@@ -1,0 +1,549 @@
+import multiprocessing
+import queue
+import socket
+import select
+import os
+import traceback
+import time
+import logging
+
+from gi.repository import GLib, GObject
+from pyModbusTCP.client import ModbusClient
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
+class DeviceError(Exception):
+    pass
+
+
+class Device(GObject.GObject):
+    """The abstract base class of a device, i.e. a component of the SAXS
+    instrument, such as an X-ray source, a motor controller or a detector.
+
+    The interface to a device consists of two parts: the first one runs in
+    the front-end process, i.e. that of running the GUI. The other one is a
+    background process, which takes care of the communication between the
+    hardware.
+
+    Properties (such as high voltage, shutter state for an X-ray source)
+    are stored in `self._properties`, which must be queried by the front-end
+    only through get_variable() and set_variable(). The names beginning with
+    underscores ('_') are reserved for internal use.
+
+    A refresh of a property can be initiated by sending `('query', <name>,
+    None)` through `_queue_to_backend`. The back-end will reply to this by 
+    `(<name>, <new value>)` in due course in `queue_to_frontend`. The value
+    is also updated in `self._properties` by the back-end. If an exception
+    occurs when reading the new value, `<new value>` will be an exception
+    object, which the front-end thread should handle or re-raise.
+
+    Properties can be refreshed periodically, automatically. If such a refresh
+    happens and a change in the value occurs, the back-end sends `(<name>, 
+    <new value>)` through `_queue_to_frontend`
+
+    On the front-end side, an idle function is running, which takes care of
+    reading `_queue_to_frontend` and emit-ing variable-change signals.
+
+    In summary, the front-end can send the following types of messages through
+    `_queue_to_backend` to the back-end:
+
+    - ('query', <variable name>, None)
+    - ('set', <variable name>, <new value>)
+    - ('execute', <command name>, <tuple of arguments>)
+    - ('exit', None, None)
+
+    In addition, the backend can also get the following messages from other
+    sources:
+
+    - ('communication_error', None, None): this will be forwarded to the 
+        front-end as ('_error', 'Communication error'). The front-end will
+        have to call `disconnect_device(because_of_failure=True)`.
+    - ('incoming', None, <incoming message from device>)  
+
+
+    The back-end can send back the following types of messages through
+    `_queue_to_frontend`:
+
+    - (<variable name>, <new value>)
+    - ('_error', <exception object>) if the exception cannot be associated to any
+        variable.
+    - ('_error', 'Communication error') if the communication channel with the
+        device broke down and a formal disconnect is needed.
+
+    Note: from the background process, we cannot:
+        - access the GUI
+        - emit signals
+        - call functions which do one or more of the above.
+    """
+    __gsignals__ = {'variable-change': (GObject.SignalFlags.RUN_FIRST, None, (str, object)),
+                    'error': (GObject.SignalFlags.RUN_LAST, None, (str, object))
+                    }
+
+    backend_interval = 1
+
+    logdir = 'log'
+
+    configdir = 'config'
+
+    log_formatstr = None
+
+    def __init__(self, instancename):
+        GObject.GObject.__init__(self)
+        self.logfile = os.path.join(self.logdir, instancename + '.log')
+        self._instancename = instancename
+        self._properties = {}
+        self._background_process = multiprocessing.Process(
+            target=self._background_worker, daemon=True)
+        self._queue_to_backend = multiprocessing.Queue()
+        self._queue_to_frontend = multiprocessing.Queue()
+        self._refresh_requested = {}
+        # the backend process must be started only after the connection to the device
+        # has been established.
+
+    def _load_state(self, dictionary):
+        """Load the state of this device to a dictionary."""
+        self.logfile = dictionary['logfile']
+        self.log_formatstr = dictionary['log_formatstr']
+        self.backend_interval = dictionary['backend_interval']
+
+    def _save_state(self):
+        """Write the state of this device to a dictionary and return it for
+        subsequent saving to a file."""
+        return {'logfile': self.logfile,
+                'log_formatstr': self.log_formatstr,
+                'backend_interval': self.backend_interval}
+
+    def _start_background_process(self):
+        """Starts the background process and registers the queue-handler idle 
+        function in the foreground"""
+        if hasattr(self, '_idle_handler'):
+            raise DeviceError('Background process already running')
+        self._idle_handler = GLib.idle_add(self._idle_worker)
+        self._background_process.start()
+
+    def _stop_background_process(self):
+        """Stops the background process and deregisters the queue-handler idle
+        function in the foreground"""
+        if not hasattr(self, '_idle_handler'):
+            raise DeviceError('Background process not running')
+        try:
+            self._queue_to_backend.put_nowait(('exit', None, None))
+            self._background_process.join()
+            GLib.source_remove(self._idle_handler)
+        finally:
+            del self._idle_handler
+
+    def get_variable(self, name):
+        """Get the value of the variable. If you need the most fresh value,
+        connect to 'variable-change' and call `self.refresh_variable()`.
+        """
+        return self._properties[name]
+
+    def set_variable(self, name, value):
+        """Set the value of the variable. In order to ensure that the variable
+        has really been updated, connect to 'variable-change' before calling
+        this."""
+        self._queue_to_backend.put_nowait(('set', name, value))
+        self.refresh_variable(name)
+
+    def refresh_variable(self, name):
+        """Request a refresh of the value of the named variable."""
+        self._queue_to_backend.put_nowait(('query', name, True))
+
+    def execute_command(self, command, *args):
+        """Execute a command on the device. The arguments are device dependent.
+
+        Note that this may not be used for reading and writing device variables,
+        the get_variable/set_variable mechanism is there for a reason.
+
+        A typical usage case is starting or stopping an exposure, opening/closing
+        the beam shutter or moving a motor.
+
+        This function returns before the completion of the command. 
+        """
+        self._queue_to_backend.put_nowait(('execute', command, args))
+
+    def _background_worker(self):
+        """Worker function of the background thread. The main job of this is
+        to run periodic checks on the hardware (polling) and updating 
+        `self._properties` accordingly, as well as writing log files.
+
+        The communication between the front-end and back-end is only through
+        `self._queue`. Note that a different copy of `self._properties`
+        exists in each process, thus we cannot use it for communication.
+        Please see the details in the class-level docstring.
+
+        This is a general method, which should not be overloaded. The actual
+        work is delegated to `_set_variable()`, `_execute_command()` and
+        `_query_variable()`, which should be overridden case-by-case.
+        """
+        self._query_variable(None)
+        while True:
+            try:
+                cmd, propname, argument = self._queue_to_backend.get(
+                    block=True, timeout=self.backend_interval)
+            except queue.Empty:
+                self._query_variable(None)  # query all variables.
+                self._log()  # log the values of variables
+                continue
+            if cmd == 'exit':
+                break  # the while True loop
+            elif cmd == 'query':
+                if propname not in self._refresh_requested:
+                    self._refresh_requested[propname] = 0
+                try:
+                    self._query_variable(propname)
+                except Exception:
+                    self._queue_to_frontend.put_nowait(
+                        (propname, 'Error on querying: %s' % traceback.format_exc()))
+                if argument:
+                    self._refresh_requested[propname] += 1
+            elif cmd == 'set':
+                try:
+                    self._set_variable(propname, argument)
+                except NotImplementedError:
+                    self._queue_to_frontend.put_nowait(
+                        (propname, 'Read-only variable'))
+            elif cmd == 'execute':
+                self._execute_command(propname, argument)
+            elif cmd == 'communication_error':
+                self._queue_to_frontend.put_nowait((
+                    '_error', 'Communication error: ' + propname))
+            elif cmd == 'incoming':
+                try:
+                    self._process_incoming_message(argument)
+                except Exception:
+                    self._queue_to_frontend.put_nowait(
+                        ('_error', traceback.format_exc()))
+            else:
+                raise NotImplementedError(
+                    'Unknown command for _background_worker: %s' % cmd)
+
+    def _update_variable(self, varname, value):
+        """Updates the value of the variable in _properties and queues a
+        notification for the front-end thread. To be called from the back-end
+        process. Returns True if the value really changed, False if not."""
+        try:
+            assert(self._properties[varname] == value)
+            if varname in self._refresh_requested and self._refresh_requested[varname] > 0:
+                self._refresh_requested[varname] -= 1
+                logger.debug('***refresh requested***')
+                raise KeyError
+            return False
+        except (AssertionError, KeyError):
+            self._properties[varname] = value
+            self._queue_to_frontend.put_nowait((varname, value))
+            return True
+
+    def _log(self):
+        """Write a line in the log-file, according to `self.log_formatstr`.
+        """
+        if (not self.logfile) or (not self.log_formatstr):
+            return
+        with open(self.logfile, 'a+', encoding='utf-8') as f:
+            f.write(
+                ('%.3f\t' % time.time()) + self.log_formatstr.format(**self._properties) + '\n')
+
+    def _idle_worker(self):
+        """This function, called as an idle procedure, queries the queue for results from the 
+        back-end and emits the corresponding signals."""
+        while True:
+            try:
+                propertyname, newvalue = self._queue_to_frontend.get_nowait()
+                if (propertyname == '_error') and (newvalue == 'Communication error'):
+                    self.disconnect_device(because_of_failure=True)
+                elif isinstance(newvalue, Exception):
+                    self.emit('error', propertyname, newvalue)
+                else:
+                    self._properties[propertyname] = newvalue
+                    self.emit('variable-change', propertyname, newvalue)
+            except queue.Empty:
+                break
+        return True  # this is an idle function, we want to be called again.
+
+    def do_error(self, propertyname, exception):
+        logger.critical(
+            'Unhandled exception. Variable name: %s. Exception: %s' % str(exception))
+        raise exception
+
+    def do_variable_change(self, propertyname, newvalue):
+        return False
+
+    def _get_connected(self):
+        """Check if we have a connection to the device. You should not call
+        this directly."""
+        raise NotImplementedError
+
+    def connect_device(self, *args):
+        """Connect to the device. This consists of the following steps:
+        1) ensuring a sane environment: the connection is not yet established
+        and the background process is not running.
+        2) establish tcp, modbus, serial, whatever connection.
+        3) call _initialize_after_connect
+        4) start the background process.
+
+        Before step 4), the front-end owns the connection variables (socket,
+        file handle, etc.), which should be instance variables. In step 4,
+        the background process takes full ownership of these: i.e. the front
+        end must not touch them.
+
+        If you want to do something just after the background process started,
+        push the appropriate messages into `_queue_to_background` in step 3).
+
+        Connection and communication parameters (e.g. host, port, baud rate,
+        timeout etc.) should be given as arguments to this method.
+
+        If an exception happens at any step, the state of the device has to be
+        returned to disconnected. If the exception happens in 4), 
+        _finalize_after_disconnect() has to be called.
+        """
+        raise NotImplementedError
+
+    def disconnect_device(self, because_of_failure=False):
+        """Disconnect from the device. This consists of the following steps:
+        1) ensure that the environment is sane: the connection is established
+        2) stop (and wait for) the background process
+        3) run _finalize_after_disconnect
+        4) close socket/modbus/whatever
+
+        Note that disconnecting can be unexpected, i.e. due to a communications
+        failure or because of the remote end. In this case this function is
+        called on a queue message from the backend.
+        """
+        raise NotImplementedError
+
+    def _initialize_after_connect(self):
+        """Do initialization after the connection has been established to the
+        device"""
+        pass
+
+    def _finalize_after_disconnect(self):
+        """Do finalization after the connection to the device has been broken down.
+        """
+        pass
+
+    def _query_variable(self, variablename):
+        """Queries the value of the current variable.
+
+        If `variablename` is None, query ALL known variables.
+
+        This method runs in the background process. Must block until the new value has been
+        obtained from the device.
+        """
+        raise NotImplementedError
+
+    def _set_variable(self, variable, value):
+        """Does the actual job of setting a device variable by contacting the device. Must
+        block until acknowledgement is obtained from the device. Run from the background
+        process"""
+        raise NotImplementedError
+
+    def _execute_command(self, commandname, arguments):
+        """Does the actual job of executing the command by contacting the device. Run from
+        the background process. 
+        """
+        raise NotImplementedError
+
+    def _process_incoming_message(self, message):
+        """This is run if a message arrives from the device."""
+        raise NotImplementedError
+
+
+class Device_TCP(Device):
+    """Device with TCP socket connection.
+
+    After the socket has been connected, a background process is started,
+    which takes care of read/write operations on the socket. You can think
+    of this as a secondary back-end process. Typically, the front-end process
+    will communicate with the primary back-end through `_queue_to_frontend`
+    and `_queue_to_backend`, and the two back-ends communicate via
+    `_outqueue` and `_queue_to_backend`.
+
+    Interactions with the device are primarily initiated by the front-end,
+    managed by the primary back-end and carried out by the communication
+    back-end.
+    """
+
+    def __init__(self, *args, **kwargs):
+        Device.__init__(self, *args, **kwargs)
+        self._outqueue = multiprocessing.Queue()
+        self._poll_timeout = None
+        self._communication_subprocess = multiprocessing.Process(
+            target=self._communication_worker, daemon=True)
+
+    def _get_connected(self):
+        """Check if we have a connection to the device. You should not call
+        this directly."""
+        return hasattr(self, '_tcpsocket')
+
+    def connect_device(self, host, port, socket_timeout, poll_timeout):
+        logger.debug('Connecting to device: %s:%d' % (host, port))
+        if self._get_connected():
+            raise DeviceError('Already connected')
+        try:
+            self._tcpsocket = socket.create_connection(
+                (host, port), socket_timeout)
+            self._tcpsocket.setblocking(False)
+            self._poll_timeout = poll_timeout
+        except (socket.error, socket.gaierror, socket.herror) as exc:
+            logger.error(
+                'Error initializing socket connection to device %s:%d' % (host, port))
+            raise exc
+        self._communication_subprocess.start()
+        logger.debug(
+            'Communication subprocess started for device %s:%d' % (host, port))
+        try:
+            self._initialize_after_connect()
+            try:
+                self._start_background_process()
+            except Exception as exc:
+                self._finalize_after_disconnect()
+                raise exc
+        except Exception as exc:
+            self._outqueue.put_nowait(('exit', None))
+            self._communication_subprocess.join()
+            self._tcpsocket.shutdown(socket.SHUT_RDWR)
+            self._tcpsocket.close()
+            del self._tcpsocket
+            raise exc
+        logger.debug('Connected to device %s:%d' % (host, port))
+
+    def disconnect_device(self, because_of_failure=False):
+        if not self._get_connected():
+            raise DeviceError('Not connected')
+        logger.debug('Disconnecting from device %s%s' % (
+            str(self._tcpsocket.getpeername()), ['', ' because of a failure'][because_of_failure]))
+        try:
+            self._stop_background_process()
+            logger.debug('Stopped background process')
+            self._finalize_after_disconnect()
+            logger.debug('Finalized')
+            self._outqueue.put_nowait(('exit', None))
+            self._communication_subprocess.join()
+            logger.debug('Closed communication subprocess')
+            self._tcpsocket.shutdown(socket.SHUT_RDWR)
+            self._tcpsocket.close()
+            logger.debug('Closed socket')
+        finally:
+            del self._tcpsocket
+
+    def _send(self, message):
+        """Send a message (bytes) to the device"""
+        #logger.debug('Sending message %s' % str(message))
+        self._outqueue.put_nowait(('send', message))
+
+    def _communication_worker(self):
+        """Background process for communication."""
+        polling = select.poll()
+        polling.register(self._tcpsocket, select.POLLIN | select.POLLPRI |
+                         select.POLLERR | select.POLLHUP | select.POLLNVAL)
+        try:
+            while True:
+                try:
+                    command, outmsg = self._outqueue.get_nowait()
+                    if command == 'send':
+                        sent = 0
+                        while sent < len(outmsg):
+                            sent += self._tcpsocket.send(outmsg[sent:])
+                    elif command == 'exit':
+                        break
+                except queue.Empty:
+                    pass
+                message = b''
+                while True:
+                    # read all parts of the message.
+                    try:
+                        # check if an input is waiting on the socket
+                        socket, event = polling.poll(
+                            self._poll_timeout * 1000)[0]
+                    except IndexError:
+                        # no incoming message
+                        break  # this inner while True loop
+                    # an event on the socket is waiting to be processed
+                    if (event & (select.POLLERR | select.POLLHUP | select.POLLNVAL)):
+                        # fatal socket error, we have to close communications.
+                        self._queue_to_backend.put_nowait((
+                            'communication_error', 'Exceptional', None))
+                        return  # end watching the socket.
+                    # read the incoming message
+                    message = message + self._tcpsocket.recv(4096)
+                    if not message:
+                        # remote end hung up on us
+                        self._queue_to_backend.put_nowait(
+                            ('communication_error', 'Closed', None))
+                        return
+                if not message:
+                    # no message was read, because no message was waiting. Note that
+                    # we are not dealing with an empty message, which would signify
+                    # the breakdown of the communication channel.
+                    continue
+                # the incoming message is ready, send it to the background
+                # thread
+                self._queue_to_backend.put_nowait(('incoming', None, message))
+        finally:
+            polling.unregister(self._tcpsocket)
+
+
+class Device_ModbusTCP(Device):
+    """Device with Modbus over TCP connection.
+    """
+
+    def __init__(self, *args, **kwargs):
+        Device.__init__(self, *args, **kwargs)
+
+    def _get_connected(self):
+        """Check if we have a connection to the device. You should not call
+        this directly."""
+        return hasattr(self, '_modbusclient')
+
+    def connect_device(self, host, port, modbus_timeout):
+        logger.debug('Connecting to device: %s:%d' % (host, port))
+        if self._get_connected():
+            raise DeviceError('Already connected')
+        self._modbusclient = ModbusClient(host, port, timeout=modbus_timeout)
+        if not self._modbusclient.open():
+            raise DeviceError(
+                'Error initializing Modbus over TCP connection to device %s:%d' % (host, port))
+        try:
+            self._initialize_after_connect()
+            try:
+                self._start_background_process()
+            except Exception as exc:
+                self._finalize_after_disconnect()
+                raise exc
+        except Exception as exc:
+            self._modbusclient.close()
+            del self._modbusclient
+            raise exc
+        logger.debug('Connected to device %s:%d' % (host, port))
+
+    def disconnect_device(self, because_of_failure=False):
+        if not self._get_connected():
+            raise DeviceError('Not connected')
+        logger.debug('Disconnecting from device %s:%d%s' % (
+            self._modbusclient.host(), self._modbusclient.port(), ['', ' because of a failure'][because_of_failure]))
+        try:
+            self._stop_background_process()
+            logger.debug('Stopped background process')
+            self._finalize_after_disconnect()
+            logger.debug('Finalized')
+            self._modbusclient.close()
+            logger.debug('Closed socket')
+        finally:
+            del self._modbusclient
+
+    def _read_integer(self, regno):
+        return self._modbusclient.read_holding_registers(regno, 1)[0]
+
+    def _write_coil(self, coilno, val):
+        self._modbusclient.write_single_coil(coilno, val)
+
+    def _read_coils(self, coilstart, coilnum):
+        return self._modbusclient.read_coils(coilstart, coilnum)
+
+    def _send(self, message):
+        """Send a message (bytes) to the device"""
+        #logger.debug('Sending message %s' % str(message))
+        self._outqueue.put_nowait(('send', message))
