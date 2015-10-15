@@ -314,6 +314,7 @@ class TMCMcard(Device_TCP):
     def _save_state(self):
         dic = Device_TCP._save_state(self)
         dic['softlimits'] = self._softlimits
+        return dic
 
     def _execute_command(self, commandname, arguments):
         if commandname == 'moveto':

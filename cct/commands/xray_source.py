@@ -3,9 +3,7 @@ Created on Oct 15, 2015
 
 @author: labuser
 '''
-import traceback
-from gi.repository import GLib
-from ..devices.device import DeviceError
+import weakref
 from .command import Command
 
 
@@ -17,8 +15,7 @@ class Shutter(Command):
     Arguments:
         <state>: 'close', 'open', True, False or a numeric boolean value
 
-    Remarks:
-        None
+    Remarks: None
     """
 
     name = 'shutter'
@@ -26,67 +23,124 @@ class Shutter(Command):
     timeout = 2
 
     def execute(self, instrument, arglist, namespace):
+        self._check_for_variable = 'shutter'
         if arglist[0] == 'close':
-            requested_state = False
+            self._check_for_value = False
         elif arglist[0] == 'open':
-            requested_state = True
-        elif isinstance(arglist, int) or isinstance(arglist, bool) or isinstance(arglist, float):
-            requested_state = bool(arglist)
-        self._conn = [instrument.xray_source.connect(
-            'variable-change', self.on_shutter, requested_state),
-            instrument.xray_source.connect('error', self.on_error)]
-        self._timeout = GLib.timeout_add(
-            self.timeout * 1000, lambda xrs=instrument.xray_source: self.on_timeout(xrs))
-        instrument.xray_source.shutter(requested_state)
-
-    def on_error(self, xray_source, propertyname, exception):
-        self.emit('fail', exception, propertyname)
-
-    def on_shutter(self, xray_source, variable, value, requested_state):
-        if variable == 'shutter':
-            if value == requested_state:
-                try:
-                    for c in self._conn:
-                        xray_source.disconnect(c)
-                    del self._conn
-                except AttributeError:
-                    pass
-                try:
-                    GLib.source_remove(self._timeout)
-                    del self._timeout
-                except AttributeError:
-                    pass
-                self.emit('return', value)
-            return False
+            self._check_for_value = True
+        elif isinstance(arglist[0], int) or isinstance(arglist[0], bool) or isinstance(arglist[0], float):
+            self._check_for_value = bool(arglist)
         else:
-            return False
-
-    def on_timeout(self, xray_source):
-        try:
-            xray_source.disconnect(self._conn)
-            del self._conn
-        except AttributeError:
-            pass
-        try:
-            # this way we can generate a traceback. Ugly, I know.
-            raise DeviceError('Shutter timeout')
-        except DeviceError as exc:
-            self.emit('fail', exc, traceback.format_exc())
-        self.emit('return', xray_source.get_variable('shutter'))
-        return False
+            raise NotImplementedError(arglist[0], type(arglist[0]))
+        self._require_device(instrument, instrument.xray_source._instancename)
+        self._install_timeout_handler(self.timeout)
+        instrument.xray_source.shutter(self._check_for_value)
 
 
-class SetPower(Command):
-    """Command to set the power of the X-ray source"""
+class Xrays(Command):
+    """Enable or disable X-ray generation
+
+    Invocation: xrays(<state>)
+
+    Arguments:
+        <state>: 'on', 'off', True, False or a numeric boolean value
+
+    Remarks: None
+    """
+
+    name = 'xrays'
+
+    timeout = 2
+
+    def execute(self, instrument, arglist, namespace):
+        self._check_for_variable = 'xrays'
+        if arglist[0] == 'off':
+            self._check_for_value = False
+        elif arglist[0] == 'on':
+            self._check_for_value = True
+        elif isinstance(arglist[0], int) or isinstance(arglist[0], bool) or isinstance(arglist[0], float):
+            self._check_for_value = bool(arglist)
+        self._require_device(instrument, instrument.xray_source._instancename)
+        self._install_timeout_handler(self.timeout)
+        instrument.xray_source.execute('xrays', self._check_for_value)
+
+
+class XrayFaultsReset(Command):
+    """Reset faults in GeniX
+
+    Invocation: xray_reset_faults()
+
+    Arguments:
+        <state>: 'on', 'off', True, False or a numeric boolean value
+
+    Remarks: None
+    """
+
+    name = 'xray_reset_faults'
+
+    timeout = 2
+
+    def execute(self, instrument, arglist, namespace):
+        self._check_for_variable = 'faults'
+        self._check_for_value = False
+        self._require_device(instrument, instrument.xray_source._instancename)
+        self._install_timeout_handler(self.timeout)
+        instrument.xray_source.execute('reset_faults', self._check_for_value)
+
+
+class Xray_Power(Command):
+    """Set the power of the X-ray source
+
+    Invocation: xray_power(<state>)
+
+    Arguments:
+        <state>: 
+            'down', 'off', 0, '0', '0W': turn the power off
+            'standby', 'low', 9, '9', '9W': standby (low-power mode)
+            'full', 'high', 30, '30', '30W': full-power mode
+
+    Remarks: None
+    """
 
     name = 'xray_power'
 
     def execute(self, instrument, arglist, namespace):
         xray_source = instrument.xray_source
-
+        self._check_for_variable = '_status'
+        self._require_device(instrument, xray_source._instancename)
         if arglist[0] in ['down', 'off', 0, '0', '0W']:
-            pass
+            self._check_for_value = 'Power off'
+            self._install_pulse_handler('Powering off', 1)
+            xray_source.execute_command('poweroff')
         elif arglist[0] in ['standby', 'low', 9, '9', '9W']:
-            pass
+            self._check_for_value = 'Low power'
+            self._install_pulse_handler('Going to low power', 1)
+            xray_source.execute_command('standby')
         elif arglist[0] in ['full', 'high', 30, '30', '30W']:
-            pass
+            self._check_for_value = 'Full power'
+            self._install_pulse_handler('Going to full power', 1)
+            xray_source.execute_command('full_power')
+
+
+class Warmup(Command):
+    """Start the warming-up procedure of the X-ray source
+
+    Invocation: xray_warmup()
+
+    Arguments: None
+
+    Remarks: None
+    """
+    name = 'xray_warmup'
+
+    def execute(self, instrument, arglist, namespace):
+        self.xray_source = weakref.proxy(instrument.xray_source)
+        self._check_for_variable = '_status'
+        self._require_device(instrument, self.xray_source._instancename)
+        self._check_for_value = 'Power off'
+        self._install_pulse_handler('Warming up', 1)
+        self.xray_source.execute_command('start_warmup')
+
+    def kill(self):
+        self.xray_source.execute_command('stop_warmup')
+        self.xray_source.execute_command('poweroff')

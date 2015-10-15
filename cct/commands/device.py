@@ -1,10 +1,19 @@
 from gi.repository import GLib
 from .command import Command
-from ..devices.device import DeviceError
-import traceback
 
 
 class GetVariable(Command):
+    """Get the value of a device variable
+
+    Invocation: getvar(<device>, <variable>)
+
+    Arguments:
+        <device>: the name of the device
+        <variable>: the name of the variable
+
+    Remarks:
+        the value is returned
+    """
     name = 'getvar'
 
     timeout = 60
@@ -12,38 +21,58 @@ class GetVariable(Command):
     def execute(self, instrument, arglist, namespace):
         devicename = arglist[0]
         variablename = arglist[1]
-
-        self._connection = instrument.devices[
-            devicename].connect('variable-change', self.on_variable_change, variablename)
-        self._timeout = GLib.timeout_add(
-            self.timeout * 1000, lambda dev=instrument.devices[devicename]: self.on_timeout(dev))
+        self._require_device(instrument, devicename)
+        self._install_timeout_handler(self.timeout)
+        self._check_for_variable = variablename
         instrument.devices[devicename].refresh_variable(variablename)
 
-    def on_variable_change(self, device, variable, newvalue, expectedvariable):
-        if variable == expectedvariable:
-            try:
-                device.disconnect(self._connection)
-                del self._connection
-            except AttributeError:
-                pass
-            try:
-                GLib.source_remove(self._timeout)
-                del self._timeout
-            except AttributeError:
-                pass
+    def on_variable_change(self, device, variable, newvalue):
+        if variable == self._check_for_variable:
+            self._uninstall_timeout_handler()
+            self._unrequire_device()
             self.emit('return', newvalue)
         return False
 
-    def on_timeout(self, device):
-        try:
-            device.disconnect(self._conn)
-            del self._conn
-        except AttributeError:
-            pass
-        try:
-            # this way we can generate a traceback. Ugly, I know.
-            raise DeviceError('Shutter timeout')
-        except DeviceError as exc:
-            self.emit('fail', exc, traceback.format_exc())
-        self.emit('return', None)
+
+class Help(Command):
+    """Get help on the command
+
+    Invocation: help(<commandname>)
+
+    Arguments:
+        <commandname>: the name of the command
+
+    Remarks:
+        a help text is printed
+    """
+    name = 'help'
+
+    def execute(self, instrument, arglist, namespace):
+        cmdname = arglist[0]
+        GLib.idle_add(
+            lambda m='Help on command ' + cmdname + ':\n' + instrument.commands[cmdname].__doc__: self._idlefunc(m))
+
+    def _idlefunc(self, msg):
+        self.emit('message', msg)
+        self.emit('return', msg)
         return False
+
+
+class What(Command):
+    """List the contents of the current namespace
+
+    Invocation: what()
+
+    Arguments: None
+
+    Remarks: None
+    """
+    name = 'what'
+
+    def execute(self, instrument, arglist, namespace):
+        GLib.idle_add(
+            lambda m=', '.join([str(k) for k in namespace.keys()]): self._idlefunc(m))
+
+    def _idlefunc(self, msg):
+        self.emit('message', msg)
+        self.emit('return', msg)

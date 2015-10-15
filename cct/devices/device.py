@@ -18,6 +18,10 @@ class DeviceError(Exception):
     pass
 
 
+class CommunicationError(DeviceError):
+    pass
+
+
 class Device(GObject.GObject):
     """The abstract base class of a device, i.e. a component of the SAXS
     instrument, such as an X-ray source, a motor controller or a detector.
@@ -77,9 +81,19 @@ class Device(GObject.GObject):
         - emit signals
         - call functions which do one or more of the above.
     """
-    __gsignals__ = {'variable-change': (GObject.SignalFlags.RUN_FIRST, None, (str, object)),
-                    'error': (GObject.SignalFlags.RUN_LAST, None, (str, object))
-                    }
+    __gsignals__ = {
+        # emitted if the value of a variable changes. The first argument is the
+        # name of the variable, the second is its new value
+        'variable-change': (GObject.SignalFlags.RUN_FIRST, None, (str, object)),
+        # emitted if an error happens. The first argument is the the name of the
+        # affected variable or '' if no variable corresponds to this error.
+        # The second argument is an exception object. The third one is the
+        # formatted traceback.
+        'error': (GObject.SignalFlags.RUN_LAST, None, (str, object, str)),
+        # emitted on (sudden) disconnect. The boolean argument is True if the
+        # disconnection was unintentional
+        'disconnect': (GObject.SignalFlags.RUN_LAST, None, (bool,)),
+    }
 
     backend_interval = 1
 
@@ -207,13 +221,13 @@ class Device(GObject.GObject):
                 self._execute_command(propname, argument)
             elif cmd == 'communication_error':
                 self._queue_to_frontend.put_nowait((
-                    '_error', 'Communication error: ' + propname))
+                    '_error', (propname, argument)))
             elif cmd == 'incoming':
                 try:
                     self._process_incoming_message(argument)
-                except Exception:
+                except Exception as exc:
                     self._queue_to_frontend.put_nowait(
-                        ('_error', traceback.format_exc()))
+                        ('_error', (exc, traceback.format_exc())))
             else:
                 raise NotImplementedError(
                     'Unknown command for _background_worker: %s' % cmd)
@@ -226,7 +240,6 @@ class Device(GObject.GObject):
             assert(self._properties[varname] == value)
             if varname in self._refresh_requested and self._refresh_requested[varname] > 0:
                 self._refresh_requested[varname] -= 1
-                logger.debug('***refresh requested***')
                 raise KeyError
             return False
         except (AssertionError, KeyError):
@@ -249,10 +262,11 @@ class Device(GObject.GObject):
         while True:
             try:
                 propertyname, newvalue = self._queue_to_frontend.get_nowait()
-                if (propertyname == '_error') and (newvalue == 'Communication error'):
+                if (propertyname == '_error') and isinstance(newvalue[0], CommunicationError):
                     self.disconnect_device(because_of_failure=True)
-                elif isinstance(newvalue, Exception):
-                    self.emit('error', propertyname, newvalue)
+                    self.emit('error', '', newvalue[0], newvalue[1])
+                elif isinstance(newvalue, tuple) and isinstance(newvalue[0], Exception):
+                    self.emit('error', propertyname, newvalue[0], newvalue[1])
                 else:
                     self._properties[propertyname] = newvalue
                     self.emit('variable-change', propertyname, newvalue)
@@ -260,9 +274,9 @@ class Device(GObject.GObject):
                 break
         return True  # this is an idle function, we want to be called again.
 
-    def do_error(self, propertyname, exception):
+    def do_error(self, propertyname, exception, tb):
         logger.critical(
-            'Unhandled exception. Variable name: %s. Exception: %s' % str(exception))
+            'Unhandled exception. Variable name: %s. Exception: %s. Traceback: %s' % (str(exception), tb))
         raise exception
 
     def do_variable_change(self, propertyname, newvalue):
@@ -304,6 +318,7 @@ class Device(GObject.GObject):
         2) stop (and wait for) the background process
         3) run _finalize_after_disconnect
         4) close socket/modbus/whatever
+        5) emit 'disconnect' signal
 
         Note that disconnecting can be unexpected, i.e. due to a communications
         failure or because of the remote end. In this case this function is
@@ -423,6 +438,7 @@ class Device_TCP(Device):
             self._tcpsocket.shutdown(socket.SHUT_RDWR)
             self._tcpsocket.close()
             logger.debug('Closed socket')
+            self.emit('disconnect', because_of_failure)
         finally:
             del self._tcpsocket
 
@@ -461,15 +477,15 @@ class Device_TCP(Device):
                     # an event on the socket is waiting to be processed
                     if (event & (select.POLLERR | select.POLLHUP | select.POLLNVAL)):
                         # fatal socket error, we have to close communications.
-                        self._queue_to_backend.put_nowait((
-                            'communication_error', 'Exceptional', None))
-                        return  # end watching the socket.
+                        raise CommunicationError(
+                            'Socket is in exceptional state: %d' % event)
+                        # end watching the socket.
                     # read the incoming message
                     message = message + self._tcpsocket.recv(4096)
                     if not message:
                         # remote end hung up on us
-                        self._queue_to_backend.put_nowait(
-                            ('communication_error', 'Closed', None))
+                        raise CommunicationError(
+                            'Socket has been closed by the remote side')
                         return
                 if not message:
                     # no message was read, because no message was waiting. Note that
@@ -479,6 +495,9 @@ class Device_TCP(Device):
                 # the incoming message is ready, send it to the background
                 # thread
                 self._queue_to_backend.put_nowait(('incoming', None, message))
+        except CommunicationError as exc:
+            self._queue_to_backend.put_nowait(
+                ('communication_error', exc, traceback.format_exc()))
         finally:
             polling.unregister(self._tcpsocket)
 

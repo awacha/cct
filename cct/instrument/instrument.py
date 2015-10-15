@@ -239,10 +239,13 @@ class Instrument(GObject.GObject):
         # the command line must contain only one command, in the form of
         # `command(arg1, arg2, arg3 ...)`
         parpairs = get_parentheses_pairs(commandline, '(')
-        argumentstring = commandline[parpairs[0][1] + 1:parpairs[0][2]]
-        arguments = [eval(a, self.command_namespace_globals,
-                          self.command_namespace_locals)
-                     for a in argumentstring.split(',')]
+        argumentstring = commandline[parpairs[0][1] + 1:parpairs[0][2]].strip()
+        if argumentstring:
+            arguments = [eval(a, self.command_namespace_globals,
+                              self.command_namespace_locals)
+                         for a in argumentstring.split(',')]
+        else:
+            arguments = []
         commandname = commandline[:parpairs[0][1]].strip()
 
         command = self.commands[commandname]()

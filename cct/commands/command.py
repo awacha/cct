@@ -1,4 +1,13 @@
-from gi.repository import GObject
+from gi.repository import GObject, GLib
+import traceback
+
+
+class CommandError(Exception):
+    pass
+
+
+class CommandTimeoutError(CommandError):
+    pass
 
 
 class Command(GObject.GObject):
@@ -63,12 +72,136 @@ class Command(GObject.GObject):
 
     def __init__(self):
         GObject.GObject.__init__(self)
+        self._device_connections = {}
 
     def execute(self, instrument, arglist, namespace):
-        pass
+        """Execute the command"""
+        raise NotImplementedError
 
     def simulate(self, instrument, arglist, namespace):
-        pass
+        """Simulate the command. Do everything as execute() would do, just do
+        not talk to the devices themselves."""
+        raise NotImplementedError
 
     def kill(self):
+        """Stop running the current command."""
         pass
+
+    def _require_device(self, instrument, devicename):
+        """Connect to signals `variable-change` and `error` of the given device
+        and set up basic signal handlers (on_variable_change() and on_error())."""
+        device = instrument.devices[devicename]
+        if device in self._device_connections:
+            raise CommandError('Device %s already required' % devicename)
+        self._device_connections[device] = [device.connect('variable-change', self.on_variable_change),
+                                            device.connect(
+            'error', self.on_error),
+            device.connect('disconnect', self.on_disconnect)]
+
+    def _unrequire_device(self, devicename=None):
+        """Disconnect basic signal handlers from the device. If argument
+        `devicename` is None, disconnect all signal handlers from all devices."""
+        if devicename is None:
+            devices = [d._instancename for d in self._device_connections]
+        else:
+            devices = [devicename]
+        for dn in devices:
+            try:
+                device = [
+                    d for d in self._device_connections if d._instancename == dn][0]
+            except IndexError:
+                continue
+            for c in self._device_connections[device]:
+                device.disconnect(c)
+            del self._device_connections[device]
+
+    def _install_timeout_handler(self, timeout):
+        """Install a timeout handler. After `timeout` seconds the command will
+        be interrupted and a `fail` signal is sent. Override on_timeout() if
+        you want a different behaviour."""
+        self._timeout = GLib.timeout_add(1000 * self.timeout, self.on_timeout)
+
+    def _uninstall_timeout_handler(self):
+        """Uninstall the timeout handler"""
+        try:
+            GLib.source_remove(self._timeout)
+            del self._timeout
+        except AttributeError:
+            pass
+
+    def _install_pulse_handler(self, message_or_func, period):
+        """Install a pulse handler, which runs periodically (`period` given in
+        seconds). If `message_or_func` is a string, the 'pulse' signal will be
+        emitted at each run, with `message_or_func` as the argument. Otherwise
+        `message_or_func` can be a callable, returning a string as an argument
+        for the 'pulse' signal.
+        """
+        if hasattr(self, '_pulse_handler'):
+            self._uninstall_pulse_handler()
+        if isinstance(message_or_func, str):
+            self._pulse_handler = GLib.timeout_add(
+                period * 1000, lambda m=message_or_func: self.emit('pulse', m) or True)
+        elif callable(message_or_func):
+            self._pulse_handler = GLib.timeout.add(
+                period * 1000, lambda m=message_or_func: self.emit('pulse', m()) or True)
+
+    def _uninstall_pulse_handler(self):
+        """Uninstall the pulse handler"""
+        try:
+            GLib.source_remove(self._pulse_handler)
+            del self._pulse_handler
+        except AttributeError:
+            pass
+
+    def on_timeout(self):
+        """The timeout handler: called if the command times out.
+
+        Its jobs are:
+        1) unrequire all required devices
+        2) emit the 'fail' signal with a CommandTimeoutError exception
+        3) uninstall timeout handler
+        4) uninstall pulse handler
+
+        If you override this, please make sure you do all the jobs above.
+        """
+        self._unrequire_device()
+        try:
+            raise CommandTimeoutError('Command %s timed out' % self.name)
+        except CommandTimeoutError as exc:
+            self.emit('fail', exc, traceback.format_exc())
+        self.emit('return', None)
+        self._uninstall_timeout_handler()
+        self._uninstall_pulse_handler()
+        return False
+
+    def on_variable_change(self, device, variablename, newvalue):
+        """A basic handler for the variable change in a device. It has been
+        written with ONLY ONE required device in mind: it may not work if
+        the command requires multiple devices.
+
+        If you want to use this handler, you must make sure that the
+        `_check_for_variable` and `_check_for_value` instance variables are
+        present. When this handler encounters a situation where the variable,
+        the name of which is carried in `_check_for_variable` gets the new
+        value `_check_for_value`, it will uninstall possible timeout handlers
+        and pulse handlers, unrequire all devices and emit the 'return' signal
+        with the new value.
+        """
+        if hasattr(self, '_check_for_variable') and hasattr(self, '_check_for_value'):
+            if (variablename == self._check_for_variable) and (newvalue == self._check_for_value):
+                self._uninstall_timeout_handler()
+                self._uninstall_pulse_handler()
+                self._unrequire_device()
+                self.emit('return', newvalue)
+        return False
+
+    def on_error(self, device, exc, tb):
+        """Emit the 'fail' signal"""
+        self.emit('fail', exc, tb)
+        return False
+
+    def on_disconnect(self, device, because_of_failure):
+        """Emit a fail signal."""
+        self.emit('fail', CommandError(
+            'Sudden disconnect of device %s' % device._instancename), 'no traceback')
+        return False
