@@ -13,8 +13,7 @@ class Command(GObject.GObject):
     operation, then returns. This method gets three arguments: `instrument`,
     which is the singleton object corresponding to the whole beamline, from
     which all the devices and state variables can be obtained. The second one
-    is the full command line pertaining to this command, usually in the form
-    'command(arg1, arg2, arg3, ...)'. The last argument is a dictionary of the
+    is the argument list of this command. The last argument is a dictionary of the
     environment (namespace) the command runs in.
 
     The `simulate()` should do everything as `execute()` can, without talking
@@ -33,17 +32,43 @@ class Command(GObject.GObject):
     still running or not.
 
     Other signals can also be defined by the user.
+
+    The member function kill() signifies the running command that it should
+    stop and emit the 'return' signal immediately, or as soon as possible.
+    Short-running commands (runtime is at most 5 seconds) might ignore this
+    function.
+
+    As a general rule, signals must not be emitted from the execute, simulate
+    and kill member functions. Use idle functions or callbacks for this.
     """
-    __gsignals__ = {'return': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
-                    'fail': (GObject.SignalFlags.RUN_LAST, None, (object, str)),
-                    'pulse': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-                    'progress': (GObject.SignalFlags.RUN_FIRST, None, (str, float))}
+    __gsignals__ = {
+        # emitted when the command completes. Must be emitted exactly once
+        'return': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
+        # emitted on a failure. Can be emitted multiple times
+        'fail': (GObject.SignalFlags.RUN_LAST, None, (object, str)),
+        # long running commands where the duration cannot be
+        # estimated in advance, should emit this periodically (say
+        # in every second)
+        'pulse': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        # long running commands where the duration can be estimated
+        # in advance, this should be emitted periodically (e.g. in
+        # every second)
+        'progress': (GObject.SignalFlags.RUN_FIRST, None, (str, float)),
+        # send occasional messages to the command interpreter (to
+        # be written to a terminal or logged at the INFO level.
+        'message': (GObject.SignalFlags.RUN_FIRST, None, (str,))
+    }
+
+    name = '__abstract__'
 
     def __init__(self):
         GObject.GObject.__init__(self)
 
-    def execute(self, instrument, commandline, namespace):
+    def execute(self, instrument, arglist, namespace):
         pass
 
-    def simulate(self, instrument, commandline, namespace):
+    def simulate(self, instrument, arglist, namespace):
+        pass
+
+    def kill(self):
         pass

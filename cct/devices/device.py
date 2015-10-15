@@ -83,14 +83,12 @@ class Device(GObject.GObject):
 
     backend_interval = 1
 
-    logdir = 'log'
-
-    configdir = 'config'
-
     log_formatstr = None
 
-    def __init__(self, instancename):
+    def __init__(self, instancename, logdir='log', configdir='config'):
         GObject.GObject.__init__(self)
+        self.logdir = logdir
+        self.configdir = configdir
         self.logfile = os.path.join(self.logdir, instancename + '.log')
         self._instancename = instancename
         self._properties = {}
@@ -111,8 +109,7 @@ class Device(GObject.GObject):
     def _save_state(self):
         """Write the state of this device to a dictionary and return it for
         subsequent saving to a file."""
-        return {'logfile': self.logfile,
-                'log_formatstr': self.log_formatstr,
+        return {'log_formatstr': self.log_formatstr,
                 'backend_interval': self.backend_interval}
 
     def _start_background_process(self):

@@ -1,4 +1,4 @@
-from cct.devices.device import Device_ModbusTCP, DeviceError
+from cct.devices.device import Device_ModbusTCP
 
 
 class GeniX(Device_ModbusTCP):

@@ -6,7 +6,7 @@ Created on Oct 13, 2015
 from .device import Device_TCP, DeviceError
 
 
-class VacuumGauge(Device_TCP):
+class TPG201(Device_TCP):
 
     log_formatstr = '{pressure}'
 
