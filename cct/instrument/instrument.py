@@ -5,7 +5,6 @@ from ..devices.vacuumgauge import TPG201
 from ..devices.device import DeviceError
 from ..services import Interpreter
 from .motor import Motor
-from gi.repository import GLib
 import traceback
 import json
 import os

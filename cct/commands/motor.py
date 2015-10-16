@@ -1,6 +1,5 @@
 from gi.repository import GLib
 from .command import Command
-from sympy.physics.quantum.cartesian import PositionBra3D
 
 
 class Moveto(Command):
