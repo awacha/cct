@@ -1,3 +1,2 @@
-from .xray_source import Shutter, Xray_Power, Warmup
-from .device import GetVariable, Help, What
-all_commands = [Shutter, Xray_Power, GetVariable, Warmup, Help, What]
+from .command import Command, CommandError, CommandTimeoutError
+from . import detector, device, jump, motor, scan, transmission, vacuumgauge, xray_source

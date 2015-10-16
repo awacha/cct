@@ -55,3 +55,7 @@ class TPG201(Device_TCP):
         else:
             raise DeviceError(
                 'Unknown message code %s in message %s' % (chr(message[3]), str(message)))
+
+    def _initialize_after_connect(self):
+        Device_TCP._initialize_after_connect(self)
+        self.refresh_variable('version', check_backend_alive=False)

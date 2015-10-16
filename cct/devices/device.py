@@ -93,9 +93,14 @@ class Device(GObject.GObject):
         # emitted on (sudden) disconnect. The boolean argument is True if the
         # disconnection was unintentional
         'disconnect': (GObject.SignalFlags.RUN_LAST, None, (bool,)),
+        # emitted when the starup is done, i.e. all variables have been read at
+        # least once
+        'startup-done': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     backend_interval = 1
+
+    watchdog_timeout = 10
 
     log_formatstr = None
 
@@ -105,9 +110,7 @@ class Device(GObject.GObject):
         self.configdir = configdir
         self.logfile = os.path.join(self.logdir, instancename + '.log')
         self._instancename = instancename
-        self._properties = {}
-        self._background_process = multiprocessing.Process(
-            target=self._background_worker, daemon=True)
+        self._properties = {'_status': 'Disconnected'}
         self._queue_to_backend = multiprocessing.Queue()
         self._queue_to_frontend = multiprocessing.Queue()
         self._refresh_requested = {}
@@ -131,8 +134,12 @@ class Device(GObject.GObject):
         function in the foreground"""
         if hasattr(self, '_idle_handler'):
             raise DeviceError('Background process already running')
+        self._background_process = multiprocessing.Process(
+            target=self._background_worker, daemon=True, name='Background process for device %s' % self._instancename)
         self._idle_handler = GLib.idle_add(self._idle_worker)
         self._background_process.start()
+        logger.debug('Background process for %s has been started' %
+                     self._instancename)
 
     def _stop_background_process(self):
         """Stops the background process and deregisters the queue-handler idle
@@ -159,9 +166,16 @@ class Device(GObject.GObject):
         self._queue_to_backend.put_nowait(('set', name, value))
         self.refresh_variable(name)
 
-    def refresh_variable(self, name):
+    def list_variables(self):
+        """Return the names of all currently defined properties as a list"""
+        return list(self._properties.keys())
+
+    def refresh_variable(self, name, check_backend_alive=True):
         """Request a refresh of the value of the named variable."""
-        self._queue_to_backend.put_nowait(('query', name, True))
+        if (not check_backend_alive) or self._background_process.is_alive():
+            self._queue_to_backend.put_nowait(('query', name, True))
+        else:
+            raise DeviceError('Backend process not running')
 
     def execute_command(self, command, *args):
         """Execute a command on the device. The arguments are device dependent.
@@ -191,13 +205,29 @@ class Device(GObject.GObject):
         `_query_variable()`, which should be overridden case-by-case.
         """
         self._query_variable(None)
+        self._watchdogtime = time.time()
+        juststarted = True
         while True:
             try:
                 cmd, propname, argument = self._queue_to_backend.get(
                     block=True, timeout=self.backend_interval)
             except queue.Empty:
+                if juststarted:
+                    logger.debug('Emitting juststarted for %s' %
+                                 self._instancename)
+                    self._queue_to_frontend.put_nowait(('_startup_done', None))
+                    juststarted = False
                 self._query_variable(None)  # query all variables.
                 self._log()  # log the values of variables
+                if time.time() - self._watchdogtime > self.watchdog_timeout:
+                    try:
+                        logger.error(
+                            'Watchdog timeout in device %s' % self._instancename)
+                        raise CommunicationError(
+                            'Watchdog timeout: no message received from device %s.' % self._instancename)
+                    except CommunicationError as exc:
+                        self._queue_to_frontend.put_nowait(
+                            ('_error', (exc, traceback.format_exc())))
                 continue
             if cmd == 'exit':
                 break  # the while True loop
@@ -232,12 +262,15 @@ class Device(GObject.GObject):
                 raise NotImplementedError(
                     'Unknown command for _background_worker: %s' % cmd)
 
-    def _update_variable(self, varname, value):
+    def _update_variable(self, varname, value, force=False):
         """Updates the value of the variable in _properties and queues a
         notification for the front-end thread. To be called from the back-end
         process. Returns True if the value really changed, False if not."""
+        self._watchdogtime = time.time()
         try:
             assert(self._properties[varname] == value)
+            if force:
+                raise KeyError
             if varname in self._refresh_requested and self._refresh_requested[varname] > 0:
                 self._refresh_requested[varname] -= 1
                 raise KeyError
@@ -253,8 +286,12 @@ class Device(GObject.GObject):
         if (not self.logfile) or (not self.log_formatstr):
             return
         with open(self.logfile, 'a+', encoding='utf-8') as f:
-            f.write(
-                ('%.3f\t' % time.time()) + self.log_formatstr.format(**self._properties) + '\n')
+            try:
+                f.write(
+                    ('%.3f\t' % time.time()) + self.log_formatstr.format(**self._properties) + '\n')
+            except KeyError as ke:
+                logger.warn('KeyError while producing log line for device %s. Missing key: %s' % (
+                    self._instancename, ke.args[0]))
 
     def _idle_worker(self):
         """This function, called as an idle procedure, queries the queue for results from the 
@@ -263,8 +300,12 @@ class Device(GObject.GObject):
             try:
                 propertyname, newvalue = self._queue_to_frontend.get_nowait()
                 if (propertyname == '_error') and isinstance(newvalue[0], CommunicationError):
+                    logger.error(
+                        'Communication error in device %s, disconnecting.' % self._instancename)
                     self.disconnect_device(because_of_failure=True)
                     self.emit('error', '', newvalue[0], newvalue[1])
+                elif (propertyname == '_startup_done'):
+                    self.emit('startup-done')
                 elif isinstance(newvalue, tuple) and isinstance(newvalue[0], Exception):
                     self.emit('error', propertyname, newvalue[0], newvalue[1])
                 else:
@@ -276,10 +317,21 @@ class Device(GObject.GObject):
 
     def do_error(self, propertyname, exception, tb):
         logger.critical(
-            'Unhandled exception. Variable name: %s. Exception: %s. Traceback: %s' % (str(exception), tb))
+            'Unhandled exception. Variable name: %s. Exception: %s. Traceback: %s' % (propertyname, str(exception), tb))
         raise exception
 
     def do_variable_change(self, propertyname, newvalue):
+        return False
+
+    def do_startup_done(self):
+        return False
+
+    def do_disconnect(self, because_of_failure):
+        logger.warning('Disconnecting from device %s. Failure flag: %s' % (
+            self._instancename, because_of_failure))
+        if self._properties['_status'] != 'Disconnected':
+            self._properties['_status'] = 'Disconnected'
+            self.emit('variable-change', '_status', 'Disconnected')
         return False
 
     def _get_connected(self):
@@ -407,13 +459,18 @@ class Device_TCP(Device):
         logger.debug(
             'Communication subprocess started for device %s:%d' % (host, port))
         try:
-            self._initialize_after_connect()
-            try:
-                self._start_background_process()
-            except Exception as exc:
-                self._finalize_after_disconnect()
-                raise exc
+            self._start_background_process()
         except Exception as exc:
+            self._outqueue.put_nowait(('exit', None))
+            self._communication_subprocess.join()
+            self._tcpsocket.shutdown(socket.SHUT_RDWR)
+            self._tcpsocket.close()
+            del self._tcpsocket
+            raise exc
+        try:
+            self._initialize_after_connect()
+        except Exception as exc:
+            self._stop_background_process()
             self._outqueue.put_nowait(('exit', None))
             self._communication_subprocess.join()
             self._tcpsocket.shutdown(socket.SHUT_RDWR)
@@ -425,8 +482,8 @@ class Device_TCP(Device):
     def disconnect_device(self, because_of_failure=False):
         if not self._get_connected():
             raise DeviceError('Not connected')
-        logger.debug('Disconnecting from device %s%s' % (
-            str(self._tcpsocket.getpeername()), ['', ' because of a failure'][because_of_failure]))
+        logger.debug('Disconnecting from device%s' %
+                     (['', ' because of a failure'][because_of_failure]))
         try:
             self._stop_background_process()
             logger.debug('Stopped background process')
@@ -435,8 +492,11 @@ class Device_TCP(Device):
             self._outqueue.put_nowait(('exit', None))
             self._communication_subprocess.join()
             logger.debug('Closed communication subprocess')
-            self._tcpsocket.shutdown(socket.SHUT_RDWR)
-            self._tcpsocket.close()
+            try:
+                self._tcpsocket.shutdown(socket.SHUT_RDWR)
+                self._tcpsocket.close()
+            except OSError:
+                pass
             logger.debug('Closed socket')
             self.emit('disconnect', because_of_failure)
         finally:

@@ -51,7 +51,8 @@ class Command(GObject.GObject):
     and kill member functions. Use idle functions or callbacks for this.
     """
     __gsignals__ = {
-        # emitted when the command completes. Must be emitted exactly once
+        # emitted when the command completes. Must be emitted exactly once.
+        # This also must be the last signal emitted by the command.
         'return': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
         # emitted on a failure. Can be emitted multiple times
         'fail': (GObject.SignalFlags.RUN_LAST, None, (object, str)),
@@ -205,3 +206,21 @@ class Command(GObject.GObject):
         self.emit('fail', CommandError(
             'Sudden disconnect of device %s' % device._instancename), 'no traceback')
         return False
+
+    @classmethod
+    def allcommands(cls):
+        all_commands = []
+        subclasses = cls.__subclasses__()
+        while True:
+            all_commands.extend(
+                [s for s in subclasses if not(s.name.startswith('_'))])
+            subclasses = [x for x in [c.__subclasses__()
+                                      for c in subclasses] if x]
+            if not subclasses:
+                break
+        del subclasses
+        return all_commands
+
+    @classmethod
+    def __str__(cls):
+        return cls.name

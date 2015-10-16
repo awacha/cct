@@ -44,6 +44,8 @@ def find_subfolders(rootdir, recursive=True):
 class FileSequence(Service):
     """A class to keep track on file sequence numbers and folders"""
 
+    name = 'filesequence'
+
     def __init__(self, *args, **kwargs):
         Service.__init__(self, *args, **kwargs)
         self._lastfsn = {}

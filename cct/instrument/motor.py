@@ -1,4 +1,7 @@
 from gi.repository import GObject
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class Motor(GObject.GObject):
@@ -7,7 +10,9 @@ class Motor(GObject.GObject):
     the motors can be decoupled."""
 
     __gsignals__ = {'variable-change': (GObject.SignalFlags.RUN_FIRST, None, (str, object)),
-                    'error': (GObject.SignalFlags.RUN_LAST, None, (str, object))
+                    'error': (GObject.SignalFlags.RUN_LAST, None, (str, object)),
+                    'position-change': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
+                    'stop': (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
                     }
 
     def __init__(self, controller, index):
@@ -19,9 +24,18 @@ class Motor(GObject.GObject):
             self._controller.connect('error', self.on_error)]
 
     def on_variable_change(self, controller, variable, newvalue):
-        if variable.split('$')[-1] != str(self._index):
-            return False  # this signal was not intended for us
-        self.emit('variable-change', variable.rsplit('$')[0], newvalue)
+        try:
+            variable, index = variable.rsplit('$', 1)
+            index = int(index)
+        except ValueError:
+            return  # message cannot be split: not for us
+        if index != self._index:
+            return  # message not for us
+        if variable == '_status' and newvalue == 'idle':
+            self.emit('stop', self.get_variable('targetpositionreached'))
+        if variable == 'actualposition':
+            self.emit('position-change', newvalue)
+        self.emit('variable-change', variable, newvalue)
 
     def on_error(self, controller, variable, errmsg):
         try:

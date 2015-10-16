@@ -1,6 +1,9 @@
-from .device import Device_TCP, DeviceError
+from .device import Device_TCP, DeviceError, CommunicationError
 import logging
+import traceback
 import dateutil.parser
+import multiprocessing
+import queue
 import re
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -64,7 +67,9 @@ pilatus_replies = [(15, br'Rate correction is on; tau = (?P<tau>' + RE_FLOAT +
                    (10, b'(?P<imgpath>.*)'),
                    (15, b'ImgMode is (?P<imgmode>.*)'),
                    (16, b'PID = (?P<pid>' + RE_INT + b')'),
-                   (None, b'/tmp/setthreshold.cmd'), ]
+                   (-1, b'access denied'),
+                   (1, b'access denied'),
+                   (-1, b'/tmp/setthreshold.cmd'), ]
 
 pilatus_replies_compiled = {}
 for idnum in {r[0] for r in pilatus_replies}:
@@ -74,6 +79,10 @@ for idnum in {r[0] for r in pilatus_replies}:
 
 class Pilatus(Device_TCP):
     log_formatstr = '{_status}\t{exptime}\t{humidity0}\t{humidity1}\t{humidity2}\t{temperature0}\t{temperature1}\t{temperature2}'
+
+    def __init__(self, *args, **kwargs):
+        Device_TCP.__init__(self, *args, **kwargs)
+        self._sendqueue = multiprocessing.Queue()
 
     def _query_variable(self, variablename):
         if variablename is None:
@@ -111,59 +120,82 @@ class Pilatus(Device_TCP):
                 raise NotImplementedError(vn)
 
     def _process_incoming_message(self, message):
-        #logger.debug('Pilatus message received: %s' % str(message))
         try:
-            idnum, status, message = message.split(b' ', 2)
-            idnum = int(idnum)
-        except ValueError:
-            # recover. SetThreshold is known to send b'/tmp/setthreshold.cmd'
-            # upon completion.
-            idnum = None
-            status = 'OK'
+            origmessage = message
+            #logger.debug('Pilatus message received: %s' % str(message))
+            try:
+                idnum, status, message = message.split(b' ', 2)
+                idnum = int(idnum)
+            except ValueError:
+                # recover. SetThreshold is known to send b'/tmp/setthreshold.cmd'
+                # upon completion.
+                idnum = -1
+                status = 'OK'
+                if not message.endswith(b'\x18'):
+                    message = message + b'\x18'
+            message = message.strip()
             if not message.endswith(b'\x18'):
-                message = message + b'\x18'
-        message = message.strip()
-        if not message.endswith(b'\x18'):
-            raise DeviceError(
-                'Invalid message (does not end with \\x18): %s' % str(message))
-        message = message[:-1]
-        if b'\x18' in message:
-            for m in message.split(b'\x18'):
-                self._process_incoming_message(m.strip() + b'\x18')
-            return
-        if status != b'OK':
-            self._queue_to_frontend.put_nowait(
-                ('_error', message.decode('utf-8')))
-
-        # handle special cases
-        if message == b'/tmp/setthreshold.cmd':
-            # a new threshold has been set, update the variables
-            self._send(b'SetThreshold\n')
-        else:
-            for r in pilatus_replies_compiled[idnum]:
-                m = r.match(message.strip())
-                if m is None:
-                    continue
-                gd = m.groupdict()
-                for k in gd:
-                    try:
-                        if k in pilatus_float_variables:
-                            converter = float
-                        elif k in pilatus_int_variables:
-                            converter = int
-                        elif k in pilatus_str_variables:
-                            converter = lambda x: x.decode('utf-8')
-                        elif k in pilatus_date_variables:
-                            converter = dateutil.parser.parse
-                        else:
-                            NotImplementedError(
-                                'Unknown converter for variable ' + str(k))
-                        self._update_variable(k, converter(gd[k]))
-                    except:
-                        raise DeviceError('Error updating variable %s' % k)
+                raise DeviceError(
+                    'Invalid message (does not end with \\x18): %s' % str(message))
+            message = message[:-1]
+            if b'\x18' in message:
+                for m in message.split(b'\x18'):
+                    self._process_incoming_message(m.strip() + b'\x18')
                 return
-            raise DeviceError('Cannot decode message: %d %s %s' %
-                              (idnum, status, message))
+            if status != b'OK':
+                self._queue_to_frontend.put_nowait(
+                    ('_error', message.decode('utf-8')))
+
+            # handle special cases
+            if message == b'/tmp/setthreshold.cmd':
+                # a new threshold has been set, update the variables
+                self._send(b'SetThreshold\n')
+            else:
+                if idnum not in pilatus_replies_compiled:
+                    raise DeviceError(
+                        'Unknown command ID in message: %d %s %s (original: %s)' % (idnum, status, message, origmessage))
+                if idnum == -1 and message == b'access denied':
+                    try:
+                        raise CommunicationError(
+                            'We could only connect to Pilatus in read-only mode')
+                    except CommunicationError as exc:
+                        self._queue_to_frontend.put_nowait(
+                            ('_error', (exc, traceback.format_exc())))
+                        return
+                for r in pilatus_replies_compiled[idnum]:
+                    m = r.match(message.strip())
+                    if m is None:
+                        continue
+                    gd = m.groupdict()
+                    for k in gd:
+                        try:
+                            if k in pilatus_float_variables:
+                                converter = float
+                            elif k in pilatus_int_variables:
+                                converter = int
+                            elif k in pilatus_str_variables:
+                                converter = lambda x: x.decode('utf-8')
+                            elif k in pilatus_date_variables:
+                                converter = dateutil.parser.parse
+                            else:
+                                NotImplementedError(
+                                    'Unknown converter for variable ' + str(k))
+                            self._update_variable(k, converter(gd[k]))
+                        except:
+                            raise DeviceError('Error updating variable %s' % k)
+                    return
+                raise DeviceError('Cannot decode message: %d %s %s' %
+                                  (idnum, status, message))
+        finally:
+            try:
+                msg = self._sendqueue.get_nowait()
+                self._lastsent = msg
+                Device_TCP._send(self, msg)
+            except queue.Empty:
+                try:
+                    del self._lastsent
+                except AttributeError:
+                    pass
 
     def _execute_command(self, commandname, arguments):
         self._send(commandname + b'\n')
@@ -182,6 +214,13 @@ class Pilatus(Device_TCP):
         else:
             raise NotImplementedError(variable)
 
+    def _send(self, message):
+        if hasattr(self, '_lastsent'):
+            self._sendqueue.put_nowait(message)
+            return
+        self._lastsent = message
+        Device_TCP._send(self, message)
+
     def set_threshold(self, thresholdvalue, gain):
         if gain.upper() not in ['LOWG', 'MIDG', 'HIGHG']:
             raise NotImplementedError(gain)
@@ -190,3 +229,9 @@ class Pilatus(Device_TCP):
 
     def expose(self, filename):
         self._send(b'Exposure ' + filename.encode('utf-8'))
+
+    def do_startup_done(self):
+        self.set_threshold(4024, 'highg')
+
+    def _initialize_after_connect(self):
+        Device_TCP._initialize_after_connect(self)

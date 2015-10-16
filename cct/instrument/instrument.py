@@ -3,7 +3,9 @@ from ..devices.xray_source import GeniX
 from ..devices.motor import TMCM351, TMCM6110
 from ..devices.vacuumgauge import TPG201
 from ..devices.device import DeviceError
-from .. import commands
+from ..services import Interpreter
+from .motor import Motor
+from gi.repository import GLib
 import traceback
 import json
 import os
@@ -27,21 +29,12 @@ class Instrument(GObject.GObject):
         self.xray_source = None
         self.detector = None
         self.motorcontrollers = {}
-        self.motors = None
+        self.motors = {}
         self.environmentcontrollers = {}
         self.configfile = os.path.join(self.configdir, 'cct.json')
         self._initialize_config()
         self.load_state()
-        self.commands = {}
-        for commandclass in commands.all_commands:
-            self.commands[commandclass.name] = commandclass
-        self.command_namespace_globals = {}
-        self.command_namespace_locals = {}
-        exec('import os', self.command_namespace_globals,
-             self.command_namespace_locals)
-        exec('import numpy as np', self.command_namespace_globals,
-             self.command_namespace_locals)
-        self._command_connections = {}
+        self.start_services()
 
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from sratch."""
@@ -73,8 +66,8 @@ class Instrument(GObject.GObject):
         self.config['connections']['environmentcontrollers']['vacuum'] = {
             'host': 'devices.credo',
             'port': 2006,
-            'timeout': 0.01,
-            'poll_timeout': 0.01,
+            'timeout': 0.1,
+            'poll_timeout': 0.1,
             'name': 'tpg201'}
         self.config['connections']['environmentcontrollers']['temperature'] = {
             'host': 'devices.credo',
@@ -202,6 +195,12 @@ class Instrument(GObject.GObject):
                 del self.motorcontrollers[cfg['name']]
                 del self.devices[cfg['name']]
                 unsuccessful.append(cfg['name'])
+        for m in self.config['motors']:
+            try:
+                self.motors[m['name']] = Motor(
+                    self.motorcontrollers[m['controller']], m['index'])
+            except KeyError as ke:
+                logger.error('Cannot find motor %s' % m['name'])
         for envcont in self.config['connections']['environmentcontrollers']:
             cfg = self.config['connections']['environmentcontrollers'][envcont]
             if envcont not in self.environmentcontrollers:
@@ -222,80 +221,5 @@ class Instrument(GObject.GObject):
                 unsuccessful.append(cfg['name'])
         return unsuccessful
 
-    def execute_command(self, commandline):
-        commandline = commandline.strip()  # remove trailing whitespace
-        # remove comments from command line. Comments are marked by a hash (#)
-        # sign. Double hash sign is an escape for the single hash.
-        commandline = commandline.replace('##', '__DoUbLeHaSh__')
-        try:
-            commandline = commandline[:commandline.index('#')]
-        except ValueError:
-            # if # is not in the commandline
-            pass
-        commandline.replace('__DoUbLeHaSh__', '#')
-        if not commandline:
-            # if the command line was empty or contained only comments, ignore
-            return
-        # the command line must contain only one command, in the form of
-        # `command(arg1, arg2, arg3 ...)`
-        parpairs = get_parentheses_pairs(commandline, '(')
-        argumentstring = commandline[parpairs[0][1] + 1:parpairs[0][2]].strip()
-        if argumentstring:
-            arguments = [eval(a, self.command_namespace_globals,
-                              self.command_namespace_locals)
-                         for a in argumentstring.split(',')]
-        else:
-            arguments = []
-        commandname = commandline[:parpairs[0][1]].strip()
-
-        command = self.commands[commandname]()
-        self._command_connections[command] = [
-            command.connect('return', self.on_command_return),
-            command.connect('fail', self.on_command_fail),
-            command.connect('message', self.on_command_message),
-            command.connect('pulse', self.on_command_pulse),
-            command.connect('progress', self.on_command_progress),
-        ]
-        command.execute(self, arguments, self.command_namespace_locals)
-
-    def on_command_return(self, command, retval):
-        logger.debug("Command %s returned:" % command.name + str(retval))
-        self.command_namespace_locals['_'] = retval
-        for c in self._command_connections[command]:
-            command.disconnect(c)
-        del self._command_connections[command]
-
-    def on_command_fail(self, command, exc, tb):
-        logger.error("Error in command %s: %s, %s" %
-                     (command.name, str(exc), str(tb)))
-
-    def on_command_message(self, command, msg):
-        logger.info("Command %s message: " % command.name + msg)
-
-    def on_command_progress(self, command, statusstring, fraction):
-        logger.info("Command %s progress: %s %.2f%%" %
-                    (command.name, statusstring, 100 * fraction))
-
-    def on_command_pulse(self, command, statusstring):
-        logger.info("Command %s pulse: %s" % (command.name, statusstring))
-
-
-def get_parentheses_pairs(cmdline, opening_types='([{'):
-    parens = []
-    openparens = []
-    pair = {'(': ')', '[': ']', '{': '}', ')': '(', ']': '[', '}': '{'}
-    closing_types = [pair[c] for c in opening_types]
-    for i in range(len(cmdline)):
-        if cmdline[i] in opening_types:
-            parens.append((cmdline[i], i))
-            openparens.append(len(parens) - 1)
-        elif cmdline[i] in closing_types:
-            if parens[openparens[-1]][0] != pair[cmdline[i]]:
-                raise ValueError(
-                    'Mismatched parentheses at position %d' % i, i)
-            parens[
-                openparens[-1]] = (parens[openparens[-1]][0], parens[openparens[-1]][1], i)
-            del openparens[-1]
-    if openparens:
-        raise ValueError('Open parentheses', openparens, parens)
-    return parens
+    def start_services(self):
+        self.interpreter = Interpreter(self)

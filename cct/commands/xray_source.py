@@ -5,6 +5,7 @@ Created on Oct 15, 2015
 '''
 import weakref
 from .command import Command
+from cct.commands.command import CommandError
 
 
 class Shutter(Command):
@@ -110,14 +111,20 @@ class Xray_Power(Command):
         self._require_device(instrument, xray_source._instancename)
         if arglist[0] in ['down', 'off', 0, '0', '0W']:
             self._check_for_value = 'Power off'
+            if xray_source.get_variable('_status') == 'Power off':
+                raise CommandError('Already off')
             self._install_pulse_handler('Powering off', 1)
             xray_source.execute_command('poweroff')
         elif arglist[0] in ['standby', 'low', 9, '9', '9W']:
             self._check_for_value = 'Low power'
+            if xray_source.get_variable('_status') == 'Low power':
+                raise CommandError('Already at low power')
             self._install_pulse_handler('Going to low power', 1)
             xray_source.execute_command('standby')
         elif arglist[0] in ['full', 'high', 30, '30', '30W']:
             self._check_for_value = 'Full power'
+            if xray_source.get_variable('_status') == 'Full power':
+                raise CommandError('Already at full power')
             self._install_pulse_handler('Going to full power', 1)
             xray_source.execute_command('full_power')
 
@@ -138,6 +145,8 @@ class Warmup(Command):
         self._check_for_variable = '_status'
         self._require_device(instrument, self.xray_source._instancename)
         self._check_for_value = 'Power off'
+        if self.xray_source.get_variable('_status') == 'Warming up':
+            raise CommandError('Warm-up already running')
         self._install_pulse_handler('Warming up', 1)
         self.xray_source.execute_command('start_warmup')
 

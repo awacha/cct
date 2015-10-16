@@ -17,6 +17,8 @@ class GeniX(Device_ModbusTCP):
             variablenames.append('power')
         if 'power' in variablenames:
             variablenames.extend(['ht', 'current'])
+            while 'power' in variablenames:
+                variablenames.remove('power')
 
         for vn in set(variablenames):
             if vn == 'ht':
