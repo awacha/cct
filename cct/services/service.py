@@ -16,7 +16,9 @@ class Service(GObject.GObject):
 
     def __init__(self, instrument):
         GObject.GObject.__init__(self)
-        self.instrument = weakref.proxy(instrument)
+        if not isinstance(instrument, weakref.ProxyTypes):
+            instrument = weakref.proxy(instrument)
+        self.instrument = instrument
 
     def _load_state(self, dictionary):
         """Load the state from a dictionary"""

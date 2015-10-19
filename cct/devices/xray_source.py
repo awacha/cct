@@ -92,7 +92,7 @@ class GeniX(Device_ModbusTCP):
                 raise NotImplementedError(vn)
 
             if ('power' in self._properties) and ('ht' in self._properties) and ('current' in self._properties):
-                if self._properties['ht'] == 0 and self._properties['current'] == 0:
+                if self._properties['ht'] == 0 and self._properties['current'] == 0 and self._read_coils(211, 1)[0] == 1:
                     self._update_variable('_status', 'Power off')
                 elif self._properties['power'] == 9:
                     self._update_variable('_status', 'Low power')

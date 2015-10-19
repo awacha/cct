@@ -19,7 +19,7 @@ pilatus_float_variables = ['tau', 'cutoff', 'exptime', 'expperiod', 'temperature
                            'exptime']
 pilatus_date_variables = ['starttime']
 pilatus_str_variables = ['version', 'gain', 'trimfile', 'cameradef', 'cameraname', 'cameraSN', '_status', 'targetfile',
-                         'lastimage', 'lastcompletedimage', 'shutterstate', 'imgpath', 'imgmode']
+                         'lastimage', 'lastcompletedimage', 'shutterstate', 'imgpath', 'imgmode', 'filename']
 
 pilatus_replies = [(15, br'Rate correction is on; tau = (?P<tau>' + RE_FLOAT +
                     br') s, cutoff = (?P<cutoff>' + RE_INT + br') counts'),
@@ -69,7 +69,10 @@ pilatus_replies = [(15, br'Rate correction is on; tau = (?P<tau>' + RE_FLOAT +
                    (16, b'PID = (?P<pid>' + RE_INT + b')'),
                    (-1, b'access denied'),
                    (1, b'access denied'),
-                   (-1, b'/tmp/setthreshold.cmd'), ]
+                   (-1, b'/tmp/setthreshold.cmd'),
+                   (-1, br'(?P<filename>/home/det/p2_det/images/.*)'),
+                   (-1, br'(?P<filename>/disk2/images/.*)'),
+                   ]
 
 pilatus_replies_compiled = {}
 for idnum in {r[0] for r in pilatus_replies}:
@@ -79,6 +82,8 @@ for idnum in {r[0] for r in pilatus_replies}:
 
 class Pilatus(Device_TCP):
     log_formatstr = '{_status}\t{exptime}\t{humidity0}\t{humidity1}\t{humidity2}\t{temperature0}\t{temperature1}\t{temperature2}'
+
+    watchdog_timeout = 20
 
     def __init__(self, *args, **kwargs):
         Device_TCP.__init__(self, *args, **kwargs)
@@ -139,6 +144,7 @@ class Pilatus(Device_TCP):
                     'Invalid message (does not end with \\x18): %s' % str(message))
             message = message[:-1]
             if b'\x18' in message:
+                #logger.warning('Multipart message: %s' % message)
                 for m in message.split(b'\x18'):
                     self._process_incoming_message(m.strip() + b'\x18')
                 return
@@ -198,7 +204,35 @@ class Pilatus(Device_TCP):
                     pass
 
     def _execute_command(self, commandname, arguments):
-        self._send(commandname + b'\n')
+        logger.debug('Executing command: %s(%s)' %
+                     (commandname, repr(arguments)))
+        if commandname == 'setthreshold':
+            if self.get_variable('_status') != 'idle':
+                raise DeviceError('Cannot trim when not idle')
+            self._send(b'SetThreshold %f %s\n' % (arguments[0], arguments[1]))
+            # after trimming, a camsetup call will reset this to idle.
+            self._update_variable('_status', 'trimming')
+        elif commandname == 'expose':
+            if self.get_variable('_status') != 'idle':
+                raise DeviceError('Cannot start exposure when not idle')
+            self._send(b'Exposure ' + arguments[0] + b'\n')
+            if self.get_variable('nimages') == 1:
+                self._update_variable('_status', 'exposing')
+            else:
+                self._update_variable('_status', 'exposing multi')
+        elif commandname == 'kill':
+            if self.get_variable('_status') == 'exposing':
+                logger.debug('Killing single exposure')
+                self._send(b'resetcam\n')
+            elif self.get_variable('_status') == 'exposing multi':
+                self._send(b'K\n')
+                logger.debug('Killing multiple exposure')
+            else:
+                raise DeviceError('No running exposures to be killed')
+        elif commandname == 'resetcam':
+            self._send(b'resetcam\n')
+        else:
+            raise NotImplementedError(commandname)
 
     def _set_variable(self, variable, value):
         if variable == 'expperiod':
@@ -214,7 +248,7 @@ class Pilatus(Device_TCP):
         else:
             raise NotImplementedError(variable)
 
-    def _send(self, message):
+    def _send(self, message, dont_expect_reply=False):
         if hasattr(self, '_lastsent'):
             self._sendqueue.put_nowait(message)
             return
@@ -224,14 +258,16 @@ class Pilatus(Device_TCP):
     def set_threshold(self, thresholdvalue, gain):
         if gain.upper() not in ['LOWG', 'MIDG', 'HIGHG']:
             raise NotImplementedError(gain)
-        self._send(b'SetThreshold %f %s\n' %
-                   (thresholdvalue, gain.encode('utf-8')))
+        self.execute_command(
+            'setthreshold', thresholdvalue, gain.encode('utf-8'))
 
     def expose(self, filename):
-        self._send(b'Exposure ' + filename.encode('utf-8'))
+        self.execute_command('expose', filename.encode('utf-8'))
 
-    def do_startup_done(self):
+    def do_startupdone(self):
         self.set_threshold(4024, 'highg')
+        Device_TCP.do_startupdone(self)
+        return False
 
     def _initialize_after_connect(self):
         Device_TCP._initialize_after_connect(self)

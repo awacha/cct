@@ -90,7 +90,7 @@ class Interpreter(Service):
         ]
         try:
             command.execute(
-                self.instrument, arguments, self.command_namespace_locals)
+                self, arguments, self.instrument, self.command_namespace_locals)
         except Exception:
             for c in self._command_connections[command]:
                 command.disconnect(c)
@@ -124,6 +124,12 @@ class Interpreter(Service):
 
     def on_command_pulse(self, command, statusstring):
         self.emit('pulse', command.name, statusstring)
+
+    def kill(self):
+        try:
+            self._command.kill()
+        except AttributeError:
+            pass
 
 
 def get_parentheses_pairs(cmdline, opening_types='([{'):

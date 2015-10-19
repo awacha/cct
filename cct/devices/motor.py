@@ -12,6 +12,10 @@ from .device import Device_TCP, DeviceError
 RE_FLOAT = r"[+-]?(\d+)*\.?\d+([eE][+-]?\d+)?"
 
 
+class TMCMConversionError(DeviceError):
+    pass
+
+
 class TMCMcard(Device_TCP):
 
     def __init__(self, *args, **kwargs):
@@ -254,31 +258,55 @@ class TMCMcard(Device_TCP):
         """Convert the raw value of position to physical dimensions.
 
         pos is in microsteps. The number of microsteps in a full step is 2**microstepresolution"""
-        return pos / 2**self._properties['microstepresolution$%d' % motoridx] * self._full_step_size
+        try:
+            return pos / 2**self._properties['microstepresolution$%d' % motoridx] * self._full_step_size
+        except KeyError as ke:
+            raise TMCMConversionError(ke)
 
     def _convert_pos_to_raw(self, pos, motoridx):
         """Convert the raw value of position to physical dimensions.
 
         pos is in microsteps. The number of microsteps in a full step is 2**microstepresolution"""
-        return pos * 2**self._properties['microstepresolution$%d' % motoridx] / self._full_step_size
+        try:
+            return pos * 2**self._properties['microstepresolution$%d' % motoridx] / self._full_step_size
+        except KeyError as ke:
+            raise TMCMConversionError(ke)
 
     def _convert_speed_to_phys(self, speed, motoridx):
-        return speed / 2**(self._properties['pulsedivisor$%d' % motoridx] + self._properties['microstepresolution$%d' % motoridx] + 16) * self._clock_frequency * self._full_step_size
+        try:
+            return speed / 2**(self._properties['pulsedivisor$%d' % motoridx] + self._properties['microstepresolution$%d' % motoridx] + 16) * self._clock_frequency * self._full_step_size
+        except KeyError as ke:
+            raise TMCMConversionError(ke)
 
     def _convert_speed_to_raw(self, speed, motoridx):
-        return int(speed * 2**(self._properties['pulsedivisor$%d' % motoridx] + self._properties['microstepresolution$%d' % motoridx] + 16) / self._clock_frequency / self._full_step_size)
+        try:
+            return int(speed * 2**(self._properties['pulsedivisor$%d' % motoridx] + self._properties['microstepresolution$%d' % motoridx] + 16) / self._clock_frequency / self._full_step_size)
+        except KeyError as ke:
+            raise TMCMConversionError(ke)
 
     def _convert_accel_to_phys(self, accel, motoridx):
-        return accel * self._full_step_size * self._clock_frequency**2 / 2**(self._properties['pulsedivisor$%d' % motoridx] + self._properties['rampdivisor$%d' % motoridx] + self._properties['microstepresolution$%d' % motoridx] + 29)
+        try:
+            return accel * self._full_step_size * self._clock_frequency**2 / 2**(self._properties['pulsedivisor$%d' % motoridx] + self._properties['rampdivisor$%d' % motoridx] + self._properties['microstepresolution$%d' % motoridx] + 29)
+        except KeyError as ke:
+            raise TMCMConversionError(ke)
 
     def _convert_accel_to_raw(self, accel, motoridx):
-        return int(accel / self._full_step_size / self._clock_frequency**2 * 2**(self._properties['pulsedivisor$%d' % motoridx] + self._properties['rampdivisor$%d' % motoridx] + self._properties['microstepresolution$%d' % motoridx] + 29))
+        try:
+            return int(accel / self._full_step_size / self._clock_frequency**2 * 2**(self._properties['pulsedivisor$%d' % motoridx] + self._properties['rampdivisor$%d' % motoridx] + self._properties['microstepresolution$%d' % motoridx] + 29))
+        except KeyError as ke:
+            raise TMCMConversionError(ke)
 
     def _convert_current_to_phys(self, current, motoridx):
-        return current * self._top_rms_current / 255
+        try:
+            return current * self._top_rms_current / 255
+        except KeyError as ke:
+            raise TMCMConversionError(ke)
 
     def _convert_current_to_raw(self, current, motoridx):
-        return int(current * 255 / self._top_rms_currnet)
+        try:
+            return int(current * 255 / self._top_rms_currnet)
+        except KeyError as ke:
+            raise TMCMConversionError(ke)
 
     def _construct_tmcl_command(self, cmdnum, typenum, motor_or_bank, value):
         cmd = bytes([1, cmdnum, typenum, motor_or_bank]) + \
@@ -294,8 +322,6 @@ class TMCMcard(Device_TCP):
         posraw = self._convert_pos_to_raw(pos, motor)
         self._queue_to_backend.put_nowait(
             ('execute', 'moveto', (motor, posraw, limits)))
-        logger.debug('Queued motor movement command on controller %s, motor %d' % (
-            self._instancename, motor))
 
     def moverel(self, motor, pos):
         if self._softlimits is not None:
@@ -306,15 +332,11 @@ class TMCMcard(Device_TCP):
         posraw = self._convert_pos_to_raw(pos, motor)
         self._queue_to_backend.put_nowait(
             ('execute', 'moverel', (motor, posraw, limits)))
-        logger.debug('Queued motor movement command on controller %s, motor %d' % (
-            self._instancename, motor))
 
     def stop(self, motor):
         self._queue_to_backend.put_nowait(('execute', 'stop', motor))
 
     def calibrate(self, motor, pos):
-        logger.debug(
-            'Calling calibrate from process: ' + multiprocessing.current_process().name)
         if self._softlimits is not None:
             if pos < self._softlimits[motor][0] or pos > self._softlimits[motor][1]:
                 raise DeviceError('Cannot calibrate outside soft limits')
@@ -333,9 +355,7 @@ class TMCMcard(Device_TCP):
 
     def _execute_command(self, commandname, arguments):
         if commandname == 'moveto':
-            logger.debug('Trying to acquire movinglock:')
             with self._movinglock:
-                logger.debug('Movinglock acquired:')
                 motor, pos, limits = arguments
                 if self._moving is not None:
                     raise DeviceError(
@@ -345,8 +365,6 @@ class TMCMcard(Device_TCP):
                         raise DeviceError(
                             'Cannot move motor %d, requested position outside soft limits' % motor)
                 if self._convert_pos_to_raw(self._properties['actualposition$%d' % motor], motor) == pos:
-                    logger.debug(
-                        'No move needed: motor is currently at target position.')
                     self._update_variable('_status', 'idle', force=True)
                     self._update_variable(
                         '_status$%d' % motor, 'idle', force=True)
@@ -356,7 +374,6 @@ class TMCMcard(Device_TCP):
                     self._update_variable('_status', 'Moving #%d' % motor)
                     self._update_variable('_status$%d' % motor, 'Moving')
                     self._send(self._construct_tmcl_command(4, 0, motor, pos))
-                logger.debug('Releasing movinglock')
         elif commandname == 'moverel':
             with self._movinglock:
                 motor, pos, limits = arguments
@@ -370,7 +387,6 @@ class TMCMcard(Device_TCP):
                         raise DeviceError(
                             'Cannot move motor %d, requested position outside soft limits' % motor)
                 if pos == 0:
-                    logger.debug('No move needed: relative move by 0 units.')
                     self._update_variable('_status', 'idle', force=True)
                     self._update_variable(
                         '_status$%d' % motor, 'idle', force=True)
@@ -395,79 +411,83 @@ class TMCMcard(Device_TCP):
                     'Invalid motor/bank number', motor_or_bank)
         except (IndexError, ValueError):
             motor_or_bank = None
-        if variable.startswith('targetposition$'):
-            self._send(
-                self._construct_tmcl_command(5, 0, motor_or_bank, self._convert_pos_to_raw(value, motor_or_bank)))
-        elif variable.startswith('actualposition$'):
-            self._send(
-                self._construct_tmcl_command(5, 1, motor_or_bank, self._convert_pos_to_raw(value, motor_or_bank)))
-        elif variable.startswith('targetspeed$'):
-            self._send(
-                self._construct_tmcl_command(5, 2, motor_or_bank, self._convert_speed_to_raw(value, motor_or_bank)))
-        elif variable.startswith('actualspeed$'):
-            self._send(
-                self._construct_tmcl_command(5, 3, motor_or_bank, self._convert_speed_to_raw(value, motor_or_bank)))
-        elif variable.startswith('maxspeed$'):
-            self._send(
-                self._construct_tmcl_command(5, 4, motor_or_bank, self._convert_speed_to_raw(value, motor_or_bank)))
-            self._send(
-                self._construct_tmcl_command(7, 4, motor_or_bank, 0))
-        elif variable.startswith('maxacceleration$'):
-            self._send(
-                self._construct_tmcl_command(5, 5, motor_or_bank, self._convert_accel_to_raw(value, motor_or_bank)))
-            self._send(
-                self._construct_tmcl_command(7, 5, motor_or_bank, 0))
-        elif variable.startswith('maxcurrent$'):
-            self._send(
-                self._construct_tmcl_command(5, 6, motor_or_bank, self._convert_current_to_raw(value, motor_or_bank)))
-        elif variable.startswith('standbycurrent$'):
-            self._send(
-                self._construct_tmcl_command(5, 7, motor_or_bank, self._convert_current_to_raw(value, motor_or_bank)))
-        elif variable.startswith('rightswitchdisable$'):
-            self._send(
-                self._construct_tmcl_command(5, 12, motor_or_bank, bool(value)))
-            self._send(
-                self._construct_tmcl_command(7, 12, motor_or_bank, 0))
-        elif variable.startswith('leftswitchdisable$'):
-            self._send(
-                self._construct_tmcl_command(5, 13, motor_or_bank, bool(value)))
-            self._send(
-                self._construct_tmcl_command(7, 13, motor_or_bank, 0))
-        elif variable.startswith('rampmode$'):
-            if value not in [0, 1, 2]:
-                raise ValueError('Invalid ramp mode: %d' % value)
-            self._send(
-                self._construct_tmcl_command(5, 138, motor_or_bank, value))
-        elif variable.startswith('microstepresolution$'):
-            if value < 0 or value > self._max_microsteps:
-                raise ValueError('Invalid microstep resolution: %d' % value)
-            self._send(
-                self._construct_tmcl_command(5, 140, motor_or_bank, value))
-            self._send(
-                self._construct_tmcl_command(7, 140, motor_or_bank, 0))
-        elif variable.startswith('rampdivisor$'):
-            if value < 0 or value > 13:
-                raise ValueError('Invalid ramp divisor: %d' % value)
-            self._send(
-                self._construct_tmcl_command(5, 153, motor_or_bank, value))
-            self._send(
-                self._construct_tmcl_command(7, 153, motor_or_bank, 0))
-        elif variable.startswith('pulsedivisor$'):
-            if value < 0 or value > 13:
-                raise ValueError('Invalid pulse divisor: %d' % value)
-            self._send(
-                self._construct_tmcl_command(5, 154, motor_or_bank, value))
-            self._send(
-                self._construct_tmcl_command(7, 154, motor_or_bank, 0))
-        elif variable.startswith('freewheelingdelay$'):
-            if value < 0 or value > 65.535:
-                raise ValueError('Invalid freewheeling delay: %d' % value)
-            self._send(
-                self._construct_tmcl_command(5, 204, motor_or_bank, value * 1000))
-            self._send(
-                self._construct_tmcl_command(7, 204, motor_or_bank, 0))
-        else:
-            raise NotImplementedError(variable)
+        try:
+            if variable.startswith('targetposition$'):
+                self._send(
+                    self._construct_tmcl_command(5, 0, motor_or_bank, self._convert_pos_to_raw(value, motor_or_bank)))
+            elif variable.startswith('actualposition$'):
+                self._send(
+                    self._construct_tmcl_command(5, 1, motor_or_bank, self._convert_pos_to_raw(value, motor_or_bank)))
+            elif variable.startswith('targetspeed$'):
+                self._send(
+                    self._construct_tmcl_command(5, 2, motor_or_bank, self._convert_speed_to_raw(value, motor_or_bank)))
+            elif variable.startswith('actualspeed$'):
+                self._send(
+                    self._construct_tmcl_command(5, 3, motor_or_bank, self._convert_speed_to_raw(value, motor_or_bank)))
+            elif variable.startswith('maxspeed$'):
+                self._send(
+                    self._construct_tmcl_command(5, 4, motor_or_bank, self._convert_speed_to_raw(value, motor_or_bank)))
+                self._send(
+                    self._construct_tmcl_command(7, 4, motor_or_bank, 0))
+            elif variable.startswith('maxacceleration$'):
+                self._send(
+                    self._construct_tmcl_command(5, 5, motor_or_bank, self._convert_accel_to_raw(value, motor_or_bank)))
+                self._send(
+                    self._construct_tmcl_command(7, 5, motor_or_bank, 0))
+            elif variable.startswith('maxcurrent$'):
+                self._send(
+                    self._construct_tmcl_command(5, 6, motor_or_bank, self._convert_current_to_raw(value, motor_or_bank)))
+            elif variable.startswith('standbycurrent$'):
+                self._send(
+                    self._construct_tmcl_command(5, 7, motor_or_bank, self._convert_current_to_raw(value, motor_or_bank)))
+            elif variable.startswith('rightswitchdisable$'):
+                self._send(
+                    self._construct_tmcl_command(5, 12, motor_or_bank, bool(value)))
+                self._send(
+                    self._construct_tmcl_command(7, 12, motor_or_bank, 0))
+            elif variable.startswith('leftswitchdisable$'):
+                self._send(
+                    self._construct_tmcl_command(5, 13, motor_or_bank, bool(value)))
+                self._send(
+                    self._construct_tmcl_command(7, 13, motor_or_bank, 0))
+            elif variable.startswith('rampmode$'):
+                if value not in [0, 1, 2]:
+                    raise ValueError('Invalid ramp mode: %d' % value)
+                self._send(
+                    self._construct_tmcl_command(5, 138, motor_or_bank, value))
+            elif variable.startswith('microstepresolution$'):
+                if value < 0 or value > self._max_microsteps:
+                    raise ValueError(
+                        'Invalid microstep resolution: %d' % value)
+                self._send(
+                    self._construct_tmcl_command(5, 140, motor_or_bank, value))
+                self._send(
+                    self._construct_tmcl_command(7, 140, motor_or_bank, 0))
+            elif variable.startswith('rampdivisor$'):
+                if value < 0 or value > 13:
+                    raise ValueError('Invalid ramp divisor: %d' % value)
+                self._send(
+                    self._construct_tmcl_command(5, 153, motor_or_bank, value))
+                self._send(
+                    self._construct_tmcl_command(7, 153, motor_or_bank, 0))
+            elif variable.startswith('pulsedivisor$'):
+                if value < 0 or value > 13:
+                    raise ValueError('Invalid pulse divisor: %d' % value)
+                self._send(
+                    self._construct_tmcl_command(5, 154, motor_or_bank, value))
+                self._send(
+                    self._construct_tmcl_command(7, 154, motor_or_bank, 0))
+            elif variable.startswith('freewheelingdelay$'):
+                if value < 0 or value > 65.535:
+                    raise ValueError('Invalid freewheeling delay: %d' % value)
+                self._send(
+                    self._construct_tmcl_command(5, 204, motor_or_bank, value * 1000))
+                self._send(
+                    self._construct_tmcl_command(7, 204, motor_or_bank, 0))
+            else:
+                raise NotImplementedError(variable)
+        except TMCMConversionError:
+            self._queue_to_backend.put_nowait(('set', variable, value))
 
     def _save_positions(self):
         with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'wt', encoding='utf-8') as f:
@@ -501,10 +521,14 @@ class TMCMcard(Device_TCP):
         with self._movinglock:
             return self._moving
 
-    def do_startup_done(self):
+    def do_startupdone(self):
         logger.debug('Loading positions for controller %s' %
                      self._instancename)
         self._load_positions()
+        Device_TCP.do_startupdone(self)
+
+    def checklimits(self, motor, position):
+        return (position >= self._softlimits[motor][0]) and (position <= self._softlimits[motor][1])
 
 
 class TMCM351(TMCMcard):

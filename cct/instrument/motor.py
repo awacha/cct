@@ -72,6 +72,9 @@ class Motor(GObject.GObject):
     def ismoving(self):
         return self.get_variable('actualspeed') != 0
 
+    def checklimits(self, position):
+        return self._controller.checklimits(self._index, position)
+
     def __del__(self):
         try:
             self._controller.disconnect(self._connection)

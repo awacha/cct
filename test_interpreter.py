@@ -2,10 +2,20 @@ import cct.instrument.instrument
 from cct.services import InterpreterError
 import readline
 import traceback
+import logging
+#import signal
 from gi.repository import GLib, Gtk
 
-ins = cct.instrument.instrument.Instrument()
-ins.connect_devices()
+logging.basicConfig()
+
+
+#oldhandler = signal.getsignal(signal.SIGINT)
+
+
+# def signalhandler(signum, stackframe):
+#    term.kill()
+
+#signal.signal(signal.SIGINT, signalhandler)
 
 
 class CCTTerm(object):
@@ -21,8 +31,14 @@ class CCTTerm(object):
         self.instrument.interpreter.connect('progress', self.on_progress)
         self.instrument.interpreter.connect('cmd-return', self.on_return)
         self.instrument.interpreter.connect('cmd-fail', self.on_fail)
+        self._conn = self.instrument.connect(
+            'devices-ready', self.start_interpreter)
         print('Known commands:', ', '.join(
-            self.instrument.interpreter.commands.keys()))
+            sorted(self.instrument.interpreter.commands.keys())))
+
+    def start_interpreter(self, instrument):
+        GLib.idle_add(term.give_prompt)
+        instrument.disconnect(self._conn)
 
     def on_message(self, interpreter, command, message):
         print(message + '\n')
@@ -56,6 +72,9 @@ class CCTTerm(object):
             GLib.idle_add(term.give_prompt)
         return False
 
+    def kill(self):
+        self.instrument.intepreter.kill()
+
     def on_return(self, interpreter, command, result):
         print('\nResult: %s' % str(result))
         self.give_prompt()
@@ -63,7 +82,8 @@ class CCTTerm(object):
     def on_fail(self, interpreter, command, exc, tb):
         print('\n\x1b[31m' + str(exc) + '\n' + tb + '\x1b[m')
 
+ins = cct.instrument.instrument.Instrument()
 term = CCTTerm(ins)
-
-GLib.idle_add(term.give_prompt)
+ins.connect_devices()
+print('Waiting for devices to get ready...')
 Gtk.main()

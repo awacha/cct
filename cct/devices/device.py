@@ -95,7 +95,7 @@ class Device(GObject.GObject):
         'disconnect': (GObject.SignalFlags.RUN_LAST, None, (bool,)),
         # emitted when the starup is done, i.e. all variables have been read at
         # least once
-        'startup-done': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'startupdone': (GObject.SignalFlags.RUN_LAST, None, ()),
     }
 
     backend_interval = 1
@@ -213,12 +213,8 @@ class Device(GObject.GObject):
                     block=True, timeout=self.backend_interval)
             except queue.Empty:
                 if juststarted:
-                    logger.debug('Emitting juststarted for %s' %
-                                 self._instancename)
                     self._queue_to_frontend.put_nowait(('_startup_done', None))
                     juststarted = False
-                self._query_variable(None)  # query all variables.
-                self._log()  # log the values of variables
                 if time.time() - self._watchdogtime > self.watchdog_timeout:
                     try:
                         logger.error(
@@ -228,6 +224,9 @@ class Device(GObject.GObject):
                     except CommunicationError as exc:
                         self._queue_to_frontend.put_nowait(
                             ('_error', (exc, traceback.format_exc())))
+                    continue
+                self._query_variable(None)  # query all variables.
+                self._log()  # log the values of variables
                 continue
             if cmd == 'exit':
                 break  # the while True loop
@@ -248,7 +247,11 @@ class Device(GObject.GObject):
                     self._queue_to_frontend.put_nowait(
                         (propname, 'Read-only variable'))
             elif cmd == 'execute':
-                self._execute_command(propname, argument)
+                try:
+                    self._execute_command(propname, argument)
+                except Exception as exc:
+                    self._queue_to_frontend.put_nowait(
+                        ('_error', (exc, traceback.format_exc())))
             elif cmd == 'communication_error':
                 self._queue_to_frontend.put_nowait((
                     '_error', (propname, argument)))
@@ -276,6 +279,9 @@ class Device(GObject.GObject):
                 raise KeyError
             return False
         except (AssertionError, KeyError):
+            #            if varname == '_status':
+            #                logger.debug('Setting status for %s to %s' %
+            #                             (self._instancename, value))
             self._properties[varname] = value
             self._queue_to_frontend.put_nowait((varname, value))
             return True
@@ -305,7 +311,7 @@ class Device(GObject.GObject):
                     self.disconnect_device(because_of_failure=True)
                     self.emit('error', '', newvalue[0], newvalue[1])
                 elif (propertyname == '_startup_done'):
-                    self.emit('startup-done')
+                    self.emit('startupdone')
                 elif isinstance(newvalue, tuple) and isinstance(newvalue[0], Exception):
                     self.emit('error', propertyname, newvalue[0], newvalue[1])
                 else:
@@ -323,7 +329,8 @@ class Device(GObject.GObject):
     def do_variable_change(self, propertyname, newvalue):
         return False
 
-    def do_startup_done(self):
+    def do_startupdone(self):
+        logger.info('Device %s is ready.' % self._instancename)
         return False
 
     def do_disconnect(self, because_of_failure):

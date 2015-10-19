@@ -23,7 +23,7 @@ class Shutter(Command):
 
     timeout = 2
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         self._check_for_variable = 'shutter'
         if arglist[0] == 'close':
             self._check_for_value = False
@@ -53,7 +53,7 @@ class Xrays(Command):
 
     timeout = 2
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         self._check_for_variable = 'xrays'
         if arglist[0] == 'off':
             self._check_for_value = False
@@ -81,7 +81,7 @@ class XrayFaultsReset(Command):
 
     timeout = 2
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         self._check_for_variable = 'faults'
         self._check_for_value = False
         self._require_device(instrument, instrument.xray_source._instancename)
@@ -105,7 +105,7 @@ class Xray_Power(Command):
 
     name = 'xray_power'
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         xray_source = instrument.xray_source
         self._check_for_variable = '_status'
         self._require_device(instrument, xray_source._instancename)
@@ -140,7 +140,7 @@ class Warmup(Command):
     """
     name = 'xray_warmup'
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         self.xray_source = weakref.proxy(instrument.xray_source)
         self._check_for_variable = '_status'
         self._require_device(instrument, self.xray_source._instancename)

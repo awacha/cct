@@ -16,7 +16,7 @@ class Moveto(Command):
     """
     name = 'moveto'
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         motorname = arglist[0]
         position = arglist[1]
 
@@ -57,7 +57,7 @@ class Moverel(Command):
     """
     name = 'moverel'
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         motorname = arglist[0]
         position = arglist[1]
 
@@ -98,7 +98,7 @@ class Where(Command):
 
     name = 'where'
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         if arglist:
             ret = instrument.motors[arglist[0]].where()
             txt = arglist[0] + ': %8.3f' % ret

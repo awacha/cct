@@ -75,7 +75,7 @@ class Command(GObject.GObject):
         GObject.GObject.__init__(self)
         self._device_connections = {}
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         """Execute the command"""
         raise NotImplementedError
 
@@ -196,7 +196,7 @@ class Command(GObject.GObject):
                 self.emit('return', newvalue)
         return False
 
-    def on_error(self, device, exc, tb):
+    def on_error(self, device, propname, exc, tb):
         """Emit the 'fail' signal"""
         self.emit('fail', exc, tb)
         return False

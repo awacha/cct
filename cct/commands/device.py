@@ -19,13 +19,20 @@ class GetVariable(Command):
 
     timeout = 60
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         devicename = arglist[0]
         variablename = arglist[1]
         self._require_device(instrument, devicename)
         self._install_timeout_handler(self.timeout)
         self._check_for_variable = variablename
-        instrument.devices[devicename].refresh_variable(variablename)
+        try:
+            instrument.devices[devicename].refresh_variable(variablename)
+        except NotImplementedError:
+            # there are variables which cannot be queried
+            self._uninstall_timeout_handler()
+            self._unrequire_device(None)
+            GLib.idle_add(lambda dev=instrument.devices[devicename], var=variablename, val=instrument.devices[
+                          devicename].get_variable(variablename): self.on_variable_change(dev, var, val) and False)
 
     def on_variable_change(self, device, variable, newvalue):
         if variable == self._check_for_variable:
@@ -50,7 +57,7 @@ class ListVariable(Command):
 
     timeout = 60
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         devicename = arglist[0]
         self._require_device(instrument, devicename)
         self._install_timeout_handler(self.timeout)
@@ -90,10 +97,15 @@ class Help(Command):
     """
     name = 'help'
 
-    def execute(self, instrument, arglist, namespace):
-        cmdname = arglist[0]
-        GLib.idle_add(
-            lambda m='Help on command ' + cmdname + ':\n' + instrument.commands[cmdname].__doc__: self._idlefunc(m))
+    def execute(self, interpreter, arglist, instrument, namespace):
+        try:
+            cmdname = arglist[0]
+        except IndexError:
+            GLib.idle_add(lambda m='Please give the name of a command as an argument. Known commands: ' +
+                          ', '.join(c for c in sorted(interpreter.commands)): self._idlefunc(m))
+        else:
+            GLib.idle_add(
+                lambda m='Help on command ' + cmdname + ':\n' + interpreter.commands[cmdname].__doc__: self._idlefunc(m))
 
     def _idlefunc(self, msg):
         self.emit('message', msg)
@@ -112,7 +124,7 @@ class What(Command):
     """
     name = 'what'
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         GLib.idle_add(
             lambda m=', '.join([str(k) for k in namespace.keys()]): self._idlefunc(m))
 
@@ -133,7 +145,7 @@ class Echo(Command):
     """
     name = 'echo'
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         GLib.idle_add(
             lambda m=', '.join([repr(a) for a in arglist]): self._idlefunc(m))
 
@@ -157,7 +169,7 @@ class Set(Command):
     """
     name = 'set'
 
-    def excute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         varname = arglist[0]
         varvalue = arglist[1]
         namespace[varname] = varvalue
@@ -177,7 +189,7 @@ class Sleep(Command):
     """
     name = 'sleep'
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         self._starttime = time.time()
         self._sleeptime = float(arglist[0])
         self._progress = GLib.timeout_add(500, self._progress)
@@ -212,6 +224,6 @@ class SaveConfig(Command):
     """
     name = 'saveconfig'
 
-    def execute(self, instrument, arglist, namespace):
+    def execute(self, interpreter, arglist, instrument, namespace):
         instrument.save_state()
         GLib.idle_add(lambda: self.emit('return', None) and False)
