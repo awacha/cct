@@ -1,9 +1,10 @@
-"""Keep track of file sequence numbers"""
+"""Keep track of file sequence numbers and do other filesystem-related jobs"""
 import os
 from .service import Service
 import logging
 import datetime
 import time
+from sastool.misc.errorvalue import ErrorValue
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -76,7 +77,8 @@ class FileSequence(Service):
 
     def reload(self):
         # check raw detector images
-        for subdir, extension in [('images', '.cbf'), ('param', '.param'), ('param_override', '.param'),
+        for subdir, extension in [('images', '.cbf'), ('param', '.param'), 
+                                  ('param_override', '.param'),
                                   ('eval2d', '.npz'), ('eval1d', '.txt')]:
             # find all subdirectories in `directory`, including `directory`
             # itself
@@ -134,7 +136,7 @@ class FileSequence(Service):
             if acquire:
                 self._nextfreefsn[prefix] += 1
 
-    def new_exposure(self, fsn, filename, prefix):
+    def new_exposure(self, fsn, filename, prefix, startdate):
         """Called by various parts of the instrument if a new exposure file 
         has became available"""
         if (prefix not in self._lastfsn) or (fsn > self._lastfsn[prefix]):
@@ -148,10 +150,12 @@ class FileSequence(Service):
             with open(os.path.join(self.instrument.config['path']['directories']['param'],
                                    prefix + '_' + ('%%0%dd.param' % config['path']['fsndigits']) % fsn), 'wt') as f:
                 f.write('FSN:\t%d\n' % fsn)
+                dist=ErrorValue(config['geometry']['dist_sample_det'],
+                                config['geometry']['dist_sample_det.err'])
                 sample = self.instrument.samplestore.get_active()
+                distcalib=dist-sample.distminus
                 f.write('Sample name:\t%s\n' % sample.title)
-                f.write('Sample-to-detector distance (mm):\t%18f\n' %
-                        config['geometry']['dist_sample_det'])
+                f.write('Sample-to-detector distance (mm):\t%18f\n'%distcalib.val)
                 f.write('Sample thickness (cm):\t%18f\n' % sample.thickness)
                 f.write('Sample position (cm):\t%18f\n' % sample.positiony)
                 f.write('Measurement time (sec): %f\n' %
@@ -160,7 +164,7 @@ class FileSequence(Service):
                     config['geometry']['beamposx'] + 1, config['geometry']['beamposy'] + 1))
                 f.write('Pixel size of 2D detector (mm):\t%f\n' %
                         config['geometry']['pixelsize'])
-                f.write('Primery intensity at monitor (counts/sec):\t%f\n' %
+                f.write('Primary intensity at monitor (counts/sec):\t%f\n' %
                         self.instrument.detector.get_variable('exptime'))
                 f.write('Date:\t%s\n' % str(datetime.datetime.now()))
                 for m in sorted(self.instrument.motors):
@@ -170,7 +174,31 @@ class FileSequence(Service):
                     for v in sorted(self.instrument.devices[d].list_variables()):
                         f.write(
                             '%s.%s:\t%s\n' % (d, v, self.instrument.devices[d].get_variable(v)))
-                raise NotImplementedError
+                f.write(sample.log())
+                
+                f.write('ThicknessError:\t%18f\n'% sample.thickness.err)
+                f.write('PosSampleError:\t%18f\n'% sample.positiony.err)
+                f.write('PosSampleX:\t%18f\n'%sample.positionx.val)
+                f.write('PosSampleXError:\t%18f\n'%sample.positionx.err)
+                f.write('EndDate:\t%s\n'%str(datetime.datetime.now())
+                f.write('DistMinus:\t%18f\n'%sample.distminus.val)
+                f.write('DistMinusErr:\t%18f\n'%sample.distminus.err)
+                f.write('SetupDescription:\t%s\n'% config['geometry']['description'])
+                f.write('DistError:\t%s\n'% dist.err)
+                f.write('XPixel:\t%18f\n'%config['geometry']['pixelsize'])
+                f.write('YPixel:\t%18f\n'%config['geometry']['pixelsize'])
+                f.write('TransmError:\t%18f\n'%sample.transmission.err)
+                f.write('Owner:\t%18f\n'%config['accounting']['operator'])
+                f.write('PosSampleError:\t%18f\n'%sample.positiony.err)
+                f.write('__Origin__:\tCCT\n')
+                f.write('MonitorError:\t0\n')
+                f.write('Wavelength:\t%18f\n'%config['geometry']['wavelength'])
+                f.write('WavelengthError:\t%18f\n'%config['geometry']['wavelength.err'])
+                f.write('__particle__:\tphoton\n')
+                f.write('Project:\t%s\n'%config['accounting']['projectname'])
+                f.write('maskid:\t%s\n'%config['geometry']['mask'].rsplit('.',1)[0])
+                f.write('StartDate:\t%s\n'% str(startdate))
+                
                 # TODO: geometry, other parameters in instrument.config; Make
                 # compatible with original param format (?) for XLS/sqlite
                 # listing.
