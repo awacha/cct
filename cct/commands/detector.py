@@ -113,6 +113,7 @@ class Expose(Command):
         self._check_for_value = 'idle'
         self._install_timeout_handler(self.timeout)
         instrument.detector.expose(self._filename)
+        self._alt_starttime = datetime.datetime.now()
         instrument.detector.refresh_variable('_status')
         self._instrument = instrument
 
@@ -136,8 +137,10 @@ class Expose(Command):
             self._unrequire_device()
             GLib.source_remove(self._progresshandler)
             self.emit('return', newvalue)
-            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix:
-                          self._instrument.filesequence.new_exposure(fsn, fn, prf) and False)
+            if not hasattr(self, '_starttime'):
+                self._starttime = self._alt_starttime
+            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime:
+                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st) and False)
         return False
 
     def kill(self):

@@ -60,10 +60,10 @@ class Instrument(GObject.GObject):
                                               }
         self.config['path']['fsndigits'] = 5
         self.config['path']['scanfile'] = 'scan/credoscan2.spec'
-        self.config['path']['prefixes'] = {'crd': 'crd',
-                                           'scn': 'testscan',
-                                           'tra': 'tra',
-                                           'tst': 'tst'}
+        self.config['path']['prefixes'] = {'crd': 'testingcrd',
+                                           'scn': 'testingscn',
+                                           'tra': 'testingtra',
+                                           'tst': 'testingtst'}
         self.config['geometry'] = {'dist_sample_det': 1000,
                                    'dist_sample_det.err': 0,
                                    'dist_source_ph1': 100,
@@ -152,7 +152,11 @@ class Instrument(GObject.GObject):
                                      'controller': 'tmcm351b', 'index': 1},
                                  {'name': 'Unknown2', 'controller': 'tmcm351b', 'index': 2}]
         self.config['devices'] = {}
-        self.config['services'] = {}
+        self.config['services'] = {
+            'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {}}
+        self.config['scan'] = {'mask': 'mask.mat',
+                               'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx', 'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay', 'total_sigma', 'sigma']}
+        self.config['transmission'] = {}
 
     def save_state(self):
         """Save the current configuration (including that of all devices) to a

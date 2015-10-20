@@ -25,17 +25,17 @@ class Sample(object):
     def fromdict(cls, dic):
         return cls(title=dic['title'],
                    positionx=ErrorValue(
-                       dic['positionx'], dic['positionx.err']),
+                       dic['positionx.val'], dic['positionx.err']),
                    positiony=ErrorValue(
-                       dic['positiony'], dic['positiony.err']),
+                       dic['positiony.val'], dic['positiony.err']),
                    thickness=ErrorValue(
-                       dic['thickness'], dic['thickness.err']),
+                       dic['thickness.val'], dic['thickness.err']),
                    transmission=ErrorValue(
-                       dic['transmission'], dic['transmission.err']),
+                       dic['transmission.val'], dic['transmission.err']),
                    preparedby=dic['preparedby'],
                    preparetime=dateutil.parser.parse(dic['preparetime']),
                    distminus=ErrorValue(
-                       dic['distminus'], dic['distminus.err']),
+                       dic['distminus.val'], dic['distminus.err']),
                    description=dic['description'],
                    category=dic['category'],
                    situation=dic['situation'],
@@ -53,11 +53,14 @@ class Sample(object):
                 'transmission.err': self.transmission.err,
                 'preparedby': self.preparedby,
                 'preparetime': str(self.preparetime),
-                'distminus.val': self.distminus,
+                'distminus.val': self.distminus.val,
                 'distminus.err': self.distminus.err,
                 'description': self.description,
                 'category': self.category,
                 'situation': self.situation}
+
+    def toparam(self):
+        return '\n'.join(['sample.' + k + ':\t%s' % v for k, v in self.todict()]) + '\n'
 
     def __init__(self, title, positionx=0.0, positiony=0.0, thickness=1.0,
                  transmission=1.0, preparedby='Anonymous', preparetime=None,

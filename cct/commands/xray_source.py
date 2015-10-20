@@ -63,7 +63,7 @@ class Xrays(Command):
             self._check_for_value = bool(arglist)
         self._require_device(instrument, instrument.xray_source._instancename)
         self._install_timeout_handler(self.timeout)
-        instrument.xray_source.execute('xrays', self._check_for_value)
+        instrument.xray_source.execute_command('xrays', self._check_for_value)
 
 
 class XrayFaultsReset(Command):
@@ -86,7 +86,8 @@ class XrayFaultsReset(Command):
         self._check_for_value = False
         self._require_device(instrument, instrument.xray_source._instancename)
         self._install_timeout_handler(self.timeout)
-        instrument.xray_source.execute('reset_faults', self._check_for_value)
+        instrument.xray_source.execute_command(
+            'reset_faults')
 
 
 class Xray_Power(Command):
@@ -149,6 +150,7 @@ class Warmup(Command):
             raise CommandError('Warm-up already running')
         self._install_pulse_handler('Warming up', 1)
         self.xray_source.execute_command('start_warmup')
+        self.xray_source.refresh_variable('_status')
 
     def kill(self):
         self.xray_source.execute_command('stop_warmup')

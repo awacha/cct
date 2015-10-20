@@ -22,16 +22,6 @@ class Scan(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         self._myinterpreter = interpreter.__class__(instrument)
-        self._myinterpreter_connections = [
-            self._myinterpreter.connect(
-                'cmd-return', self.on_myintr_command_return),
-            self._myinterpreter.connect(
-                'cmd-fail', self.on_myintr_command_fail),
-            self._myinterpreter.connect('pulse', self.on_myintr_pulse),
-            self._myinterpreter.connect('progress', self.on_myintr_progress),
-            self._myinterpreter.connect(
-                'cmd-message', self.on_myintr_command_message),
-        ]
         self._motor, self._start, self._end, self._N, self._exptime, self._comment = arglist
         assert(instrument.motors[self._motor].checklimits(self._start))
         assert(instrument.motors[self._motor].checklimits(self._end))
@@ -45,8 +35,27 @@ class Scan(Command):
         self._whereto = self._start
         self._in_fail = False
         self._kill = False
-        self._myinterpreter.execute_command(
-            'moveto("%s", %f)' % (self._motor, self._start))
+        self._myinterpreter_connections = [
+            self._myinterpreter.connect(
+                'cmd-return', self.on_myintr_command_return),
+            self._myinterpreter.connect(
+                'cmd-fail', self.on_myintr_command_fail),
+            self._myinterpreter.connect('pulse', self.on_myintr_pulse),
+            self._myinterpreter.connect('progress', self.on_myintr_progress),
+            self._myinterpreter.connect(
+                'cmd-message', self.on_myintr_command_message),
+        ]
+        self._instrument_connections = [
+            instrument.exposureanalyzer.connect('scanpoint', self.on_scanpoint)]
+        try:
+            self._myinterpreter.execute_command(
+                'moveto("%s", %f)' % (self._motor, self._start))
+        except Exception:
+            self._cleanup()
+            raise
+
+    def on_scanpoint(self, prefix, fsn, scandata):
+        pass
 
     def on_myintr_command_return(self, interpreter, commandname, returnvalue):
         if self._in_fail:
@@ -107,6 +116,12 @@ class Scan(Command):
             for c in self._myinterpreter_connections:
                 self._myinterpreter.disconnect(c)
             del self._myinterpreter_connections
+        except AttributeError:
+            pass
+        try:
+            for c in self._instrument_connections:
+                self._instrument.disconnect(c)
+            del self._instrument_connections
         except AttributeError:
             pass
 

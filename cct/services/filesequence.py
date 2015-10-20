@@ -32,17 +32,26 @@ logger.setLevel(logging.DEBUG)
 """
 
 
+def find_in_subfolders(rootdir, target, recursive=True):
+    for d in [rootdir] + find_subfolders():
+        if os.path.exists(os.path.join(d, target)):
+            return os.path.join(d, target)
+    raise FileNotFoundError(target)
+
+
 def find_subfolders(rootdir, recursive=True):
     """Find subdirectories with a cheat: it is assumed that directory names do not
     contain periods."""
     possibledirs = [os.path.join(rootdir, x)
-                    for x in os.listdir(rootdir) if '.' not in x]
+                    for x in sorted(os.listdir(rootdir)) if '.' not in x]
     dirs = [x for x in possibledirs if os.path.isdir(x)]
     results = dirs[:]
     if recursive:
         results = dirs[:]
         for d in dirs:
-            results.extend(find_subfolders(d, recursive))
+            index = results.index(d)
+            for subdir in reversed(find_subfolders(d, recursive)):
+                results.insert(index, subdir)
     return results
 
 
@@ -75,9 +84,11 @@ class FileSequence(Service):
                     self.instrument.config['motors'], key=lambda x: x['name'])) + '\n')
                 f.write('\n')
 
+    def start_scan(self):
+
     def reload(self):
         # check raw detector images
-        for subdir, extension in [('images', '.cbf'), ('param', '.param'), 
+        for subdir, extension in [('images', '.cbf'), ('param', '.param'),
                                   ('param_override', '.param'),
                                   ('eval2d', '.npz'), ('eval1d', '.txt')]:
             # find all subdirectories in `directory`, including `directory`
@@ -143,19 +154,23 @@ class FileSequence(Service):
             self._lastfsn[prefix] = fsn
         logger.info('New exposure: %s (fsn: %d, prefix: %s)' %
                     (filename, fsn, prefix))
+        filename = filename[filename.index('images') + 7:]
         # write header file if needed
         config = self.instrument.config
         if prefix in [config['path']['prefixes']['crd'],
                       config['path']['prefixes']['tst']]:
             with open(os.path.join(self.instrument.config['path']['directories']['param'],
                                    prefix + '_' + ('%%0%dd.param' % config['path']['fsndigits']) % fsn), 'wt') as f:
+                logger.debug(
+                    'Writing param file for new exposure to %s' % f.name)
                 f.write('FSN:\t%d\n' % fsn)
-                dist=ErrorValue(config['geometry']['dist_sample_det'],
-                                config['geometry']['dist_sample_det.err'])
+                dist = ErrorValue(config['geometry']['dist_sample_det'],
+                                  config['geometry']['dist_sample_det.err'])
                 sample = self.instrument.samplestore.get_active()
-                distcalib=dist-sample.distminus
+                distcalib = dist - sample.distminus
                 f.write('Sample name:\t%s\n' % sample.title)
-                f.write('Sample-to-detector distance (mm):\t%18f\n'%distcalib.val)
+                f.write('Sample-to-detector distance (mm):\t%18f\n' %
+                        distcalib.val)
                 f.write('Sample thickness (cm):\t%18f\n' % sample.thickness)
                 f.write('Sample position (cm):\t%18f\n' % sample.positiony)
                 f.write('Measurement time (sec): %f\n' %
@@ -168,37 +183,44 @@ class FileSequence(Service):
                         self.instrument.detector.get_variable('exptime'))
                 f.write('Date:\t%s\n' % str(datetime.datetime.now()))
                 for m in sorted(self.instrument.motors):
-                    f.write('Motor[%s]:\t%f\n' %
+                    f.write('motor.%s:\t%f\n' %
                             self.instrument.motors[m].where())
                 for d in sorted(self.instrument.devices):
                     for v in sorted(self.instrument.devices[d].list_variables()):
                         f.write(
                             '%s.%s:\t%s\n' % (d, v, self.instrument.devices[d].get_variable(v)))
-                f.write(sample.log())
-                
-                f.write('ThicknessError:\t%18f\n'% sample.thickness.err)
-                f.write('PosSampleError:\t%18f\n'% sample.positiony.err)
-                f.write('PosSampleX:\t%18f\n'%sample.positionx.val)
-                f.write('PosSampleXError:\t%18f\n'%sample.positionx.err)
-                f.write('EndDate:\t%s\n'%str(datetime.datetime.now())
-                f.write('DistMinus:\t%18f\n'%sample.distminus.val)
-                f.write('DistMinusErr:\t%18f\n'%sample.distminus.err)
-                f.write('SetupDescription:\t%s\n'% config['geometry']['description'])
-                f.write('DistError:\t%s\n'% dist.err)
-                f.write('XPixel:\t%18f\n'%config['geometry']['pixelsize'])
-                f.write('YPixel:\t%18f\n'%config['geometry']['pixelsize'])
-                f.write('TransmError:\t%18f\n'%sample.transmission.err)
-                f.write('Owner:\t%18f\n'%config['accounting']['operator'])
-                f.write('PosSampleError:\t%18f\n'%sample.positiony.err)
+                f.write(sample.toparam())
+                for k in config['geometry']:
+                    f.write('geometry.%s:\t%s\n' % (k, config['geometry'][k]))
+                for k in config['accounting']:
+                    f.write('accounting.%s:\t%s\n' %
+                            (k, config['accounting'][k]))
+
+                f.write('ThicknessError:\t%18f\n' % sample.thickness.err)
+                f.write('PosSampleError:\t%18f\n' % sample.positiony.err)
+                f.write('PosSampleX:\t%18f\n' % sample.positionx.val)
+                f.write('PosSampleXError:\t%18f\n' % sample.positionx.err)
+                f.write('EndDate:\t%s\n' % str(datetime.datetime.now()))
+                f.write('DistMinus:\t%18f\n' % sample.distminus.val)
+                f.write('DistMinusErr:\t%18f\n' % sample.distminus.err)
+                f.write('SetupDescription:\t%s\n' %
+                        config['geometry']['description'])
+                f.write('DistError:\t%s\n' % dist.err)
+                f.write('XPixel:\t%18f\n' % config['geometry']['pixelsize'])
+                f.write('YPixel:\t%18f\n' % config['geometry']['pixelsize'])
+                f.write('TransmError:\t%18f\n' % sample.transmission.err)
+                f.write('Owner:\t%18f\n' % config['accounting']['operator'])
+                f.write('PosSampleError:\t%18f\n' % sample.positiony.err)
                 f.write('__Origin__:\tCCT\n')
                 f.write('MonitorError:\t0\n')
-                f.write('Wavelength:\t%18f\n'%config['geometry']['wavelength'])
-                f.write('WavelengthError:\t%18f\n'%config['geometry']['wavelength.err'])
+                f.write('Wavelength:\t%18f\n' %
+                        config['geometry']['wavelength'])
+                f.write('WavelengthError:\t%18f\n' %
+                        config['geometry']['wavelength.err'])
                 f.write('__particle__:\tphoton\n')
-                f.write('Project:\t%s\n'%config['accounting']['projectname'])
-                f.write('maskid:\t%s\n'%config['geometry']['mask'].rsplit('.',1)[0])
-                f.write('StartDate:\t%s\n'% str(startdate))
-                
-                # TODO: geometry, other parameters in instrument.config; Make
-                # compatible with original param format (?) for XLS/sqlite
-                # listing.
+                f.write('Project:\t%s\n' % config['accounting']['projectname'])
+                f.write('maskid:\t%s\n' %
+                        config['geometry']['mask'].rsplit('.', 1)[0])
+                f.write('StartDate:\t%s\n' % str(startdate))
+        self.instrument.exposureanalyzer.submit(
+            fsn, filename, prefix, startdate)

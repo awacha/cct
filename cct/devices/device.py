@@ -119,7 +119,6 @@ class Device(GObject.GObject):
 
     def _load_state(self, dictionary):
         """Load the state of this device to a dictionary."""
-        self.logfile = dictionary['logfile']
         self.log_formatstr = dictionary['log_formatstr']
         self.backend_interval = dictionary['backend_interval']
 
