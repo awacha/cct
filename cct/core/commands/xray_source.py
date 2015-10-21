@@ -4,8 +4,7 @@ Created on Oct 15, 2015
 @author: labuser
 '''
 import weakref
-from .command import Command
-from cct.commands.command import CommandError
+from .command import Command, CommandError
 
 
 class Shutter(Command):

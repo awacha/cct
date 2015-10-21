@@ -85,6 +85,7 @@ class FileSequence(Service):
                 f.write('\n')
 
     def start_scan(self):
+        pass
 
     def reload(self):
         # check raw detector images

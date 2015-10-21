@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+-->
+<language id="cct" _name="CCT Script" version="2.0" _section="Scripts">
+  <metadata>
+    <property name="mimetypes">text/vnd.cct</property>
+    <property name="globs">*.cct</property>
+    <property name="line-comment-start">#</property>
+  </metadata>
+
+  <styles>
+    <style id="comment" _name="Comment" map-to="def:comment"/>
+    <style id="keyword" _name="Keyword" map-to="def:keyword"/>
+  </styles>
+
+  <definitions>
+
+    <context id="line-comment" style-ref="comment" end-at-line-end="true" class="comment" class-disabled="no-spell-check">
+      <start>#</start>
+      <include>
+        <context ref="def:in-line-comment"/>
+      </include>
+    </context>
+
+    <context id="keywords" style-ref="keyword">
+      <keyword>label</keyword>
+      <keyword>sample</keyword>
+      <keyword>expose</keyword>
+      <keyword>xray_power</keyword>
+      <keyword>xray</keyword>
+      <keyword>shutter</keyword>
+      <keyword>moveto</keyword>
+      <keyword>moverel</keyword>
+      <keyword>goto</keyword>
+      <keyword>gosub</keyword>
+      <keyword>goif</keyword>
+      <keyword>gosubif</keyword>
+      <keyword>goifnot</keyword>
+      <keyword>gosubifnot</keyword>
+      <keyword>return</keyword>
+      <keyword>sleep</keyword>
+      <keyword>set</keyword>
+      <keyword>math</keyword>
+      <keyword>wait_vacuum</keyword>
+      <keyword>breakpoint</keyword>
+      <keyword>goifbreakpoint</keyword>
+      <keyword>breakonflag</keyword>
+      <keyword>end</keyword>
+      <keyword>set_temp</keyword>
+      <keyword>wait_temp</keyword>
+      <keyword>circulator</keyword>
+      <keyword>genix_faultstatus</keyword>
+      <keyword>genix_reset_faults</keyword>
+      <keyword>getparam</keyword>
+      <keyword>scan</keyword>
+      <keyword>scanrel</keyword>
+      <keyword>temperature</keyword>
+      <keyword>transmission</keyword>
+      <keyword>transmissionmulti</keyword>
+      <keyword>vacuum</keyword>
+      <keyword>where</keyword>
+    </context>
+
+    <context id="cct" class="no-spell-check">
+      <include>
+        <context ref="line-comment"/>
+        <context ref="keywords"/>
+      </include>
+    </context>
+
+  </definitions>
+
+</language>
+

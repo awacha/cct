@@ -1,5 +1,5 @@
-import cct.instrument.instrument
-from cct.services import InterpreterError
+from cct.core.instrument.instrument import Instrument
+from cct.core.services import InterpreterError
 import readline
 import traceback
 import logging
@@ -82,7 +82,7 @@ class CCTTerm(object):
     def on_fail(self, interpreter, command, exc, tb):
         print('\n\x1b[31m' + str(exc) + '\n' + tb + '\x1b[m')
 
-ins = cct.instrument.instrument.Instrument()
+ins = Instrument()
 term = CCTTerm(ins)
 ins.connect_devices()
 print('Waiting for devices to get ready...')
