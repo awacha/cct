@@ -186,9 +186,9 @@ class Instrument(GObject.GObject):
     def _disconnect_signals(self, devicename, device):
         try:
             for c in self._signalconnections[devicename]:
-                device.disconnect[c]
+                device.disconnect(c)
             del self._signalconnections[device]
-        except AttributeError:
+        except (AttributeError, KeyError):
             pass
 
     def connect_devices(self):

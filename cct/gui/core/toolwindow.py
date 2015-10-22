@@ -1,9 +1,25 @@
 from gi.repository import Gtk
 import pkg_resources
 import weakref
+import logging
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+
+def error_message(parentwindow, message, reason=None):
+    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.INFO,
+                         buttons=Gtk.ButtonsType.OK, message_format=message)
+    if reason is not None:
+        md.format_secondary_text('Reason: '+reason)
+    result=md.run()
+    md.destroy()
+    return result
 
 class ToolWindow(object):
-    def __init__(self, gladefile, toplevelname, instrument, application):
+    def __init__(self, gladefile, toplevelname, instrument, application, *args):
+        self._toplevelname=toplevelname
+        self._hide_on_close=True
+        self._application=application
         self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/%s'%gladefile))
         self._builder.set_application(application)
         try:
@@ -12,23 +28,27 @@ class ToolWindow(object):
             # instrument is already a weakref
             self._instrument=instrument
         self._inhibit_close_reason=None
-        self._init_gui()
-        self._builder.connect_signals(self)
         self._window=self._builder.get_object(toplevelname)
+        self._init_gui(*args)
+        self._builder.connect_signals(self)
         self._window.connect('delete-event', self.on_window_delete)
         self._window.show_all()
+        self._widgets_insensitive=[]
 
-    def on_window_delete(self, window):
+    def on_window_delete(self, window, event):
+        logger.debug('On_window_delete for %s'%self._toplevelname)
         if not self.can_close():
-            md=Gtk.MessageDialog(parent=self._window, flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.INFO,
-                                 buttons=Gtk.ButtonsType.OK, message_format='Cannot close this window')
-            md.format_secondary_text('Reason: '+self._inhibit_close_reason)
-            md.run()
+            error_message(self._window, 'Cannot close this window', self._inhibit_close_reason)
             return True
-        self._window.hide()
-        return True
+        if self._hide_on_close:
+            logger.debug('Hiding %s toolwindow'%self._toplevelname)
+            self._window.hide()
+            return True
+        else:
+            logger.debug('Not hiding %s toolwindow: letting it be destroyed.'%self._toplevelname)
+            return False
 
-    def _init_gui(self):
+    def _init_gui(self, *args):
         """this can be used to do some fine-tuning on the gui before connecting signals"""
         pass
 
@@ -41,5 +61,23 @@ class ToolWindow(object):
     def can_close(self):
         return self._inhibit_close_reason is None
 
-    def on_close(self, widget):
-        return self.on_window_delete(self._window)
+    def on_close(self, widget, event=None):
+        #callback for the close button
+        if not self._hide_on_close:
+            logger.debug('on_close called for toolwindow %s: requesting destroy'%self._toplevelname)
+            self._window.destroy()
+        return self.on_window_delete(self._window, event=None)
+
+    def _make_insensitive(self, reason, widgets=[]):
+        self.inhibit_close(reason)
+        for w in widgets:
+            self._builder.get_object(w).set_sensitive(False)
+            self._widgets_insensitive.append(w)
+        self._window.set_deletable(False)
+
+    def _make_sensitive(self):
+        self.permit_close()
+        for w in self._widgets_insensitive:
+            self._builder.get_object(w).set_sensitive(True)
+        self._widgets_insensitive=[]
+        self._window.set_deletable(True)

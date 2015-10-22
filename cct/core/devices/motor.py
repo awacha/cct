@@ -25,18 +25,31 @@ class TMCMcard(Device_TCP):
         # step is 1/200 mm.
         self._full_step_size = 1 / 200.
         self.backend_interval = 0.1
-        self._softlimits = None
         self._sendqueue = multiprocessing.Queue()  # holds postponed sends.
         self._moving = None  # which motor is currently moving
         self._movinglock = multiprocessing.Lock()
+        self._positions_loaded=False
+        self._load_positions()
+
+    def _has_all_variables(self):
+        variablenames = [base + '$' + str(motidx) for base in ['pulsedivisor',
+                                                               'rampdivisor', 'microstepresolution',
+                                                               'targetpositionreached', 'maxcurrent', 'standbycurrent',
+                                                               'rightswitchstatus', 'leftswitchstatus', 'rightswitchenable',
+                                                               'leftswitchenable', 'rampmode', 'freewheelingdelay', 'load', 'drivererror',
+                                                               'targetposition', 'actualposition',
+                                                               'actualspeed', 'targetspeed', 'maxspeed',
+                                                               'maxacceleration',
+                                                               'actualacceleration'] for motidx in self._motor_indices] + ['firmwareversion']
+        return all([v in self._properties for v in variablenames])
 
     def _query_variable(self, variablename):
         if variablename is None:
             variablenames = [base + '$' + str(motidx) for base in ['pulsedivisor',
                                                                    'rampdivisor', 'microstepresolution',
                                                                    'targetpositionreached', 'maxcurrent', 'standbycurrent',
-                                                                   'rightswitchstatus', 'leftswitchstatus', 'rightswitchdisable',
-                                                                   'leftswitchdisable', 'rampmode', 'freewheelingdelay', 'load', 'drivererror',
+                                                                   'rightswitchstatus', 'leftswitchstatus', 'rightswitchenable',
+                                                                   'leftswitchenable', 'rampmode', 'freewheelingdelay', 'load', 'drivererror',
                                                                    'targetposition', 'actualposition',
                                                                    'actualspeed', 'targetspeed', 'maxspeed',
                                                                    'maxacceleration',
@@ -94,10 +107,10 @@ class TMCMcard(Device_TCP):
         elif variablename.startswith('leftswitchstatus$'):
             self._send(
                 self._construct_tmcl_command(6, 11, motor_or_bank, 0))
-        elif variablename.startswith('rightswitchdisable$'):
+        elif variablename.startswith('rightswitchenable$'):
             self._send(
                 self._construct_tmcl_command(6, 12, motor_or_bank, 0))
-        elif variablename.startswith('leftswitchdisable$'):
+        elif variablename.startswith('leftswitchenable$'):
             self._send(
                 self._construct_tmcl_command(6, 13, motor_or_bank, 0))
         elif variablename.startswith('actualacceleration$'):
@@ -208,10 +221,10 @@ class TMCMcard(Device_TCP):
                         'leftswitchstatus$' + motor_or_bank, bool(value))
                 elif typenum == 12:
                     self._update_variable(
-                        'rightswitchdisable$' + motor_or_bank, bool(value))
+                        'rightswitchenable$' + motor_or_bank, not bool(value))
                 elif typenum == 13:
                     self._update_variable(
-                        'leftswitchdisable$' + motor_or_bank, bool(value))
+                        'leftswitchenable$' + motor_or_bank, not bool(value))
                 elif typenum == 135:
                     self._update_variable(
                         'actualacceleration$' + motor_or_bank, self._convert_accel_to_phys(value, motoridx))
@@ -314,21 +327,15 @@ class TMCMcard(Device_TCP):
         return cmd + bytes([sum(cmd) % 256])
 
     def moveto(self, motor, pos):
-        if self._softlimits is not None:
-            limits = tuple([self._convert_pos_to_raw(l, motor)
-                            for l in self._softlimits[motor]])
-        else:
-            limits = None
+        limits = (self._convert_pos_to_raw(self._properties['softleft$%d'%motor], motor),
+                  self._convert_pos_to_raw(self._properties['softright$%d'%motor], motor))
         posraw = self._convert_pos_to_raw(pos, motor)
         self._queue_to_backend.put_nowait(
             ('execute', 'moveto', (motor, posraw, limits)))
 
     def moverel(self, motor, pos):
-        if self._softlimits is not None:
-            limits = tuple([self._convert_pos_to_raw(l, motor)
-                            for l in self._softlimits[motor]])
-        else:
-            limits = None
+        limits = (self._convert_pos_to_raw(self._properties['softleft$%d'%motor], motor),
+                  self._convert_pos_to_raw(self._properties['softright$%d'%motor], motor))
         posraw = self._convert_pos_to_raw(pos, motor)
         self._queue_to_backend.put_nowait(
             ('execute', 'moverel', (motor, posraw, limits)))
@@ -337,10 +344,8 @@ class TMCMcard(Device_TCP):
         self._queue_to_backend.put_nowait(('execute', 'stop', motor))
 
     def calibrate(self, motor, pos):
-        if self._softlimits is not None:
-            if pos < self._softlimits[motor][0] or pos > self._softlimits[motor][1]:
-                raise DeviceError('Cannot calibrate outside soft limits')
-
+        if not self.checklimits(motor, pos):
+            raise DeviceError('Cannot calibrate outside soft limits')
         self.set_variable('rampmode$%d' % motor, 2)
         self.set_variable('actualposition$%d' % motor, pos)
         self.set_variable('targetposition$%d' % motor, pos)
@@ -350,7 +355,7 @@ class TMCMcard(Device_TCP):
 
     def _save_state(self):
         dic = Device_TCP._save_state(self)
-        dic['softlimits'] = self._softlimits
+#        dic['softlimits'] = self._softlimits
         return dic
 
     def _execute_command(self, commandname, arguments):
@@ -440,14 +445,14 @@ class TMCMcard(Device_TCP):
             elif variable.startswith('standbycurrent$'):
                 self._send(
                     self._construct_tmcl_command(5, 7, motor_or_bank, self._convert_current_to_raw(value, motor_or_bank)))
-            elif variable.startswith('rightswitchdisable$'):
+            elif variable.startswith('rightswitchenable$'):
                 self._send(
-                    self._construct_tmcl_command(5, 12, motor_or_bank, bool(value)))
+                    self._construct_tmcl_command(5, 12, motor_or_bank, not bool(value)))
                 self._send(
                     self._construct_tmcl_command(7, 12, motor_or_bank, 0))
-            elif variable.startswith('leftswitchdisable$'):
+            elif variable.startswith('leftswitchenable$'):
                 self._send(
-                    self._construct_tmcl_command(5, 13, motor_or_bank, bool(value)))
+                    self._construct_tmcl_command(5, 13, motor_or_bank, not bool(value)))
                 self._send(
                     self._construct_tmcl_command(7, 13, motor_or_bank, 0))
             elif variable.startswith('rampmode$'):
@@ -490,28 +495,42 @@ class TMCMcard(Device_TCP):
             self._queue_to_backend.put_nowait(('set', variable, value))
 
     def _save_positions(self):
+        if not self._positions_loaded:
+            # avoid overwriting the position file before it can be loaded.
+            logger.debug('Not saving positions yet: file exists and up to now no complete loading happened.')
+            return
         with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'wt', encoding='utf-8') as f:
             for mot in range(self._motorcount):
                 f.write('%d: %g (%g, %g)\n' % (
-                    mot, self.where(mot), self._softlimits[mot][0], self._softlimits[mot][1]))
+                    mot, self.where(mot), self._properties['softleft$%d'%mot], self._properties['softright$%d'%mot]))
 
     def _load_positions(self):
         with self._movinglock:
             if self._moving:
                 raise DeviceError(
                     'Cannot load positions from file if motor is moving!')
-            with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'rt', encoding='utf-8') as f:
-                for l in f:
-                    m = re.match('(?P<motoridx>\d+): (?P<position>' + RE_FLOAT +
-                                 ') \((?P<leftlim>' + RE_FLOAT + '), (?P<rightlim>' + RE_FLOAT + ')\)', l)
-                    if not m:
-                        raise DeviceError(
-                            'Invalid line in motor position file: ' + l)
-                    gd = m.groupdict()
-                    idx = int(gd['motoridx'])
-                    self._softlimits[idx] = (
-                        float(gd['leftlim']), float(gd['rightlim']))
-                    self.calibrate(idx, float(gd['position']))
+            try:
+                with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'rt', encoding='utf-8') as f:
+                    for l in f:
+                        m = re.match('(?P<motoridx>\d+): (?P<position>' + RE_FLOAT +
+                                     ') \((?P<leftlim>' + RE_FLOAT + '), (?P<rightlim>' + RE_FLOAT + ')\)', l)
+                        if not m:
+                            raise DeviceError(
+                                'Invalid line in motor position file: ' + l)
+                        gd = m.groupdict()
+                        idx = int(gd['motoridx'])
+                        self._properties['softleft$%d'%idx]=float(gd['leftlim'])
+                        self._properties['softright$%d'%idx]=float(gd['rightlim'])
+                        if 'actualposition$%d'%idx not in self._properties:
+                            continue
+                        else:
+                            if abs(self._properties['actualposition$%d'%idx] - float(gd['position']))>0.001:
+                                logger.warning('Current position (%.3f) of motor %d on controller %s differs from the stored one (%.3f): calibrating to the stored value.'%(
+                                    self._properties['actualposition$%d'%idx], idx, self._instancename, float(gd['position'])))
+                                self.calibrate(idx, float(gd['position']))
+                            self._positions_loaded=True
+            except FileNotFoundError:
+                self._positions_loaded=True
 
     def _initialize_after_connect(self):
         Device_TCP._initialize_after_connect(self)
@@ -528,8 +547,27 @@ class TMCMcard(Device_TCP):
         Device_TCP.do_startupdone(self)
 
     def checklimits(self, motor, position):
-        return (position >= self._softlimits[motor][0]) and (position <= self._softlimits[motor][1])
+        return (position >= self._properties['softleft$%d'%motor]) and (position <= self._properties['softright$%d'%motor])
 
+    def set_limits(self, index, left=None, right=None):
+        if left is not None:
+            self._properties['softleft$%d'%index]=left
+            self.emit('variable-change','softleft$%d'%index,left)
+        if right is not None:
+            self._properties['softright$%d'%index]=right
+            self.emit('variable-change', 'softright$%d'%index, right)
+
+    def get_limits(self, index):
+        return self._properties['softleft$%d'%index], self._properties['softright$%d'%index]
+
+    def set_variable(self, name, value):
+        if name.startswith('softleft$') or name.startswith('softright$'):
+            if self._properties[name]!=value:
+                self._properties[name]=value
+                self._save_positions()
+                self.emit('variable-change', name, value)
+        else:
+            return Device_TCP.set_variable(self,name, value)
 
 class TMCM351(TMCMcard):
 
@@ -539,7 +577,29 @@ class TMCM351(TMCMcard):
         self._motorcount = 3
         self._motor_indices = [0, 1, 2]
         self._max_microsteps = 6
-        self._softlimits = [[-100, 100]] * self._motorcount
+        for i in range(self._motorcount):
+            self._properties['softleft$%d'%i]=-100
+            self._properties['softright$%d'%i]=100
+
+    def decode_error_flags(self, flags):
+        lis=[]
+        if flags&0b1:
+            lis.append('Overcurrent bridge A low side')
+        if flags&0b10:
+            lis.append('Overcurrent bridge B low side')
+        if flags&0b100:
+            lis.append('Open load bridge A')
+        if flags&0b1000:
+            lis.append('Open load bridge B')
+        if flags&0b10000:
+            lis.append('Overcurrent high side')
+        if flags&0b100000:
+            lis.append('Driver undervoltage')
+        if flags&0b1000000:
+            lis.append('Temperature warning')
+        if flags&0b10000000:
+            lis.append('Overtemperature')
+        return lis
 
 
 class TMCM6110(TMCMcard):
@@ -551,3 +611,26 @@ class TMCM6110(TMCMcard):
         self._motor_indices = [0, 1, 2, 3, 4, 5]
         self._max_microsteps = 8
         self._softlimits = [[-100, 100]] * self._motorcount
+        for i in range(self._motorcount):
+            self._properties['softleft$%d'%i]=-100
+            self._properties['softright$%d'%i]=100
+
+    def decode_error_flags(self, flags):
+        lis=[]
+        if flags&0b1:
+            lis.append('stallGuard2 threshold reached')
+        if flags&0b10:
+            lis.append('Overtemperature')
+        if flags&0b100:
+            lis.append('Pre-warning overtemperature')
+        if flags&0b1000:
+            lis.append('Short to ground A')
+        if flags&0b10000:
+            lis.append('Short to ground B')
+        if flags&0b100000:
+            lis.append('Open load A')
+        if flags&0b1000000:
+            lis.append('Open load B')
+        if flags&0b10000000:
+            lis.append('Stand still')
+        return lis

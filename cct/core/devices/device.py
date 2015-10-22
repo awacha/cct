@@ -212,8 +212,9 @@ class Device(GObject.GObject):
                     block=True, timeout=self.backend_interval)
             except queue.Empty:
                 if juststarted:
-                    self._queue_to_frontend.put_nowait(('_startup_done', None))
-                    juststarted = False
+                    if self._has_all_variables():
+                        self._queue_to_frontend.put_nowait(('_startup_done', None))
+                        juststarted = False
                 if time.time() - self._watchdogtime > self.watchdog_timeout:
                     try:
                         logger.error(
@@ -263,6 +264,12 @@ class Device(GObject.GObject):
             else:
                 raise NotImplementedError(
                     'Unknown command for _background_worker: %s' % cmd)
+
+    def _has_all_variables(self):
+        """Checks if all the variables have been requested and received at least once.
+        The basic implementation just returns True. You should probably override this
+        in the actual device."""
+        return True
 
     def _update_variable(self, varname, value, force=False):
         """Updates the value of the variable in _properties and queues a
@@ -457,10 +464,10 @@ class Device_TCP(Device):
                 (host, port), socket_timeout)
             self._tcpsocket.setblocking(False)
             self._poll_timeout = poll_timeout
-        except (socket.error, socket.gaierror, socket.herror) as exc:
+        except (socket.error, socket.gaierror, socket.herror, ConnectionRefusedError) as exc:
             logger.error(
                 'Error initializing socket connection to device %s:%d' % (host, port))
-            raise exc
+            raise DeviceError('Cannot connect to device.',exc)
         self._communication_subprocess.start()
         logger.debug(
             'Communication subprocess started for device %s:%d' % (host, port))

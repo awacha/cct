@@ -10,7 +10,7 @@ class Motor(GObject.GObject):
     the motors can be decoupled."""
 
     __gsignals__ = {'variable-change': (GObject.SignalFlags.RUN_FIRST, None, (str, object)),
-                    'error': (GObject.SignalFlags.RUN_LAST, None, (str, object)),
+                    'error': (GObject.SignalFlags.RUN_LAST, None, (str, object, str)),
                     'position-change': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
                     'stop': (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
                     }
@@ -37,13 +37,13 @@ class Motor(GObject.GObject):
             self.emit('position-change', newvalue)
         self.emit('variable-change', variable, newvalue)
 
-    def on_error(self, controller, variable, errmsg):
+    def on_error(self, controller, variable, errmsg, tb):
         try:
             if variable.split('$')[-1] != str(self._index):
                 return False
         except AttributeError:
             return False
-        self.emit('error', variable.rsplit('$')[0], errmsg)
+        self.emit('error', variable.rsplit('$')[0], errmsg, tb)
 
     def get_variable(self, varname):
         return self._controller.get_variable(varname + '$%d' % self._index)
@@ -56,6 +56,18 @@ class Motor(GObject.GObject):
 
     def where(self):
         return self._controller.where(self._index)
+
+    def speed(self):
+        return self._controller.get_variable('actualspeed$%d'%self._index)
+
+    def load(self):
+        return self._controller.get_variable('load$%d'%self._index)
+
+    def leftlimitswitch(self):
+        return self._controller.get_variable('leftswitchstatus$%d'%self._index)
+
+    def rightlimitswitch(self):
+        return self._controller.get_variable('rightswitchstatus$%d'%self._index)
 
     def moveto(self, position):
         return self._controller.moveto(self._index, position)
@@ -81,3 +93,14 @@ class Motor(GObject.GObject):
             del self._connection
         except AttributeError:
             pass
+
+    def get_limits(self):
+        return self._controller.get_limits(self._index)
+
+    def errorflags(self):
+        return self._controller.get_variable('drivererror$%d'%self._index)
+
+    def decode_error_flags(self, flags=None):
+        if flags is None:
+            flags=self.errorflags()
+        return self._controller.decode_error_flags(flags)
