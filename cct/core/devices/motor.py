@@ -353,6 +353,7 @@ class TMCMcard(Device_TCP):
         self.set_variable('rampmode$%d' % motor, 2)
         self.set_variable('actualposition$%d' % motor, pos)
         self.set_variable('targetposition$%d' % motor, pos)
+        #ToDo: after calibration the motor positions have to be saved!
 
     def where(self, motor):
         return self.get_variable('actualposition$%d' % motor)
