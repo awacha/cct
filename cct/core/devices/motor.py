@@ -28,7 +28,7 @@ class TMCMcard(Device_TCP):
         self._sendqueue = multiprocessing.Queue()  # holds postponed sends.
         self._moving = None  # which motor is currently moving
         self._movinglock = multiprocessing.Lock()
-        self._positions_loaded=False
+        self._positions_loaded=multiprocessing.Event() # used for a boolean variable, nothing more
         self._load_positions()
 
     def _has_all_variables(self):
@@ -327,6 +327,8 @@ class TMCMcard(Device_TCP):
         return cmd + bytes([sum(cmd) % 256])
 
     def moveto(self, motor, pos):
+        if not self._positions_loaded.is_set():
+            raise DeviceError('Cannot move motors until positions and soft limits have been loaded')
         limits = (self._convert_pos_to_raw(self._properties['softleft$%d'%motor], motor),
                   self._convert_pos_to_raw(self._properties['softright$%d'%motor], motor))
         posraw = self._convert_pos_to_raw(pos, motor)
@@ -334,6 +336,8 @@ class TMCMcard(Device_TCP):
             ('execute', 'moveto', (motor, posraw, limits)))
 
     def moverel(self, motor, pos):
+        if not self._positions_loaded.is_set():
+            raise DeviceError('Cannot move motors until positions and soft limits have been loaded')
         limits = (self._convert_pos_to_raw(self._properties['softleft$%d'%motor], motor),
                   self._convert_pos_to_raw(self._properties['softright$%d'%motor], motor))
         posraw = self._convert_pos_to_raw(pos, motor)
@@ -379,6 +383,7 @@ class TMCMcard(Device_TCP):
                     self._update_variable('_status', 'Moving #%d' % motor)
                     self._update_variable('_status$%d' % motor, 'Moving')
                     self._send(self._construct_tmcl_command(4, 0, motor, pos))
+                    self.refresh_variable('actualspeed$%d'%motor)
         elif commandname == 'moverel':
             with self._movinglock:
                 motor, pos, limits = arguments
@@ -401,6 +406,7 @@ class TMCMcard(Device_TCP):
                     self._update_variable('_status', 'Moving #%d' % motor)
                     self._update_variable('_status$%d' % motor, 'Moving')
                     self._send(self._construct_tmcl_command(4, 1, motor, pos))
+                    self.refresh_variable('actualspeed$%d'%motor)
         elif commandname == 'stop':
             motor = arguments
             self._motor_indices = [motor]
@@ -495,7 +501,7 @@ class TMCMcard(Device_TCP):
             self._queue_to_backend.put_nowait(('set', variable, value))
 
     def _save_positions(self):
-        if not self._positions_loaded:
+        if not self._positions_loaded.is_set():
             # avoid overwriting the position file before it can be loaded.
             logger.debug('Not saving positions yet: file exists and up to now no complete loading happened.')
             return
@@ -528,9 +534,9 @@ class TMCMcard(Device_TCP):
                                 logger.warning('Current position (%.3f) of motor %d on controller %s differs from the stored one (%.3f): calibrating to the stored value.'%(
                                     self._properties['actualposition$%d'%idx], idx, self._instancename, float(gd['position'])))
                                 self.calibrate(idx, float(gd['position']))
-                            self._positions_loaded=True
+                            self._positions_loaded.set()
             except FileNotFoundError:
-                self._positions_loaded=True
+                self._positions_loaded.set()
 
     def _initialize_after_connect(self):
         Device_TCP._initialize_after_connect(self)
