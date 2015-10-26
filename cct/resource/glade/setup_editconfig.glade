@@ -6,6 +6,8 @@
     <columns>
       <!-- column-name name -->
       <column type="gchararray"/>
+      <!-- column-name icon-name -->
+      <column type="gchararray"/>
     </columns>
   </object>
   <object class="GtkAdjustment" id="float_entry_adjustment">
@@ -22,7 +24,7 @@
   </object>
   <object class="GtkDialog" id="editconfig">
     <property name="can_focus">False</property>
-    <property name="type_hint">dialog</property>
+    <property name="type_hint">normal</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">
         <property name="can_focus">False</property>
@@ -75,7 +77,7 @@
             <property name="can_focus">True</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
-            <property name="position">200</property>
+            <property name="position">300</property>
             <property name="position_set">True</property>
             <property name="wide_handle">True</property>
             <child>
@@ -90,7 +92,10 @@
                     <property name="model">configtreestore</property>
                     <property name="search_column">0</property>
                     <child internal-child="selection">
-                      <object class="GtkTreeSelection" id="treeview-selection"/>
+                      <object class="GtkTreeSelection" id="treeview-selection">
+                        <property name="mode">browse</property>
+                        <signal name="changed" handler="on_select" swapped="no"/>
+                      </object>
                     </child>
                   </object>
                 </child>
@@ -211,9 +216,10 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <child>
-                              <object class="GtkEntry" id="string_entry">
+                              <object class="GtkEntry" id="str_entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <signal name="changed" handler="on_edit" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="name">str</property>
@@ -226,6 +232,7 @@
                                 <property name="can_focus">True</property>
                                 <property name="adjustment">float_entry_adjustment</property>
                                 <property name="digits">4</property>
+                                <signal name="value-changed" handler="on_edit" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="name">float</property>
@@ -238,6 +245,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="adjustment">int_entry_adjustment</property>
+                                <signal name="value-changed" handler="on_edit" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="name">int</property>
@@ -250,11 +258,38 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="halign">start</property>
+                                <signal name="state-set" handler="on_switch_state_set" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="name">bool</property>
                                 <property name="title" translatable="yes">Bool entry</property>
                                 <property name="position">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="label6">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">start</property>
+                                <property name="label" translatable="yes">Please select a child item</property>
+                              </object>
+                              <packing>
+                                <property name="name">dict</property>
+                                <property name="title" translatable="yes">Placeholder entry for dict types</property>
+                                <property name="position">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="other_display">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">start</property>
+                                <property name="label" translatable="yes">N/A</property>
+                              </object>
+                              <packing>
+                                <property name="name">notimplemented</property>
+                                <property name="title" translatable="yes">Display (not entry) for not implemented types</property>
+                                <property name="position">5</property>
                               </packing>
                             </child>
                           </object>

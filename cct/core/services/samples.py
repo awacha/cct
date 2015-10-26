@@ -92,3 +92,7 @@ class SampleStore(Service):
 
     def get_active(self):
         return [x for x in self._list if x.title == self._active][0]
+
+    def __iter__(self):
+        for l in self._list:
+            yield l

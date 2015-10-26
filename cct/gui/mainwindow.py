@@ -84,7 +84,6 @@ class DeviceStatusBar(Gtk.Box):
             self._connections[dev]=dev.connect('variable-change', self.on_variable_change, device)
 
     def do_destroy(self):
-        logger.debug('Destroying devicestatusbar')
         try:
             for d in self._connections:
                 d.disconnect(self._connections[d])
@@ -122,7 +121,8 @@ class MainWindow(object):
         self._statusbar = self._builder.get_object('statusbar')
         self._dialogs = {}
         self._instrument = Instrument()
-        self._instrument.connect_devices()
+        if self._online:
+            self._instrument.connect_devices()
         self._devicestatus=DeviceStatusBar(self._instrument)
         self._builder.get_object('devicestatus_box').pack_start(self._devicestatus, True, True, 0)
 
@@ -158,7 +158,7 @@ class MainWindow(object):
 
 
     def on_menu_setup_sampleeditor(self, menuitem):
-        logger.debug('This is not yet implemented')
+        self.construct_and_run_dialog(SampleSetup, 'samplesetup', 'setup_sampleedit.glade')
         return False
 
     def on_menu_setup_definegeometry(self, menuitem):
@@ -208,7 +208,7 @@ class MainWindow(object):
 
 def run():
     app = CCTApplication(
-        application_id='hu.mta.ttk.credo.cctgui', flags=Gio.ApplicationFlags.FLAGS_NONE)
+        application_id='hu.mta.ttk.credo.cctgui', flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
     app.run(sys.argv)
 
 

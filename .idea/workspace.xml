@@ -2,17 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="99faf451-2ecd-4233-8633-db4a680d3374" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/cct/gui/setup/__init__.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/cct/gui/setup/editconfig.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/cct/gui/devices/genix.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/cct/gui/core/indicator.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/cct/resource/css/indicatorcolors.css" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/resource/glade/device_genix.glade" afterPath="$PROJECT_DIR$/cct/resource/glade/device_genix.glade" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/core/instrument/instrument.py" afterPath="$PROJECT_DIR$/cct/core/instrument/instrument.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/cct/gui/setup/sampleedit.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/gui/setup/editconfig.py" afterPath="$PROJECT_DIR$/cct/gui/setup/editconfig.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/gui/mainwindow.py" afterPath="$PROJECT_DIR$/cct/gui/mainwindow.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/core/services/samples.py" afterPath="$PROJECT_DIR$/cct/core/services/samples.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/resource/glade/setup_editconfig.glade" afterPath="$PROJECT_DIR$/cct/resource/glade/setup_editconfig.glade" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/resource/glade/setup_sampleedit.glade" afterPath="$PROJECT_DIR$/cct/resource/glade/setup_sampleedit.glade" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/gui/core/toolwindow.py" afterPath="$PROJECT_DIR$/cct/gui/core/toolwindow.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/core/devices/xray_source.py" afterPath="$PROJECT_DIR$/cct/core/devices/xray_source.py" />
     </list>
     <ignored path="cct.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -44,9 +41,9 @@
         <entry file="file://$PROJECT_DIR$/cct/gui/mainwindow.py">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="36" column="38" selection-start-line="36" selection-start-column="38" selection-end-line="36" selection-end-column="38" />
+              <caret line="161" column="0" selection-start-line="161" selection-start-column="0" selection-end-line="161" selection-end-column="0" />
               <folding>
-                <marker date="1445851523426" expanded="true" signature="3423:4210" placeholder="..." />
+                <marker date="1445870558234" expanded="true" signature="3372:4159" placeholder="..." />
               </folding>
             </state>
           </provider>
@@ -56,7 +53,7 @@
         <entry file="file://$PROJECT_DIR$/cct/core/instrument/instrument.py">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="131" column="96" selection-start-line="131" selection-start-column="96" selection-end-line="131" selection-end-column="96" />
+              <caret line="167" column="44" selection-start-line="167" selection-start-column="44" selection-end-line="167" selection-end-column="44" />
               <folding />
             </state>
           </provider>
@@ -78,7 +75,7 @@
         <entry file="file://$PROJECT_DIR$/cct/gui/core/toolwindow.py">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="38" column="39" selection-start-line="38" selection-start-column="39" selection-end-line="38" selection-end-column="39" />
+              <caret line="33" column="17" selection-start-line="33" selection-start-column="17" selection-end-line="33" selection-end-column="17" />
               <folding>
                 <element signature="e#0#29#0" expanded="true" />
               </folding>
@@ -98,23 +95,35 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="__init__.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cct/gui/setup/__init__.py">
+      <file leaf-file-name="editconfig.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/cct/gui/setup/editconfig.py">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+              <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
+              <folding>
+                <element signature="e#0#54#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="sampleedit.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/cct/gui/setup/sampleedit.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.07822686">
+              <caret line="4" column="24" selection-start-line="4" selection-start-column="24" selection-end-line="4" selection-end-column="24" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="editconfig.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/cct/gui/setup/editconfig.py">
+      <file leaf-file-name="samples.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/cct/core/services/samples.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.58670145">
-              <caret line="30" column="0" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+            <state vertical-scroll-proportion="0.0">
+              <caret line="97" column="19" selection-start-line="97" selection-start-column="19" selection-end-line="97" selection-end-column="19" />
               <folding>
-                <element signature="e#0#40#0" expanded="true" />
+                <element signature="e#0#42#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -155,11 +164,13 @@
         <option value="$PROJECT_DIR$/cct/resource/css/indicatorcolors.css" />
         <option value="$PROJECT_DIR$/cct/gui/core/indicator.py" />
         <option value="$PROJECT_DIR$/cct/core/devices/xray_source.py" />
-        <option value="$PROJECT_DIR$/cct/gui/core/toolwindow.py" />
         <option value="$PROJECT_DIR$/cct/gui/devices/genix.py" />
-        <option value="$PROJECT_DIR$/cct/gui/mainwindow.py" />
         <option value="$PROJECT_DIR$/cct/core/instrument/instrument.py" />
+        <option value="$PROJECT_DIR$/cct/gui/core/toolwindow.py" />
         <option value="$PROJECT_DIR$/cct/gui/setup/editconfig.py" />
+        <option value="$PROJECT_DIR$/cct/gui/mainwindow.py" />
+        <option value="$PROJECT_DIR$/cct/core/services/samples.py" />
+        <option value="$PROJECT_DIR$/cct/gui/setup/sampleedit.py" />
       </list>
     </option>
   </component>
@@ -167,8 +178,8 @@
     <order />
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="354" />
-    <option name="y" value="93" />
+    <option name="x" value="279" />
+    <option name="y" value="44" />
     <option name="width" value="1390" />
     <option name="height" value="904" />
   </component>
@@ -438,6 +449,28 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
+              <option name="myItemId" value="services" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="cct" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="cct" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="cct" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="core" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
               <option name="myItemId" value="instrument" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
@@ -649,7 +682,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="354" y="93" width="1390" height="904" extended-state="0" />
+    <frame x="279" y="44" width="1390" height="904" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.2496382" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -695,24 +728,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/cct/core/instrument/instrument.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="190" column="41" selection-start-line="190" selection-start-column="41" selection-end-line="190" selection-end-column="41" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/cct/core/devices/device.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="454" column="12" selection-start-line="454" selection-start-column="12" selection-end-line="454" selection-end-column="12" />
-          <folding>
-            <element signature="e#0#22#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cct/gui/measurement/scan.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -773,7 +788,7 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <marker date="1445851523426" expanded="true" signature="3423:4210" placeholder="..." />
+            <marker date="1445870558234" expanded="true" signature="3372:4159" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -829,7 +844,7 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <marker date="1445851523426" expanded="true" signature="3423:4210" placeholder="..." />
+            <marker date="1445870558234" expanded="true" signature="3372:4159" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -885,7 +900,7 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="88" column="0" selection-start-line="88" selection-start-column="0" selection-end-line="88" selection-end-column="0" />
           <folding>
-            <marker date="1445851523426" expanded="true" signature="3423:4210" placeholder="..." />
+            <marker date="1445870558234" expanded="true" signature="3372:4159" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -1015,16 +1030,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cct/gui/core/toolwindow.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="38" column="39" selection-start-line="38" selection-start-column="39" selection-end-line="38" selection-end-column="39" />
-          <folding>
-            <element signature="e#0#29#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cct/core/devices/xray_source.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.23468058">
@@ -1053,6 +1058,13 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/cct/gui/setup/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/cct/gui/devices/motors.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -1063,20 +1075,32 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cct/gui/setup/__init__.py">
+    <entry file="file://$PROJECT_DIR$/cct/gui/core/toolwindow.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <caret line="33" column="17" selection-start-line="33" selection-start-column="17" selection-end-line="33" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#29#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cct/gui/setup/editconfig.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#54#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/cct/gui/mainwindow.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
-          <caret line="36" column="38" selection-start-line="36" selection-start-column="38" selection-end-line="36" selection-end-column="38" />
+          <caret line="161" column="0" selection-start-line="161" selection-start-column="0" selection-end-line="161" selection-end-column="0" />
           <folding>
-            <marker date="1445851523426" expanded="true" signature="3423:4210" placeholder="..." />
+            <marker date="1445870558234" expanded="true" signature="3372:4159" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -1084,18 +1108,26 @@
     <entry file="file://$PROJECT_DIR$/cct/core/instrument/instrument.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
-          <caret line="131" column="96" selection-start-line="131" selection-start-column="96" selection-end-line="131" selection-end-column="96" />
+          <caret line="167" column="44" selection-start-line="167" selection-start-column="44" selection-end-line="167" selection-end-column="44" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cct/gui/setup/editconfig.py">
+    <entry file="file://$PROJECT_DIR$/cct/core/services/samples.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.58670145">
-          <caret line="30" column="0" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="97" column="19" selection-start-line="97" selection-start-column="19" selection-end-line="97" selection-end-column="19" />
           <folding>
-            <element signature="e#0#40#0" expanded="true" />
+            <element signature="e#0#42#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cct/gui/setup/sampleedit.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.07822686">
+          <caret line="4" column="24" selection-start-line="4" selection-start-column="24" selection-end-line="4" selection-end-column="24" />
+          <folding />
         </state>
       </provider>
     </entry>
