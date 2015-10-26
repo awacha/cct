@@ -6,7 +6,7 @@ class GeniX(Device_ModbusTCP):
 
     def __init__(self, *args, **kwargs):
         Device_ModbusTCP.__init__(self, *args, **kwargs)
-        self.backend_interval = 0.5
+        self.backend_interval = 0.4
 
     def _query_variable(self, variablename):
         if variablename is None:
@@ -51,7 +51,7 @@ class GeniX(Device_ModbusTCP):
                 if not statusbits[1]:
                     self._update_variable('_status', 'X-rays off')
                 if statusbits[2]:
-                    self._update_variable('_status', 'Stand-by')
+                    self._update_variable('_status', 'Going to stand-by')
                 if statusbits[3]:
                     self._update_variable('_status', 'Ramping up')
                 self._update_variable('conditions_auto', statusbits[4])

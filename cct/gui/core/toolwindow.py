@@ -15,6 +15,16 @@ def error_message(parentwindow, message, reason=None):
     md.destroy()
     return result
 
+def question_message(parentwindow, question, detail=None):
+    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.QUESTION,
+                         buttons=Gtk.ButtonsType.YES_NO, message_format=question)
+    if detail is not None:
+        md.format_secondary_text('Reason: '+detail)
+    result=md.run()
+    md.destroy()
+    return result==Gtk.ResponseType.YES
+
+
 class ToolWindow(object):
     def __init__(self, gladefile, toplevelname, instrument, application, *args):
         self._toplevelname=toplevelname
@@ -29,11 +39,13 @@ class ToolWindow(object):
             self._instrument=instrument
         self._inhibit_close_reason=None
         self._window=self._builder.get_object(toplevelname)
+        self._window.connect('delete-event', self.on_window_delete)
+        self._window.connect('map', self.on_map)
+        self._window.connect('unmap', self.on_unmap)
+        self._widgets_insensitive=[]
         self._init_gui(*args)
         self._builder.connect_signals(self)
-        self._window.connect('delete-event', self.on_window_delete)
         self._window.show_all()
-        self._widgets_insensitive=[]
 
     def on_window_delete(self, window, event):
         logger.debug('On_window_delete for %s'%self._toplevelname)
@@ -81,3 +93,11 @@ class ToolWindow(object):
             self._builder.get_object(w).set_sensitive(True)
         self._widgets_insensitive=[]
         self._window.set_deletable(True)
+
+    def on_unmap(self, window):
+        """This function should disconnect all the signal handlers from devices. Hidden windows do not need updating."""
+        return False
+
+    def on_map(self, window):
+        """This function should connect all signal handlers to devices, as well as do an update to the GUI."""
+        return True

@@ -12,6 +12,8 @@ import argparse
 from ..core.instrument.instrument import Instrument
 from .measurement.scan import Scan
 from .devices.motors import Motors
+from .devices.genix import GeniX
+from .setup.editconfig import EditConfig
 
 logger = logging.getLogger('__name__')
 logger.setLevel(logging.DEBUG)
@@ -164,6 +166,7 @@ class MainWindow(object):
         return False
 
     def on_menu_setup_editconfiguration(self, menuitem):
+        self.construct_and_run_dialog(EditConfig, 'editconfig', 'setup_editconfig.glade')
         return False
 
     def on_menu_setup_calibration_beamcenter(self, menuitem):
@@ -173,6 +176,7 @@ class MainWindow(object):
         return False
 
     def on_menu_devices_xraysource(self, menuitem):
+        self.construct_and_run_dialog(GeniX, 'genix', 'devices_genix.glade')
         return False
 
     def on_menu_devices_detector(self, menuitem):

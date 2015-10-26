@@ -129,28 +129,28 @@ class Instrument(GObject.GObject):
             'timeout': 0.01,
             'poll_timeout': 0.01,
             'name': 'tmcm6110'}
-        self.config['motors'] = [{'name': 'Unknown1', 'controller': 'tmcm351a', 'index': 0},
-                                 {'name': 'Sample_X',
+        self.config['motors'] = {'0':{'name': 'Unknown1', 'controller': 'tmcm351a', 'index': 0},
+                                 '1':{'name': 'Sample_X',
                                      'controller': 'tmcm351a', 'index': 1},
-                                 {'name': 'Sample_Y',
+                                 '2':{'name': 'Sample_Y',
                                      'controller': 'tmcm351a', 'index': 2},
-                                 {'name': 'PH1X',
+                                 '3':{'name': 'PH1X',
                                      'controller': 'tmcm6110', 'index': 0},
-                                 {'name': 'PH1Y',
+                                 '4':{'name': 'PH1Y',
                                      'controller': 'tmcm6110', 'index': 1},
-                                 {'name': 'PH2X',
+                                 '5':{'name': 'PH2X',
                                      'controller': 'tmcm6110', 'index': 2},
-                                 {'name': 'PH2Y',
+                                 '6':{'name': 'PH2Y',
                                      'controller': 'tmcm6110', 'index': 3},
-                                 {'name': 'PH3X',
+                                 '7':{'name': 'PH3X',
                                      'controller': 'tmcm6110', 'index': 4},
-                                 {'name': 'PH3Y',
+                                 '8':{'name': 'PH3Y',
                                      'controller': 'tmcm6110', 'index': 5},
-                                 {'name': 'BeamStop_X',
+                                 '9':{'name': 'BeamStop_X',
                                      'controller': 'tmcm351b', 'index': 0},
-                                 {'name': 'BeamStop_Y',
+                                 '10':{'name': 'BeamStop_Y',
                                      'controller': 'tmcm351b', 'index': 1},
-                                 {'name': 'Unknown2', 'controller': 'tmcm351b', 'index': 2}]
+                                 '11':{'name': 'Unknown2', 'controller': 'tmcm351b', 'index': 2}}
         self.config['devices'] = {}
         self.config['services'] = {
             'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {}}
@@ -265,10 +265,11 @@ class Instrument(GObject.GObject):
                 unsuccessful.append(cfg['name'])
         for m in self.config['motors']:
             try:
-                self.motors[m['name']] = Motor(
-                    self.motorcontrollers[m['controller']], m['index'])
+                self.motors[self.config['motors'][m]['name']] = Motor(
+                    self.motorcontrollers[self.config['motors'][m]['controller']],
+                    self.config['motors'][m]['index'])
             except KeyError:
-                logger.error('Cannot find motor %s' % m['name'])
+                logger.error('Cannot find motor %s' % self.config['motors'][m]['name'])
         for envcont in self.config['connections']['environmentcontrollers']:
             cfg = self.config['connections']['environmentcontrollers'][envcont]
             if envcont not in self.environmentcontrollers:
@@ -305,7 +306,7 @@ class Instrument(GObject.GObject):
         if not self._waiting_for_ready:
             self.emit('devices-ready')
 
-    def on_disconnect(self, device):
+    def on_disconnect(self, device, because_of_failure):
         pass
 
     def start_services(self):
