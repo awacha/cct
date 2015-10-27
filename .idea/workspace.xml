@@ -1,24 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="99faf451-2ecd-4233-8633-db4a680d3374" name="Default" comment="Saving motor positions after calibration done.&#10;Introduced global &quot;busy&quot; flag (multiprocessing.Event) into Instrument class.&#10;FileSequence: get_prefixes() returns known prefixes. reload() now checks for well-known prefixes ('crd', 'tst', 'scn'), and establish an entry in _lastfsn even if no files are present.&#10;Interpreter: is_busy() member function (True if a command is running).&#10;SampleStore: corrected loading of legacy file format.&#10;Gui.core: started coding plotimage.&#10;Gui.measurement: singleexposure GUI&#10;Gui.setup: resolved a glitch in editconfig. An exception was raised every time the window was hidden and reopened.&#10;Gui.sampleedit: working&#10;">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/cct/resource/glade/core_plotimage.glade" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/cct/gui/core/plotimage.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/cct/gui/measurement/singleexposure.py" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/cct/resource/glade/cct.glade" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/cct/resource/glade/setup_sampleedit_editor.glade" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/gui/setup/editconfig.py" afterPath="$PROJECT_DIR$/cct/gui/setup/editconfig.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/core/services/filesequence.py" afterPath="$PROJECT_DIR$/cct/core/services/filesequence.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/core/instrument/instrument.py" afterPath="$PROJECT_DIR$/cct/core/instrument/instrument.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/core/services/interpreter.py" afterPath="$PROJECT_DIR$/cct/core/services/interpreter.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/resource/glade/mainwindow.glade" afterPath="$PROJECT_DIR$/cct/resource/glade/mainwindow.glade" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/gui/mainwindow.py" afterPath="$PROJECT_DIR$/cct/gui/mainwindow.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/resource/glade/measurement_singleexposure.glade" afterPath="$PROJECT_DIR$/cct/resource/glade/measurement_singleexposure.glade" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/core/devices/motor.py" afterPath="$PROJECT_DIR$/cct/core/devices/motor.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/gui/setup/sampleedit.py" afterPath="$PROJECT_DIR$/cct/gui/setup/sampleedit.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/core/services/samples.py" afterPath="$PROJECT_DIR$/cct/core/services/samples.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/resource/glade/setup_editconfig.glade" afterPath="$PROJECT_DIR$/cct/resource/glade/setup_editconfig.glade" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cct/resource/glade/setup_sampleedit.glade" afterPath="$PROJECT_DIR$/cct/resource/glade/setup_sampleedit.glade" />
+    <list default="true" id="99faf451-2ecd-4233-8633-db4a680d3374" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="cct.iws" />
@@ -722,7 +705,13 @@
       <option name="project" value="LOCAL" />
       <updated>1445872272713</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Saving motor positions after calibration done.&#10;Introduced global &quot;busy&quot; flag (multiprocessing.Event) into Instrument class.&#10;FileSequence: get_prefixes() returns known prefixes. reload() now checks for well-known prefixes ('crd', 'tst', 'scn'), and establish an entry in _lastfsn even if no files are present.&#10;Interpreter: is_busy() member function (True if a command is running).&#10;SampleStore: corrected loading of legacy file format.&#10;Gui.core: started coding plotimage.&#10;Gui.measurement: singleexposure GUI&#10;Gui.setup: resolved a glitch in editconfig. An exception was raised every time the window was hidden and reopened.&#10;Gui.sampleedit: working&#10;Removed obsolete GUI definitions cct.glade and setup_sampleedit_editor.glade.&#10;New GUI definition: core_plotimage.glade&#10;">
+      <created>1445956594592</created>
+      <option name="number" value="00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1445956594592</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TodoView">
@@ -738,17 +727,17 @@
     <frame x="235" y="68" width="1390" height="904" extended-state="0" />
     <editor active="false" />
     <layout>
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.25405008" sideWeight="0.49360147" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.25405008" sideWeight="0.49360147" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.29419354" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.35031056" sideWeight="0.50574714" order="12" side_tool="true" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3279099" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32903227" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.3483871" sideWeight="0.49425286" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.3483871" sideWeight="0.49425286" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.2496318" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="true" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.25405008" sideWeight="0.50639856" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -775,7 +764,8 @@
     <MESSAGE value="GUI developments: &#10;Polished main window;&#10;Scan dialog working, just scanning itself is not yet implemented;&#10;Motor overview, moving and configuring possible.&#10;" />
     <MESSAGE value="Corrected two glitches in motor movements:&#10;- incorrect synchronization between background and foreground processes resulted in not saving the motor positions&#10;- very small motor movements (0.001) did not emit a 'stop' signal." />
     <MESSAGE value="New function: info_message() in toolwindow.py&#10;Editconfig mostly works.&#10;Started coding sample editor. Redesigned corresponding .glade file to include the sample list and sample editor in the same window." />
-    <option name="LAST_COMMIT_MESSAGE" value="New function: info_message() in toolwindow.py&#10;Editconfig mostly works.&#10;Started coding sample editor. Redesigned corresponding .glade file to include the sample list and sample editor in the same window." />
+    <MESSAGE value="Saving motor positions after calibration done.&#10;Introduced global &quot;busy&quot; flag (multiprocessing.Event) into Instrument class.&#10;FileSequence: get_prefixes() returns known prefixes. reload() now checks for well-known prefixes ('crd', 'tst', 'scn'), and establish an entry in _lastfsn even if no files are present.&#10;Interpreter: is_busy() member function (True if a command is running).&#10;SampleStore: corrected loading of legacy file format.&#10;Gui.core: started coding plotimage.&#10;Gui.measurement: singleexposure GUI&#10;Gui.setup: resolved a glitch in editconfig. An exception was raised every time the window was hidden and reopened.&#10;Gui.sampleedit: working&#10;Removed obsolete GUI definitions cct.glade and setup_sampleedit_editor.glade.&#10;New GUI definition: core_plotimage.glade&#10;" />
+    <option name="LAST_COMMIT_MESSAGE" value="Saving motor positions after calibration done.&#10;Introduced global &quot;busy&quot; flag (multiprocessing.Event) into Instrument class.&#10;FileSequence: get_prefixes() returns known prefixes. reload() now checks for well-known prefixes ('crd', 'tst', 'scn'), and establish an entry in _lastfsn even if no files are present.&#10;Interpreter: is_busy() member function (True if a command is running).&#10;SampleStore: corrected loading of legacy file format.&#10;Gui.core: started coding plotimage.&#10;Gui.measurement: singleexposure GUI&#10;Gui.setup: resolved a glitch in editconfig. An exception was raised every time the window was hidden and reopened.&#10;Gui.sampleedit: working&#10;Removed obsolete GUI definitions cct.glade and setup_sampleedit_editor.glade.&#10;New GUI definition: core_plotimage.glade&#10;" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
