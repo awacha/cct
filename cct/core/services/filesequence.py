@@ -109,11 +109,17 @@ class FileSequence(Service):
                                   for f in filelist if (f.split('_')[0] == c)])
                     if maxfsn > self._lastfsn[c]:
                         self._lastfsn[c] = maxfsn
+
+        for p in self.instrument.config['path']['prefixes'].values():
+            if p not in self._lastfsn:
+                self._lastfsn[p]=0
+
         for c in self._lastfsn:
             if c not in self._nextfreefsn:
                 self._nextfreefsn[c] = 0
             if self._nextfreefsn[c] < self._lastfsn[c]:
                 self._nextfreefsn[c] = self._lastfsn[c] + 1
+
 
         # reload scans
         scanpath = self.instrument.config['path']['directories']['scan']
@@ -225,3 +231,7 @@ class FileSequence(Service):
                 f.write('StartDate:\t%s\n' % str(startdate))
         self.instrument.exposureanalyzer.submit(
             fsn, filename, prefix, startdate)
+
+    def get_prefixes(self):
+        """Return the known prefixes"""
+        return list(self._lastfsn.keys())

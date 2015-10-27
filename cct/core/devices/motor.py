@@ -185,6 +185,12 @@ class TMCMcard(Device_TCP):
                 elif typenum == 1:
                     self._update_variable(
                         'actualposition$' + motor_or_bank, self._convert_pos_to_phys(value, motoridx))
+                    try:
+                        if self._properties['actualspeed$'+motor_or_bank]==0:
+                            self._save_positions()
+                    except KeyError:
+                        # actualspeed for this motor not yet measured
+                        logger.debug('actualposition changed for motor %s on controller %s, but actualspeed not yet available: not saving positions'%(motor_or_bank, self._instancename))
                 elif typenum == 2:
                     self._update_variable(
                         'targetspeed$' + motor_or_bank, self._convert_speed_to_phys(value, motoridx))
@@ -353,7 +359,6 @@ class TMCMcard(Device_TCP):
         self.set_variable('rampmode$%d' % motor, 2)
         self.set_variable('actualposition$%d' % motor, pos)
         self.set_variable('targetposition$%d' % motor, pos)
-        #ToDo: after calibration the motor positions have to be saved!
 
     def where(self, motor):
         return self.get_variable('actualposition$%d' % motor)
@@ -502,14 +507,15 @@ class TMCMcard(Device_TCP):
             self._queue_to_backend.put_nowait(('set', variable, value))
 
     def _save_positions(self):
-        if not self._positions_loaded.is_set():
-            # avoid overwriting the position file before it can be loaded.
-            logger.debug('Not saving positions yet: file exists and up to now no complete loading happened.')
-            return
-        with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'wt', encoding='utf-8') as f:
-            for mot in range(self._motorcount):
-                f.write('%d: %g (%g, %g)\n' % (
-                    mot, self.where(mot), self._properties['softleft$%d'%mot], self._properties['softright$%d'%mot]))
+        with self._movinglock:
+            if not self._positions_loaded.is_set():
+                # avoid overwriting the position file before it can be loaded.
+                logger.debug('Not saving positions yet: file exists and up to now no complete loading happened.')
+                return
+            with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'wt', encoding='utf-8') as f:
+                for mot in range(self._motorcount):
+                    f.write('%d: %g (%g, %g)\n' % (
+                        mot, self.where(mot), self._properties['softleft$%d'%mot], self._properties['softright$%d'%mot]))
 
     def _load_positions(self):
         with self._movinglock:

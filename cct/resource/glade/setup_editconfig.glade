@@ -49,6 +49,20 @@
               </packing>
             </child>
             <child>
+              <object class="GtkButton" id="save_button">
+                <property name="label" translatable="yes">Save</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_save" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkButton" id="button_close">
                 <property name="label" translatable="yes">Close</property>
                 <property name="visible">True</property>
@@ -59,7 +73,7 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">2</property>
               </packing>
             </child>
           </object>
@@ -123,6 +137,7 @@
                         <property name="valign">start</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
+                        <property name="column_spacing">5</property>
                         <property name="row_homogeneous">True</property>
                         <child>
                           <object class="GtkLabel" id="label2">
@@ -272,6 +287,8 @@
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
                                 <property name="label" translatable="yes">Please select a child item</property>
+                                <property name="ellipsize">end</property>
+                                <property name="single_line_mode">True</property>
                               </object>
                               <packing>
                                 <property name="name">dict</property>
@@ -285,6 +302,8 @@
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
                                 <property name="label" translatable="yes">N/A</property>
+                                <property name="ellipsize">end</property>
+                                <property name="single_line_mode">True</property>
                               </object>
                               <packing>
                                 <property name="name">notimplemented</property>

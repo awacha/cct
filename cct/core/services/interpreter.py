@@ -98,6 +98,9 @@ class Interpreter(Service):
             raise
         self._command = command
 
+    def is_busy(self):
+        return hasattr(self, '_command')
+
     def on_command_return(self, command, retval):
         logger.debug("Command %s returned:" % str(command) + str(retval))
         self.command_namespace_locals['_'] = retval

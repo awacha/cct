@@ -25,6 +25,10 @@ class EditConfig(ToolWindow):
                     _add_children(config[c])
             del parents[-1]
         _add_children(self._instrument.config)
+        try:
+            del self._selectioniter
+        except AttributeError:
+            pass
         self._builder.get_object('configtreeview').get_selection().select_iter(model.get_iter_first())
 
     def on_apply(self, button):
@@ -40,8 +44,7 @@ class EditConfig(ToolWindow):
         def reset_changed_status(model, path, it):
             model[it][1]=''
         model.foreach(reset_changed_status)
-        self._instrument.save_state()
-        info_message(self._window, 'Config saved to %s'%self._instrument.configfile)
+        self.on_save(button)
 
     def note_change(self):
         model, it=self._builder.get_object('configtreeview').get_selection().get_selected()
@@ -112,3 +115,8 @@ class EditConfig(ToolWindow):
     def on_switch_state_set(self, switch, state):
         self.on_edit(switch)
         return False
+
+    def on_save(self, button):
+        self._instrument.save_state()
+        self.on_map(self._window)
+        info_message(self._window, 'Config saved to %s'%self._instrument.configfile)

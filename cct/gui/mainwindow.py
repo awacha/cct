@@ -14,8 +14,10 @@ from .measurement.scan import Scan
 from .devices.motors import Motors
 from .devices.genix import GeniX
 from .setup.editconfig import EditConfig
+from .setup.sampleedit import SampleEdit
+from .measurement.singleexposure import SingleExposure
 
-logger = logging.getLogger('__name__')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 oldexcepthook=sys.excepthook
@@ -59,7 +61,7 @@ class CCTApplication(Gtk.Application):
 
     def do_command_line(self, args):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--online',
+        parser.add_argument('--online', action='store_true', default='false',
                             help='Enable working on-line (you should give this if you want to do serious work)')
         args = parser.parse_args()
         if args.online:
@@ -158,7 +160,7 @@ class MainWindow(object):
 
 
     def on_menu_setup_sampleeditor(self, menuitem):
-        self.construct_and_run_dialog(SampleSetup, 'samplesetup', 'setup_sampleedit.glade')
+        self.construct_and_run_dialog(SampleEdit, 'samplesetup', 'setup_sampleedit.glade')
         return False
 
     def on_menu_setup_definegeometry(self, menuitem):
@@ -197,6 +199,7 @@ class MainWindow(object):
         return False
 
     def on_menu_measurement_singleexposure(self, menuitem):
+        self.construct_and_run_dialog(SingleExposure,'singleexposure','measurement_singleexposure.glade')
         return False
 
     def on_menu_measurement_transmission(self, menuitem):

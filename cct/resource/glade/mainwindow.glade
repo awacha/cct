@@ -346,6 +346,7 @@
                         <property name="use_underline">True</property>
                         <property name="image">image14</property>
                         <property name="use_stock">False</property>
+                        <signal name="activate" handler="on_menu_measurement_singleexposure" swapped="no"/>
                       </object>
                     </child>
                     <child>

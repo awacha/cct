@@ -9,6 +9,7 @@ import traceback
 import json
 import os
 import logging
+import multiprocessing
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -40,6 +41,7 @@ class Instrument(GObject.GObject):
         self._initialize_config()
         self._signalconnections = {}
         self._waiting_for_ready = []
+        self.busy=multiprocessing.Event()
         self.load_state()
         self.start_services()
 
