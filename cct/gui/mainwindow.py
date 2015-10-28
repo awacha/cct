@@ -204,14 +204,14 @@ class MainWindow(object):
         return False
 
     def on_menu_measurement_transmission(self, menuitem):
-        pi=PlotImage()
         m=np.random.randn(256*256).reshape(256,256)
-        pi.set_image(m)
-        pi.set_mask(m>-1)
-        pi.set_pixelsize(0.172)
-        pi.set_beampos(30,120)
-        pi.set_wavelength(0.1542)
-        pi.set_distance(300)
+        colidx, rowidx = np.meshgrid(np.arange(256), np.arange(256))
+        beampos_rowidx = 30
+        beampos_colidx = 120
+        m = ((colidx - beampos_colidx) ** 2 + (rowidx - beampos_rowidx) ** 2) ** 0.5 + m
+        mask = (rowidx > 100) & (rowidx < 150) & (colidx > 20) & (colidx < 40)
+        pi = PlotImage(image=m, mask=mask, pixelsize=0.172, beampos=(beampos_rowidx, beampos_colidx), wavelength=0.1542,
+                       distance=1500)
         return False
 
     def on_menu_measurement_automaticprogram(self, menuitem):
