@@ -16,14 +16,37 @@ class PlotImage(object):
     def __init__(self, **kwargs):
         self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/core_plotimage.glade'))
         self._builder.set_application(Gio.Application.get_default())
-        self._builder.connect_signals(self)
+        if 'image' in kwargs:
+            self._matrix = kwargs['image']
+        else:
+            self._matrix = None
+        if 'mask' in kwargs:
+            self._mask = kwargs['mask']
+            self._builder.get_object('showmask_checkbutton').set_sensitive(True)
+            self._builder.get_object('showmask_checkbutton').set_active(True)
+        else:
+            self._mask = None
+        if 'beampos' in kwargs:
+            self._beampos = kwargs['beampos']
+            self._builder.get_object('showcrosshair_checkbutton').set_sensitive(True)
+            self._builder.get_object('showcrosshair_checkbutton').set_active(True)
+        else:
+            self._beampos = None
+        if 'distance' in kwargs:
+            self._distance = kwargs['distance']
+        else:
+            self._distance = None
+        if 'pixelsize' in kwargs:
+            self._pixelsize = kwargs['pixelsize']
+        else:
+            self._pixelsize = None
+        if 'wavelength' in kwargs:
+            self._wavelength = kwargs['wavelength']
+        else:
+            self._wavelength = None
+        self._validate_parameters()
         self._window=self._builder.get_object('plotimage')
         self._inhibit_replot = False
-        self._matrix=None
-        self._mask=None
-        self._beampos=None
-        self._distance=None
-        self._pixelsize=None
         self._fig=Figure()
         self._canvas=FigureCanvasGTK3Agg(self._fig)
         self._canvas.set_size_request(530, 350)
@@ -36,19 +59,7 @@ class PlotImage(object):
         box=self._builder.get_object('box1')
         box.pack_start(self._canvas,True,True,0)
         box.pack_start(self._toolbar,False, True, 0)
-        if 'image' in kwargs:
-            self._matrix = kwargs['image']
-        if 'mask' in kwargs:
-            self._mask = kwargs['mask']
-        if 'beampos' in kwargs:
-            self._beampos = kwargs['beampos']
-        if 'distance' in kwargs:
-            self._distance = kwargs['distance']
-        if 'pixelsize' in kwargs:
-            self._pixelsize = kwargs['pixelsize']
-        if 'wavelength' in kwargs:
-            self._wavelength = kwargs['wavelength']
-        self._validate_parameters()
+        self._builder.connect_signals(self)
         self._replot()
         self._window.show_all()
 
@@ -117,8 +128,6 @@ class PlotImage(object):
     def _validate_parameters(self):
         ac=self._builder.get_object('axes_combo')
         previously_selected=ac.get_active_text()
-        if previously_selected is None:
-            previously_selected='abs. pixel'
         self._inhibit_replot = True
         try:
             ac.remove_all()
@@ -138,7 +147,8 @@ class PlotImage(object):
                     active_set = True
                     break
             if not active_set:
-                ac.set_active(0)
+                logger.debug(i)
+                ac.set_active(i)
             self._builder.get_object('showmask_checkbutton').set_sensitive(self._mask is not None)
             self._builder.get_object('showcrosshair_checkbutton').set_sensitive(self._beampos is not None)
         finally:
@@ -146,8 +156,10 @@ class PlotImage(object):
 
     def _replot(self):
         if self._inhibit_replot:
+            logger.debug('Replot inhibited')
             return
         if self._matrix is None:
+            logger.debug('No matrix')
             return
         self._fig.clear()
         self._axis=self._fig.add_subplot(1,1,1)
@@ -219,8 +231,8 @@ class PlotImage(object):
             self._axis.xaxis.set_label_text('$2\\theta_x$ ($^\circ$)')
             self._axis.yaxis.set_label_text('$2\\theta_y$ ($^\circ$)')
         elif axes == 'q':
-            self._axis.xaxis.set_label_text('q_x$ (nm$^{-1}$)')
-            self._axis.yaxis.set_label_text('q_y$ (nm$^{-1}$)')
+            self._axis.xaxis.set_label_text('$q_x$ (nm$^{-1}$)')
+            self._axis.yaxis.set_label_text('$q_y$ (nm$^{-1}$)')
         self._fig.tight_layout()
         self._canvas.draw_idle()
         #ToDo: plot mask
