@@ -1,7 +1,7 @@
 from gi.repository import GObject, GLib
 import logging
 from .service import Service, ServiceError
-from ..commands.command import Command
+from ..commands.command import Command, cleanup_commandline
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -31,56 +31,55 @@ class Interpreter(Service):
         # send occasional messages to the command interpreter (to
         # be written to a terminal or logged at the INFO level.
         'cmd-message': (GObject.SignalFlags.RUN_FIRST, None, (str, str,)),
-        'script-end': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
-    def __init__(self, *args, **kwargs):
-        Service.__init__(self, *args, **kwargs)
+    def __init__(self, instrument, namespace=None, **kwargs):
+        Service.__init__(self, instrument, **kwargs)
         self.commands = {}
         for commandclass in Command.allcommands():
             self.commands[commandclass.name] = commandclass
         self.command_namespace_globals = {}
-        self.command_namespace_locals = {}
+        if namespace is not None:
+            self.command_namespace_locals=namespace
+        else:
+            self.command_namespace_locals = {}
         exec('import os', self.command_namespace_globals,
              self.command_namespace_locals)
         exec('import numpy as np', self.command_namespace_globals,
              self.command_namespace_locals)
         self._command_connections = {}
 
-    def execute_command(self, commandline):
+    def execute_command(self, commandline, arguments=None):
         if hasattr(self, '_command'):
             raise InterpreterError('Interpreter is busy')
-
-        commandline = commandline.strip()  # remove trailing whitespace
-        # remove comments from command line. Comments are marked by a hash (#)
-        # sign. Double hash sign is an escape for the single hash.
-        commandline = commandline.replace('##', '__DoUbLeHaSh__')
-        try:
-            commandline = commandline[:commandline.index('#')]
-        except ValueError:
-            # if # is not in the commandline
-            pass
-        commandline.replace('__DoUbLeHaSh__', '#')
-        if not commandline:
-            # if the command line was empty or contained only comments, ignore
-            GLib.idle_add(
-                lambda cmd='empty', rv=None: self.on_command_return(cmd, rv))
-            return
-        # the command line must contain only one command, in the form of
-        # `command(arg1, arg2, arg3 ...)`
-        parpairs = get_parentheses_pairs(commandline, '(')
-        argumentstring = commandline[parpairs[0][1] + 1:parpairs[0][2]].strip()
-        if argumentstring:
-            arguments = [eval(a, self.command_namespace_globals,
-                              self.command_namespace_locals)
-                         for a in argumentstring.split(',')]
-        else:
-            arguments = []
-        commandname = commandline[:parpairs[0][1]].strip()
-        try:
-            command = self.commands[commandname]()
-        except KeyError:
-            raise InterpreterError('Unknown command: ' + commandname)
+        if isinstance(commandline, Command):
+            # we got a Command instance, not a string. Arguments are supplied as well
+            if arguments is None:
+                arguments=[]
+            command=commandline
+        elif isinstance(commandline, str):
+            # we have to parse the command line. `arguments` is disregarded.
+            commandline_cleaned=cleanup_commandline(commandline)
+            if not commandline_cleaned:
+                # if the command line was empty or contained only comments, ignore
+                GLib.idle_add(
+                    lambda cmd='empty', rv=None: self.on_command_return(cmd, rv))
+                return None
+            # the command line must contain only one command, in the form of
+            # `command(arg1, arg2, arg3 ...)`
+            parpairs = get_parentheses_pairs(commandline_cleaned, '(')
+            argumentstring = commandline_cleaned[parpairs[0][1] + 1:parpairs[0][2]].strip()
+            if argumentstring:
+                arguments = [eval(a, self.command_namespace_globals,
+                                  self.command_namespace_locals)
+                             for a in argumentstring.split(',')]
+            else:
+                arguments = []
+            commandname = commandline_cleaned[:parpairs[0][1]].strip()
+            try:
+                command = self.commands[commandname]()
+            except KeyError:
+                raise InterpreterError('Unknown command: ' + commandname)
         self._command_connections[command] = [
             command.connect('return', self.on_command_return),
             command.connect('fail', self.on_command_fail),
@@ -97,6 +96,7 @@ class Interpreter(Service):
             del self._command_connections[command]
             raise
         self._command = command
+        return self._command
 
     def is_busy(self):
         return hasattr(self, '_command')
@@ -154,3 +154,4 @@ def get_parentheses_pairs(cmdline, opening_types='([{'):
     if openparens:
         raise ValueError('Open parentheses', openparens, parens)
     return parens
+

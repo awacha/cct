@@ -66,22 +66,22 @@ class Instrument(GObject.GObject):
                                            'scn': 'testingscn',
                                            'tra': 'testingtra',
                                            'tst': 'testingtst'}
-        self.config['geometry'] = {'dist_sample_det': 1000,
-                                   'dist_sample_det.err': 0,
-                                   'dist_source_ph1': 100,
-                                   'dist_ph1_ph2': 100,
-                                   'dist_ph2_ph3': 1,
-                                   'dist_ph3_sample': 2,
-                                   'dist_det_beamstop': 1,
-                                   'pinhole_1': 1000,
-                                   'pinhole_2': 300,
-                                   'pinhole_3': 750,
+        self.config['geometry'] = {'dist_sample_det': 1000.,
+                                   'dist_sample_det.err': 0.,
+                                   'dist_source_ph1': 100.,
+                                   'dist_ph1_ph2': 100.,
+                                   'dist_ph2_ph3': 1.,
+                                   'dist_ph3_sample': 2.,
+                                   'dist_det_beamstop': 1.,
+                                   'pinhole_1': 1000.,
+                                   'pinhole_2': 300.,
+                                   'pinhole_3': 750.,
                                    'description': 'Generic geometry, please correct values',
-                                   'beamstop': 4,
+                                   'beamstop': 4.,
                                    'wavelength': 0.15418,
                                    'wavelength.err': 0.15418 * 0.03,
-                                   'beamposx': 330,
-                                   'beamposy': 257,
+                                   'beamposx': 330.,
+                                   'beamposy': 257.,
                                    'pixelsize': 0.172,
                                    'mask': 'mask.mat'}
         self.config['accounting'] = {'operator': 'CREDO operator',
@@ -170,6 +170,7 @@ class Instrument(GObject.GObject):
                 self, service)._save_state()
         with open(self.configfile, 'wt', encoding='utf-8') as f:
             json.dump(self.config, f)
+        logger.info('Saved state to %s'%self.configfile)
 
     def load_state(self):
         """Load the saved configuration file. This is only useful before

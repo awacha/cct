@@ -132,16 +132,17 @@ class Expose(Command):
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'filename':
+            if not hasattr(self, '_starttime'):
+                self._starttime = self._alt_starttime
+            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime:
+                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st) and False)
+        if variablename=='_status' and newvalue=='idle':
             self._uninstall_timeout_handler()
             self._uninstall_pulse_handler()
             self._unrequire_device()
             GLib.source_remove(self._progresshandler)
             self.emit('return', newvalue)
-            if not hasattr(self, '_starttime'):
-                self._starttime = self._alt_starttime
-            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime:
-                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st) and False)
-        return False
+        return True
 
     def kill(self):
         self._instrument.detector.execute_command('kill')
@@ -150,7 +151,7 @@ class Expose(Command):
 class ExposeMulti(Command):
     """Start an exposure of multiple images in pilatus
 
-    Invocation: exposemulti(<exptime>, <nimages> [, <prefix>, <expperiod>])
+    Invocation: exposemulti(<exptime>, <nimages> [, <prefix>, <expdelay>])
 
     Arguments:
         <exptime>: exposure time in seconds
@@ -158,6 +159,8 @@ class ExposeMulti(Command):
         <prefix>: the prefix of the resulting file name, e.g. 'crd', 'scn', 
             'tra', 'tst', etc. If not given, it is taken from the variable
             `expose_prefix`
+        <expdelay>: the delay time between exposures. Defaults to 0.003 sec,
+            which is the lowest allowed value.
 
     Returns:
         the file name returned by camserver
@@ -169,21 +172,28 @@ class ExposeMulti(Command):
     name = 'exposemulti'
 
     def execute(self, interpreter, arglist, instrument, namespace):
-        raise NotImplementedError
         exptime = float(arglist[0])
         assert(exptime > 0)
+        nimages = int(arglist[1])
+        assert(nimages>0)
         try:
-            prefix = arglist[1]
+            prefix = arglist[2]
         except IndexError:
             prefix = namespace['expose_prefix']
-        assert(instrument.detector.get_variable('nimages') == 1)
+        try:
+            expdelay=arglist[3]
+        except IndexError:
+            expdelay=0.003
+        assert(expdelay>0.003)
+        instrument.detector.set_variable('nimages',nimages)
         self._fsn = instrument.filesequence.get_nextfreefsn(prefix)
         self._filename = prefix + '_' + \
             ('%%0%dd' %
              instrument.config['path']['fsndigits']) % self._fsn + '.cbf'
         instrument.detector.set_variable('exptime', exptime)
         self._exptime = exptime
-        self.timeout = exptime + 3
+        instrument.detector.set_variable('expperiod', exptime+expdelay)
+        self.timeout = exptime *nimages+expdelay*(nimages-1)+ 3
         self._progresshandler = GLib.timeout_add(500,
                                                  lambda d=instrument.detector: self._progress(d))
         self._require_device(instrument, 'pilatus')
@@ -209,13 +219,16 @@ class ExposeMulti(Command):
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'filename':
+            if not hasattr(self, '_starttime'):
+                self._starttime = self._alt_starttime
+            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime:
+                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st) and False)
+        if variablename=='_status' and newvalue=='idle':
             self._uninstall_timeout_handler()
             self._uninstall_pulse_handler()
             self._unrequire_device()
             GLib.source_remove(self._progresshandler)
             self.emit('return', newvalue)
-            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue:
-                          self._instrument.filesequence.new_exposure(fsn, fn) and False)
         return False
 
     def kill(self):

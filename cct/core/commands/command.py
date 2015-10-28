@@ -224,3 +224,18 @@ class Command(GObject.GObject):
     @classmethod
     def __str__(cls):
         return cls.name
+
+def cleanup_commandline(commandline):
+    """Clean up the commandline: remove trailing spaces and comments"""
+
+    commandline = commandline.strip()  # remove trailing whitespace
+    # remove comments from command line. Comments are marked by a hash (#)
+    # sign. Double hash sign is an escape for the single hash.
+    commandline = commandline.replace('##', '__DoUbLeHaSh__')
+    try:
+        commandline = commandline[:commandline.index('#')]
+    except ValueError:
+        # if # is not in the commandline
+        pass
+    commandline.replace('__DoUbLeHaSh__', '#')
+    return commandline.strip()

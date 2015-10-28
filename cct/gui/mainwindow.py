@@ -16,8 +16,10 @@ from .devices.motors import Motors
 from .devices.genix import GeniX
 from .setup.editconfig import EditConfig
 from .setup.sampleedit import SampleEdit
+from .setup.definegeometry import DefineGeometry
 from .measurement.singleexposure import SingleExposure
 from .core.plotimage import PlotImage
+from .measurement.script import ScriptMeasurement
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -165,7 +167,7 @@ class MainWindow(object):
         return False
 
     def on_menu_setup_definegeometry(self, menuitem):
-        raise NotImplementedError
+        self.construct_and_run_dialog(DefineGeometry, 'definegeometry', 'setup_definegeometry.glade')
         return False
 
     def on_menu_setup_editconfiguration(self, menuitem):
@@ -215,6 +217,7 @@ class MainWindow(object):
         return False
 
     def on_menu_measurement_automaticprogram(self, menuitem):
+        self.construct_and_run_dialog(ScriptMeasurement,'script','measurement_script.glade')
         return False
 
 

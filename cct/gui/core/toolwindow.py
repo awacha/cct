@@ -19,7 +19,7 @@ def question_message(parentwindow, question, detail=None):
     md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.QUESTION,
                          buttons=Gtk.ButtonsType.YES_NO, message_format=question)
     if detail is not None:
-        md.format_secondary_text('Reason: '+detail)
+        md.format_secondary_text(detail)
     result=md.run()
     md.destroy()
     return result==Gtk.ResponseType.YES
@@ -28,7 +28,7 @@ def info_message(parentwindow, info, detail=None):
     md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.INFO,
                          buttons=Gtk.ButtonsType.OK, message_format=info)
     if detail is not None:
-        md.format_secondary_text('Reason: '+detail)
+        md.format_secondary_text(detail)
     result=md.run()
     md.destroy()
     return result
