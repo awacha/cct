@@ -9,6 +9,7 @@ import sys
 import logging
 import traceback
 import argparse
+import numpy as np
 from ..core.instrument.instrument import Instrument
 from .measurement.scan import Scan
 from .devices.motors import Motors
@@ -16,7 +17,7 @@ from .devices.genix import GeniX
 from .setup.editconfig import EditConfig
 from .setup.sampleedit import SampleEdit
 from .measurement.singleexposure import SingleExposure
-
+from .core.plotimage import PlotImage
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -61,7 +62,7 @@ class CCTApplication(Gtk.Application):
 
     def do_command_line(self, args):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--online', action='store_true', default='false',
+        parser.add_argument('--online', action='store_true', default=False,
                             help='Enable working on-line (you should give this if you want to do serious work)')
         args = parser.parse_args()
         if args.online:
@@ -203,6 +204,14 @@ class MainWindow(object):
         return False
 
     def on_menu_measurement_transmission(self, menuitem):
+        pi=PlotImage()
+        m=np.random.randn(256*256).reshape(256,256)
+        pi.set_image(m)
+        pi.set_mask(m>-1)
+        pi.set_pixelsize(0.172)
+        pi.set_beampos(30,120)
+        pi.set_wavelength(0.1542)
+        pi.set_distance(300)
         return False
 
     def on_menu_measurement_automaticprogram(self, menuitem):
