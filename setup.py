@@ -18,7 +18,19 @@ def getresourcefiles():
         reslist.extend([os.path.join(directory,f).split('/',1)[1] for f in files])
     print('Generated resource list:\n  '+'\n  '.join(x for x in reslist)+'\n',flush=True)
     return reslist
-    
+
+def update_languagespec():
+    from cct.core.commands import Command
+    allcommands=sorted([c.name for c in Command.allcommands()])
+    with open('cct/resource/language-specs/cct.lang.in','rt', encoding='utf-8') as fin:
+        with open('cct/resource/language-specs/cct.lang', 'wt', encoding='utf-8') as fout:
+            for l in fin:
+                if l.startswith('% KEYWORDS %'):
+                    for c in allcommands:
+                        fout.write('      <keyword>%s</keyword>\n'%c)
+                else:
+                    fout.write(l)
+    print('Updated language spec. Command list:\n'+', '.join(allcommands))
   
 #print('Finding packages',flush=True)
 #packages=['cct.'+x for x in find_packages('cct')]
@@ -26,6 +38,7 @@ def getresourcefiles():
 #print('Finding resources',flush=True)
 #resources=getresourcefiles()
 #print('Running setup()',flush=True)
+update_languagespec()
 setup(name='cct', version='0.0.1', author='Andras Wacha',
       author_email='awacha@gmail.com', url='http://github.com/awacha/cct',
       description='CREDO Control Tool',
