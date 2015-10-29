@@ -61,7 +61,6 @@ class Instrument(GObject.GObject):
                                               'scan': 'scan'
                                               }
         self.config['path']['fsndigits'] = 5
-        self.config['path']['scanfile'] = 'scan/credoscan2.spec'
         self.config['path']['prefixes'] = {'crd': 'testingcrd',
                                            'scn': 'testingscn',
                                            'tra': 'testingtra',
@@ -157,7 +156,8 @@ class Instrument(GObject.GObject):
         self.config['services'] = {
             'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {}}
         self.config['scan'] = {'mask': 'mask.mat',
-                               'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx', 'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay', 'total_sigma', 'sigma']}
+                               'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx', 'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay', 'total_sigma', 'sigma'],
+                               'scanfile':'credoscan2.spec'}
         self.config['transmission'] = {}
 
     def save_state(self):

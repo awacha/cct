@@ -144,8 +144,6 @@ class MotorMover(ToolWindow):
             motorselector.append_text(m)
             if m==motorname:
                 motorselector.set_active(i)
-        self._window.connect('map', self.on_map)
-        self._window.connect('unmap', self.on_unmap)
         motorselector.connect('changed', self.on_motorselector_changed)
         GLib.idle_add(lambda ms=motorselector:self.on_motorselector_changed(ms))
 
@@ -160,13 +158,16 @@ class MotorMover(ToolWindow):
         self._breakdown_motorconnection()
         self._motor=self._instrument.motors[self._builder.get_object('motorselector').get_active_text()]
         self._motorconnection=[self._motor.connect('variable-change', self.on_motor_variable_change),
-                               self._motor.connect('stop', self.on_motor_stop)]
+                               self._motor.connect('stop', self.on_motor_stop),
+                               self._motor.connect('error', self.on_motor_error)]
 
     def on_map(self, window):
         self._establish_motorconnection()
+        ToolWindow.on_map(self, window)
 
     def on_unmap(self, window):
         self._breakdown_motorconnection()
+        ToolWindow.on_unmap(self, window)
 
     def on_move(self, button):
         if button.get_label()=='Move':
@@ -193,6 +194,10 @@ class MotorMover(ToolWindow):
         self._builder.get_object('move_button').set_label('Move')
         self._make_sensitive()
 
+    def on_motor_error(self, motor, varname, exc,tb):
+        if self._builder.get_object('move_button').get_label()=='Stop':
+            self.on_motor_stop(motor, False)
+        error_message(self._window,'Motor error: '+str(exc),tb)
 
     def on_motorselector_changed(self, combobox):
         if self._window.get_visible():
@@ -214,3 +219,4 @@ class MotorMover(ToolWindow):
 
     def on_relative_toggled(self, checkbutton):
         self.adjust_limits()
+

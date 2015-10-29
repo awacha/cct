@@ -31,6 +31,7 @@
     <property name="name">Scan</property>
     <property name="can_focus">False</property>
     <property name="tooltip_text" translatable="yes">Execute scan measurements</property>
+    <property name="resizable">False</property>
     <property name="type_hint">normal</property>
     <signal name="delete-event" handler="on_close" swapped="no"/>
     <child internal-child="vbox">
@@ -301,7 +302,6 @@
             </child>
             <child>
               <object class="GtkProgressBar" id="scan_progress">
-                <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="no_show_all">True</property>
                 <property name="text" translatable="yes">Scan not running</property>

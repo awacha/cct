@@ -1,5 +1,6 @@
 from ..core.toolwindow import ToolWindow, error_message
 import logging
+from ..core.scangraph import ScanGraph
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -41,22 +42,71 @@ class Scan(ToolWindow):
                     self._make_sensitive()
                     self._builder.get_object('start_button').set_label('Start')
                 if self._builder.get_object('symmetric_checkbutton').get_active():
+                    raise NotImplementedError('symmetric scans not yet implemented')
                     width=self._builder.get_object('start_or_width_spin').get_value()
                     commandline='scanrel("%s", %f, %d, %f, "%s")'%(motor, width, nsteps, exptime, comment)
                 else:
                     start=self._builder.get_object('start_or_width_spin').get_value()
                     end=self._builder.get_object('end_spin').get_value()
                     commandline='scan("%s", %f, %f, %d, %f, "%s")' %(motor, start, end, nsteps, exptime, comment)
-                logger.debug('Would execute the following command: '+commandline)
+                self._connections={self._instrument.interpreter:[
+                    self._instrument.interpreter.connect('cmd-return',self.on_command_return),
+                    self._instrument.interpreter.connect('cmd-fail', self.on_command_fail),
+                    self._instrument.interpreter.connect('cmd-message', self.on_command_message),
+                    self._instrument.interpreter.connect('progress', self.on_progress),
+                    self._instrument.interpreter.connect('pulse', self.on_pulse),
+                ], self._instrument.exposureanalyzer:[self._instrument.exposureanalyzer.connect('scanpoint', self.on_scanpoint)]}
+                self._instrument.interpreter.execute_command(commandline)
+                self._scangraph=ScanGraph([motor]+self._instrument.config['scan']['columns'],nsteps, self._instrument)
             except:
-                self._make_sensitive()
-                self._builder.get_object('start_button').set_label('Start')
+                self._cleanup_after_scan()
                 raise
         elif button.get_label()=='Stop':
-            self._make_sensitive()
-            self._builder.get_object('start_button').set_label('Start')
+            self._instrument.interpreter.kill()
         return True
 
+    def on_command_return(self, interpreter, commandname, returnvalue):
+        self._cleanup_after_scan()
+        logger.info('Scan finished')
+
+    def on_command_fail(self, interpreter, commandname, exc, tb):
+        error_message(self._window,'Error while scanning',tb)
+        logger.error('Error while scanning: %s. Traceback: %s'%(str(exc),tb))
+
+    def on_command_message(self, interpreter, commandname, message):
+        logger.info('Scan message: '+message)
+
+    def on_pulse(self, interpreter, commandname, message):
+        progress=self._builder.get_object('scan_progress')
+        progress.set_visible(True)
+        progress.set_text(message)
+        progress.pulse()
+
+    def on_progress(self, interpreter, commandname, message, fraction):
+        progress=self._builder.get_object('scan_progress')
+        progress.set_visible(True)
+        progress.set_fraction(fraction)
+        progress.set_text(message)
+
+    def _cleanup_after_scan(self):
+        try:
+            for service in self._connections:
+                for c in self._connections[service]:
+                    service.disconnect(c)
+            del self._connections
+        except AttributeError:
+            pass
+        self._make_sensitive()
+        self._builder.get_object('start_button').set_label('Start')
+        self._builder.get_object('scan_progress').set_visible(False)
+        try:
+            self._scangraph.truncate_scan()
+            del self._scangraph
+        except AttributeError:
+            pass
+
+    def on_scanpoint(self, exposureanalyzer, prefix, fsn, scandata):
+        self._scangraph.append_data(scandata)
 
     def on_symmetric_scan_toggled(self, checkbutton):
         if checkbutton.get_active():

@@ -19,6 +19,7 @@ class Motor(GObject.GObject):
         GObject.GObject.__init__(self)
         self._controller = controller
         self._index = index
+        self._moving=False
         self._connection = [self._controller.connect(
             'variable-change', self.on_variable_change),
             self._controller.connect('error', self.on_error)]
@@ -31,19 +32,24 @@ class Motor(GObject.GObject):
             return  # message cannot be split: not for us
         if index != self._index:
             return  # message not for us
-        if variable == '_status' and newvalue == 'idle':
+        if variable == '_status' and newvalue=='Moving':
+            self._moving=True
+        if variable == '_status' and newvalue=='idle' and self._moving:
+            self._moving =False
             self.emit('stop', self.get_variable('targetpositionreached'))
         if variable == 'actualposition':
             self.emit('position-change', newvalue)
         self.emit('variable-change', variable, newvalue)
 
-    def on_error(self, controller, variable, errmsg, tb):
+    def on_error(self, controller, variable, exception, tb):
         try:
             if variable.split('$')[-1] != str(self._index):
                 return False
         except AttributeError:
             return False
-        self.emit('error', variable.rsplit('$')[0], errmsg, tb)
+        logger.error('Motor (%s:#%d) error: Variable: %s. Exception: '%(controller._instancename, self._index, variable.rsplit('$')[0])+str(exception)+'\n'+tb)
+        self.emit('error', variable.rsplit('$')[0], exception, tb)
+        return False
 
     def get_variable(self, varname):
         return self._controller.get_variable(varname + '$%d' % self._index)

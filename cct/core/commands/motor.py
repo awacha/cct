@@ -24,7 +24,10 @@ class Moveto(Command):
         self._connections = [motor.connect('stop', self.on_stop, motorname),
                              motor.connect(
                                  'position-change', self.on_position_change, motorname),
-                             motor.connect('error', self.on_error, motorname)]
+                             motor.connect('error', self.on_motorerror, motorname)]
+
+        if instrument.motors[motorname].where()==position:
+            GLib.idle_add(lambda m=instrument.motors[motorname],tr=True, mn=motorname:self.on_stop(m,tr,mn))
         instrument.motors[motorname].moveto(position)
 
     def on_position_change(self, motor, newpos, motorname):
@@ -38,10 +41,10 @@ class Moveto(Command):
         except AttributeError:
             pass
         self.emit('return', targetreached)
+        return False
 
-    def on_error(self, motor, propname, exc, tb, motorname):
+    def on_motorerror(self, motor, propname, exc, tb, motorname):
         self.emit('fail', exc, tb)
-
 
 class Moverel(Command):
     """Move motor relatively
@@ -65,7 +68,9 @@ class Moverel(Command):
         self._connections = [motor.connect('stop', self.on_stop, motorname),
                              motor.connect(
                                  'position-change', self.on_position_change, motorname),
-                             motor.connect('error', self.on_error, motorname)]
+                             motor.connect('error', self.on_motorerror, motorname)]
+        if position==0:
+            GLib.idle_add(lambda m=instrument.motors[motorname],tr=True, mn=motorname:self.on_stop(m,tr,mn))
         instrument.motors[motorname].moverel(position)
 
     def on_position_change(self, motor, newpos, motorname):
@@ -79,10 +84,10 @@ class Moverel(Command):
         except AttributeError:
             pass
         self.emit('return', targetreached)
+        return False
 
-    def on_error(self, motor, propname, exc, tb, motorname):
+    def on_motorerror(self, motor, propname, exc, tb, motorname):
         self.emit('fail', exc, tb)
-
 
 class Where(Command):
     """Get current motor position(s)

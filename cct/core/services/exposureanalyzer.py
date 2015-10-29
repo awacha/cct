@@ -8,6 +8,9 @@ from sastool.io.twodim import readcbf
 from .filesequence import find_in_subfolders
 import traceback
 import numpy as np
+import logging
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def get_statistics(matrix, mask=None):
@@ -41,7 +44,7 @@ def get_statistics(matrix, mask=None):
     masked_sigma = (masked_sigmax**2 + masked_sigmay**2)**0.5
     return {'total_sum': total_sum, 'sum': masked_sum,
             'total_max': total_max, 'max': masked_max,
-            'totaL_beamx': total_beamx, 'beamx': masked_beamx,
+            'total_beamx': total_beamx, 'beamx': masked_beamx,
             'total_beamy': total_beamy, 'beamy': masked_beamy,
             'total_sigmax': total_sigmax, 'sigmax': masked_sigmax,
             'total_sigmay': total_sigmay, 'sigmay': masked_sigmay,
@@ -62,6 +65,7 @@ class ExposureAnalyzer(Service):
         'error': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object, str)),
         'scanpoint': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object)),
         'datareduction-done': (GObject.SignalFlags.RUN_FIRST, None, (str, int)),
+        'idle': (GObject.SignalFlags.RUN_FIRST, None, ()),
 
     }
 
@@ -76,10 +80,13 @@ class ExposureAnalyzer(Service):
         # process. Note that updates to instrument.config won't affect us,
         # since we are running in a different process
         self._config = self.instrument.config
+        self._backendprocess.start()
+        self._working=0
 
     def _backgroundworker(self):
         while True:
-            prefix, fsn, filename = self._queue_to_backend.get()
+            prefix, fsn, filename, args = self._queue_to_backend.get()
+            logger.debug('Exposureanalyzer bacground process got work: %s, %d, %s, %s'%(prefix,fsn,filename,str(args)))
             cbfdata = readcbf(
                 os.path.join(self._config['path']['directories']['images'], filename))[0]
             if prefix == 'exit':
@@ -90,8 +97,11 @@ class ExposureAnalyzer(Service):
             elif prefix == self._config['path']['prefixes']['scn']:
                 if not hasattr(self, '_scanmask'):
                     try:
-                        m = loadmat(find_in_subfolders(self._config['path']['directories']['mask']),
+                        filename=self._config['scan']['mask']
+                        if not os.path.isabs(filename):
+                            filename=find_in_subfolders(self._config['path']['directories']['mask'],
                                     self._config['scan']['mask'])
+                        m = loadmat(filename)
                         self._scanmask = m[
                             [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
                     except (IOError, OSError, IndexError) as exc:
@@ -102,7 +112,7 @@ class ExposureAnalyzer(Service):
                 # scan point, we have to calculate something.
                 stat = get_statistics(cbfdata, self._scanmask)
                 stat['FSN'] = fsn
-                resultlist = tuple([stat[k]
+                resultlist = tuple([args]+[stat[k]
                                     for k in self._config['scan']['columns']])
                 self._queue_to_frontend.put_nowait(
                     ((prefix, fsn), 'scanpoint', resultlist))
@@ -110,16 +120,22 @@ class ExposureAnalyzer(Service):
     def _idle_function(self):
         try:
             prefix_fsn, what, arguments = self._queue_to_frontend.get_nowait()
+            self._working-=1
         except queue.Empty:
             return True
         if what == 'error':
             self.emit(
                 'error', prefix_fsn[0], prefix_fsn[1], arguments[0], arguments[1])
-        elif what == 'scan':
+        elif what == 'scanpoint':
+            logger.debug('Emitting scanpoint with arguments: %s'%str(arguments))
             self.emit('scanpoint', prefix_fsn[0], prefix_fsn[1], arguments)
         elif what == 'datareduction':
             self.emit('datareduction-done', prefix_fsn[0], prefix_fsn[1])
+        if self._working==0:
+            self.emit('idle')
         return True
 
-    def submit(self, prefix, fsn, filename, starttime):
-        self._queue_to_backend.put_nowait((prefix, fsn, filename))
+    def submit(self, fsn, filename, prefix, args):
+        logger.debug('Submitting to exposureanalyzer: %s, %d, %s, %s'%(prefix,fsn,filename,str(args)))
+        self._queue_to_backend.put_nowait((prefix, fsn, filename, args))
+        self._working+=1

@@ -33,7 +33,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def find_in_subfolders(rootdir, target, recursive=True):
-    for d in [rootdir] + find_subfolders():
+    for d in [rootdir] + find_subfolders(rootdir):
         if os.path.exists(os.path.join(d, target)):
             return os.path.join(d, target)
     raise FileNotFoundError(target)
@@ -70,10 +70,8 @@ class FileSequence(Service):
         self.reload()
 
     def init_scanfile(self):
-        self._scanfile = self.instrument.config['path']['scanfile']
-        if self._scanfile.split(os.sep)[0] != self.instrument.config['path']['directories']['scan']:
-            self._scanfile = os.path.join(
-                self.instrument.config['path']['directories']['scan'], self._scanfile)
+        self._scanfile = os.path.join(self.instrument.config['path']['directories']['scan'],self.instrument.config['scan']['scanfile'])
+
         if not os.path.exists(self._scanfile):
             with open(self._scanfile, 'wt', encoding='utf-8') as f:
                 f.write('#F %s' % os.path.abspath(self._scanfile) + '\n')
@@ -143,7 +141,8 @@ class FileSequence(Service):
         try:
             return self._nextfreescan
         finally:
-            self._nextfreescan += 1
+            if acquire:
+                self._nextfreescan += 1
 
     def get_nextfreefsn(self, prefix, acquire=True):
         if prefix not in self._nextfreefsn:
@@ -154,7 +153,7 @@ class FileSequence(Service):
             if acquire:
                 self._nextfreefsn[prefix] += 1
 
-    def new_exposure(self, fsn, filename, prefix, startdate):
+    def new_exposure(self, fsn, filename, prefix, startdate, args):
         """Called by various parts of the instrument if a new exposure file 
         has became available"""
         if (prefix not in self._lastfsn) or (fsn > self._lastfsn[prefix]):
@@ -230,7 +229,7 @@ class FileSequence(Service):
                         config['geometry']['mask'].rsplit('.', 1)[0])
                 f.write('StartDate:\t%s\n' % str(startdate))
         self.instrument.exposureanalyzer.submit(
-            fsn, filename, prefix, startdate)
+            fsn, filename, prefix, args)
 
     def get_prefixes(self):
         """Return the known prefixes"""

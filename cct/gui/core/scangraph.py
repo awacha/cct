@@ -97,6 +97,10 @@ class ScanGraph(object):
             self._builder.get_object('cursorscale').set_value(abscissa[self._cursorindex])
             # we don't need to `self._redraw_cursor()` because self._redraw_signals() already took care of it.
 
+    def truncate_scan(self):
+        """Can be used for user-broken scans"""
+        self._data=self._data[:self._dataindex]
+        self.start_view_mode()
 
     def append_data(self, datatuple):
         if self.is_scan_mode():
@@ -166,13 +170,15 @@ class ScanGraph(object):
         except AttributeError:
             pass
         self._axes.clear()
+        if not self._dataindex:
+            return
         model=self._builder.get_object('counterstore')
         for row in model:
             if not row[1]:
                 continue # signal not visible
             signal=row[0]
             scaling=row[3]
-            self._axes.plot(self._data[self.get_abscissaname()], self._data[signal]*scaling,'.-',label=signal)
+            self._axes.plot(self._data[self.get_abscissaname()][0:self._dataindex], self._data[signal][0:self._dataindex]*scaling,'.-',label=signal)
         self._axes.legend(loc='best',fontsize='small')
         self._axes.xaxis.set_label_text(self.get_abscissaname())
         self._redraw_cursor()
@@ -303,3 +309,6 @@ class ScanGraph(object):
 
         newdata[abscissaname]=0.5*(self._data[abscissaname][1:self._dataindex]+self._data[abscissaname][0:self._dataindex-1])
         sg=self.__class__(self._data.dtype.names, newdata, self._instrument)
+
+    def get_visible(self):
+        return self._window.get_visible()

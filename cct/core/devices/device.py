@@ -235,20 +235,26 @@ class Device(GObject.GObject):
                     self._refresh_requested[propname] = 0
                 try:
                     self._query_variable(propname)
-                except Exception:
+                except Exception as exc:
                     self._queue_to_frontend.put_nowait(
-                        (propname, 'Error on querying: %s' % traceback.format_exc()))
+                        (propname, (exc, traceback.format_exc())))
                 if argument:
                     self._refresh_requested[propname] += 1
             elif cmd == 'set':
                 try:
                     self._set_variable(propname, argument)
-                except NotImplementedError:
+                except NotImplementedError as ne:
                     self._queue_to_frontend.put_nowait(
-                        (propname, 'Read-only variable'))
+                        (propname, (ne, traceback.format_exc())))
             elif cmd == 'execute':
                 try:
                     self._execute_command(propname, argument)
+                except DeviceError as exc:
+                    if len(exc.args)>1:
+                        self._queue_to_frontend.put_nowait(
+                            (exc.args[1], (exc, traceback.format_exc())))
+                    else:
+                        self._queue_to_fromtend.put_nowait(('_error', (exc, traceback.format_exc())))
                 except Exception as exc:
                     self._queue_to_frontend.put_nowait(
                         ('_error', (exc, traceback.format_exc())))
@@ -277,19 +283,20 @@ class Device(GObject.GObject):
         process. Returns True if the value really changed, False if not."""
         self._watchdogtime = time.time()
         try:
-            assert(self._properties[varname] == value)
+            assert(self._properties[varname] == value) # can raise AssertionError and KeyError
             if force:
                 raise KeyError
             if varname in self._refresh_requested and self._refresh_requested[varname] > 0:
                 self._refresh_requested[varname] -= 1
-                raise KeyError
+                raise AssertionError
             return False
         except (AssertionError, KeyError):
-            #            if varname == '_status':
-            #                logger.debug('Setting status for %s to %s' %
-            #                             (self._instancename, value))
+            if varname.startswith('_status'):
+                logger.debug('Setting %s for %s to %s' %
+                             (varname, self._instancename, value))
             self._properties[varname] = value
             self._queue_to_frontend.put_nowait((varname, value))
+
             return True
 
     def _log(self):
@@ -328,8 +335,7 @@ class Device(GObject.GObject):
         return True  # this is an idle function, we want to be called again.
 
     def do_error(self, propertyname, exception, tb):
-        logger.critical(
-            'Unhandled exception. Variable name: %s. Exception: %s. Traceback: %s' % (propertyname, str(exception), tb))
+        logger.error('Device error. Variable name: %s. Exception: %s. Traceback: %s' % (propertyname, str(exception), tb))
         raise exception
 
     def do_variable_change(self, propertyname, newvalue):

@@ -11,6 +11,8 @@ from .device import Device_TCP, DeviceError
 
 RE_FLOAT = r"[+-]?(\d+)*\.?\d+([eE][+-]?\d+)?"
 
+MUST_REFRESH_WHEN_MOVING=['targetpositionreached', 'actualspeed', 'targetposition', 'actualposition', 'actualspeed', 'targetspeed',
+                           'rightswitchstatus', 'leftswitchstatus', 'actualacceleration', 'load', 'drivererror']
 
 class TMCMConversionError(DeviceError):
     pass
@@ -27,7 +29,8 @@ class TMCMcard(Device_TCP):
         self.backend_interval = 0.1
         self._sendqueue = multiprocessing.Queue()  # holds postponed sends.
         self._moving = None  # which motor is currently moving
-        self._movinglock = multiprocessing.Lock()
+        self._movinglock = multiprocessing.RLock()
+        self._moving_started_at=None
         self._positions_loaded=multiprocessing.Event() # used for a boolean variable, nothing more
         self._load_positions()
 
@@ -54,8 +57,7 @@ class TMCMcard(Device_TCP):
                                                                    'actualspeed', 'targetspeed', 'maxspeed',
                                                                    'maxacceleration',
                                                                    'actualacceleration'] for motidx in self._motor_indices] + ['firmwareversion']
-            mustrefresh = ['targetpositionreached', 'targetposition', 'actualposition', 'actualspeed', 'targetspeed',
-                           'rightswitchstatus', 'leftswitchstatus', 'actualacceleration', 'load', 'drivererror']
+            mustrefresh = MUST_REFRESH_WHEN_MOVING
             variablenames = [vn for vn in variablenames
                              if (vn not in self._properties) or
                              any([vn.startswith(x) for x in mustrefresh])]
@@ -179,31 +181,28 @@ class TMCMcard(Device_TCP):
                 typenum = self._lastsent[2]
                 motor_or_bank = str(self._lastsent[3])
                 motoridx = self._lastsent[3]
-                if typenum == 0:
+                if typenum == 0: # targetposition
                     self._update_variable(
                         'targetposition$' + motor_or_bank, self._convert_pos_to_phys(value, motoridx))
-                elif typenum == 1:
+                elif typenum == 1: # actualposition
                     self._update_variable(
                         'actualposition$' + motor_or_bank, self._convert_pos_to_phys(value, motoridx))
-                    try:
-                        if self._properties['actualspeed$'+motor_or_bank]==0:
+                    with self._movinglock:
+                        if self._moving is None:
+                            # if nothing is moving, save the positions
                             self._save_positions()
-                    except KeyError:
-                        # actualspeed for this motor not yet measured
-                        logger.debug('actualposition changed for motor %s on controller %s, but actualspeed not yet available: not saving positions'%(motor_or_bank, self._instancename))
-                elif typenum == 2:
+                        else:
+                            # if moving, queue an immediate check for all variables.
+                            for vn in MUST_REFRESH_WHEN_MOVING:
+                                if vn!='actualposition':
+                                    self.refresh_variable(vn+'$'+motor_or_bank)
+                                self.refresh_variable('actualposition$'+motor_or_bank)
+                elif typenum == 2: #targetspeed
                     self._update_variable(
                         'targetspeed$' + motor_or_bank, self._convert_speed_to_phys(value, motoridx))
-                elif typenum == 3:
-                    if self._update_variable(
-                            'actualspeed$' + motor_or_bank, self._convert_speed_to_phys(value, motoridx)) and value == 0:
-                        # the current motor has just stopped
-                        self._motor_indices = list(range(self._motorcount))
-                        with self._movinglock:
-                            self._moving = None
-                        self._update_variable('_status', 'idle')
-                        self._update_variable('_status$%d' % motoridx, 'idle')
-                        self._save_positions()
+                elif typenum == 3: #actualspeed
+                    self._update_variable(
+                        'actualspeed$' + motor_or_bank, self._convert_speed_to_phys(value, motoridx))
                 elif typenum == 4:
                     self._update_variable(
                         'maxspeed$' + motor_or_bank, self._convert_speed_to_phys(value, motoridx))
@@ -255,6 +254,21 @@ class TMCMcard(Device_TCP):
                         'drivererror$' + motor_or_bank, value)
                 else:
                     raise NotImplementedError(typenum)
+                if typenum in [8,10,11]:
+                    #check if we are still moving
+                    save_positions=False
+                    with self._movinglock:
+                        if self._moving:
+                            if not self._is_still_moving(motor_or_bank):
+                                self._moving=None
+                                self._update_variable('_status','idle')
+                                self._update_variable('_status$'+motor_or_bank,'idle')
+                                save_positions=True
+                        else:
+                            self._update_variable('_status','idle')
+                            self._update_variable('_status$'+motor_or_bank,'idle')
+                    if save_positions:
+                        self._save_positions()
             elif cmdnum == 136:
                 self._update_variable('firmwareversion', 'TMCM%d' % (
                     value // 0x10000) + ', firmware v%d.%d' % ((value % 0x10000) / 0x100, value % 0x100))
@@ -265,6 +279,21 @@ class TMCMcard(Device_TCP):
                 Device_TCP._send(self, msg)
             except queue.Empty:
                 del self._lastsent
+
+    def _is_still_moving(self, motor_or_bank):
+        actpos=self._properties['actualposition$'+motor_or_bank]
+        targetpos=self._properties['targetposition$'+motor_or_bank]
+        leftswitch=self._properties['leftswitchenable$'+motor_or_bank] and self._properties['leftswitchstatus$'+motor_or_bank]
+        rightswitch=self._properties['rightswitchenable$'+motor_or_bank] and self._properties['rightswitchstatus$'+motor_or_bank]
+        targetposreached=self._properties['targetpositionreached$'+motor_or_bank]
+        if ((targetpos-actpos)>0 and rightswitch) or ((targetpos-actpos)<0 and leftswitch):
+            # moving to targetpos is inhibited by a limit switch
+            logger.debug('Stopped by switch')
+            return False
+        if targetposreached:
+            logger.debug('Target reached')
+            return False
+        return True
 
     def _send(self, message):
         if hasattr(self, '_lastsent'):
@@ -374,11 +403,19 @@ class TMCMcard(Device_TCP):
                 motor, pos, limits = arguments
                 if self._moving is not None:
                     raise DeviceError(
-                        'Cannot move motor %d: another motor (%d) is currently moving' % (motor, self._moving))
+                        'Cannot move motor %d: another motor (%d) is currently moving' % (motor, self._moving),'_status$%d'%motor)
+                where = self._convert_pos_to_raw(
+                    self._properties['actualposition$%d' % motor], motor)
+                if pos-where >0 and (self._properties['rightswitchstatus$%d'%motor] and self._properties['rightswitchenable$%d'%motor]):
+                    logger.debug('Right limit hit')
+                    raise DeviceError('Cannot move motor %d to the right: limit switch active'%motor, '_status$%d'%motor)
+                if pos-where<0 and (self._properties['leftswitchstatus$%d'%motor] and self._properties['leftswitchenable$%d'%motor]):
+                    logger.debug('Left limit hit')
+                    raise DeviceError('Cannot move motor %d to the left: limit switch active'%motor, '_status$%d'%motor)
                 if limits is not None:
                     if pos < limits[0] or pos > limits[1]:
                         raise DeviceError(
-                            'Cannot move motor %d, requested position outside soft limits' % motor)
+                            'Cannot move motor %d, requested position outside soft limits' % motor, '_status$%d'%motor)
                 if self._convert_pos_to_raw(self._properties['actualposition$%d' % motor], motor) == pos:
                     self._update_variable('_status', 'idle', force=True)
                     self._update_variable(
@@ -386,10 +423,23 @@ class TMCMcard(Device_TCP):
                 else:
                     self._motor_indices = [motor]
                     self._moving = motor
+                    self._moving_started=False
                     self._update_variable('_status', 'Moving #%d' % motor)
                     self._update_variable('_status$%d' % motor, 'Moving')
+                    while True:
+                        try:
+                            self._queue_to_backend.get_nowait()
+                        except queue.Empty:
+                            break
+                    while True:
+                        try:
+                            self._sendqueue.get_nowait()
+                        except queue.Empty:
+                            break
+                    self._update_variable('_targetpositionreached$%d'%motor,False)
+                    self._moving_started_at=self._properties['actualposition$%d'%motor]
                     self._send(self._construct_tmcl_command(4, 0, motor, pos))
-                    self.refresh_variable('actualspeed$%d'%motor)
+                    self.refresh_variable('targetpositionreached$%d'%motor)
         elif commandname == 'moverel':
             with self._movinglock:
                 motor, pos, limits = arguments
@@ -402,6 +452,12 @@ class TMCMcard(Device_TCP):
                     if pos + where < limits[0] or pos + where > limits[1]:
                         raise DeviceError(
                             'Cannot move motor %d, requested position outside soft limits' % motor)
+                if pos >0 and (self._properties['rightswitchstatus$%d'%motor] and self._properties['rightswitchenable$%d'%motor]):
+                    logger.debug('Right limit hit')
+                    raise DeviceError('Cannot move motor %d to the right: limit switch active'%motor, '_status$%d'%motor)
+                if pos<0 and (self._properties['leftswitchstatus$%d'%motor] and self._properties['leftswitchenable$%d'%motor]):
+                    logger.debug('Left limit hit')
+                    raise DeviceError('Cannot move motor %d to the left: limit switch active'%motor, '_status$%d'%motor)
                 if pos == 0:
                     self._update_variable('_status', 'idle', force=True)
                     self._update_variable(
@@ -409,14 +465,30 @@ class TMCMcard(Device_TCP):
                 else:
                     self._motor_indices = [motor]
                     self._moving = motor
+                    self._moving_started=False
                     self._update_variable('_status', 'Moving #%d' % motor)
                     self._update_variable('_status$%d' % motor, 'Moving')
+                    while True:
+                        try:
+                            self._queue_to_backend.get_nowait()
+                        except queue.Empty:
+                            break
+                    while True:
+                        try:
+                            self._sendqueue.get_nowait()
+                        except queue.Empty:
+                            break
+                    self._update_variable('_targetpositionreached$%d'%motor,False)
+                    self._moving_started_at=self._properties['actualposition$%d'%motor]
                     self._send(self._construct_tmcl_command(4, 1, motor, pos))
-                    self.refresh_variable('actualspeed$%d'%motor)
+                    self.refresh_variable('targetpositionreached$%d'%motor)
         elif commandname == 'stop':
             motor = arguments
             self._motor_indices = [motor]
             self._send(self._construct_tmcl_command(3, 0, motor, 0))
+        elif commandname=='positions_loaded':
+            logger.debug('Setting positions_loaded flag in process %s'%multiprocessing.current_process().name)
+            self._positions_loaded.set()
         else:
             raise NotImplementedError(commandname)
 
@@ -510,7 +582,7 @@ class TMCMcard(Device_TCP):
         with self._movinglock:
             if not self._positions_loaded.is_set():
                 # avoid overwriting the position file before it can be loaded.
-                logger.debug('Not saving positions yet: file exists and up to now no complete loading happened.')
+                logger.debug('Not saving positions yet (process %s): file exists and up to now no complete loading happened.'%multiprocessing.current_process().name)
                 return
             with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'wt', encoding='utf-8') as f:
                 for mot in range(self._motorcount):
@@ -518,13 +590,17 @@ class TMCMcard(Device_TCP):
                         mot, self.where(mot), self._properties['softleft$%d'%mot], self._properties['softright$%d'%mot]))
 
     def _load_positions(self):
+        logger.debug('_Loading positions for controller %s'%self._instancename)
         with self._movinglock:
             if self._moving:
                 raise DeviceError(
                     'Cannot load positions from file if motor is moving!')
             try:
                 with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'rt', encoding='utf-8') as f:
+                    loaded=[]
+                    lines=0
                     for l in f:
+                        lines+=1
                         m = re.match('(?P<motoridx>\d+): (?P<position>' + RE_FLOAT +
                                      ') \((?P<leftlim>' + RE_FLOAT + '), (?P<rightlim>' + RE_FLOAT + ')\)', l)
                         if not m:
@@ -541,8 +617,16 @@ class TMCMcard(Device_TCP):
                                 logger.warning('Current position (%.3f) of motor %d on controller %s differs from the stored one (%.3f): calibrating to the stored value.'%(
                                     self._properties['actualposition$%d'%idx], idx, self._instancename, float(gd['position'])))
                                 self.calibrate(idx, float(gd['position']))
-                            self._positions_loaded.set()
+                            loaded.append(idx)
+                    if lines!=self._motorcount:
+                        raise ValueError('Invalid motor position file: '+os.path.join(self.configdir, self._instancename + '.motorpos'))
+                if len(loaded)==self._motorcount:
+                    logger.info('Positions loaded for controller %s in process %s'%(self._instancename, multiprocessing.current_process().name))
+                    self.execute_command('positions_loaded')
+                    self._positions_loaded.set()
             except FileNotFoundError:
+                logger.info('Positions loaded (no file) for controller %s in process %s'%(self._instancename, multiprocessing.current_process().name))
+                self.execute_command('positions_loaded')
                 self._positions_loaded.set()
 
     def _initialize_after_connect(self):
@@ -585,11 +669,11 @@ class TMCMcard(Device_TCP):
 class TMCM351(TMCMcard):
 
     def __init__(self, *args, **kwargs):
-        TMCMcard.__init__(self, *args, **kwargs)
-        self._top_rms_current = 2.8
         self._motorcount = 3
+        self._top_rms_current = 2.8
         self._motor_indices = [0, 1, 2]
         self._max_microsteps = 6
+        TMCMcard.__init__(self, *args, **kwargs)
         for i in range(self._motorcount):
             self._properties['softleft$%d'%i]=-100
             self._properties['softright$%d'%i]=100
@@ -618,12 +702,11 @@ class TMCM351(TMCMcard):
 class TMCM6110(TMCMcard):
 
     def __init__(self, *args, **kwargs):
-        TMCMcard.__init__(self, *args, **kwargs)
-        self._top_rms_current = 1.1
         self._motorcount = 6
+        self._top_rms_current = 1.1
         self._motor_indices = [0, 1, 2, 3, 4, 5]
         self._max_microsteps = 8
-        self._softlimits = [[-100, 100]] * self._motorcount
+        TMCMcard.__init__(self, *args, **kwargs)
         for i in range(self._motorcount):
             self._properties['softleft$%d'%i]=-100
             self._properties['softright$%d'%i]=100
