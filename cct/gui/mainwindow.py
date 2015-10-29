@@ -20,6 +20,9 @@ from .setup.definegeometry import DefineGeometry
 from .measurement.singleexposure import SingleExposure
 from .core.plotimage import PlotImage
 from .measurement.script import ScriptMeasurement
+from .core.scangraph import ScanGraph
+
+import sastool
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -195,6 +198,9 @@ class MainWindow(object):
         return False
 
     def on_menu_devices_temperaturestage(self, menuitem):
+        scanstore=sastool.classes.SASScanStore('/home/labuser/credo_data/current/scan/credoscan.spec')
+        scan=scanstore.get_scan(1000)
+        sg=ScanGraph(scan.columns(), scan.data)
         return False
 
     def on_menu_measurement_scan(self, menuitem):
