@@ -1,7 +1,10 @@
+import logging
+
+from gi.repository import Gtk, GLib
+
 from ..core.toolwindow import ToolWindow, error_message
 from ...core.devices.device import DeviceError
-from gi.repository import Gtk, GLib
-import logging
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -51,6 +54,9 @@ class Motors(ToolWindow):
                 elif var=='drivererror':
                     row[8]=', '.join(motor.decode_error_flags(value))
         return False
+
+    def on_motorview_row_activate(self, motorview, path, column):
+        self.on_move(None)
 
     def on_move(self, button):
         model, treeiter=self._builder.get_object('motortreeview').get_selection().get_selected()

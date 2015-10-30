@@ -111,6 +111,7 @@ class Device(GObject.GObject):
         self.logfile = os.path.join(self.logdir, instancename + '.log')
         self._instancename = instancename
         self._properties = {'_status': 'Disconnected'}
+        self._timestamps = {'_status': time.time()}
         self._queue_to_backend = multiprocessing.Queue()
         self._queue_to_frontend = multiprocessing.Queue()
         self._refresh_requested = {}
@@ -169,10 +170,20 @@ class Device(GObject.GObject):
         """Return the names of all currently defined properties as a list"""
         return list(self._properties.keys())
 
-    def refresh_variable(self, name, check_backend_alive=True):
-        """Request a refresh of the value of the named variable."""
+    def refresh_variable(self, name, check_backend_alive=True, signal_needed=True):
+        """Request a refresh of the value of the named variable.
+
+        check_backend_alive: before submitting the query to the backend, check
+            if the backend process is running. If not, raise an exception.
+            Usually you need this set to True. The raison d'etre of this switch
+            is that there are some special cases upon initialization, when we
+            are priming the queue before we start the backend.
+
+        signal_needed: if you expect a variable-change signal even if no change
+            occurred
+        """
         if (not check_backend_alive) or self._background_process.is_alive():
-            self._queue_to_backend.put_nowait(('query', name, True))
+            self._queue_to_backend.put_nowait(('query', name, signal_needed))
         else:
             raise DeviceError('Backend process not running')
 
@@ -214,6 +225,7 @@ class Device(GObject.GObject):
                 if juststarted:
                     if self._has_all_variables():
                         self._queue_to_frontend.put_nowait(('_startup_done', None))
+                        self._on_startupdone()
                         juststarted = False
                 if time.time() - self._watchdogtime > self.watchdog_timeout:
                     try:
@@ -230,16 +242,16 @@ class Device(GObject.GObject):
                 continue
             if cmd == 'exit':
                 break  # the while True loop
-            elif cmd == 'query':
+            elif cmd in ['query']:
                 if propname not in self._refresh_requested:
                     self._refresh_requested[propname] = 0
+                if argument:
+                    self._refresh_requested[propname] += 1
                 try:
                     self._query_variable(propname)
                 except Exception as exc:
                     self._queue_to_frontend.put_nowait(
                         (propname, (exc, traceback.format_exc())))
-                if argument:
-                    self._refresh_requested[propname] += 1
             elif cmd == 'set':
                 try:
                     self._set_variable(propname, argument)
@@ -277,6 +289,11 @@ class Device(GObject.GObject):
         in the actual device."""
         return True
 
+    def _on_startupdone(self):
+        """Called from the backend thread when the startup is done, i.e. all variables
+        have been read."""
+        return True
+
     def _update_variable(self, varname, value, force=False):
         """Updates the value of the variable in _properties and queues a
         notification for the front-end thread. To be called from the back-end
@@ -296,8 +313,10 @@ class Device(GObject.GObject):
                              (varname, self._instancename, value))
             self._properties[varname] = value
             self._queue_to_frontend.put_nowait((varname, value))
-
             return True
+        finally:
+            # set the timestamp
+            self._timestamps[varname] = time.time()
 
     def _log(self):
         """Write a line in the log-file, according to `self.log_formatstr`.
@@ -329,6 +348,7 @@ class Device(GObject.GObject):
                     self.emit('error', propertyname, newvalue[0], newvalue[1])
                 else:
                     self._properties[propertyname] = newvalue
+                    self._timestamps[propertyname] = time.time()
                     self.emit('variable-change', propertyname, newvalue)
             except queue.Empty:
                 break
@@ -336,10 +356,6 @@ class Device(GObject.GObject):
 
     def do_error(self, propertyname, exception, tb):
         logger.error('Device error. Variable name: %s. Exception: %s. Traceback: %s' % (propertyname, str(exception), tb))
-        raise exception
-
-    def do_variable_change(self, propertyname, newvalue):
-        return False
 
     def do_startupdone(self):
         logger.info('Device %s is ready.' % self._instancename)

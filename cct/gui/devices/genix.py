@@ -1,8 +1,13 @@
+import logging
+
 from ..core.toolwindow import ToolWindow, question_message
 from ..core.indicator import Indicator, IndicatorState
-import logging
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+# ToDo: shutter button activates when window mapped. This must be corrected immediately!
 
 class GeniX(ToolWindow):
     def _init_gui(self, *args):
@@ -38,11 +43,19 @@ class GeniX(ToolWindow):
     def on_map(self, window):
         for vn in self._indicators:
             self.on_variable_change(self._genix, vn, self._genix.get_variable(vn))
-        self._builder.get_object('shutter_toggle').set_active(self._genix.get_variable('shutter'))
-        self._builder.get_object('xraystate_toggle').set_active(self._genix.get_variable('xrays'))
+        logger.debug('Mapping GeniX window.')
+        genixshutter = self._genix.get_variable('shutter')
+        shuttertoggle = self._builder.get_object('shutter_toggle').get_active()
+        if genixshutter != shuttertoggle:
+            self._builder.get_object('shutter_toggle').set_active(self._genix.get_variable('shutter'))
+        genixxrays = self._genix.get_variable('xrays')
+        xraystoggle = self._builder.get_object('xraystate_toggle').get_active()
+        if genixxrays != xraystoggle:
+            self._builder.get_object('xraystate_toggle').set_active(self._genix.get_variable('xrays'))
         if not hasattr(self, '_genixconnections'):
             self._genixconnections=[self._genix.connect('variable-change', self.on_variable_change),
                                     ]
+        logger.debug('Mapping GeniX window finished.')
 
     def on_unmap(self, window):
         try:
@@ -77,7 +90,9 @@ class GeniX(ToolWindow):
         pass
 
     def on_shutter(self, button):
-        self._genix.execute_command('shutter',button.get_active())
+        logger.debug('Shutter button toggled to: ' + str(button.get_active()))
+        if self._genix.get_variable('shutter') != button.get_active():
+            self._genix.execute_command('shutter', button.get_active())
 
     def on_xraystate(self, button):
         self._genix.execute_command('xrays',button.get_active())

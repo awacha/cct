@@ -12,7 +12,8 @@ import numpy as np
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class PlotImage(object):
+
+class PlotImageWidget(object):
     def __init__(self, **kwargs):
         self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/core_plotimage.glade'))
         self._builder.set_application(Gio.Application.get_default())
@@ -45,23 +46,22 @@ class PlotImage(object):
         else:
             self._wavelength = None
         self._validate_parameters()
-        self._window=self._builder.get_object('plotimage')
+        self._widget = self._builder.get_object('plotimage')
         self._inhibit_replot = False
         self._fig=Figure()
         self._canvas=FigureCanvasGTK3Agg(self._fig)
         self._canvas.set_size_request(530, 350)
-        self._toolbar=NavigationToolbar2GTK3(self._canvas, self._window)
+        self._toolbar = NavigationToolbar2GTK3(self._canvas, None)
         palette_combo=self._builder.get_object('palette_combo')
         for i,cm in enumerate(sorted(matplotlib.cm.cmap_d)):
             palette_combo.append_text(cm)
             if cm=='jet':
                 palette_combo.set_active(i)
-        box=self._builder.get_object('box1')
-        box.pack_start(self._canvas,True,True,0)
-        box.pack_start(self._toolbar,False, True, 0)
+        self._widget.pack_start(self._canvas, True, True, 0)
+        self._widget.pack_start(self._toolbar, False, True, 0)
         self._builder.connect_signals(self)
         self._replot()
-        self._window.show_all()
+        self._widget.show_all()
 
     def on_settingschanged(self, widget):
         self._replot()
@@ -141,14 +141,16 @@ class PlotImage(object):
                         if (self._wavelength is not None):
                             ac.append_text('q')
             active_set = False
+            lastidx = 0
             for i, scaling in enumerate(ac.get_model()):
+                lastidx = i
                 if scaling[0] == previously_selected:
                     ac.set_active(i)
                     active_set = True
                     break
             if not active_set:
-                logger.debug(i)
-                ac.set_active(i)
+                logger.debug(lastidx)
+                ac.set_active(lastidx)
             self._builder.get_object('showmask_checkbutton').set_sensitive(self._mask is not None)
             self._builder.get_object('showcrosshair_checkbutton').set_sensitive(self._beampos is not None)
         finally:
@@ -235,13 +237,11 @@ class PlotImage(object):
             self._axis.yaxis.set_label_text('$q_y$ (nm$^{-1}$)')
         self._fig.tight_layout()
         self._canvas.draw_idle()
-        #ToDo: plot mask
 
 
-    def on_close(self, widget, event=None):
-        self._fig.clear()
-        del self._mask
-        del self._matrix
-        self._window.destroy()
-        return True
-
+class PlotImageWindow(PlotImageWidget):
+    def __init__(self, **kwargs):
+        PlotImageWidget.__init__(self, **kwargs)
+        self._window = Gtk.Window()
+        self._window.add(self._widget)
+        self._window.show_all()

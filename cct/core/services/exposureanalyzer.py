@@ -1,54 +1,46 @@
 import multiprocessing
 import queue
 import os
+import traceback
+import logging
+
 from scipy.io import loadmat
 from gi.repository import GLib, GObject
-from .service import Service
 from sastool.io.twodim import readcbf
-from .filesequence import find_in_subfolders
-import traceback
 import numpy as np
-import logging
+
+from .service import Service
+from .filesequence import find_in_subfolders
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def get_statistics(matrix, mask=None):
+def get_statistics(matrix, masktotal=None, mask=None):
     """Calculate different statistics of a detector image, such as sum, max,
     center of gravity, etc."""
-    x = np.arange(matrix.shape[0])
-    y = np.arange(matrix.shape[1])
-    total_sum = matrix.sum()
-    total_max = matrix.max()
-    total_beamx = (matrix * x[:, np.newaxis]).sum() / total_sum
-    total_beamy = (matrix * y[np.newaxis, :]).sum() / total_sum
-    total_sigmax = (
-        (matrix * (x[:, np.newaxis] - total_beamx)**2).sum() /
-        total_sum)**0.5
-    total_sigmay = (
-        (matrix * (y[np.newaxis, :] - total_beamy)**2).sum() /
-        total_sum)**0.5
-    total_sigma = (total_sigmax**2 + total_sigmay**2)**0.5
     if mask is None:
         mask = 1
-    masked_sum = (matrix * mask).sum()
-    masked_max = (matrix * mask).max()
-    masked_beamx = (matrix * mask * x[:, np.newaxis]).sum() / masked_sum
-    masked_beamy = (matrix * mask * y[np.newaxis, :]).sum() / masked_sum
-    masked_sigmax = (
-        (matrix * mask * (x[:, np.newaxis] - masked_beamx)**2).sum() /
-        masked_sum)**0.5
-    masked_sigmay = (
-        (matrix * mask * (y[np.newaxis, :] - masked_beamy)**2).sum() /
-        masked_sum)**0.5
-    masked_sigma = (masked_sigmax**2 + masked_sigmay**2)**0.5
-    return {'total_sum': total_sum, 'sum': masked_sum,
-            'total_max': total_max, 'max': masked_max,
-            'total_beamx': total_beamx, 'beamx': masked_beamx,
-            'total_beamy': total_beamy, 'beamy': masked_beamy,
-            'total_sigmax': total_sigmax, 'sigmax': masked_sigmax,
-            'total_sigmay': total_sigmay, 'sigmay': masked_sigmay,
-            'total_sigma': total_sigma, 'sigma': masked_sigma}
+    if masktotal is None:
+        masktotal = 1
+    result = {}
+    matrixorig = matrix
+    for prefix, mask in [('total_', masktotal), ('', mask)]:
+        matrix = matrixorig * mask
+        x = np.arange(matrix.shape[0])
+        y = np.arange(matrix.shape[1])
+        result[prefix + 'sum'] = (matrix).sum()
+        result[prefix + 'max'] = (matrix).max()
+        result[prefix + 'beamx'] = (matrix * x[:, np.newaxis]).sum() / result[prefix + 'sum']
+        result[prefix + 'beamy'] = (matrix * y[np.newaxis, :]).sum() / result[prefix + 'sum']
+        result[prefix + 'sigmax'] = (
+                                        (matrix * (x[:, np.newaxis] - result[prefix + 'beamx']) ** 2).sum() /
+                                        result[prefix + 'sum']) ** 0.5
+        result[prefix + 'sigmay'] = (
+                                        (matrix * (y[np.newaxis, :] - result[prefix + 'beamy']) ** 2).sum() /
+                                        result[prefix + 'sum']) ** 0.5
+        result[prefix + 'sigma'] = (result[prefix + 'sigmax'] ** 2 + result[prefix + 'sigmay'] ** 2) ** 0.5
+    return result
 
 
 class ExposureAnalyzer(Service):
@@ -108,9 +100,23 @@ class ExposureAnalyzer(Service):
                         # could not load mask file
                         self._queue_to_frontend.put_nowait(
                             ((prefix, fsn), 'error', (exc, traceback.format_exc())))
+                if not hasattr(self, '_scanmasktotal'):
+                    try:
+                        filename = self._config['scan']['mask_total']
+                        if not os.path.isabs(filename):
+                            filename = find_in_subfolders(self._config['path']['directories']['mask'],
+                                                          self._config['scan']['mask_total'])
+                        m = loadmat(filename)
+                        self._scanmasktotal = m[
+                            [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
+                        self._scanmasktotal = self._scanmasktotal == 1
+                    except (IOError, OSError, IndexError) as exc:
+                        # could not load mask file
+                        self._queue_to_frontend.put_nowait(
+                            ((prefix, fsn), 'error', (exc, traceback.format_exc())))
 
                 # scan point, we have to calculate something.
-                stat = get_statistics(cbfdata, self._scanmask)
+                stat = get_statistics(cbfdata, self._scanmasktotal, self._scanmask)
                 stat['FSN'] = fsn
                 resultlist = tuple([args]+[stat[k]
                                     for k in self._config['scan']['columns']])

@@ -1,3 +1,9 @@
+import traceback
+import json
+import os
+import logging
+import multiprocessing
+
 from ..devices.detector import Pilatus
 from ..devices.xray_source import GeniX
 from ..devices.motor import TMCM351, TMCM6110
@@ -5,11 +11,7 @@ from ..devices.vacuumgauge import TPG201
 from ..devices.device import DeviceError
 from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore
 from .motor import Motor
-import traceback
-import json
-import os
-import logging
-import multiprocessing
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -156,6 +158,7 @@ class Instrument(GObject.GObject):
         self.config['services'] = {
             'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {}}
         self.config['scan'] = {'mask': 'mask.mat',
+                               'mask_total': 'mask.mat',
                                'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx', 'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay', 'total_sigma', 'sigma'],
                                'scanfile':'credoscan2.spec'}
         self.config['transmission'] = {}

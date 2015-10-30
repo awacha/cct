@@ -1,5 +1,7 @@
-from gi.repository import GObject
 import logging
+
+from gi.repository import GObject
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -32,10 +34,7 @@ class Motor(GObject.GObject):
             return  # message cannot be split: not for us
         if index != self._index:
             return  # message not for us
-        if variable == '_status' and newvalue=='Moving':
-            self._moving=True
-        if variable == '_status' and newvalue=='idle' and self._moving:
-            self._moving =False
+        if variable == '_status' and newvalue == 'idle':
             self.emit('stop', self.get_variable('targetpositionreached'))
         if variable == 'actualposition':
             self.emit('position-change', newvalue)

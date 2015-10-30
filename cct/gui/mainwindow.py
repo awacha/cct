@@ -18,7 +18,7 @@ from .setup.editconfig import EditConfig
 from .setup.sampleedit import SampleEdit
 from .setup.definegeometry import DefineGeometry
 from .measurement.singleexposure import SingleExposure
-from .core.plotimage import PlotImage
+from .core.plotimage import PlotImageWindow
 from .measurement.script import ScriptMeasurement
 from .core.scangraph import ScanGraph
 
@@ -218,7 +218,8 @@ class MainWindow(object):
         beampos_colidx = 120
         m = ((colidx - beampos_colidx) ** 2 + (rowidx - beampos_rowidx) ** 2) ** 0.5 + m
         mask = (rowidx > 100) & (rowidx < 150) & (colidx > 20) & (colidx < 40)
-        pi = PlotImage(image=m, mask=mask, pixelsize=0.172, beampos=(beampos_rowidx, beampos_colidx), wavelength=0.1542,
+        pi = PlotImageWindow(image=m, mask=mask, pixelsize=0.172, beampos=(beampos_rowidx, beampos_colidx),
+                             wavelength=0.1542,
                        distance=1500)
         return False
 
