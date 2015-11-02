@@ -14,15 +14,15 @@ from ..core.instrument.instrument import Instrument
 from .measurement.scan import Scan
 from .devices.motors import Motors
 from .devices.genix import GeniX
+from .devices.tpg201 import TPG201
 from .setup.editconfig import EditConfig
 from .setup.sampleedit import SampleEdit
 from .setup.definegeometry import DefineGeometry
 from .measurement.singleexposure import SingleExposure
 from .core.plotimage import PlotImageWindow
 from .measurement.script import ScriptMeasurement
-from .core.scangraph import ScanGraph
+from .core.plotcurve import PlotCurveWindow
 
-import sastool
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -178,9 +178,11 @@ class MainWindow(object):
         return False
 
     def on_menu_setup_calibration_beamcenter(self, menuitem):
+        # ToDo
         return False
 
     def on_menu_setup_calibration_sampletodetectordistance(self, menuitem):
+        #ToDo
         return False
 
     def on_menu_devices_xraysource(self, menuitem):
@@ -188,6 +190,7 @@ class MainWindow(object):
         return False
 
     def on_menu_devices_detector(self, menuitem):
+        #ToDo
         return False
 
     def on_menu_devices_motors(self, menuitem):
@@ -195,12 +198,18 @@ class MainWindow(object):
         return False
 
     def on_menu_devices_vacuumgauge(self, menuitem):
+        self.construct_and_run_dialog(TPG201, 'vacgauge', 'devices_tpg201.glade')
         return False
 
     def on_menu_devices_temperaturestage(self, menuitem):
-        scanstore=sastool.classes.SASScanStore('/home/labuser/credo_data/current/scan/credoscan.spec')
-        scan=scanstore.get_scan(1000)
-        sg=ScanGraph(scan.columns(), scan.data)
+        x = np.linspace(0.001, 1, 1000)
+        dx = x / 100
+        y = (1 / x ** 3 * (np.sin(x * 20) - x * 20 * np.cos(x * 20))) ** 2
+        x = x + np.random.randn(len(x)) * dx
+        dy = y / 100
+        y = y + np.random.randn(len(y)) * dy
+        pc = PlotCurveWindow()
+        pc.addcurve(x, y, dx, dy, 'test curve', 'q', 0.172, 1000, 0.15142)
         return False
 
     def on_menu_measurement_scan(self, menuitem):

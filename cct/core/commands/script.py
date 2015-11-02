@@ -1,7 +1,10 @@
-from .command import Command, CommandError, CommandTimeoutError, cleanup_commandline
-from .jump import JumpException, GotoException, GosubException, ReturnException
 import traceback
+
 from gi.repository import GObject, GLib
+
+from .command import Command, CommandError, cleanup_commandline
+from .jump import JumpException, GotoException, GosubException, ReturnException
+
 
 class ScriptEndException(JumpException):
     pass
@@ -47,6 +50,9 @@ class Script(Command):
         GLib.idle_add(self.nextcommand)
 
     def nextcommand(self):
+        if hasattr(self, '_kill'):
+            self.emit('return', 'Killed')
+            return False
         self._cursor+=1
         try:
             commandline=self._script[self._cursor]
@@ -113,6 +119,9 @@ class Script(Command):
             if line.split()[0].startswith('@'+labelname):
                 return i
         raise ScriptError('Unknown label in script: %s'%labelname)
+
+    def kill(self):
+        self._myinterpreter.kill()
 
 class End(Command):
     """End a script and return a value.

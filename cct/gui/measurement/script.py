@@ -1,7 +1,8 @@
-from ..core.toolwindow import ToolWindow, question_message, error_message, info_message
 from gi.repository import GtkSource, Gdk, Gtk
-from ...core.commands.script import Script
 import pkg_resources
+
+from ..core.toolwindow import ToolWindow, question_message, error_message, info_message
+from ...core.commands.script import Script
 
 language_def_path = pkg_resources.resource_filename(
     'cct', 'resource/language-specs')
@@ -87,13 +88,15 @@ class ScriptMeasurement(ToolWindow):
         self._sourcebuffer.redo()
 
     def on_toolbutton_cut(self, toolbutton):
-        self._sourcebuffer.copy_clipboard(Gtk.Clipboard.get_default())
+        self._sourcebuffer.copy_clipboard(Gtk.Clipboard.get_default(Gdk.Display.get_default()))
 
     def on_toolbutton_copy(self, toolbutton):
-        self._sourcebuffer.cut_clipboard(Gtk.Clipboard.get_default(), self._inhibit_close_reason is not None)
+        self._sourcebuffer.cut_clipboard(Gtk.Clipboard.get_default(Gdk.Display.get_default()),
+                                         self._inhibit_close_reason is not None)
 
     def on_toolbutton_paste(self, toolbutton):
-        self._sourcebuffer.paste_clipboard(Gtk.Clipboard.get_default(), self._inhibit_close_reason is not None)
+        self._sourcebuffer.paste_clipboard(Gtk.Clipboard.get_default(Gdk.Display.get_default()),
+                                           self._inhibit_close_reason is not None)
 
     def on_toolbutton_execute(self, toolbutton):
         self._scriptcommand=Script(self._sourcebuffer.get_text(self._sourcebuffer.get_start_iter(),
@@ -124,6 +127,10 @@ class ScriptMeasurement(ToolWindow):
             self._instrument.interpreter.disconnect(c)
         del self._interpreter_connections
         self._builder.get_object('sourceview').set_editable(True)
+        self._sourcebuffer.remove_source_marks(
+            self._sourcebuffer.get_start_iter(), self._sourcebuffer.get_end_iter(), 'Executing')
+        self._builder.get_object('progressbar').set_text('')
+        self._builder.get_object('progressbar').set_fraction(0)
         for c in self._scriptconnections:
             self._scriptcommand.disconnect(c)
         del self._scriptconnections

@@ -7,8 +7,6 @@ logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-# ToDo: shutter button activates when window mapped. This must be corrected immediately!
-
 class GeniX(ToolWindow):
     def _init_gui(self, *args):
         self._indicators={}
@@ -150,12 +148,10 @@ class GeniX(ToolWindow):
             if newvalue:
                 self._make_sensitive()
             else:
-                self._make_insensitive(None, [self._builder.get_object(b) for b in ['operations_buttonbox',
-                                                                                    'statusindicators',
-                                                                                    'errorindicators']])
+                self._make_insensitive(None, ['operations_buttonbox', 'statusindicators', 'errorindicators'])
         elif variablename=='xrays':
             self._indicators[variablename].set_value(['Off','On'][newvalue], [IndicatorState.ERROR,IndicatorState.OK][newvalue])
-            xraystate_toggle=self._builder.get_object('shutter_toggle')
+            xraystate_toggle = self._builder.get_object('xraystate_toggle')
             if xraystate_toggle.get_active()!=newvalue:
                 xraystate_toggle.set_active(newvalue)
             if not newvalue:

@@ -1,7 +1,10 @@
-from gi.repository import GObject, GLib
 import logging
+
+from gi.repository import GObject, GLib
+
 from .service import Service, ServiceError
 from ..commands.command import Command, cleanup_commandline
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -130,6 +133,7 @@ class Interpreter(Service):
 
     def kill(self):
         try:
+            logger.debug('Interpreter: killing currently running command %s' % self._command.name)
             self._command.kill()
         except AttributeError:
             pass

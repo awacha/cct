@@ -240,8 +240,24 @@ class PlotImageWidget(object):
 
 
 class PlotImageWindow(PlotImageWidget):
+    instancelist = []
     def __init__(self, **kwargs):
         PlotImageWidget.__init__(self, **kwargs)
         self._window = Gtk.Window()
         self._window.add(self._widget)
+        self._window.connect('destroy', self.on_destroy)
+        self._window.connect('focus-in-event', self.on_focus_in)
         self._window.show_all()
+        PlotImageWindow.instancelist.append(self)
+
+    def on_destroy(self, window):
+        PlotImageWindow.instancelist.remove(self)
+        return False
+
+    def on_focus_in(self, window, event):
+        PlotImageWindow.instancelist.remove(self)
+        PlotImageWindow.instancelist.append(self)
+
+    @classmethod
+    def get_latest_window(cls):
+        return cls.instancelist[-1]
