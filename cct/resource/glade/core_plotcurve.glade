@@ -124,6 +124,7 @@
                 <property name="can_focus">False</property>
                 <items>
                   <item translatable="yes">pixels</item>
+                  <item translatable="yes">detector radius</item>
                 </items>
               </object>
             </child>
