@@ -183,6 +183,9 @@ class TMCMcard(Device_TCP):
         elif variablename.startswith('drivererror$'):
             self._send(
                 self._construct_tmcl_command(6, 208, motor_or_bank, 0))
+        elif variablename.startswith('softleft$') or variablename.startswith('softright$'):
+            # these are pseudo-(device variables)
+            self._update_variable(variablename, self._properties[variablename], force=True)
         else:
             raise NotImplementedError(variablename)
 
