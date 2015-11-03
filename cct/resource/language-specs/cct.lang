@@ -23,6 +23,7 @@
     </context>
 
     <context id="keywords" style-ref="keyword">
+      <keyword>beamstop</keyword>
       <keyword>echo</keyword>
       <keyword>end</keyword>
       <keyword>expose</keyword>
@@ -37,9 +38,11 @@
       <keyword>moverel</keyword>
       <keyword>moveto</keyword>
       <keyword>return</keyword>
+      <keyword>sample</keyword>
       <keyword>saveconfig</keyword>
       <keyword>scan</keyword>
       <keyword>set</keyword>
+      <keyword>setvar</keyword>
       <keyword>shutter</keyword>
       <keyword>sleep</keyword>
       <keyword>stopexposure</keyword>
