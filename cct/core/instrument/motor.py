@@ -21,7 +21,6 @@ class Motor(GObject.GObject):
         GObject.GObject.__init__(self)
         self._controller = controller
         self._index = index
-        self._moving=False
         self._connection = [self._controller.connect(
             'variable-change', self.on_variable_change),
             self._controller.connect('error', self.on_error)]

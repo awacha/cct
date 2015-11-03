@@ -1,9 +1,9 @@
-import struct
-import multiprocessing
-import queue
 import logging
+import multiprocessing
 import os
+import queue
 import re
+import struct
 import time
 
 from .device import Device_TCP, DeviceError
@@ -597,6 +597,8 @@ class TMCMcard(Device_TCP):
                 # if an error happened above, we are not moving.
                 logger.debug('Exception while starting move: ' + str(exc))
                 self._moving = None
+                # force updates on _status: this will ensure that higher-level
+                # motor interfaces will issue stop signals
                 self._update_variable('_status', 'idle', force=True)
                 self._update_variable('_status$%d' % motor, 'idle', force=True)
                 self._busyflag.release()
