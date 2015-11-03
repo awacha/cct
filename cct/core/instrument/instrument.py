@@ -1,16 +1,16 @@
-import traceback
 import json
-import os
 import logging
 import multiprocessing
+import os
+import traceback
 
+from .motor import Motor
 from ..devices.detector import Pilatus
-from ..devices.xray_source import GeniX
+from ..devices.device import DeviceError
 from ..devices.motor import TMCM351, TMCM6110
 from ..devices.vacuumgauge import TPG201
-from ..devices.device import DeviceError
+from ..devices.xray_source import GeniX
 from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore
-from .motor import Motor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -30,8 +30,9 @@ class Instrument(GObject.GObject):
         'devices-ready': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
-    def __init__(self):
+    def __init__(self, clobber_config):
         GObject.GObject.__init__(self)
+        self._clobber_config = clobber_config
         self.devices = {}
         self.services = {}
         self.xray_source = None
@@ -161,7 +162,8 @@ class Instrument(GObject.GObject):
                                'mask_total': 'mask.mat',
                                'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx', 'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay', 'total_sigma', 'sigma'],
                                'scanfile':'credoscan2.spec'}
-        self.config['transmission'] = {}
+        self.config['transmission'] = {'empty_sample': 'Empty_Beam', 'nimages': 10, 'exptime': 0.5, 'mask': 'mask.mat'}
+        self.config['beamstop'] = {'in': (3, 3), 'out': (3, 10)}
 
     def save_state(self):
         """Save the current configuration (including that of all devices) to a
@@ -179,6 +181,9 @@ class Instrument(GObject.GObject):
         """Load the saved configuration file. This is only useful before
         connecting to devices, because status of the back-end process is
         not updated by Device._load_state()."""
+        if self._clobber_config:
+            logger.debug('Not loading config file: clobbering config requested.')
+            return
         try:
             with open(self.configfile, 'rt', encoding='utf-8') as f:
                 self.config = json.load(f)

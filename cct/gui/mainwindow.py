@@ -23,6 +23,11 @@ from .core.plotimage import PlotImageWindow
 from .measurement.script import ScriptMeasurement
 from .core.plotcurve import PlotCurveWindow
 
+itheme = Gtk.IconTheme.get_default()
+itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/scalable'))
+itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/256x256'))
+itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/64x64'))
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -59,7 +64,7 @@ class CCTApplication(Gtk.Application):
         # self.connect('startup', self.on_startup)
 
     def do_activate(self):
-        self._mw = MainWindow(self, self._online)
+        self._mw = MainWindow(self, self._online, self._newconfig)
         self.add_window(self._mw._window)
         self._mw._window.set_show_menubar(True)
         self._mw._window.show_all()
@@ -69,11 +74,11 @@ class CCTApplication(Gtk.Application):
         parser = argparse.ArgumentParser()
         parser.add_argument('--online', action='store_true', default=False,
                             help='Enable working on-line (you should give this if you want to do serious work)')
+        parser.add_argument('--newconfig', action='store_true', default=False,
+                            help='Clobber the config file. You probably don\'t need this, only in case you are running a new version of cct for the first time.')
         args = parser.parse_args()
-        if args.online:
-            self._online = True
-        else:
-            self._online = False
+        self._online = args.online
+        self._newconfig = args.newconfig
         self.do_activate()
         return 0
 
@@ -105,9 +110,10 @@ class DeviceStatusBar(Gtk.Box):
         return False
 
 class MainWindow(object):
-    def __init__(self, app, is_online):
+    def __init__(self, app, is_online, clobber_config):
         self._application = app
         self._online = is_online
+        self._clobber_config = clobber_config
         self._builder = Gtk.Builder.new_from_file(
             pkg_resources.resource_filename('cct', 'resource/glade/mainwindow.glade'))
         self._builder.set_application(app)
@@ -128,7 +134,7 @@ class MainWindow(object):
         self._logview = self._builder.get_object('logtext')
         self._statusbar = self._builder.get_object('statusbar')
         self._dialogs = {}
-        self._instrument = Instrument()
+        self._instrument = Instrument(self._clobber_config)
         if self._online:
             self._instrument.connect_devices()
         self._devicestatus=DeviceStatusBar(self._instrument)
@@ -162,6 +168,7 @@ class MainWindow(object):
 
     def on_menu_file_quit(self, menuitem):
         self._window.destroy()
+        self._instrument.save_state()
         self._application.quit()
 
 
