@@ -1,6 +1,8 @@
-from gi.repository import GLib
-from .command import Command
 import time
+
+from gi.repository import GLib
+
+from .command import Command
 
 
 class GetVariable(Command):
@@ -40,6 +42,54 @@ class GetVariable(Command):
             self._unrequire_device()
             self.emit('return', newvalue)
         return False
+
+
+class SetVariable(Command):
+    """Set the value of a device variable
+
+    Invocation: setvar(<device>, <variable>, <value>)
+
+    Arguments:
+        <device>: the name of the device
+        <variable>: the name of the variable
+        <value>: the new value
+
+    Remarks:
+        This command does not return until the change has been verified.
+        It returns the updated value of the device variable, which may be
+        slightly different from the requested one (quantization, hardware
+        limitations etc.)
+
+        Use with care! Setting wrong values (e.g. coil current limits for
+        motor controllers) may cause permanent hardware damage!
+    """
+    name = 'setvar'
+
+    timeout = 60
+
+    def execute(self, interpreter, arglist, instrument, namespace):
+        devicename = arglist[0]
+        variablename = arglist[1]
+        value = arglist[2]
+        self._require_device(instrument, devicename)
+        self._install_timeout_handler(self.timeout)
+        self._check_for_variable = value
+        try:
+            instrument.devices[devicename].set_variable(variablename, value)
+        except NotImplementedError:
+            # there are variables which cannot be queried
+            self._uninstall_timeout_handler()
+            self._unrequire_device(None)
+            GLib.idle_add(lambda dev=instrument.devices[devicename], var=variablename, val=instrument.devices[
+                devicename].get_variable(variablename): self.on_variable_change(dev, var, val) and False)
+
+    def on_variable_change(self, device, variable, newvalue):
+        if variable == self._check_for_variable:
+            self._uninstall_timeout_handler()
+            self._unrequire_device()
+            self.emit('return', newvalue)
+        return False
+
 
 
 class ListVariable(Command):
