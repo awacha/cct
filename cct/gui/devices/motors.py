@@ -2,7 +2,7 @@ import logging
 
 from gi.repository import Gtk, GLib
 
-from ..core.toolwindow import ToolWindow, error_message
+from ..core.toolwindow import ToolWindow, error_message, question_message
 from ...core.devices.device import DeviceError
 
 logger=logging.getLogger(__name__)
@@ -18,6 +18,7 @@ class Motors(ToolWindow):
             self._model.append((m, '%.3f'%lims[0], '%.3f'%lims[1], '%.3f'%mot.where(), '%.3f'%mot.speed(), mot.leftlimitswitch(),
                                 mot.rightlimitswitch(), '%d'%mot.load(), ', '.join(mot.decode_error_flags())))
             self._motorconnections.append((mot,mot.connect('variable-change', self.on_motor_variable_change, m)))
+            self._motorconnections.append((mot, mot.connect('stop', self.on_motor_stop, m)))
         self._view=self._builder.get_object('motortreeview')
         columns=[
             Gtk.TreeViewColumn('Motor name',Gtk.CellRendererText(), text=0),
@@ -33,6 +34,8 @@ class Motors(ToolWindow):
         for c in columns:
             c.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
             self._view.append_column(c)
+        self.on_samplelist_changed(self._instrument.samplestore)
+        self._check_beamstop_state()
 
     def on_motor_variable_change(self, motor, var, value, motorname):
         for row in self._model:
@@ -53,7 +56,111 @@ class Motors(ToolWindow):
                     row[7]='%d'%value
                 elif var=='drivererror':
                     row[8]=', '.join(motor.decode_error_flags(value))
+        if var == 'actualposition' and motorname in ['BeamStop_X', 'BeamStop_Y']:
+            self._check_beamstop_state()
         return False
+
+    def on_motor_stop(self, motor, targetreached, motorname):
+        if hasattr(self, '_movebeamstop'):
+            if motorname == 'BeamStop_X':
+                # moving the BeamStop_X just ended, move BeamStop_Y
+                ypos = self._instrument.config['beamstop'][self._movebeamstop][1]
+                GLib.idle_add(lambda yp=ypos: self._instrument.motors['BeamStop_Y'].moveto(yp) and False)
+            elif motorname == 'BeamStop_Y':
+                # moving motor BeamStopY is ended too, clean up.
+                del self._movebeamstop
+                self._make_sensitive()
+        if hasattr(self, '_movetosample'):
+            if motorname == 'Sample_X':
+                # moving Sample_X ended. Move Sample_Y
+                GLib.idle_add(lambda yp=self._movetosample.positiony.val: self._instrument.motors['Sample_Y'].moveto(
+                    yp) and False)
+            elif motorname == 'Sample_Y':
+                del self._movetosample
+                self._make_sensitive()
+
+    def _check_beamstop_state(self):
+        xpos = self._instrument.motors['BeamStop_X'].where()
+        ypos = self._instrument.motors['BeamStop_Y'].where()
+        if (abs(xpos - self._instrument.config['beamstop']['in'][0]) < 0.001 and
+                    abs(ypos - self._instrument.config['beamstop']['in'][1]) < 0.001):
+            self._builder.get_object('beamstopstatusimage').set_from_icon_name('beamstop-in', Gtk.IconSize.BUTTON)
+            self._builder.get_object('beamstopstatuslabel').set_label('Beamstop is in the beam')
+        elif (abs(xpos - self._instrument.config['beamstop']['out'][0]) < 0.001 and
+                      abs(ypos - self._instrument.config['beamstop']['out'][1]) < 0.001):
+            self._builder.get_object('beamstopstatusimage').set_from_icon_name('beamstop-out', Gtk.IconSize.BUTTON)
+            self._builder.get_object('beamstopstatuslabel').set_label('Beamstop is out of the beam')
+        else:
+            self._builder.get_object('beamstopstatusimage').set_from_icon_name('beamstop-inconsistent',
+                                                                               Gtk.IconSize.BUTTON)
+            self._builder.get_object('beamstopstatuslabel').set_label('Beamstop position inconsistent')
+
+    def on_calibratebeamstop_in(self, button):
+        xpos = self._instrument.motors['BeamStop_X'].where()
+        ypos = self._instrument.motors['BeamStop_Y'].where()
+        if question_message(self._window, 'Calibrate beamstop in position',
+                            'Do you really want to set the new "beamstop in" position to (%f, %f)?' % (xpos, ypos)):
+            self._instrument.config['beamstop']['in'] = (xpos, ypos)
+            self._check_beamstop_state()
+
+    def on_calibratebeamstop_out(self, button):
+        xpos = self._instrument.motors['BeamStop_X'].where()
+        ypos = self._instrument.motors['BeamStop_Y'].where()
+        if question_message(self._window, 'Calibrate beamstop out position',
+                            'Do you really want to set the new "beamstop out" position to (%f, %f)?' % (xpos, ypos)):
+            self._instrument.config['beamstop']['out'] = (xpos, ypos)
+            self._check_beamstop_state()
+
+    def on_movebeamstop_in(self, button):
+        self.movebeamstop(False)
+
+    def on_movebeamstop_out(self, button):
+        self.movebeamstop(True)
+
+    def movebeamstop(self, out):
+        assert (not hasattr(self, '_movebeamstop'))
+        try:
+            if out:
+                self._movebeamstop = 'out'
+                xpos, ypos = self._instrument.config['beamstop']['out']
+            else:
+                self._movebeamstop = 'in'
+                xpos, ypos = self._instrument.config['beamstop']['in']
+            self._make_insensitive('Beamstop is moving', ['highlevel_expander'])
+            self._instrument.motors['BeamStop_X'].moveto(xpos)
+        except Exception as exc:
+            self._make_sensitive()
+            error_message(self._window, 'Cannot start move', str(exc.args[0]))
+
+    def on_map(self, window):
+        self.on_unmap(window)
+        self._samplestore_connection = self._instrument.samplestore.connect('list-changed', self.on_samplelist_changed)
+
+    def on_unmap(self, window):
+        try:
+            self._instrument.samplestore.disconnect(self._samplestore_connection)
+            del self._samplestore_connection
+        except AttributeError:
+            pass
+
+    def on_samplelist_changed(self, samplestore):
+        sampleselector = self._builder.get_object('sampleselector')
+        lastselected = sampleselector.get_active_text()
+        if not lastselected:
+            lastselected = samplestore.get_active_name()
+        sampleselector.remove_all()
+        for i, s in enumerate(sorted(samplestore)):
+            sampleselector.append_text(s.title)
+            if s.title == lastselected:
+                sampleselector.set_active(i)
+
+    def on_moveto_sample(self, button):
+        assert (not hasattr(self, '_movetosample'))
+        self._movetosample = self._instrument.samplestore.get_sample(
+            self._builder.get_object('sampleselector').get_active_text())
+        self._make_insensitive('Moving sample', ['highlevel_expander'])
+        self._instrument.motors['Sample_X'].moveto(self._movetosample.positionx.val)
+
 
     def on_motorview_row_activate(self, motorview, path, column):
         self.on_move(None)

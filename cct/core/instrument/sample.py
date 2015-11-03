@@ -1,6 +1,7 @@
-from sastool.misc.errorvalue import ErrorValue
-import dateutil.parser
 import datetime
+
+import dateutil.parser
+from sastool.misc.errorvalue import ErrorValue
 
 VALID_CATEGORIES = ['calibration sample',
                     'normalization sample', 'sample', 'sample+can', 'can', 'none']
@@ -136,3 +137,21 @@ class Sample(object):
             if isinstance(self.__getattribute__(attr), ErrorValue):
                 hed[key + 'Error'] = self.__getattribute__(attr).err
         return hed
+
+    def __ge__(self, other):
+        return self.title >= other.title
+
+    def __eq__(self, other):
+        return self.title == other.title
+
+    def __gt__(self, other):
+        return self.title > other.title
+
+    def __lt__(self, other):
+        return self.title < other.title
+
+    def __le__(self, other):
+        return self.title <= other.title
+
+    def __ne__(self, other):
+        return self.title != other.title

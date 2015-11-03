@@ -8,12 +8,12 @@ Directories=256x256,scalable
 MinSize=1
 Size=256
 MaxSize=256
-Context=SAXSCtrl
+Context=cct
 Type=Scalable
 
 [scalable]
 MinSize=1
 MaxSize=512
-Context=SAXSCtrl
+Context=cct
 Type=Scalable
 

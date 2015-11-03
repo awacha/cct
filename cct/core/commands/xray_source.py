@@ -4,6 +4,9 @@ Created on Oct 15, 2015
 @author: labuser
 '''
 import weakref
+
+from gi.repository import GLib
+
 from .command import Command, CommandError
 
 
@@ -112,21 +115,25 @@ class Xray_Power(Command):
         if arglist[0] in ['down', 'off', 0, '0', '0W']:
             self._check_for_value = 'Power off'
             if xray_source.get_variable('_status') == 'Power off':
-                raise CommandError('Already off')
+                GLib.idle_add(lambda xrs=xray_source, val=self._check_for_value: self.on_variable_change(xrs, '_status',
+                                                                                                         val) and False)
             self._install_pulse_handler('Powering off', 1)
             xray_source.execute_command('poweroff')
         elif arglist[0] in ['standby', 'low', 9, '9', '9W']:
             self._check_for_value = 'Low power'
             if xray_source.get_variable('_status') == 'Low power':
-                raise CommandError('Already at low power')
+                GLib.idle_add(lambda xrs=xray_source, val=self._check_for_value: self.on_variable_change(xrs, '_status',
+                                                                                                         val) and False)
             self._install_pulse_handler('Going to low power', 1)
             xray_source.execute_command('standby')
         elif arglist[0] in ['full', 'high', 30, '30', '30W']:
             self._check_for_value = 'Full power'
             if xray_source.get_variable('_status') == 'Full power':
-                raise CommandError('Already at full power')
+                GLib.idle_add(lambda xrs=xray_source, val=self._check_for_value: self.on_variable_change(xrs, '_status',
+                                                                                                         val) and False)
             self._install_pulse_handler('Going to full power', 1)
             xray_source.execute_command('full_power')
+        xray_source.refresh_variable('_status')
 
 
 class Warmup(Command):

@@ -1,7 +1,8 @@
-from ..core.toolwindow import ToolWindow, question_message, error_message, info_message
-from gi.repository import GtkSource, Gdk, Gtk
-from ...core.commands.script import Script
 import pkg_resources
+from gi.repository import GtkSource, Gdk, Gtk, GObject
+
+from ..core.toolwindow import ToolWindow, question_message, error_message, info_message
+from ...core.commands.script import Script, Command
 
 language_def_path = pkg_resources.resource_filename(
     'cct', 'resource/language-specs')
@@ -87,13 +88,15 @@ class ScriptMeasurement(ToolWindow):
         self._sourcebuffer.redo()
 
     def on_toolbutton_cut(self, toolbutton):
-        self._sourcebuffer.copy_clipboard(Gtk.Clipboard.get_default())
+        self._sourcebuffer.copy_clipboard(Gtk.Clipboard.get_default(Gdk.Display.get_default()))
 
     def on_toolbutton_copy(self, toolbutton):
-        self._sourcebuffer.cut_clipboard(Gtk.Clipboard.get_default(), self._inhibit_close_reason is not None)
+        self._sourcebuffer.cut_clipboard(Gtk.Clipboard.get_default(Gdk.Display.get_default()),
+                                         self._inhibit_close_reason is not None)
 
     def on_toolbutton_paste(self, toolbutton):
-        self._sourcebuffer.paste_clipboard(Gtk.Clipboard.get_default(), self._inhibit_close_reason is not None)
+        self._sourcebuffer.paste_clipboard(Gtk.Clipboard.get_default(Gdk.Display.get_default()),
+                                           self._inhibit_close_reason is not None)
 
     def on_toolbutton_execute(self, toolbutton):
         self._scriptcommand=Script(self._sourcebuffer.get_text(self._sourcebuffer.get_start_iter(),
@@ -124,6 +127,10 @@ class ScriptMeasurement(ToolWindow):
             self._instrument.interpreter.disconnect(c)
         del self._interpreter_connections
         self._builder.get_object('sourceview').set_editable(True)
+        self._sourcebuffer.remove_source_marks(
+            self._sourcebuffer.get_start_iter(), self._sourcebuffer.get_end_iter(), 'Executing')
+        self._builder.get_object('progressbar').set_text('')
+        self._builder.get_object('progressbar').set_fraction(0)
         for c in self._scriptconnections:
             self._scriptcommand.disconnect(c)
         del self._scriptconnections
@@ -171,8 +178,36 @@ class ScriptMeasurement(ToolWindow):
         self._instrument.interpreter.kill()
 
     def on_toolbutton_help(self, toolbutton):
-        pass
+        if not hasattr(self, '_helpdialog'):
+            self._helpdialog = CommandHelpDialog('help_commandhelpbrowser.glade', 'commandhelpbrowser',
+                                                 self._instrument, self._application)
+            self._helpdialog.connect('insert', self.on_insert)
+        self._helpdialog._window.show_all()
+
+    def on_insert(self, helpdialog, text):
+        self._sourcebuffer.insert_at_cursor(text)
 
     def on_close(self, widget, event=None):
         self.confirm_save()
         ToolWindow.on_close(self, widget, event)
+
+
+class CommandHelpDialog(ToolWindow):
+    __gsignals__ = {'insert': (GObject.SignalFlags.RUN_FIRST, None, (str,))}
+
+    def _init_gui(self, *args):
+        model = self._builder.get_object('commandnames')
+        for command in sorted([c.name for c in Command.allcommands()]):
+            model.append((command,))
+        tc = Gtk.TreeViewColumn('Command', Gtk.CellRendererText(), text=0)
+        self._builder.get_object('commandsview').append_column(tc)
+        self._builder.get_object('commandsview').get_selection().select_iter(model.get_iter_first())
+
+    def on_command_selected(self, treeviewselection):
+        model, it = treeviewselection.get_selected()
+        buf = self._builder.get_object('helptextbuffer')
+        buf.set_text([c.__doc__ for c in Command.allcommands() if c.name == model[it][0]][0])
+
+    def on_insert(self, button):
+        model, it = self._builder.get_object('commandsview').get_selection().get_selected()
+        self.emit('insert', model[it][0] + '()')

@@ -1,7 +1,9 @@
-from gi.repository import Gtk
-import pkg_resources
-import weakref
 import logging
+import weakref
+
+import pkg_resources
+from gi.repository import Gtk, GObject
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -34,8 +36,9 @@ def info_message(parentwindow, info, detail=None):
     return result
 
 
-class ToolWindow(object):
+class ToolWindow(GObject.GObject):
     def __init__(self, gladefile, toplevelname, instrument, application, *args):
+        GObject.GObject.__init__(self)
         self._toplevelname=toplevelname
         self._hide_on_close=True
         self._application=application

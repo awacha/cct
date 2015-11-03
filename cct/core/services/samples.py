@@ -1,10 +1,13 @@
+import logging
+import os
+
+import dateutil.parser
+from gi.repository import GObject
+from sastool.misc.errorvalue import ErrorValue
+
 from .service import Service, ServiceError
 from ..instrument.sample import Sample
-from sastool.misc.errorvalue import ErrorValue
-import dateutil.parser
-import os
-from gi.repository import GObject
-import logging
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -132,3 +135,6 @@ class SampleStore(Service):
     def set_sample(self, title, sample):
         self._list=sorted([s for s in self._list if s.title !=title]+[sample], key=lambda x:x.title)
         self.emit('list-changed')
+
+    def __contains__(self, item):
+        return bool([s for s in self._list if s.title == item])

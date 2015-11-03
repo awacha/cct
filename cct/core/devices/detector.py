@@ -1,12 +1,17 @@
-from .device import Device_TCP, DeviceError, CommunicationError
 import logging
 import traceback
-import dateutil.parser
 import multiprocessing
 import queue
 import re
+
+import dateutil.parser
+
+from .device import Device_TCP, DeviceError, CommunicationError
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+# ToDo: killing exposure not working for multiple exposures
 
 RE_FLOAT = br"[+-]?(\d+)*\.?\d+([eE][+-]?\d+)?"
 RE_DATE = br"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+"
@@ -72,6 +77,7 @@ pilatus_replies = [(15, br'Rate correction is on; tau = (?P<tau>' + RE_FLOAT +
                    (-1, b'/tmp/setthreshold.cmd'),
                    (-1, br'(?P<filename>/home/det/p2_det/images/.*)'),
                    (-1, br'(?P<filename>/disk2/images/.*)'),
+                   (15, br''),
                    ]
 
 pilatus_replies_compiled = {}
@@ -88,6 +94,7 @@ class Pilatus(Device_TCP):
     def __init__(self, *args, **kwargs):
         Device_TCP.__init__(self, *args, **kwargs)
         self._sendqueue = multiprocessing.Queue()
+        self._expected_status = 'idle'
 
     def _query_variable(self, variablename):
         if variablename is None:
@@ -129,13 +136,18 @@ class Pilatus(Device_TCP):
             origmessage = message
             #logger.debug('Pilatus message received: %s' % str(message))
             try:
-                idnum, status, message = message.split(b' ', 2)
+                if message.count(b' ') < 2:
+                    idnum, status = message.split(b' ')
+                    status = status[:-1]  # cut the b'\x18' from the end
+                    message = b'\x18'
+                else:
+                    idnum, status, message = message.split(b' ', 2)
                 idnum = int(idnum)
             except ValueError:
                 # recover. SetThreshold is known to send b'/tmp/setthreshold.cmd'
                 # upon completion.
                 idnum = -1
-                status = 'OK'
+                status = b'OK'
                 if not message.endswith(b'\x18'):
                     message = message + b'\x18'
             message = message.strip()
@@ -149,12 +161,17 @@ class Pilatus(Device_TCP):
                     self._process_incoming_message(m.strip() + b'\x18')
                 return
             if status != b'OK':
-                self._queue_to_frontend.put_nowait(
-                    ('_error', message.decode('utf-8')))
+                try:
+                    raise DeviceError('Status of message is not "OK", but "%s": %s' % (
+                    status.decode('utf-8'), origmessage.decode('utf-8')))
+                except DeviceError as exc:
+                    self._queue_to_frontend.put_nowait(
+                        ('_error', (exc, traceback.format_exc())))
 
             # handle special cases
             if message == b'/tmp/setthreshold.cmd':
                 # a new threshold has been set, update the variables
+                self._update_variable('_status', 'idle')
                 self._send(b'SetThreshold\n')
             else:
                 if idnum not in pilatus_replies_compiled:
@@ -168,6 +185,11 @@ class Pilatus(Device_TCP):
                         self._queue_to_frontend.put_nowait(
                             ('_error', (exc, traceback.format_exc())))
                         return
+                if idnum == 7 and status == b'OK':
+                    # exposing finished, we can release the watchdog
+                    self._release_watchdog()
+                if idnum == 15 and message.startswith(b'Starting'):
+                    self._update_variable('_status', self._expected_status)
                 for r in pilatus_replies_compiled[idnum]:
                     m = r.match(message.strip())
                     if m is None:
@@ -190,7 +212,7 @@ class Pilatus(Device_TCP):
                         except:
                             raise DeviceError('Error updating variable %s' % k)
                     return
-                raise DeviceError('Cannot decode message: %d %s %s' %
+                raise DeviceError('Cannot decode message: "%d" "%s" "%s"' %
                                   (idnum, status, message))
         finally:
             try:
@@ -217,18 +239,23 @@ class Pilatus(Device_TCP):
                 raise DeviceError('Cannot start exposure when not idle')
             self._send(b'Exposure ' + arguments[0] + b'\n')
             if self.get_variable('nimages') == 1:
+                self._expected_status = 'exposing'
                 self._update_variable('_status', 'exposing')
+                self._suppress_watchdog()
             else:
+                self._expected_status = 'exposing multi'
                 self._update_variable('_status', 'exposing multi')
+                self._suppress_watchdog()
         elif commandname == 'kill':
             if self.get_variable('_status') == 'exposing':
                 logger.debug('Killing single exposure')
-                self._send(b'resetcam\n')
+                self._send(b'K\nresetcam\n')
             elif self.get_variable('_status') == 'exposing multi':
-                self._send(b'K\n')
+                self._send(b'K\nresetcam\n')
                 logger.debug('Killing multiple exposure')
             else:
                 raise DeviceError('No running exposures to be killed')
+            self._release_watchdog()
         elif commandname == 'resetcam':
             self._send(b'resetcam\n')
         else:

@@ -1,4 +1,6 @@
-from ..core.toolwindow import ToolWindow, error_message
+from ..core.toolwindow import ToolWindow
+from ...core.commands.detector import Expose, ExposeMulti
+
 
 class SingleExposure(ToolWindow):
     def _init_gui(self, *args):
@@ -51,6 +53,11 @@ class SingleExposure(ToolWindow):
 
             button.set_label('Stop')
             self._make_insensitive('Exposure is running', ['entrygrid', 'close_button'])
+            if nimages == 1:
+                self._instrument.interpreter.execute_command(Expose(), (exptime, prefix))
+            else:
+                self._instrument.interpreter.execute_command(ExposeMulti(), (exptime, nimages, prefix, expdelay))
+
         else:
             button.set_label('Start')
             self._builder.get_object('progressframe').set_visible(False)

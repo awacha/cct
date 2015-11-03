@@ -1,9 +1,13 @@
-from .command import Command
-from gi.repository import GLib
-import time
 import datetime
-import weakref
+import os
+import logging
 
+from gi.repository import GLib
+
+from .command import Command
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class Trim(Command):
     """Trim the Pilatus detector
@@ -103,7 +107,11 @@ class Expose(Command):
             self._otherarg = arglist[2]
         except IndexError:
             self._otherarg=None
-        assert(instrument.detector.get_variable('nimages') == 1)
+        try:
+            assert (instrument.detector.get_variable('nimages') == 1)
+        except AssertionError:
+            instrument.detector.set_variable('nimages', 1)
+        self._require_device(instrument, 'pilatus')
         self._fsn = instrument.filesequence.get_nextfreefsn(self._prefix)
         self._filename = self._prefix + '_' + \
             ('%%0%dd' %
@@ -113,16 +121,12 @@ class Expose(Command):
         self.timeout = exptime + 3
         self._progresshandler = GLib.timeout_add(500,
                                                  lambda d=instrument.detector: self._progress(d))
-        self._require_device(instrument, 'pilatus')
         self._check_for_variable = '_status'
         self._check_for_value = 'idle'
         self._install_timeout_handler(self.timeout)
         self._instrument = instrument
         self._file_received=False
         self._detector_idle=False
-        instrument.detector.expose(self._filename)
-        self._alt_starttime = datetime.datetime.now()
-        instrument.detector.refresh_variable('_status')
 
     def _progress(self, detector):
         if not hasattr(self, '_starttime'):
@@ -138,15 +142,19 @@ class Expose(Command):
         return True
 
     def on_variable_change(self, device, variablename, newvalue):
-        if variablename == 'filename':
+        if variablename == 'exptime':
+            device.expose(self._filename)
+            self._alt_starttime = datetime.datetime.now()
+        elif variablename == 'filename':
             if not hasattr(self, '_starttime'):
                 self._starttime = self._alt_starttime
+
             GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime, oa=self._otherarg:
                           self._instrument.filesequence.new_exposure(fsn, fn, prf, st,oa) and False)
             self._file_received=True
-        if variablename=='_status' and newvalue=='idle':
+        elif variablename == '_status' and newvalue == 'idle':
             self._detector_idle=True
-        if self._detector_idle and self._file_received:
+        if self._detector_idle and (self._file_received or hasattr(self, '_kill')):
             self._uninstall_timeout_handler()
             self._uninstall_pulse_handler()
             self._unrequire_device()
@@ -155,6 +163,7 @@ class Expose(Command):
         return True
 
     def kill(self):
+        self._kill = True
         self._instrument.detector.execute_command('kill')
 
 
@@ -201,24 +210,26 @@ class ExposeMulti(Command):
             self._otherarg=None
         assert(expdelay>0.003)
         instrument.detector.set_variable('nimages',nimages)
-        self._fsn = instrument.filesequence.get_nextfreefsn(prefix)
-        self._filename = prefix + '_' + \
-            ('%%0%dd' %
-             instrument.config['path']['fsndigits']) % self._fsn + '.cbf'
-        instrument.detector.set_variable('exptime', exptime)
+        self._require_device(instrument, 'pilatus')
+        self._fsns = list(instrument.filesequence.get_nextfreefsns(prefix, nimages))
+        self._prefix = prefix
+        self._filenames_pending = [prefix + '_' + ('%%0%dd' % instrument.config['path']['fsndigits']) % f + '.cbf'
+                                   for f in self._fsns]
+        self._expected_due_times = [exptime + i * (exptime + expdelay) for i in range(nimages)]
         self._exptime = exptime
+        self._nimages = nimages
+        self._totaltime = exptime * nimages + expdelay * (nimages - 1)
+        self.timeout = self._totaltime + 3
+
+        instrument.detector.set_variable('exptime', exptime)
         instrument.detector.set_variable('expperiod', exptime+expdelay)
-        self.timeout = exptime *nimages+expdelay*(nimages-1)+ 3
         self._progresshandler = GLib.timeout_add(500,
                                                  lambda d=instrument.detector: self._progress(d))
-        self._require_device(instrument, 'pilatus')
-        self._check_for_variable = '_status'
-        self._check_for_value = 'idle'
         self._install_timeout_handler(self.timeout)
         self._file_received=False
         self._detector_idle=False
-        instrument.detector.expose(self._filename)
-        instrument.detector.refresh_variable('_status')
+        self._imgpath = instrument.detector.get_variable('imgpath')
+        logger.info('Starting exposure of %d images. First: %s' % (nimages, self._filenames_pending[0]))
         self._instrument = instrument
 
     def _progress(self, detector):
@@ -227,29 +238,90 @@ class ExposeMulti(Command):
                 self._starttime = detector.get_variable('starttime')
             except KeyError:
                 return True
-        timeleft = self._exptime - \
-            (datetime.datetime.now() - self._starttime).total_seconds()
+        timeleft = self._totaltime - \
+                   (datetime.datetime.now() - self._starttime).total_seconds()
         # timeleft=detector.get_variable('timeleft')
-        self.emit('progress', 'Exposing to %s. Remaining time: %4.1f' % (
-            detector.get_variable('targetfile'), timeleft), 1 - timeleft / self._exptime)
+        self.emit('progress', 'Exposing %d images, %d remaining. Remaining time: %4.1f sec' % (self._nimages,
+                                                                                               len(
+                                                                                                   self._expected_due_times),
+                                                                                               timeleft),
+                  1 - timeleft / self._totaltime)
         return True
 
-    def on_variable_change(self, device, variablename, newvalue):
-        if variablename == 'filename':
-            if not hasattr(self, '_starttime'):
-                self._starttime = self._alt_starttime
-            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime, oa=self._otherarg:
-                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st, oa) and False)
+    def _filechecker(self):
+        logger.debug('Filechecker woke.')
+        if hasattr(self, '_kill'):
+            return False
+        try:
+            starttime = self._starttime
+        except AttributeError:
+            starttime = self._alt_starttime
+        # the time in seconds elapsed from issuing the "exposure" command.
+        elapsedtime = (datetime.datetime.now() - starttime).total_seconds()
+        # check the times when images are due
+        due_times = [dt for dt in self._expected_due_times if dt < elapsedtime]
+        while due_times:
+            # try to confirm the presence of all due images
+            due_files = [fn for fn, dt in zip(self._filenames_pending, self._expected_due_times) if dt < elapsedtime]
+            due_fsns = [fs for fs, dt in zip(self._fsns, self._expected_due_times) if dt < elapsedtime]
+            loaded_count = 0  # collect the number of successfully found images
+            for filename, fsn, dt in zip(due_files, due_fsns, due_times):
+                if self._instrument.filesequence.is_cbf_ready(filename):
+                    # if the file is present, let it be processed.
+                    logger.debug('We have %s' % filename)
+                    GLib.idle_add(
+                        lambda fs=fsn, fn=os.path.join(self._imgpath, filename), prf=self._prefix, st=starttime,
+                               oa=self._otherarg:
+                        self._instrument.filesequence.new_exposure(fs, fn, prf, st, oa) and False)
+                    self._filenames_pending.remove(filename)
+                    self._fsns.remove(fsn)
+                    self._expected_due_times.remove(dt)
+                    loaded_count += 1
+            if loaded_count != len(due_times):
+                # if not all files were loaded, re-queue ourselves for immediate running.
+                self._filechecker_handle = GLib.idle_add(self._filechecker)
+                return False
+            # time may have spent in the for-loop above, check if any images might have became available
+            elapsedtime = (datetime.datetime.now() - starttime).total_seconds()
+            due_times = [dt for dt in self._expected_due_times if dt < elapsedtime]
+        # no more files are expected just now
+        if self._filenames_pending:
+            # if we still have some files to wait for, re-queue us to the time when the next will be available.
+            elapsedtime = (datetime.datetime.now() - starttime).total_seconds()
+            self._filechecker_handle = GLib.timeout_add(1000 * (self._expected_due_times[0] - elapsedtime),
+                                                        self._filechecker)
+        else:
+            # all files received:
             self._file_received=True
-        if variablename=='_status' and newvalue=='idle':
+            self._try_to_end()
+        return False
+
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == 'exptime':
+            device.expose(self._filenames_pending[0])
+            self._alt_starttime = datetime.datetime.now()
+            self._filechecker_handle = GLib.timeout_add(self._exptime * 1000, self._filechecker)
+        elif variablename == 'starttime':
+            self._starttime = newvalue
+            logger.debug('start confirmation obtained')
+        elif variablename == '_status' and newvalue == 'idle':
             self._detector_idle=True
-        if self._file_received and self._detector_idle:
+        self._try_to_end()
+        return False
+
+    def _try_to_end(self):
+        if (self._file_received or hasattr(self, '_kill')) and self._detector_idle:
             self._uninstall_timeout_handler()
             self._uninstall_pulse_handler()
             self._unrequire_device()
             GLib.source_remove(self._progresshandler)
-            self.emit('return', newvalue)
-        return False
+            self.emit('return', None)
 
     def kill(self):
+        GLib.source_remove(self._filechecker_handle)
+        self._kill = True
         self._instrument.detector.execute_command('kill')
+
+    def on_error(self, device, propname, exc, tb):
+        self.kill()
+        return False

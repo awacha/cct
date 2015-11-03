@@ -1,10 +1,13 @@
 """Keep track of file sequence numbers and do other filesystem-related jobs"""
 import os
-from .service import Service
 import logging
 import datetime
 import time
+
 from sastool.misc.errorvalue import ErrorValue
+
+from .service import Service
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -153,6 +156,17 @@ class FileSequence(Service):
             if acquire:
                 self._nextfreefsn[prefix] += 1
 
+    def get_nextfreefsns(self, prefix, N, acquire=True):
+        assert (N > 0)
+        if prefix not in self._nextfreefsn:
+            self._nextfreefsn[prefix] = 1
+        try:
+            return range(self._nextfreefsn[prefix], self._nextfreefsn[prefix] + N)
+        finally:
+            if acquire:
+                self._nextfreefsn[prefix] += N
+
+
     def new_exposure(self, fsn, filename, prefix, startdate, args):
         """Called by various parts of the instrument if a new exposure file 
         has became available"""
@@ -234,3 +248,12 @@ class FileSequence(Service):
     def get_prefixes(self):
         """Return the known prefixes"""
         return list(self._lastfsn.keys())
+
+    def is_cbf_ready(self, filename):
+        imgdir = self.instrument.config['path']['directories']['images']
+        os.stat(self.instrument.config['path']['directories']['images'])
+        try:
+            os.stat(os.path.join(imgdir, filename))
+        except FileNotFoundError:
+            return False
+        return True

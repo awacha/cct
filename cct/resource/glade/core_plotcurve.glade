@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.19.0 -->
 <interface>
   <requires lib="gtk+" version="3.16"/>
-  <object class="GtkBox" id="box1">
+  <object class="GtkBox" id="plotcurve">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="orientation">vertical</property>
@@ -24,6 +24,20 @@
           </packing>
         </child>
         <child>
+          <object class="GtkToggleToolButton" id="legend_toggle">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="tooltip_text" translatable="yes">Show legend</property>
+            <property name="label" translatable="yes">Legend</property>
+            <property name="use_underline">True</property>
+            <signal name="toggled" handler="request_replot" swapped="no"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="homogeneous">True</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkMenuToolButton" id="plottype_menubutton">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -35,75 +49,102 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <object class="GtkMenuItem" id="loglog_type">
+                  <object class="GtkRadioMenuItem" id="loglog_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Double logarithmic</property>
                     <property name="use_underline">True</property>
+                    <property name="active">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkMenuItem" id="logx_type">
+                  <object class="GtkRadioMenuItem" id="logx_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Logarithmic X</property>
                     <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">loglog_type</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkMenuItem" id="logy_type">
+                  <object class="GtkRadioMenuItem" id="logy_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Logarithmic Y</property>
                     <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">loglog_type</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkMenuItem" id="linlin_type">
+                  <object class="GtkRadioMenuItem" id="linlin_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Double linear</property>
                     <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">loglog_type</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkMenuItem" id="guinier3d_type">
+                  <object class="GtkRadioMenuItem" id="guinier3d_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Guinier</property>
                     <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">loglog_type</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkMenuItem" id="guinier2d_type">
+                  <object class="GtkRadioMenuItem" id="guinier2d_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Guinier (cross-section)</property>
                     <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">loglog_type</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkMenuItem" id="guinier1d_type">
+                  <object class="GtkRadioMenuItem" id="guinier1d_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Guinier (thickness)</property>
                     <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">loglog_type</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkMenuItem" id="kratky_type">
+                  <object class="GtkRadioMenuItem" id="kratky_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Kratky</property>
                     <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">loglog_type</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkMenuItem" id="porod_type">
+                  <object class="GtkRadioMenuItem" id="porod_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Porod</property>
                     <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">loglog_type</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
                   </object>
                 </child>
               </object>
@@ -115,17 +156,119 @@
           </packing>
         </child>
         <child>
-          <object class="GtkToolItem" id="toolbutton1">
+          <object class="GtkMenuToolButton" id="xunits_menubutton">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <child>
-              <object class="GtkComboBoxText" id="xunits_combo">
+            <property name="tooltip_text" translatable="yes">X axis units</property>
+            <property name="label" translatable="yes">X units</property>
+            <property name="use_underline">True</property>
+            <child type="menu">
+              <object class="GtkMenu" id="menu2">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <items>
-                  <item translatable="yes">pixels</item>
-                  <item translatable="yes">detector radius</item>
-                </items>
+                <child>
+                  <object class="GtkRadioMenuItem" id="pixels_xunit">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Horizontal axis in pixel units</property>
+                    <property name="label" translatable="yes">Pixels</property>
+                    <property name="use_underline">True</property>
+                    <property name="active">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkRadioMenuItem" id="radius_xunit">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Detector radius on the horizontal axis</property>
+                    <property name="label" translatable="yes">Detector radius</property>
+                    <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">pixels_xunit</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkRadioMenuItem" id="twotheta_xunit">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Scattering angle on the x axis</property>
+                    <property name="label" translatable="yes">Two theta</property>
+                    <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">pixels_xunit</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkRadioMenuItem" id="q_xunit">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Momentum transfer (q) on the x axis</property>
+                    <property name="label" translatable="yes">Momentum transfer</property>
+                    <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">pixels_xunit</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="homogeneous">True</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkMenuToolButton" id="yunits_menubutton">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="tooltip_text" translatable="yes">Set the units on the vertical axis</property>
+            <property name="label" translatable="yes">Y units</property>
+            <property name="use_underline">True</property>
+            <child type="menu">
+              <object class="GtkMenu" id="menu3">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkRadioMenuItem" id="arbunits_yunit">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Arbitrary units, i.e. cps, etc.</property>
+                    <property name="label" translatable="yes">Arbitrary units</property>
+                    <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkRadioMenuItem" id="dsigmadomega_yunit">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Volume-normalized differential scattering cross-section</property>
+                    <property name="label" translatable="yes">cm-1 * sr-1</property>
+                    <property name="use_underline">True</property>
+                    <property name="active">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">arbunits_yunit</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkRadioMenuItem" id="dsigmadomegathickness_yunit">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Differential scattering cross-section times thickness</property>
+                    <property name="label" translatable="yes">sr-1</property>
+                    <property name="use_underline">True</property>
+                    <property name="draw_as_radio">True</property>
+                    <property name="group">arbunits_yunit</property>
+                    <signal name="toggled" handler="request_replot" swapped="no"/>
+                  </object>
+                </child>
               </object>
             </child>
           </object>

@@ -1,16 +1,16 @@
-import multiprocessing
-import queue
-import os
-import traceback
 import logging
+import multiprocessing
+import os
+import queue
+import traceback
 
-from scipy.io import loadmat
+import numpy as np
 from gi.repository import GLib, GObject
 from sastool.io.twodim import readcbf
-import numpy as np
+from scipy.io import loadmat
 
-from .service import Service
 from .filesequence import find_in_subfolders
+from .service import Service
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -57,8 +57,8 @@ class ExposureAnalyzer(Service):
         'error': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object, str)),
         'scanpoint': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object)),
         'datareduction-done': (GObject.SignalFlags.RUN_FIRST, None, (str, int)),
+        'transmdata': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object)),
         'idle': (GObject.SignalFlags.RUN_FIRST, None, ()),
-
     }
 
     def __init__(self, *args, **kwargs):
@@ -75,10 +75,30 @@ class ExposureAnalyzer(Service):
         self._backendprocess.start()
         self._working=0
 
+    def get_mask(self, maskname):
+        if not hasattr(self, '_masks'):
+            self._masks = {}
+        try:
+            return self._masks[maskname]
+        except KeyError:
+            if not os.path.isabs(maskname):
+                filename = find_in_subfolders(self._config['path']['directories']['mask'],
+                                              maskname)
+            else:
+                filename = maskname
+            m = loadmat(filename)
+            self._masks[maskname] = m[
+                [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
+            return self._masks[maskname]
+
+
+
+
     def _backgroundworker(self):
         while True:
             prefix, fsn, filename, args = self._queue_to_backend.get()
-            logger.debug('Exposureanalyzer bacground process got work: %s, %d, %s, %s'%(prefix,fsn,filename,str(args)))
+            logger.debug(
+                'Exposureanalyzer background process got work: %s, %d, %s, %s' % (prefix, fsn, filename, str(args)))
             cbfdata = readcbf(
                 os.path.join(self._config['path']['directories']['images'], filename))[0]
             if prefix == 'exit':
@@ -86,37 +106,26 @@ class ExposureAnalyzer(Service):
             elif prefix == self._config['path']['prefixes']['crd']:
                 # data reduction needed
                 pass
+            elif prefix == self._config['path']['prefixes']['tra']:
+                # transmission measurement
+                try:
+                    transmmask = self.get_mask(self._config['transmission']['mask'])
+                except (IOError, OSError, IndexError) as exc:
+                    # could not load a mask file
+                    self._queue_to_frontend.put_nowait(
+                        ((prefix, fsn), 'error', (exc, traceback.format_exc())))
+                self._queue_to_frontend.put_nowait((prefix, fsn), 'transmdata', ((cbfdata * transmmask).sum(), args))
             elif prefix == self._config['path']['prefixes']['scn']:
-                if not hasattr(self, '_scanmask'):
-                    try:
-                        filename=self._config['scan']['mask']
-                        if not os.path.isabs(filename):
-                            filename=find_in_subfolders(self._config['path']['directories']['mask'],
-                                    self._config['scan']['mask'])
-                        m = loadmat(filename)
-                        self._scanmask = m[
-                            [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
-                    except (IOError, OSError, IndexError) as exc:
-                        # could not load mask file
-                        self._queue_to_frontend.put_nowait(
-                            ((prefix, fsn), 'error', (exc, traceback.format_exc())))
-                if not hasattr(self, '_scanmasktotal'):
-                    try:
-                        filename = self._config['scan']['mask_total']
-                        if not os.path.isabs(filename):
-                            filename = find_in_subfolders(self._config['path']['directories']['mask'],
-                                                          self._config['scan']['mask_total'])
-                        m = loadmat(filename)
-                        self._scanmasktotal = m[
-                            [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
-                        self._scanmasktotal = self._scanmasktotal == 1
-                    except (IOError, OSError, IndexError) as exc:
-                        # could not load mask file
-                        self._queue_to_frontend.put_nowait(
-                            ((prefix, fsn), 'error', (exc, traceback.format_exc())))
+                try:
+                    scanmask = self.get_mask(self._config['scan']['mask'])
+                    scanmasktotal = self.get_mask(self._config['scan']['mask_total'])
+                except (IOError, OSError, IndexError) as exc:
+                    # could not load a mask file
+                    self._queue_to_frontend.put_nowait(
+                        ((prefix, fsn), 'error', (exc, traceback.format_exc())))
 
                 # scan point, we have to calculate something.
-                stat = get_statistics(cbfdata, self._scanmasktotal, self._scanmask)
+                stat = get_statistics(cbfdata, scanmasktotal, scanmask)
                 stat['FSN'] = fsn
                 resultlist = tuple([args]+[stat[k]
                                     for k in self._config['scan']['columns']])
@@ -137,6 +146,8 @@ class ExposureAnalyzer(Service):
             self.emit('scanpoint', prefix_fsn[0], prefix_fsn[1], arguments)
         elif what == 'datareduction':
             self.emit('datareduction-done', prefix_fsn[0], prefix_fsn[1])
+        elif what == 'transmdata':
+            self.emit('transmdata', prefix_fsn[0], prefix_fsn[1], arguments)
         if self._working==0:
             self.emit('idle')
         return True

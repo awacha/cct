@@ -200,6 +200,17 @@ class Device(GObject.GObject):
         """
         self._queue_to_backend.put_nowait(('execute', command, args))
 
+    def _suppress_watchdog(self):
+        """Suppresses checking for device inactivity. Some devices can
+        become intentionally inactive for a long time, e.g. Pilatus
+        when exposing multiple frames."""
+        self._watchdog_alive = False
+
+    def _release_watchdog(self):
+        """Resumes checking for device inactivity"""
+        self._watchdogtime = time.time()
+        self._watchdog_alive = True
+
     def _background_worker(self):
         """Worker function of the background thread. The main job of this is
         to run periodic checks on the hardware (polling) and updating 
@@ -216,6 +227,7 @@ class Device(GObject.GObject):
         """
         self._query_variable(None)
         self._watchdogtime = time.time()
+        self._watchdog_alive = True
         juststarted = True
         while True:
             try:
@@ -227,7 +239,7 @@ class Device(GObject.GObject):
                         self._queue_to_frontend.put_nowait(('_startup_done', None))
                         self._on_startupdone()
                         juststarted = False
-                if time.time() - self._watchdogtime > self.watchdog_timeout:
+                if (time.time() - self._watchdogtime > self.watchdog_timeout) and self._watchdog_alive:
                     try:
                         logger.error(
                             'Watchdog timeout in device %s' % self._instancename)
@@ -237,8 +249,9 @@ class Device(GObject.GObject):
                         self._queue_to_frontend.put_nowait(
                             ('_error', (exc, traceback.format_exc())))
                     continue
-                self._query_variable(None)  # query all variables.
-                self._log()  # log the values of variables
+                if self._watchdog_alive:
+                    self._query_variable(None)  # query all variables.
+                    self._log()  # log the values of variables
                 continue
             if cmd == 'exit':
                 break  # the while True loop
@@ -266,7 +279,7 @@ class Device(GObject.GObject):
                         self._queue_to_frontend.put_nowait(
                             (exc.args[1], (exc, traceback.format_exc())))
                     else:
-                        self._queue_to_fromtend.put_nowait(('_error', (exc, traceback.format_exc())))
+                        self._queue_to_frontend.put_nowait(('_error', (exc, traceback.format_exc())))
                 except Exception as exc:
                     self._queue_to_frontend.put_nowait(
                         ('_error', (exc, traceback.format_exc())))
