@@ -1,5 +1,6 @@
-from gi.repository import GObject, GLib
 import traceback
+
+from gi.repository import GObject, GLib
 
 
 class CommandError(Exception):
@@ -214,8 +215,11 @@ class Command(GObject.GObject):
         while True:
             all_commands.extend(
                 [s for s in subclasses if not(s.name.startswith('_'))])
-            subclasses = [x for x in [c.__subclasses__()
-                                      for c in subclasses] if x]
+            newsubclasses = []
+            for sc in [x for x in [c.__subclasses__()
+                                   for c in subclasses] if x]:
+                newsubclasses.extend(sc)
+            subclasses = newsubclasses
             if not subclasses:
                 break
         del subclasses
