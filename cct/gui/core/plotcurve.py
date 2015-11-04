@@ -1,11 +1,11 @@
 import logging
 
-from gi.repository import Gtk, Gio
-import pkg_resources
-from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
-from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
-from matplotlib.figure import Figure
 import numpy as np
+import pkg_resources
+from gi.repository import Gtk, Gio
+from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
+from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
+from matplotlib.figure import Figure
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -171,183 +171,187 @@ class PlotCurveWidget(object):
             self._builder.get_object('dsigmadomega_yunit').set_active(True)
 
     def request_replot(self, widget):
-        if isinstance(widget, Gtk.RadioMenuItem) and not widget.get_active():
-            # avoid plotting twice when another radio item has been selected
-            logger.debug('Not plotting (yet)')
-            return
-        self._axes.clear()
-        if self._builder.get_object('pixels_xunit').get_active():
-            xkey = 'pixel'
-            dxkey = 'dpixel'
-            xlabel = 'Distance from origin (pixel)'
-        elif self._builder.get_object('radius_xunit').get_active():
-            xkey = 'rho'
-            dxkey = 'drho'
-            xlabel = 'Distance from origin (mm)'
-        elif self._builder.get_object('twotheta_xunit').get_active():
-            xkey = 'tth'
-            dxkey = 'dtth'
-            xlabel = 'Scattering angle ($^\circ$)'
+        try:
+            if isinstance(widget, Gtk.RadioMenuItem) and not widget.get_active():
+                # avoid plotting twice when another radio item has been selected
+                logger.debug('Not plotting (yet)')
+                return
+            self._axes.clear()
+            if self._builder.get_object('pixels_xunit').get_active():
+                xkey = 'pixel'
+                dxkey = 'dpixel'
+                xlabel = 'Distance from origin (pixel)'
+            elif self._builder.get_object('radius_xunit').get_active():
+                xkey = 'rho'
+                dxkey = 'drho'
+                xlabel = 'Distance from origin (mm)'
+            elif self._builder.get_object('twotheta_xunit').get_active():
+                xkey = 'tth'
+                dxkey = 'dtth'
+                xlabel = 'Scattering angle ($^\circ$)'
 
-        if self._builder.get_object('q_xunit').get_active():
-            if self._builder.get_object('guinier3d_type').get_active():
-                for c in self._curves:
-                    self._axes.errorbar(c['q'], c['y'], c['dy'], c['dq'], label=c['legend'])
-                self._axes.set_xscale('power', exponent=2)
-                self._axes.set_yscale('log')
-                if self._builder.get_object('arbunits_yunit').get_active():
-                    self._axes.yaxis.set_label_text('Intensity (arb. units)')
-                elif self._builder.get_object('dsigmadomega_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
-                elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega\\times t$ (sr$^{-1}$)')
-                else:
-                    raise NotImplementedError
-                if self._builder.get_object('legend_toggle').get_active():
-                    self._axes.legend(loc='best', fontsize='small')
-                self._axes.xaxis.set_label_text('q (nm${-1}$)')
-                self._canvas.draw()
-                return
-            elif self._builder.get_object('guinier2d_type').get_active():
-                for c in self._curves:
-                    y = c['y'] * c['q']
-                    if c['dy'] is not None and c['dq'] is not None:
-                        dy = (c['dq'] ** 2 * c['y'] ** 2 + c['dy'] ** 2 * c['q'] ** 2) ** 0.5
-                    elif c['dy'] is not None:
-                        dy = c['dy'] * c['q']
-                    elif c['dq'] is not None:
-                        dy = c['dq'] * c['y']
+            if self._builder.get_object('q_xunit').get_active():
+                if self._builder.get_object('guinier3d_type').get_active():
+                    for c in self._curves:
+                        self._axes.errorbar(c['q'], c['y'], c['dy'], c['dq'], label=c['legend'])
+                    self._axes.set_xscale('power', exponent=2)
+                    self._axes.set_yscale('log')
+                    if self._builder.get_object('arbunits_yunit').get_active():
+                        self._axes.yaxis.set_label_text('Intensity (arb. units)')
+                    elif self._builder.get_object('dsigmadomega_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
+                    elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega\\times t$ (sr$^{-1}$)')
                     else:
-                        dy = None
-                    self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
-                self._axes.set_xscale('power', exponent=2)
-                self._axes.set_yscale('log')
-                if self._builder.get_object('arbunits_yunit').get_active():
-                    self._axes.yaxis.set_label_text('Intensity*q (arb. units * nm$^{-1})')
-                elif self._builder.get_object('dsigmadomega_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot q$ (cm$^{-1}$ sr$^{-1}$ nm$^{-1}$)')
-                elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q$ (sr$^{-1}$ nm$^{-1}$)')
-                else:
-                    raise NotImplementedError
-                if self._builder.get_object('legend_toggle').get_active():
-                    self._axes.legend(loc='best', fontsize='small')
-                self._axes.xaxis.set_label_text('q (nm${-1}$)')
-                self._canvas.draw()
-                return
-            elif self._builder.get_object('guinier1d_type').get_active():
-                for c in self._curves:
-                    y = c['y'] * c['q'] ** 2
-                    if c['dy'] is not None and c['dq'] is not None:
-                        dy = (c['dq'] ** 2 * c['y'] ** 2 * 4 * c['q'] ** 2 + c['dy'] ** 2 * c['q'] ** 4) ** 0.5
-                    elif c['dy'] is not None:
-                        dy = c['dy'] * c['q'] ** 2
-                    elif c['dq'] is not None:
-                        dy = c['dq'] * 2 * c['q'] ** 2 * c['y']
+                        raise NotImplementedError
+                    if self._builder.get_object('legend_toggle').get_active():
+                        self._axes.legend(loc='best', fontsize='small')
+                    self._axes.xaxis.set_label_text('q (nm${-1}$)')
+                    self._canvas.draw()
+                    return
+                elif self._builder.get_object('guinier2d_type').get_active():
+                    for c in self._curves:
+                        y = c['y'] * c['q']
+                        if c['dy'] is not None and c['dq'] is not None:
+                            dy = (c['dq'] ** 2 * c['y'] ** 2 + c['dy'] ** 2 * c['q'] ** 2) ** 0.5
+                        elif c['dy'] is not None:
+                            dy = c['dy'] * c['q']
+                        elif c['dq'] is not None:
+                            dy = c['dq'] * c['y']
+                        else:
+                            dy = None
+                        self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
+                    self._axes.set_xscale('power', exponent=2)
+                    self._axes.set_yscale('log')
+                    if self._builder.get_object('arbunits_yunit').get_active():
+                        self._axes.yaxis.set_label_text('Intensity*q (arb. units * nm$^{-1})')
+                    elif self._builder.get_object('dsigmadomega_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot q$ (cm$^{-1}$ sr$^{-1}$ nm$^{-1}$)')
+                    elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q$ (sr$^{-1}$ nm$^{-1}$)')
                     else:
-                        dy = None
-                    self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
-                self._axes.set_xscale('power', exponent=2)
-                self._axes.set_yscale('log')
-                if self._builder.get_object('arbunits_yunit').get_active():
-                    self._axes.yaxis.set_label_text('Intensity*q$^2$ (arb. units * nm$^{-2})')
-                elif self._builder.get_object('dsigmadomega_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot q^2$ (cm$^{-1}$ sr$^{-1}$ nm$^{-2}$)')
-                elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q^2$ (sr$^{-1}$ nm$^{-2}$)')
-                else:
-                    raise NotImplementedError
-                if self._builder.get_object('legend_toggle').get_active():
-                    self._axes.legend(loc='best', fontsize='small')
-                self._axes.xaxis.set_label_text('q (nm${-1}$)')
-                self._canvas.draw()
-                return
-            elif self._builder.get_object('kratky_type').get_active():
-                for c in self._curves:
-                    y = c['y'] * c['q'] ** 2
-                    if c['dy'] is not None and c['dq'] is not None:
-                        dy = (c['dq'] ** 2 * c['y'] ** 2 * 4 * c['q'] ** 2 + c['dy'] ** 2 * c['q'] ** 4) ** 0.5
-                    elif c['dy'] is not None:
-                        dy = c['dy'] * c['q'] ** 2
-                    elif c['dq'] is not None:
-                        dy = c['dq'] * 2 * c['q'] ** 2 * c['y']
+                        raise NotImplementedError
+                    if self._builder.get_object('legend_toggle').get_active():
+                        self._axes.legend(loc='best', fontsize='small')
+                    self._axes.xaxis.set_label_text('q (nm${-1}$)')
+                    self._canvas.draw()
+                    return
+                elif self._builder.get_object('guinier1d_type').get_active():
+                    for c in self._curves:
+                        y = c['y'] * c['q'] ** 2
+                        if c['dy'] is not None and c['dq'] is not None:
+                            dy = (c['dq'] ** 2 * c['y'] ** 2 * 4 * c['q'] ** 2 + c['dy'] ** 2 * c['q'] ** 4) ** 0.5
+                        elif c['dy'] is not None:
+                            dy = c['dy'] * c['q'] ** 2
+                        elif c['dq'] is not None:
+                            dy = c['dq'] * 2 * c['q'] ** 2 * c['y']
+                        else:
+                            dy = None
+                        self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
+                    self._axes.set_xscale('power', exponent=2)
+                    self._axes.set_yscale('log')
+                    if self._builder.get_object('arbunits_yunit').get_active():
+                        self._axes.yaxis.set_label_text('Intensity*q$^2$ (arb. units * nm$^{-2})')
+                    elif self._builder.get_object('dsigmadomega_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot q^2$ (cm$^{-1}$ sr$^{-1}$ nm$^{-2}$)')
+                    elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q^2$ (sr$^{-1}$ nm$^{-2}$)')
                     else:
-                        dy = None
-                    self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
+                        raise NotImplementedError
+                    if self._builder.get_object('legend_toggle').get_active():
+                        self._axes.legend(loc='best', fontsize='small')
+                    self._axes.xaxis.set_label_text('q (nm${-1}$)')
+                    self._canvas.draw()
+                    return
+                elif self._builder.get_object('kratky_type').get_active():
+                    for c in self._curves:
+                        y = c['y'] * c['q'] ** 2
+                        if c['dy'] is not None and c['dq'] is not None:
+                            dy = (c['dq'] ** 2 * c['y'] ** 2 * 4 * c['q'] ** 2 + c['dy'] ** 2 * c['q'] ** 4) ** 0.5
+                        elif c['dy'] is not None:
+                            dy = c['dy'] * c['q'] ** 2
+                        elif c['dq'] is not None:
+                            dy = c['dq'] * 2 * c['q'] ** 2 * c['y']
+                        else:
+                            dy = None
+                        self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
+                    self._axes.set_xscale('linear')
+                    self._axes.set_yscale('linear')
+                    if self._builder.get_object('arbunits_yunit').get_active():
+                        self._axes.yaxis.set_label_text('Intensity*q$^2$ (arb. units * nm$^{-2})')
+                    elif self._builder.get_object('dsigmadomega_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot q^2$ (cm$^{-1}$ sr$^{-1}$ nm$^{-2}$)')
+                    elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q^2$ (sr$^{-1}$ nm$^{-2}$)')
+                    else:
+                        raise NotImplementedError
+                    if self._builder.get_object('legend_toggle').get_active():
+                        self._axes.legend(loc='best', fontsize='small')
+                    self._axes.xaxis.set_label_text('q (nm${-1}$)')
+                    self._canvas.draw()
+                    return
+                elif self._builder.get_object('porod_type').get_active():
+                    for c in self._curves:
+                        y = c['y'] * c['q'] ** 4
+                        if c['dy'] is not None and c['dq'] is not None:
+                            dy = (c['dq'] ** 2 * c['y'] ** 2 * 16 * c['q'] ** 6 + c['dy'] ** 2 * c['q'] ** 8) ** 0.5
+                        elif c['dy'] is not None:
+                            dy = c['dy'] * c['q'] ** 4
+                        elif c['dq'] is not None:
+                            dy = c['dq'] * 4 * c['q'] ** 6 * c['y']
+                        else:
+                            dy = None
+                        self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
+                    self._axes.set_xscale('linear')
+                    self._axes.set_yscale('power', exponent=4)
+                    if self._builder.get_object('arbunits_yunit').get_active():
+                        self._axes.yaxis.set_label_text('Intensity*q$^4$ (arb. units * nm$^{-4})')
+                    elif self._builder.get_object('dsigmadomega_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot q^4$ (cm$^{-1}$ sr$^{-1}$ nm$^{-4}$)')
+                    elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
+                        self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q^4$ (sr$^{-1}$ nm$^{-4}$)')
+                    else:
+                        raise NotImplementedError
+                    if self._builder.get_object('legend_toggle').get_active():
+                        self._axes.legend(loc='best', fontsize='small')
+                    self._axes.xaxis.set_label_text('q (nm${-1}$)')
+                    self._canvas.draw()
+                    return
+                else:
+                    xkey = 'q'
+                    dxkey = 'dq'
+                    xlabel = 'q (nm$^{-1}$)'
+
+            for c in self._curves:
+                self._axes.errorbar(c[xkey], c['y'], c['dy'], c[dxkey], label=c['legend'])
+            if self._builder.get_object('loglog_type').get_active():
+                self._axes.set_xscale('log')
+                self._axes.set_yscale('log')
+            elif self._builder.get_object('logx_type').get_active():
+                self._axes.set_xscale('log')
+                self._axes.set_yscale('linear')
+            elif self._builder.get_object('logy_type').get_active():
+                self._axes.set_xscale('linear')
+                self._axes.set_yscale('log')
+            elif self._builder.get_object('linlin_type').get_active():
                 self._axes.set_xscale('linear')
                 self._axes.set_yscale('linear')
-                if self._builder.get_object('arbunits_yunit').get_active():
-                    self._axes.yaxis.set_label_text('Intensity*q$^2$ (arb. units * nm$^{-2})')
-                elif self._builder.get_object('dsigmadomega_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot q^2$ (cm$^{-1}$ sr$^{-1}$ nm$^{-2}$)')
-                elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q^2$ (sr$^{-1}$ nm$^{-2}$)')
-                else:
-                    raise NotImplementedError
-                if self._builder.get_object('legend_toggle').get_active():
-                    self._axes.legend(loc='best', fontsize='small')
-                self._axes.xaxis.set_label_text('q (nm${-1}$)')
-                self._canvas.draw()
-                return
-            elif self._builder.get_object('porod_type').get_active():
-                for c in self._curves:
-                    y = c['y'] * c['q'] ** 4
-                    if c['dy'] is not None and c['dq'] is not None:
-                        dy = (c['dq'] ** 2 * c['y'] ** 2 * 16 * c['q'] ** 6 + c['dy'] ** 2 * c['q'] ** 8) ** 0.5
-                    elif c['dy'] is not None:
-                        dy = c['dy'] * c['q'] ** 4
-                    elif c['dq'] is not None:
-                        dy = c['dq'] * 4 * c['q'] ** 6 * c['y']
-                    else:
-                        dy = None
-                    self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
-                self._axes.set_xscale('linear')
-                self._axes.set_yscale('power', exponent=4)
-                if self._builder.get_object('arbunits_yunit').get_active():
-                    self._axes.yaxis.set_label_text('Intensity*q$^4$ (arb. units * nm$^{-4})')
-                elif self._builder.get_object('dsigmadomega_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot q^4$ (cm$^{-1}$ sr$^{-1}$ nm$^{-4}$)')
-                elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
-                    self._axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q^4$ (sr$^{-1}$ nm$^{-4}$)')
-                else:
-                    raise NotImplementedError
-                if self._builder.get_object('legend_toggle').get_active():
-                    self._axes.legend(loc='best', fontsize='small')
-                self._axes.xaxis.set_label_text('q (nm${-1}$)')
-                self._canvas.draw()
-                return
+            if self._builder.get_object('arbunits_yunit').get_active():
+                self._axes.yaxis.set_label_text('Intensity (arb. units)')
+            elif self._builder.get_object('dsigmadomega_yunit').get_active():
+                self._axes.yaxis.set_label_text('$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
+            elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
+                self._axes.yaxis.set_label_text('$d\sigma/d\Omega\\times t$ (sr$^{-1}$)')
             else:
-                xkey = 'q'
-                dxkey = 'dq'
-                xlabel = 'q (nm$^{-1}$)'
-
-        for c in self._curves:
-            self._axes.errorbar(c[xkey], c['y'], c['dy'], c[dxkey], label=c['legend'])
-        if self._builder.get_object('loglog_type').get_active():
-            self._axes.set_xscale('log')
-            self._axes.set_yscale('log')
-        elif self._builder.get_object('logx_type').get_active():
-            self._axes.set_xscale('log')
-            self._axes.set_yscale('linear')
-        elif self._builder.get_object('logy_type').get_active():
-            self._axes.set_xscale('linear')
-            self._axes.set_yscale('log')
-        elif self._builder.get_object('linlin_type').get_active():
-            self._axes.set_xscale('linear')
-            self._axes.set_yscale('linear')
-        if self._builder.get_object('arbunits_yunit').get_active():
-            self._axes.yaxis.set_label_text('Intensity (arb. units)')
-        elif self._builder.get_object('dsigmadomega_yunit').get_active():
-            self._axes.yaxis.set_label_text('$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
-        elif self._builder.get_object('dsigmadomegathickness_yunit').get_active():
-            self._axes.yaxis.set_label_text('$d\sigma/d\Omega\\times t$ (sr$^{-1}$)')
-        else:
-            raise NotImplementedError
-        self._axes.xaxis.set_label_text(xlabel)
-        if self._builder.get_object('legend_toggle').get_active():
-            self._axes.legend(loc='best', fontsize='small')
-        self._canvas.draw()
-        return
+                raise NotImplementedError
+            self._axes.xaxis.set_label_text(xlabel)
+            if self._builder.get_object('legend_toggle').get_active():
+                self._axes.legend(loc='best', fontsize='small')
+            self._canvas.draw()
+            return
+        except ValueError:
+            self._axes.clear()
+            self._canvas.draw()
 
     @staticmethod
     def _get_pixel_down(rho, drho, pixelsize):
@@ -414,4 +418,7 @@ class PlotCurveWindow(PlotCurveWidget):
 
     @classmethod
     def get_latest_window(cls):
-        return cls.instancelist[-1]
+        if not cls.instancelist:
+            return cls()
+        else:
+            return cls.instancelist[-1]
