@@ -203,6 +203,23 @@ class Echo(Command):
         self.emit('message', msg)
         self.emit('return', '')
 
+class Print(Echo):
+    """A print command similar to that in Python.
+
+    Invocation: print(<arg1>, <arg2>, ...)
+
+    Arguments:
+        arbitrary number and type of arguments
+
+    Remarks:
+        keyword arguments not supported
+    """
+    name='print'
+
+    def execute(self, interpreter, arglist, instrument, namespace):
+        text=' '.join([str(x) for x in arglist])
+        GLib.idle_add(lambda m=text:self._idlefunc(m))
+
 
 class Set(Command):
     """Set value of script variable
