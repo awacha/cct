@@ -1,3 +1,5 @@
+import datetime
+
 import pkg_resources
 from gi.repository import GtkSource, Gdk, Gtk, GObject
 
@@ -113,8 +115,12 @@ class ScriptMeasurement(ToolWindow):
             self._instrument.interpreter.connect('cmd-message', self.on_script_message),
                                        ]
         self._builder.get_object('sourceview').set_editable(False)
-        self._scriptconnections=[self._scriptcommand.connect('cmd-start', self.on_command_start)
-                                 ]
+        self._scriptconnections = [self._scriptcommand.connect('cmd-start', self.on_command_start)]
+        buf = self._builder.get_object('messagesbuffer')
+        buf.insert(buf.get_end_iter(),
+                   '----------------------- %s -----------------------\n' % str(datetime.datetime.now()))
+        self._builder.get_object('messagesview').scroll_to_iter(buf.get_end_iter(), 0, False, 0, 0)
+        buf.place_cursor(buf.get_end_iter())
         try:
             self._instrument.interpreter.execute_command(self._scriptcommand)
         except Exception:

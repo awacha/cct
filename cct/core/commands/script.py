@@ -3,7 +3,7 @@ import traceback
 from gi.repository import GObject, GLib
 
 from .command import Command, CommandError, cleanup_commandline
-from .jump import JumpException, GotoException, GosubException, ReturnException
+from .jump import JumpException, GotoException, GosubException, ReturnException, PassException
 
 
 class ScriptEndException(JumpException):
@@ -21,6 +21,13 @@ class Script(Command):
     Scripts can have positional arguments in a similar way as commands can. At the start of execution, the special
     variable _scriptargs is created in the namespace. Commands can reference them as _scriptargs[index] in their
     argument list.
+
+    Subclasses can define an attribute '_cannot_return_yet': if such an attribute exists, the script does not emit the
+    'return' signal, but waits (in an idle loop) for this attribute to vanish. Abnormal termination (because of an
+    exception or the failure of a subcommand) does not regard this, though.
+
+    Another useful overridable method is cleanup(): this is called before emitting the 'return' signal. It can be used
+    e.g. to disconnect signal handlers.
     """
 
     __gsignals__={#emitted at the start of a command
@@ -51,14 +58,17 @@ class Script(Command):
 
     def nextcommand(self):
         if hasattr(self, '_kill'):
-            self.emit('return', 'Killed')
+            try:
+                self.cleanup()
+            finally:
+                self.emit('return', 'Killed')
             return False
         self._cursor+=1
         try:
             commandline=self._script[self._cursor]
         except IndexError:
             # last command, return with the result of the last command.
-            self.emit('return', self._myinterpreter.command_namespace_locals['_'])
+            GLib.idle_add(lambda rv=self._myinterpreter.command_namespace_locals['_']: self._try_to_return(rv))
             return False
         try:
             cmd=self._myinterpreter.execute_command(commandline)
@@ -72,19 +82,32 @@ class Script(Command):
         except GosubException as gse:
             self._jumpstack.append(self._cursor)
             self._cursor=self.find_label(gse.args[0])
+        except ScriptEndException as se:
+            GLib.idle_add(lambda returnvalue=se.args[0]:self._try_to_return(returnvalue))
+            return False
+        except PassException:
+            # raised by a conditional goto/gosub command if the condition evaluated to False
+            # jump to the next command.
+            GLib.idle_add(lambda :self.nextcommand() and False)
+            return False
         except JumpException as je:
             raise NotImplementedError(je)
-        except ScriptEndException as se:
-            self.emit('return', se.args[0])
-            return False
         except Exception as exc:
-            self.emit('fail', exc, traceback.format_exc())
-            self.emit('return', None)
+            try:
+                try:
+                    self.emit('fail', exc, traceback.format_exc())
+                finally:
+                    self.cleanup()
+            finally:
+                self.emit('return', None)
         return False
 
     def on_cmd_return(self, myinterpreter, cmdname, returnvalue):
         if hasattr(self, '_failure'):
-            self.emit('return',None)
+            try:
+                self.cleanup()
+            finally:
+                self.emit('return',None)
             del self._failure
         else:
             GLib.idle_add(self.nextcommand)
@@ -119,6 +142,18 @@ class Script(Command):
             if line.split()[0].startswith('@'+labelname):
                 return i
         raise ScriptError('Unknown label in script: %s'%labelname)
+
+    def _try_to_return(self, returnvalue):
+        if hasattr(self,'_cannot_return_yet'):
+            self.emit('pulse', 'Waiting for finalization')
+            GLib.timeout_add(100, lambda rv=returnvalue:self._try_to_return(rv))
+            return False
+        else:
+            try:
+                self.cleanup()
+            finally:
+                self.emit('return', returnvalue)
+            return False
 
     def kill(self):
         self._myinterpreter.kill()

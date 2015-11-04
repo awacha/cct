@@ -45,7 +45,7 @@ class Interpreter(Service):
         if namespace is not None:
             self.command_namespace_locals=namespace
         else:
-            self.command_namespace_locals = {}
+            self.command_namespace_locals = {'_config': instrument.config}
         exec('import os', self.command_namespace_globals,
              self.command_namespace_locals)
         exec('import numpy as np', self.command_namespace_globals,
@@ -68,14 +68,53 @@ class Interpreter(Service):
                 GLib.idle_add(
                     lambda cmd='empty', rv=None: self.on_command_return(cmd, rv))
                 return None
+            if commandline_cleaned.startswith('@'):
+                # this is a definition of a label, ignore this.
+                GLib.idle_add(lambda cmd='label', rv=commandline_cleaned[1:].strip(): self.on_command_return(cmd, rv))
+                return None
             # the command line must contain only one command, in the form of
             # `command(arg1, arg2, arg3 ...)`
             parpairs = get_parentheses_pairs(commandline_cleaned, '(')
             argumentstring = commandline_cleaned[parpairs[0][1] + 1:parpairs[0][2]].strip()
             if argumentstring:
+                # split the argument string at commas. Beware that arguments can be valid
+                # Python expressions, thus may contain commas in various kinds of
+                # parentheses, brackets, curly brackets, strings etc. Skip these.
+                logger.debug('Trying to split argumentstring *%s*' % argumentstring)
+                arguments = []
+                currentargument = ''
+                openparens = {'(': 0, '[': 0, '{': 0, '"': 0, "'": 0}
+                for i in range(len(argumentstring)):
+                    if argumentstring[i] == ',' and all([x == 0 for x in openparens.values()]):
+                        logger.debug('Separating comma at index %d' % i)
+                        arguments.append(currentargument)
+                        currentargument = ''
+                    else:
+                        c = argumentstring[i]
+                        currentargument = currentargument + c
+                        if c == '(':
+                            openparens['('] += 1
+                        elif c == ')':
+                            openparens['('] -= 1
+                        elif c == '[':
+                            openparens['['] += 1
+                        elif c == ']':
+                            openparens['['] -= 1
+                        elif c == '{':
+                            openparens['{'] += 1
+                        elif c == '}':
+                            openparens['{'] -= 1
+                        elif c == '"':
+                            openparens['"'] = 1 - openparens['"']
+                        elif c == "'":
+                            openparens["'"] = 1 - openparens["'"]
+                        elif c == ',':
+                            logger.debug('Comma in parenthesized region at index %d' % i)
+                if currentargument:
+                    arguments.append(currentargument)
                 arguments = [eval(a, self.command_namespace_globals,
                                   self.command_namespace_locals)
-                             for a in argumentstring.split(',')]
+                             for a in arguments]
             else:
                 arguments = []
             commandname = commandline_cleaned[:parpairs[0][1]].strip()
@@ -105,7 +144,7 @@ class Interpreter(Service):
         return hasattr(self, '_command')
 
     def on_command_return(self, command, retval):
-        logger.debug("Command %s returned:" % str(command) + str(retval))
+        #        logger.debug("Command %s returned:" % str(command) + str(retval))
         self.command_namespace_locals['_'] = retval
         try:
             for c in self._command_connections[command]:
