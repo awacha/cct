@@ -314,12 +314,12 @@ class TMCMcard(Device_TCP):
                     # on. We must decide if the motor has stopped or not
                     if not self._is_moving(motoridx):
                         # the motor has stopped
+                        self._busyflag.release()
                         self._moving = None
                         self._update_variable('_status', 'idle')
                         self._update_variable('_status$' + motor_or_bank, 'idle')
                         logger.debug('Saving positions for %s: moving just ended.' % self._instancename)
                         self._save_positions()
-                        self._busyflag.release()
             elif cmdnum == 136:
                 self._update_variable('firmwareversion', 'TMCM%d' % (
                     value // 0x10000) + ', firmware v%d.%d' % ((value % 0x10000) / 0x100, value % 0x100))
@@ -582,10 +582,10 @@ class TMCMcard(Device_TCP):
                 if relpos == 0:
                     # do not execute null-moves.
                     logger.debug('Would be null move.')
+                    self._busyflag.release()
                     self._update_variable('_status', 'idle', force=True)
                     self._update_variable(
                         '_status$%d' % motor, 'idle', force=True)
-                    self._busyflag.release()
                 else:
                     # we need and can move. Issue the command.
                     posraw = self._convert_pos_to_raw(pos, motor)
@@ -599,9 +599,9 @@ class TMCMcard(Device_TCP):
                 self._moving = None
                 # force updates on _status: this will ensure that higher-level
                 # motor interfaces will issue stop signals
+                self._busyflag.release()
                 self._update_variable('_status', 'idle', force=True)
                 self._update_variable('_status$%d' % motor, 'idle', force=True)
-                self._busyflag.release()
                 raise
         elif commandname == 'stop':
             motor = arguments[0]

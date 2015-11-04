@@ -158,12 +158,15 @@ class Beamstop(Command):
             self._xpos, self._ypos = self._instrument.config['beamstop']['out']
         else:
             raise ConnectionError('Invalid argument: ' + str(arglist[0]))
-        self._stopconnection = self._instrument.motors['BeamStop_X'].connect('stop', self.on_stop, 'BeamStop_X')
+        self._motorconnections = [self._instrument.motors['BeamStop_X'].connect('stop', self.on_stop, 'BeamStop_X'),
+                                  self._instrument.motors['BeamStop_X'].connect('variable-change', self.on_varchange, 'BeamStop_X')]
+        self._startpos=self._instrument.motors['BeamStop_X'].where()
         self._instrument.motors['BeamStop_X'].moveto(self._xpos)
 
     def on_stop(self, motor, targetpositionreached, motorname):
-        motor.disconnect(self._stopconnection)
-        del self._stopconnection
+        for c in self._motorconnections:
+            motor.disconnect(c)
+        del self._motorconnections
         if not targetpositionreached:
             try:
                 raise CommandError(
@@ -171,10 +174,25 @@ class Beamstop(Command):
             except Exception as ce:
                 self.emit('fail', (ce, traceback.format_exc()))
         if motorname == 'BeamStop_X':
-            self._stopconnection = self._instrument.motors['BeamStop_Y'].connect('stop', self.on_stop, 'BeamStop_Y')
-            self._instrument.motors['BeamStop_Y'].moveto(self._ypos)
+            self._motorconnections = [self._instrument.motors['BeamStop_Y'].connect('stop', self.on_stop, 'BeamStop_Y'),
+                                      self._instrument.motors['BeamStop_Y'].connect('variable-change', self.on_varchange, 'BeamStop_Y')]
+            self._startpos=self._instrument.motors['BeamStop_Y'].where()
+            try:
+                self._instrument.motors['BeamStop_Y'].moveto(self._ypos)
+            except Exception as exc:
+                self._instrument.motors['BeamStop_Y'].disconnect(self._stopconnection)
+                del self._stopconnection
+                self.emit('fail',exc,traceback.format_exc())
+                self.emit('return',None)
         else:
             self.end_command()
+
+    def on_varchange(self, device, variablename, newvalue, motorname):
+        if variablename=='actualposition':
+            target=device.get_variable('targetposition')
+            self.emit('progress', 'Moving motor %s to %.3f. Now at: %.3f'%(motorname, target, newvalue),
+                      1-(newvalue-target)/(self._startpos-target))
+
 
     def end_command(self):
         xpos = self._instrument.motors['BeamStop_X'].where()
@@ -213,15 +231,20 @@ class Sample(Command):
         if not arglist:
             GLib.idle_add(self.end_command)
             return
-        sample = self._instrument.samplestore.set_active(arglist[0])
+        self._instrument.samplestore.set_active(arglist[0])
+        sample=self._instrument.samplestore.get_active()
+        assert(sample.title, arglist[0])
         self._xpos = sample.positionx.val
         self._ypos = sample.positiony.val
-        self._stopconnection = self._instrument.motors['Sample_X'].connect('stop', self.on_stop, 'Sample_X')
+        self._motorconnections = [self._instrument.motors['Sample_X'].connect('stop', self.on_stop, 'Sample_X'),
+                                  self._instrument.motors['Sample_X'].connect('variable-change', self.on_varchange, 'Sample_X')]
+        self._startpos=self._instrument.motors['Sample_X'].where()
         self._instrument.motors['Sample_X'].moveto(self._xpos)
 
     def on_stop(self, motor, targetpositionreached, motorname):
-        motor.disconnect(self._stopconnection)
-        del self._stopconnection
+        for c in self._motorconnections:
+            motor.disconnect(c)
+        del self._motorconnections
         if not targetpositionreached:
             try:
                 raise CommandError(
@@ -229,10 +252,24 @@ class Sample(Command):
             except Exception as ce:
                 self.emit('fail', (ce, traceback.format_exc()))
         if motorname == 'Sample_X':
-            self._stopconnection = self._instrument.motors['Sample_Y'].connect('stop', self.on_stop, 'Sample_Y')
-            self._instrument.motors['Sample_Y'].moveto(self._ypos)
+            self._motorconnections = [self._instrument.motors['Sample_Y'].connect('stop', self.on_stop, 'Sample_Y'),
+                                      self._instrument.motors['Sample_Y'].connect('variable-change', self.on_varchange, 'Sample_Y')]
+            self._startpos=self._instrument.motors['Sample_Y'].where()
+            try:
+                self._instrument.motors['Sample_Y'].moveto(self._ypos)
+            except Exception as exc:
+                self._instrument.motors['Sample_Y'].disconnect(self._stopconnection)
+                del self._stopconnection
+                self.emit('fail',exc,traceback.format_exc())
+                self.emit('return',None)
         else:
             self.end_command()
+
+    def on_varchange(self, device, variablename, newvalue, motorname):
+        if variablename=='actualposition':
+            target=device.get_variable('targetposition')
+            self.emit('progress', 'Moving motor %s to %.3f. Now at: %.3f'%(motorname, target, newvalue),
+                      1-(newvalue-target)/(self._startpos-target))
 
     def end_command(self):
         self.emit('return', self._instrument.samplestore.get_active_name())
