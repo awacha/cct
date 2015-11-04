@@ -290,5 +290,8 @@
     <child>
       <placeholder/>
     </child>
+    <child>
+      <placeholder/>
+    </child>
   </object>
 </interface>
