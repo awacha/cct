@@ -93,9 +93,9 @@ class SampleStore(Service):
             self.emit('list-changed')
         else:
             return False
-        if self._active is None:
-            self._active = sample.title
-            self.emit('active-changed')
+        #        if self._active is None:
+        #            self._active = sample.title
+        #            self.emit('active-changed')
         return True
 
     def remove(self, sample):
@@ -107,8 +107,14 @@ class SampleStore(Service):
         self.emit('list-changed')
 
     def set_active(self, sample):
+        """sample: string or None"""
+        assert (isinstance(sample, str) or (sample is None))
+        if sample is None:
+            self._active = None
+            self.emit('active-changed')
+            return
         if isinstance(sample, Sample):
-            sample = sample.name
+            sample = sample.title
         if [s for s in self._list if s.title == sample]:
             self._active = sample
             self.emit('active-changed')
@@ -116,10 +122,16 @@ class SampleStore(Service):
             raise SampleStoreError('No sample %s defined.' % sample)
 
     def get_active(self):
-        return [x for x in self._list if x.title == self._active][0]
+        if self._active is None:
+            return None
+        else:
+            return [x for x in self._list if x.title == self._active][0]
 
     def get_active_name(self):
-        return self.get_active().title
+        if self._active is None:
+            return None
+        else:
+            return self.get_active().title
 
     def __iter__(self):
         for l in self._list:
