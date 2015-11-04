@@ -61,7 +61,8 @@ class Sample(object):
                 'situation': self.situation}
 
     def toparam(self):
-        return '\n'.join(['sample.' + k + ':\t%s' % v for k, v in self.todict()]) + '\n'
+        dic=self.todict()
+        return '\n'.join(['sample.' + k + ':\t%s' % dic[k] for k in dic]) + '\n'
 
     def __init__(self, title, positionx=0.0, positiony=0.0, thickness=1.0,
                  transmission=1.0, preparedby='Anonymous', preparetime=None,
@@ -141,9 +142,6 @@ class Sample(object):
     def __ge__(self, other):
         return self.title >= other.title
 
-    def __eq__(self, other):
-        return self.title == other.title
-
     def __gt__(self, other):
         return self.title > other.title
 
@@ -152,6 +150,3 @@ class Sample(object):
 
     def __le__(self, other):
         return self.title <= other.title
-
-    def __ne__(self, other):
-        return self.title != other.title
