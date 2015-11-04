@@ -32,12 +32,13 @@ class Shutter(Command):
         elif arglist[0] == 'open':
             self._check_for_value = True
         elif isinstance(arglist[0], int) or isinstance(arglist[0], bool) or isinstance(arglist[0], float):
-            self._check_for_value = bool(arglist)
+            self._check_for_value = (arglist[0] != 0)
         else:
             raise NotImplementedError(arglist[0], type(arglist[0]))
         self._require_device(instrument, instrument.xray_source._instancename)
         self._install_timeout_handler(self.timeout)
         instrument.xray_source.shutter(self._check_for_value)
+        instrument.xray_source.refresh_variable('shutter')
 
 
 class Xrays(Command):
@@ -66,6 +67,7 @@ class Xrays(Command):
         self._require_device(instrument, instrument.xray_source._instancename)
         self._install_timeout_handler(self.timeout)
         instrument.xray_source.execute_command('xrays', self._check_for_value)
+        instrument.xray_source.refresh_variable('xrays')
 
 
 class XrayFaultsReset(Command):
@@ -154,6 +156,8 @@ class Warmup(Command):
         self._check_for_value = 'Power off'
         if self.xray_source.get_variable('_status') == 'Warming up':
             raise CommandError('Warm-up already running')
+        if self.xray_source.get_variable('_status') != 'Power off':
+            raise CommandError('Warm-up can only be started from power off mode')
         self._install_pulse_handler('Warming up', 1)
         self.xray_source.execute_command('start_warmup')
         self.xray_source.refresh_variable('_status')
