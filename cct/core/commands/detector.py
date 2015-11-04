@@ -1,6 +1,6 @@
 import datetime
-import os
 import logging
+import os
 
 from gi.repository import GLib
 
@@ -316,6 +316,8 @@ class ExposeMulti(Command):
             self._unrequire_device()
             GLib.source_remove(self._progresshandler)
             self.emit('return', None)
+            self._detector_idle=False
+            self._file_received=False
 
     def kill(self):
         GLib.source_remove(self._filechecker_handle)
