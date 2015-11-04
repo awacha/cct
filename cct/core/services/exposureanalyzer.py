@@ -58,6 +58,7 @@ class ExposureAnalyzer(Service):
         'scanpoint': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object)),
         'datareduction-done': (GObject.SignalFlags.RUN_FIRST, None, (str, int)),
         'transmdata': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object)),
+        'image': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object, object, object)),
         'idle': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
@@ -114,7 +115,9 @@ class ExposureAnalyzer(Service):
                     # could not load a mask file
                     self._queue_to_frontend.put_nowait(
                         ((prefix, fsn), 'error', (exc, traceback.format_exc())))
-                self._queue_to_frontend.put_nowait((prefix, fsn), 'transmdata', ((cbfdata * transmmask).sum(), args))
+                else:
+                    self._queue_to_frontend.put_nowait(
+                        ((prefix, fsn), 'transmdata', args + ((cbfdata * transmmask).sum(),)))
             elif prefix == self._config['path']['prefixes']['scn']:
                 try:
                     scanmask = self.get_mask(self._config['scan']['mask'])
@@ -123,14 +126,24 @@ class ExposureAnalyzer(Service):
                     # could not load a mask file
                     self._queue_to_frontend.put_nowait(
                         ((prefix, fsn), 'error', (exc, traceback.format_exc())))
-
-                # scan point, we have to calculate something.
-                stat = get_statistics(cbfdata, scanmasktotal, scanmask)
-                stat['FSN'] = fsn
-                resultlist = tuple([args]+[stat[k]
-                                    for k in self._config['scan']['columns']])
-                self._queue_to_frontend.put_nowait(
-                    ((prefix, fsn), 'scanpoint', resultlist))
+                else:
+                    # scan point, we have to calculate something.
+                    stat = get_statistics(cbfdata, scanmasktotal, scanmask)
+                    stat['FSN'] = fsn
+                    resultlist = tuple([args] + [stat[k]
+                                                 for k in self._config['scan']['columns']])
+                    self._queue_to_frontend.put_nowait(
+                        ((prefix, fsn), 'scanpoint', resultlist))
+            else:
+                try:
+                    mask = self.get_mask(self._config['geometry']['mask'])
+                except (IOError, OSError, IndexError) as exc:
+                    # could not load a mask file
+                    self._queue_to_frontend.put_nowait(
+                        ((prefix, fsn), 'error', (exc, traceback.format_exc())))
+                else:
+                    self._queue_to_frontend.put_nowait(
+                        ((prefix, fsn), 'image', (cbfdata, mask) + args))
 
     def _idle_function(self):
         try:
@@ -148,6 +161,8 @@ class ExposureAnalyzer(Service):
             self.emit('datareduction-done', prefix_fsn[0], prefix_fsn[1])
         elif what == 'transmdata':
             self.emit('transmdata', prefix_fsn[0], prefix_fsn[1], arguments)
+        elif what == 'image':
+            self.emit('image', prefix_fsn[0], prefix_fsn[1], arguments[0], arguments[1], arguments[2])
         if self._working==0:
             self.emit('idle')
         return True

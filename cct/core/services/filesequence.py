@@ -1,7 +1,7 @@
 """Keep track of file sequence numbers and do other filesystem-related jobs"""
-import os
-import logging
 import datetime
+import logging
+import os
 import time
 
 from sastool.misc.errorvalue import ErrorValue
@@ -166,10 +166,11 @@ class FileSequence(Service):
             if acquire:
                 self._nextfreefsn[prefix] += N
 
-
-    def new_exposure(self, fsn, filename, prefix, startdate, args):
+    def new_exposure(self, fsn, filename, prefix, startdate, argstuple=None):
         """Called by various parts of the instrument if a new exposure file 
         has became available"""
+        if argstuple is None:
+            argstuple = ()
         if (prefix not in self._lastfsn) or (fsn > self._lastfsn[prefix]):
             self._lastfsn[prefix] = fsn
         logger.info('New exposure: %s (fsn: %d, prefix: %s)' %
@@ -179,20 +180,26 @@ class FileSequence(Service):
         config = self.instrument.config
         if prefix in [config['path']['prefixes']['crd'],
                       config['path']['prefixes']['tst']]:
+            params = {}
             with open(os.path.join(self.instrument.config['path']['directories']['param'],
                                    prefix + '_' + ('%%0%dd.param' % config['path']['fsndigits']) % fsn), 'wt') as f:
+                params['fsn'] = fsn
                 logger.debug(
                     'Writing param file for new exposure to %s' % f.name)
                 f.write('FSN:\t%d\n' % fsn)
                 dist = ErrorValue(config['geometry']['dist_sample_det'],
                                   config['geometry']['dist_sample_det.err'])
                 sample = self.instrument.samplestore.get_active()
-                distcalib = dist - sample.distminus
-                f.write('Sample name:\t%s\n' % sample.title)
+                if sample is not None:
+                    distcalib = dist - sample.distminus
+                    f.write('Sample name:\t%s\n' % sample.title)
+                else:
+                    distcalib = dist
                 f.write('Sample-to-detector distance (mm):\t%18f\n' %
                         distcalib.val)
-                f.write('Sample thickness (cm):\t%18f\n' % sample.thickness)
-                f.write('Sample position (cm):\t%18f\n' % sample.positiony)
+                if sample is not None:
+                    f.write('Sample thickness (cm):\t%18f\n' % sample.thickness)
+                    f.write('Sample position (cm):\t%18f\n' % sample.positiony)
                 f.write('Measurement time (sec): %f\n' %
                         self.instrument.detector.get_variable('exptime'))
                 f.write('Beam x y for integration:\t%18f %18f\n' % (
@@ -202,35 +209,46 @@ class FileSequence(Service):
                 f.write('Primary intensity at monitor (counts/sec):\t%f\n' %
                         self.instrument.detector.get_variable('exptime'))
                 f.write('Date:\t%s\n' % str(datetime.datetime.now()))
+                params['motors'] = {}
                 for m in sorted(self.instrument.motors):
                     f.write('motor.%s:\t%f\n' %
-                            self.instrument.motors[m].where())
+                            (m, self.instrument.motors[m].where()))
+                    params['motors'][m] = self.instrument.motors[m].where()
+                params['devices'] = {}
                 for d in sorted(self.instrument.devices):
+                    params['devices'][d] = {}
                     for v in sorted(self.instrument.devices[d].list_variables()):
                         f.write(
                             '%s.%s:\t%s\n' % (d, v, self.instrument.devices[d].get_variable(v)))
-                f.write(sample.toparam())
+                        params['devices'][d][v] = self.instrument.devices[d].get_variable(v)
+                if sample is not None:
+                    f.write(sample.toparam())
+                    params['sample'] = sample.todict()
+                params['geometry'] = {}
                 for k in config['geometry']:
                     f.write('geometry.%s:\t%s\n' % (k, config['geometry'][k]))
+                    params['geometry'][k] = config['geometry'][k]
+                params['accounting'] = {}
                 for k in config['accounting']:
                     f.write('accounting.%s:\t%s\n' %
                             (k, config['accounting'][k]))
-
-                f.write('ThicknessError:\t%18f\n' % sample.thickness.err)
-                f.write('PosSampleError:\t%18f\n' % sample.positiony.err)
-                f.write('PosSampleX:\t%18f\n' % sample.positionx.val)
-                f.write('PosSampleXError:\t%18f\n' % sample.positionx.err)
+                    params['accounting'][k] = config['accounting'][k]
+                if sample is not None:
+                    f.write('ThicknessError:\t%18f\n' % sample.thickness.err)
+                    f.write('PosSampleError:\t%18f\n' % sample.positiony.err)
+                    f.write('PosSampleX:\t%18f\n' % sample.positionx.val)
+                    f.write('PosSampleXError:\t%18f\n' % sample.positionx.err)
+                    f.write('DistMinus:\t%18f\n' % sample.distminus.val)
+                    f.write('DistMinusErr:\t%18f\n' % sample.distminus.err)
+                    f.write('TransmError:\t%18f\n' % sample.transmission.err)
+                    f.write('PosSampleError:\t%18f\n' % sample.positiony.err)
                 f.write('EndDate:\t%s\n' % str(datetime.datetime.now()))
-                f.write('DistMinus:\t%18f\n' % sample.distminus.val)
-                f.write('DistMinusErr:\t%18f\n' % sample.distminus.err)
                 f.write('SetupDescription:\t%s\n' %
                         config['geometry']['description'])
                 f.write('DistError:\t%s\n' % dist.err)
                 f.write('XPixel:\t%18f\n' % config['geometry']['pixelsize'])
                 f.write('YPixel:\t%18f\n' % config['geometry']['pixelsize'])
-                f.write('TransmError:\t%18f\n' % sample.transmission.err)
-                f.write('Owner:\t%18f\n' % config['accounting']['operator'])
-                f.write('PosSampleError:\t%18f\n' % sample.positiony.err)
+                f.write('Owner:\t%s\n' % config['accounting']['operator'])
                 f.write('__Origin__:\tCCT\n')
                 f.write('MonitorError:\t0\n')
                 f.write('Wavelength:\t%18f\n' %
@@ -242,8 +260,9 @@ class FileSequence(Service):
                 f.write('maskid:\t%s\n' %
                         config['geometry']['mask'].rsplit('.', 1)[0])
                 f.write('StartDate:\t%s\n' % str(startdate))
+            argstuple = argstuple + (params,)
         self.instrument.exposureanalyzer.submit(
-            fsn, filename, prefix, args)
+            fsn, filename, prefix, argstuple)
 
     def get_prefixes(self):
         """Return the known prefixes"""
