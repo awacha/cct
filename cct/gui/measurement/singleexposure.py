@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from sastool.utils2d.integrate import radint_fullq_errorprop
 
@@ -6,6 +8,8 @@ from ..core.plotimage import PlotImageWindow
 from ..core.toolwindow import ToolWindow, error_message
 from ...core.commands.detector import Expose, ExposeMulti
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class SingleExposure(ToolWindow):
     def _init_gui(self, *args):
@@ -75,7 +79,7 @@ class SingleExposure(ToolWindow):
             # not a true command, we just enter here.
             if self._builder.get_object('samplename_check').get_active():
                 self._instrument.interpreter.execute_command(
-                    'sample(%s)' % self._builder.get_object('sampleselector').get_active_text())
+                    'sample("%s")' % self._builder.get_object('sampleselector').get_active_text())
             else:
                 self._instrument.samplestore.set_active(None)
                 self.on_cmd_return(interpreter, 'sample', None)
