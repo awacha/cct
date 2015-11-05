@@ -143,8 +143,9 @@ class Expose(Command):
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'exptime':
-            device.expose(self._filename)
-            self._alt_starttime = datetime.datetime.now()
+            if not hasattr(self,'_alt_starttime'):
+                device.expose(self._filename)
+                self._alt_starttime = datetime.datetime.now()
         elif variablename == 'filename':
             if not hasattr(self, '_starttime'):
                 self._starttime = self._alt_starttime
@@ -298,9 +299,10 @@ class ExposeMulti(Command):
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'exptime':
-            device.expose(self._filenames_pending[0])
-            self._alt_starttime = datetime.datetime.now()
-            self._filechecker_handle = GLib.timeout_add(self._exptime * 1000, self._filechecker)
+            if not hasattr(self,'_alt_starttime'):
+                device.expose(self._filenames_pending[0])
+                self._alt_starttime = datetime.datetime.now()
+                self._filechecker_handle = GLib.timeout_add(self._exptime * 1000, self._filechecker)
         elif variablename == 'starttime':
             self._starttime = newvalue
             logger.debug('start confirmation obtained')
