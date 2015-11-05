@@ -22,6 +22,7 @@ from .measurement.singleexposure import SingleExposure
 from .core.plotimage import PlotImageWindow
 from .measurement.script import ScriptMeasurement
 from .core.plotcurve import PlotCurveWindow
+from .setup.calibration import Calibration
 
 itheme = Gtk.IconTheme.get_default()
 itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/scalable'))
@@ -184,13 +185,10 @@ class MainWindow(object):
         self.construct_and_run_dialog(EditConfig, 'editconfig', 'setup_editconfig.glade')
         return False
 
-    def on_menu_setup_calibration_beamcenter(self, menuitem):
-        # ToDo
+    def on_menu_setup_calibration(self, menuitem):
+        self.construct_and_run_dialog(Calibration, 'calibration', 'setup_calibration.glade')
         return False
 
-    def on_menu_setup_calibration_sampletodetectordistance(self, menuitem):
-        #ToDo
-        return False
 
     def on_menu_devices_xraysource(self, menuitem):
         self.construct_and_run_dialog(GeniX, 'genix', 'devices_genix.glade')

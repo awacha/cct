@@ -49,14 +49,6 @@
     <property name="visible">True</property>
     <property name="can_focus">False</property>
   </object>
-  <object class="GtkImage" id="image5">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-  </object>
-  <object class="GtkImage" id="image6">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-  </object>
   <object class="GtkImage" id="image7">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -207,36 +199,7 @@
                         <property name="use_underline">True</property>
                         <property name="image">image7</property>
                         <property name="use_stock">False</property>
-                        <child type="submenu">
-                          <object class="GtkMenu" id="menu4">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <child>
-                              <object class="GtkImageMenuItem" id="menuitem6">
-                                <property name="label" translatable="yes">Beam _center</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="tooltip_text" translatable="yes">Find the beam center</property>
-                                <property name="use_underline">True</property>
-                                <property name="image">image6</property>
-                                <property name="use_stock">False</property>
-                                <signal name="activate" handler="on_menu_setup_calibration_beamcenter" swapped="no"/>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkImageMenuItem" id="menuitem7">
-                                <property name="label" translatable="yes">Sample-to-detector _distance</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="tooltip_text" translatable="yes">Calibrate the sample-to-detector distance</property>
-                                <property name="use_underline">True</property>
-                                <property name="image">image5</property>
-                                <property name="use_stock">False</property>
-                                <signal name="activate" handler="on_menu_setup_calibration_sampletodetectordistance" swapped="no"/>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
+                        <signal name="activate" handler="on_menu_setup_calibration" swapped="no"/>
                       </object>
                     </child>
                   </object>
