@@ -348,7 +348,10 @@ class TMCMcard(Device_TCP):
                 self._lastsent = msg
                 Device_TCP._send(self, msg)
             except queue.Empty:
-                del self._lastsent
+                try:
+                    del self._lastsent
+                except AttributeError:
+                    pass
                 if (self._moving is not None):
                     # if we are moving, queue an immediate check for all variables.
                     for vn in VOLATILE_VARIABLES:
