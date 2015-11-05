@@ -168,13 +168,15 @@ class Motors(ToolWindow):
     def on_move(self, button):
         model, treeiter=self._builder.get_object('motortreeview').get_selection().get_selected()
         motorname=model[treeiter][0]
-        movewindow=MotorMover('devices_motors_move.glade','motormover', self._instrument, self._application, motorname)
+        movewindow = MotorMover('devices_motors_move.glade', 'motormover', self._instrument, self._application,
+                                'Move motor', motorname)
         movewindow._window.show_all()
 
     def on_config(self, button):
         model, treeiter=self._builder.get_object('motortreeview').get_selection().get_selected()
         motorname=model[treeiter][0]
-        configwindow=MotorConfig('devices_motors_config.glade','motorconfig', self._instrument, self._application, motorname)
+        configwindow = MotorConfig('devices_motors_config.glade', 'motorconfig', self._instrument, self._application,
+                                   'Configure motor', motorname)
         configwindow._window.show_all()
 
 class MotorConfig(ToolWindow):

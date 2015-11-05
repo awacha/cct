@@ -9,7 +9,6 @@ import sys
 import logging
 import traceback
 import argparse
-import numpy as np
 from ..core.instrument.instrument import Instrument
 from .measurement.scan import Scan
 from .devices.motors import Motors
@@ -19,9 +18,7 @@ from .setup.editconfig import EditConfig
 from .setup.sampleedit import SampleEdit
 from .setup.definegeometry import DefineGeometry
 from .measurement.singleexposure import SingleExposure
-from .core.plotimage import PlotImageWindow
 from .measurement.script import ScriptMeasurement
-from .core.plotcurve import PlotCurveWindow
 from .setup.calibration import Calibration
 
 itheme = Gtk.IconTheme.get_default()
@@ -140,6 +137,7 @@ class MainWindow(object):
             self._instrument.connect_devices()
         self._devicestatus=DeviceStatusBar(self._instrument)
         self._builder.get_object('devicestatus_box').pack_start(self._devicestatus, True, True, 0)
+        self._window.set_title('Credo Control Tool')
 
     def on_delete_event(self, window, event):
         return self.on_menu_file_quit(window)
@@ -162,10 +160,12 @@ class MainWindow(object):
             self._statusbar.push(0, record.message.split('\n')[0])
         return False
 
-    def construct_and_run_dialog(self, windowclass, toplevelname, gladefile):
+    def construct_and_run_dialog(self, windowclass, toplevelname, gladefile, windowtitle):
         if toplevelname not in self._dialogs:
-            self._dialogs[toplevelname] = windowclass(gladefile, toplevelname, self._instrument, self._application)
+            self._dialogs[toplevelname] = windowclass(gladefile, toplevelname, self._instrument, self._application,
+                                                      windowtitle)
         self._dialogs[toplevelname]._window.show_all()
+        self._dialogs[toplevelname]._window.present()
 
     def on_menu_file_quit(self, menuitem):
         self._window.destroy()
@@ -174,24 +174,24 @@ class MainWindow(object):
 
 
     def on_menu_setup_sampleeditor(self, menuitem):
-        self.construct_and_run_dialog(SampleEdit, 'samplesetup', 'setup_sampleedit.glade')
+        self.construct_and_run_dialog(SampleEdit, 'samplesetup', 'setup_sampleedit.glade', 'Set-up samples')
         return False
 
     def on_menu_setup_definegeometry(self, menuitem):
-        self.construct_and_run_dialog(DefineGeometry, 'definegeometry', 'setup_definegeometry.glade')
+        self.construct_and_run_dialog(DefineGeometry, 'definegeometry', 'setup_definegeometry.glade', 'Define geometry')
         return False
 
     def on_menu_setup_editconfiguration(self, menuitem):
-        self.construct_and_run_dialog(EditConfig, 'editconfig', 'setup_editconfig.glade')
+        self.construct_and_run_dialog(EditConfig, 'editconfig', 'setup_editconfig.glade', 'Edit configuration')
         return False
 
     def on_menu_setup_calibration(self, menuitem):
-        self.construct_and_run_dialog(Calibration, 'calibration', 'setup_calibration.glade')
+        self.construct_and_run_dialog(Calibration, 'calibration', 'setup_calibration.glade', 'Calibration')
         return False
 
 
     def on_menu_devices_xraysource(self, menuitem):
-        self.construct_and_run_dialog(GeniX, 'genix', 'devices_genix.glade')
+        self.construct_and_run_dialog(GeniX, 'genix', 'devices_genix.glade', 'X-ray source')
         return False
 
     def on_menu_devices_detector(self, menuitem):
@@ -199,46 +199,32 @@ class MainWindow(object):
         return False
 
     def on_menu_devices_motors(self, menuitem):
-        self.construct_and_run_dialog(Motors, 'motoroverview', 'devices_motors.glade')
+        self.construct_and_run_dialog(Motors, 'motoroverview', 'devices_motors.glade', 'Overview of motors')
         return False
 
     def on_menu_devices_vacuumgauge(self, menuitem):
-        self.construct_and_run_dialog(TPG201, 'vacgauge', 'devices_tpg201.glade')
+        self.construct_and_run_dialog(TPG201, 'vacgauge', 'devices_tpg201.glade', 'Vacuum gauge')
         return False
 
     def on_menu_devices_temperaturestage(self, menuitem):
-        x = np.linspace(0.001, 1, 1000)
-        dx = x / 100
-        y = (1 / x ** 3 * (np.sin(x * 20) - x * 20 * np.cos(x * 20))) ** 2
-        x = x + np.random.randn(len(x)) * dx
-        dy = y / 100
-        y = y + np.random.randn(len(y)) * dy
-        pc = PlotCurveWindow()
-        pc.addcurve(x, y, dx, dy, 'test curve', 'q', 0.172, 1000, 0.15142)
+        # ToDo
         return False
 
     def on_menu_measurement_scan(self, menuitem):
-        self.construct_and_run_dialog(Scan, 'scan', 'measurement_scan.glade')
+        self.construct_and_run_dialog(Scan, 'scan', 'measurement_scan.glade', 'Scan measurements')
         return False
 
     def on_menu_measurement_singleexposure(self, menuitem):
-        self.construct_and_run_dialog(SingleExposure,'singleexposure','measurement_singleexposure.glade')
+        self.construct_and_run_dialog(SingleExposure, 'singleexposure', 'measurement_singleexposure.glade',
+                                      'Single exposure')
         return False
 
     def on_menu_measurement_transmission(self, menuitem):
-        m=np.random.randn(256*256).reshape(256,256)
-        colidx, rowidx = np.meshgrid(np.arange(256), np.arange(256))
-        beampos_rowidx = 30
-        beampos_colidx = 120
-        m = ((colidx - beampos_colidx) ** 2 + (rowidx - beampos_rowidx) ** 2) ** 0.5 + m
-        mask = (rowidx > 100) & (rowidx < 150) & (colidx > 20) & (colidx < 40)
-        pi = PlotImageWindow(image=m, mask=mask, pixelsize=0.172, beampos=(beampos_rowidx, beampos_colidx),
-                             wavelength=0.1542,
-                       distance=1500)
+        #ToDo
         return False
 
     def on_menu_measurement_automaticprogram(self, menuitem):
-        self.construct_and_run_dialog(ScriptMeasurement,'script','measurement_script.glade')
+        self.construct_and_run_dialog(ScriptMeasurement, 'script', 'measurement_script.glade', 'Scripting')
         return False
 
 

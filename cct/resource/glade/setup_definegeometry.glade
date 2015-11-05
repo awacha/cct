@@ -324,7 +324,7 @@
                         <property name="hexpand">True</property>
                         <property name="text" translatable="yes">200.00</property>
                         <property name="adjustment">ldval_adjustment</property>
-                        <property name="digits">2</property>
+                        <property name="digits">4</property>
                         <property name="value">200</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
@@ -340,7 +340,7 @@
                         <property name="hexpand">True</property>
                         <property name="text" translatable="yes">200.00</property>
                         <property name="adjustment">lderr_adjustment</property>
-                        <property name="digits">2</property>
+                        <property name="digits">4</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>

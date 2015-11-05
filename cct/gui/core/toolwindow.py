@@ -37,7 +37,7 @@ def info_message(parentwindow, info, detail=None):
 
 
 class ToolWindow(GObject.GObject):
-    def __init__(self, gladefile, toplevelname, instrument, application, *args):
+    def __init__(self, gladefile, toplevelname, instrument, application, windowtitle, *args):
         GObject.GObject.__init__(self)
         self._toplevelname=toplevelname
         self._hide_on_close=True
@@ -54,6 +54,7 @@ class ToolWindow(GObject.GObject):
         self._window.connect('delete-event', self.on_window_delete)
         self._window.connect('map', self.on_map)
         self._window.connect('unmap', self.on_unmap)
+        self._window.set_title(windowtitle)
         self._widgets_insensitive=[]
         self._init_gui(*args)
         self._builder.connect_signals(self)
