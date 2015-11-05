@@ -1,8 +1,8 @@
 import logging
-import traceback
 import multiprocessing
 import queue
 import re
+import traceback
 
 import dateutil.parser
 
@@ -24,7 +24,8 @@ pilatus_float_variables = ['tau', 'cutoff', 'exptime', 'expperiod', 'temperature
                            'exptime']
 pilatus_date_variables = ['starttime']
 pilatus_str_variables = ['version', 'gain', 'trimfile', 'cameradef', 'cameraname', 'cameraSN', '_status', 'targetfile',
-                         'lastimage', 'lastcompletedimage', 'shutterstate', 'imgpath', 'imgmode', 'filename']
+                         'lastimage', 'lastcompletedimage', 'shutterstate', 'imgpath', 'imgmode', 'filename',
+                         'camstate']
 
 pilatus_replies = [(15, br'Rate correction is on; tau = (?P<tau>' + RE_FLOAT +
                     br') s, cutoff = (?P<cutoff>' + RE_INT + br') counts'),
@@ -64,7 +65,7 @@ pilatus_replies = [(15, br'Rate correction is on; tau = (?P<tau>' + RE_FLOAT +
                    (13, b'kill'),
                    (15, b'N images set to: (?P<nimages>' + RE_INT + b')'),
                    (2, br"\n*\s*Camera definition:\n\s+(?P<cameradef>.*)\n\s*Camera name: (?P<cameraname>.*),\sS/N\s(?P<cameraSN>" + RE_INT +
-                    br"-" + RE_INT + br")\n\s*Camera state: (?P<_status>.*)\n\s*Target file: (?P<targetfile>.*)\n\s*Time left: (?P<timeleft>" + RE_FLOAT +
+                    br"-" + RE_INT + br")\n\s*Camera state: (?P<camstate>.*)\n\s*Target file: (?P<targetfile>.*)\n\s*Time left: (?P<timeleft>" + RE_FLOAT +
                     br')\n\s*Last image: (?P<lastimage>.*)\n\s*Master PID is: (?P<masterPID>' + RE_INT +
                     br')\n\s*Controlling PID is: (?P<controllingPID>' + RE_INT +
                     br')\n\s*Exposure time: (?P<exptime>' + RE_FLOAT +
@@ -112,7 +113,7 @@ class Pilatus(Device_TCP):
                 self._send(b'THread\n')
             elif vn == 'nimages':
                 self._send(b'NImages\n')
-            elif vn in ['cameradef', 'cameraname', 'cameraSN', '_status', 'targetfile',
+            elif vn in ['cameradef', 'cameraname', 'cameraSN', 'camstate', 'targetfile',
                         'timeleft', 'lastimage', 'masterPID', 'controllingPID',
                         'exptime', 'lastcompletedimage', 'shutterstate']:
                 self._send(b'camsetup\n')
@@ -185,8 +186,9 @@ class Pilatus(Device_TCP):
                         self._queue_to_frontend.put_nowait(
                             ('_error', (exc, traceback.format_exc())))
                         return
-                if idnum == 7 and status == b'OK':
+                if idnum == 7:  # and status == b'OK':
                     # exposing finished, we can release the watchdog
+                    self._update_variable('_status', 'idle')
                     self._release_watchdog()
                 if idnum == 15 and message.startswith(b'Starting'):
                     self._update_variable('_status', self._expected_status)
@@ -206,7 +208,7 @@ class Pilatus(Device_TCP):
                             elif k in pilatus_date_variables:
                                 converter = dateutil.parser.parse
                             else:
-                                NotImplementedError(
+                                raise NotImplementedError(
                                     'Unknown converter for variable ' + str(k))
                             self._update_variable(k, converter(gd[k]))
                         except:
@@ -298,3 +300,6 @@ class Pilatus(Device_TCP):
 
     def _initialize_after_connect(self):
         Device_TCP._initialize_after_connect(self)
+
+    def _on_startupdone(self):
+        self._update_variable('_status', 'idle')
