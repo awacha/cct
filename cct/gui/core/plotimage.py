@@ -53,6 +53,11 @@ class PlotImageWidget(object):
         self._canvas=FigureCanvasGTK3Agg(self._fig)
         self._canvas.set_size_request(530, 350)
         self._toolbar = NavigationToolbar2GTK3(self._canvas, None)
+        b = Gtk.ToolButton(icon_widget=Gtk.Image.new_from_icon_name('view-refresh', Gtk.IconSize.LARGE_TOOLBAR),
+                           label='Redraw')
+        b.set_tooltip_text('Redraw the image')
+        self._toolbar.insert(b, 9)
+        b.connect('clicked', lambda b: self._replot())
         palette_combo=self._builder.get_object('palette_combo')
         for i,cm in enumerate(sorted(matplotlib.cm.cmap_d)):
             palette_combo.append_text(cm)
@@ -78,6 +83,7 @@ class PlotImageWidget(object):
     def set_mask(self, mask):
         self._mask = mask
         self._builder.get_object('showmask_checkbutton').set_active(True)
+        self._validate_parameters()
         self._replot()
 
     def get_mask(self):
@@ -166,6 +172,7 @@ class PlotImageWidget(object):
             return
         self._fig.clear()
         self._axis=self._fig.add_subplot(1,1,1)
+        self._axis.set_axis_bgcolor('black')
         scaling=self._builder.get_object('colourscale_combo').get_active_text()
         matrix = self._matrix.copy()
         logger.debug('Plotting. Matrix minimum: %f. Matrix maximum: %f' % (self._matrix.min(), self._matrix.max()))
@@ -213,8 +220,8 @@ class PlotImageWidget(object):
                                 norm=norm, interpolation='nearest', aspect='equal', origin='upper', extent=extent)
         if (self._builder.get_object('showmask_checkbutton').get_sensitive() and
                 self._builder.get_object('showmask_checkbutton').get_active()):
-            mf = (~self._mask).astype(float)
-            mf[~self._mask]=np.nan
+            mf = (~self._mask).astype(float)  # in `mf`, masked pixels are 1.0, unmasked (valid) are 0.0
+            mf[self._mask] = np.nan  # now mf consists of 1.0 (masked) and NaN (valid) values.
             self._axis.imshow(mf, cmap=matplotlib.cm.gray_r, interpolation='nearest', aspect='equal', alpha=0.7,
                               origin='upper', extent=extent)
         if (self._builder.get_object('showcrosshair_checkbutton').get_sensitive() and

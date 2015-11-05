@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 import numpy as np
 import pkg_resources
@@ -78,6 +79,11 @@ class PlotCurveWidget(object):
         self._canvas.set_size_request(530, 350)
         self._axes = self._fig.add_subplot(1, 1, 1)
         self._toolbar = NavigationToolbar2GTK3(self._canvas, None)
+        b = Gtk.ToolButton(icon_widget=Gtk.Image.new_from_icon_name('view-refresh', Gtk.IconSize.LARGE_TOOLBAR),
+                           label='Redraw')
+        b.set_tooltip_text('Redraw the curves')
+        self._toolbar.insert(b, 9)
+        b.connect('clicked', self.request_replot)
         self._widget.pack_start(self._canvas, True, True, 0)
         self._widget.pack_start(self._toolbar, False, True, 0)
         self._builder.get_object('dsigmadomega_yunit').get_children()[0].set_markup('cm<sup>-1</sup>sr<sup>-1</sup>')
@@ -145,6 +151,7 @@ class PlotCurveWidget(object):
                 pass
         self._curves.append(curvedata)
         self._validate_entries()
+        self.request_replot(None)
 
     def _validate_entries(self):
         self._builder.get_object('pixels_xunit').set_sensitive(all(['pixel' in c for c in self._curves]))
@@ -349,7 +356,8 @@ class PlotCurveWidget(object):
                 self._axes.legend(loc='best', fontsize='small')
             self._canvas.draw()
             return
-        except ValueError:
+        except Exception as exc:
+            logger.error('Error while plotting one-dimensional curve: %s ' % str(exc) + traceback.format_exc())
             self._axes.clear()
             self._canvas.draw()
 
