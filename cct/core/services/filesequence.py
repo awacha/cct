@@ -2,9 +2,12 @@
 import datetime
 import logging
 import os
+import pickle
 import time
 
+from sastool.io.twodim import readcbf
 from sastool.misc.errorvalue import ErrorValue
+from scipy.io import loadmat
 
 from .service import Service
 
@@ -191,6 +194,7 @@ class FileSequence(Service):
                                   config['geometry']['dist_sample_det.err'])
                 sample = self.instrument.samplestore.get_active()
                 if sample is not None:
+                    params['sample'] = sample
                     distcalib = dist - sample.distminus
                     f.write('Sample name:\t%s\n' % sample.title)
                 else:
@@ -219,7 +223,7 @@ class FileSequence(Service):
                     params['devices'][d] = {}
                     for v in sorted(self.instrument.devices[d].list_variables()):
                         f.write(
-                            '%s.%s:\t%s\n' % (d, v, self.instrument.devices[d].get_variable(v)))
+                            'devices.%s.%s:\t%s\n' % (d, v, self.instrument.devices[d].get_variable(v)))
                         params['devices'][d][v] = self.instrument.devices[d].get_variable(v)
                 if sample is not None:
                     f.write(sample.toparam())
@@ -228,6 +232,8 @@ class FileSequence(Service):
                 for k in config['geometry']:
                     f.write('geometry.%s:\t%s\n' % (k, config['geometry'][k]))
                     params['geometry'][k] = config['geometry'][k]
+                params['geometry']['truedistance'] = distcalib.val
+                params['geometry']['truedistance.err'] = distcalib.err
                 params['accounting'] = {}
                 for k in config['accounting']:
                     f.write('accounting.%s:\t%s\n' %
@@ -260,6 +266,9 @@ class FileSequence(Service):
                 f.write('maskid:\t%s\n' %
                         config['geometry']['mask'].rsplit('.', 1)[0])
                 f.write('StartDate:\t%s\n' % str(startdate))
+            with open(os.path.join(self.instrument.config['path']['directories']['param'],
+                                   prefix + '_' + ('%%0%dd.pickle' % config['path']['fsndigits']) % fsn), 'wb') as f:
+                pickle.dump(params, f)
             argstuple = argstuple + (params,)
         self.instrument.exposureanalyzer.submit(
             fsn, filename, prefix, argstuple)
@@ -276,3 +285,31 @@ class FileSequence(Service):
         except FileNotFoundError:
             return False
         return True
+
+    def load_exposure(self, prefix, fsn):
+        cbfname = os.path.join(self.instrument.config['path']['directories']['images'],
+                               prefix + '_' + '%%0%dd' % self.instrument.config['path']['fsndigits'] % fsn + '.cbf')
+        data, header = readcbf(cbfname, load_header=True, load_data=True)
+        with open(os.path.join(self.instrument.config['path']['directories']['param'],
+                               prefix + '_' + ('%%0%dd.pickle' % self.instrument.config['path']['fsndigits']) % fsn),
+                  'rb') as f:
+            param = pickle.load(f)
+        param['cbf'] = header
+        mask = self.get_mask(param['geometry']['mask'])
+        return data, mask, param
+
+    def get_mask(self, maskname):
+        if not hasattr(self, '_masks'):
+            self._masks = {}
+        try:
+            return self._masks[maskname]
+        except KeyError:
+            if not os.path.isabs(maskname):
+                filename = find_in_subfolders(self.instrument.config['path']['directories']['mask'],
+                                              maskname)
+            else:
+                filename = maskname
+            m = loadmat(filename)
+            self._masks[maskname] = m[
+                [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
+            return self._masks[maskname]
