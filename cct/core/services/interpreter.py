@@ -60,6 +60,7 @@ class Interpreter(Service):
             if arguments is None:
                 arguments=[]
             command=commandline
+            self.command_namespace_locals['_commandline'] = '<none>'
         elif isinstance(commandline, str):
             # we have to parse the command line. `arguments` is disregarded.
             commandline_cleaned=cleanup_commandline(commandline)
@@ -122,6 +123,9 @@ class Interpreter(Service):
                 command = self.commands[commandname]()
             except KeyError:
                 raise InterpreterError('Unknown command: ' + commandname)
+            self.command_namespace_locals['_commandline'] = commandline_cleaned
+        else:
+            raise NotImplementedError(commandline)
         self._command_connections[command] = [
             command.connect('return', self.on_command_return),
             command.connect('fail', self.on_command_fail),
