@@ -92,9 +92,6 @@ class ExposureAnalyzer(Service):
                 [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
             return self._masks[maskname]
 
-
-
-
     def _backgroundworker(self):
         while True:
             prefix, fsn, filename, args = self._queue_to_backend.get()
@@ -106,7 +103,11 @@ class ExposureAnalyzer(Service):
                 break
             elif prefix == self._config['path']['prefixes']['crd']:
                 # data reduction needed
-                pass
+                mask=self.get_mask(self._config['geometry']['mask'])
+                I, dI, param,mask=self.datareduction(cbfdata, mask, args[0])
+                self._queue_to_frontend.put_nowait(
+                    ((prefix, fsn), 'datareduction-done')
+                )
             elif prefix == self._config['path']['prefixes']['tra']:
                 # transmission measurement
                 try:
@@ -171,3 +172,25 @@ class ExposureAnalyzer(Service):
         logger.debug('Submitting to exposureanalyzer: %s, %d, %s, %s'%(prefix,fsn,filename,str(args)))
         self._queue_to_backend.put_nowait((prefix, fsn, filename, args))
         self._working+=1
+
+    def prescaling(self, intensity, error, mask, params):
+        intensity/=params['devices']['pilatus']['exptime']
+        error/=params['devices']['pilatus']['exptime']
+        return intensity, error, mask, params
+
+    def subtractbackground(self, intensity, error, mask, params):
+        return intensity, error, mask, params
+
+    def correctgeometry(self, intensity, error, mask, params):
+        return intensity, error, mask, params
+
+    def absolutescaling(self, intensity, error, mask, params):
+        return intensity, error, mask, params
+
+    def datareduction(self, intensity, mask, params):
+        error=intensity**0.5
+        intensity, error, mask, params=self.prescaling(intensity,error,mask,params)
+        intensity, error, mask, params=self.subtractbackground(intensity, error, mask, params)
+        intensity, error, mask, params=self.correctgeometry(intensity, error, mask, params)
+        intensity, error, mask, params=self.absolutescaling(intensity, error, mask, params)
+
