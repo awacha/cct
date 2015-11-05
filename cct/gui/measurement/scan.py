@@ -1,6 +1,8 @@
-from ..core.toolwindow import ToolWindow, error_message
 import logging
+
 from ..core.scangraph import ScanGraph
+from ..core.toolwindow import ToolWindow, error_message
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -42,7 +44,6 @@ class Scan(ToolWindow):
                     self._make_sensitive()
                     self._builder.get_object('start_button').set_label('Start')
                 if self._builder.get_object('symmetric_checkbutton').get_active():
-                    raise NotImplementedError('symmetric scans not yet implemented')
                     width=self._builder.get_object('start_or_width_spin').get_value()
                     commandline='scanrel("%s", %f, %d, %f, "%s")'%(motor, width, nsteps, exptime, comment)
                 else:

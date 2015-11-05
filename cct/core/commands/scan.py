@@ -1,8 +1,10 @@
-from .command import Command, CommandError
-import traceback
-import os
 import logging
+import os
 import time
+import traceback
+
+from .command import Command, CommandError
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -53,10 +55,18 @@ class Scan(Command):
             instrument.exposureanalyzer.connect('scanpoint', self.on_scanpoint),
             instrument.exposureanalyzer.connect('idle', self.on_idle),
         ]
+        self._motor_connections = [
+            instrument.motors[self._motor].connect('position-change', self.on_motor_position_change)
+        ]
         self._scanfilename=os.path.join(self._instrument.config['path']['directories']['scan'],
                                         self._instrument.config['scan']['scanfile'])
         with open(self._scanfilename, 'at', encoding='utf-8') as f:
-            f.write('\n#S %d  scan("%s", %f, %f, %d, %f, "%s")\n'%(self._scanfsn,self._motor, self._start, self._end, self._N, self._exptime, self._comment))
+            try:
+                cmdline = namespace['commandline']
+            except KeyError:
+                cmdline = '%s("%s", %f, %f, %d, %f, "%s")' % (
+                self.name, self._motor, self._start, self._end, self._N, self._exptime, self._comment)
+            f.write('\n#S %d  %s\n' % (self._scanfsn, cmdline))
             f.write('#D %s\n'%time.asctime())
             f.write('#C %s\n'%self._comment)
             f.write('#T %f  (Seconds)\n'%self._exptime)
@@ -84,6 +94,14 @@ class Scan(Command):
             raise
         logger.debug('Scan command started')
 
+    def on_motor_position_change(self, motor, where):
+        if hasattr(self, '_we_can_start_the_exposure'):
+            # we need to start the exposure
+            del self._we_can_start_the_exposure
+            self._myinterpreter.execute_command(
+                'expose(%f, "%s", %f)' % (self._exptime, self._exposure_prefix, where))
+            self._exposureanalyzer_idle = False
+
     def on_scanpoint(self, exposureanalyzer, prefix, fsn, scandata):
         line=str(scandata)[0]+'  '+' '.join(str(f) for f in scandata[1:])
         with open(self._scanfilename,'at', encoding='utf-8') as f:
@@ -109,15 +127,17 @@ class Scan(Command):
         if commandname == 'moveto':
             # check if we are in the desired place
             try:
-                if (not returnvalue) and (abs(self._instrument.motors[self._motor].where()-self._whereto)>0.001):
-                    raise CommandError('Positioning error: current position of motor %s (%f) is not the expected one (%f)' % (
-                        self._motor, self._instrument.motors[self._motor].where(), self._whereto))
+                if (not returnvalue):
+                    logger.warning('Positioning error: moveto command returned with False')
+                    if (abs(self._instrument.motors[self._motor].where() - self._whereto) > 0.001):
+                        raise CommandError(
+                            'Positioning error: current position of motor %s (%f) is not the expected one (%f)' % (
+                                self._motor, self._instrument.motors[self._motor].where(), self._whereto))
             except CommandError as ce:
                 self._die(ce, traceback.format_exc())
-            # we need to start the exposure
-            self._myinterpreter.execute_command(
-                'expose(%f, "%s", %f)' % (self._exptime, self._exposure_prefix, self._instrument.motors[self._motor].where()))
-            self._exposureanalyzer_idle=False
+            self._instrument.motors[self._motor].refresh_variable('actualposition')
+            self._we_can_start_the_exposure = True
+
         elif commandname == 'expose':
             self._idx += 1
             self.emit('progress','Scan running: %d/%d'%(self._idx,self._N),self._idx/self._N)
@@ -171,6 +191,12 @@ class Scan(Command):
             del self._instrument_connections
         except AttributeError:
             pass
+        try:
+            for c in self._motor_connections:
+                self._instrument.motors[self._motor].disconnect(c)
+            del self._motor_connections
+        except AttributeError:
+            pass
 
     def _die(self, exception, tback):
         self.emit('fail', exception, tback)
@@ -180,3 +206,28 @@ class Scan(Command):
     def kill(self):
         self._kill = True
         self._myinterpreter.kill()
+
+
+class ScanRel(Scan):
+    """Do a scan measurement relative to the current position of the motor
+
+    Invocation: scan(<motor>, <halfwidth>, <Npoints>, <exptime>, <comment>)
+
+    Arguments:
+        <motor>: name of the motor
+        <halfwidth>: half width of the scan range
+        <Npoints>: number of points
+        <exptime>: exposure time at each point
+        <comment>: description of the scan
+
+    Remarks:
+        None
+    """
+    name = 'scanrel'
+
+    def execute(self, interpreter, arglist, instrument, namespace):
+        self._motor, self._halfwidth, self._N, self._exptime, self._comment = arglist
+        pos = instrument.motors[self._motor].where()
+        return Scan.execute(self, interpreter, (
+        self._motor, pos - self._halfwidth, pos + self._halfwidth, self._N, self._exptime, self._comment), instrument,
+                            namespace)
