@@ -20,6 +20,7 @@ from .setup.definegeometry import DefineGeometry
 from .measurement.singleexposure import SingleExposure
 from .measurement.script import ScriptMeasurement
 from .setup.calibration import Calibration
+from .tools.exposureviewer import ExposureViewer
 
 itheme = Gtk.IconTheme.get_default()
 itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/scalable'))
@@ -227,6 +228,24 @@ class MainWindow(object):
         self.construct_and_run_dialog(ScriptMeasurement, 'script', 'measurement_script.glade', 'Scripting')
         return False
 
+    def on_menu_tools_maskeditor(self, menuitem):
+        return False
+
+    def on_menu_tools_view(self, menuitem):
+        self.construct_and_run_dialog(ExposureViewer, 'calibration', 'setup_calibration.glade', 'Data viewer')
+        return False
+
+    def on_menu_tools_scanview(self, menuitem):
+        return False
+
+    def on_menu_tools_capillary(self, menuitem):
+        return False
+
+    def on_menu_tools_datareduction(self, menuitem):
+        return False
+
+    def on_menu_help_about(self, menuitem):
+        return False
 
 def run():
     app = CCTApplication(

@@ -67,7 +67,7 @@
                 <property name="vexpand">True</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkExpander" id="expander1">
+                  <object class="GtkExpander" id="loadfile_expander">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="expanded">True</property>
@@ -181,7 +181,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkExpander" id="expander_centering">
+                  <object class="GtkExpander" id="centering_expander">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <child>
@@ -252,7 +252,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkExpander" id="expander2">
+                  <object class="GtkExpander" id="distance_expander">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="vexpand">True</property>
@@ -622,7 +622,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="box3">
+              <object class="GtkBox" id="right_box">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="hexpand">True</property>
@@ -705,7 +705,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkFrame" id="frame2">
+                  <object class="GtkFrame" id="results_frame">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>
@@ -808,7 +808,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButtonBox" id="buttonbox1">
+          <object class="GtkButtonBox" id="buttonbox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="halign">end</property>
