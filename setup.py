@@ -1,15 +1,10 @@
 #!/usb/bin/env python
-#print('Importing setuptools',flush=True)
 from setuptools import setup, find_packages
-#print('Importing setuptools.extension',flush=True)
 from setuptools.extension import Extension
-#print('Importing setuptools',flush=True)
-#from distutils.sysconfig import get_python_lib, get_python_inc
-#print('Importing os',flush=True)
+from distutils.sysconfig import get_python_lib, get_python_inc
+from Cython.Build import cythonize
+import numpy as np
 import os
-
-#with open('.version_last','rt') as f:
-#    version_last=int(f.read())
 
 def getresourcefiles():
     print('Generating resource list',flush=True)
@@ -31,26 +26,24 @@ def update_languagespec():
                 else:
                     fout.write(l)
     print('Updated language spec. Command list:\n'+', '.join(allcommands))
+
+
+extensions = [Extension("cct.core.utils.radint", ["cct/core/utils/radint.pyx"], include_dirs=[np.get_include()])]
+
   
-#print('Finding packages',flush=True)
-#packages=['cct.'+x for x in find_packages('cct')]
-#print('Found packages:',packages,flush=True)
-#print('Finding resources',flush=True)
-#resources=getresourcefiles()
-#print('Running setup()',flush=True)
 update_languagespec()
 setup(name='cct', version='0.0.1', author='Andras Wacha',
       author_email='awacha@gmail.com', url='http://github.com/awacha/cct',
       description='CREDO Control Tool',
       packages=find_packages(),
-      # cmdclass = {'build_ext': build_ext},
-      #ext_modules=cythonize(ext_modules),
+      #      cmdclass = {'build_ext': build_ext},
+      ext_modules=cythonize(extensions),
       install_requires=['numpy>=1.0.0', 'scipy>=0.7.0', 'matplotlib', 'sastool', 'sasgui', 'pymodbustcp'],
       entry_points={'gui_scripts':['cct = cct.gui.mainwindow:run'],
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",
       license="",
       package_data={'': getresourcefiles()},
-#      include_package_data=True,
+      #      include_package_data=True,
       zip_safe=False,
-)
+      )
