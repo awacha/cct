@@ -182,6 +182,13 @@ class Instrument(GObject.GObject):
                                               '(110)': {'val': 21.37584, 'err': 0.00004},
                                               '(111)': {'val': 26.18000, 'err': 0.00004}},
                                      }
+        self.config['datareduction'] = {'backgroundname': 'Empty_Beam',
+                                        'absintrefname': 'Glassy_Carbon',
+                                        'absintrefdata': 'config/GC_data_nm.dat',
+                                        'distancetolerance': 100,  # mm
+                                        'mu_air': 1000,  # ToDo
+                                        'mu_air.err': 0  # ToDo
+                                        }
 
     def save_state(self):
         """Save the current configuration (including that of all devices) to a
@@ -195,6 +202,16 @@ class Instrument(GObject.GObject):
             json.dump(self.config, f)
         logger.info('Saved state to %s'%self.configfile)
 
+    def _update_config(self, config_orig, config_loaded):
+        for c in config_loaded:
+            if c not in config_orig:
+                config_orig[c] = config_loaded[c]
+            elif isinstance(config_orig[c], dict) and isinstance(config_loaded[c], dict):
+                self._update_config(config_orig[c], config_loaded[c])
+            else:
+                config_orig[c] = config_loaded[c]
+        return
+
     def load_state(self):
         """Load the saved configuration file. This is only useful before
         connecting to devices, because status of the back-end process is
@@ -204,9 +221,11 @@ class Instrument(GObject.GObject):
             return
         try:
             with open(self.configfile, 'rt', encoding='utf-8') as f:
-                self.config = json.load(f)
+                config_loaded = json.load(f)
         except IOError:
             return
+        self._update_config(self.config, config_loaded)
+
 
     def _connect_signals(self, devicename, device):
         self._signalconnections[devicename] = [device.connect('startupdone', self.on_ready),

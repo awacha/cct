@@ -161,7 +161,6 @@ class Motors(ToolWindow):
         self._make_insensitive('Moving sample', ['highlevel_expander'])
         self._instrument.motors['Sample_X'].moveto(self._movetosample.positionx.val)
 
-
     def on_motorview_row_activate(self, motorview, path, column):
         self.on_move(None)
 

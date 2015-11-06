@@ -1,9 +1,9 @@
 import logging
 
 import numpy as np
-from sastool.misc.errorvalue import ErrorValue
 
 from .script import Script
+from ..utils.errorvalue import ErrorValue
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

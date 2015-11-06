@@ -1,24 +1,46 @@
 import logging
 import multiprocessing
 import os
+import pickle
 import queue
 import traceback
 
 import numpy as np
 from gi.repository import GLib, GObject
 from sastool.io.twodim import readcbf
+from sastool.misc.easylsq import nonlinear_odr
 from scipy.io import loadmat
 
-from .filesequence import find_in_subfolders
-from .service import Service
+from .service import Service, ServiceError
+from ..utils.errorvalue import ErrorValue
+from ..utils.geometrycorrections import solidangle, angledependentabsorption, angledependentairtransmission
+from ..utils.pathutils import find_in_subfolders
+from ..utils.sasimage import SASImage
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+class DataReductionEnd(Exception):
+    pass
+
+
+def flatten_dict(d):
+    flat = {}
+    for k in d:
+        if not isinstance(d[k], dict):
+            flat[k] = d[k]
+        else:
+            d1 = flatten_dict(d[k])
+            for k1 in d1:
+                flat[k + '.' + k1] = d1[k1]
+    return flat
+
+
 def get_statistics(matrix, masktotal=None, mask=None):
     """Calculate different statistics of a detector image, such as sum, max,
     center of gravity, etc."""
+    assert (isinstance(matrix, np.ndarray))
     if mask is None:
         mask = 1
     if masktotal is None:
@@ -104,7 +126,8 @@ class ExposureAnalyzer(Service):
             elif prefix == self._config['path']['prefixes']['crd']:
                 # data reduction needed
                 mask=self.get_mask(self._config['geometry']['mask'])
-                I, dI, param,mask=self.datareduction(cbfdata, mask, args[0])
+                im = self.datareduction(cbfdata, mask, args[0])
+                self.savecorrected(prefix, fsn, im)
                 self._queue_to_frontend.put_nowait(
                     ((prefix, fsn), 'datareduction-done')
                 )
@@ -173,24 +196,92 @@ class ExposureAnalyzer(Service):
         self._queue_to_backend.put_nowait((prefix, fsn, filename, args))
         self._working+=1
 
-    def prescaling(self, intensity, error, mask, params):
-        intensity/=params['devices']['pilatus']['exptime']
-        error/=params['devices']['pilatus']['exptime']
-        return intensity, error, mask, params
+    def prescaling(self, im):
+        im /= im.params['devices']['pilatus']['exptime']
+        transmission = ErrorValue(im.params['sample']['transmission'], im.params['sample']['transmission.err'])
+        im /= transmission
+        im.params['datareduction']['history'].append('Divided by exposure time')
+        im.params['datareduction']['history'].append('Divided by transmission: %s' % str(transmission))
+        return im
 
-    def subtractbackground(self, intensity, error, mask, params):
-        return intensity, error, mask, params
+    def subtractbackground(self, im):
+        if im.params['sample']['title'] == self._config['datareduction']['backgroundname']:
+            self._lastbackground = im
+            raise DataReductionEnd()
+        if (abs(im.params['geometry']['truedistance'] -
+                    self._lastbackground['geometry']['truedistance']) <
+                self._config['datareduction']['distancetolerance']):
+            im -= self._lastbackground
+            im.params['datareduction']['history'].append('Subtracted background FSN #%d' % self._lastbackground['fsn'])
+        else:
+            raise ServiceError('Last seen background measurement does not match the exposure under reduction.')
+        return im
 
-    def correctgeometry(self, intensity, error, mask, params):
-        return intensity, error, mask, params
+    def correctgeometry(self, im):
+        tth = im.twotheta_rad
+        im *= solidangle(tth.val, tth.err, im.params['geometry']['truedistance'],
+                         im.params['geometry']['truedistance.err'], im.params['geometry']['pixelsize'])
+        im.params['datareduction']['history'].append('Corrected for solid angle')
+        im *= angledependentabsorption(tth.val, tth.err, im.params['sample']['transmission.val'],
+                                       im.params['sample']['transmission.err'])
+        im.params['datareduction']['history'].append('Corrected for angle-dependent absorption')
+        im *= angledependentairtransmission(tth.val, tth.err, self._config['datareduction']['mu_air'],
+                                            self._config['datareduction']['mu_air.err'],
+                                            im.params['geometry']['truedistance'],
+                                            im.params['geometry']['truedistance.err'])
+        im.params['datareduction']['history'].append('Corrected for angle-dependent air absorption')
+        return im
 
-    def absolutescaling(self, intensity, error, mask, params):
-        return intensity, error, mask, params
+    def dividebythickness(self, im):
+        im /= ErrorValue(im.params['sample']['thickness.val'], im.params['sample']['thickness.err'])
+        return im
+
+    def absolutescaling(self, im):
+        if im.params['sample']['title'] == self._config['datareduction']['absintrefname']:
+            dataset = np.loadtxt(self._config['datareduction']['absintrefdata'])
+            q, dq, I, dI, area = im.radial_average(qrange=dataset[:, 0])
+            dataset = dataset[area > 0, :]
+            I = I[area > 0]
+            dI = dI[area > 0]
+            scalingfactor, stat = nonlinear_odr(I, dataset[:, 1], dI, dataset[:, 2], lambda x, a: a * x, [1])
+            self._lastabsintref = im
+            self._absintscalingfactor = scalingfactor
+            self._absintstat = stat
+            im.params['datareduction']['history'].append(
+                'Determined absolute intensity scaling factor: %s. Reduced Chi2: %f. DoF: %d. This corresponds to beam flux %s photons*eta/sec' % (
+                self._absintscalingfactor, self._absintstat['Chi2_reduced'], self._absintstat['DoF'],
+                1 / self._absintscalingfactor))
+        if abs(im.params['geometry']['truedistance'] - self._lastabsintref.params['geometry']['truedistance']) < \
+                self._config['datareduction']['distancetolerance']:
+            im *= self._absintscalingfactor
+            im.params['datareduction']['history'].append(
+                'Using absolute intensity factor %s from measurement FSN #%d for absolute intensity calibration.' % (
+                self._absintscalingfactor, self._lastabsintref.params['fsn']))
+            im.params['datareduction']['flux'] = (1 / self._absintscalingfactor).val
+            im.params['datareduction']['flux.err'] = (1 / self._absintscalingfactor).err
+        else:
+            raise ServiceError(
+                'S-D distance of the last seen absolute intensity reference measurement does not match the exposure under reduction.')
+        return im
+
+    def savecorrected(self, prefix, fsn, im):
+        npzname = os.path.join(self._config['path']['directories']['eval2d'],
+                               prefix + '_%%0%dd' % self._config['path']['fsndigits'] % fsn + '.npz')
+        np.savez_compressed(npzname, Intensity=im.val, Error=im.err)
+        with open(os.path.join(self._config['path']['directories']['eval2d'],
+                               prefix + '_%%0%dd' % self._config['path']['fsndigits'] % fsn + '.pickle'), 'wb') as f:
+            pickle.dump(im.params, f)
+
 
     def datareduction(self, intensity, mask, params):
-        error=intensity**0.5
-        intensity, error, mask, params=self.prescaling(intensity,error,mask,params)
-        intensity, error, mask, params=self.subtractbackground(intensity, error, mask, params)
-        intensity, error, mask, params=self.correctgeometry(intensity, error, mask, params)
-        intensity, error, mask, params=self.absolutescaling(intensity, error, mask, params)
-
+        im = SASImage(intensity, intensity ** 0.5, params, mask)
+        im.params['datareduction'] = {'history': []}
+        try:
+            self.prescaling(im)
+            self.subtractbackground(im)
+            self.correctgeometry(im)
+            self.dividebythickness(im)
+            self.absolutescaling(im)
+        except DataReductionEnd:
+            pass
+        return im

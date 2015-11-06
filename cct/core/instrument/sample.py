@@ -1,7 +1,8 @@
 import datetime
 
 import dateutil.parser
-from sastool.misc.errorvalue import ErrorValue
+
+from ..utils.errorvalue import ErrorValue
 
 VALID_CATEGORIES = ['calibration sample',
                     'normalization sample', 'sample', 'sample+can', 'can', 'none']

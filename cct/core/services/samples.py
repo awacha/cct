@@ -3,10 +3,10 @@ import os
 
 import dateutil.parser
 from gi.repository import GObject
-from sastool.misc.errorvalue import ErrorValue
 
 from .service import Service, ServiceError
 from ..instrument.sample import Sample
+from ..utils.errorvalue import ErrorValue
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
