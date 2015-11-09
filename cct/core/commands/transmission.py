@@ -102,6 +102,7 @@ class Transmission(Script):
             )
             self.emit('message', 'I_%s for sample %s is: %s' % (
                 what, samplename, self._intensities[samplename][what].tostring()))
+            self.emit('detail', (what, samplename, self._intensities[samplename][what]))
             if what == 'sample':
                 transm = ((self._intensities[samplename]['sample'] -
                            self._intensities[samplename]['dark']) /
@@ -112,6 +113,7 @@ class Transmission(Script):
                 self._instrument.samplestore.set_sample(sam.title, sam)
                 self.emit('message',
                           'Transmission value %s has been saved for sample %s.' % (transm.tostring(), sam.title))
+                self.emit('detail', ('transmission', samplename, transm))
                 if self._nsamples == len(self._intensities):
                     del self._cannot_return_yet
 
