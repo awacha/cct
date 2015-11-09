@@ -3,7 +3,9 @@ import traceback
 from gi.repository import GLib
 
 from .command import Command, CommandError
-
+import logging
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class Moveto(Command):
     """Move motor
@@ -152,10 +154,12 @@ class Beamstop(Command):
         if not arglist:
             GLib.idle_add(self.end_command)
             return
-        if (arglist[0] == 'in') or (arglist[0]):
+        if (arglist[0] == 'in') or ((isinstance(arglist[0],int) or isinstance(arglist[0], bool) or isinstance(arglist[0],float) and bool(arglist[0]))):
             self._xpos, self._ypos = self._instrument.config['beamstop']['in']
-        elif (arglist[0] == 'out') or (not arglist[0]):
+            self._direction='in'
+        elif (arglist[0] == 'out') or ((isinstance(arglist[0],int) or isinstance(arglist[0], bool) or isinstance(arglist[0],float) and not bool(arglist[0]))):
             self._xpos, self._ypos = self._instrument.config['beamstop']['out']
+            self._direction='out'
         else:
             raise ConnectionError('Invalid argument: ' + str(arglist[0]))
         self._motorconnections = [self._instrument.motors['BeamStop_X'].connect('stop', self.on_stop, 'BeamStop_X'),
@@ -190,7 +194,7 @@ class Beamstop(Command):
     def on_varchange(self, device, variablename, newvalue, motorname):
         if variablename=='actualposition':
             target=device.get_variable('targetposition')
-            self.emit('progress', 'Moving motor %s to %.3f. Now at: %.3f'%(motorname, target, newvalue),
+            self.emit('progress', 'Moving beamstop %s. Motor %s to %.3f, Now at: %.3f'%(self._direction, motorname, target, newvalue),
                       1-(newvalue-target)/(self._startpos-target))
 
 
