@@ -107,7 +107,6 @@ class FileSequence(Service):
         with open(scanfile, 'rt', encoding='utf-8') as f:
             f.seek(self._scanfile_toc[scanfile][index],0)
             l=f.readline().strip()
-            logger.debug('Loaded line: %s'%l)
             assert(l.startswith('#S'))
             assert(int(l.split()[1])==index)
             length=None
@@ -184,7 +183,6 @@ class FileSequence(Service):
             for scanfile in [f for f in os.listdir(subdir)
                              if f.endswith('.spec')]:
                 scanfile = os.path.join(subdir, scanfile)
-                logger.debug('Parsing scanfile %s'%scanfile)
                 with open(scanfile, 'rt', encoding='utf-8') as f:
                     self._scanfile_toc[scanfile]={}
                     l=f.readline()
@@ -194,10 +192,9 @@ class FileSequence(Service):
                             pos=f.tell()-len(l)-1
                             idx=int(l.split()[1])
                             self._scanfile_toc[scanfile][idx]=pos
-                            logger.debug('Scan #%d at %d'%(idx,pos))
                         l=f.readline()
-        for sf in self._scanfile_toc:
-            logger.debug('Max. scan index in file %s: %d'%(sf, max([k for k in self._scanfile_toc[sf]]+[0])))
+#        for sf in self._scanfile_toc:
+#            logger.debug('Max. scan index in file %s: %d'%(sf, max([k for k in self._scanfile_toc[sf]]+[0])))
 
         lastscan=max([max([k for k in self._scanfile_toc[sf]] + [0])
                               for sf in self._scanfile_toc] + [0])
@@ -205,7 +202,7 @@ class FileSequence(Service):
             self._lastscan=lastscan
             self.emit('lastscan-changed', self._lastscan)
 
-        logger.debug('Max. scan index: %d'%self._lastscan)
+ #       logger.debug('Max. scan index: %d'%self._lastscan)
         self._nextfreescan = self._lastscan + 1
         self.emit('nextscan-changed', self._nextfreescan)
 

@@ -117,8 +117,8 @@ class ExposureAnalyzer(Service):
     def _backgroundworker(self):
         while True:
             prefix, fsn, filename, args = self._queue_to_backend.get()
-            logger.debug(
-                'Exposureanalyzer background process got work: %s, %d, %s, %s' % (prefix, fsn, filename, str(args)))
+#            logger.debug(
+#                'Exposureanalyzer background process got work: %s, %d, %s, %s' % (prefix, fsn, filename, str(args)))
             cbfdata = readcbf(
                 os.path.join(self._config['path']['directories']['images'], filename))[0]
             if prefix == 'exit':
@@ -179,7 +179,7 @@ class ExposureAnalyzer(Service):
             self.emit(
                 'error', prefix_fsn[0], prefix_fsn[1], arguments[0], arguments[1])
         elif what == 'scanpoint':
-            logger.debug('Emitting scanpoint with arguments: %s'%str(arguments))
+#            logger.debug('Emitting scanpoint with arguments: %s'%str(arguments))
             self.emit('scanpoint', prefix_fsn[0], prefix_fsn[1], arguments)
         elif what == 'datareduction':
             self.emit('datareduction-done', prefix_fsn[0], prefix_fsn[1])
@@ -192,7 +192,7 @@ class ExposureAnalyzer(Service):
         return True
 
     def submit(self, fsn, filename, prefix, args):
-        logger.debug('Submitting to exposureanalyzer: %s, %d, %s, %s'%(prefix,fsn,filename,str(args)))
+#        logger.debug('Submitting to exposureanalyzer: %s, %d, %s, %s'%(prefix,fsn,filename,str(args)))
         self._queue_to_backend.put_nowait((prefix, fsn, filename, args))
         self._working+=1
 
