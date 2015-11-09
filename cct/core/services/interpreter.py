@@ -6,7 +6,7 @@ from .service import Service, ServiceError
 from ..commands.command import Command, cleanup_commandline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class InterpreterError(ServiceError):
