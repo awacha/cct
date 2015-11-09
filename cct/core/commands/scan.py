@@ -60,30 +60,13 @@ class Scan(Command):
         ]
         self._scanfilename=os.path.join(self._instrument.config['path']['directories']['scan'],
                                         self._instrument.config['scan']['scanfile'])
-        with open(self._scanfilename, 'at', encoding='utf-8') as f:
-            try:
-                cmdline = namespace['commandline']
-            except KeyError:
-                cmdline = '%s("%s", %f, %f, %d, %f, "%s")' % (
+        try:
+            cmdline = namespace['commandline']
+        except KeyError:
+            cmdline = '%s("%s", %f, %f, %d, %f, "%s")' % (
                 self.name, self._motor, self._start, self._end, self._N, self._exptime, self._comment)
-            f.write('\n#S %d  %s\n' % (self._scanfsn, cmdline))
-            f.write('#D %s\n'%time.asctime())
-            f.write('#C %s\n'%self._comment)
-            f.write('#T %f  (Seconds)\n'%self._exptime)
-            f.write('#G0 0\n')
-            f.write('#G1 0\n')
-            f.write('#Q 0 0 0')
-            entry_index=8
-            p_index=-1
-            for m in sorted(self._instrument.motors):
-                if entry_index>=8:
-                    p_index+=1
-                    f.write('\n#P%d'%p_index)
-                    entry_index=0
-                f.write(' %f'%self._instrument.motors[m].where())
-                entry_index+=1
-            f.write('\n#N %d\n'%self._N)
-            f.write('#L '+'  '.join([self._motor]+self._instrument.config['scan']['columns'])+'\n')
+        self._scanfsn=self._instrument.filesequence.new_scan(cmdline, self._comment, self._exptime, self._N, self._motor)
+
         try:
             self._notyetstarted=True
             self._scan_end=False
@@ -103,7 +86,7 @@ class Scan(Command):
             self._exposureanalyzer_idle = False
 
     def on_scanpoint(self, exposureanalyzer, prefix, fsn, scandata):
-        line=str(scandata)[0]+'  '+' '.join(str(f) for f in scandata[1:])
+        line=str(scandata[0])+'  '+' '.join(str(f) for f in scandata[1:])
         with open(self._scanfilename,'at', encoding='utf-8') as f:
             f.write(line+'\n')
         self.emit('message',line)
