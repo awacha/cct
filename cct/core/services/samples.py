@@ -75,6 +75,8 @@ class SampleStore(Service):
                     elif l.startswith('situation ='):
                         sample['situation'] = rhs
                     else:
+                        if sample['title'] in self:
+                            self.remove(sample['title'])
                         self.add(Sample(**sample))
         except IOError:
             pass
