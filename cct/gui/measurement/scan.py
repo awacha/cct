@@ -35,8 +35,8 @@ class Scan(ToolWindow):
             self._make_insensitive('Scan sequence is running', ['close_button', 'entry_grid'])
             self._builder.get_object('start_button').set_label('Stop')
             try:
-                motor=self._builder.get_object('motorselector').get_active_text()
-                nsteps=self._builder.get_object('nsteps_spin').get_value_as_int()
+                self._motor=self._builder.get_object('motorselector').get_active_text()
+                self._nsteps=self._builder.get_object('nsteps_spin').get_value_as_int()
                 exptime=self._builder.get_object('countingtime_spin').get_value()
                 comment=self._builder.get_object('comment_entry').get_text().replace('"','\\"')
                 if not comment.strip():
@@ -45,11 +45,11 @@ class Scan(ToolWindow):
                     self._builder.get_object('start_button').set_label('Start')
                 if self._builder.get_object('symmetric_checkbutton').get_active():
                     width=self._builder.get_object('start_or_width_spin').get_value()
-                    commandline='scanrel("%s", %f, %d, %f, "%s")'%(motor, width, nsteps, exptime, comment)
+                    self._commandline='scanrel("%s", %f, %d, %f, "%s")'%(self._motor, width, self._nsteps, exptime, comment)
                 else:
                     start=self._builder.get_object('start_or_width_spin').get_value()
                     end=self._builder.get_object('end_spin').get_value()
-                    commandline='scan("%s", %f, %f, %d, %f, "%s")' %(motor, start, end, nsteps, exptime, comment)
+                    self._commandline='scan("%s", %f, %f, %d, %f, "%s")' %(self._motor, start, end, self._nsteps, exptime, comment)
                 self._connections={self._instrument.interpreter:[
                     self._instrument.interpreter.connect('cmd-return',self.on_command_return),
                     self._instrument.interpreter.connect('cmd-fail', self.on_command_fail),
@@ -57,8 +57,10 @@ class Scan(ToolWindow):
                     self._instrument.interpreter.connect('progress', self.on_progress),
                     self._instrument.interpreter.connect('pulse', self.on_pulse),
                 ], self._instrument.exposureanalyzer:[self._instrument.exposureanalyzer.connect('scanpoint', self.on_scanpoint)]}
-                self._instrument.interpreter.execute_command(commandline)
-                self._scangraph=ScanGraph([motor]+self._instrument.config['scan']['columns'],nsteps, self._instrument)
+                if self._builder.get_object('shutter_checkbutton').get_active():
+                    self._instrument.interpreter.execute_command('shutter("open")')
+                else:
+                    self.on_command_return(self._instrument.interpreter, 'shutter', True)
             except:
                 self._cleanup_after_scan()
                 raise
@@ -67,8 +69,19 @@ class Scan(ToolWindow):
         return True
 
     def on_command_return(self, interpreter, commandname, returnvalue):
-        self._cleanup_after_scan()
-        logger.info('Scan finished')
+        if commandname=='shutter' and returnvalue:
+            self._instrument.interpreter.execute_command(self._commandline)
+            self._scangraph=ScanGraph([self._motor]+self._instrument.config['scan']['columns'],self._nsteps, self._instrument)
+        elif commandname=='scan' or commandname=='scanrel':
+            if self._builder.get_object('shutter_checkbutton').get_active():
+                self._instrument.interpreter.execute_command('shutter("close")')
+            else:
+                self.on_command_return(self._instrument.interpreter, 'shutter', False)
+        elif commandname=='shutter' and not returnvalue:
+            self._cleanup_after_scan()
+            logger.info('Scan finished')
+        else:
+            raise NotImplementedError(commandname)
 
     def on_command_fail(self, interpreter, commandname, exc, tb):
         error_message(self._window,'Error while scanning',tb)
