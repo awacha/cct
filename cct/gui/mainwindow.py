@@ -20,6 +20,7 @@ from .setup.sampleedit import SampleEdit
 from .setup.definegeometry import DefineGeometry
 from .measurement.singleexposure import SingleExposure
 from .measurement.script import ScriptMeasurement
+from .measurement.transmission import Transmission
 from .setup.calibration import Calibration
 from .tools.exposureviewer import ExposureViewer
 from .tools.capillarymeasurement import CapillaryMeasurement
@@ -277,6 +278,8 @@ class MainWindow(object):
         return False
 
     def on_menu_measurement_transmission(self, menuitem):
+        self.construct_and_run_dialog(Transmission, 'measuretransmission', 'measurement_transmission.glade',
+                                      'Transmission measurement')
         #ToDo
         return False
 
