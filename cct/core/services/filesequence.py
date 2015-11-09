@@ -5,12 +5,12 @@ import os
 import pickle
 import time
 
-from sastool.io.twodim import readcbf
 from scipy.io import loadmat
 
 from .service import Service
 from ..utils.errorvalue import ErrorValue
 from ..utils.pathutils import find_in_subfolders, find_subfolders
+from ..utils.sasimage import SASImage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -39,10 +39,8 @@ logger.setLevel(logging.DEBUG)
 """
 
 
-
 class FileSequence(Service):
     """A class to keep track on file sequence numbers and folders"""
-
     name = 'filesequence'
 
     def __init__(self, *args, **kwargs):
@@ -55,7 +53,9 @@ class FileSequence(Service):
         self.reload()
 
     def init_scanfile(self):
-        self._scanfile = os.path.join(self.instrument.config['path']['directories']['scan'],self.instrument.config['scan']['scanfile'])
+        self._scanfile = os.path.join(
+            self.instrument.config['path']['directories']['scan'],
+            self.instrument.config['scan']['scanfile'])
 
         if not os.path.exists(self._scanfile):
             with open(self._scanfile, 'wt', encoding='utf-8') as f:
@@ -64,7 +64,8 @@ class FileSequence(Service):
                 f.write('#D %s\n' % time.asctime())
                 f.write('#C CREDO scan file\n')
                 f.write('#O0 ' + '  '.join(m['name'] for m in sorted(
-                    self.instrument.config['motors'], key=lambda x: x['name'])) + '\n')
+                    self.instrument.config['motors'],
+                    key=lambda x: x['name'])) + '\n')
                 f.write('\n')
 
     def start_scan(self):
@@ -81,7 +82,8 @@ class FileSequence(Service):
             for d in [directory] + find_subfolders(directory):
                 # find all files
                 filelist = [
-                    f for f in os.listdir(d) if f.endswith(extension) and '_' in f]
+                    f for f in os.listdir(d) if f.endswith(extension)
+                    and '_' in f]
                 # find all file prefixes, like 'crd', 'tst', 'tra', 'scn', etc.
                 for c in {f.rsplit('.')[0].split('_')[0] for f in filelist}:
                     if c not in self._lastfsn:
@@ -95,7 +97,7 @@ class FileSequence(Service):
 
         for p in self.instrument.config['path']['prefixes'].values():
             if p not in self._lastfsn:
-                self._lastfsn[p]=0
+                self._lastfsn[p] = 0
 
         for c in self._lastfsn:
             if c not in self._nextfreefsn:
@@ -103,11 +105,11 @@ class FileSequence(Service):
             if self._nextfreefsn[c] < self._lastfsn[c]:
                 self._nextfreefsn[c] = self._lastfsn[c] + 1
 
-
         # reload scans
         scanpath = self.instrument.config['path']['directories']['scan']
         for subdir in [scanpath] + find_subfolders(scanpath):
-            for scanfile in [f for f in os.listdir(subdir) if f.endswith('.spec')]:
+            for scanfile in [f for f in os.listdir(subdir)
+                             if f.endswith('.spec')]:
                 scanfile = os.path.join(subdir, scanfile)
                 with open(scanfile, 'rt', encoding='utf-8') as f:
                     self._scanfiles[scanfile] = [
@@ -143,13 +145,14 @@ class FileSequence(Service):
         if prefix not in self._nextfreefsn:
             self._nextfreefsn[prefix] = 1
         try:
-            return range(self._nextfreefsn[prefix], self._nextfreefsn[prefix] + N)
+            return range(self._nextfreefsn[prefix],
+                         self._nextfreefsn[prefix] + N)
         finally:
             if acquire:
                 self._nextfreefsn[prefix] += N
 
     def new_exposure(self, fsn, filename, prefix, startdate, argstuple=None):
-        """Called by various parts of the instrument if a new exposure file 
+        """Called by various parts of the instrument if a new exposure file
         has became available"""
         if argstuple is None:
             argstuple = ()
@@ -163,8 +166,10 @@ class FileSequence(Service):
         if prefix in [config['path']['prefixes']['crd'],
                       config['path']['prefixes']['tst']]:
             params = {}
-            with open(os.path.join(self.instrument.config['path']['directories']['param'],
-                                   prefix + '_' + ('%%0%dd.param' % config['path']['fsndigits']) % fsn), 'wt') as f:
+            with open(os.path.join(
+                      self.instrument.config['path']['directories']['param'],
+                      prefix + '_' + '%%0%dd.param' %
+                      config['path']['fsndigits']) % fsn, 'wt') as f:
                 params['fsn'] = fsn
                 logger.debug(
                     'Writing param file for new exposure to %s' % f.name)
@@ -266,16 +271,15 @@ class FileSequence(Service):
         return True
 
     def load_exposure(self, prefix, fsn):
-        cbfname = os.path.join(self.instrument.config['path']['directories']['images'],
-                               prefix + '_' + '%%0%dd' % self.instrument.config['path']['fsndigits'] % fsn + '.cbf')
-        data, header = readcbf(cbfname, load_header=True, load_data=True)
-        with open(os.path.join(self.instrument.config['path']['directories']['param'],
-                               prefix + '_' + ('%%0%dd.pickle' % self.instrument.config['path']['fsndigits']) % fsn),
-                  'rb') as f:
-            param = pickle.load(f)
-        param['cbf'] = header
-        mask = self.get_mask(param['geometry']['mask'])
-        return data, mask, param
+        cbfname = os.path.join(
+            self.instrument.config['path']['directories']['images'],
+            prefix + '_' + '%%0%dd.cbf' %
+            self.instrument.config['path']['fsndigits'] % fsn)
+        picklename = os.path.join(
+            self.instrument.config['path']['directories']['param'],
+            prefix + '_' + '%%0%dd.pickle' %
+            self.instrument.config['path']['fsndigits'] % fsn)
+        return SASImage.new_from_file(cbfname, picklename)
 
     def get_mask(self, maskname):
         if not hasattr(self, '_masks'):
