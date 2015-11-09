@@ -67,7 +67,13 @@ class Command(GObject.GObject):
         'progress': (GObject.SignalFlags.RUN_FIRST, None, (str, float)),
         # send occasional messages to the command interpreter (to
         # be written to a terminal or logged at the INFO level.
-        'message': (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        'message': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        # can be sent to give the front-end command-dependent details.
+        # A typical use case is the transmission command, which uses
+        # this mechanism to notify the front-end of what it has
+        # currently been doing. The single argument of this signal
+        # depends on the command.
+        'detail': (GObject.SignalFlags.RUN_FIRST, None, (object,))
     }
 
     name = '__abstract__'

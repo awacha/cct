@@ -23,6 +23,8 @@ class Interpreter(Service):
         'cmd-return': (GObject.SignalFlags.RUN_FIRST, None, (str, object,)),
         # emitted on a failure. Can be emitted multiple times
         'cmd-fail': (GObject.SignalFlags.RUN_LAST, None, (str, object, str)),
+        # just channeling the currently running command's 'detail' signal
+        'cmd-detail': (GObject.SignalFlags.RUN_FIRST, None, (str, object)),
         # long running commands where the duration cannot be
         # estimated in advance, should emit this periodically (say
         # in every second)
@@ -132,6 +134,7 @@ class Interpreter(Service):
             command.connect('message', self.on_command_message),
             command.connect('pulse', self.on_command_pulse),
             command.connect('progress', self.on_command_progress),
+            command.connect('detail', self.on_command_detail),
         ]
         try:
             command.execute(
@@ -173,6 +176,9 @@ class Interpreter(Service):
 
     def on_command_pulse(self, command, statusstring):
         self.emit('pulse', command.name, statusstring)
+
+    def on_command_detail(self, command, detail):
+        self.emit('cmd-detail', command.name, detail)
 
     def kill(self):
         try:
