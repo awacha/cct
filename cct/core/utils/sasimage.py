@@ -45,7 +45,7 @@ class SASImage(ErrorValue):
             param = pickle.load(f)
         if header is None:
             param['cbf'] = header
-        maskfile = loadmat(find_in_subfolders(param['geometry']['mask']))
+        maskfile = loadmat(find_in_subfolders(param['geometry']['mask'],'mask'))
         mask = maskfile[[k for k in maskfile if not k.startswith('_')][0]]
         return cls(intensity, error, param, mask)
 
