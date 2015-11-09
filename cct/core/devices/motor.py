@@ -607,7 +607,7 @@ class TMCMcard(Device_TCP):
                 self._update_variable('_status$%d' % motor, 'idle', force=True)
                 raise
         elif commandname == 'stop':
-            motor = arguments[0]
+            motor = arguments
             self._send(self._construct_tmcl_command(3, 0, motor, 0))
         elif commandname == 'load_positions':
             self._load_positions()
