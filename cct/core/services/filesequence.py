@@ -4,6 +4,8 @@ import logging
 import os
 import pickle
 import time
+import numpy as np
+import dateutil.parser
 
 from scipy.io import loadmat
 
@@ -47,8 +49,8 @@ class FileSequence(Service):
         Service.__init__(self, *args, **kwargs)
         self._lastfsn = {}
         self._lastscan = 0
-        self._scanfiles = {}
         self._nextfreefsn = {}
+        self._scanfile_toc={}
         self.init_scanfile()
         self.reload()
 
@@ -68,8 +70,71 @@ class FileSequence(Service):
                     key=lambda x: x['name'])) + '\n')
                 f.write('\n')
 
-    def start_scan(self):
-        pass
+    def new_scan(self, cmdline, comment, exptime, N, motorname):
+        scanidx=self.get_nextfreescan(acquire=True)
+        with open(self._scanfile, 'at', encoding='utf-8') as f:
+            self._scanfile_toc[self._scanfile][scanidx]=f.tell()
+            f.write('\n#S %d  %s\n' % (scanidx, cmdline))
+            f.write('#D %s\n'%time.asctime())
+            f.write('#C %s\n'%comment)
+            f.write('#T %f  (Seconds)\n'%exptime)
+            f.write('#G0 0\n')
+            f.write('#G1 0\n')
+            f.write('#Q 0 0 0')
+            entry_index=8
+            p_index=-1
+            for m in sorted(self.instrument.motors):
+                if entry_index>=8:
+                    p_index+=1
+                    f.write('\n#P%d'%p_index)
+                    entry_index=0
+                f.write(' %f'%self.instrument.motors[m].where())
+                entry_index+=1
+            f.write('\n#N %d\n'%N)
+            f.write('#L '+'  '.join([motorname]+self.instrument.config['scan']['columns'])+'\n')
+        logger.info('Written entry for scan %d into scanfile %s'%(scanidx, self._scanfile))
+        return scanidx
+
+    def load_scan(self, index, scanfile=None):
+        if scanfile is None:
+            scanfile=self._scanfile
+        result={}
+        with open(scanfile, 'rt', encoding='utf-8') as f:
+            f.seek(self._scanfile_toc[scanfile][index],0)
+            l=f.readline().strip()
+            logger.debug('Loaded line: %s'%l)
+            assert(l.startswith('#S'))
+            assert(int(l.split()[1])==index)
+            length=None
+            index=None
+            while l:
+                if l.startswith('#S'):
+                    result['index']=int(l.split()[1])
+                    result['command']=l.split(None,2)[2]
+                elif l.startswith('#D'):
+                    result['date']=dateutil.parser.parse(l[3:])
+                elif l.startswith('#C'):
+                    result['comment']=l[3:]
+                elif l.startswith('#T') and l.endswith('(Seconds)'):
+                    result['countingtime']=float(l.split()[1])
+                elif l.startswith('#P'):
+                    if 'positions' not in result:
+                        result['positions']=[]
+                    result['positions'].append([float(x) for x in l.split()[1:]])
+                elif l.startswith('#N'):
+                    length=int(l[3:])
+                elif l.startswith('#L'):
+                    result['signals']=l[3:].split('  ')
+                    assert(length is not None)
+                    result['data']=np.zeros(length, dtype=list(zip(result['signals'], [np.float]*len(result['signals']))))
+                    index=0
+                elif l.startswith('#'):
+                    pass
+                else:
+                    result['data'][index]=tuple(float(x) for x in l.split())
+                    index+=1
+                l=f.readline().strip()
+        return result
 
     def reload(self):
         # check raw detector images
@@ -111,11 +176,24 @@ class FileSequence(Service):
             for scanfile in [f for f in os.listdir(subdir)
                              if f.endswith('.spec')]:
                 scanfile = os.path.join(subdir, scanfile)
+                logger.debug('Parsing scanfile %s'%scanfile)
                 with open(scanfile, 'rt', encoding='utf-8') as f:
-                    self._scanfiles[scanfile] = [
-                        int(l.split()[1]) for l in f if l.startswith('#S')]
-        self._lastscan = max([max(self._scanfiles[sf] + [0])
-                              for sf in self._scanfiles] + [0])
+                    self._scanfile_toc[scanfile]={}
+                    l=f.readline()
+                    while l:
+                        l=l.strip()
+                        if l.startswith('#S'):
+                            pos=f.tell()-len(l)-1
+                            idx=int(l.split()[1])
+                            self._scanfile_toc[scanfile][idx]=pos
+                            logger.debug('Scan #%d at %d'%(idx,pos))
+                        l=f.readline()
+        for sf in self._scanfile_toc:
+            logger.debug('Max. scan index in file %s: %d'%(sf, max([k for k in self._scanfile_toc[sf]]+[0])))
+
+        self._lastscan = max([max([k for k in self._scanfile_toc[sf]] + [0])
+                              for sf in self._scanfile_toc] + [0])
+        logger.debug('Max. scan index: %d'%self._lastscan)
         self._nextfreescan = self._lastscan + 1
 
     def get_lastfsn(self, prefix):
