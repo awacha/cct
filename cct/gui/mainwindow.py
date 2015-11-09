@@ -4,6 +4,7 @@ require_version('Gtk', '3.0')
 from gi.repository import Gio
 from gi.repository import Gtk
 from gi.repository import GLib
+from gi.repository import GdkPixbuf
 import pkg_resources
 import sys
 import logging
@@ -172,6 +173,9 @@ class MainWindow(object):
         self._builder.connect_signals(self)
         self._window.set_show_menubar(True)
         self._window.connect('delete-event', self.on_delete_event)
+        self._window.set_default_icon_list([GdkPixbuf.Pixbuf.new_from_file_at_size(
+            pkg_resources.resource_filename('cct','resource/icons/scalable/cctlogo.svg'),
+            sz,sz) for sz in [16, 32, 48, 64, 128, 256]])
         self._window.show_all()
         self._loghandler = MyLogHandler(self._writelogline)
         self._loghandler.setLevel(logging.DEBUG)
