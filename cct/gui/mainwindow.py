@@ -21,6 +21,8 @@ from .measurement.singleexposure import SingleExposure
 from .measurement.script import ScriptMeasurement
 from .setup.calibration import Calibration
 from .tools.exposureviewer import ExposureViewer
+from .tools.capillarymeasurement import CapillaryMeasurement
+import kerberos
 
 itheme = Gtk.IconTheme.get_default()
 itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/scalable'))
@@ -63,10 +65,18 @@ class CCTApplication(Gtk.Application):
         # self.connect('startup', self.on_startup)
 
     def do_activate(self):
-        self._mw = MainWindow(self, self._online, self._newconfig)
-        self.add_window(self._mw._window)
-        self._mw._window.set_show_menubar(True)
-        self._mw._window.show_all()
+
+        ad=AuthenticatorDialog(self)
+        try:
+            if (not self._skipauthentication) and (not ad.run()):
+                return True
+
+            self._mw = MainWindow(self, self._online, self._newconfig)
+            self.add_window(self._mw._window)
+            self._mw._window.set_show_menubar(True)
+            self._mw._window.show_all()
+        finally:
+            ad._window.destroy()
         return True
 
     def do_command_line(self, args):
@@ -75,11 +85,53 @@ class CCTApplication(Gtk.Application):
                             help='Enable working on-line (you should give this if you want to do serious work)')
         parser.add_argument('--newconfig', action='store_true', default=False,
                             help='Clobber the config file. You probably don\'t need this, only in case you are running a new version of cct for the first time.')
+        parser.add_argument('--root', action='store_true', default=False,
+                            help='Skip the authentication dialog. Use this only as a last resort!')
         args = parser.parse_args()
         self._online = args.online
         self._newconfig = args.newconfig
+        self._skipauthentication=args.root
         self.do_activate()
         return 0
+
+
+class AuthenticatorDialog(object):
+    def __init__(self, application):
+        self._application=application
+        self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/accounting_login.glade'))
+        self._window=self._builder.get_object('accountingdialog')
+        self._builder.connect_signals(self)
+
+    def run(self):
+        response=self._window.run()
+        if response==Gtk.ResponseType.DELETE_EVENT:
+            self._application.quit()
+            return False
+        else:
+            logger.debug('Response ID: '+str(response))
+            username=self._builder.get_object('operator_entry').get_text()
+            if '@' not in username:
+                username=username+'@MTATTKMFIBNO'
+            try:
+                if kerberos.checkPassword(username,
+                                          self._builder.get_object('password_entry').get_text(),
+                                          '','',0):
+                    return True
+            except kerberos.BasicAuthError:
+                self._application.quit()
+
+    def get_operator(self):
+        username=self._builder.get_object('operator_entry').get_text()
+        return username.split('@')[0]
+
+    def get_proposalid(self):
+        return self._builder.get_object('proposalid_entry').get_active_text()
+
+    def get_proposername(self):
+        return self._builder.get_object('proposername_entry').get_text()
+
+    def get_proposaltitle(self):
+        return self._builder.get_object('proposaltitle_entry').get_text()
 
 class DeviceStatusBar(Gtk.Box):
     def __init__(self, instrument):
@@ -239,6 +291,7 @@ class MainWindow(object):
         return False
 
     def on_menu_tools_capillary(self, menuitem):
+        self.construct_and_run_dialog(CapillaryMeasurement, 'capillarymeasurement', 'tools_capillarymeasurement.glade', 'Capillary measurement')
         return False
 
     def on_menu_tools_datareduction(self, menuitem):
