@@ -6,7 +6,7 @@ import pickle
 import time
 import numpy as np
 import dateutil.parser
-
+from gi.repository import GObject
 from scipy.io import loadmat
 
 from .service import Service
@@ -44,6 +44,11 @@ logger.setLevel(logging.DEBUG)
 class FileSequence(Service):
     """A class to keep track on file sequence numbers and folders"""
     name = 'filesequence'
+
+    __gsignals__={'nextfsn-changed':(GObject.SignalFlags.RUN_FIRST, None, (str, int,)),
+                  'nextscan-changed':(GObject.SignalFlags.RUN_FIRST, None, (int,)),
+                  'lastfsn-changed':(GObject.SignalFlags.RUN_FIRST, None, (str, int,)),
+                  'lastscan-changed':(GObject.SignalFlags.RUN_FIRST, None, (int,))}
 
     def __init__(self, *args, **kwargs):
         Service.__init__(self, *args, **kwargs)
@@ -153,12 +158,14 @@ class FileSequence(Service):
                 for c in {f.rsplit('.')[0].split('_')[0] for f in filelist}:
                     if c not in self._lastfsn:
                         self._lastfsn[c] = 0
+                        self.emit('lastfsn-changed', c, self._lastfsn[c])
                     # find the highest available FSN of the current prefix in
                     # this directory
                     maxfsn = max([int(f.split('_')[1][:-len(extension)])
                                   for f in filelist if (f.split('_')[0] == c)])
                     if maxfsn > self._lastfsn[c]:
                         self._lastfsn[c] = maxfsn
+                        self.emit('lastfsn-changed', c, self._lastfsn[c])
 
         for p in self.instrument.config['path']['prefixes'].values():
             if p not in self._lastfsn:
@@ -169,6 +176,7 @@ class FileSequence(Service):
                 self._nextfreefsn[c] = 0
             if self._nextfreefsn[c] < self._lastfsn[c]:
                 self._nextfreefsn[c] = self._lastfsn[c] + 1
+                self.emit('nextfsn-changed', c, self._nextfreefsn[c])
 
         # reload scans
         scanpath = self.instrument.config['path']['directories']['scan']
@@ -191,10 +199,15 @@ class FileSequence(Service):
         for sf in self._scanfile_toc:
             logger.debug('Max. scan index in file %s: %d'%(sf, max([k for k in self._scanfile_toc[sf]]+[0])))
 
-        self._lastscan = max([max([k for k in self._scanfile_toc[sf]] + [0])
+        lastscan=max([max([k for k in self._scanfile_toc[sf]] + [0])
                               for sf in self._scanfile_toc] + [0])
+        if self._lastscan !=lastscan:
+            self._lastscan=lastscan
+            self.emit('lastscan-changed', self._lastscan)
+
         logger.debug('Max. scan index: %d'%self._lastscan)
         self._nextfreescan = self._lastscan + 1
+        self.emit('nextscan-changed', self._nextfreescan)
 
     def get_lastfsn(self, prefix):
         return self._lastfsn[prefix]
@@ -208,6 +221,7 @@ class FileSequence(Service):
         finally:
             if acquire:
                 self._nextfreescan += 1
+            self.emit('nextscan-changed', self._nextfreescan)
 
     def get_nextfreefsn(self, prefix, acquire=True):
         if prefix not in self._nextfreefsn:
@@ -217,6 +231,7 @@ class FileSequence(Service):
         finally:
             if acquire:
                 self._nextfreefsn[prefix] += 1
+            self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
     def get_nextfreefsns(self, prefix, N, acquire=True):
         assert (N > 0)
@@ -228,6 +243,7 @@ class FileSequence(Service):
         finally:
             if acquire:
                 self._nextfreefsn[prefix] += N
+            self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
     def new_exposure(self, fsn, filename, prefix, startdate, argstuple=None):
         """Called by various parts of the instrument if a new exposure file
@@ -236,6 +252,7 @@ class FileSequence(Service):
             argstuple = ()
         if (prefix not in self._lastfsn) or (fsn > self._lastfsn[prefix]):
             self._lastfsn[prefix] = fsn
+            self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
         logger.info('New exposure: %s (fsn: %d, prefix: %s)' %
                     (filename, fsn, prefix))
         filename = filename[filename.index('images') + 7:]
