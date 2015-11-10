@@ -94,7 +94,7 @@ def radint_fullq(np.ndarray[np.double_t, ndim = 2] data not None,
                  np.ndarray[np.uint8_t, ndim = 2] mask,
                  np.ndarray[np.double_t, ndim = 1] q = None,
                  int errorpropagation = 2, int abscissa_errorpropagation = 2,
-                 bint autoqrange_linear = True, int abscissa_kind = 0):
+                 bint autoqrange_linear = True, int abscissa_kind = 3):
     """ Radial averaging of scattering images, full azimuthal range
 
     Inputs:
@@ -135,10 +135,10 @@ def radint_fullq(np.ndarray[np.double_t, ndim = 2] data not None,
             linspace-d. Otherwise log10 spacing will be applied.
         abscissa_kind: an integer number determining the abscissa values of
             the result. Can be:
-            0: q (4*pi*sin(theta)/lambda)
-            1: 2*theta
-            2: detector radius in length units (mm, if the pixel size is in mm)
-            3: pixels
+            3: q (4*pi*sin(theta)/lambda)
+            2: 2*theta
+            1: detector radius in length units (mm, if the pixel size is in mm)
+            0: pixels
 
     X is the first index (row number), Y is the second index (column number).
     Counting starts from zero.
@@ -147,7 +147,7 @@ def radint_fullq(np.ndarray[np.double_t, ndim = 2] data not None,
     """
     cdef np.ndarray[np.double_t, ndim = 1] qout, dqout, Intensity, Error, Area, pixelout
     cdef np.ndarray[np.double_t, ndim = 2] x, y
-    cdef Py_ssize_t ix, iy, l, maxlog, M, N, Numq
+    cdef Py_ssize_t ix, iy, l, maxlog, M, N, Numq, count_invalid_error=0, count_invalid_data=0, count_masked=0, count_underflow=0, count_overflow=0
     cdef double q1, dq1, rho
     cdef double * qmax
     cdef double * Intensity_squared
@@ -159,8 +159,10 @@ def radint_fullq(np.ndarray[np.double_t, ndim = 2] data not None,
         dataerr = np.ones_like(data, dtype=np.double)
     if mask is None:
         mask = np.ones_like(data, dtype=np.bool)
-    assert (data.shape == dataerr.shape)
-    assert (data.shape == mask.shape)
+    assert(data.shape[0] == dataerr.shape[0])
+    assert(data.shape[1] == dataerr.shape[1])
+    assert(data.shape[0] == mask.shape[0])
+    assert(data.shape[1] == mask.shape[1])
     M = data.shape[0]
     N = data.shape[1]
     # if the q-scale was not supplied, create one.
@@ -211,19 +213,24 @@ def radint_fullq(np.ndarray[np.double_t, ndim = 2] data not None,
         for iy from 0 <= iy < N:  # columns
             if not mask[ix, iy]:
                 # if the pixel is masked, disregard it.
+                count_masked+=1
                 continue
             if not isfinite(data[ix, iy]):
                 # disregard nonfinite (NaN or inf) pixels.
+                count_invalid_data+=1
                 continue
             if not isfinite(dataerr[ix, iy]):
                 # disregard nonfinite (NaN or inf) pixels.
+                count_invalid_error+=1
                 continue
             dataerr_current = dataerr[ix, iy]
             if errorpropagation == 0 and dataerr[ix, iy] <= 0:
                 dataerr_current = 1
             if r[ix, iy] < q[0]:  # q underflow
+                count_underflow+=1
                 continue
             if r[ix, iy] > q[Numq - 1]:  # q overflow
+                count_overflow+=1
                 continue
             for l from 0 <= l < Numq:  # Find the q-bin
                 if (r[ix, iy] > qmax[l]):
@@ -264,6 +271,8 @@ def radint_fullq(np.ndarray[np.double_t, ndim = 2] data not None,
                 Area[l] += 1
                 break  # avoid counting this pixel into higher q-bins.
             # normalize the results
+    #print('Radial averaging statistics.\n  Masked: %d\n  Invalid data: %d\n  Invalid error: %d\n  Underflow: %d\n  Overflow: %d'%(
+    #    count_masked, count_invalid_data, count_invalid_error, count_underflow, count_overflow))
     for l from 0 <= l < Numq:
         if Area[l] == 0:
             continue
