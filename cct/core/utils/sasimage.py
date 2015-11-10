@@ -1,11 +1,13 @@
+import pickle
+
+import numpy as np
+from sastool.io.twodim import readcbf
+from scipy.io import loadmat
 from .radint import radint_fullq
+
+from .errorvalue import ErrorValue
 from .pathutils import find_in_subfolders
 from .sascurve import SASCurve
-import numpy as np
-import pickle
-from scipy.io import loadmat
-from .errorvalue import ErrorValue
-from sastool.io.twodim import readcbf
 
 
 class SASImage(ErrorValue):
@@ -41,15 +43,17 @@ class SASImage(ErrorValue):
             intensity, header = readcbf(twodname, load_header=True,
                                         load_data=True)
             error = intensity ** 0.5
+        else:
+            raise NotImplementedError(twodname.lower())
         with open(picklename, 'rb') as f:
             param = pickle.load(f)
         if header is None:
             param['cbf'] = header
-        maskfile = loadmat(find_in_subfolders(param['geometry']['mask'],'mask'))
+        maskfile = loadmat(find_in_subfolders('mask', param['geometry']['mask']))
         mask = maskfile[[k for k in maskfile if not k.startswith('_')][0]]
         return cls(intensity, error, param, mask)
 
-    def radial_average(self, qrange=None, pixels=False):
+    def radial_average(self, qrange=None, pixels=False, raw_result=False):
         if pixels:
             abscissa_kind = 0
         else:
@@ -63,11 +67,14 @@ class SASImage(ErrorValue):
             self._param['geometry']['pixelsize'],
             self._param['geometry']['beamposx'],
             0, self._param['geometry']['beamposy'], 0,
-            self._mask, qrange, errorpropagation=3,
+            self._mask.astype(np.uint8), qrange, errorpropagation=3,
             abscissa_errorpropagation=3,
             abscissa_kind=abscissa_kind)
-        return SASCurve(q, I, dq, dI, self._param['sample']['title'] +
-                        ' %.2f mm' % self._param['geometry']['truedistance'])
+        if raw_result:
+            return q, dq, I, dI, area
+        else:
+            return SASCurve(q, I, dq, dI, self._param['sample']['title'] +
+                            ' %.2f mm' % self._param['geometry']['truedistance'])
 
     @property
     def params(self):
@@ -81,12 +88,12 @@ class SASImage(ErrorValue):
     def pixel(self):
         x = np.arange(self.val.shape[0])[:, np.newaxis]
         y = np.arange(self.val.shape[1])[np.newaxis, :]
-        return ((x - self._param['geometry']['beamposx']) ** 2 +
-                (y - self._param['geometry']['beamposy']) ** 2) ** 0.5
+        return ErrorValue(((x - self._param['geometry']['beamposx']) ** 2 +
+                           (y - self._param['geometry']['beamposy']) ** 2) ** 0.5, np.zeros_like(self.val))
 
     @property
     def detradius(self):
-        return self.pixel / self._param['geometry']['pixelsize']
+        return self.pixel * self._param['geometry']['pixelsize']
 
     @property
     def twotheta_rad(self):
