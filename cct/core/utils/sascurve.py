@@ -1,6 +1,7 @@
 import numpy as np
-from .errorvalue import ErrorValue
 from sastool.misc.easylsq import nonlinear_leastsquares, nonlinear_odr
+
+from .errorvalue import ErrorValue
 
 
 class SASCurve(object):
@@ -28,17 +29,18 @@ class SASCurve(object):
                           'fit to ' + self._legend)
         return ret + (fitted, )
 
+    @property
+    def q(self):
+        return self._x.val
 
+    @property
+    def dq(self):
+        return self._x.err
 
+    @property
+    def intensity(self):
+        return self._y.val
 
-
-
-
-
-
-
-
-
-
-
-
+    @property
+    def error(self):
+        return self._y.err
