@@ -4,13 +4,15 @@ import logging
 import os
 import pickle
 import time
-import numpy as np
+
 import dateutil.parser
+import numpy as np
 from gi.repository import GObject
 from scipy.io import loadmat
 
 from .service import Service
 from ..utils.errorvalue import ErrorValue
+from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders, find_subfolders
 from ..utils.sasimage import SASImage
 
@@ -257,94 +259,60 @@ class FileSequence(Service):
         config = self.instrument.config
         if prefix in [config['path']['prefixes']['crd'],
                       config['path']['prefixes']['tst']]:
+
+            # construct the params dictionary
             params = {}
-            with open(os.path.join(
-                      self.instrument.config['path']['directories']['param'],
-                      prefix + '_' + '%%0%dd.param' %
-                      config['path']['fsndigits']) % fsn, 'wt') as f:
-                params['fsn'] = fsn
-                logger.debug(
-                    'Writing param file for new exposure to %s' % f.name)
-                f.write('FSN:\t%d\n' % fsn)
-                dist = ErrorValue(config['geometry']['dist_sample_det'],
-                                  config['geometry']['dist_sample_det.err'])
-                sample = self.instrument.samplestore.get_active()
-                if sample is not None:
-                    params['sample'] = sample
-                    distcalib = dist - sample.distminus
-                    f.write('Sample name:\t%s\n' % sample.title)
-                else:
-                    distcalib = dist
-                f.write('Sample-to-detector distance (mm):\t%18f\n' %
-                        distcalib.val)
-                if sample is not None:
-                    f.write('Sample thickness (cm):\t%18f\n' % sample.thickness)
-                    f.write('Sample position (cm):\t%18f\n' % sample.positiony)
-                f.write('Measurement time (sec): %f\n' %
-                        self.instrument.detector.get_variable('exptime'))
-                f.write('Beam x y for integration:\t%18f %18f\n' % (
-                    config['geometry']['beamposx'] + 1, config['geometry']['beamposy'] + 1))
-                f.write('Pixel size of 2D detector (mm):\t%f\n' %
-                        config['geometry']['pixelsize'])
-                f.write('Primary intensity at monitor (counts/sec):\t%f\n' %
-                        self.instrument.detector.get_variable('exptime'))
-                f.write('Date:\t%s\n' % str(datetime.datetime.now()))
-                params['motors'] = {}
-                for m in sorted(self.instrument.motors):
-                    f.write('motor.%s:\t%f\n' %
-                            (m, self.instrument.motors[m].where()))
-                    params['motors'][m] = self.instrument.motors[m].where()
-                params['devices'] = {}
-                for d in sorted(self.instrument.devices):
-                    params['devices'][d] = {}
-                    for v in sorted(self.instrument.devices[d].list_variables()):
-                        f.write(
-                            'devices.%s.%s:\t%s\n' % (d, v, self.instrument.devices[d].get_variable(v)))
-                        params['devices'][d][v] = self.instrument.devices[d].get_variable(v)
-                if sample is not None:
-                    f.write(sample.toparam())
-                    params['sample'] = sample.todict()
-                params['geometry'] = {}
-                for k in config['geometry']:
-                    f.write('geometry.%s:\t%s\n' % (k, config['geometry'][k]))
-                    params['geometry'][k] = config['geometry'][k]
-                params['geometry']['truedistance'] = distcalib.val
-                params['geometry']['truedistance.err'] = distcalib.err
-                params['accounting'] = {}
-                for k in config['accounting']:
-                    f.write('accounting.%s:\t%s\n' %
-                            (k, config['accounting'][k]))
-                    params['accounting'][k] = config['accounting'][k]
-                if sample is not None:
-                    f.write('ThicknessError:\t%18f\n' % sample.thickness.err)
-                    f.write('PosSampleError:\t%18f\n' % sample.positiony.err)
-                    f.write('PosSampleX:\t%18f\n' % sample.positionx.val)
-                    f.write('PosSampleXError:\t%18f\n' % sample.positionx.err)
-                    f.write('DistMinus:\t%18f\n' % sample.distminus.val)
-                    f.write('DistMinusErr:\t%18f\n' % sample.distminus.err)
-                    f.write('TransmError:\t%18f\n' % sample.transmission.err)
-                    f.write('PosSampleError:\t%18f\n' % sample.positiony.err)
-                f.write('EndDate:\t%s\n' % str(datetime.datetime.now()))
-                f.write('SetupDescription:\t%s\n' %
-                        config['geometry']['description'])
-                f.write('DistError:\t%s\n' % dist.err)
-                f.write('XPixel:\t%18f\n' % config['geometry']['pixelsize'])
-                f.write('YPixel:\t%18f\n' % config['geometry']['pixelsize'])
-                f.write('Owner:\t%s\n' % config['accounting']['operator'])
-                f.write('__Origin__:\tCCT\n')
-                f.write('MonitorError:\t0\n')
-                f.write('Wavelength:\t%18f\n' %
-                        config['geometry']['wavelength'])
-                f.write('WavelengthError:\t%18f\n' %
-                        config['geometry']['wavelength.err'])
-                f.write('__particle__:\tphoton\n')
-                f.write('Project:\t%s\n' % config['accounting']['projectname'])
-                f.write('maskid:\t%s\n' %
-                        config['geometry']['mask'].rsplit('.', 1)[0])
-                f.write('StartDate:\t%s\n' % str(startdate))
-            with open(os.path.join(self.instrument.config['path']['directories']['param'],
-                                   prefix + '_' + ('%%0%dd.pickle' % config['path']['fsndigits']) % fsn), 'wb') as f:
+            paramfilename = os.path.join(
+                self.instrument.config['path']['directories']['param'],
+                prefix + '_' + '%%0%dd.param' %
+                config['path']['fsndigits']) % fsn
+            picklefilename = paramfilename[:-len('.param')] + '.pickle'
+            sample = self.instrument.samplestore.get_active()
+            params['fsn'] = fsn
+            params['filename'] = os.path.abspath(picklefilename)
+            params['exposure'] = {'fsn': fsn,
+                                  'exptime': self.instrument.detector.get_variable('exptime'),
+                                  'monitor': self.instrument.detector.get_variable('exptime'),
+                                  'startdate': str(startdate),
+                                  'date': str(datetime.datetime.now()),
+                                  'enddate': str(datetime.datetime.now())}
+            params['geometry'] = {}
+            for k in config['geometry']:
+                params['geometry'][k] = config['geometry'][k]
+            dist = ErrorValue(config['geometry']['dist_sample_det'],
+                              config['geometry']['dist_sample_det.err'])
+            if sample is not None:
+                distcalib = dist - sample.distminus
+                params['sample'] = sample.todict()
+            else:
+                distcalib = dist
+            params['geometry']['truedistance'] = distcalib.val
+            params['geometry']['truedistance.err'] = distcalib.err
+
+            params['motors'] = {}
+            for m in sorted(self.instrument.motors):
+                params['motors'][m] = self.instrument.motors[m].where()
+            params['devices'] = {}
+            for d in sorted(self.instrument.devices):
+                params['devices'][d] = {}
+                for v in sorted(self.instrument.devices[d].list_variables()):
+                    params['devices'][d][v] = self.instrument.devices[d].get_variable(v)
+
+            params['environment'] = {}
+            if 'vacuum' in self.instrument.environmentcontrollers:
+                params['environment']['vacuum_pressure'] = self.instrument.environmentcontrollers[
+                    'vacuum'].get_variable('pressure')
+            # ToDo: temperature in environment
+            params['accounting'] = {}
+            for k in config['accounting']:
+                params['accounting'][k] = config['accounting'][k]
+
+            # save the params dictionary
+            with open(picklefilename, 'wb') as f:
+                logger.debug('Dumping pickle file %s' % picklefilename)
                 pickle.dump(params, f)
+
+            write_legacy_paramfile(paramfilename, params)
             argstuple = argstuple + (params,)
         self.instrument.exposureanalyzer.submit(
             fsn, filename, prefix, argstuple)
