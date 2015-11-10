@@ -1,4 +1,5 @@
 import numpy as np
+
 from .errorvalue import ErrorValue
 
 
@@ -89,24 +90,28 @@ def angledependentabsorption(twotheta, dtwotheta, transmission, dtransmission):
                       _angledependentabsorption_error(twotheta, dtwotheta, transmission, dtransmission))
 
 
-def angledependentairtransmission(twotheta, dtwotheta, mu_air,
-                                  dmu_air, sampletodetectordistance,
-                                  dsampletodetectordistance):
+def angledependentairtransmission(twotheta, dtwotheta,
+                                  pressure, sampletodetectordistance,
+                                  dsampletodetectordistance, mu0_air=1 / 883.49, dmu0_air=0):
     """Correction for the angle dependent absorption of air in the scattered
     beam path, with error propagation
 
     Inputs:
             twotheta: matrix of two-theta values
             dtwotheta: absolute error matrix of two-theta
-            mu_air: the linear absorption coefficient of air
-            dmu_air: error of the linear absorption coefficient of air
+            pressure: the air pressure in mbar
             sampletodetectordistance: sample-to-detector distance
             dsampletodetectordistance: error of the sample-to-detector distance
+            mu0_air: the linear absorption coefficient of air at 1000 mbars, in 1/mm units.
+                At 8 keV this is 1/883.49 1/mm
+            dmu0_air: error of the linear absorption coefficient of air at 1000 mbars in 1/mm units
 
     1/mu_air and sampletodetectordistance should have the same dimension
 
     The scattering intensity matrix should be multiplied by the resulting
     correction matrix."""
+    mu_air = mu0_air / 1000 * pressure
+    dmu_air = dmu0_air / 1000 * pressure
     return ErrorValue(np.exp(mu_air * sampletodetectordistance / np.cos(twotheta)),
                       np.sqrt(dmu_air ** 2 * sampletodetectordistance ** 2 *
                               np.exp(2 * mu_air * sampletodetectordistance / np.cos(twotheta))
