@@ -1,17 +1,17 @@
-import multiprocessing
-import queue
-import socket
-import select
-import os
-import traceback
-import time
 import logging
+import multiprocessing
+import os
+import queue
+import select
+import socket
+import time
+import traceback
 
 from gi.repository import GLib, GObject
 from pyModbusTCP.client import ModbusClient
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DeviceError(Exception):
