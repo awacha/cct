@@ -13,6 +13,8 @@ logger.setLevel(logging.DEBUG)
 
 class SingleExposure(ToolWindow):
     def _init_gui(self, *args):
+        self._images_done = 0
+        self._images_requested = 0
         pass
 
     def _break_connections(self):
@@ -54,16 +56,18 @@ class SingleExposure(ToolWindow):
             self._instrument.interpreter.connect('progress', self.on_progress),
         ]
 
+    def _cleanup_expanalyzer(self):
+        try:
+            self._instrument.exposureanalyzer.disconnect(self._expanalyzerconnection)
+            del self._expanalyzerconnection
+        except AttributeError:
+            pass
+
     def _cleanup_exposure(self):
         try:
             for c in self._interpreter_connections:
                 self._instrument.interpreter.disconnect(c)
             del self._interpreter_connections
-        except AttributeError:
-            pass
-        try:
-            self._instrument.exposureanalyzer.disconnect(self._expanalyzerconnection)
-            del self._expanalyzerconnection
         except AttributeError:
             pass
         self._builder.get_object('start_button').set_label('Start')
@@ -74,6 +78,7 @@ class SingleExposure(ToolWindow):
     def on_cmd_return(self, interpreter, commandname, returnvalue):
         if hasattr(self, '_kill'):
             self._cleanup_exposure()
+            self._cleanup_expanalyzer()
             del self._kill
         elif commandname == 'start':
             # not a true command, we just enter here.
@@ -91,6 +96,7 @@ class SingleExposure(ToolWindow):
         elif commandname == 'shutter' and returnvalue is None:
             # shutter timeout
             self._cleanup_exposure()
+            self._cleanup_expanalyzer()
             error_message(self._window, 'Shutter timeout')
         elif commandname == 'shutter' and returnvalue is True:
             # start exposure
@@ -98,6 +104,7 @@ class SingleExposure(ToolWindow):
             exptime=self._builder.get_object('exptime_spin').get_value()
             nimages=self._builder.get_object('nimages_spin').get_value_as_int()
             expdelay=self._builder.get_object('expdelay_spin').get_value()
+            self._images_requested = nimages
 
             self._builder.get_object('progressframe').show_all()
             self._builder.get_object('progressframe').set_visible(True)
@@ -166,6 +173,9 @@ class SingleExposure(ToolWindow):
                 params['geometry']['beamposy'], 0.0, mask.astype(np.uint8))
             curvewin.addcurve(q, Intensity, qerror, Error, legend, 'q', params['geometry']['pixelsize'],
                               params['geometry']['dist_sample_det'], params['geometry']['wavelength'])
+        self._images_done += 1
+        if self._images_done >= self._images_requested:
+            self._cleanup_expanalyzer()
 
     def on_samplelist_changed(self, samplestore):
         sampleselector=self._builder.get_object('sampleselector')
