@@ -6,6 +6,8 @@ from gi.repository import GtkSource, Gdk, Gtk, GObject
 from ..core.toolwindow import ToolWindow, question_message, error_message, info_message
 from ...core.commands.script import Script, Command
 
+# ToDo: closing the script window results in GtkWarnings (not a GTK_WIDGET etc.). Something to do with buffer marks.
+
 language_def_path = pkg_resources.resource_filename(
     'cct', 'resource/language-specs')
 langman = GtkSource.LanguageManager.get_default()
@@ -53,7 +55,8 @@ class ScriptMeasurement(ToolWindow):
     def on_toolbutton_open(self, toolbutton):
         self.confirm_save()
         if not hasattr(self, '_filechooser'):
-            self._filechooser=Gtk.FileChooserDialog('Open script file', self._window, Gtk.FileChooserAction.OPEN, 'OK', 1, 'Cancel', 0)
+            self._filechooser = Gtk.FileChooserDialog('Open script file', self._window, Gtk.FileChooserAction.OPEN,
+                                                      ['OK', 1, 'Cancel', 0])
         self._filechooser.set_action(Gtk.FileChooserAction.OPEN)
         self._filechooser.set_title('Open script file')
         self._filechooser.set_transient_for(self._window)
@@ -72,7 +75,8 @@ class ScriptMeasurement(ToolWindow):
 
     def on_toolbutton_saveas(self, toolbutton):
         if not hasattr(self, '_filechooser'):
-            self._filechooser=Gtk.FileChooserDialog('Save script file as...', self._window, Gtk.FileChooserAction.SAVE, 'OK', 1, 'Cancel',  0)
+            self._filechooser = Gtk.FileChooserDialog('Save script file as...', self._window,
+                                                      Gtk.FileChooserAction.SAVE, ['OK', 1, 'Cancel', 0])
         self._filechooser.set_action(Gtk.FileChooserAction.SAVE)
         self._filechooser.set_do_overwrite_confirmation(True)
         self._filechooser.set_title('Save script file as...')
@@ -186,7 +190,7 @@ class ScriptMeasurement(ToolWindow):
     def on_toolbutton_help(self, toolbutton):
         if not hasattr(self, '_helpdialog'):
             self._helpdialog = CommandHelpDialog('help_commandhelpbrowser.glade', 'commandhelpbrowser',
-                                                 self._instrument, self._application)
+                                                 self._instrument, self._application, 'Help on commands')
             self._helpdialog.connect('insert', self.on_insert)
         self._helpdialog._window.show_all()
 
