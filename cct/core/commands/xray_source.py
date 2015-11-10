@@ -1,8 +1,3 @@
-'''
-Created on Oct 15, 2015
-
-@author: labuser
-'''
 import weakref
 
 from gi.repository import GLib
