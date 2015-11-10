@@ -1,10 +1,15 @@
-from .arithmetic import ArithmeticBase
 import copy
-import numpy as np
-import numbers
+import logging
 import math
-import collections
+import numbers
 import re
+
+import numpy as np
+
+from .arithmetic import ArithmeticBase
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 __all__ = ['ErrorValue']
 
@@ -66,14 +71,22 @@ class ErrorValue(ArithmeticBase):
         #        return memo[self]
 
     def __neg__(self):
-        return self.__class__(-self.val, self.err)
+        obj = copy.deepcopy(self)
+        obj.val = -obj.val
+        return obj
 
     def _recip(self):
         """Calculate the reciprocal of this instance"""
-        return self.__class__(1.0 / self.val, self.err / (self.val * self.val))
+        obj = copy.deepcopy(self)
+        obj.val = 1.0 / self.val
+        obj.err = (self.err / (self.val ** 2))
+        return obj
 
     def __getitem__(self, key):
-        return self.__class__(self.val[key], self.err[key])
+        obj = copy.deepcopy(self)
+        obj.val = self.val[key]
+        obj.err = self.err[key]
+        return obj
 
     def __iadd__(self, value):
         try:
@@ -104,10 +117,11 @@ class ErrorValue(ArithmeticBase):
             other = ErrorValue(other)
         except ValueError:
             return NotImplemented
-        err = ((self.val ** (other.val - 1) * other.val * self.err) ** 2 +
+        obj = copy.deepcopy(self)
+        obj.err = ((self.val ** (other.val - 1) * other.val * self.err) ** 2 +
                (np.log(self.val) * self.val ** other.val * other.err) ** 2) ** 0.5
-        val = self.val ** other.val
-        return self.__class__(val, err)
+        obj.val = self.val ** other.val
+        return obj
 
     def __repr__(self):
         return 'ErrorValue(' + repr(self.val) + ' \u00b1 ' + repr(self.err) + ')'
@@ -118,11 +132,11 @@ class ErrorValue(ArithmeticBase):
     def __trunc__(self):
         return int(self.val)
 
-    def __array__(self, dt=None):
-        if dt is None:
-            return np.array(self.val)
-        else:
-            return np.array(self.val, dt)
+    #    def __array__(self, dt=None):
+    #        if dt is None:
+    #            return np.array(self.val)
+    #        else:
+    #            return np.array(self.val, dt)
 
     def tostring(self, extra_digits=0, plusminus=' \u00b1 ', fmt=None):
         """Make a string representation of the value and its uncertainty.
@@ -160,52 +174,97 @@ class ErrorValue(ArithmeticBase):
         return str(self.val) + ' +/- ' + str(self.err)
 
     def abs(self):
-        return self.__class__(np.abs(self.val), self.err)
+        obj = copy.deepcopy(self)
+        obj.val = np.abs(self.val)
+        obj.err = self.err
+        return obj
 
     def sin(self):
-        return self.__class__(np.sin(self.val), np.abs(np.cos(self.val) * self.err))
+        obj = copy.deepcopy(self)
+        obj.val = np.sin(self.val)
+        obj.err = np.abs(np.cos(self.val) * self.err)
+        return obj
 
     def cos(self):
-        return self.__class__(np.cos(self.val), np.abs(np.sin(self.val) * self.err))
+        obj = copy.deepcopy(self)
+        obj.val = np.cos(self.val)
+        obj.err = np.abs(np.sin(self.val) * self.err)
+        return obj
 
     def tan(self):
-        return self.__class__(np.tan(self.val), np.abs(1 + np.tan(self.val) ** 2) * self.err)
+        obj = copy.deepcopy(self)
+        obj.val = np.tan(self.val)
+        obj.err = np.abs(1 + np.tan(self.val) ** 2) * self.err
+        return obj
 
     def sqrt(self):
         return self ** 0.5
 
     def sinh(self):
-        return self.__class__(np.sinh(self.val), np.abs(np.cosh(self.val) * self.err))
+        obj = copy.deepcopy(self)
+        obj.val = np.sinh(self.val)
+        obj.err = np.abs(np.cosh(self.val)) * self.err
+        return obj
 
     def cosh(self):
-        return self.__class__(np.cosh(self.val), np.abs(np.sinh(self.val) * self.err))
+        obj = copy.deepcopy(self)
+        obj.val = np.cosh(self.val)
+        obj.err = np.sinh(self.val) * self.err
+        return obj
 
     def tanh(self):
-        return self.__class__(np.tanh(self.val), np.abs(1 - np.tanh(self.val) ** 2) * self.err)
+        obj = copy.deepcopy(self)
+        obj.val = np.tanh(self.val)
+        obj.err = np.abs(1 - np.tanh(self.val) ** 2) * self.err
+        return obj
 
     def arcsin(self):
-        return self.__class__(np.arcsin(self.val), np.abs(self.err / np.sqrt(1 - self.val ** 2)))
+        obj = copy.deepcopy(self)
+        obj.val = np.arcsin(self.val)
+        obj.err = np.abs(self.err / np.sqrt(1 - self.val ** 2))
+        return obj
 
     def arccos(self):
-        return self.__class__(np.arccos(self.val), np.abs(self.err / np.sqrt(1 - self.val ** 2)))
+        obj = copy.deepcopy(self)
+        obj.val = np.arccos(self.val)
+        obj.err = np.abs(self.err / np.sqrt(1 - self.val ** 2))
+        return obj
 
     def arcsinh(self):
-        return self.__class__(np.arcsinh(self.val), np.abs(self.err / np.sqrt(1 + self.val ** 2)))
+        obj = copy.deepcopy(self)
+        obj.val = np.arcsinh(self.val)
+        obj.err = np.abs(self.err / np.sqrt(1 + self.val ** 2))
+        return obj
 
     def arccosh(self):
-        return self.__class__(np.arccosh(self.val), np.abs(self.err / np.sqrt(self.val ** 2 - 1)))
+        obj = copy.deepcopy(self)
+        obj.val = np.arccosh(self.val)
+        obj.err = np.abs(self.err / np.sqrt(self.val ** 2 - 1))
+        return obj
 
     def arctanh(self):
-        return self.__class__(np.arctanh(self.val), np.abs(self.err / (1 - self.val ** 2)))
+        obj = copy.deepcopy(self)
+        obj.val = np.arctanh(self.val)
+        obj.err = np.abs(self.err / (1 - self.val ** 2))
+        return obj
 
     def arctan(self):
-        return self.__class__(np.arctan(self.val), np.abs(self.err / (1 + self.val ** 2)))
+        obj = copy.deepcopy(self)
+        obj.val = np.arctan(self.val)
+        obj.err = np.abs(self.err / (1 + self.val ** 2))
+        return obj
 
     def log(self):
-        return self.__class__(np.log(self.val), np.abs(self.err / self.val))
+        obj = copy.deepcopy(self)
+        obj.val = np.log(self.val)
+        obj.err = np.abs(self.err / self.val)
+        return obj
 
     def exp(self):
-        return self.__class__(np.exp(self.val), np.abs(self.err * np.exp(self.val)))
+        obj = copy.deepcopy(self)
+        obj.val = np.exp(self.val)
+        obj.err = np.abs(self.err * np.exp(self.val))
+        return obj
 
     def random_sample(self):
         """Sample a random number (array) of the distribution defined by
