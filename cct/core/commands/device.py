@@ -91,6 +91,28 @@ class SetVariable(Command):
         return False
 
 
+class DevCommand(Command):
+    """Execute a low-level command on a device
+
+    Invocation: devcommand(<device>, <commandname>, <arg1>, <arg2>, ...)
+
+    Arguments:
+        <device>: the name of the device
+        <commandname>: the name of the low-level command
+        <arg1...>: arguments needed for that command
+
+    Remarks:
+        This command returns immediately.
+    """
+    name = 'devcommand'
+
+    def execute(self, interpreter, arglist, instrument, namespace):
+        devicename = arglist[0]
+        commandname = arglist[1]
+        device = instrument.devices[devicename]
+        device.execute_command(commandname, *(arglist[2:]))
+        GLib.idle_add(lambda: self.emit('return', None) and False)
+
 
 class ListVariable(Command):
     """List the names of all variables of a device
@@ -260,7 +282,7 @@ class Sleep(Command):
         self._starttime = time.time()
         self._sleeptime = float(arglist[0])
         self._progress = GLib.timeout_add(500, self._progress)
-        self._end = GLib.timeout_add(1000 * self._sleeptime, self._end)
+        self._end = GLib.timeout_add(1000 * self._sleeptime, self.on_end)
 
     def _progress(self):
         t = time.time()
@@ -268,14 +290,14 @@ class Sleep(Command):
                   (self._sleeptime - (t - self._starttime)), (t - self._starttime) / self._sleeptime)
         return True
 
-    def _end(self):
+    def on_end(self):
         GLib.source_remove(self._progress)
         GLib.source_remove(self._end)
         self.emit('return', time.time() - self._starttime)
         return False
 
     def kill(self):
-        GLib.idle_add(self._end)
+        GLib.idle_add(self.on_end)
 
 
 class SaveConfig(Command):
