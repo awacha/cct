@@ -118,7 +118,7 @@ class Expose(Command):
              instrument.config['path']['fsndigits']) % self._fsn + '.cbf'
         instrument.detector.set_variable('exptime', exptime)
         self._exptime = exptime
-        self.timeout = exptime + 3
+        self.timeout = exptime + 30
         self._progresshandler = GLib.timeout_add(500,
                                                  lambda d=instrument.detector: self._progress(d))
         self._check_for_variable = '_status'
@@ -220,7 +220,7 @@ class ExposeMulti(Command):
         self._exptime = exptime
         self._nimages = nimages
         self._totaltime = exptime * nimages + expdelay * (nimages - 1)
-        self.timeout = self._totaltime + 3
+        self.timeout = self._totaltime + 30
 
         instrument.detector.set_variable('exptime', exptime)
         instrument.detector.set_variable('expperiod', exptime+expdelay)
