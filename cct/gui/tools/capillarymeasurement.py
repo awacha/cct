@@ -1,12 +1,13 @@
-from ..core.toolwindow import ToolWindow, error_message, info_message
-from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
-from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
-from matplotlib.figure import Figure
-from gi.repository import Gtk
 import numpy as np
+from gi.repository import Gtk
+from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
+from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
+from matplotlib.figure import Figure
+from sastool.misc.basicfit import findpeak_single
+
+from ..core.toolwindow import ToolWindow, error_message, info_message
 from ...core.utils.errorvalue import ErrorValue
 
-from sastool.misc.basicfit import findpeak_single
 
 class CapillaryMeasurement(ToolWindow):
     def _init_gui(self, *args):
@@ -41,7 +42,8 @@ class CapillaryMeasurement(ToolWindow):
             del self._rightcurve
         except AttributeError:
             pass
-        self._axes.clear()
+        self._figure.clear()
+        self._axes = self._figure.add_subplot(1, 1, 1)
         x=self._scandata['signals'][0]
         y=self._builder.get_object('signalname_combo').get_active_text()
         if y is None:
@@ -57,6 +59,7 @@ class CapillaryMeasurement(ToolWindow):
         self._axes.xaxis.set_label_text(x)
         self._axes.yaxis.set_label_text(ylabel)
         self._axes.grid(True, which='both')
+        self._axes.set_title(self._scandata['comment'])
         self._canvas.draw()
         return True
 
