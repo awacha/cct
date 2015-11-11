@@ -1,12 +1,10 @@
 import logging
 
-import numpy as np
-from sastool.utils2d.integrate import radint_fullq_errorprop
-
 from ..core.plotcurve import PlotCurveWindow
 from ..core.plotimage import PlotImageWindow
 from ..core.toolwindow import ToolWindow, error_message
 from ...core.commands.detector import Expose, ExposeMulti
+from ...core.utils.sasimage import SASImage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -144,35 +142,33 @@ class SingleExposure(ToolWindow):
     def on_image(self, exposureanalyzer, prefix, fsn, matrix, mask, params):
         if 'sample' in params:
             legend = 'FSN #%d, %s at %.2f mm' % (
-            params['fsn'], params['sample']['title'], params['geometry']['dist_sample_det'])
+                params['exposure']['fsn'], params['sample']['title'], params['geometry']['dist_sample_det'])
         else:
-            legend = 'FSN #%d, unknown sample at %.2f mm' % (params['fsn'], params['geometry']['dist_sample_det'])
+            legend = 'FSN #%d, unknown sample at %.2f mm' % (
+            params['exposure']['fsn'], params['geometry']['dist_sample_det'])
+        im = SASImage(matrix, matrix ** 0.5, params, mask)
         if self._builder.get_object('plotimage_check').get_active():
             if self._builder.get_object('reuseimage_check').get_active():
                 imgwin = PlotImageWindow.get_latest_window()
             else:
                 imgwin = PlotImageWindow()
-            imgwin.set_image(matrix)
-            imgwin.set_mask(mask)
-            imgwin.set_distance(params['geometry']['dist_sample_det'])
-            imgwin.set_beampos(params['geometry']['beamposx'],
-                               params['geometry']['beamposy'])
-            imgwin.set_pixelsize(params['geometry']['pixelsize'])
-            imgwin.set_wavelength(params['geometry']['wavelength'])
+            imgwin.set_image(im.val)
+            imgwin.set_mask(im._mask)
+            imgwin.set_distance(im.params['geometry']['dist_sample_det'])
+            imgwin.set_beampos(im.params['geometry']['beamposx'],
+                               im.params['geometry']['beamposy'])
+            imgwin.set_pixelsize(im.params['geometry']['pixelsize'])
+            imgwin.set_wavelength(im.params['geometry']['wavelength'])
             imgwin._window.set_title(legend)
         if self._builder.get_object('plotradial_check').get_active():
             if self._builder.get_object('reuseradial_check').get_active():
                 curvewin = PlotCurveWindow.get_latest_window()
             else:
                 curvewin = PlotCurveWindow()
-            q, qerror, Intensity, Error, Area = radint_fullq_errorprop(
-                matrix, matrix ** 0.5, params['geometry']['wavelength'],
-                params['geometry']['wavelength.err'], params['geometry']['dist_sample_det'],
-                params['geometry']['dist_sample_det.err'], params['geometry']['pixelsize'],
-                params['geometry']['pixelsize'], params['geometry']['beamposx'], 0.0,
-                params['geometry']['beamposy'], 0.0, mask.astype(np.uint8))
-            curvewin.addcurve(q, Intensity, qerror, Error, legend, 'q', params['geometry']['pixelsize'],
-                              params['geometry']['dist_sample_det'], params['geometry']['wavelength'])
+            curve = im.radial_average()
+            curvewin.addcurve(curve.q, curve.intensity, curve.dq, curve.error, legend, 'q',
+                              im.params['geometry']['pixelsize'],
+                              im.params['geometry']['dist_sample_det'], im.params['geometry']['wavelength'])
         self._images_done += 1
         if self._images_done >= self._images_requested:
             self._cleanup_expanalyzer()
