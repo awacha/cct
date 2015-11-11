@@ -338,7 +338,8 @@ class TMCMcard(Device_TCP):
             else:
                 raise NotImplementedError(cmdnum)
         except TMCMConversionError:
-            logger.debug('TMCM conversion error. If you get too much of these too often, it is a big problem.')
+            if self._has_all_variables():
+                logger.error('TMCM conversion error.')
         finally:
             try:
                 msg = self._sendqueue.get_nowait()
