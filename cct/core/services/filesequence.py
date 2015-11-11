@@ -80,7 +80,7 @@ class FileSequence(Service):
     def new_scan(self, cmdline, comment, exptime, N, motorname):
         scanidx=self.get_nextfreescan(acquire=True)
         with open(self._scanfile, 'at', encoding='utf-8') as f:
-            self._scanfile_toc[self._scanfile][scanidx]=f.tell()
+            self._scanfile_toc[self._scanfile][scanidx] = f.tell() + 1
             f.write('\n#S %d  %s\n' % (scanidx, cmdline))
             f.write('#D %s\n'%time.asctime())
             f.write('#C %s\n'%comment)
@@ -140,6 +140,8 @@ class FileSequence(Service):
                     result['data'][index]=tuple(float(x) for x in l.split())
                     index+=1
                 l=f.readline().strip()
+            if 'data' in result:
+                result['data'] = result['data'][:index]
         return result
 
     def reload(self):
@@ -215,12 +217,13 @@ class FileSequence(Service):
         return self._lastscan
 
     def get_nextfreescan(self, acquire=True):
+        retval = self._nextfreescan
+        if acquire:
+            self._nextfreescan += 1
         try:
-            return self._nextfreescan
-        finally:
-            if acquire:
-                self._nextfreescan += 1
             self.emit('nextscan-changed', self._nextfreescan)
+        finally:
+            return retval
 
     def get_nextfreefsn(self, prefix, acquire=True):
         if prefix not in self._nextfreefsn:
@@ -302,7 +305,11 @@ class FileSequence(Service):
             if 'vacuum' in self.instrument.environmentcontrollers:
                 params['environment']['vacuum_pressure'] = self.instrument.environmentcontrollers[
                     'vacuum'].get_variable('pressure')
-            # ToDo: temperature in environment
+            if 'temperature' in self.instrument.environmentcontrollers:
+                params['environment']['temperature_setpoint'] = self.instrument.environmentcontrollers[
+                    'temperature'].get_variable('setpoint')
+                params['environment']['temperature'] = self.instrument.environmentcontrollers[
+                    'temperature'].get_variable('temperature_internal')
             params['accounting'] = {}
             for k in config['accounting']:
                 params['accounting'][k] = config['accounting'][k]

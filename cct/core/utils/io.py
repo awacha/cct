@@ -57,6 +57,13 @@ def write_legacy_paramfile(paramfilename, params):
             f.write('SampleSituation:\t%s\n' % params['sample']['situation'])
             f.write('SampleCategory:\t%s\n' % params['sample']['category'])
 
+        if 'temperature_setpoint' in params['environment']:
+            f.write('TemperatureSetpoint:\t%.18f\n' % params['environment']['temperature_setpoint'])
+        if 'temperature' in params['environment']:
+            f.write('Temperature:\t%.18f\n' % params['environment']['temperature'])
+        if 'vacuum_pressure' in params['environment']:
+            f.write('Vacuum:\t%.18f\n' % params['environment']['vacuum_pressure'])
+
         f.write('EndDate:\t%s\n' % params['exposure']['date'])
         f.write('SetupDescription:\t%s\n' %
                 params['geometry']['description'])

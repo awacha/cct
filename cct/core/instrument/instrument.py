@@ -5,6 +5,7 @@ import os
 import traceback
 
 from .motor import Motor
+from ..devices.circulator import HaakePhoenix
 from ..devices.detector import Pilatus
 from ..devices.device import DeviceError
 from ..devices.motor import TMCM351, TMCM6110
@@ -111,8 +112,8 @@ class Instrument(GObject.GObject):
         self.config['connections']['environmentcontrollers']['temperature'] = {
             'host': 'devices.credo',
             'port': 2001,
-            'timeout': 0.01,
-            'poll_timeout': 0.01,
+            'timeout': 0.1,
+            'poll_timeout': 0.1,
             'name': 'haakephoenix'}
         self.config['connections']['motorcontrollers'] = {}
         self.config['connections']['motorcontrollers']['tmcm351a'] = {
@@ -322,7 +323,7 @@ class Instrument(GObject.GObject):
             cfg = self.config['connections']['environmentcontrollers'][envcont]
             if envcont not in self.environmentcontrollers:
                 if envcont == 'temperature':
-                    continue  # TODO
+                    self.environmentcontrollers[envcont] = HaakePhoenix(cfg['name'])
                 elif envcont == 'vacuum':
                     self.environmentcontrollers[envcont] = TPG201(cfg['name'])
                 self.devices[
