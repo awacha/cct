@@ -156,7 +156,6 @@ class PlotImageWidget(object):
                     active_set = True
                     break
             if not active_set:
-                logger.debug(lastidx)
                 ac.set_active(lastidx)
             self._builder.get_object('showmask_checkbutton').set_sensitive(self._mask is not None)
             self._builder.get_object('showcrosshair_checkbutton').set_sensitive(self._beampos is not None)
@@ -165,17 +164,14 @@ class PlotImageWidget(object):
 
     def _replot(self):
         if self._inhibit_replot:
-            logger.debug('Replot inhibited')
             return
         if self._matrix is None:
-            logger.debug('No matrix')
             return
         self._fig.clear()
         self._axis=self._fig.add_subplot(1,1,1)
         self._axis.set_axis_bgcolor('black')
         scaling=self._builder.get_object('colourscale_combo').get_active_text()
         matrix = self._matrix.copy()
-        logger.debug('Plotting. Matrix minimum: %f. Matrix maximum: %f' % (self._matrix.min(), self._matrix.max()))
         if self._matrix.max() <= 0:
             self._builder.get_object('colourscale_combo').set_active(0)
             return
@@ -220,8 +216,8 @@ class PlotImageWidget(object):
                                 norm=norm, interpolation='nearest', aspect='equal', origin='upper', extent=extent)
         if (self._builder.get_object('showmask_checkbutton').get_sensitive() and
                 self._builder.get_object('showmask_checkbutton').get_active()):
-            mf = (~self._mask).astype(float)  # in `mf`, masked pixels are 1.0, unmasked (valid) are 0.0
-            mf[self._mask] = np.nan  # now mf consists of 1.0 (masked) and NaN (valid) values.
+            mf = np.ones(self._mask.shape, np.float)  # in `mf`, masked pixels are 1.0, unmasked (valid) are 0.0
+            mf[self._mask != 0] = np.nan  # now mf consists of 1.0 (masked) and NaN (valid) values.
             self._axis.imshow(mf, cmap=matplotlib.cm.gray_r, interpolation='nearest', aspect='equal', alpha=0.7,
                               origin='upper', extent=extent)
         if (self._builder.get_object('showcrosshair_checkbutton').get_sensitive() and
