@@ -1,4 +1,8 @@
+import logging
 import traceback
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 from gi.repository import GObject, GLib
 
@@ -64,6 +68,7 @@ class Script(Command):
                 self.emit('return', 'Killed')
             return False
         self._cursor+=1
+        logger.debug('Executing line %d' % self._cursor)
         try:
             commandline=self._script[self._cursor]
         except IndexError:
@@ -79,9 +84,13 @@ class Script(Command):
             return False
         except GotoException as ge:
             self._cursor=self.find_label(ge.args[0])
+            GLib.idle_add(self.nextcommand)
+            return False
         except GosubException as gse:
             self._jumpstack.append(self._cursor)
             self._cursor=self.find_label(gse.args[0])
+            GLib.idle_add(self.nextcommand)
+            return False
         except ScriptEndException as se:
             GLib.idle_add(lambda returnvalue=se.args[0]:self._try_to_return(returnvalue))
             return False
@@ -140,6 +149,7 @@ class Script(Command):
             if not line:
                 continue
             if line.split()[0].startswith('@'+labelname):
+                logger.debug('Label "%s" is on line #%d\n' % (labelname, i))
                 return i
         raise ScriptError('Unknown label in script: %s'%labelname)
 
@@ -156,6 +166,7 @@ class Script(Command):
             return False
 
     def kill(self):
+        self._kill = True
         self._myinterpreter.kill()
 
 class End(Command):
