@@ -1,16 +1,18 @@
-from gi.repository import Gtk
-import pkg_resources
-from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
-from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
-from matplotlib.figure import Figure
-import numpy as np
-from sastool.misc.basicfit import findpeak_single
 import logging
+
+import numpy as np
+import pkg_resources
+from gi.repository import Gtk
+from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
+from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
+from matplotlib.figure import Figure
+from sastool.misc.basicfit import findpeak_single
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class ScanGraph(object):
-    def __init__(self, signals=[], data=None, instrument=None):
+    def __init__(self, signals=[], data=None, instrument=None, fsn=None, comment=None):
         """if data is an integer, we assume scanning mode, up to this number of data points. It can also be a numpy
          structured array with dtype `[(s,float) for s in signals]`: then we are in plotting mode. If in scan mode,
          self._dataindex <len(self._data). In plotting mode, self._dataindex>=len(self._data).
@@ -21,6 +23,7 @@ class ScanGraph(object):
          if instrument is given, motors can be moved.
          """
         object.__init__(self)
+        self._comment = comment
         self._instrument=instrument
         if len(signals)<2:
             raise ValueError('At least one signal has to be given apart from the abscissa')
@@ -80,6 +83,8 @@ class ScanGraph(object):
         self._builder.get_object('move_to_cursor_button').set_sensitive(self._instrument is not None)
         self._builder.get_object('move_to_peak_button').set_sensitive(False)
         self._redraw_signals()
+        if fsn is not None:
+            self._window.set_title('Scan #%d' % fsn)
 
     def is_scan_mode(self):
         return self._dataindex<len(self._data)
@@ -181,6 +186,8 @@ class ScanGraph(object):
             self._axes.plot(self._data[self.get_abscissaname()][0:self._dataindex], self._data[signal][0:self._dataindex]*scaling,'.-',label=signal)
         self._axes.legend(loc='best',fontsize='small')
         self._axes.xaxis.set_label_text(self.get_abscissaname())
+        if self._comment is not None:
+            self._axes.set_title(self._comment)
         self._redraw_cursor()
         self._canvas.draw()
 
