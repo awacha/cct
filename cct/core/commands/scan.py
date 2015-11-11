@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 import traceback
 
 from .command import Command, CommandError
@@ -35,7 +34,7 @@ class Scan(Command):
         assert(self._exptime > 0)
         assert(self._motor in instrument.motors)
         self._idx = 0
-        self._scanfsn = instrument.filesequence.get_nextfreescan()
+        self._scanfsn = instrument.filesequence.get_nextfreescan(acquire=False)
         self._instrument = instrument
         self._exposure_prefix = instrument.config['path']['prefixes']['scn']
         self._whereto = self._start
@@ -75,7 +74,7 @@ class Scan(Command):
         except Exception:
             self._cleanup()
             raise
-        logger.debug('Scan command started')
+        self.emit('message', 'Scan #%d started.' % self._scanfsn)
 
     def on_motor_position_change(self, motor, where):
         if hasattr(self, '_we_can_start_the_exposure'):
@@ -86,10 +85,11 @@ class Scan(Command):
             self._exposureanalyzer_idle = False
 
     def on_scanpoint(self, exposureanalyzer, prefix, fsn, scandata):
+        logger.debug('Writing scan line for position %f' % scandata[0])
         line=str(scandata[0])+'  '+' '.join(str(f) for f in scandata[1:])
         with open(self._scanfilename,'at', encoding='utf-8') as f:
             f.write(line+'\n')
-        self.emit('message',line)
+            # self.emit('message',line)
 
     def on_myintr_command_return(self, interpreter, commandname, returnvalue):
         self._notyetstarted=False
@@ -158,10 +158,11 @@ class Scan(Command):
         return False
 
     def on_myintr_command_message(self, interpreter, commandname, message):
-        self.emit('message')
+        self.emit('message', message)
         return False
 
     def _cleanup(self):
+        logger.debug('Cleaning up scan')
         try:
             for c in self._myinterpreter_connections:
                 self._myinterpreter.disconnect(c)
@@ -170,7 +171,7 @@ class Scan(Command):
             pass
         try:
             for c in self._instrument_connections:
-                self._instrument.disconnect(c)
+                self._instrument.exposureanalyzer.disconnect(c)
             del self._instrument_connections
         except AttributeError:
             pass

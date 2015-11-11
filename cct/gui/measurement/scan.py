@@ -70,8 +70,10 @@ class Scan(ToolWindow):
 
     def on_command_return(self, interpreter, commandname, returnvalue):
         if commandname=='shutter' and returnvalue:
+            scanfsn = self._instrument.filesequence.get_nextfreescan(acquire=False)
             self._instrument.interpreter.execute_command(self._commandline)
-            self._scangraph=ScanGraph([self._motor]+self._instrument.config['scan']['columns'],self._nsteps, self._instrument)
+            self._scangraph = ScanGraph([self._motor] + self._instrument.config['scan']['columns'], self._nsteps,
+                                        self._instrument, scanfsn, self._builder.get_object('comment_entry').get_text())
         elif commandname=='scan' or commandname=='scanrel':
             if self._builder.get_object('shutter_checkbutton').get_active():
                 self._instrument.interpreter.execute_command('shutter("close")')
