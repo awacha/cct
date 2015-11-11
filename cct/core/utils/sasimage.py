@@ -2,8 +2,8 @@ import pickle
 
 import numpy as np
 from sastool.io.twodim import readcbf
+from sastool.utils2d.integrate import radint_fullq_errorprop
 from scipy.io import loadmat
-from .radint import radint_fullq
 
 from .errorvalue import ErrorValue
 from .pathutils import find_in_subfolders
@@ -55,19 +55,20 @@ class SASImage(ErrorValue):
 
     def radial_average(self, qrange=None, pixels=False, raw_result=False):
         if pixels:
-            abscissa_kind = 0
-        else:
             abscissa_kind = 3
-        q, dq, I, dI, area = radint_fullq(
+        else:
+            abscissa_kind = 0
+        q, dq, I, dI, area = radint_fullq_errorprop(
             self.val, self.err,
             self._param['geometry']['wavelength'],
             self._param['geometry']['wavelength.err'],
             self._param['geometry']['truedistance'],
             self._param['geometry']['truedistance.err'],
             self._param['geometry']['pixelsize'],
-            self._param['geometry']['beamposx'],
-            0, self._param['geometry']['beamposy'], 0,
-            self._mask.astype(np.uint8), qrange, errorpropagation=3,
+            self._param['geometry']['pixelsize'],
+            self._param['geometry']['beamposx'], 0,
+            self._param['geometry']['beamposy'], 0,
+            (self._mask == 0).astype(np.uint8), qrange, errorpropagation=3,
             abscissa_errorpropagation=3,
             abscissa_kind=abscissa_kind)
         if raw_result:
