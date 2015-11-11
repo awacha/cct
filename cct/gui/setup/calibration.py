@@ -7,7 +7,6 @@ from matplotlib.widgets import Cursor
 from sastool.misc.basicfit import findpeak_single
 from sastool.misc.easylsq import nonlinear_odr
 from sastool.utils2d.centering import findbeam_radialpeak, findbeam_powerlaw
-from sastool.utils2d.integrate import radint_fullq_errorprop
 
 from ...core.utils.errorvalue import ErrorValue
 
@@ -141,9 +140,9 @@ class Calibration(ToolWindow):
         logger.debug('Calval: ' + str(calval))
         logger.debug('Calerr: ' + str(calerr))
         if len(uncalval) > 1:
-            fitfunc = lambda pix, dist: qfrompix(pix, pixelsize=self._params['geometry']['pixelsize'],
+            fitfunc = lambda pix, dist: qfrompix(pix, pixelsize=self._im.params['geometry']['pixelsize'],
                                                  beampos=0, alpha=np.pi * 0.5,
-                                                 wavelength=self._params['geometry']['wavelength'],
+                                                 wavelength=self._im.params['geometry']['wavelength'],
                                                  dist=dist)
             self._dist, stat = nonlinear_odr(uncalval, calval, uncalerr, calerr, fitfunc, [100])
             x = np.linspace(uncalval.min(), uncalval.max(), len(uncalval) * 100)
@@ -151,9 +150,9 @@ class Calibration(ToolWindow):
         elif len(uncalval) == 1:
             q = ErrorValue(float(calval[0]), float(calerr[0]))
             pix = ErrorValue(float(uncalval[0]), float(uncalerr[0]))
-            wl = ErrorValue(self._params['geometry']['wavelength'],
-                            self._params['geometry']['wavelength.err'])
-            pixsize = self._params['geometry']['pixelsize']
+            wl = ErrorValue(self._im.params['geometry']['wavelength'],
+                            self._im.params['geometry']['wavelength.err'])
+            pixsize = self._im.params['geometry']['pixelsize']
             self._dist = (pix * pixsize) / (2 * (wl * q / 4 / np.pi).arcsin()).tan()
         else:
             self._dist = None
@@ -167,13 +166,13 @@ class Calibration(ToolWindow):
     def do_fit(self, curvetype):
         xmin, xmax, ymin, ymax = self._plot1d._axes.axis()
         try:
-            x = self._curve['x']
-            y = self._curve['y']
+            x = self._curve.q
+            y = self._curve.intensity
             idx = (x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax)
             x = x[idx]
             y = y[idx]
-            dx = self._curve['dx'][idx]
-            dy = self._curve['dy'][idx]
+            dx = self._curve.dq
+            dy = self._curve.error
             pos, hwhm, baseline, ampl = findpeak_single(x, y, dy)
             x_ = np.linspace(x.min(), x.max(), len(x) * 10)
             if curvetype == 'Gauss':
@@ -221,31 +220,31 @@ class Calibration(ToolWindow):
                 return
             elif method == 'Peak amplitude':
                 xmin, xmax = self._plot1d._axes.axis()[:2]
-                posx, posy = findbeam_radialpeak(self._data, [self._params['geometry']['beamposx'],
-                                                              self._params['geometry']['beamposy']],
-                                                 self._mask, xmin, xmax, drive_by='amplitude')
+                posx, posy = findbeam_radialpeak(self._im.val, [self._im.params['geometry']['beamposx'],
+                                                                self._im.params['geometry']['beamposy']],
+                                                 self._im._mask, xmin, xmax, drive_by='amplitude')
             elif method == 'Peak width':
                 xmin, xmax = self._plot1d._axes.axis()[:2]
-                posx, posy = findbeam_radialpeak(self._data, [self._params['geometry']['beamposx'],
-                                                              self._params['geometry']['beamposy']],
-                                                 self._mask, xmin, xmax, drive_by='amplitude')
+                posx, posy = findbeam_radialpeak(self._im.data, [self._im.params['geometry']['beamposx'],
+                                                                 self._im.params['geometry']['beamposy']],
+                                                 self._im.mask, xmin, xmax, drive_by='amplitude')
             elif method == 'Power-law goodness of fit':
                 xmin, xmax = self._plot1d._axes.axis()[:2]
-                posx, posy = findbeam_powerlaw(self._data, [self._params['geometry']['beamposx'],
-                                                            self._params['geometry']['beamposy']],
-                                               self._mask, xmin, xmax)
+                posx, posy = findbeam_powerlaw(self._im.data, [self._im.params['geometry']['beamposx'],
+                                                               self._im.params['geometry']['beamposy']],
+                                               self._im.mask, xmin, xmax)
             else:
                 raise NotImplementedError(method)
-        self._params['geometry']['beamposx'] = posx
-        self._params['geometry']['beamposy'] = posy
+        self._im.params['geometry']['beamposx'] = posx
+        self._im.params['geometry']['beamposy'] = posy
         self._builder.get_object('center_label').set_text('(%.3f, %.3f)' % (posy, posx))
         self._plot2d.set_beampos(posx, posy)
         self._radial_average()
         self._builder.get_object('savecenter_button').set_sensitive(True)
 
     def on_savecenter(self, button):
-        self._instrument.config['geometry']['beamposx'] = self._params['geometry']['beamposx']
-        self._instrument.config['geometry']['beamposy'] = self._params['geometry']['beamposy']
+        self._instrument.config['geometry']['beamposx'] = self._im.params['geometry']['beamposx']
+        self._instrument.config['geometry']['beamposy'] = self._im.params['geometry']['beamposy']
         self._instrument.save_state()
         logger.info('Beam center updated to (%.3f, %.3f) [(x, y) or (col, row)].' % (
         self._instrument.config['geometry']['beamposy'],
@@ -261,33 +260,30 @@ class Calibration(ToolWindow):
         button.set_sensitive(False)
 
     def _radial_average(self):
-        pix, pixerror, Intensity, Error, Area = radint_fullq_errorprop(
-            self._data, self._data ** 0.5, self._params['geometry']['wavelength'],
-            self._params['geometry']['wavelength.err'], self._params['geometry']['dist_sample_det'],
-            self._params['geometry']['dist_sample_det.err'], self._params['geometry']['pixelsize'],
-            self._params['geometry']['pixelsize'], self._params['geometry']['beamposx'], 0.0,
-            self._params['geometry']['beamposy'], 0.0, (~self._mask).astype(np.uint8), abscissa_kind=3)
+        self._curve = self._im.radial_average(pixels=False)
         try:
-            sampletitle = self._params['sample']['title']
+            sampletitle = self._im.params['sample']['title']
         except KeyError:
             sampletitle = 'no sample'
-        self._plot1d.addcurve(pix, Intensity, pixerror, Error, 'FSN #%d: %s. Beam: (%.3f, %.3f)' % (
-            self._params['fsn'], sampletitle, self._params['geometry']['beamposy'],
-            self._params['geometry']['beamposx']), 'pixel')
-        self._curve = {'x': pix, 'dx': pixerror, 'y': Intensity, 'dy': Error}
+        self._plot1d.addcurve(self._curve.q, self._curve.intensity, self._curve.dq, self._curve.error,
+                              'FSN #%d: %s. Beam: (%.3f, %.3f)' % (
+                                  self._im.params['exposure']['fsn'], sampletitle,
+                                  self._im.params['geometry']['beamposy'],
+                                  self._im.params['geometry']['beamposx']), 'pixel')
 
     def on_loadexposure(self, button):
-        self._data, self._mask, self._params = self._instrument.filesequence.load_exposure(
+        im = self._instrument.filesequence.load_exposure(
             self._builder.get_object('prefix_combo').get_active_text(),
             self._builder.get_object('fsn_adjustment').get_value())
         if self._builder.get_object('mask_check').get_active():
-            self._mask = self._instrument.filesequence.get_mask(self._builder.get_object('maskchooser').get_filename())
-        self._plot2d.set_image(self._data)
-        self._plot2d.set_beampos(self._params['geometry']['beamposx'], self._params['geometry']['beamposy'])
-        self._plot2d.set_wavelength(self._params['geometry']['wavelength'])
-        self._plot2d.set_distance(self._params['geometry']['truedistance'])
-        self._plot2d.set_mask(self._mask)
-        self._plot2d.set_pixelsize(self._params['geometry']['pixelsize'])
-        self._builder.get_object('center_label').set_text('(%.3f, %.3f)' % (self._params['geometry']['beamposy'],
-                                                                            self._params['geometry']['beamposx']))
+            im._mask = self._instrument.filesequence.get_mask(self._builder.get_object('maskchooser').get_filename())
+        self._plot2d.set_image(im.val)
+        self._plot2d.set_beampos(im.params['geometry']['beamposx'], im.params['geometry']['beamposy'])
+        self._plot2d.set_wavelength(im.params['geometry']['wavelength'])
+        self._plot2d.set_distance(im.params['geometry']['truedistance'])
+        self._plot2d.set_mask(im._mask)
+        self._plot2d.set_pixelsize(im.params['geometry']['pixelsize'])
+        self._builder.get_object('center_label').set_text('(%.3f, %.3f)' % (im.params['geometry']['beamposy'],
+                                                                            im.params['geometry']['beamposx']))
+        self._im = im
         self._radial_average()
