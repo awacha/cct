@@ -1,5 +1,7 @@
-from ..core.toolwindow import ToolWindow, error_message
 from gi.repository import GLib
+
+from ..core.toolwindow import ToolWindow, error_message
+
 
 class Transmission(ToolWindow):
     def on_map(self, window):
@@ -44,7 +46,7 @@ class Transmission(ToolWindow):
         if button.get_label()=='Start':
             self._make_insensitive('Transmission measurement running',['entry_expander', 'transmview', 'add_button', 'remove_button', 'close_button'])
             self._builder.get_object('start_button').set_label('Stop')
-            samplenames=', '.join("'%s'"%row[0] for row in self._builder.get_object('transmstore'))
+            samplenames = ', '.join("'%s'" % row[0] for row in reversed(self._builder.get_object('transmstore')))
             self._interpreterconnections=[self._instrument.interpreter.connect('cmd-return', self.on_cmd_return),
                                           self._instrument.interpreter.connect('cmd-detail', self.on_cmd_detail),
                                           self._instrument.interpreter.connect('cmd-fail', self.on_cmd_fail),
