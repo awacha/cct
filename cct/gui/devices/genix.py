@@ -1,7 +1,7 @@
 import logging
 
-from ..core.toolwindow import ToolWindow, question_message
 from ..core.indicator import Indicator, IndicatorState
+from ..core.toolwindow import ToolWindow, question_message
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -129,7 +129,7 @@ class GeniX(ToolWindow):
             elif newvalue=='Full power':
                 for b in powerbuttons:
                     powerbuttons[b].set_sensitive(False)
-                powerbuttons['low'].set_sensitive(True)
+                powerbuttons['standby'].set_sensitive(True)
                 powerbuttons['down'].set_sensitive(True)
             elif newvalue=='X-rays off':
                 for b in powerbuttons:
