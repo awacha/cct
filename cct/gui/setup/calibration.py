@@ -8,6 +8,7 @@ from sastool.misc.basicfit import findpeak_single
 from sastool.misc.easylsq import nonlinear_odr
 from sastool.utils2d.centering import findbeam_radialpeak, findbeam_powerlaw
 
+from ..core.exposureloader import ExposureLoader
 from ...core.utils.errorvalue import ErrorValue
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,13 @@ class Calibration(ToolWindow):
         self._figpairstoolbox = NavigationToolbar2GTK3(self._figpairscanvas, self._window)
         self._builder.get_object('figbox_distcalib').pack_start(self._figpairstoolbox, False, True, 0)
         self._figpairsaxes = self._figpairs.add_subplot(1, 1, 1)
+        logger.debug('Initializing EL')
+        self._el = ExposureLoader(self._instrument)
+        logger.debug('EL ready. Packing.')
+        self._builder.get_object('loadfile_expander').add(self._el)
+        logger.debug('EL packed. Connecting.')
+        self._el.connect('open', self.on_loadexposure)
+        logger.debug('Connected.')
         tv = self._builder.get_object('pairview')
         tc = Gtk.TreeViewColumn('Uncalibrated', Gtk.CellRendererText(), text=0)
         tv.append_column(tc)
@@ -52,18 +60,7 @@ class Calibration(ToolWindow):
             csel.append_text(calibrant)
         csel.set_active(0)
         self.on_calibrant_selector_changed(csel)
-        self.on_overridemask_toggled(self._builder.get_object('mask_check'))
 
-    def on_map(self, window):
-        ps = self._builder.get_object('prefix_combo')
-        previous_active = ps.get_active_text()
-        ps.remove_all()
-        for i, p in enumerate(sorted(self._instrument.filesequence.get_prefixes())):
-            ps.append_text(p)
-            if p == previous_active:
-                ps.set_active(i)
-        if previous_active is None:
-            ps.set_active(0)
 
     def on_calibrant_selector_changed(self, csel):
         peaksel = self._builder.get_object('peak_selector')
@@ -271,12 +268,7 @@ class Calibration(ToolWindow):
                                   self._im.params['geometry']['beamposy'],
                                   self._im.params['geometry']['beamposx']), 'pixel')
 
-    def on_loadexposure(self, button):
-        im = self._instrument.filesequence.load_exposure(
-            self._builder.get_object('prefix_combo').get_active_text(),
-            self._builder.get_object('fsn_adjustment').get_value())
-        if self._builder.get_object('mask_check').get_active():
-            im._mask = self._instrument.filesequence.get_mask(self._builder.get_object('maskchooser').get_filename())
+    def on_loadexposure(self, exposureloader, im):
         self._plot2d.set_image(im.val)
         self._plot2d.set_beampos(im.params['geometry']['beamposx'], im.params['geometry']['beamposy'])
         self._plot2d.set_wavelength(im.params['geometry']['wavelength'])
