@@ -25,6 +25,7 @@ from .setup.calibration import Calibration
 from .tools.exposureviewer import ExposureViewer
 from .tools.capillarymeasurement import CapillaryMeasurement
 from .tools.scanviewer import ScanViewer
+from .tools.maskeditor import MaskEditor
 
 import kerberos
 
@@ -290,6 +291,7 @@ class MainWindow(object):
         return False
 
     def on_menu_tools_maskeditor(self, menuitem):
+        self.construct_and_run_dialog(MaskEditor, 'maskeditor', 'tools_maskeditor.glade', 'Mask editor')
         return False
 
     def on_menu_tools_view(self, menuitem):
