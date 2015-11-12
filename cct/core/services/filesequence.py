@@ -80,7 +80,8 @@ class FileSequence(Service):
     def new_scan(self, cmdline, comment, exptime, N, motorname):
         scanidx=self.get_nextfreescan(acquire=True)
         with open(self._scanfile, 'at', encoding='utf-8') as f:
-            self._scanfile_toc[self._scanfile][scanidx] = f.tell() + 1
+            self._scanfile_toc[self._scanfile][scanidx] = {'pos': f.tell() + 1, 'cmd': cmdline,
+                                                           'date': datetime.datetime.now()}
             f.write('\n#S %d  %s\n' % (scanidx, cmdline))
             f.write('#D %s\n'%time.asctime())
             f.write('#C %s\n'%comment)
@@ -107,7 +108,7 @@ class FileSequence(Service):
             scanfile=self._scanfile
         result={}
         with open(scanfile, 'rt', encoding='utf-8') as f:
-            f.seek(self._scanfile_toc[scanfile][index],0)
+            f.seek(self._scanfile_toc[scanfile][index]['pos'], 0)
             l=f.readline().strip()
             assert(l.startswith('#S'))
             assert(int(l.split()[1])==index)
@@ -143,6 +144,12 @@ class FileSequence(Service):
             if 'data' in result:
                 result['data'] = result['data'][:index]
         return result
+
+    def get_scans(self, scanfile):
+        return self._scanfile_toc[scanfile]
+
+    def get_scanfiles(self):
+        return sorted(self._scanfile_toc.keys())
 
     def reload(self):
         # check raw detector images
@@ -190,12 +197,18 @@ class FileSequence(Service):
                 with open(scanfile, 'rt', encoding='utf-8') as f:
                     self._scanfile_toc[scanfile]={}
                     l=f.readline()
+                    idx = None
                     while l:
                         l=l.strip()
                         if l.startswith('#S'):
                             pos=f.tell()-len(l)-1
-                            idx=int(l.split()[1])
-                            self._scanfile_toc[scanfile][idx]=pos
+                            start, idx, cmd = l.split(None, 2)
+                            idx = int(idx)
+                            self._scanfile_toc[scanfile][idx] = {'pos': pos, 'cmd': cmd}
+                        elif l.startswith('#D') and idx is not None:
+                            self._scanfile_toc[scanfile][idx]['date'] = dateutil.parser.parse(l.split(None, 1)[1])
+                        elif l.startswith('#C') and idx is not None:
+                            self._scanfile_toc[scanfile][idx]['comment'] = l.split(None, 1)[1]
                         l=f.readline()
 #        for sf in self._scanfile_toc:
 #            logger.debug('Max. scan index in file %s: %d'%(sf, max([k for k in self._scanfile_toc[sf]]+[0])))

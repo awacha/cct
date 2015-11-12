@@ -24,6 +24,8 @@ from .measurement.transmission import Transmission
 from .setup.calibration import Calibration
 from .tools.exposureviewer import ExposureViewer
 from .tools.capillarymeasurement import CapillaryMeasurement
+from .tools.scanviewer import ScanViewer
+
 import kerberos
 
 itheme = Gtk.IconTheme.get_default()
@@ -295,6 +297,7 @@ class MainWindow(object):
         return False
 
     def on_menu_tools_scanview(self, menuitem):
+        self.construct_and_run_dialog(ScanViewer, 'scanviewer', 'tools_scanviewer.glade', 'Scan viewer')
         return False
 
     def on_menu_tools_capillary(self, menuitem):
