@@ -93,17 +93,21 @@ class ToolWindow(GObject.GObject):
             self._window.destroy()
         return self.on_window_delete(self._window, event=None)
 
-    def _make_insensitive(self, reason, widgets=[]):
+    def _make_insensitive(self, reason, widgets=[], otherwidgets=[]):
         self.inhibit_close(reason)
         for w in widgets:
-            self._builder.get_object(w).set_sensitive(False)
+            widget = self._builder.get_object(w)
+            widget.set_sensitive(False)
+            self._widgets_insensitive.append(widget)
+        for w in otherwidgets:
+            w.set_sensitive(False)
             self._widgets_insensitive.append(w)
         self._window.set_deletable(False)
 
     def _make_sensitive(self):
         self.permit_close()
         for w in self._widgets_insensitive:
-            self._builder.get_object(w).set_sensitive(True)
+            w.set_sensitive(True)
         self._widgets_insensitive=[]
         self._window.set_deletable(True)
 
