@@ -7,7 +7,7 @@
     <property name="can_focus">False</property>
     <property name="orientation">vertical</property>
     <child>
-      <object class="GtkExpander" id="expander1">
+      <object class="GtkExpander" id="settings_expander">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <child>

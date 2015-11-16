@@ -65,6 +65,7 @@ class PlotImageWidget(object):
                 palette_combo.set_active(i)
         self._widget.pack_start(self._canvas, True, True, 0)
         self._widget.pack_start(self._toolbar, False, True, 0)
+        self._settings_expander = self._builder.get_object('settings_expander')
         self._builder.connect_signals(self)
         self._replot()
         self._widget.show_all()
@@ -84,7 +85,7 @@ class PlotImageWidget(object):
         self._mask = mask
         self._builder.get_object('showmask_checkbutton').set_active(True)
         self._validate_parameters()
-        self._replot()
+        self._replot(keepzoom=True)
 
     def get_mask(self):
         return self._mask
@@ -162,11 +163,15 @@ class PlotImageWidget(object):
         finally:
             self._inhibit_replot = False
 
-    def _replot(self):
+    def _replot(self, keepzoom=True):
         if self._inhibit_replot:
             return
         if self._matrix is None:
             return
+        if keepzoom and hasattr(self, '_axis'):
+            savedzoom = self._axis.axis()
+        else:
+            savedzoom = None
         self._fig.clear()
         self._axis=self._fig.add_subplot(1,1,1)
         self._axis.set_axis_bgcolor('black')
@@ -251,6 +256,10 @@ class PlotImageWidget(object):
             self._axis.xaxis.set_label_text('$q_x$ (nm$^{-1}$)')
             self._axis.yaxis.set_label_text('$q_y$ (nm$^{-1}$)')
         self._fig.tight_layout()
+        self._toolbar.home()
+        if keepzoom and savedzoom is not None:
+            self._axis.axis(savedzoom)
+            self._toolbar.push_current()
         self._canvas.draw_idle()
 
 
