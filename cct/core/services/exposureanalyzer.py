@@ -3,6 +3,7 @@ import multiprocessing
 import os
 import pickle
 import queue
+import resource
 import traceback
 
 import numpy as np
@@ -83,6 +84,7 @@ class ExposureAnalyzer(Service):
         'transmdata': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object)),
         'image': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object, object, object)),
         'idle': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'telemetry': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
     }
 
     def __init__(self, *args, **kwargs):
@@ -115,15 +117,23 @@ class ExposureAnalyzer(Service):
                 [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
             return self._masks[maskname]
 
+    def get_telemetry(self):
+        self._queue_to_backend.put_nowait(('_telemetry', None, None, None))
+
     def _backgroundworker(self):
         while True:
             prefix, fsn, filename, args = self._queue_to_backend.get()
 #            logger.debug(
 #                'Exposureanalyzer background process got work: %s, %d, %s, %s' % (prefix, fsn, filename, str(args)))
-            cbfdata = readcbf(
-                os.path.join(self._config['path']['directories']['images'], filename))[0]
-            if prefix == 'exit':
+            if not prefix.startswith('_'):
+                cbfdata = readcbf(
+                    os.path.join(self._config['path']['directories']['images'], filename))[0]
+            else:
+                cbfdata = None
+            if prefix == '_exit':
                 break
+            elif prefix == '_telemetry':
+                self._queue_to_frontend.put_nowait((None, 'telemetry', self._get_telemetry()))
             elif prefix == self._config['path']['prefixes']['crd']:
                 # data reduction needed
                 try:
@@ -194,6 +204,8 @@ class ExposureAnalyzer(Service):
             self.emit('transmdata', prefix_fsn[0], prefix_fsn[1], arguments)
         elif what == 'image':
             self.emit('image', prefix_fsn[0], prefix_fsn[1], arguments[0], arguments[1], arguments[2])
+        elif what == 'telemetry':
+            self.emit('telemetry', arguments)
         if self._working==0:
             self.emit('idle')
         return True
@@ -202,6 +214,12 @@ class ExposureAnalyzer(Service):
 #        logger.debug('Submitting to exposureanalyzer: %s, %d, %s, %s'%(prefix,fsn,filename,str(args)))
         self._queue_to_backend.put_nowait((prefix, fsn, filename, args))
         self._working+=1
+
+    def _get_telemetry(self):
+        return {'processname': multiprocessing.current_process().name,
+                'self': resource.getrusage(resource.RUSAGE_SELF),
+                'children': resource.getrusage(resource.RUSAGE_CHILDREN),
+                'inqueuelen': self._queue_to_backend.qsize()}
 
     def prescaling(self, im):
         im /= im.params['exposure']['exptime']

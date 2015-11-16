@@ -26,6 +26,8 @@ from .tools.exposureviewer import ExposureViewer
 from .tools.capillarymeasurement import CapillaryMeasurement
 from .tools.scanviewer import ScanViewer
 from .tools.maskeditor import MaskEditor
+from .diagnostics.telemetry import Telemetry
+from .devices.haakephoenix import HaakePhoenix
 
 import kerberos
 
@@ -268,7 +270,8 @@ class MainWindow(object):
         return False
 
     def on_menu_devices_temperaturestage(self, menuitem):
-        # ToDo
+        self.construct_and_run_dialog(HaakePhoenix, 'haakephoenix', 'devices_haakephoenix.glade',
+                                      'Temperature controller')
         return False
 
     def on_menu_measurement_scan(self, menuitem):
@@ -308,6 +311,9 @@ class MainWindow(object):
 
     def on_menu_tools_datareduction(self, menuitem):
         return False
+
+    def on_menu_tools_diagnostics_resourceusage(self, menuitem):
+        self.construct_and_run_dialog(Telemetry, 'telemetrywindow', 'diagnostics_telemetry.glade', 'Resource usage')
 
     def on_menu_help_about(self, menuitem):
         return False

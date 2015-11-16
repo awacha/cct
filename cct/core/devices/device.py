@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 import os
 import queue
+import resource
 import select
 import socket
 import time
@@ -96,6 +97,9 @@ class Device(GObject.GObject):
         # emitted when the starup is done, i.e. all variables have been read at
         # least once
         'startupdone': (GObject.SignalFlags.RUN_LAST, None, ()),
+        # emitted when a response for a telemetry request has been received.
+        # The argument is a dict.
+        'telemetry': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
     }
 
     backend_interval = 1
@@ -104,11 +108,15 @@ class Device(GObject.GObject):
 
     log_formatstr = None
 
-    def __init__(self, instancename, logdir='log', configdir='config'):
+    def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
         GObject.GObject.__init__(self)
         self.logdir = logdir
         self.configdir = configdir
         self.logfile = os.path.join(self.logdir, instancename + '.log')
+        if configdict is not None:
+            self.config = configdict
+        else:
+            self.config = {}
         self._instancename = instancename
         self._properties = {'_status': 'Disconnected'}
         self._timestamps = {'_status': time.time()}
@@ -117,6 +125,14 @@ class Device(GObject.GObject):
         self._refresh_requested = {}
         # the backend process must be started only after the connection to the device
         # has been established.
+
+    @property
+    def name(self):
+        return self._instancename
+
+    def send_config(self, configdict):
+        self._queue_to_backend.put_nowait(('config', None, configdict))
+        self.config = configdict
 
     def _load_state(self, dictionary):
         """Load the state of this device to a dictionary."""
@@ -134,6 +150,12 @@ class Device(GObject.GObject):
         function in the foreground"""
         if hasattr(self, '_idle_handler'):
             raise DeviceError('Background process already running')
+        # empty the backend queue.
+        while True:
+            try:
+                self._queue_to_backend.get_nowait()
+            except queue.Empty:
+                break
         self._background_process = multiprocessing.Process(
             target=self._background_worker, daemon=True, name='Background process for device %s' % self._instancename)
         self._idle_handler = GLib.idle_add(self._idle_worker)
@@ -228,6 +250,8 @@ class Device(GObject.GObject):
         self._query_variable(None)
         self._watchdogtime = time.time()
         self._watchdog_alive = True
+        # empty the properties dictionary
+        self._properties = {}
         juststarted = True
         while True:
             try:
@@ -247,13 +271,21 @@ class Device(GObject.GObject):
                             'Watchdog timeout: no message received from device %s.' % self._instancename)
                     except CommunicationError as exc:
                         self._queue_to_frontend.put_nowait(
-                            ('_error', (exc, traceback.format_exc())))
+                            ('_watchdog', (exc, traceback.format_exc())))
                     continue
                 if self._watchdog_alive:
                     self._query_variable(None)  # query all variables.
                     self._log()  # log the values of variables
                 continue
-            if cmd == 'exit':
+            if cmd == 'config':
+                self.config = argument
+            elif cmd == 'telemetry':
+                tm = self._get_telemetry()
+                self._queue_to_frontend.put_nowait(('_telemetry', tm))
+                if self._watchdog_alive:
+                    self._query_variable(None)
+                    self._log()
+            elif cmd == 'exit':
                 break  # the while True loop
             elif cmd in ['query']:
                 if propname not in self._refresh_requested:
@@ -295,6 +327,15 @@ class Device(GObject.GObject):
             else:
                 raise NotImplementedError(
                     'Unknown command for _background_worker: %s' % cmd)
+
+    def _get_telemetry(self):
+        return {'processname': multiprocessing.current_process().name,
+                'self': resource.getrusage(resource.RUSAGE_SELF),
+                'children': resource.getrusage(resource.RUSAGE_CHILDREN),
+                'inqueuelen': self._queue_to_backend.qsize()}
+
+    def get_telemetry(self):
+        self._queue_to_backend.put_nowait(('telemetry', None, None))
 
     def _has_all_variables(self):
         """Checks if all the variables have been requested and received at least once.
@@ -357,6 +398,12 @@ class Device(GObject.GObject):
                     self.emit('error', '', newvalue[0], newvalue[1])
                 elif (propertyname == '_startup_done'):
                     self.emit('startupdone')
+                elif (propertyname == '_telemetry'):
+                    self.emit('telemetry', newvalue)
+                elif (propertyname == '_watchdog'):
+                    logger.warning('Watchdog timeout in device %s: restarting background process.' % self.name)
+                    self._stop_background_process()
+                    self._start_background_process()
                 elif isinstance(newvalue, tuple) and isinstance(newvalue[0], Exception):
                     self.emit('error', propertyname, newvalue[0], newvalue[1])
                 else:
