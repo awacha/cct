@@ -113,7 +113,7 @@ class Instrument(GObject.GObject):
             'host': 'devices.credo',
             'port': 2001,
             'timeout': 0.1,
-            'poll_timeout': 0.1,
+            'poll_timeout': 0.05,
             'name': 'haakephoenix'}
         self.config['connections']['motorcontrollers'] = {}
         self.config['connections']['motorcontrollers']['tmcm351a'] = {

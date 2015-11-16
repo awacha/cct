@@ -2,6 +2,24 @@
 <!-- Generated with glade 3.19.0 -->
 <interface>
   <requires lib="gtk+" version="3.16"/>
+  <object class="GtkAdjustment" id="highlimit_adjustment">
+    <property name="lower">-300</property>
+    <property name="upper">300</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="lowlimit_adjustment">
+    <property name="lower">-300</property>
+    <property name="upper">300</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="setpoint_adjustment">
+    <property name="lower">-300</property>
+    <property name="upper">300</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
   <object class="GtkWindow" id="haakephoenix">
     <property name="can_focus">False</property>
     <child>
@@ -13,6 +31,7 @@
           <object class="GtkFrame" id="frame1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
             <property name="label_xalign">0</property>
             <property name="shadow_type">none</property>
             <child>
@@ -24,9 +43,8 @@
                   <object class="GtkGrid" id="statusgrid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <child>
-                      <placeholder/>
-                    </child>
+                    <property name="row_homogeneous">True</property>
+                    <property name="column_homogeneous">True</property>
                     <child>
                       <placeholder/>
                     </child>
@@ -76,6 +94,7 @@
           <object class="GtkFrame" id="frame3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
             <property name="label_xalign">0</property>
             <property name="shadow_type">none</property>
             <child>
@@ -87,9 +106,8 @@
                   <object class="GtkGrid" id="errorgrid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <child>
-                      <placeholder/>
-                    </child>
+                    <property name="row_homogeneous">True</property>
+                    <property name="column_homogeneous">True</property>
                     <child>
                       <placeholder/>
                     </child>
@@ -139,6 +157,7 @@
           <object class="GtkFrame" id="frame4">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
             <property name="label_xalign">0</property>
             <property name="shadow_type">none</property>
             <child>
@@ -150,9 +169,8 @@
                   <object class="GtkGrid" id="othergrid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <child>
-                      <placeholder/>
-                    </child>
+                    <property name="row_homogeneous">True</property>
+                    <property name="column_homogeneous">True</property>
                     <child>
                       <placeholder/>
                     </child>
@@ -210,7 +228,193 @@
                 <property name="can_focus">False</property>
                 <property name="left_padding">12</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkGrid" id="grid1">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkLabel" id="label5">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="margin_right">5</property>
+                        <property name="label" translatable="yes">Circulator:</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSwitch" id="circulator_switch">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <signal name="state-set" handler="on_circulator_switch_state_set" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label7">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="margin_right">5</property>
+                        <property name="label" translatable="yes">Fuzzy ID:</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSwitch" id="fuzzyid_switch">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <signal name="state-set" handler="on_fuzzyid_switch_state_set" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label6">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="margin_left">8</property>
+                        <property name="margin_right">5</property>
+                        <property name="label" translatable="yes">Setpoint (°C):</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">2</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton" id="setpoint_spin">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="adjustment">setpoint_adjustment</property>
+                        <property name="digits">3</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">3</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="setpoint_button">
+                        <property name="label" translatable="yes">Set</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <signal name="clicked" handler="on_set_setpoint" object="setpoint_spin" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">4</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label9">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="margin_left">8</property>
+                        <property name="margin_right">5</property>
+                        <property name="label" translatable="yes">Low limit (°C):</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">2</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label10">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="margin_left">8</property>
+                        <property name="margin_right">5</property>
+                        <property name="label" translatable="yes">High limit (°C):</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">2</property>
+                        <property name="top_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton" id="lowlimit_spin">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="adjustment">lowlimit_adjustment</property>
+                        <property name="digits">3</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">3</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton" id="highlimit_spin">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="adjustment">highlimit_adjustment</property>
+                        <property name="digits">3</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">3</property>
+                        <property name="top_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="lowlimit_button">
+                        <property name="label" translatable="yes">Set</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <signal name="clicked" handler="on_set_lowlimit" object="lowlimit_spin" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">4</property>
+                        <property name="top_attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="highlimit_button">
+                        <property name="label" translatable="yes">Set</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <signal name="clicked" handler="on_set_highlimit" object="highlimit_spin" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">4</property>
+                        <property name="top_attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="setclock_button">
+                        <property name="label" translatable="yes">Update RTC</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Update the real time clock of the unit</property>
+                        <signal name="clicked" handler="on_update_rtc" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">2</property>
+                        <property name="width">2</property>
+                      </packing>
+                    </child>
+                  </object>
                 </child>
               </object>
             </child>
@@ -237,7 +441,7 @@
             <property name="layout_style">start</property>
             <child>
               <object class="GtkButton" id="close_button">
-                <property name="label" translatable="yes">button</property>
+                <property name="label" translatable="yes">Close</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>

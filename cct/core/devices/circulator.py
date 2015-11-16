@@ -33,7 +33,8 @@ class HaakePhoenix(Device_TCP):
     def _execute_command(self, commandname, arguments):
         if commandname == 'start':
             self._send(b'W TS 1\r')
-        elif commandname == 'start':
+        elif commandname == 'stop':
+            logger.debug('Sending stop command: W TS 0<cr>')
             self._send(b'W TS 0\r')
         elif commandname == 'alarm':
             self._send(b'W AL\r')
@@ -54,12 +55,14 @@ class HaakePhoenix(Device_TCP):
         message = self._stashmessage + message
         try:
             if not hasattr(self, '_lastsent'):
+                logger.debug('No lastsent for message: %s' % message.decode('utf-8').replace('\r', ''))
                 # print('!!! NOLASTSENT')
                 return
             if message == b'F001\r':
                 # unknown command
+                lastcommand = self._lastsent.decode('ascii').replace('\r', '')
                 logger.warning(
-                    'Unknown command reported by circulator. Lastcommand: *%s*' % self._lastsent.decode('ascii'))
+                    'Unknown command reported by circulator. Lastcommand: *%s*' % lastcommand)
                 return
             if message == b'F123\r':
                 logger.warning('Error 123 reported by circulator.')
@@ -126,10 +129,18 @@ class HaakePhoenix(Device_TCP):
                 self._update_variable('beep', bool(int(message[2:3])))
             elif message.startswith(b'XT'):
                 hour, min, sec = [int(x) for x in message[2:-1].split(b':')]
-                self._update_variable('time', datetime.time(hour, min, sec))
+                try:
+                    self._update_variable('time', datetime.time(hour, min, sec))
+                except ValueError:
+                    # the real-time clock on some units can sometime glitch
+                    self._update_variable('time', datetime.time(0, 0, 0))
             elif message.startswith(b'XD'):
                 day, month, year = [int(x) for x in message[2:-1].split(b'.')]
-                self._update_variable('date', datetime.date(year + 2000, month, day))
+                try:
+                    self._update_variable('date', datetime.date(year + 2000, month, day))
+                except ValueError:
+                    # the real-time clock on some units can sometime glitch
+                    self._update_variable('date', datetime.date(1900, 1, 1))
             elif message.startswith(b'WD'):
                 self._update_variable('watchdog_on', bool(int(message[2:3])))
             elif message.startswith(b'WS'):
@@ -138,13 +149,15 @@ class HaakePhoenix(Device_TCP):
                 self._update_variable('cooling_on', bool(int(message[2:3])))
             elif message.startswith(b'PF'):
                 if self._update_variable('pump_power', float(message[2:-1])):
-                    if float([message[2:-1]]) > 0:
+                    if float(message[2:-1]) > 0:
                         self._update_variable('_status', 'running')
                     else:
                         self._update_variable('_status', 'stopped')
             elif message == b'$':
                 # confirmation for the last command
-                pass
+                logger.debug('Confirmation for message %s received.' % self._lastsent.decode('utf-8').replace('\r', ''))
+            else:
+                logger.debug('Unknown message: %s' % message.decode('utf-8').replace('\r', ''))
         finally:
             try:
                 if self._stashmessage:
@@ -153,7 +166,6 @@ class HaakePhoenix(Device_TCP):
                 msg = self._sendqueue.get_nowait()
                 self._lastsent = msg
                 Device_TCP._send(self, msg)
-            #                print('SENT: '+msg[:-1].decode('ascii'))
             except queue.Empty:
                 try:
                     del self._lastsent
@@ -162,6 +174,9 @@ class HaakePhoenix(Device_TCP):
 
     def _query_variable(self, variablename):
         if variablename is None:
+            if self._sendqueue.qsize() > 3:
+                # skip autoupdate
+                return
             toberefreshed = [x for x in self.allvariables if x not in self._properties] + self.urgentvariables
             if not self._urgency_counter:
                 toberefreshed.extend(self.notsourgentvariables)
@@ -220,14 +235,16 @@ class HaakePhoenix(Device_TCP):
         pass
 
     def _set_variable(self, variable, value):
+        logger.debug('Setting circulator variable from process %s' % multiprocessing.current_process().name)
         if variable == 'setpoint':
-            self._send(b'W SW %6.2f\r' % value)
+            logger.debug('Setting setpoint. Sending: W SW %.2f<cr>' % value)
+            self._send(b'W SW %.2f\r' % value)
         elif variable == 'highlimit':
-            self._send(b'W HL %6.2f\r' % value)
+            self._send(b'W HL %.2f\r' % value)
         elif variable == 'lowlimit':
-            self._send(b'W LL %6.2f\r' % value)
+            self._send(b'W LL %.2f\r' % value)
         elif variable == 'highlimit':
-            self._send(b'W HL %6.2f\r' % value)
+            self._send(b'W HL %.2f\r' % value)
         elif variable == 'control_external':
             self._send(b'OUT MODE 2 %d\r' % bool(value))
         elif variable == 'diffcontrol_on':
@@ -240,10 +257,10 @@ class HaakePhoenix(Device_TCP):
             self._send(b'W ZB %d\r' % bool(value))
         elif variable == 'date':
             assert (isinstance(value, datetime.date))
-            self._send(b'W XD %02d %02d %02d\r' % (value.day, value.month, value.year % 100))
+            self._send(b'W XD %02d.%02d.%02d\r' % (value.day, value.month, value.year % 100))
         elif variable == 'time':
             assert (isinstance(value, datetime.time))
-            self._send(b'W XD %02d %02d %02d\r' % (value.hour, value.minute, value.second))
+            self._send(b'W XT %02d:%02d:%02d\r' % (value.hour, value.minute, value.second))
         elif variable == 'watchdog_on':
             self._send(b'W WD %d\r' % bool(value))
         elif variable == 'watchdog_setpoint':
@@ -265,7 +282,6 @@ class HaakePhoenix(Device_TCP):
             self._sendqueue.put_nowait(message)
             return
         self._lastsent = message
-        #        print('SENT: '+message[:-1].decode('ascii'))
         Device_TCP._send(self, message)
 
     def decode_error_flags(self, flags):
