@@ -1,6 +1,7 @@
 from gi import require_version
 
 require_version('Gtk', '3.0')
+require_version('GtkSource', '3.0')
 from gi.repository import Gio
 from gi.repository import Gtk
 from gi.repository import GLib
@@ -9,6 +10,7 @@ import pkg_resources
 import sys
 import logging
 import traceback
+import time
 import argparse
 from ..core.instrument.instrument import Instrument
 from .measurement.scan import Scan
@@ -28,13 +30,22 @@ from .tools.scanviewer import ScanViewer
 from .tools.maskeditor import MaskEditor
 from .diagnostics.telemetry import Telemetry
 from .devices.haakephoenix import HaakePhoenix
+from .devices.pilatus import Pilatus
+from .toolframes.resourceusage import ResourceUsage
+from .toolframes.nextfsn import NextFSN
+from .toolframes.shutter import ShutterBeamstop
 
 import kerberos
 
 itheme = Gtk.IconTheme.get_default()
 itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/scalable'))
 itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/256x256'))
+itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/128x128'))
 itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/64x64'))
+itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/48x48'))
+itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/32x32'))
+itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/16x16'))
+itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/8x8'))
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -68,17 +79,20 @@ class CCTApplication(Gtk.Application):
     def __init__(self, *args, **kwargs):
         kwargs['flags'] = Gio.ApplicationFlags.HANDLES_COMMAND_LINE
         Gtk.Application.__init__(self, *args, **kwargs)
+        self._starttime = time.time()
         # self.connect('activate', self.on_activate)
         # self.connect('startup', self.on_startup)
 
     def do_activate(self):
-
         ad=AuthenticatorDialog(self)
         try:
             if (not self._skipauthentication) and (not ad.run()):
                 return True
-
-            self._mw = MainWindow(self, self._online, self._newconfig)
+            accounting = {'operator': ad.get_operator(),
+                          'proposalid': ad.get_proposalid(),
+                          'proposaltitle': ad.get_proposaltitle(),
+                          'proposername': ad.get_proposername()}
+            self._mw = MainWindow(self, self._online, self._newconfig, accounting)
             self.add_window(self._mw._window)
             self._mw._window.set_show_menubar(True)
             self._mw._window.show_all()
@@ -110,22 +124,23 @@ class AuthenticatorDialog(object):
         self._builder.connect_signals(self)
 
     def run(self):
-        response=self._window.run()
-        if response==Gtk.ResponseType.DELETE_EVENT:
-            self._application.quit()
-            return False
-        else:
-            logger.debug('Response ID: '+str(response))
-            username=self._builder.get_object('operator_entry').get_text()
-            if '@' not in username:
-                username=username+'@MTATTKMFIBNO'
-            try:
-                if kerberos.checkPassword(username,
-                                          self._builder.get_object('password_entry').get_text(),
-                                          '','',0):
-                    return True
-            except kerberos.BasicAuthError:
+        while True:
+            response = self._window.run()
+            if response == Gtk.ResponseType.DELETE_EVENT or response == 0:
                 self._application.quit()
+                return False
+            elif response == 1:
+                username = self._builder.get_object('operator_entry').get_text()
+                if '@' not in username:
+                    username = username + '@MTATTKMFIBNO'
+                try:
+                    if kerberos.checkPassword(username,
+                                              self._builder.get_object('password_entry').get_text(),
+                                              '', '', 0):
+                        return True
+                except kerberos.BasicAuthError:
+                    self._builder.get_object('password_entry').set_text('')
+                    # ToDo: show the user that the password was invalid
 
     def get_operator(self):
         username=self._builder.get_object('operator_entry').get_text()
@@ -168,7 +183,7 @@ class DeviceStatusBar(Gtk.Box):
         return False
 
 class MainWindow(object):
-    def __init__(self, app, is_online, clobber_config):
+    def __init__(self, app, is_online, clobber_config, accounting):
         self._application = app
         self._online = is_online
         self._clobber_config = clobber_config
@@ -195,11 +210,30 @@ class MainWindow(object):
         self._logview = self._builder.get_object('logtext')
         self._statusbar = self._builder.get_object('statusbar')
         self._dialogs = {}
-        self._instrument = Instrument(self._clobber_config)
+        self._instrument = Instrument(self._clobber_config, accounting)
         if self._online:
             self._instrument.connect_devices()
         self._devicestatus=DeviceStatusBar(self._instrument)
         self._builder.get_object('devicestatus_box').pack_start(self._devicestatus, True, True, 0)
+
+        self._toolframes = {'resourceusage': ResourceUsage('toolframe_telemetry.glade',
+                                                           'telemetryframe',
+                                                           self._instrument,
+                                                           self._application),
+                            'nextfsn': NextFSN('toolframe_nextfsn.glade',
+                                               'nextfsnframe',
+                                               self._instrument,
+                                               self._application),
+                            'shutterbeamstop': ShutterBeamstop('toolframe_shutter.glade',
+                                                               'shutterframe',
+                                                               self._instrument,
+                                                               self._application)
+                            }
+
+        self._builder.get_object('toolbox').pack_end(self._toolframes['resourceusage']._widget, False, True, 0)
+        self._builder.get_object('toolbox').pack_end(self._toolframes['nextfsn']._widget, False, True, 0)
+        self._builder.get_object('toolbox').pack_end(self._toolframes['shutterbeamstop']._widget, False, True, 0)
+        self._window.show_all()
         self._window.set_title('Credo Control Tool')
 
     def on_delete_event(self, window, event):
@@ -258,7 +292,7 @@ class MainWindow(object):
         return False
 
     def on_menu_devices_detector(self, menuitem):
-        #ToDo
+        self.construct_and_run_dialog(Pilatus, 'pilatus', 'devices_pilatus.glade', 'Detector')
         return False
 
     def on_menu_devices_motors(self, menuitem):
@@ -286,7 +320,6 @@ class MainWindow(object):
     def on_menu_measurement_transmission(self, menuitem):
         self.construct_and_run_dialog(Transmission, 'measuretransmission', 'measurement_transmission.glade',
                                       'Transmission measurement')
-        #ToDo
         return False
 
     def on_menu_measurement_automaticprogram(self, menuitem):
@@ -310,12 +343,14 @@ class MainWindow(object):
         return False
 
     def on_menu_tools_datareduction(self, menuitem):
+        #ToDo
         return False
 
     def on_menu_tools_diagnostics_resourceusage(self, menuitem):
         self.construct_and_run_dialog(Telemetry, 'telemetrywindow', 'diagnostics_telemetry.glade', 'Resource usage')
 
     def on_menu_help_about(self, menuitem):
+        #ToDo
         return False
 
 def run():
