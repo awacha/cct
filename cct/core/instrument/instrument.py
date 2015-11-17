@@ -2,6 +2,7 @@ import json
 import logging
 import multiprocessing
 import os
+import resource
 import traceback
 
 from .motor import Motor
@@ -16,22 +17,41 @@ from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-from gi.repository import GObject
+from gi.repository import GObject, GLib
+
+
+class DummyTm(object):
+    ru_utime = None
+    ru_stime = None
+    ru_maxrss = None
+    ru_minflt = None
+    ru_majflt = None
+    ru_inblock = None
+    ru_oublock = None
+    ru_nvcsw = None
+    ru_nivcsw = None
 
 
 class InstrumentError(Exception):
     pass
 
 
+def get_telemetry():
+    return {'processname': multiprocessing.current_process().name,
+            'self': resource.getrusage(resource.RUSAGE_SELF),
+            'children': resource.getrusage(resource.RUSAGE_CHILDREN),
+            'inqueuelen': 0}
+
 class Instrument(GObject.GObject):
     configdir = 'config'
+    telemetry_timeout = 0.9
 
     __gsignals__ = {
         # emitted when all devices have been initialized.
         'devices-ready': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
-    def __init__(self, clobber_config):
+    def __init__(self, clobber_config, accounting):
         GObject.GObject.__init__(self)
         self._clobber_config = clobber_config
         self.devices = {}
@@ -45,9 +65,16 @@ class Instrument(GObject.GObject):
         self._initialize_config()
         self._signalconnections = {}
         self._waiting_for_ready = []
+        self._telemetries = {}
+        self._outstanding_telemetries = []
+        self._telemetry_timeout = GLib.timeout_add(self.telemetry_timeout * 1000, self.on_telemetry_timeout)
         self.busy=multiprocessing.Event()
         self.load_state()
         self.start_services()
+        self.config['accounting']['operator'] = accounting['operator']
+        self.config['accounting']['projectid'] = accounting['proposalid']
+        self.config['accounting']['projectname'] = accounting['proposaltitle']
+        self.config['accounting']['proposer'] = accounting['proposername']
 
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from sratch."""
@@ -62,7 +89,8 @@ class Instrument(GObject.GObject):
                                               'eval1d': 'eval1d',
                                               'eval2d': 'eval2d',
                                               'param_override': 'param_override',
-                                              'scan': 'scan'
+                                              'scan': 'scan',
+                                              'images_detector': ['/disk2/images', '/home/det/p2_det/images'],
                                               }
         self.config['path']['fsndigits'] = 5
         self.config['path']['prefixes'] = {'crd': 'testingcrd',
@@ -230,7 +258,10 @@ class Instrument(GObject.GObject):
 
     def _connect_signals(self, devicename, device):
         self._signalconnections[devicename] = [device.connect('startupdone', self.on_ready),
-                                               device.connect('disconnect', self.on_disconnect)]
+                                               device.connect('disconnect', self.on_disconnect),
+                                               device.connect('telemetry', self.on_telemetry, devicename)]
+        if devicename in self._outstanding_telemetries:
+            self._outstanding_telemetries.remove(devicename)
 
     def _disconnect_signals(self, devicename, device):
         try:
@@ -347,6 +378,11 @@ class Instrument(GObject.GObject):
                 self.devices[d]._load_state(self.config['devices'][d])
         return unsuccessful
 
+    def on_telemetry(self, device, telemetry, devicename):
+        self._telemetries[devicename] = telemetry
+        if devicename in self._outstanding_telemetries:
+            self._outstanding_telemetries.remove(devicename)
+
     def on_ready(self, device):
         try:
             self._waiting_for_ready.remove(device._instancename)
@@ -368,3 +404,41 @@ class Instrument(GObject.GObject):
         self.exposureanalyzer = ExposureAnalyzer(self)
         self.exposureanalyzer._load_state(
             self.config['services']['exposureanalyzer'])
+
+    def on_telemetry_timeout(self):
+        self._telemetries['main'] = get_telemetry()
+        for d in self.devices:
+            if d in self._outstanding_telemetries:
+                continue
+            self._outstanding_telemetries.append(d)
+            self.devices[d].get_telemetry()
+
+        for s in ['exposureanalyzer']:
+            if s in self._outstanding_telemetries:
+                continue
+            self._outstanding_telemetries.append(s)
+            getattr(self, s).get_telemetry()
+        return True
+
+    def get_telemetry(self, process=None):
+        if process is None:
+            tm = {}
+            for what in ['self', 'children']:
+                tm[what] = DummyTm()
+                tm[what].ru_utime = sum([self._telemetries[k][what].ru_utime for k in self._telemetries])
+                tm[what].ru_stime = sum([self._telemetries[k][what].ru_stime for k in self._telemetries])
+                tm[what].ru_maxrss = sum([self._telemetries[k][what].ru_maxrss for k in self._telemetries])
+                tm[what].ru_minflt = sum([self._telemetries[k][what].ru_minflt for k in self._telemetries])
+                tm[what].ru_majflt = sum([self._telemetries[k][what].ru_majflt for k in self._telemetries])
+                tm[what].ru_inblock = sum([self._telemetries[k][what].ru_inblock for k in self._telemetries])
+                tm[what].ru_oublock = sum([self._telemetries[k][what].ru_oublock for k in self._telemetries])
+                tm[what].ru_nvcsw = sum([self._telemetries[k][what].ru_nvcsw for k in self._telemetries])
+                tm[what].ru_nivcsw = sum([self._telemetries[k][what].ru_nivcsw for k in self._telemetries])
+        else:
+            tm = {'self': self._telemetries[process]['self'],
+                  'children': self._telemetries[process]['children'],
+                  }
+        return tm
+
+    def get_telemetrykeys(self):
+        return self._telemetries.keys()
