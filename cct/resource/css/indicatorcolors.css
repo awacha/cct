@@ -1,9 +1,9 @@
 GtkEventBox#indicator_ok {
-    background-color: #33ff00
+    background-color: #007c08
 }
 
 GtkEventBox#indicator_warning {
-    background-color: #ffbc00
+    background-color: #ffac00
 }
 
 GtkEventBox#indicator_error {
