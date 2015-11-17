@@ -20,8 +20,8 @@ RE_INT = br"[+-]?\d+"
 pilatus_int_variables = ['wpix', 'hpix', 'sel_bank', 'sel_module',
                          'sel_chip', 'diskfree', 'nimages', 'masterPID', 'controllingPID', 'pid']
 pilatus_float_variables = ['tau', 'cutoff', 'exptime', 'expperiod', 'temperature0',
-                           'temperature1', 'temperature2', 'humidity0', 'humidity1', 'humidity2', 'threshold', 'vcmp', 'timeleft',
-                           'exptime']
+                           'temperature1', 'temperature2', 'humidity0', 'humidity1', 'humidity2', 'threshold', 'vcmp',
+                           'timeleft']
 pilatus_date_variables = ['starttime']
 pilatus_str_variables = ['version', 'gain', 'trimfile', 'cameradef', 'cameraname', 'cameraSN', '_status', 'targetfile',
                          'lastimage', 'lastcompletedimage', 'shutterstate', 'imgpath', 'imgmode', 'filename',
@@ -100,7 +100,7 @@ class Pilatus(Device_TCP):
     def _query_variable(self, variablename):
         if variablename is None:
             variablenames = ['gain', 'trimfile', 'nimages',
-                             'cameradef', 'imgpath', 'imgmode', 'PID', 'expperiod', 'diskfree']
+                             'cameradef', 'imgpath', 'imgmode', 'PID', 'expperiod', 'diskfree', 'tau']
         else:
             variablenames = [variablename]
 
@@ -129,6 +129,8 @@ class Pilatus(Device_TCP):
                 self._send(b'tau\n')
             elif vn == 'diskfree':
                 self._send(b'df\n')
+            elif vn == 'version':
+                self._send(b'version\n')
             else:
                 raise NotImplementedError(vn)
 
@@ -294,6 +296,7 @@ class Pilatus(Device_TCP):
         self.execute_command('expose', filename.encode('utf-8'))
 
     def do_startupdone(self):
+        self.refresh_variable('version')
         self.set_threshold(4024, 'highg')
         Device_TCP.do_startupdone(self)
         return False
@@ -303,3 +306,4 @@ class Pilatus(Device_TCP):
 
     def _on_startupdone(self):
         self._update_variable('_status', 'idle')
+        self._update_variable('starttime', None)
