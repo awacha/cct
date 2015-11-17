@@ -116,6 +116,8 @@ class Expose(Command):
         self._filename = self._prefix + '_' + \
             ('%%0%dd' %
              instrument.config['path']['fsndigits']) % self._fsn + '.cbf'
+        instrument.detector.set_variable('imgpath', self._instrument.config['path']['directories']['images_detector'][
+            0] + '/' + self._prefix)
         instrument.detector.set_variable('exptime', exptime)
         self._exptime = exptime
         self.timeout = exptime + 30
@@ -223,6 +225,8 @@ class ExposeMulti(Command):
         self.timeout = self._totaltime + 30
 
         instrument.detector.set_variable('exptime', exptime)
+        instrument.detector.set_variable('imgpath', self._instrument.config['path']['directories']['images_detector'][
+            0] + '/' + self._prefix)
         instrument.detector.set_variable('expperiod', exptime+expdelay)
         self._progresshandler = GLib.timeout_add(500,
                                                  lambda d=instrument.detector: self._progress(d))
@@ -267,7 +271,7 @@ class ExposeMulti(Command):
             due_fsns = [fs for fs, dt in zip(self._fsns, self._expected_due_times) if dt < elapsedtime]
             loaded_count = 0  # collect the number of successfully found images
             for filename, fsn, dt in zip(due_files, due_fsns, due_times):
-                if self._instrument.filesequence.is_cbf_ready(filename):
+                if self._instrument.filesequence.is_cbf_ready(self._prefix + '/' + filename):
                     # if the file is present, let it be processed.
                     logger.debug('We have %s' % filename)
                     GLib.idle_add(

@@ -230,13 +230,12 @@ class FileSequence(Service):
         return self._lastscan
 
     def get_nextfreescan(self, acquire=True):
-        retval = self._nextfreescan
-        if acquire:
-            self._nextfreescan += 1
         try:
-            self.emit('nextscan-changed', self._nextfreescan)
+            return self._nextfreescan
         finally:
-            return retval
+            if acquire:
+                self._nextfreescan += 1
+                self.emit('nextscan-changed', self._nextfreescan)
 
     def get_nextfreefsn(self, prefix, acquire=True):
         if prefix not in self._nextfreefsn:
@@ -246,7 +245,7 @@ class FileSequence(Service):
         finally:
             if acquire:
                 self._nextfreefsn[prefix] += 1
-            self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
+                self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
     def get_nextfreefsns(self, prefix, N, acquire=True):
         assert (N > 0)
@@ -351,15 +350,23 @@ class FileSequence(Service):
         return True
 
     def load_exposure(self, prefix, fsn):
-        cbfname = os.path.join(
-            self.instrument.config['path']['directories']['images'],
-            prefix + '_' + '%%0%dd.cbf' %
-            self.instrument.config['path']['fsndigits'] % fsn)
         picklename = os.path.join(
             self.instrument.config['path']['directories']['param'],
             prefix + '_' + '%%0%dd.pickle' %
             self.instrument.config['path']['fsndigits'] % fsn)
-        return SASImage.new_from_file(cbfname, picklename)
+        try:
+            cbfname = os.path.join(
+                self.instrument.config['path']['directories']['images'], prefix,
+                prefix + '_' + '%%0%dd.cbf' %
+                self.instrument.config['path']['fsndigits'] % fsn)
+            return SASImage.new_from_file(cbfname, picklename)
+        except FileNotFoundError:
+            cbfname = os.path.join(
+                self.instrument.config['path']['directories']['images'],
+                prefix + '_' + '%%0%dd.cbf' %
+                self.instrument.config['path']['fsndigits'] % fsn)
+            return SASImage.new_from_file(cbfname, picklename)
+
 
     def get_mask(self, maskname):
         if not hasattr(self, '_masks'):

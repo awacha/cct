@@ -27,18 +27,6 @@ class DataReductionEnd(Exception):
     pass
 
 
-def flatten_dict(d):
-    flat = {}
-    for k in d:
-        if not isinstance(d[k], dict):
-            flat[k] = d[k]
-        else:
-            d1 = flatten_dict(d[k])
-            for k1 in d1:
-                flat[k + '.' + k1] = d1[k1]
-    return flat
-
-
 def get_statistics(matrix, masktotal=None, mask=None):
     """Calculate different statistics of a detector image, such as sum, max,
     center of gravity, etc."""
@@ -126,8 +114,13 @@ class ExposureAnalyzer(Service):
 #            logger.debug(
 #                'Exposureanalyzer background process got work: %s, %d, %s, %s' % (prefix, fsn, filename, str(args)))
             if not prefix.startswith('_'):
-                cbfdata = readcbf(
-                    os.path.join(self._config['path']['directories']['images'], filename))[0]
+                try:
+                    # first try to load from a per-prefix directory.
+                    cbfdata = readcbf(os.path.join(self._config['path']['directories']['images'], prefix, filename))[0]
+                except FileNotFoundError:
+                    # try the root 'images' directory
+                    cbfdata = readcbf(
+                        os.path.join(self._config['path']['directories']['images'], filename))[0]
             else:
                 cbfdata = None
             if prefix == '_exit':
