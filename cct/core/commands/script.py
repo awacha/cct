@@ -50,7 +50,7 @@ class Script(Command):
         namespace['_scriptargs']=arglist
         self._cursor=-1
         self._jumpstack=[]
-        self._myinterpreter=interpreter.__class__(instrument, namespace)
+        self._myinterpreter = interpreter.create_child(namespace)
         self._myinterpreter_connections=[
             self._myinterpreter.connect('cmd-return', self.on_cmd_return),
             self._myinterpreter.connect('cmd-fail', self.on_cmd_fail),

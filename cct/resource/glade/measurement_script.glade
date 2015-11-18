@@ -286,6 +286,196 @@
                   </packing>
                 </child>
                 <child>
+                  <object class="GtkBox" id="box3">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkLabel" id="label2">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="margin_right">5</property>
+                        <property name="label" translatable="yes">Flags:</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButtonBox" id="flags_buttonbox">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="hexpand">False</property>
+                        <property name="vexpand">False</property>
+                        <property name="layout_style">center</property>
+                        <child>
+                          <object class="GtkToggleButton" id="flag1_button">
+                            <property name="label" translatable="yes">1</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">0</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="flag2_button">
+                            <property name="label" translatable="yes">2</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">1</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="flag3_button">
+                            <property name="label" translatable="yes">3</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">2</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="flag4_button">
+                            <property name="label" translatable="yes">4</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="valign">end</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">3</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="flag5_button">
+                            <property name="label" translatable="yes">5</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">4</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="flag6_button">
+                            <property name="label" translatable="yes">6</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">5</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="flag7_button">
+                            <property name="label" translatable="yes">7</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">6</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="flag8_button">
+                            <property name="label" translatable="yes">8</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">7</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="flag9_button">
+                            <property name="label" translatable="yes">9</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">8</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkToggleButton" id="flag10_button">
+                            <property name="label" translatable="yes">10</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <signal name="toggled" handler="on_flag_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">False</property>
+                            <property name="position">9</property>
+                            <property name="non_homogeneous">True</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
                   <object class="GtkScrolledWindow" id="scrolledwindow1">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -317,7 +507,7 @@
                   <packing>
                     <property name="expand">True</property>
                     <property name="fill">True</property>
-                    <property name="position">1</property>
+                    <property name="position">2</property>
                   </packing>
                 </child>
               </object>

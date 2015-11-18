@@ -118,6 +118,12 @@ class ScriptMeasurement(ToolWindow):
             self._instrument.interpreter.connect('progress',self.on_script_progress),
             self._instrument.interpreter.connect('cmd-message', self.on_script_message),
                                        ]
+        self._instrument.interpreter.clear_flag(None)  # clear all flags
+        flagsbb = self._builder.get_object('flags_buttonbox')
+        for b in flagsbb:
+            if b.get_active():
+                self._instrument.interpreter.set_flag(b.get_label())
+
         self._builder.get_object('sourceview').set_editable(False)
         self._scriptconnections = [self._scriptcommand.connect('cmd-start', self.on_command_start)]
         buf = self._builder.get_object('messagesbuffer')
@@ -200,6 +206,12 @@ class ScriptMeasurement(ToolWindow):
     def on_close(self, widget, event=None):
         self.confirm_save()
         ToolWindow.on_close(self, widget, event)
+
+    def on_flag_toggled(self, flagtoggle):
+        if flagtoggle.get_active():
+            self._instrument.interpreter.set_flag(flagtoggle.get_label())
+        else:
+            self._instrument.interpreter.clear_flag(flagtoggle.get_label())
 
 
 class CommandHelpDialog(ToolWindow):

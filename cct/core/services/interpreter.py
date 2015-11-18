@@ -40,6 +40,7 @@ class Interpreter(Service):
 
     def __init__(self, instrument, namespace=None, **kwargs):
         Service.__init__(self, instrument, **kwargs)
+        self._flags = []
         self.commands = {}
         for commandclass in Command.allcommands():
             self.commands[commandclass.name] = commandclass
@@ -53,6 +54,12 @@ class Interpreter(Service):
         exec('import numpy as np', self.command_namespace_globals,
              self.command_namespace_locals)
         self._command_connections = {}
+
+    def create_child(self, namespace=None, **kwargs):
+        """Create a child interpreter. Children and parents share the same set of flags."""
+        child = Interpreter(self.instrument, namespace, **kwargs)
+        child._parent = self
+        return child
 
     def execute_command(self, commandline, arguments=None):
         if hasattr(self, '_command'):
@@ -186,6 +193,31 @@ class Interpreter(Service):
             self._command.kill()
         except AttributeError:
             pass
+
+    def set_flag(self, flagname):
+        try:
+            return self._parent.set_flag(flagname)
+        except AttributeError:
+            # we have no parent
+            if flagname not in self._flags:
+                self._flags.append(flagname)
+
+    def clear_flag(self, flagname=None):
+        try:
+            return self._parent.clear_flag(flagname)
+        except AttributeError:
+            # we have no parent
+            if flagname is None:
+                self._flags = []
+            else:
+                self._flags = [f for f in self._flags if f != flagname]
+
+    def is_flag(self, flagname):
+        try:
+            return self._parent.is_flag(flagname)
+        except AttributeError:
+            # we have no parent
+            return flagname in self._flags
 
 
 def get_parentheses_pairs(cmdline, opening_types='([{'):
