@@ -1,4 +1,9 @@
-from gi.repository import Gtk
+import logging
+
+from gi.repository import Gtk, GLib
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 from ..core.toolframe import ToolFrame
 
@@ -17,26 +22,34 @@ class ShutterBeamstop(ToolFrame):
                     self._instrument.motors['BeamStop_X'].connect('position-change', self.on_motor_position_change),
                 ],
             }
-            self.on_motor_position_change(None, None)
-            self.on_genix_variable_change(self._instrument.devices['genix'], 'shutter',
-                                          self._instrument.devices['genix'].get_variable('shutter'))
+            # self.on_motor_position_change(None, None)
+            # self.on_genix_variable_change(self._instrument.devices['genix'], 'shutter',
+            #                              self._instrument.devices['genix'].get_variable('shutter'))
         except KeyError:
             self._widget.set_sensitive(False)
 
     def on_unmap(self, widget):
-        for dev in self._connections:
-            for c in self._connections[dev]:
-                dev.disconnect(c)
-            del self._connections[dev]
-        self._connections = {}
+        try:
+            for dev in list(self._connections):
+                for c in self._connections[dev]:
+                    dev.disconnect(c)
+                del self._connections[dev]
+            self._connections = {}
+        except AttributeError:
+            pass
 
     def on_genix_variable_change(self, genix, varname, value):
         if varname == 'shutter':
-            self._builder.get_object('shutter-switch').set_state(value)
+            logger.debug('Shutter opened.')
+            self._builder.get_object('shutter_switch').set_state(value)
 
     def on_motor_position_change(self, motor, pos):
-        x = self._instrument.motors['BeamStop_X'].where()
-        y = self._instrument.motors['BeamStop_Y'].where()
+        try:
+            x = self._instrument.motors['BeamStop_X'].where()
+            y = self._instrument.motors['BeamStop_Y'].where()
+        except KeyError:
+            GLib.timeout_add(3000, lambda: self.on_motor_position_change(motor, pos))
+            return False
 
         if ((abs(x - self._instrument.config['beamstop']['in'][0]) < 0.001)
             and (abs(y - self._instrument.config['beamstop']['in'][1]) < 0.001)):
@@ -53,9 +66,11 @@ class ShutterBeamstop(ToolFrame):
                                                                                Gtk.IconSize.BUTTON)
             self._builder.get_object('beamstop_in_button').set_sensitive(True)
             self._builder.get_object('beamstop_out_button').set_sensitive(True)
+        return False
 
     def on_shutter_switch_set_state(self, switch, value):
         self._instrument.interpreter.execute_command('shutter(%d)' % value)
+        return True
 
     def on_beamstop_in(self, button):
         self._instrument.interpreter.execute_command('beamstop("in")')
