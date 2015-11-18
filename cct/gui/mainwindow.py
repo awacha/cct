@@ -21,7 +21,7 @@ from .setup.editconfig import EditConfig
 from .setup.sampleedit import SampleEdit
 from .setup.definegeometry import DefineGeometry
 from .measurement.singleexposure import SingleExposure
-from .measurement.script import ScriptMeasurement
+from .measurement.script import ScriptMeasurement, CommandHelpDialog
 from .measurement.transmission import Transmission
 from .setup.calibration import Calibration
 from .tools.exposureviewer import ExposureViewer
@@ -34,8 +34,10 @@ from .devices.pilatus import Pilatus
 from .toolframes.resourceusage import ResourceUsage
 from .toolframes.nextfsn import NextFSN
 from .toolframes.shutter import ShutterBeamstop
+from .toolframes.accounting import AccountingFrame
 
-import kerberos
+cssprovider = Gtk.CssProvider()
+cssprovider.load_from_path(pkg_resources.resource_filename('cct', 'resource/css/widgetbackgrounds.css'))
 
 itheme = Gtk.IconTheme.get_default()
 itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/scalable'))
@@ -61,8 +63,7 @@ def my_excepthook(type_, value, traceback_):
     oldexcepthook(type_, value, traceback_)
 sys.excepthook = my_excepthook
 
-
-
+logging.basicConfig()
 
 class MyLogHandler(logging.Handler):
     def __init__(self, logfunction):
@@ -71,7 +72,6 @@ class MyLogHandler(logging.Handler):
 
     def emit(self, record):
         message = self.format(record)
-        print(message, flush=True)
         GLib.idle_add(self._logfunction, message, record)
 
 
@@ -84,15 +84,12 @@ class CCTApplication(Gtk.Application):
         # self.connect('startup', self.on_startup)
 
     def do_activate(self):
-        ad=AuthenticatorDialog(self)
+        ad = AuthenticatorDialog(self, self._instrument)
         try:
             if (not self._skipauthentication) and (not ad.run()):
                 return True
-            accounting = {'operator': ad.get_operator(),
-                          'proposalid': ad.get_proposalid(),
-                          'proposaltitle': ad.get_proposaltitle(),
-                          'proposername': ad.get_proposername()}
-            self._mw = MainWindow(self, self._online, self._newconfig, accounting)
+
+            self._mw = MainWindow(self, self._instrument)
             self.add_window(self._mw._window)
             self._mw._window.set_show_menubar(True)
             self._mw._window.show_all()
@@ -104,24 +101,41 @@ class CCTApplication(Gtk.Application):
         parser = argparse.ArgumentParser()
         parser.add_argument('--online', action='store_true', default=False,
                             help='Enable working on-line (you should give this if you want to do serious work)')
-        parser.add_argument('--newconfig', action='store_true', default=False,
-                            help='Clobber the config file. You probably don\'t need this, only in case you are running a new version of cct for the first time.')
         parser.add_argument('--root', action='store_true', default=False,
                             help='Skip the authentication dialog. Use this only as a last resort!')
         args = parser.parse_args()
+        self._instrument = Instrument(args.online)
+        self._instrument.load_state()
         self._online = args.online
-        self._newconfig = args.newconfig
         self._skipauthentication=args.root
         self.do_activate()
         return 0
 
 
 class AuthenticatorDialog(object):
-    def __init__(self, application):
+    def __init__(self, application, instrument):
         self._application=application
+        self._instrument = instrument
         self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/accounting_login.glade'))
         self._window=self._builder.get_object('accountingdialog')
+        self._builder.get_object('operator_entry').set_text(instrument.config['services']['accounting']['operator'])
+        self._builder.get_object('proposalid_entry').remove_all()
+        self._builder.get_object('password_entry').get_style_context().add_provider(cssprovider,
+                                                                                    Gtk.STYLE_PROVIDER_PRIORITY_USER)
+        for pid in self._instrument.accounting.get_projectids():
+            self._builder.get_object('proposalid_entry').append_text(pid)
+        self._builder.get_object('proposalid_entry').set_active(0)
         self._builder.connect_signals(self)
+        self.on_proposalid_changed(self._builder.get_object('proposalid_entry'))
+
+    def on_proposalid_changed(self, selector):
+        if selector.get_active_text() in self._instrument.accounting.get_projectids():
+            project = self._instrument.accounting.get_project(selector.get_active_text())
+            self._builder.get_object('proposaltitle_entry').set_text(project.projectname)
+            self._builder.get_object('proposername_entry').set_text(project.proposer)
+
+    def on_password_changed(self, password_entry):
+        password_entry.set_name('GtkEntry')
 
     def run(self):
         while True:
@@ -131,29 +145,18 @@ class AuthenticatorDialog(object):
                 return False
             elif response == 1:
                 username = self._builder.get_object('operator_entry').get_text()
-                if '@' not in username:
-                    username = username + '@MTATTKMFIBNO'
-                try:
-                    if kerberos.checkPassword(username,
-                                              self._builder.get_object('password_entry').get_text(),
-                                              '', '', 0):
-                        return True
-                except kerberos.BasicAuthError:
-                    self._builder.get_object('password_entry').set_text('')
-                    # ToDo: show the user that the password was invalid
+                if self._application._instrument.accounting.authenticate(
+                        username, self._builder.get_object('password_entry').get_text()):
+                    self.update_instrument()
+                    return True
+                self._builder.get_object('password_entry').set_name('redbackground')
 
-    def get_operator(self):
-        username=self._builder.get_object('operator_entry').get_text()
-        return username.split('@')[0]
-
-    def get_proposalid(self):
-        return self._builder.get_object('proposalid_entry').get_active_text()
-
-    def get_proposername(self):
-        return self._builder.get_object('proposername_entry').get_text()
-
-    def get_proposaltitle(self):
-        return self._builder.get_object('proposaltitle_entry').get_text()
+    def update_instrument(self):
+        projectid = self._builder.get_object('proposalid_entry').get_active_text()
+        projectname = self._builder.get_object('proposaltitle_entry').get_text()
+        proposername = self._builder.get_object('proposername_entry').get_text()
+        self._instrument.accounting.new_project(projectid, projectname, proposername)
+        self._instrument.accounting.select_project(projectid)
 
 class DeviceStatusBar(Gtk.Box):
     def __init__(self, instrument):
@@ -183,10 +186,8 @@ class DeviceStatusBar(Gtk.Box):
         return False
 
 class MainWindow(object):
-    def __init__(self, app, is_online, clobber_config, accounting):
+    def __init__(self, app, instrument):
         self._application = app
-        self._online = is_online
-        self._clobber_config = clobber_config
         self._builder = Gtk.Builder.new_from_file(
             pkg_resources.resource_filename('cct', 'resource/glade/mainwindow.glade'))
         self._builder.set_application(app)
@@ -210,9 +211,8 @@ class MainWindow(object):
         self._logview = self._builder.get_object('logtext')
         self._statusbar = self._builder.get_object('statusbar')
         self._dialogs = {}
-        self._instrument = Instrument(self._clobber_config, accounting)
-        if self._online:
-            self._instrument.connect_devices()
+        self._instrument = instrument
+        self._instrument.connect_devices()
         self._devicestatus=DeviceStatusBar(self._instrument)
         self._builder.get_object('devicestatus_box').pack_start(self._devicestatus, True, True, 0)
 
@@ -227,14 +227,93 @@ class MainWindow(object):
                             'shutterbeamstop': ShutterBeamstop('toolframe_shutter.glade',
                                                                'shutterframe',
                                                                self._instrument,
-                                                               self._application)
+                                                               self._application),
+                            'accounting': AccountingFrame('toolframe_accounting.glade',
+                                                          'accountingframe',
+                                                          self._instrument,
+                                                          self._application)
                             }
 
         self._builder.get_object('toolbox').pack_end(self._toolframes['resourceusage']._widget, False, True, 0)
         self._builder.get_object('toolbox').pack_end(self._toolframes['nextfsn']._widget, False, True, 0)
         self._builder.get_object('toolbox').pack_end(self._toolframes['shutterbeamstop']._widget, False, True, 0)
+        self._builder.get_object('toolbox').pack_end(self._toolframes['accounting']._widget, False, True, 0)
         self._window.show_all()
         self._window.set_title('Credo Control Tool')
+
+        self._interpreterconnections = [
+            self._instrument.interpreter.connect('cmd-return', self.on_interpreter_cmd_return),
+            self._instrument.interpreter.connect('cmd-fail', self.on_interpreter_cmd_fail),
+            self._instrument.interpreter.connect('pulse', self.on_interpreter_cmd_pulse),
+            self._instrument.interpreter.connect('progress', self.on_interpreter_cmd_progress),
+            self._instrument.interpreter.connect('cmd-message', self.on_interpreter_cmd_message)]
+        self._commandhistory = []
+        self._historyindex = None
+
+    def on_command_entry_keyevent(self, entry, event):
+        if event.hardware_keycode == 111:
+            # cursor up key
+            if self._commandhistory:
+                if self._historyindex is None:
+                    self._historyindex = len(self._commandhistory)
+                self._historyindex = max(0, self._historyindex - 1)
+                self._builder.get_object('command_entry').set_text(self._commandhistory[self._historyindex])
+            return True  # inhibit further processing of this key event
+        elif event.hardware_keycode == 116:
+            # cursor down key
+            if self._commandhistory:
+                if self._historyindex is None:
+                    self._historyindex = -1
+                self._historyindex = min(self._historyindex + 1, len(self._commandhistory) - 1)
+                self._builder.get_object('command_entry').set_text(self._commandhistory[self._historyindex])
+            return True  # inhibit further processing of this key event
+        # logger.debug('KeyEvent: %s. Keyval: %s. HW: %d str: %s len: %s'%(str(event), event.keyval, event.hardware_keycode, event.string, event.length))
+        return False
+
+    def on_command_execute(self, button):
+        if button.get_label() == 'Execute':
+            cmd = self._builder.get_object('command_entry').get_text()
+            self._instrument.interpreter.execute_command(cmd)
+            self._builder.get_object('command_entry').set_sensitive(False)
+            # self._builder.get_object('execute_button').set_sensitive(False)
+            button.set_label('Stop')
+            if (not self._commandhistory) or (self._commandhistory and self._commandhistory[-1] != cmd):
+                self._commandhistory.append(self._builder.get_object('command_entry').get_text())
+        elif button.get_label() == 'Stop':
+            self._instrument.interpreter.kill()
+        else:
+            raise NotImplementedError(button.get_label())
+
+    def on_interpreter_cmd_return(self, interpreter, commandname, returnvalue):
+        self._builder.get_object('command_entry').set_sensitive(True)
+        # self._builder.get_object('execute_button').set_sensitive(True)
+        self._builder.get_object('command_entry').set_progress_fraction(0)
+        self._builder.get_object('command_entry').set_text('')
+        self._builder.get_object('command_entry').grab_focus()
+        self._builder.get_object('execute_button').set_label('Execute')
+        self._historyindex = None
+        self._statusbar.pop(1)
+
+    def on_interpreter_cmd_fail(self, interpreter, commandname, exc, tb):
+        logger.error('Command %s failed: %s %s' % (commandname, str(exc), tb))
+
+    def on_interpreter_cmd_message(self, interpreter, commandname, message):
+        self._statusbar.pop(1)
+        self._statusbar.push(1, message)
+        enditer = self._logbuffer.get_end_iter()
+        self._logbuffer.insert_with_tags(enditer, message + '\n', self._logtags.lookup('normal'))
+        self._logview.scroll_to_mark(
+            self._logbuffer.get_mark('log_end'), 0.1, False, 0, 0)
+
+    def on_interpreter_cmd_pulse(self, interpreter, commandname, message):
+        self._builder.get_object('command_entry').progress_pulse()
+        self._statusbar.pop(1)
+        self._statusbar.push(1, message)
+
+    def on_interpreter_cmd_progress(self, interpreter, commandname, message, fraction):
+        self._builder.get_object('command_entry').set_progress_fraction(fraction)
+        self._statusbar.pop(1)
+        self._statusbar.push(1, message)
 
     def on_delete_event(self, window, event):
         return self.on_menu_file_quit(window)
@@ -350,8 +429,14 @@ class MainWindow(object):
         self.construct_and_run_dialog(Telemetry, 'telemetrywindow', 'diagnostics_telemetry.glade', 'Resource usage')
 
     def on_menu_help_about(self, menuitem):
-        #ToDo
+
         return False
+
+    def on_menu_help_commandhelp(self, menuitem):
+        self.construct_and_run_dialog(CommandHelpDialog, 'commandhelpbrowser', 'help_commandhelpbrowser.glade',
+                                      'Help on commands')
+        return False
+
 
 def run():
     app = CCTApplication(

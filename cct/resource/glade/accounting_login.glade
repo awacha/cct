@@ -105,6 +105,7 @@
                 <property name="activates_default">True</property>
                 <property name="placeholder_text" translatable="yes">Password...</property>
                 <property name="input_purpose">password</property>
+                <signal name="changed" handler="on_password_changed" swapped="no"/>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -179,6 +180,7 @@
                 <property name="can_focus">False</property>
                 <property name="hexpand">True</property>
                 <property name="has_entry">True</property>
+                <signal name="changed" handler="on_proposalid_changed" swapped="no"/>
                 <child internal-child="entry">
                   <object class="GtkEntry" id="comboboxtext-entry">
                     <property name="can_focus">True</property>

@@ -1,0 +1,11 @@
+GtkWidget#greenbackground {
+    background-color: #007c08
+}
+
+GtkWidget#yellowbackground {
+    background-color: #ffac00
+}
+
+GtkWidget#redbackground {
+    background-color: #ff0000
+}

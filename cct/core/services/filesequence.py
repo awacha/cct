@@ -323,8 +323,8 @@ class FileSequence(Service):
                 params['environment']['temperature'] = self.instrument.environmentcontrollers[
                     'temperature'].get_variable('temperature_internal')
             params['accounting'] = {}
-            for k in config['accounting']:
-                params['accounting'][k] = config['accounting'][k]
+            for k in config['services']['accounting']:
+                params['accounting'][k] = config['services']['accounting'][k]
 
             # save the params dictionary
             with open(picklefilename, 'wb') as f:

@@ -12,7 +12,7 @@ from ..devices.device import DeviceError
 from ..devices.motor import TMCM351, TMCM6110
 from ..devices.vacuumgauge import TPG201
 from ..devices.xray_source import GeniX
-from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore
+from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -51,9 +51,9 @@ class Instrument(GObject.GObject):
         'devices-ready': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
-    def __init__(self, clobber_config, accounting):
+    def __init__(self, online):
         GObject.GObject.__init__(self)
-        self._clobber_config = clobber_config
+        self._online = online
         self.devices = {}
         self.services = {}
         self.xray_source = None
@@ -71,10 +71,7 @@ class Instrument(GObject.GObject):
         self.busy=multiprocessing.Event()
         self.load_state()
         self.start_services()
-        self.config['accounting']['operator'] = accounting['operator']
-        self.config['accounting']['projectid'] = accounting['proposalid']
-        self.config['accounting']['projectname'] = accounting['proposaltitle']
-        self.config['accounting']['proposer'] = accounting['proposername']
+
 
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from sratch."""
@@ -115,11 +112,6 @@ class Instrument(GObject.GObject):
                                    'beamposy': 257.,
                                    'pixelsize': 0.172,
                                    'mask': 'mask.mat'}
-        self.config['accounting'] = {'operator': 'CREDO operator',
-                                     'projectid': 'Project ID',
-                                     'projectname': 'Project name',
-                                     'proposer': 'Main proposer',
-                                     }
         self.config['connections'] = {}
         self.config['connections']['xray_source'] = {'host': 'genix.credo',
                                                      'port': 502,
@@ -187,6 +179,13 @@ class Instrument(GObject.GObject):
         self.config['devices'] = {}
         self.config['services'] = {
             'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {}}
+        self.config['services']['accounting'] = {'operator': 'CREDOoperator',
+                                                 'projectid': 'Project ID',
+                                                 'projectname': 'Project name',
+                                                 'proposer': 'Main proposer',
+                                                 'default_realm': 'MTATTKMFIBNO',
+                                                 }
+
         self.config['scan'] = {'mask': 'mask.mat',
                                'mask_total': 'mask.mat',
                                'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx', 'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay', 'total_sigma', 'sigma'],
@@ -224,7 +223,7 @@ class Instrument(GObject.GObject):
         JSON file."""
         for d in self.devices:
             self.config['devices'][d] = self.devices[d]._save_state()
-        for service in ['interpreter', 'samplestore', 'filesequence', 'exposureanalyzer']:
+        for service in ['interpreter', 'samplestore', 'filesequence', 'exposureanalyzer', 'accounting']:
             self.config['services'][service] = getattr(
                 self, service)._save_state()
         with open(self.configfile, 'wt', encoding='utf-8') as f:
@@ -245,9 +244,6 @@ class Instrument(GObject.GObject):
         """Load the saved configuration file. This is only useful before
         connecting to devices, because status of the back-end process is
         not updated by Device._load_state()."""
-        if self._clobber_config:
-            logger.debug('Not loading config file: clobbering config requested.')
-            return
         try:
             with open(self.configfile, 'rt', encoding='utf-8') as f:
                 config_loaded = json.load(f)
@@ -274,7 +270,8 @@ class Instrument(GObject.GObject):
     def connect_devices(self):
         """Try to connect to all devices. Send error logs on failures. Return
         a list of unsuccessfully connected devices."""
-
+        if not self._online:
+            logger.info('Not connecting to hardware: we are not on-line.')
         unsuccessful = []
         if self.xray_source is None:
             self.xray_source = GeniX(
@@ -404,6 +401,8 @@ class Instrument(GObject.GObject):
         self.exposureanalyzer = ExposureAnalyzer(self)
         self.exposureanalyzer._load_state(
             self.config['services']['exposureanalyzer'])
+        self.accounting = Accounting(self)
+        self.accounting._load_state(self.config['services']['accounting'])
 
     def on_telemetry_timeout(self):
         self._telemetries['main'] = get_telemetry()
