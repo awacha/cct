@@ -541,8 +541,11 @@ class TMCMcard(Device_TCP):
 
     def _on_startupdone(self):
         self._load_positions()
-        for key in [k for k in self._properties if k.startswith('_status')]:
-            self._update_variable(key, 'idle')
+        self._update_variable('_status', 'idle')
+        for i in range(self._motorcount):
+            self._update_variable('_status$%d' % i, 'idle')
+        #        for key in [k for k in self._properties if k.startswith('_status')]:
+        #            self._update_variable(key, 'idle')
         return True
 
     def _execute_command(self, commandname, arguments):

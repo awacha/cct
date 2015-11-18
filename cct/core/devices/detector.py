@@ -296,6 +296,7 @@ class Pilatus(Device_TCP):
         self.execute_command('expose', filename.encode('utf-8'))
 
     def do_startupdone(self):
+        logger.debug('Pilatus: do_startupdone')
         self.refresh_variable('version')
         self.set_threshold(4024, 'highg')
         Device_TCP.do_startupdone(self)

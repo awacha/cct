@@ -96,7 +96,7 @@ class Device(GObject.GObject):
         'disconnect': (GObject.SignalFlags.RUN_LAST, None, (bool,)),
         # emitted when the starup is done, i.e. all variables have been read at
         # least once
-        'startupdone': (GObject.SignalFlags.RUN_LAST, None, ()),
+        'startupdone': (GObject.SignalFlags.RUN_FIRST, None, ()),
         # emitted when a response for a telemetry request has been received.
         # The argument is a dict.
         'telemetry': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
@@ -233,6 +233,26 @@ class Device(GObject.GObject):
         self._watchdogtime = time.time()
         self._watchdog_alive = True
 
+    def _on_background_queue_empty(self):
+        if self._juststarted:
+            if self._has_all_variables():
+                self._queue_to_frontend.put_nowait(('_startup_done', None))
+                self._on_startupdone()
+                self._juststarted = False
+        if (time.time() - self._watchdogtime > self.watchdog_timeout) and self._watchdog_alive:
+            try:
+                logger.error(
+                    'Watchdog timeout in device %s' % self._instancename)
+                raise CommunicationError(
+                    'Watchdog timeout: no message received from device %s.' % self._instancename)
+            except CommunicationError as exc:
+                self._queue_to_frontend.put_nowait(
+                    ('_watchdog', (exc, traceback.format_exc())))
+        if self._watchdog_alive:
+            self._query_variable(None)  # query all variables.
+            self._log()  # log the values of variables
+
+
     def _background_worker(self):
         """Worker function of the background thread. The main job of this is
         to run periodic checks on the hardware (polling) and updating 
@@ -252,39 +272,20 @@ class Device(GObject.GObject):
         self._watchdog_alive = True
         # empty the properties dictionary
         self._properties = {}
-        juststarted = True
+        self._juststarted = True
         while True:
             try:
                 cmd, propname, argument = self._queue_to_backend.get(
                     block=True, timeout=self.backend_interval)
             except queue.Empty:
-                if juststarted:
-                    if self._has_all_variables():
-                        self._queue_to_frontend.put_nowait(('_startup_done', None))
-                        self._on_startupdone()
-                        juststarted = False
-                if (time.time() - self._watchdogtime > self.watchdog_timeout) and self._watchdog_alive:
-                    try:
-                        logger.error(
-                            'Watchdog timeout in device %s' % self._instancename)
-                        raise CommunicationError(
-                            'Watchdog timeout: no message received from device %s.' % self._instancename)
-                    except CommunicationError as exc:
-                        self._queue_to_frontend.put_nowait(
-                            ('_watchdog', (exc, traceback.format_exc())))
-                    continue
-                if self._watchdog_alive:
-                    self._query_variable(None)  # query all variables.
-                    self._log()  # log the values of variables
+                self._on_background_queue_empty()
                 continue
             if cmd == 'config':
                 self.config = argument
             elif cmd == 'telemetry':
                 tm = self._get_telemetry()
                 self._queue_to_frontend.put_nowait(('_telemetry', tm))
-                if self._watchdog_alive:
-                    self._query_variable(None)
-                    self._log()
+                self._on_background_queue_empty()
             elif cmd == 'exit':
                 break  # the while True loop
             elif cmd in ['query']:
