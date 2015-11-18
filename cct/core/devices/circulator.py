@@ -34,7 +34,6 @@ class HaakePhoenix(Device_TCP):
         if commandname == 'start':
             self._send(b'W TS 1\r')
         elif commandname == 'stop':
-            logger.debug('Sending stop command: W TS 0<cr>')
             self._send(b'W TS 0\r')
         elif commandname == 'alarm':
             self._send(b'W AL\r')
