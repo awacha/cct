@@ -4,3 +4,6 @@
 /cct.egg-info
 __pycache__
 /.idea
+radint.c
+*.so
+cct.lang
