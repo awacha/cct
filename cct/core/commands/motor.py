@@ -1,9 +1,9 @@
+import logging
 import traceback
 
 from gi.repository import GLib
 
 from .command import Command, CommandError
-import logging
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -33,10 +33,11 @@ class Moveto(Command):
 
         if instrument.motors[motorname].where()==position:
             GLib.idle_add(lambda m=instrument.motors[motorname],tr=True, mn=motorname:self.on_stop(m,tr,mn))
+        self.emit('message', 'Moving motor %s to %.3f.' % (motorname, position))
         instrument.motors[motorname].moveto(position)
 
     def on_position_change(self, motor, newpos, motorname):
-        self.emit('pulse', 'Moving motor %s: %-8.2f' % (motorname, newpos))
+        self.emit('pulse', 'Moving motor %s: %-8.3f' % (motorname, newpos))
 
     def on_stop(self, motor, targetreached, motorname):
         try:
@@ -76,6 +77,7 @@ class Moverel(Command):
                              motor.connect('error', self.on_motorerror, motorname)]
         if position==0:
             GLib.idle_add(lambda m=instrument.motors[motorname],tr=True, mn=motorname:self.on_stop(m,tr,mn))
+        self.emit('message', 'Moving motor %s by %.3f.' % (motorname, position))
         instrument.motors[motorname].moverel(position)
 
     def on_position_change(self, motor, newpos, motorname):
@@ -165,6 +167,7 @@ class Beamstop(Command):
         self._motorconnections = [self._instrument.motors['BeamStop_X'].connect('stop', self.on_stop, 'BeamStop_X'),
                                   self._instrument.motors['BeamStop_X'].connect('variable-change', self.on_varchange, 'BeamStop_X')]
         self._startpos=self._instrument.motors['BeamStop_X'].where()
+        self.emit('message', 'Moving beamstop %s.' % (self._direction))
         self._instrument.motors['BeamStop_X'].moveto(self._xpos)
 
     def on_stop(self, motor, targetpositionreached, motorname):
@@ -243,6 +246,7 @@ class Sample(Command):
         self._motorconnections = [self._instrument.motors['Sample_X'].connect('stop', self.on_stop, 'Sample_X'),
                                   self._instrument.motors['Sample_X'].connect('variable-change', self.on_varchange, 'Sample_X')]
         self._startpos=self._instrument.motors['Sample_X'].where()
+        self.emit('message', 'Moving sample %s into the beam.' % (sample.title))
         self._instrument.motors['Sample_X'].moveto(self._xpos)
 
     def on_stop(self, motor, targetpositionreached, motorname):

@@ -129,6 +129,7 @@ class Expose(Command):
         self._instrument = instrument
         self._file_received=False
         self._detector_idle=False
+        self.emit('message', 'Starting exposure of file: %s' % (self._filename))
 
     def _progress(self, detector):
         if not hasattr(self, '_starttime'):
@@ -234,7 +235,7 @@ class ExposeMulti(Command):
         self._file_received=False
         self._detector_idle=False
         self._imgpath = instrument.detector.get_variable('imgpath')
-        logger.info('Starting exposure of %d images. First: %s' % (nimages, self._filenames_pending[0]))
+        self.emit('message', 'Starting exposure of %d images. First: %s' % (nimages, self._filenames_pending[0]))
         self._instrument = instrument
 
     def _progress(self, detector):

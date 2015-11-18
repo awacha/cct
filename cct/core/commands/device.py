@@ -283,6 +283,7 @@ class Sleep(Command):
         self._sleeptime = float(arglist[0])
         self._progress = GLib.timeout_add(500, self._progress)
         self._end = GLib.timeout_add(1000 * self._sleeptime, self.on_end)
+        self.emit('message', 'Sleeping for %.2f seconds.' % self._sleeptime)
 
     def _progress(self):
         t = time.time()
@@ -297,6 +298,7 @@ class Sleep(Command):
         return False
 
     def kill(self):
+        self.emit('message', 'We have been rudely awoken from our gentle sleep.')
         GLib.idle_add(self.on_end)
 
 

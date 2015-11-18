@@ -86,6 +86,7 @@ class Transmission(Script):
         self._intensities = {}
         self._cannot_return_yet = True
         self._nsamples = len(samplenames)
+        self.emit('message', 'Starting transmission measurement of %d sample(s).' % self._nsamples)
         Script.execute(self, interpreter, (samplenames, nimages, exptime, emptyname), instrument, namespace)
 
     def on_transmdata(self, exposureanalyzer, prefix, fsn, data):

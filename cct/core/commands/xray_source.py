@@ -32,6 +32,10 @@ class Shutter(Command):
             raise NotImplementedError(arglist[0], type(arglist[0]))
         self._require_device(instrument, instrument.xray_source._instancename)
         self._install_timeout_handler(self.timeout)
+        if self._check_for_value:
+            self.emit('message', 'Opening shutter.')
+        else:
+            self.emit('message', 'Closing shutter.')
         instrument.xray_source.shutter(self._check_for_value)
         instrument.xray_source.refresh_variable('shutter')
 
@@ -63,6 +67,10 @@ class Xrays(Command):
         self._install_timeout_handler(self.timeout)
         instrument.xray_source.execute_command('xrays', self._check_for_value)
         instrument.xray_source.refresh_variable('xrays')
+        if self._check_for_value:
+            self.emit('message', 'Turning X-ray generator on.')
+        else:
+            self.emit('message', 'Turning X-ray generator off.')
 
 
 class XrayFaultsReset(Command):
@@ -87,6 +95,7 @@ class XrayFaultsReset(Command):
         self._install_timeout_handler(self.timeout)
         instrument.xray_source.execute_command(
             'reset_faults')
+        self.emit('Trying to reset X-ray generator fault flags.')
 
 
 class Xray_Power(Command):
@@ -115,6 +124,7 @@ class Xray_Power(Command):
                 GLib.idle_add(lambda xrs=xray_source, val=self._check_for_value: self.on_variable_change(xrs, '_status',
                                                                                                          val) and False)
             self._install_pulse_handler('Powering off', 1)
+            self.emit('message', 'Powering off X-ray source.')
             xray_source.execute_command('poweroff')
         elif arglist[0] in ['standby', 'low', 9, '9', '9W']:
             self._check_for_value = 'Low power'
@@ -122,6 +132,7 @@ class Xray_Power(Command):
                 GLib.idle_add(lambda xrs=xray_source, val=self._check_for_value: self.on_variable_change(xrs, '_status',
                                                                                                          val) and False)
             self._install_pulse_handler('Going to low power', 1)
+            self.emit('message', 'Putting X-ray source to standby mode.')
             xray_source.execute_command('standby')
         elif arglist[0] in ['full', 'high', 30, '30', '30W']:
             self._check_for_value = 'Full power'
@@ -129,6 +140,7 @@ class Xray_Power(Command):
                 GLib.idle_add(lambda xrs=xray_source, val=self._check_for_value: self.on_variable_change(xrs, '_status',
                                                                                                          val) and False)
             self._install_pulse_handler('Going to full power', 1)
+            self.emit('message', 'Putting X-ray source to full-power mode.')
             xray_source.execute_command('full_power')
         xray_source.refresh_variable('_status')
 
@@ -156,7 +168,9 @@ class Warmup(Command):
         self._install_pulse_handler('Warming up', 1)
         self.xray_source.execute_command('start_warmup')
         self.xray_source.refresh_variable('_status')
+        self.emit('message', 'Started warm-up procedure.')
 
     def kill(self):
         self.xray_source.execute_command('stop_warmup')
         self.xray_source.execute_command('poweroff')
+        self.emit('message', 'Stopped warm-up procedure-')
