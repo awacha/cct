@@ -40,7 +40,6 @@ class ShutterBeamstop(ToolFrame):
 
     def on_genix_variable_change(self, genix, varname, value):
         if varname == 'shutter':
-            logger.debug('Shutter opened.')
             self._builder.get_object('shutter_switch').set_state(value)
 
     def on_motor_position_change(self, motor, pos):
@@ -69,7 +68,7 @@ class ShutterBeamstop(ToolFrame):
         return False
 
     def on_shutter_switch_set_state(self, switch, value):
-        self._instrument.interpreter.execute_command('shutter(%d)' % value)
+        self._instrument.devices['genix'].shutter(value)
         return True
 
     def on_beamstop_in(self, button):
