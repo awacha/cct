@@ -125,6 +125,8 @@ class ExposureAnalyzer(Service):
                 cbfdata = None
             if prefix == '_exit':
                 break
+            elif prefix == '_config':
+                self._config = filename
             elif prefix == '_telemetry':
                 self._queue_to_frontend.put_nowait((None, 'telemetry', self._get_telemetry()))
             elif prefix == self._config['path']['prefixes']['crd']:
@@ -340,3 +342,6 @@ class ExposureAnalyzer(Service):
         except DataReductionEnd:
             pass
         return im
+
+    def sendconfig(self):
+        self._queue_to_backend.put_nowait(('_config', None, self.instrument.config, None))

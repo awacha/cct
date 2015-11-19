@@ -229,6 +229,7 @@ class Instrument(GObject.GObject):
         with open(self.configfile, 'wt', encoding='utf-8') as f:
             json.dump(self.config, f)
         logger.info('Saved state to %s'%self.configfile)
+        self.exposureanalyzer.sendconfig()
 
     def _update_config(self, config_orig, config_loaded):
         for c in config_loaded:
