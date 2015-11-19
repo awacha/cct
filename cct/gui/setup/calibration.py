@@ -148,7 +148,8 @@ class Calibration(ToolWindow):
             q = ErrorValue(float(calval[0]), float(calerr[0]))
             pix = ErrorValue(float(uncalval[0]), float(uncalerr[0]))
             wl = ErrorValue(self._im.params['geometry']['wavelength'],
-                            self._im.params['geometry']['wavelength.err'])
+                            0)  # wavelength error is not considered here: it has already been considered in the pixel value (peak position)
+            #                            self._im.params['geometry']['wavelength.err'])
             pixsize = self._im.params['geometry']['pixelsize']
             self._dist = (pix * pixsize) / (2 * (wl * q / 4 / np.pi).arcsin()).tan()
         else:
@@ -217,19 +218,21 @@ class Calibration(ToolWindow):
                 return
             elif method == 'Peak amplitude':
                 xmin, xmax = self._plot1d._axes.axis()[:2]
+                logger.debug('Peak amplitude method: xmin: %f. xmax: %f. Original beampos: %f, %f.' % (
+                xmin, xmax, self._im.params['geometry']['beamposx'], self._im.params['geometry']['beamposy']))
                 posx, posy = findbeam_radialpeak(self._im.val, [self._im.params['geometry']['beamposx'],
                                                                 self._im.params['geometry']['beamposy']],
                                                  self._im._mask, xmin, xmax, drive_by='amplitude')
             elif method == 'Peak width':
                 xmin, xmax = self._plot1d._axes.axis()[:2]
-                posx, posy = findbeam_radialpeak(self._im.data, [self._im.params['geometry']['beamposx'],
-                                                                 self._im.params['geometry']['beamposy']],
-                                                 self._im.mask, xmin, xmax, drive_by='amplitude')
+                posx, posy = findbeam_radialpeak(self._im.val, [self._im.params['geometry']['beamposx'],
+                                                                self._im.params['geometry']['beamposy']],
+                                                 self._im._mask, xmin, xmax, drive_by='amplitude')
             elif method == 'Power-law goodness of fit':
                 xmin, xmax = self._plot1d._axes.axis()[:2]
-                posx, posy = findbeam_powerlaw(self._im.data, [self._im.params['geometry']['beamposx'],
-                                                               self._im.params['geometry']['beamposy']],
-                                               self._im.mask, xmin, xmax)
+                posx, posy = findbeam_powerlaw(self._im.val, [self._im.params['geometry']['beamposx'],
+                                                              self._im.params['geometry']['beamposy']],
+                                               self._im._mask, xmin, xmax)
             else:
                 raise NotImplementedError(method)
         self._im.params['geometry']['beamposx'] = posx
@@ -257,7 +260,7 @@ class Calibration(ToolWindow):
         button.set_sensitive(False)
 
     def _radial_average(self):
-        self._curve = self._im.radial_average(pixels=False)
+        self._curve = self._im.radial_average(pixels=True)
         try:
             sampletitle = self._im.params['sample']['title']
         except KeyError:
