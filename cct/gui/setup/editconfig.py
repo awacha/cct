@@ -1,6 +1,9 @@
-from ..core.toolwindow import ToolWindow, info_message
-from gi.repository import Gtk
 import logging
+
+from gi.repository import Gtk
+
+from ..core.toolwindow import ToolWindow, info_message
+
 logger=logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
@@ -14,6 +17,8 @@ class EditConfig(ToolWindow):
         tv.append_column(tc)
 
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
         model=self._builder.get_object('configtreestore')
         model.clear()
         parents=[None]

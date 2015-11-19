@@ -4,6 +4,7 @@ from gi.repository import Gtk, GLib
 
 from ..core.toolwindow import ToolWindow, error_message, question_message
 from ...core.devices.device import DeviceError
+from ...core.services.accounting import PrivilegeLevel
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -133,8 +134,12 @@ class Motors(ToolWindow):
             error_message(self._window, 'Cannot start move', str(exc.args[0]))
 
     def on_map(self, window):
-        self.on_unmap(window)
-        self._samplestore_connection = self._instrument.samplestore.connect('list-changed', self.on_samplelist_changed)
+        if not ToolWindow.on_map(self, window):
+            self.on_unmap(window)
+            self._samplestore_connection = self._instrument.samplestore.connect('list-changed',
+                                                                                self.on_samplelist_changed)
+        else:
+            return True
 
     def on_unmap(self, window):
         try:
@@ -168,14 +173,14 @@ class Motors(ToolWindow):
         model, treeiter=self._builder.get_object('motortreeview').get_selection().get_selected()
         motorname=model[treeiter][0]
         movewindow = MotorMover('devices_motors_move.glade', 'motormover', self._instrument, self._application,
-                                'Move motor', motorname)
+                                'Move motor', PrivilegeLevel.LAYMAN, motorname)
         movewindow._window.show_all()
 
     def on_config(self, button):
         model, treeiter=self._builder.get_object('motortreeview').get_selection().get_selected()
         motorname=model[treeiter][0]
         configwindow = MotorConfig('devices_motors_config.glade', 'motorconfig', self._instrument, self._application,
-                                   'Configure motor', motorname)
+                                   'Configure motor', PrivilegeLevel.CONFIGURE_MOTORS, motorname)
         configwindow._window.show_all()
 
 class MotorConfig(ToolWindow):
@@ -249,7 +254,6 @@ class MotorConfig(ToolWindow):
         self._window.destroy()
 
 
-
 class MotorMover(ToolWindow):
     def _init_gui(self, motorname):
         self._hide_on_close=False
@@ -276,8 +280,10 @@ class MotorMover(ToolWindow):
                                self._motor.connect('error', self.on_motor_error)]
 
     def on_map(self, window):
-        self._establish_motorconnection()
-        ToolWindow.on_map(self, window)
+        if ToolWindow.on_map(self, window):
+            self._establish_motorconnection()
+        else:
+            return True
 
     def on_unmap(self, window):
         self._breakdown_motorconnection()
@@ -285,6 +291,15 @@ class MotorMover(ToolWindow):
 
     def on_move(self, button):
         if button.get_label()=='Move':
+            if ((self._builder.get_object('motorselector').get_active_text() in ['BeamStop_X', 'BeamStop_Y']) and
+                    not self._instrument.accounting.has_privilege(PrivilegeLevel.BEAMSTOP)):
+                error_message(self._window, 'Cannot move beamstop', 'Insufficient privileges')
+                return
+            if ((self._builder.get_object('motorselector').get_active_text() in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y',
+                                                                                 'PH3_X', 'PH3_Y']) and
+                    not self._instrument.accounting.has_privilege(PrivilegeLevel.PINHOLE)):
+                error_message(self._window, 'Cannot move pinholes', 'Insufficient privileges')
+                return
             self._builder.get_object('move_button').set_label('Stop')
             try:
                 target=self._builder.get_object('target_spin').get_value()

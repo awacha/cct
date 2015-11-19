@@ -2,6 +2,8 @@ import kerberos
 import logging
 import pickle
 
+from gi.repository import GObject
+
 from .service import Service, ServiceError
 
 logger = logging.getLogger(__name__)
@@ -72,6 +74,7 @@ class Project(object):
 
 
 class Accounting(Service):
+    __gsignals__ = {'privlevel-changed': (GObject.SignalFlags.RUN_FIRST, None, (int,))}
     def __init__(self, *args, **kwargs):
         Service.__init__(self, *args, **kwargs)
         self._user = None
@@ -87,8 +90,8 @@ class Accounting(Service):
                 except IndexError:
                     self._users.append(User(username.split('@', 1)[0], 'Firstname', 'Lastname', PrivilegeLevel.LAYMAN))
                     self._user = self._users[-1]
-                    self._privlevel = self._user.privlevel
-                    self.instrument.config['services']['accounting']['operator'] = self._user.username
+                self.set_privilegelevel(PrivilegeLevel.LAYMAN)
+                self.instrument.config['services']['accounting']['operator'] = self._user.username
                 return True
         except kerberos.BasicAuthError:
             return False
@@ -121,11 +124,18 @@ class Accounting(Service):
     def get_privilegelevel(self):
         return self._privlevel
 
+    def has_privilege(self, what):
+        logger.debug(
+            'Checking privilege: %s (%s) <=? %s (%s)' % (what, type(what), self._privlevel, type(self._privlevel)))
+        return what <= self._privlevel
+
+
     def set_privilegelevel(self, level):
         if isinstance(level, str):
             level = PrivilegeLevel.fromstr(level)
         if level <= self._user.privlevel:
             self._privlevel = level
+            self.emit('privlevel-changed', self._privlevel)
         else:
             raise ServiceError('Insufficient privileges')
 

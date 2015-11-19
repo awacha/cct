@@ -37,10 +37,11 @@ def info_message(parentwindow, info, detail=None):
 
 
 class ToolWindow(GObject.GObject):
-    def __init__(self, gladefile, toplevelname, instrument, application, windowtitle, *args):
+    def __init__(self, gladefile, toplevelname, instrument, application, windowtitle, privlevel, *args):
         GObject.GObject.__init__(self)
         self._toplevelname=toplevelname
         self._hide_on_close=True
+        self._privlevel = privlevel
         self._application=application
         self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/%s'%gladefile))
         self._builder.set_application(application)
@@ -59,6 +60,7 @@ class ToolWindow(GObject.GObject):
         self._init_gui(*args)
         self._builder.connect_signals(self)
         self._window.show_all()
+        self._window.hide()
 
     def on_window_delete(self, window, event):
         logger.debug('On_window_delete for %s'%self._toplevelname)
@@ -117,4 +119,9 @@ class ToolWindow(GObject.GObject):
 
     def on_map(self, window):
         """This function should connect all signal handlers to devices, as well as do an update to the GUI."""
-        return True
+        if not self._instrument.accounting.has_privilege(self._privlevel):
+            error_message(self._window, 'Insufficient privilege level to open this tool')
+            self._window.hide()
+            return True
+        else:
+            return False

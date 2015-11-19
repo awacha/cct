@@ -13,6 +13,7 @@ import traceback
 import time
 import argparse
 from ..core.instrument.instrument import Instrument
+from ..core.services.accounting import PrivilegeLevel
 from .measurement.scan import Scan
 from .devices.motors import Motors
 from .devices.genix import GeniX
@@ -122,6 +123,7 @@ class AuthenticatorDialog(object):
         self._builder.get_object('proposalid_entry').remove_all()
         self._builder.get_object('password_entry').get_style_context().add_provider(cssprovider,
                                                                                     Gtk.STYLE_PROVIDER_PRIORITY_USER)
+
         for pid in self._instrument.accounting.get_projectids():
             self._builder.get_object('proposalid_entry').append_text(pid)
         self._builder.get_object('proposalid_entry').set_active(0)
@@ -150,6 +152,7 @@ class AuthenticatorDialog(object):
                     self.update_instrument()
                     return True
                 self._builder.get_object('password_entry').set_name('redbackground')
+            #                self._builder.get_object('password_entry').queue_draw()
 
     def update_instrument(self):
         projectid = self._builder.get_object('proposalid_entry').get_active_text()
@@ -336,10 +339,10 @@ class MainWindow(object):
             self._statusbar.push(0, record.message.split('\n')[0])
         return False
 
-    def construct_and_run_dialog(self, windowclass, toplevelname, gladefile, windowtitle):
+    def construct_and_run_dialog(self, windowclass, toplevelname, gladefile, windowtitle, privlevel):
         if toplevelname not in self._dialogs:
             self._dialogs[toplevelname] = windowclass(gladefile, toplevelname, self._instrument, self._application,
-                                                      windowtitle)
+                                                      windowtitle, privlevel)
         self._dialogs[toplevelname]._window.show_all()
         self._dialogs[toplevelname]._window.present()
 
@@ -350,75 +353,86 @@ class MainWindow(object):
 
 
     def on_menu_setup_sampleeditor(self, menuitem):
-        self.construct_and_run_dialog(SampleEdit, 'samplesetup', 'setup_sampleedit.glade', 'Set-up samples')
+        self.construct_and_run_dialog(SampleEdit, 'samplesetup', 'setup_sampleedit.glade', 'Set-up samples',
+                                      PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_setup_definegeometry(self, menuitem):
-        self.construct_and_run_dialog(DefineGeometry, 'definegeometry', 'setup_definegeometry.glade', 'Define geometry')
+        self.construct_and_run_dialog(DefineGeometry, 'definegeometry', 'setup_definegeometry.glade', 'Define geometry',
+                                      PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_setup_editconfiguration(self, menuitem):
-        self.construct_and_run_dialog(EditConfig, 'editconfig', 'setup_editconfig.glade', 'Edit configuration')
+        self.construct_and_run_dialog(EditConfig, 'editconfig', 'setup_editconfig.glade', 'Edit configuration',
+                                      PrivilegeLevel.SUPERUSER)
         return False
 
     def on_menu_setup_calibration(self, menuitem):
-        self.construct_and_run_dialog(Calibration, 'calibration', 'setup_calibration.glade', 'Calibration')
+        self.construct_and_run_dialog(Calibration, 'calibration', 'setup_calibration.glade', 'Calibration',
+                                      PrivilegeLevel.LAYMAN)
         return False
 
 
     def on_menu_devices_xraysource(self, menuitem):
-        self.construct_and_run_dialog(GeniX, 'genix', 'devices_genix.glade', 'X-ray source')
+        self.construct_and_run_dialog(GeniX, 'genix', 'devices_genix.glade', 'X-ray source', PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_devices_detector(self, menuitem):
-        self.construct_and_run_dialog(Pilatus, 'pilatus', 'devices_pilatus.glade', 'Detector')
+        self.construct_and_run_dialog(Pilatus, 'pilatus', 'devices_pilatus.glade', 'Detector', PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_devices_motors(self, menuitem):
-        self.construct_and_run_dialog(Motors, 'motoroverview', 'devices_motors.glade', 'Overview of motors')
+        self.construct_and_run_dialog(Motors, 'motoroverview', 'devices_motors.glade', 'Overview of motors',
+                                      PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_devices_vacuumgauge(self, menuitem):
-        self.construct_and_run_dialog(TPG201, 'vacgauge', 'devices_tpg201.glade', 'Vacuum gauge')
+        self.construct_and_run_dialog(TPG201, 'vacgauge', 'devices_tpg201.glade', 'Vacuum gauge', PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_devices_temperaturestage(self, menuitem):
         self.construct_and_run_dialog(HaakePhoenix, 'haakephoenix', 'devices_haakephoenix.glade',
-                                      'Temperature controller')
+                                      'Temperature controller', PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_measurement_scan(self, menuitem):
-        self.construct_and_run_dialog(Scan, 'scan', 'measurement_scan.glade', 'Scan measurements')
+        self.construct_and_run_dialog(Scan, 'scan', 'measurement_scan.glade', 'Scan measurements',
+                                      PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_measurement_singleexposure(self, menuitem):
         self.construct_and_run_dialog(SingleExposure, 'singleexposure', 'measurement_singleexposure.glade',
-                                      'Single exposure')
+                                      'Single exposure', PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_measurement_transmission(self, menuitem):
         self.construct_and_run_dialog(Transmission, 'measuretransmission', 'measurement_transmission.glade',
-                                      'Transmission measurement')
+                                      'Transmission measurement', PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_measurement_automaticprogram(self, menuitem):
-        self.construct_and_run_dialog(ScriptMeasurement, 'script', 'measurement_script.glade', 'Scripting')
+        self.construct_and_run_dialog(ScriptMeasurement, 'script', 'measurement_script.glade', 'Scripting',
+                                      PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_tools_maskeditor(self, menuitem):
-        self.construct_and_run_dialog(MaskEditor, 'maskeditor', 'tools_maskeditor.glade', 'Mask editor')
+        self.construct_and_run_dialog(MaskEditor, 'maskeditor', 'tools_maskeditor.glade', 'Mask editor',
+                                      PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_tools_view(self, menuitem):
-        self.construct_and_run_dialog(ExposureViewer, 'calibration', 'setup_calibration.glade', 'Data viewer')
+        self.construct_and_run_dialog(ExposureViewer, 'calibration', 'setup_calibration.glade', 'Data viewer',
+                                      PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_tools_scanview(self, menuitem):
-        self.construct_and_run_dialog(ScanViewer, 'scanviewer', 'tools_scanviewer.glade', 'Scan viewer')
+        self.construct_and_run_dialog(ScanViewer, 'scanviewer', 'tools_scanviewer.glade', 'Scan viewer',
+                                      PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_tools_capillary(self, menuitem):
-        self.construct_and_run_dialog(CapillaryMeasurement, 'capillarymeasurement', 'tools_capillarymeasurement.glade', 'Capillary measurement')
+        self.construct_and_run_dialog(CapillaryMeasurement, 'capillarymeasurement', 'tools_capillarymeasurement.glade',
+                                      'Capillary measurement', PrivilegeLevel.LAYMAN)
         return False
 
     def on_menu_tools_datareduction(self, menuitem):
@@ -426,7 +440,8 @@ class MainWindow(object):
         return False
 
     def on_menu_tools_diagnostics_resourceusage(self, menuitem):
-        self.construct_and_run_dialog(Telemetry, 'telemetrywindow', 'diagnostics_telemetry.glade', 'Resource usage')
+        self.construct_and_run_dialog(Telemetry, 'telemetrywindow', 'diagnostics_telemetry.glade', 'Resource usage',
+                                      PrivilegeLevel.LAYMAN)
 
     def on_menu_help_about(self, menuitem):
 
@@ -434,7 +449,7 @@ class MainWindow(object):
 
     def on_menu_help_commandhelp(self, menuitem):
         self.construct_and_run_dialog(CommandHelpDialog, 'commandhelpbrowser', 'help_commandhelpbrowser.glade',
-                                      'Help on commands')
+                                      'Help on commands', PrivilegeLevel.LAYMAN)
         return False
 
 
