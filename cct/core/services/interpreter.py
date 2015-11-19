@@ -36,6 +36,8 @@ class Interpreter(Service):
         # send occasional messages to the command interpreter (to
         # be written to a terminal or logged at the INFO level.
         'cmd-message': (GObject.SignalFlags.RUN_FIRST, None, (str, str,)),
+        # emitted when work started (False) or work finished (True).
+        'idle-changed': (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
     }
 
     def __init__(self, instrument, namespace=None, **kwargs):
@@ -152,6 +154,7 @@ class Interpreter(Service):
             del self._command_connections[command]
             raise
         self._command = command
+        self.emit('idle-changed', False)
         return self._command
 
     def is_busy(self):
@@ -171,6 +174,7 @@ class Interpreter(Service):
         except AttributeError:
             pass
         self.emit('cmd-return', str(command), retval)
+        self.emit('idle-changed', True)
 
     def on_command_fail(self, command, exc, tb):
         self.emit('cmd-fail', command.name, exc, tb)
