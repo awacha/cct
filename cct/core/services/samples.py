@@ -106,6 +106,12 @@ class SampleStore(Service):
         if not [s for s in self._list if s.title==sample]:
             raise KeyError('Unknown sample with title %s'%sample)
         self._list = [s for s in self._list if s.title != sample]
+        if sample == self._active:
+            try:
+                self._active = self._list[0]
+            except IndexError:
+                self._active = None
+            self.emit('active-changed')
         self.emit('list-changed')
 
     def set_active(self, sample):
@@ -127,7 +133,11 @@ class SampleStore(Service):
         if self._active is None:
             return None
         else:
-            return [x for x in self._list if x.title == self._active][0]
+            try:
+                return [x for x in self._list if x.title == self._active][0]
+            except IndexError:
+                self._active = None
+                return None
 
     def get_active_name(self):
         if self._active is None:
