@@ -3,12 +3,13 @@
 <interface>
   <requires lib="gtk+" version="3.16"/>
   <object class="GtkAdjustment" id="calerr_adjustment">
-    <property name="upper">1000</property>
+    <property name="upper">100000</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="calval_adjustment">
-    <property name="upper">1000</property>
+    <property name="upper">100000</property>
+    <property name="value">-100000</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
@@ -39,12 +40,13 @@
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="uncalerr_adjustment">
-    <property name="upper">100</property>
+    <property name="upper">100000</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
   <object class="GtkAdjustment" id="uncalval_adjustment">
-    <property name="upper">100</property>
+    <property name="lower">-100000</property>
+    <property name="upper">100000</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
