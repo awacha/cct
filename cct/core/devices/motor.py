@@ -85,6 +85,15 @@ class TMCMcard(Device_TCP):
                 for motidx in range(self._motorcount)] + DEVICE_VARIABLES
 
     def _query_variable(self, variablename):
+        if not hasattr(self, '_lastsent'):
+            try:
+                msg = self._sendqueue.get_nowait()
+                self._lastsent = msg
+                Device_TCP._send(self, msg)
+                logger.warning('Recovered from a possible deadlock situation!')
+            except queue.Empty:
+                pass
+
         if variablename is None:
             # this means that we must query all variables. We simply postpone
             # the work by inserting appropriate query commands into the queue.
@@ -103,10 +112,14 @@ class TMCMcard(Device_TCP):
                                     if ((vn not in self._properties) and
                                         (vn not in variablenames))]
                 variablenames.extend(missingvariables)
-            if self._sendqueue.qsize() < 10:
+            if (self._sendqueue.qsize() < 3):
                 # now insert the query requests in the queue
                 for vn in variablenames:
                     self._queue_to_backend.put_nowait(('query', vn, False))
+                logger.debug('Autoquery in %s: %s' % (self._instancename, ', '.join(sorted(variablenames))))
+            else:
+                logger.debug('NO AUTOQUERY in %s: sendqueue size too large: %d. Do we have _lastsent? %s' % (
+                self._instancename, self._sendqueue.qsize(), hasattr(self, '_lastsent')))
             return  # do no actual querying.
         try:
             motor_or_bank = int(variablename.split('$')[1])
@@ -621,6 +634,7 @@ class TMCMcard(Device_TCP):
             raise NotImplementedError(commandname)
 
     def _set_variable(self, variable, value):
+        logger.debug('Set_variable in %s: %s <- %s' % (self._instancename, variable, str(value)))
         try:
             motor_or_bank = int(variable.split('$')[1])
             if motor_or_bank < 0 or motor_or_bank >= self._motorcount:

@@ -116,7 +116,7 @@ class Expose(Command):
         self._filename = self._prefix + '_' + \
             ('%%0%dd' %
              instrument.config['path']['fsndigits']) % self._fsn + '.cbf'
-        instrument.detector.set_variable('imgpath', self._instrument.config['path']['directories']['images_detector'][
+        instrument.detector.set_variable('imgpath', instrument.config['path']['directories']['images_detector'][
             0] + '/' + self._prefix)
         instrument.detector.set_variable('exptime', exptime)
         self._exptime = exptime
@@ -135,6 +135,9 @@ class Expose(Command):
         if not hasattr(self, '_starttime'):
             try:
                 self._starttime = detector.get_variable('starttime')
+                if self._starttime is None:
+                    del self._starttime
+                    raise KeyError
             except KeyError:
                 return True
         timeleft = self._exptime - \
@@ -158,7 +161,7 @@ class Expose(Command):
             self._file_received=True
         elif variablename == '_status' and newvalue == 'idle':
             self._detector_idle=True
-        if self._detector_idle and (self._file_received or hasattr(self, '_kill')):
+        if (self._detector_idle and self._file_received) or hasattr(self, '_kill'):
             self._uninstall_timeout_handler()
             self._uninstall_pulse_handler()
             self._unrequire_device()
@@ -317,7 +320,7 @@ class ExposeMulti(Command):
         return False
 
     def _try_to_end(self):
-        if (self._file_received or hasattr(self, '_kill')) and self._detector_idle:
+        if (self._file_received and self._detector_idle) or hasattr(self, '_kill'):
             self._uninstall_timeout_handler()
             self._uninstall_pulse_handler()
             self._unrequire_device()

@@ -12,7 +12,7 @@ from gi.repository import GLib, GObject
 from pyModbusTCP.client import ModbusClient
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DeviceError(Exception):
@@ -118,6 +118,7 @@ class Device(GObject.GObject):
         else:
             self.config = {}
         self._instancename = instancename
+        self._outstanding_telemetry = False
         self._properties = {'_status': 'Disconnected'}
         self._timestamps = {'_status': time.time()}
         self._queue_to_backend = multiprocessing.Queue()
@@ -242,14 +243,17 @@ class Device(GObject.GObject):
         if (time.time() - self._watchdogtime > self.watchdog_timeout) and self._watchdog_alive:
             try:
                 logger.error(
-                    'Watchdog timeout in device %s' % self._instancename)
+                    'Watchdog timeout in device %s. Last query was %f seconds ago.' % (
+                    self._instancename, time.time() - self._lastquerytime))
                 raise CommunicationError(
-                    'Watchdog timeout: no message received from device %s.' % self._instancename)
+                    'Watchdog timeout: no message received from device %s. Last query was %f seconds ago.' % (
+                    self._instancename, time.time() - self._lastquerytime))
             except CommunicationError as exc:
                 self._queue_to_frontend.put_nowait(
                     ('_watchdog', (exc, traceback.format_exc())))
         if self._watchdog_alive:
             self._query_variable(None)  # query all variables.
+            self._lastquerytime = time.time()
             self._log()  # log the values of variables
 
 
@@ -268,6 +272,7 @@ class Device(GObject.GObject):
         `_query_variable()`, which should be overridden case-by-case.
         """
         self._query_variable(None)
+        self._lastquerytime = time.time()
         self._watchdogtime = time.time()
         self._watchdog_alive = True
         # empty the properties dictionary
@@ -282,6 +287,7 @@ class Device(GObject.GObject):
                 continue
             if cmd == 'config':
                 self.config = argument
+                self._on_background_queue_empty()
             elif cmd == 'telemetry':
                 tm = self._get_telemetry()
                 self._queue_to_frontend.put_nowait(('_telemetry', tm))
@@ -295,6 +301,7 @@ class Device(GObject.GObject):
                     self._refresh_requested[propname] += 1
                 try:
                     self._query_variable(propname)
+                    self._lastquerytime = time.time()
                 except Exception as exc:
                     self._queue_to_frontend.put_nowait(
                         (propname, (exc, traceback.format_exc())))
@@ -336,7 +343,10 @@ class Device(GObject.GObject):
                 'inqueuelen': self._queue_to_backend.qsize()}
 
     def get_telemetry(self):
-        self._queue_to_backend.put_nowait(('telemetry', None, None))
+        if not self._outstanding_telemetry:
+            self._queue_to_backend.put_nowait(('telemetry', None, None))
+        else:
+            raise DeviceError('Another telemetry request is pending.')
 
     def _has_all_variables(self):
         """Checks if all the variables have been requested and received at least once.
@@ -429,6 +439,9 @@ class Device(GObject.GObject):
             self._properties['_status'] = 'Disconnected'
             self.emit('variable-change', '_status', 'Disconnected')
         return False
+
+    def do_telemetry(self, telemetry):
+        self._outstanding_telemetry = False
 
     def _get_connected(self):
         """Check if we have a connection to the device. You should not call

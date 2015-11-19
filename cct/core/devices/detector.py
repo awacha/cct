@@ -191,6 +191,12 @@ class Pilatus(Device_TCP):
                 if idnum == 7:  # and status == b'OK':
                     # exposing finished, we can release the watchdog
                     self._update_variable('_status', 'idle')
+                    self._update_variable('starttime',None)
+                    self._release_watchdog()
+                if idnum==13:
+                    # killed
+                    self._update_variable('_status', 'idle')
+                    self._update_variable('starttime',None)
                     self._release_watchdog()
                 if idnum == 15 and message.startswith(b'Starting'):
                     self._update_variable('_status', self._expected_status)
@@ -273,7 +279,7 @@ class Pilatus(Device_TCP):
         elif variable == 'tau':
             self._send(b'tau %f\n' % value)
         elif variable == 'imgpath':
-            self._send(b'imgpath %s\n' % value)
+            self._send(b'imgpath %s\n' % value.encode('utf-8'))
         elif variable == 'exptime':
             self._send(b'exptime %f\n' % value)
         else:

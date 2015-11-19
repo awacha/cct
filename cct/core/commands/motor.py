@@ -4,6 +4,7 @@ import traceback
 from gi.repository import GLib
 
 from .command import Command, CommandError
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -240,7 +241,7 @@ class Sample(Command):
             return
         self._instrument.samplestore.set_active(arglist[0])
         sample=self._instrument.samplestore.get_active()
-        assert(sample.title, arglist[0])
+        assert (sample.title == arglist[0])
         self._xpos = sample.positionx.val
         self._ypos = sample.positiony.val
         self._motorconnections = [self._instrument.motors['Sample_X'].connect('stop', self.on_stop, 'Sample_X'),
