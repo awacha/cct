@@ -168,11 +168,11 @@ class Beamstop(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         self._instrument = instrument
-        if not self._instrument.accounting.has_privilege(PrivilegeLevel.BEAMSTOP):
-            raise CommandError('Insufficient privileges to move beamstop')
         if not arglist:
             GLib.idle_add(self.end_command)
             return
+        if not self._instrument.accounting.has_privilege(PrivilegeLevel.BEAMSTOP):
+            raise CommandError('Insufficient privileges to move beamstop')
         if (arglist[0] == 'in') or ((isinstance(arglist[0],int) or isinstance(arglist[0], bool) or isinstance(arglist[0],float) and bool(arglist[0]))):
             self._xpos, self._ypos = self._instrument.config['beamstop']['in']
             self._direction='in'
@@ -223,11 +223,14 @@ class Beamstop(Command):
         ypos = self._instrument.motors['BeamStop_Y'].where()
         if ((abs(xpos - self._instrument.config['beamstop']['in'][0]) < 0.001) and
                 (abs(ypos - self._instrument.config['beamstop']['in'][1]) < 0.001)):
+            self.emit('message', 'Beamstop is in the beam.')
             self.emit('return', 'in')
         elif ((abs(xpos - self._instrument.config['beamstop']['out'][0]) < 0.001) and
                   (abs(ypos - self._instrument.config['beamstop']['out'][1]) < 0.001)):
+            self.emit('message', 'Beamstop is out of the beam.')
             self.emit('return', 'out')
         else:
+            self.emit('message', 'Beamstop position is inconsistent.')
             self.emit('return', 'none')
         return False
 
@@ -297,5 +300,6 @@ class Sample(Command):
                       1-(newvalue-target)/(self._startpos-target))
 
     def end_command(self):
+        self.emit('message', 'Current sample is: %s' % self._instrument.samplestore.get_active_name())
         self.emit('return', self._instrument.samplestore.get_active_name())
         return False

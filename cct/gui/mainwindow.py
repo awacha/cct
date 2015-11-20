@@ -9,10 +9,13 @@ from gi.repository import GdkPixbuf
 import pkg_resources
 import sys
 import logging
+from logging.handlers import TimedRotatingFileHandler
+from logging import StreamHandler
 import traceback
 import time
 import argparse
 from ..core.instrument.instrument import Instrument
+from ..core.commands.command import CommandError
 from .measurement.scan import Scan
 from .devices.motors import Motors
 from .devices.genix import GeniX
@@ -37,6 +40,18 @@ from .toolframes.shutter import ShutterBeamstop
 from .toolframes.accounting import AccountingFrame
 from .accounting.usermanager import UserManager
 from .accounting.projectmanager import ProjectManager
+from .core.toolwindow import error_message
+
+handler = StreamHandler()
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+handler.setFormatter(formatter)
+logging.root.addHandler(handler)
+handler = TimedRotatingFileHandler('log/cct.log', 'D', 1, encoding='utf-8', backupCount=0)
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+handler.setFormatter(formatter)
+logging.root.addHandler(handler)
+logging.root.setLevel(logging.DEBUG)
+logging.root.info('------------------- Program startup -------------------')
 
 cssprovider = Gtk.CssProvider()
 cssprovider.load_from_path(pkg_resources.resource_filename('cct', 'resource/css/widgetbackgrounds.css'))
@@ -54,6 +69,7 @@ itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 oldexcepthook=sys.excepthook
 def my_excepthook(type_, value, traceback_):
     try:
@@ -64,8 +80,6 @@ def my_excepthook(type_, value, traceback_):
             'Error in excepthook: ' + traceback.format_exc())
     oldexcepthook(type_, value, traceback_)
 sys.excepthook = my_excepthook
-
-logging.basicConfig()
 
 class MyLogHandler(logging.Handler):
     def __init__(self, logfunction):
@@ -261,12 +275,16 @@ class MainWindow(object):
     def on_command_execute(self, button):
         if button.get_label() == 'Execute':
             cmd = self._builder.get_object('command_entry').get_text()
-            self._instrument.interpreter.execute_command(cmd)
-            self._builder.get_object('command_entry').set_sensitive(False)
-            # self._builder.get_object('execute_button').set_sensitive(False)
-            button.set_label('Stop')
-            if (not self._commandhistory) or (self._commandhistory and self._commandhistory[-1] != cmd):
-                self._commandhistory.append(self._builder.get_object('command_entry').get_text())
+            try:
+                self._instrument.interpreter.execute_command(cmd)
+            except CommandError as ce:
+                error_message(self._window, 'Cannot execute command', str(ce))
+            else:
+                self._builder.get_object('command_entry').set_sensitive(False)
+                # self._builder.get_object('execute_button').set_sensitive(False)
+                button.set_label('Stop')
+                if (not self._commandhistory) or (self._commandhistory and self._commandhistory[-1] != cmd):
+                    self._commandhistory.append(self._builder.get_object('command_entry').get_text())
         elif button.get_label() == 'Stop':
             self._instrument.interpreter.kill()
         else:

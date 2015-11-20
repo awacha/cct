@@ -90,7 +90,7 @@ class TMCMcard(Device_TCP):
                 msg = self._sendqueue.get_nowait()
                 self._lastsent = msg
                 Device_TCP._send(self, msg)
-                logger.warning('Recovered from a possible deadlock situation!')
+                self._logger.warning('Recovered from a possible deadlock situation!')
             except queue.Empty:
                 pass
 
@@ -116,9 +116,9 @@ class TMCMcard(Device_TCP):
                 # now insert the query requests in the queue
                 for vn in variablenames:
                     self._queue_to_backend.put_nowait(('query', vn, False))
-                logger.debug('Autoquery in %s: %s' % (self._instancename, ', '.join(sorted(variablenames))))
+                self._logger.debug('Autoquery in %s: %s' % (self._instancename, ', '.join(sorted(variablenames))))
             else:
-                logger.debug('NO AUTOQUERY in %s: sendqueue size too large: %d. Do we have _lastsent? %s' % (
+                self._logger.debug('NO AUTOQUERY in %s: sendqueue size too large: %d. Do we have _lastsent? %s' % (
                 self._instancename, self._sendqueue.qsize(), hasattr(self, '_lastsent')))
             return  # do no actual querying.
         try:
@@ -257,7 +257,8 @@ class TMCMcard(Device_TCP):
                             # if no motor is moving or the moving motor is not
                             # this one, and the position of this motor has
                             # changed, save the motor positions
-                            logger.debug('Position of motor %s on %s changed (to %f, raw %f), saving positions' % (
+                            self._logger.debug(
+                                'Position of motor %s on %s changed (to %f, raw %f), saving positions' % (
                                 motor_or_bank, self._instancename, self._convert_pos_to_phys(value, motoridx), value))
                             self._save_positions()
                             # the else: branch of the above if would mean that
@@ -331,7 +332,7 @@ class TMCMcard(Device_TCP):
                         self._moving = None
                         self._update_variable('_status', 'idle')
                         self._update_variable('_status$' + motor_or_bank, 'idle')
-                        logger.debug('Saving positions for %s: moving just ended.' % self._instancename)
+                        self._logger.debug('Saving positions for %s: moving just ended.' % self._instancename)
                         self._save_positions()
             elif cmdnum == 136:
                 self._update_variable('firmwareversion', 'TMCM%d' % (
@@ -352,7 +353,7 @@ class TMCMcard(Device_TCP):
                 raise NotImplementedError(cmdnum)
         except TMCMConversionError:
             if self._has_all_variables():
-                logger.error('TMCM conversion error.')
+                self._logger.error('TMCM conversion error.')
         finally:
             try:
                 msg = self._sendqueue.get_nowait()
@@ -417,17 +418,16 @@ class TMCMcard(Device_TCP):
                 'rightswitchstatus$%d' % motoridx]
             if ((targetpos - actpos) > 0 and rightswitch) or ((targetpos - actpos) < 0 and leftswitch):
                 # moving to targetpos is inhibited by a limit switch
-                logger.debug('Stopped by switch')
+                self._logger.debug('Stopped by switch')
                 return False
 
         # check if the target position is reached
         if self._timestamps['targetpositionreached$%d' % motoridx] > self._moving['starttime']:
             if self._properties['targetpositionreached$%d' % motoridx]:
-                logger.debug('Target reached')
+                self._logger.debug('Target reached')
                 return False
 
         # we could not rule out that we are moving
-        logger.debug('Still moving')
         return True
 
     def _send(self, message):
@@ -511,7 +511,6 @@ class TMCMcard(Device_TCP):
             raise DeviceError('Cannot start motor movement: one motor on the controller is moving')
         self._queue_to_backend.put_nowait(
             ('execute', 'moveto', (motor, pos)))
-        logger.debug('Queued moveto command')
 
     def moverel(self, motor, pos):
         if not self._positions_loaded.is_set():
@@ -522,7 +521,6 @@ class TMCMcard(Device_TCP):
             raise DeviceError('Cannot start motor movement: one motor on the controller is moving')
         self._queue_to_backend.put_nowait(
             ('execute', 'moverel', (motor, pos)))
-        logger.debug('Queued moverel command')
 
     def stop(self, motor):
         self._queue_to_backend.put_nowait(('execute', 'stop', motor))
@@ -589,19 +587,18 @@ class TMCMcard(Device_TCP):
                 if ((relpos > 0) and
                         (self._properties['rightswitchstatus$%d' % motor] and
                              self._properties['rightswitchenable$%d' % motor])):
-                    logger.error('Right limit switch active before move')
+                    self._logger.error('Right limit switch active before move')
                     raise DeviceError('Cannot move motor %d to the right: limit switch active' % motor,
                                       '_status$%d' % motor)
                 if ((relpos < 0) and
                         (self._properties['leftswitchstatus$%d' % motor] and
                              self._properties['leftswitchenable$%d' % motor])):
-                    logger.error('Left limit switch active before move')
+                    self._logger.error('Left limit switch active before move')
                     raise DeviceError('Cannot move motor %d to the left: limit switch active' % motor,
                                       '_status$%d' % motor)
                 # check if we really want to move
                 if relpos == 0:
                     # do not execute null-moves.
-                    logger.debug('Would be null move.')
                     self._busyflag.release()
                     self._update_variable('_status', 'idle', force=True)
                     self._update_variable(
@@ -615,7 +612,7 @@ class TMCMcard(Device_TCP):
                     self._send(self._construct_tmcl_command(4, int(commandname == 'moverel'), motor, posraw))
             except Exception as exc:
                 # if an error happened above, we are not moving.
-                logger.debug('Exception while starting move: ' + str(exc))
+                self._logger.warning('Exception while starting move: ' + str(exc))
                 self._moving = None
                 # force updates on _status: this will ensure that higher-level
                 # motor interfaces will issue stop signals
@@ -634,7 +631,7 @@ class TMCMcard(Device_TCP):
             raise NotImplementedError(commandname)
 
     def _set_variable(self, variable, value):
-        logger.debug('Set_variable in %s: %s <- %s' % (self._instancename, variable, str(value)))
+        self._logger.debug('Set_variable in %s: %s <- %s' % (self._instancename, variable, str(value)))
         try:
             motor_or_bank = int(variable.split('$')[1])
             if motor_or_bank < 0 or motor_or_bank >= self._motorcount:
@@ -731,7 +728,7 @@ class TMCMcard(Device_TCP):
     def _save_positions(self):
         if not self._positions_loaded.is_set():
             # avoid overwriting the position file before it can be loaded.
-            logger.debug(
+            self._logger.debug(
                 'Not saving positions yet (process %s): file exists and up to now no complete loading happened.' % multiprocessing.current_process().name)
             return
         with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'wt', encoding='utf-8') as f:
@@ -739,10 +736,10 @@ class TMCMcard(Device_TCP):
                 f.write('%d: %g (%g, %g)\n' % (
                     mot, self.where(mot), self._properties['softleft$%d' % mot],
                     self._properties['softright$%d' % mot]))
-            logger.debug('Positions saved for controller %s' % self._instancename)
+            self._logger.debug('Positions saved for controller %s' % self._instancename)
 
     def _load_positions(self):
-        logger.debug('Loading positions for controller %s' % self._instancename)
+        self._logger.debug('Loading positions for controller %s' % self._instancename)
         if not self._busyflag.acquire(False):
             raise DeviceError(
                 'Cannot load positions from file if motor is moving!')
@@ -762,13 +759,13 @@ class TMCMcard(Device_TCP):
                     self._update_variable('softleft$%d' % idx, float(gd['leftlim']))
                     self._update_variable('softright$%d' % idx, float(gd['rightlim']))
                     if 'actualposition$%d' % idx not in self._properties:
-                        logger.debug(
+                        self._logger.warning(
                             'Actualposition for motor %d on controller %s not yet received. Not calibrating.' % (
                                 idx, self._instancename))
                         continue
                     else:
                         if abs(self._properties['actualposition$%d' % idx] - float(gd['position'])) > 0.001:
-                            logger.warning(
+                            self._logger.warning(
                                 'Current position (%.3f) of motor %d on controller %s differs from the stored one (%.3f): calibrating to the stored value.' % (
                                     self._properties['actualposition$%d' % idx], idx, self._instancename,
                                     float(gd['position'])))
@@ -778,11 +775,11 @@ class TMCMcard(Device_TCP):
                     raise ValueError('Invalid motor position file: ' + os.path.join(self.configdir,
                                                                                     self._instancename + '.motorpos'))
             if len(loaded) == self._motorcount:
-                logger.info('Positions loaded for controller %s in process %s' % (
+                self._logger.info('Positions loaded for controller %s in process %s' % (
                     self._instancename, multiprocessing.current_process().name))
                 self._positions_loaded.set()
         except FileNotFoundError:
-            logger.info('Positions loaded (no file) for controller %s in process %s' % (
+            self._logger.info('Positions loaded (no file) for controller %s in process %s' % (
                 self._instancename, multiprocessing.current_process().name))
             self._positions_loaded.set()
         finally:

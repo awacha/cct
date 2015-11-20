@@ -6,7 +6,7 @@ import queue
 from .device import Device_TCP
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class HaakePhoenix(Device_TCP):
@@ -45,7 +45,7 @@ class HaakePhoenix(Device_TCP):
     def _has_all_variables(self):
         missing = [x for x in self.allvariables if x not in self._properties]
         #        if missing:
-        #            logger.debug('HaakePhoenix missing variables: %s'%', '.join(missing))
+        #            self._logger.debug('HaakePhoenix missing variables: %s'%', '.join(missing))
         return not missing
 
     def _process_incoming_message(self, message):
@@ -54,23 +54,23 @@ class HaakePhoenix(Device_TCP):
         message = self._stashmessage + message
         try:
             if not hasattr(self, '_lastsent'):
-                logger.debug('No lastsent for message: %s' % message.decode('utf-8').replace('\r', ''))
+                self._logger.debug('No lastsent for message: %s' % message.decode('utf-8').replace('\r', ''))
                 # print('!!! NOLASTSENT')
                 return
             if message == b'F001\r':
                 # unknown command
                 lastcommand = self._lastsent.decode('ascii').replace('\r', '')
-                logger.warning(
+                self._logger.warning(
                     'Unknown command reported by circulator. Lastcommand: *%s*' % lastcommand)
                 return
             if message == b'F123\r':
-                logger.warning('Error 123 reported by circulator.')
+                self._logger.warning('Error 123 reported by circulator.')
                 return
             elif message == b'FE00\r':
                 # might be a bug in the firmware
                 message = b'FE00$\r'
             if not message.endswith(b'$\r'):
-                logger.warning('Malformed message: does not end with "$\\r": %s' % message)
+                self._logger.warning('Malformed message: does not end with "$\\r": %s' % message)
                 self._stashmessage = self._stashmessage + message
                 return
             self._stashmessage = b''
@@ -110,13 +110,13 @@ class HaakePhoenix(Device_TCP):
                 if len(message) == 2:
                     self._update_variable('control_on', bool(int(message[0:1])))
                 else:
-                    logger.debug('Invalid message for control_on: %s' % message.decode('utf-8'))
+                    self._logger.debug('Invalid message for control_on: %s' % message.decode('utf-8'))
                     raise NotImplementedError((self._lastsent, message))
             elif self._lastsent == b'IN MODE 2\r':
                 if len(message) == 2:
                     self._update_variable('control_external', bool(int(message[0:1])))
                 else:
-                    logger.debug('Invalid message for control_external: %s' % message.decode('utf-8'))
+                    self._logger.debug('Invalid message for control_external: %s' % message.decode('utf-8'))
                     raise NotImplementedError((self._lastsent, message))
             elif message.startswith(b'FR'):
                 self._update_variable('diffcontrol_on', bool(int(message[2:3])))
@@ -154,9 +154,10 @@ class HaakePhoenix(Device_TCP):
                         self._update_variable('_status', 'stopped')
             elif message == b'$':
                 # confirmation for the last command
-                logger.debug('Confirmation for message %s received.' % self._lastsent.decode('utf-8').replace('\r', ''))
+                self._logger.debug(
+                    'Confirmation for message %s received.' % self._lastsent.decode('utf-8').replace('\r', ''))
             else:
-                logger.debug('Unknown message: %s' % message.decode('utf-8').replace('\r', ''))
+                self._logger.debug('Unknown message: %s' % message.decode('utf-8').replace('\r', ''))
         finally:
             try:
                 if self._stashmessage:
@@ -234,9 +235,9 @@ class HaakePhoenix(Device_TCP):
         pass
 
     def _set_variable(self, variable, value):
-        logger.debug('Setting circulator variable from process %s' % multiprocessing.current_process().name)
+        self._logger.debug('Setting circulator variable from process %s' % multiprocessing.current_process().name)
         if variable == 'setpoint':
-            logger.debug('Setting setpoint. Sending: W SW %.2f<cr>' % value)
+            self._logger.debug('Setting setpoint. Sending: W SW %.2f<cr>' % value)
             self._send(b'W SW %.2f\r' % value)
         elif variable == 'highlimit':
             self._send(b'W HL %.2f\r' % value)

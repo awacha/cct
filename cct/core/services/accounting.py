@@ -101,6 +101,7 @@ class Accounting(Service):
                     self._user = self._users[-1]
                 self.set_privilegelevel(self._user.privlevel)
                 self.instrument.config['services']['accounting']['operator'] = self._user.username
+                logger.info('Authenticated user %s.' % self._user.username)
                 return True
         except kerberos.BasicAuthError:
             return False

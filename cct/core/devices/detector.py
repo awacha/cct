@@ -9,7 +9,7 @@ import dateutil.parser
 from .device import Device_TCP, DeviceError, CommunicationError
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # ToDo: killing exposure not working for multiple exposures
 
@@ -137,7 +137,7 @@ class Pilatus(Device_TCP):
     def _process_incoming_message(self, message):
         try:
             origmessage = message
-            #logger.debug('Pilatus message received: %s' % str(message))
+            # self._logger.debug('Pilatus message received: %s' % str(message))
             try:
                 if message.count(b' ') < 2:
                     idnum, status = message.split(b' ')
@@ -159,7 +159,7 @@ class Pilatus(Device_TCP):
                     'Invalid message (does not end with \\x18): %s' % str(message))
             message = message[:-1]
             if b'\x18' in message:
-                #logger.warning('Multipart message: %s' % message)
+                #self._logger.warning('Multipart message: %s' % message)
                 for m in message.split(b'\x18'):
                     self._process_incoming_message(m.strip() + b'\x18')
                 return
@@ -236,7 +236,7 @@ class Pilatus(Device_TCP):
                     pass
 
     def _execute_command(self, commandname, arguments):
-        logger.debug('Executing command: %s(%s)' %
+        self._logger.debug('Executing command: %s(%s)' %
                      (commandname, repr(arguments)))
         if commandname == 'setthreshold':
             if self.get_variable('_status') != 'idle':
@@ -258,11 +258,11 @@ class Pilatus(Device_TCP):
                 self._suppress_watchdog()
         elif commandname == 'kill':
             if self.get_variable('_status') == 'exposing':
-                logger.debug('Killing single exposure')
+                self._logger.debug('Killing single exposure')
                 self._send(b'K\nresetcam\n')
             elif self.get_variable('_status') == 'exposing multi':
                 self._send(b'K\nresetcam\n')
-                logger.debug('Killing multiple exposure')
+                self._logger.debug('Killing multiple exposure')
             else:
                 raise DeviceError('No running exposures to be killed')
             self._release_watchdog()

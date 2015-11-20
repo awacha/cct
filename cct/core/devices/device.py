@@ -7,12 +7,13 @@ import select
 import socket
 import time
 import traceback
+from logging.handlers import QueueHandler
 
 from gi.repository import GLib, GObject
 from pyModbusTCP.client import ModbusClient
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DeviceError(Exception):
@@ -21,6 +22,11 @@ class DeviceError(Exception):
 
 class CommunicationError(DeviceError):
     pass
+
+
+class QueueLogHandler(QueueHandler):
+    def prepare(self, record):
+        return ('_log', record)
 
 
 class Device(GObject.GObject):
@@ -242,7 +248,7 @@ class Device(GObject.GObject):
                 self._juststarted = False
         if (time.time() - self._watchdogtime > self.watchdog_timeout) and self._watchdog_alive:
             try:
-                logger.error(
+                self._logger.error(
                     'Watchdog timeout in device %s. Last query was %f seconds ago.' % (
                     self._instancename, time.time() - self._lastquerytime))
                 raise CommunicationError(
@@ -271,6 +277,12 @@ class Device(GObject.GObject):
         work is delegated to `_set_variable()`, `_execute_command()` and
         `_query_variable()`, which should be overridden case-by-case.
         """
+        self._logger = logging.getLogger(__name__ + '::' + self._instancename + '/backgroundprocess')
+        self._logger.propagate = False
+        if not self._logger.hasHandlers():
+            self._logger.addHandler(QueueLogHandler(self._queue_to_frontend))
+            self._logger.addHandler(logging.StreamHandler())
+            self._logger.setLevel(logging.getLogger(__name__).getEffectiveLevel())
         self._query_variable(None)
         self._lastquerytime = time.time()
         self._watchdogtime = time.time()
@@ -374,8 +386,8 @@ class Device(GObject.GObject):
             return False
         except (AssertionError, KeyError):
             if varname.startswith('_status'):
-                logger.debug('Setting %s for %s to %s' %
-                             (varname, self._instancename, value))
+                self._logger.debug('Setting %s for %s to %s' %
+                                   (varname, self._instancename, value))
             self._properties[varname] = value
             self._queue_to_frontend.put_nowait((varname, value))
             return True
@@ -393,7 +405,7 @@ class Device(GObject.GObject):
                 f.write(
                     ('%.3f\t' % time.time()) + self.log_formatstr.format(**self._properties) + '\n')
             except KeyError as ke:
-                logger.warn('KeyError while producing log line for device %s. Missing key: %s' % (
+                self._logger.warn('KeyError while producing log line for device %s. Missing key: %s' % (
                     self._instancename, ke.args[0]))
 
     def _idle_worker(self):
@@ -415,6 +427,9 @@ class Device(GObject.GObject):
                     logger.warning('Watchdog timeout in device %s: restarting background process.' % self.name)
                     self._stop_background_process()
                     self._start_background_process()
+                elif (propertyname == '_log'):
+                    if newvalue.levelno >= logging.getLogger(__name__).getEffectiveLevel():
+                        logger.handle(newvalue)
                 elif isinstance(newvalue, tuple) and isinstance(newvalue[0], Exception):
                     self.emit('error', propertyname, newvalue[0], newvalue[1])
                 else:
@@ -613,7 +628,7 @@ class Device_TCP(Device):
 
     def _send(self, message):
         """Send a message (bytes) to the device"""
-        #logger.debug('Sending message %s' % str(message))
+        # self._logger.debug('Sending message %s' % str(message))
         self._outqueue.put_nowait(('send', message))
 
     def _communication_worker(self):
@@ -728,7 +743,3 @@ class Device_ModbusTCP(Device):
     def _read_coils(self, coilstart, coilnum):
         return self._modbusclient.read_coils(coilstart, coilnum)
 
-    def _send(self, message):
-        """Send a message (bytes) to the device"""
-        #logger.debug('Sending message %s' % str(message))
-        self._outqueue.put_nowait(('send', message))
