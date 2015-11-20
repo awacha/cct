@@ -60,7 +60,7 @@ class HaakePhoenix(Device_TCP):
             if message == b'F001\r':
                 # unknown command
                 lastcommand = self._lastsent.decode('ascii').replace('\r', '')
-                self._logger.warning(
+                self._logger.debug(
                     'Unknown command reported by circulator. Lastcommand: *%s*' % lastcommand)
                 return
             if message == b'F123\r':
