@@ -14,14 +14,17 @@ class PrivilegeLevel(object):
     LAYMAN = 0
     BEAMSTOP = 10
     PINHOLE = 20
-    CALIBRATE_MOTORS = 30
-    CONFIGURE_MOTORS = 40
-    MANAGE_USERS = 50
+    MANAGE_PROJECTS = 30
+    CALIBRATE_MOTORS = 40
+    CONFIGURE_MOTORS = 50
+    MANAGE_USERS = 60
     SUPERUSER = 100
 
     @classmethod
     def tostr(cls, level):
-        for levelname in cls.all_levels():
+        for levelname in cls.__dict__:
+            if levelname.startswith('_') or levelname.endswith('_'):
+                continue
             if cls.__dict__[levelname] == level:
                 return levelname.replace('_', ' ').title()
         raise NotImplementedError(level)
@@ -32,8 +35,12 @@ class PrivilegeLevel(object):
 
     @classmethod
     def all_levels(cls):
-        return sorted([k for k in cls.__dict__ if k.upper() == k and not (k.startswith('__') or k.endswith('__'))],
-                      key=lambda x: cls.fromstr(x))
+        return sorted([cls.__dict__[k] for k in cls.__dict__ if
+                       k.upper() == k and not (k.startswith('__') or k.endswith('__'))])
+
+    @classmethod
+    def all_levels_str(cls):
+        return [cls.tostr(l) for l in cls.all_levels()]
 
     @classmethod
     def levels_below(cls, level):
@@ -42,7 +49,7 @@ class PrivilegeLevel(object):
             returnstr = True
         else:
             returnstr = False
-        levels = [cls.fromstr(l) for l in cls.all_levels() if cls.fromstr(l) <= level]
+        levels = [l for l in cls.all_levels() if l <= level]
         if returnstr:
             return [cls.tostr(l) for l in levels]
         else:
@@ -74,11 +81,13 @@ class Project(object):
 
 
 class Accounting(Service):
-    __gsignals__ = {'privlevel-changed': (GObject.SignalFlags.RUN_FIRST, None, (int,))}
+    __gsignals__ = {'privlevel-changed': (GObject.SignalFlags.RUN_FIRST, None, (int,)),
+                    'project-changed': (GObject.SignalFlags.RUN_FIRST, None, ())}
+
     def __init__(self, *args, **kwargs):
         Service.__init__(self, *args, **kwargs)
-        self._user = None
-        self._privlevel = None
+        self._user = User('root', 'System', 'System', PrivilegeLevel.SUPERUSER)
+        self._privlevel = PrivilegeLevel.SUPERUSER
 
     def authenticate(self, username, password):
         if '@' not in username:
@@ -88,9 +97,9 @@ class Accounting(Service):
                 try:
                     self._user = [u for u in self._users if u.username == username.split('@', 1)[0]][0]
                 except IndexError:
-                    self._users.append(User(username.split('@', 1)[0], 'Firstname', 'Lastname', PrivilegeLevel.LAYMAN))
+                    self.add_user(username.split('@', 1)[0], 'Firstname', 'Lastname', PrivilegeLevel.LAYMAN)
                     self._user = self._users[-1]
-                self.set_privilegelevel(PrivilegeLevel.LAYMAN)
+                self.set_privilegelevel(self._user.privlevel)
                 self.instrument.config['services']['accounting']['operator'] = self._user.username
                 return True
         except kerberos.BasicAuthError:
@@ -118,8 +127,16 @@ class Accounting(Service):
             except FileNotFoundError:
                 return None
 
-    def get_user(self):
-        return self._user
+    def get_user(self, username=None):
+        if username is None:
+            return self._user
+        else:
+            user = [u for u in self._users if u.username == username]
+            assert (len(user) == 1)
+            return user[0]
+
+    def get_usernames(self):
+        return sorted([u.username for u in self._users])
 
     def get_privilegelevel(self):
         return self._privlevel
@@ -128,7 +145,6 @@ class Accounting(Service):
         logger.debug(
             'Checking privilege: %s (%s) <=? %s (%s)' % (what, type(what), self._privlevel, type(self._privlevel)))
         return what <= self._privlevel
-
 
     def set_privilegelevel(self, level):
         if isinstance(level, str):
@@ -181,6 +197,7 @@ class Accounting(Service):
         return sorted([p.projectid for p in self._projects])
 
     def new_project(self, projectid, projectname, proposer):
+        assert (self.has_privilege(PrivilegeLevel.MANAGE_PROJECTS))
         self._projects = [p for p in self._projects if p.projectid != projectid]
         prj = Project(projectid, projectname, proposer)
         self._projects.append(prj)
@@ -194,6 +211,7 @@ class Accounting(Service):
         self.instrument.config['services']['accounting']['projectid'] = self._project.projectid
         self.instrument.config['services']['accounting']['projectname'] = self._project.projectname
         self.instrument.config['services']['accounting']['proposer'] = self._project.proposer
+        self.emit('project-changed')
 
     def get_project(self, projectid=None):
         if projectid is None:
@@ -204,3 +222,32 @@ class Accounting(Service):
             projects = [prj]
         assert (len(projects) == 1)
         return projects[0]
+
+    def update_user(self, username, firstname=None, lastname=None, maxpriv=None):
+        user = [u for u in self._users if u.username == username][0]
+        if firstname is not None:
+            user.firstname = firstname
+        if lastname is not None:
+            user.lastname = lastname
+        if maxpriv is not None:
+            if user.username == self.get_user().username:
+                raise ServiceError('Setting privileges of the current user is not allowed.')
+            assert (self.has_privilege(PrivilegeLevel.MANAGE_USERS))
+            if isinstance(maxpriv, str):
+                maxpriv = PrivilegeLevel.fromstr(maxpriv)
+            user.privlevel = maxpriv
+        self.instrument.save_state()
+        logger.info('Updated user %s' % username)
+
+    def delete_user(self, username):
+        if username == self.get_user().username:
+            raise ServiceError('Cannot delete current user')
+        assert (self.has_privilege(PrivilegeLevel.MANAGE_USERS))
+        self._users = [u for u in self._users if u.username != username]
+        self.instrument.save_state()
+
+    def add_user(self, username, firstname, lastname, privlevel):
+        assert (not [u for u in self._users if u.username == username])
+        assert (self.has_privilege(PrivilegeLevel.MANAGE_USERS))
+        self._users.append(User(username, firstname, lastname, privlevel))
+        self.instrument.save_state()

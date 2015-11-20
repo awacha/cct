@@ -5,6 +5,8 @@ from ..core.toolwindow import ToolWindow, error_message
 
 class Transmission(ToolWindow):
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
         try:
             self._instrument.samplestore.disconnect(self._onlistchangedconnection)
             del self._onlistchangedconnection

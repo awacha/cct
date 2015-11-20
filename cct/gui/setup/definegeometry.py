@@ -1,8 +1,3 @@
-from gi.repository import GLib
-from gi.repository import GObject
-from gi.repository import Gio
-from gi.repository import Gtk
-
 from ..core.toolwindow import ToolWindow, question_message, info_message
 
 class DefineGeometry(ToolWindow):
@@ -10,6 +5,11 @@ class DefineGeometry(ToolWindow):
         pass
 
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
+        self._update_gui()
+
+    def _update_gui(self):
         conf=self._instrument.config['geometry']
         self._builder.get_object('l0_adjustment').set_value(conf['dist_source_ph1'])
         self._builder.get_object('l1_adjustment').set_value(conf['dist_ph1_ph2'])

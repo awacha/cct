@@ -17,6 +17,8 @@ class Telemetry(ToolWindow):
             pass
 
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
         self.on_timeout()
         try:
             GLib.source_remove(self._idle_handler)

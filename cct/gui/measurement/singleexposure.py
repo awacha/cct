@@ -22,6 +22,8 @@ class SingleExposure(ToolWindow):
             pass
 
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
         self._break_connections()
         self._sampleconnections=self._instrument.samplestore.connect('list-changed', self.on_samplelist_changed)
         self.on_samplelist_changed(self._instrument.samplestore)

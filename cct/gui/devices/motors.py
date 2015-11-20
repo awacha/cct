@@ -134,12 +134,11 @@ class Motors(ToolWindow):
             error_message(self._window, 'Cannot start move', str(exc.args[0]))
 
     def on_map(self, window):
-        if not ToolWindow.on_map(self, window):
-            self.on_unmap(window)
-            self._samplestore_connection = self._instrument.samplestore.connect('list-changed',
-                                                                                self.on_samplelist_changed)
-        else:
+        if ToolWindow.on_map(self, window):
             return True
+        self.on_unmap(window)
+        self._samplestore_connection = self._instrument.samplestore.connect('list-changed',
+                                                                            self.on_samplelist_changed)
 
     def on_unmap(self, window):
         try:
@@ -180,11 +179,12 @@ class Motors(ToolWindow):
         model, treeiter=self._builder.get_object('motortreeview').get_selection().get_selected()
         motorname=model[treeiter][0]
         configwindow = MotorConfig('devices_motors_config.glade', 'motorconfig', self._instrument, self._application,
-                                   'Configure motor', PrivilegeLevel.CONFIGURE_MOTORS, motorname)
+                                   'Configure motor', motorname)
         configwindow._window.show_all()
 
 class MotorConfig(ToolWindow):
     def _init_gui(self, motorname):
+        self._privlevel = PrivilegeLevel.CONFIGURE_MOTORS
         self._hide_on_close=False
         self._motorname=motorname
         motor=self._instrument.motors[motorname]
@@ -281,9 +281,8 @@ class MotorMover(ToolWindow):
 
     def on_map(self, window):
         if ToolWindow.on_map(self, window):
-            self._establish_motorconnection()
-        else:
             return True
+        self._establish_motorconnection()
 
     def on_unmap(self, window):
         self._breakdown_motorconnection()

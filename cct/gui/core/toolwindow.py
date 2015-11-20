@@ -4,6 +4,8 @@ import weakref
 import pkg_resources
 from gi.repository import Gtk, GObject
 
+from ...core.services.accounting import PrivilegeLevel
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -37,11 +39,11 @@ def info_message(parentwindow, info, detail=None):
 
 
 class ToolWindow(GObject.GObject):
-    def __init__(self, gladefile, toplevelname, instrument, application, windowtitle, privlevel, *args):
+    def __init__(self, gladefile, toplevelname, instrument, application, windowtitle, *args):
         GObject.GObject.__init__(self)
         self._toplevelname=toplevelname
         self._hide_on_close=True
-        self._privlevel = privlevel
+        self._privlevel = PrivilegeLevel.LAYMAN
         self._application=application
         self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/%s'%gladefile))
         self._builder.set_application(application)
@@ -59,8 +61,19 @@ class ToolWindow(GObject.GObject):
         self._widgets_insensitive=[]
         self._init_gui(*args)
         self._builder.connect_signals(self)
-        self._window.show_all()
-        self._window.hide()
+        self._window.foreach(lambda x: x.show_all())
+        self._instrument.accounting.connect('privlevel-changed', self.on_privlevel_changed)
+
+    def on_privlevel_changed(self, accounting, newprivlevel):
+        if not self._instrument.accounting.has_privilege(self._privlevel):
+            if self._inhibit_close_reason is not None:
+                # we cannot close, make us insensitive then
+                self._window.set_sensitive(False)
+            else:
+                self.on_window_delete(self._window, None)
+        else:
+            if not self._window.get_sensitive():
+                self._window.set_sensitive(True)
 
     def on_window_delete(self, window, event):
         logger.debug('On_window_delete for %s'%self._toplevelname)

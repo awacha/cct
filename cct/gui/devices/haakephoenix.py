@@ -47,9 +47,15 @@ class HaakePhoenix(ToolWindow):
             self._indicators[vn] = Indicator(label, '--', IndicatorState.UNKNOWN)
             othergrid.attach(self._indicators[vn], column, row, 1, 1)
         self._haakephoenix = self._instrument.devices['haakephoenix']
-        self.on_map(self._window)
+        self._update_indicators()
+
 
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
+        self._update_indicators()
+
+    def _update_indicators(self):
         for vn in self._indicators:
             self.on_variable_change(self._haakephoenix, vn, self._haakephoenix.get_variable(vn))
         if not hasattr(self, '_haakephoenixconnections'):

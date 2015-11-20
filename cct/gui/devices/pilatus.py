@@ -53,7 +53,7 @@ class Pilatus(ToolWindow):
                                        (0, 5, 'humidity2', 'Sensor humidity')]:
             self._indicators[vn] = Indicator(label, '--', IndicatorState.UNKNOWN)
             grid.attach(self._indicators[vn], column, row, 1, 1)
-        self.on_map(self._window)
+        self._update_indicators()
 
     def _cleanup_signalconnections(self):
         try:
@@ -63,9 +63,13 @@ class Pilatus(ToolWindow):
             pass
 
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
         self._cleanup_signalconnections()
         self._detector_connection = self._instrument.devices['pilatus'].connect('variable-change',
                                                                                 self.on_variable_change)
+
+    def _update_indicators(self):
         for vn in self._indicators:
             self.on_variable_change(self._instrument.devices['pilatus'], vn,
                                     self._instrument.devices['pilatus'].get_variable(vn))

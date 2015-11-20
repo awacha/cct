@@ -201,7 +201,8 @@ class CapillaryMeasurement(ToolWindow):
         return True
 
     def on_map(self, window):
-        ToolWindow.on_map(self, window)
+        if ToolWindow.on_map(self, window):
+            return True
         try:
             self._instrument.samplestore.disconnect(self._samplestoreconnection)
             del self._samplestoreconnection

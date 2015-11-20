@@ -3,6 +3,7 @@ import logging
 from gi.repository import Gtk
 
 from ..core.toolwindow import ToolWindow, info_message
+from ...core.services.accounting import PrivilegeLevel
 
 logger=logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -10,6 +11,7 @@ logger.setLevel(logging.DEBUG)
 class EditConfig(ToolWindow):
     def _init_gui(self, *args):
         self._changedpaths=[]
+        self._privlevel = PrivilegeLevel.SUPERUSER
         tv=self._builder.get_object('configtreeview')
         tc=Gtk.TreeViewColumn('Label', Gtk.CellRendererText(), text=0)
         tv.append_column(tc)
@@ -19,6 +21,9 @@ class EditConfig(ToolWindow):
     def on_map(self, window):
         if ToolWindow.on_map(self, window):
             return True
+        self._update_gui()
+
+    def _update_gui(self):
         model=self._builder.get_object('configtreestore')
         model.clear()
         parents=[None]
@@ -123,5 +128,5 @@ class EditConfig(ToolWindow):
 
     def on_save(self, button):
         self._instrument.save_state()
-        self.on_map(self._window)
+        self._update_gui()
         info_message(self._window, 'Config saved to %s'%self._instrument.configfile)

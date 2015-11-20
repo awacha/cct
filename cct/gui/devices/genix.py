@@ -36,12 +36,19 @@ class GeniX(ToolWindow):
             self._indicators[vn]=Indicator(label, 'N/A', IndicatorState.UNKNOWN)
             errorindicators.attach(self._indicators[vn],column, row,1,1)
         self._genix=self._instrument.devices['genix']
-        self.on_map(self._window)
+        self._update_indicators(self._window)
 
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
+        self._update_indicators()
+        if not hasattr(self, '_genixconnections'):
+            self._genixconnections = [self._genix.connect('variable-change', self.on_variable_change),
+                                      ]
+
+    def _update_indicators(self):
         for vn in self._indicators:
             self.on_variable_change(self._genix, vn, self._genix.get_variable(vn))
-        logger.debug('Mapping GeniX window.')
         genixshutter = self._genix.get_variable('shutter')
         shuttertoggle = self._builder.get_object('shutter_toggle').get_active()
         if genixshutter != shuttertoggle:
@@ -50,10 +57,6 @@ class GeniX(ToolWindow):
         xraystoggle = self._builder.get_object('xraystate_toggle').get_active()
         if genixxrays != xraystoggle:
             self._builder.get_object('xraystate_toggle').set_active(self._genix.get_variable('xrays'))
-        if not hasattr(self, '_genixconnections'):
-            self._genixconnections=[self._genix.connect('variable-change', self.on_variable_change),
-                                    ]
-        logger.debug('Mapping GeniX window finished.')
 
     def on_unmap(self, window):
         try:

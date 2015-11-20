@@ -1,8 +1,11 @@
-from gi.repository import Gtk
-from ..core.toolwindow import ToolWindow, info_message, question_message
-from ...core.instrument.sample import Sample, ErrorValue
-import logging
 import datetime
+import logging
+
+from gi.repository import Gtk
+
+from ..core.toolwindow import ToolWindow, question_message
+from ...core.instrument.sample import Sample, ErrorValue
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -21,6 +24,8 @@ class SampleEdit(ToolWindow):
             pass
 
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
         self._break_connections()
         self._sampleconnections=[self._instrument.samplestore.connect('list-changed', lambda x: self._repopulate_list())]
         self._repopulate_list()

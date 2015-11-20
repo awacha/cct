@@ -14,6 +14,11 @@ class ScanViewer(ToolWindow):
             pass
 
     def on_map(self, window):
+        if ToolWindow.on_map(self, window):
+            return True
+        self._update_gui()
+
+    def _update_gui(self):
         self._disconnect_lastscanconnection()
         self._lastscanconnection = self._instrument.filesequence.connect('lastscan-changed', self.on_lastscan_changed)
         scanfileselector = self._builder.get_object('scanfile_selector')
