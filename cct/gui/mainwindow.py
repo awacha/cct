@@ -120,22 +120,10 @@ class AuthenticatorDialog(object):
         self._instrument = instrument
         self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/accounting_login.glade'))
         self._window=self._builder.get_object('accountingdialog')
-        self._builder.get_object('operator_entry').set_text(instrument.config['services']['accounting']['operator'])
-        self._builder.get_object('proposalid_entry').remove_all()
         self._builder.get_object('password_entry').get_style_context().add_provider(cssprovider,
                                                                                     Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
-        for pid in self._instrument.accounting.get_projectids():
-            self._builder.get_object('proposalid_entry').append_text(pid)
-        self._builder.get_object('proposalid_entry').set_active(0)
         self._builder.connect_signals(self)
-        self.on_proposalid_changed(self._builder.get_object('proposalid_entry'))
-
-    def on_proposalid_changed(self, selector):
-        if selector.get_active_text() in self._instrument.accounting.get_projectids():
-            project = self._instrument.accounting.get_project(selector.get_active_text())
-            self._builder.get_object('proposaltitle_entry').set_text(project.projectname)
-            self._builder.get_object('proposername_entry').set_text(project.proposer)
 
     def on_password_changed(self, password_entry):
         password_entry.set_name('GtkEntry')
@@ -156,11 +144,7 @@ class AuthenticatorDialog(object):
             #                self._builder.get_object('password_entry').queue_draw()
 
     def update_instrument(self):
-        projectid = self._builder.get_object('proposalid_entry').get_active_text()
-        projectname = self._builder.get_object('proposaltitle_entry').get_text()
-        proposername = self._builder.get_object('proposername_entry').get_text()
-        self._instrument.accounting.new_project(projectid, projectname, proposername)
-        self._instrument.accounting.select_project(projectid)
+        pass
 
 class DeviceStatusBar(Gtk.Box):
     def __init__(self, instrument):

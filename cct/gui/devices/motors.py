@@ -97,6 +97,9 @@ class Motors(ToolWindow):
             self._builder.get_object('beamstopstatuslabel').set_label('Beamstop position inconsistent')
 
     def on_calibratebeamstop_in(self, button):
+        if not self._instrument.accounting.has_privilege(PrivilegeLevel.CALIBRATE_MOTORS):
+            error_message(self._window, 'Cannot calibrate beamstop position', 'Insufficient privileges')
+            return
         xpos = self._instrument.motors['BeamStop_X'].where()
         ypos = self._instrument.motors['BeamStop_Y'].where()
         if question_message(self._window, 'Calibrate beamstop in position',
@@ -105,6 +108,9 @@ class Motors(ToolWindow):
             self._check_beamstop_state()
 
     def on_calibratebeamstop_out(self, button):
+        if not self._instrument.accounting.has_privilege(PrivilegeLevel.CALIBRATE_MOTORS):
+            error_message(self._window, 'Cannot calibrate beamstop position', 'Insufficient privileges')
+            return
         xpos = self._instrument.motors['BeamStop_X'].where()
         ypos = self._instrument.motors['BeamStop_Y'].where()
         if question_message(self._window, 'Calibrate beamstop out position',
@@ -120,6 +126,9 @@ class Motors(ToolWindow):
 
     def movebeamstop(self, out):
         assert (not hasattr(self, '_movebeamstop'))
+        if not self._instrument.accounting.has_privilege(PrivilegeLevel.BEAMSTOP):
+            error_message(self._window, 'Cannot move beamstop', 'Insufficient privileges')
+            return
         try:
             if out:
                 self._movebeamstop = 'out'

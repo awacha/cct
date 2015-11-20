@@ -2,7 +2,8 @@ import logging
 
 import numpy as np
 
-from .script import Script
+from .script import Script, CommandError
+from ..services.accounting import PrivilegeLevel
 from ..utils.errorvalue import ErrorValue
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,9 @@ class Transmission(Script):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         self._instrument = instrument
+        if not self._instrument.accounting.has_privilege(PrivilegeLevel.BEAMSTOP):
+            raise CommandError('Insufficient privileges to move the beamstop')
+
         if isinstance(arglist[0], str):
             samplenames = [arglist[0]]
         else:

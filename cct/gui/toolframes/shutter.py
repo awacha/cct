@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 from ..core.toolframe import ToolFrame
-
+from ...core.services.accounting import PrivilegeLevel
 
 class ShutterBeamstop(ToolFrame):
     def _init_gui(self, *args):
@@ -27,6 +27,15 @@ class ShutterBeamstop(ToolFrame):
             #                              self._instrument.devices['genix'].get_variable('shutter'))
         except KeyError:
             self._widget.set_sensitive(False)
+        self._privlevelconnection = self._instrument.accounting.connect('privlevel-changed', self.on_privlevel_changed)
+        self.on_privlevel_changed(self._instrument.accounting, self._instrument.accounting.get_privilegelevel())
+
+    def on_privlevel_changed(self, accounting, newprivlevel):
+        if not accounting.has_privilege(PrivilegeLevel.BEAMSTOP):
+            self._builder.get_object('beamstop_in_button').set_sensitive(False)
+            self._builder.get_object('beamstop_out_button').set_sensitive(False)
+        else:
+            self.on_motor_position_change(None, None)
 
     def on_unmap(self, widget):
         try:
@@ -35,6 +44,11 @@ class ShutterBeamstop(ToolFrame):
                     dev.disconnect(c)
                 del self._connections[dev]
             self._connections = {}
+        except AttributeError:
+            pass
+        try:
+            self._instrument.accounting.disconnect(self._privlevelconnection)
+            del self._privlevelconnection
         except AttributeError:
             pass
 

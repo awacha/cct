@@ -3,6 +3,7 @@ import os
 import traceback
 
 from .command import Command, CommandError
+from ..services.accounting import PrivilegeLevel
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -28,6 +29,12 @@ class Scan(Command):
     def execute(self, interpreter, arglist, instrument, namespace):
         self._myinterpreter = interpreter.__class__(instrument)
         self._motor, self._start, self._end, self._N, self._exptime, self._comment = arglist
+        if self._motor in ['BeamStop_X', 'BeamStop_Y'] and not self._instrument.accounting.has_privilege(
+                PrivilegeLevel.BEAMSTOP):
+            raise CommandError('Insufficient privileges to move the beamstop')
+        if self._motor in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
+                           'PH3_Y'] and not self._instrument.accounting.has_privilege(PrivilegeLevel.PINHOLE):
+            raise CommandError('Insufficient privileges to move pinholes')
         assert(instrument.motors[self._motor].checklimits(self._start))
         assert(instrument.motors[self._motor].checklimits(self._end))
         assert(self._N >= 2)

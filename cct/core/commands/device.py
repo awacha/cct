@@ -2,7 +2,8 @@ import time
 
 from gi.repository import GLib
 
-from .command import Command
+from .command import Command, CommandError
+from ..services.accounting import PrivilegeLevel
 
 
 class GetVariable(Command):
@@ -69,6 +70,8 @@ class SetVariable(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         devicename = arglist[0]
+        if devicename.startswith('tmcm') and not instrument.accounting.has_privilege(PrivilegeLevel.CONFIGURE_MOTORS):
+            raise CommandError('Insufficient privileges to configure motors.')
         variablename = arglist[1]
         value = arglist[2]
         self._require_device(instrument, devicename)

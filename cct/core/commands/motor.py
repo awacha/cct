@@ -4,6 +4,7 @@ import traceback
 from gi.repository import GLib
 
 from .command import Command, CommandError
+from ..services.accounting import PrivilegeLevel
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -24,6 +25,13 @@ class Moveto(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         motorname = arglist[0]
+        if motorname in ['BeamStop_X', 'BeamStop_Y'] and not instrument.accounting.has_privilege(
+                PrivilegeLevel.BEAMSTOP):
+            raise CommandError('Insufficient privileges to move the beamstop')
+        if motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
+                         'PH3_Y'] and not instrument.accounting.has_privilege(PrivilegeLevel.PINHOLE):
+            raise CommandError('Insufficient privileges to move pinholes')
+
         position = arglist[1]
 
         motor = instrument.motors[motorname]
@@ -69,6 +77,12 @@ class Moverel(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         motorname = arglist[0]
+        if motorname in ['BeamStop_X', 'BeamStop_Y'] and not instrument.accounting.has_privilege(
+                PrivilegeLevel.BEAMSTOP):
+            raise CommandError('Insufficient privileges to move the beamstop')
+        if motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
+                         'PH3_Y'] and not instrument.accounting.has_privilege(PrivilegeLevel.PINHOLE):
+            raise CommandError('Insufficient privileges to move pinholes')
         position = arglist[1]
 
         motor = instrument.motors[motorname]
@@ -154,6 +168,8 @@ class Beamstop(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         self._instrument = instrument
+        if not self._instrument.accounting.has_privilege(PrivilegeLevel.BEAMSTOP):
+            raise CommandError('Insufficient privileges to move beamstop')
         if not arglist:
             GLib.idle_add(self.end_command)
             return
