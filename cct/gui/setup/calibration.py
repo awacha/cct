@@ -162,11 +162,11 @@ class Calibration(ToolWindow):
         self._figpairscanvas.draw()
 
     def do_fit(self, curvetype):
-        xmin, xmax, ymin, ymax = self._plot1d._axes.axis()
+        xmin, xmax = self._plot1d.get_zoom_xrange()
         try:
             x = self._curve.q
             y = self._curve.intensity
-            idx = (x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax)
+            idx = (x >= xmin) & (x <= xmax)
             x = x[idx]
             y = y[idx]
             dx = self._curve.dq
@@ -217,19 +217,19 @@ class Calibration(ToolWindow):
                 self._make_insensitive('Manual positioning active', widgets=['input_box', 'close_button'])
                 return
             elif method == 'Peak amplitude':
-                xmin, xmax = self._plot1d._axes.axis()[:2]
+                xmin, xmax = self._plot1d.get_zoom_xrange()
                 logger.debug('Peak amplitude method: xmin: %f. xmax: %f. Original beampos: %f, %f.' % (
                 xmin, xmax, self._im.params['geometry']['beamposx'], self._im.params['geometry']['beamposy']))
                 posx, posy = findbeam_radialpeak(self._im.val, [self._im.params['geometry']['beamposx'],
                                                                 self._im.params['geometry']['beamposy']],
                                                  self._im._mask, xmin, xmax, drive_by='amplitude')
             elif method == 'Peak width':
-                xmin, xmax = self._plot1d._axes.axis()[:2]
+                xmin, xmax = self._plot1d.get_zoom_xrange()
                 posx, posy = findbeam_radialpeak(self._im.val, [self._im.params['geometry']['beamposx'],
                                                                 self._im.params['geometry']['beamposy']],
                                                  self._im._mask, xmin, xmax, drive_by='amplitude')
             elif method == 'Power-law goodness of fit':
-                xmin, xmax = self._plot1d._axes.axis()[:2]
+                xmin, xmax = self._plot1d.get_zoom_xrange()
                 posx, posy = findbeam_powerlaw(self._im.val, [self._im.params['geometry']['beamposx'],
                                                               self._im.params['geometry']['beamposy']],
                                                self._im._mask, xmin, xmax)
@@ -249,7 +249,11 @@ class Calibration(ToolWindow):
         logger.info('Beam center updated to (%.3f, %.3f) [(x, y) or (col, row)].' % (
         self._instrument.config['geometry']['beamposy'],
         self._instrument.config['geometry']['beamposx']))
+        self._instrument.save_state()
         button.set_sensitive(False)
+
+    def on_replot(self, button):
+        return self._radial_average()
 
     def on_savedistance(self, button):
         self._instrument.config['geometry']['dist_sample_det'] = self._dist.val
@@ -257,6 +261,7 @@ class Calibration(ToolWindow):
         logger.info('Sample-to-detector distance updated to %.4f \u00b1 %.4f mm.' % (
         self._instrument.config['geometry']['dist_sample_det'],
         self._instrument.config['geometry']['dist_sample_det.err']))
+        self._instrument.save_state()
         button.set_sensitive(False)
 
     def _radial_average(self):

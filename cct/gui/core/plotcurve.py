@@ -201,6 +201,8 @@ class PlotCurveWidget(object):
                 if self._builder.get_object('guinier3d_type').get_active():
                     for c in self._curves:
                         self._axes.errorbar(c['q'], c['y'], c['dy'], c['dq'], label=c['legend'])
+                        c['_x'] = c['q']
+                        c['_y'] = c['y']
                     self._axes.set_xscale('power', exponent=2)
                     self._axes.set_yscale('log')
                     if self._builder.get_object('arbunits_yunit').get_active():
@@ -228,6 +230,8 @@ class PlotCurveWidget(object):
                         else:
                             dy = None
                         self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
+                        c['_x'] = c['q']
+                        c['_y'] = y
                     self._axes.set_xscale('power', exponent=2)
                     self._axes.set_yscale('log')
                     if self._builder.get_object('arbunits_yunit').get_active():
@@ -255,6 +259,8 @@ class PlotCurveWidget(object):
                         else:
                             dy = None
                         self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
+                        c['_x'] = c['q']
+                        c['_y'] = y
                     self._axes.set_xscale('power', exponent=2)
                     self._axes.set_yscale('log')
                     if self._builder.get_object('arbunits_yunit').get_active():
@@ -282,6 +288,8 @@ class PlotCurveWidget(object):
                         else:
                             dy = None
                         self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
+                        c['_x'] = c['q']
+                        c['_y'] = y
                     self._axes.set_xscale('linear')
                     self._axes.set_yscale('linear')
                     if self._builder.get_object('arbunits_yunit').get_active():
@@ -309,6 +317,8 @@ class PlotCurveWidget(object):
                         else:
                             dy = None
                         self._axes.errorbar(c['q'], y, dy, c['dq'], label=c['legend'])
+                        c['_x'] = c['q']
+                        c['_y'] = y
                     self._axes.set_xscale('linear')
                     self._axes.set_yscale('power', exponent=4)
                     if self._builder.get_object('arbunits_yunit').get_active():
@@ -331,6 +341,8 @@ class PlotCurveWidget(object):
 
             for c in self._curves:
                 self._axes.errorbar(c[xkey], c['y'], c['dy'], c[dxkey], label=c['legend'])
+                c['_x'] = c[xkey]
+                c['_y'] = c['y']
             if self._builder.get_object('loglog_type').get_active():
                 self._axes.set_xscale('log')
                 self._axes.set_yscale('log')
@@ -402,6 +414,16 @@ class PlotCurveWidget(object):
         if dtth is not None:
             dic['dq'] = 4 * np.pi / wavelength * np.cos(0.5 * np.pi / 180 * tth) * 0.5 * np.pi / 180 * dtth
         return dic
+
+    def get_zoom_xrange(self):
+        xminlim, xmaxlim, yminlim, ymaxlim = self._axes.axis()
+        xmin = xminlim;
+        xmax = xmaxlim
+        for c in self._curves:
+            idx = (xminlim <= c['_x']) & (xmaxlim >= c['_x']) & (yminlim <= c['_y']) & (ymaxlim >= c['_y'])
+            xmin = max(xmin, c['_x'][idx])
+            xmax = min(xmin, c['_x'][idx])
+        return xmin, xmax
 
 
 class PlotCurveWindow(PlotCurveWidget):

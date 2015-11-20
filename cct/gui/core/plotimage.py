@@ -57,7 +57,7 @@ class PlotImageWidget(object):
                            label='Redraw')
         b.set_tooltip_text('Redraw the image')
         self._toolbar.insert(b, 9)
-        b.connect('clicked', lambda b: self._replot())
+        b.connect('clicked', lambda b: self._replot(False))
         palette_combo=self._builder.get_object('palette_combo')
         for i,cm in enumerate(sorted(matplotlib.cm.cmap_d)):
             palette_combo.append_text(cm)
@@ -71,7 +71,7 @@ class PlotImageWidget(object):
         self._widget.show_all()
 
     def on_settingschanged(self, widget):
-        self._replot()
+        self._replot(False)
 
     def set_image(self, image):
         self._matrix = image
