@@ -36,7 +36,7 @@ class GeniX(ToolWindow):
             self._indicators[vn]=Indicator(label, 'N/A', IndicatorState.UNKNOWN)
             errorindicators.attach(self._indicators[vn],column, row,1,1)
         self._genix=self._instrument.devices['genix']
-        self._update_indicators(self._window)
+        self._update_indicators(self)
 
     def on_map(self, window):
         if ToolWindow.on_map(self, window):
