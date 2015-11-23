@@ -31,6 +31,7 @@ from .tools.exposureviewer import ExposureViewer
 from .tools.capillarymeasurement import CapillaryMeasurement
 from .tools.scanviewer import ScanViewer
 from .tools.maskeditor import MaskEditor
+from .tools.datareduction import DataReduction
 from .diagnostics.telemetry import Telemetry
 from .devices.haakephoenix import HaakePhoenix
 from .devices.pilatus import Pilatus
@@ -214,7 +215,8 @@ class MainWindow(object):
         self._statusbar = self._builder.get_object('statusbar')
         self._dialogs = {}
         self._instrument = instrument
-        self._instrument.connect_devices()
+        if self._instrument._online:
+            self._instrument.connect_devices()
         self._devicestatus=DeviceStatusBar(self._instrument)
         self._builder.get_object('devicestatus_box').pack_start(self._devicestatus, True, True, 0)
 
@@ -344,9 +346,13 @@ class MainWindow(object):
 
     def construct_and_run_dialog(self, windowclass, toplevelname, gladefile, windowtitle):
         if toplevelname not in self._dialogs:
-            self._dialogs[toplevelname] = windowclass(gladefile, toplevelname, self._instrument, self._application,
-                                                      windowtitle)
-        # self._dialogs[toplevelname]._window.show_all()
+            try:
+                self._dialogs[toplevelname] = windowclass(gladefile, toplevelname, self._instrument, self._application,
+                                                          windowtitle)
+            except Exception as exc:
+                # this has already been handled with an error dialog
+                logger.debug('Could not open window %s: %s %s' % (windowtitle, str(exc), traceback.format_exc()))
+                return
         self._dialogs[toplevelname]._window.present()
 
     def on_menu_file_quit(self, menuitem):
@@ -428,7 +434,7 @@ class MainWindow(object):
         return False
 
     def on_menu_tools_datareduction(self, menuitem):
-        #ToDo
+        self.construct_and_run_dialog(DataReduction, 'datareduction', 'tools_datareduction.glade', 'Data reduction')
         return False
 
     def on_menu_tools_diagnostics_resourceusage(self, menuitem):

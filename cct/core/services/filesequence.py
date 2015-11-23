@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 import pickle
+import re
 import time
 
 import dateutil.parser
@@ -42,6 +43,8 @@ logger.setLevel(logging.DEBUG)
 
 """
 
+FILENAME_RE = re.compile(r'(.*/)?\w+_\d+\.\w+')
+
 
 class FileSequence(Service):
     """A class to keep track on file sequence numbers and folders"""
@@ -72,9 +75,9 @@ class FileSequence(Service):
                 f.write('#E %d\n' % time.time())
                 f.write('#D %s\n' % time.asctime())
                 f.write('#C CREDO scan file\n')
-                f.write('#O0 ' + '  '.join(m['name'] for m in sorted(
-                    self.instrument.config['motors'],
-                    key=lambda x: x['name'])) + '\n')
+                f.write('#O0 ' + '  '.join(sorted([m['name'] for m in
+                                                   self.instrument.config['motors']],
+                                                  key=lambda x: x['name'])) + '\n')
                 f.write('\n')
 
     def new_scan(self, cmdline, comment, exptime, N, motorname):
@@ -159,11 +162,11 @@ class FileSequence(Service):
             # find all subdirectories in `directory`, including `directory`
             # itself
             directory = self.instrument.config['path']['directories'][subdir]
+            filename_regex = re.compile('(.*/)?\\w+_\\d+\\' + extension + '$')
             for d in [directory] + find_subfolders(directory):
                 # find all files
                 filelist = [
-                    f for f in os.listdir(d) if f.endswith(extension)
-                    and '_' in f]
+                    f for f in os.listdir(d) if filename_regex.match(f) is not None]
                 # find all file prefixes, like 'crd', 'tst', 'tra', 'scn', etc.
                 for c in {f.rsplit('.')[0].split('_')[0] for f in filelist}:
                     if c not in self._lastfsn:
@@ -367,6 +370,13 @@ class FileSequence(Service):
                 self.instrument.config['path']['fsndigits'] % fsn)
             return SASImage.new_from_file(cbfname, picklename)
 
+    def load_param(self, prefix, fsn):
+        picklename = os.path.join(
+            self.instrument.config['path']['directories']['param'],
+            prefix + '_' + '%%0%dd.pickle' %
+            self.instrument.config['path']['fsndigits'] % fsn)
+        with open(picklename, 'rb') as f:
+            return pickle.load(f)
 
     def get_mask(self, maskname):
         if not hasattr(self, '_masks'):
