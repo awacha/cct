@@ -91,54 +91,13 @@
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
-  <object class="GtkDialog" id="definegeometry">
+  <object class="GtkWindow" id="definegeometry">
     <property name="can_focus">False</property>
-    <property name="type_hint">dialog</property>
-    <signal name="delete-event" handler="on_close" swapped="no"/>
-    <child internal-child="vbox">
-      <object class="GtkBox" id="dialog-vbox1">
+    <child>
+      <object class="GtkBox" id="box2">
+        <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">2</property>
-        <child internal-child="action_area">
-          <object class="GtkButtonBox" id="dialog-action_area1">
-            <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
-            <child>
-              <object class="GtkButton" id="apply_button">
-                <property name="label" translatable="yes">Apply</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <signal name="clicked" handler="on_apply" swapped="no"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="close_button">
-                <property name="label" translatable="yes">Close</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <signal name="clicked" handler="on_close" swapped="no"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">2</property>
-          </packing>
-        </child>
         <child>
           <object class="GtkFrame" id="frame1">
             <property name="visible">True</property>
@@ -238,6 +197,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
+                        <property name="text" translatable="yes">200.00</property>
                         <property name="adjustment">l0_adjustment</property>
                         <property name="digits">2</property>
                         <property name="value">200</property>
@@ -322,7 +282,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
-                        <property name="text" translatable="yes">200.00</property>
+                        <property name="text" translatable="yes">200.0000</property>
                         <property name="adjustment">ldval_adjustment</property>
                         <property name="digits">4</property>
                         <property name="value">200</property>
@@ -338,7 +298,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
-                        <property name="text" translatable="yes">200.00</property>
+                        <property name="text" translatable="yes">0.0000</property>
                         <property name="adjustment">lderr_adjustment</property>
                         <property name="digits">4</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
@@ -450,6 +410,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
+                        <property name="text" translatable="yes">0</property>
                         <property name="adjustment">pinhole1_adjustment</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
@@ -494,7 +455,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
-                        <property name="text" translatable="yes">0</property>
+                        <property name="text" translatable="yes">0.000</property>
                         <property name="adjustment">beamstop_adjustment</property>
                         <property name="digits">3</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
@@ -633,6 +594,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
+                        <property name="text" translatable="yes">0.000</property>
                         <property name="adjustment">beamx_adjustment</property>
                         <property name="digits">3</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
@@ -648,7 +610,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
-                        <property name="text" translatable="yes">0</property>
+                        <property name="text" translatable="yes">0.000</property>
                         <property name="adjustment">beamy_adjustment</property>
                         <property name="digits">3</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
@@ -664,9 +626,10 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
-                        <property name="text" translatable="yes">0</property>
+                        <property name="text" translatable="yes">0.170</property>
                         <property name="adjustment">pixelsize_adjustment</property>
                         <property name="digits">3</property>
+                        <property name="value">0.17000000000000001</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>
@@ -680,7 +643,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
-                        <property name="text" translatable="yes">0</property>
+                        <property name="text" translatable="yes">0.00000</property>
                         <property name="adjustment">wavelengthval_adjustment</property>
                         <property name="digits">5</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
@@ -695,7 +658,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
-                        <property name="text" translatable="yes">0</property>
+                        <property name="text" translatable="yes">0.00000</property>
                         <property name="adjustment">wavelengtherr_adjustment</property>
                         <property name="digits">5</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
@@ -741,6 +704,47 @@
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Other:</property>
               </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButtonBox" id="buttonbox1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="halign">end</property>
+            <property name="layout_style">start</property>
+            <child>
+              <object class="GtkButton" id="apply_button">
+                <property name="label" translatable="yes">Apply</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_apply" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="close_button">
+                <property name="label" translatable="yes">Close</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_close" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
             </child>
           </object>
           <packing>
