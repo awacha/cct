@@ -1,10 +1,11 @@
 #!/usb/bin/env python
+import os
+
+import numpy as np
+from Cython.Build import cythonize
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
-from distutils.sysconfig import get_python_lib, get_python_inc
-from Cython.Build import cythonize
-import numpy as np
-import os
+
 
 def getresourcefiles():
     print('Generating resource list',flush=True)
@@ -32,7 +33,7 @@ extensions = [Extension("cct.core.utils.radint", ["cct/core/utils/radint.pyx"], 
 
   
 update_languagespec()
-setup(name='cct', version='0.0.1', author='Andras Wacha',
+setup(name='cct', version='1.0.0', author='Andras Wacha',
       author_email='awacha@gmail.com', url='http://github.com/awacha/cct',
       description='CREDO Control Tool',
       packages=find_packages(),

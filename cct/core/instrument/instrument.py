@@ -90,10 +90,10 @@ class Instrument(GObject.GObject):
                                               'images_detector': ['/disk2/images', '/home/det/p2_det/images'],
                                               }
         self.config['path']['fsndigits'] = 5
-        self.config['path']['prefixes'] = {'crd': 'testingcrd',
-                                           'scn': 'testingscn',
-                                           'tra': 'testingtra',
-                                           'tst': 'testingtst'}
+        self.config['path']['prefixes'] = {'crd': 'crd',
+                                           'scn': 'scn',
+                                           'tra': 'tra',
+                                           'tst': 'tst'}
         self.config['geometry'] = {'dist_sample_det': 1000.,
                                    'dist_sample_det.err': 0.,
                                    'dist_source_ph1': 100.,
