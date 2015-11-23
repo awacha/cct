@@ -2,9 +2,9 @@
 <!-- Generated with glade 3.19.0 -->
 <interface>
   <requires lib="gtk+" version="3.16"/>
-  <object class="GtkAboutDialog" id="aboutdialog1">
+  <object class="GtkAboutDialog" id="aboutdialog">
     <property name="can_focus">False</property>
-    <property name="type">popup</property>
+    <property name="window_position">center-on-parent</property>
     <property name="type_hint">dialog</property>
     <property name="program_name">Credo Control Tool (CCT)</property>
     <property name="version">0.0.1</property>
@@ -119,7 +119,7 @@ Creative Commons is not a party to its public licenses. Notwithstanding, Creativ
 
 Creative Commons may be contacted at creativecommons.org.</property>
     <property name="authors">András Wacha (awacha@gmail.com)</property>
-    <property name="logo"/>
+    <property name="logo_icon_name">cctlogo</property>
     <property name="wrap_license">True</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="aboutdialog-vbox1">

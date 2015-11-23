@@ -441,7 +441,13 @@ class MainWindow(object):
         self.construct_and_run_dialog(Telemetry, 'telemetrywindow', 'diagnostics_telemetry.glade', 'Resource usage')
 
     def on_menu_help_about(self, menuitem):
-
+        builder = Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct', 'resource/glade/help_about.glade'))
+        ad = builder.get_object('aboutdialog')
+        ad.set_version(pkg_resources.get_distribution('cct').version)
+        ad.set_logo(GdkPixbuf.Pixbuf.new_from_file_at_size(
+            pkg_resources.resource_filename('cct', 'resource/icons/scalable/cctlogo.svg'), 256, 256))
+        ad.run()
+        ad.destroy()
         return False
 
     def on_menu_help_commandhelp(self, menuitem):
