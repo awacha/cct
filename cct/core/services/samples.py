@@ -84,7 +84,7 @@ class SampleStore(Service):
 
     def _save_state(self):
         dic = Service._save_state(self)
-        dic['active'] = self._active
+        dic['active'] = self._active.title
         dic['list'] = {x.title:x.todict() for x in self._list}
         return dic
 
