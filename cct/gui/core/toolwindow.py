@@ -59,7 +59,11 @@ class ToolWindow(GObject.GObject):
         self._window.connect('unmap', self.on_unmap)
         self._window.set_title(windowtitle)
         self._widgets_insensitive=[]
-        self._init_gui(*args)
+        try:
+            self._init_gui(*args)
+        except Exception as exc:
+            error_message(self._window, 'Cannot initialize window %s' % windowtitle, str(exc))
+            raise
         self._builder.connect_signals(self)
         self._window.foreach(lambda x: x.show_all())
         self._instrument.accounting.connect('privlevel-changed', self.on_privlevel_changed)
