@@ -3,7 +3,7 @@ import logging
 from gi.repository import Gtk, GLib
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setlevel(logging.INFO)
 
 from ..core.toolframe import ToolFrame
 from ...core.services.accounting import PrivilegeLevel

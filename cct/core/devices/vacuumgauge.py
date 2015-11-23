@@ -3,8 +3,12 @@ Created on Oct 13, 2015
 
 @author: labuser
 '''
+import logging
+
 from .device import Device_TCP, DeviceError
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class TPG201(Device_TCP):
 
@@ -59,3 +63,7 @@ class TPG201(Device_TCP):
     def _initialize_after_connect(self):
         Device_TCP._initialize_after_connect(self)
         self.refresh_variable('version', check_backend_alive=False)
+
+    def __init__(self, *args, **kwargs):
+        self._logger = logger
+        Device_TCP.__init__(self, *args, **kwargs)

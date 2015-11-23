@@ -7,7 +7,7 @@ from gi.repository import GObject
 from .service import Service, ServiceError
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class PrivilegeLevel(object):

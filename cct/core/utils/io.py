@@ -2,7 +2,7 @@ import logging
 import os
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setlevel(logging.INFO)
 
 
 def write_legacy_paramfile(paramfilename, params):

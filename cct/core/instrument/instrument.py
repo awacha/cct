@@ -15,7 +15,7 @@ from ..devices.xray_source import GeniX
 from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 from gi.repository import GObject, GLib
 

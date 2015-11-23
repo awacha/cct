@@ -1,10 +1,15 @@
+import logging
+
 from .device import Device_ModbusTCP
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class GeniX(Device_ModbusTCP):
     log_formatstr = '{_status}\t{ht}\t{current}\t{shutter}'
 
     def __init__(self, *args, **kwargs):
+        self._logger = logger
         Device_ModbusTCP.__init__(self, *args, **kwargs)
         self.backend_interval = 0.4
 

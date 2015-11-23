@@ -93,6 +93,7 @@ class Pilatus(Device_TCP):
     watchdog_timeout = 20
 
     def __init__(self, *args, **kwargs):
+        self._logger = logger
         Device_TCP.__init__(self, *args, **kwargs)
         self._sendqueue = multiprocessing.Queue()
         self._expected_status = 'idle'
@@ -302,7 +303,7 @@ class Pilatus(Device_TCP):
         self.execute_command('expose', filename.encode('utf-8'))
 
     def do_startupdone(self):
-        logger.debug('Pilatus: do_startupdone')
+        self._logger.debug('Pilatus: do_startupdone')
         self.refresh_variable('version')
         self.set_threshold(4024, 'highg')
         Device_TCP.do_startupdone(self)

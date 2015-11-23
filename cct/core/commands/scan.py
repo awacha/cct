@@ -6,7 +6,7 @@ from .command import Command, CommandError
 from ..services.accounting import PrivilegeLevel
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class Scan(Command):
     """Do a scan measurement

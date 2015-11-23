@@ -9,7 +9,7 @@ import numpy as np
 from .arithmetic import ArithmeticBase
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setlevel(logging.INFO)
 
 __all__ = ['ErrorValue']
 

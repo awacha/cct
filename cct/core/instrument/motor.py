@@ -3,7 +3,7 @@ import logging
 from gi.repository import GObject
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Motor(GObject.GObject):

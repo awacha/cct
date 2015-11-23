@@ -116,6 +116,9 @@ class Device(GObject.GObject):
 
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
         GObject.GObject.__init__(self)
+        if not hasattr(self, '_logger'):
+            # do not override _loggers set by children classes.
+            self._logger = logger
         self.logdir = logdir
         self.configdir = configdir
         self.logfile = os.path.join(self.logdir, instancename + '.log')
@@ -167,8 +170,8 @@ class Device(GObject.GObject):
             target=self._background_worker, daemon=True, name='Background process for device %s' % self._instancename)
         self._idle_handler = GLib.idle_add(self._idle_worker)
         self._background_process.start()
-        logger.debug('Background process for %s has been started' %
-                     self._instancename)
+        self._logger.debug('Background process for %s has been started' %
+                           self._instancename)
 
     def _stop_background_process(self):
         """Stops the background process and deregisters the queue-handler idle
@@ -415,7 +418,7 @@ class Device(GObject.GObject):
             try:
                 propertyname, newvalue = self._queue_to_frontend.get_nowait()
                 if (propertyname == '_error') and isinstance(newvalue[0], CommunicationError):
-                    logger.error(
+                    self._logger.error(
                         'Communication error in device %s, disconnecting.' % self._instancename)
                     self.disconnect_device(because_of_failure=True)
                     self.emit('error', '', newvalue[0], newvalue[1])
@@ -424,12 +427,12 @@ class Device(GObject.GObject):
                 elif (propertyname == '_telemetry'):
                     self.emit('telemetry', newvalue)
                 elif (propertyname == '_watchdog'):
-                    logger.warning('Watchdog timeout in device %s: restarting background process.' % self.name)
+                    self._logger.warning('Watchdog timeout in device %s: restarting background process.' % self.name)
                     self._stop_background_process()
                     self._start_background_process()
                 elif (propertyname == '_log'):
                     if newvalue.levelno >= logging.getLogger(__name__).getEffectiveLevel():
-                        logger.handle(newvalue)
+                        self._logger.handle(newvalue)
                 elif isinstance(newvalue, tuple) and isinstance(newvalue[0], Exception):
                     self.emit('error', propertyname, newvalue[0], newvalue[1])
                 else:
@@ -441,14 +444,15 @@ class Device(GObject.GObject):
         return True  # this is an idle function, we want to be called again.
 
     def do_error(self, propertyname, exception, tb):
-        logger.error('Device error. Variable name: %s. Exception: %s. Traceback: %s' % (propertyname, str(exception), tb))
+        self._logger.error(
+            'Device error. Variable name: %s. Exception: %s. Traceback: %s' % (propertyname, str(exception), tb))
 
     def do_startupdone(self):
-        logger.info('Device %s is ready.' % self._instancename)
+        self._logger.info('Device %s is ready.' % self._instancename)
         return False
 
     def do_disconnect(self, because_of_failure):
-        logger.warning('Disconnecting from device %s. Failure flag: %s' % (
+        self._logger.warning('Disconnecting from device %s. Failure flag: %s' % (
             self._instancename, because_of_failure))
         if self._properties['_status'] != 'Disconnected':
             self._properties['_status'] = 'Disconnected'
@@ -567,7 +571,7 @@ class Device_TCP(Device):
         return hasattr(self, '_tcpsocket')
 
     def connect_device(self, host, port, socket_timeout, poll_timeout):
-        logger.debug('Connecting to device: %s:%d' % (host, port))
+        self._logger.debug('Connecting to device: %s:%d' % (host, port))
         if self._get_connected():
             raise DeviceError('Already connected')
         try:
@@ -576,11 +580,11 @@ class Device_TCP(Device):
             self._tcpsocket.setblocking(False)
             self._poll_timeout = poll_timeout
         except (socket.error, socket.gaierror, socket.herror, ConnectionRefusedError) as exc:
-            logger.error(
+            self._logger.error(
                 'Error initializing socket connection to device %s:%d' % (host, port))
             raise DeviceError('Cannot connect to device.',exc)
         self._communication_subprocess.start()
-        logger.debug(
+        self._logger.debug(
             'Communication subprocess started for device %s:%d' % (host, port))
         try:
             self._start_background_process()
@@ -601,27 +605,27 @@ class Device_TCP(Device):
             self._tcpsocket.close()
             del self._tcpsocket
             raise exc
-        logger.debug('Connected to device %s:%d' % (host, port))
+        self._logger.debug('Connected to device %s:%d' % (host, port))
 
     def disconnect_device(self, because_of_failure=False):
         if not self._get_connected():
             raise DeviceError('Not connected')
-        logger.debug('Disconnecting from device%s' %
-                     (['', ' because of a failure'][because_of_failure]))
+        self._logger.debug('Disconnecting from device%s' %
+                           (['', ' because of a failure'][because_of_failure]))
         try:
             self._stop_background_process()
-            logger.debug('Stopped background process')
+            self._logger.debug('Stopped background process')
             self._finalize_after_disconnect()
-            logger.debug('Finalized')
+            self._logger.debug('Finalized')
             self._outqueue.put_nowait(('exit', None))
             self._communication_subprocess.join()
-            logger.debug('Closed communication subprocess')
+            self._logger.debug('Closed communication subprocess')
             try:
                 self._tcpsocket.shutdown(socket.SHUT_RDWR)
                 self._tcpsocket.close()
             except OSError:
                 pass
-            logger.debug('Closed socket')
+            self._logger.debug('Closed socket')
             self.emit('disconnect', because_of_failure)
         finally:
             del self._tcpsocket
@@ -699,7 +703,7 @@ class Device_ModbusTCP(Device):
         return hasattr(self, '_modbusclient')
 
     def connect_device(self, host, port, modbus_timeout):
-        logger.debug('Connecting to device: %s:%d' % (host, port))
+        self._logger.debug('Connecting to device: %s:%d' % (host, port))
         if self._get_connected():
             raise DeviceError('Already connected')
         self._modbusclient = ModbusClient(host, port, timeout=modbus_timeout)
@@ -717,20 +721,20 @@ class Device_ModbusTCP(Device):
             self._modbusclient.close()
             del self._modbusclient
             raise exc
-        logger.debug('Connected to device %s:%d' % (host, port))
+        self._logger.debug('Connected to device %s:%d' % (host, port))
 
     def disconnect_device(self, because_of_failure=False):
         if not self._get_connected():
             raise DeviceError('Not connected')
-        logger.debug('Disconnecting from device %s:%d%s' % (
+        self._logger.debug('Disconnecting from device %s:%d%s' % (
             self._modbusclient.host(), self._modbusclient.port(), ['', ' because of a failure'][because_of_failure]))
         try:
             self._stop_background_process()
-            logger.debug('Stopped background process')
+            self._logger.debug('Stopped background process')
             self._finalize_after_disconnect()
-            logger.debug('Finalized')
+            self._logger.debug('Finalized')
             self._modbusclient.close()
-            logger.debug('Closed socket')
+            self._logger.debug('Closed socket')
         finally:
             del self._modbusclient
 

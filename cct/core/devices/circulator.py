@@ -22,6 +22,7 @@ class HaakePhoenix(Device_TCP):
     backend_interval = 0.1
 
     def __init__(self, *args, **kwargs):
+        self._logger = logger
         Device_TCP.__init__(self, *args, **kwargs)
         # communication between software and hardware must be synchronous:
         # we cannot send until we got a reply. This queue stores the messages

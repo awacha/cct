@@ -42,6 +42,7 @@ class TMCMcard(Device_TCP):
     work for other models."""
 
     def __init__(self, *args, **kwargs):
+        self._logger = logger
         Device_TCP.__init__(self, *args, **kwargs)
         # number of motors
         self._motorcount = 0

@@ -7,7 +7,7 @@ from ..services.accounting import PrivilegeLevel
 from ..utils.errorvalue import ErrorValue
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Transmission(Script):

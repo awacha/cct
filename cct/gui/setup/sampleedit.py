@@ -7,7 +7,7 @@ from ..core.toolwindow import ToolWindow, question_message
 from ...core.instrument.sample import Sample, ErrorValue
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setlevel(logging.INFO)
 
 class SampleEdit(ToolWindow):
     def _init_gui(self):

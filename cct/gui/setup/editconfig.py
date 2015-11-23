@@ -6,7 +6,7 @@ from ..core.toolwindow import ToolWindow, info_message
 from ...core.services.accounting import PrivilegeLevel
 
 logger=logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setlevel(logging.INFO)
 
 class EditConfig(ToolWindow):
     def _init_gui(self, *args):

@@ -9,7 +9,7 @@ from matplotlib.figure import Figure
 from sastool.misc.basicfit import findpeak_single
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setlevel(logging.INFO)
 
 class ScanGraph(object):
     def __init__(self, signals=[], data=None, instrument=None, fsn=None, comment=None):
