@@ -87,7 +87,13 @@ class Interpreter(Service):
             # the command line must contain only one command, in the form of
             # `command(arg1, arg2, arg3 ...)`
             parpairs = get_parentheses_pairs(commandline_cleaned, '(')
-            argumentstring = commandline_cleaned[parpairs[0][1] + 1:parpairs[0][2]].strip()
+            if not parpairs:
+                # no parentheses, can be used for commands which do not accept any arguments
+                argumentstring = ''
+                commandname = commandline_cleaned
+            else:
+                commandname = commandline_cleaned[:parpairs[0][1]].strip()
+                argumentstring = commandline_cleaned[parpairs[0][1] + 1:parpairs[0][2]].strip()
             if argumentstring:
                 # split the argument string at commas. Beware that arguments can be valid
                 # Python expressions, thus may contain commas in various kinds of
@@ -129,7 +135,6 @@ class Interpreter(Service):
                              for a in arguments]
             else:
                 arguments = []
-            commandname = commandline_cleaned[:parpairs[0][1]].strip()
             try:
                 command = self.commands[commandname]()
             except KeyError:
