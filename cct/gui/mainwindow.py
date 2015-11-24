@@ -6,6 +6,7 @@ from gi.repository import Gio
 from gi.repository import Gtk
 from gi.repository import GLib
 from gi.repository import GdkPixbuf
+from gi.repository import Notify
 import pkg_resources
 import sys
 import logging
@@ -42,6 +43,8 @@ from .toolframes.accounting import AccountingFrame
 from .accounting.usermanager import UserManager
 from .accounting.projectmanager import ProjectManager
 from .core.toolwindow import error_message
+
+Notify.init('cct')
 
 handler = StreamHandler()
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
@@ -250,7 +253,8 @@ class MainWindow(object):
             self._instrument.interpreter.connect('cmd-fail', self.on_interpreter_cmd_fail),
             self._instrument.interpreter.connect('pulse', self.on_interpreter_cmd_pulse),
             self._instrument.interpreter.connect('progress', self.on_interpreter_cmd_progress),
-            self._instrument.interpreter.connect('cmd-message', self.on_interpreter_cmd_message)]
+            self._instrument.interpreter.connect('cmd-message', self.on_interpreter_cmd_message),
+            self._instrument.interpreter.connect('idle-changed', self.on_interpreter_idle_changed),]
         self._commandhistory = []
         self._historyindex = None
 
@@ -274,6 +278,12 @@ class MainWindow(object):
         # logger.debug('KeyEvent: %s. Keyval: %s. HW: %d str: %s len: %s'%(str(event), event.keyval, event.hardware_keycode, event.string, event.length))
         return False
 
+    def on_interpreter_idle_changed(self, interpreter, idle):
+        if not idle:
+            self._builder.get_object('command_entry').set_sensitive(idle)
+            if self._builder.get_object('execute_button').get_label()=='Execute':
+                self._builder.get_object('execute_button').set_sensitive(idle)
+
     def on_command_execute(self, button):
         if button.get_label() == 'Execute':
             cmd = self._builder.get_object('command_entry').get_text()
@@ -282,8 +292,6 @@ class MainWindow(object):
             except CommandError as ce:
                 error_message(self._window, 'Cannot execute command', str(ce))
             else:
-                self._builder.get_object('command_entry').set_sensitive(False)
-                # self._builder.get_object('execute_button').set_sensitive(False)
                 button.set_label('Stop')
                 if (not self._commandhistory) or (self._commandhistory and self._commandhistory[-1] != cmd):
                     self._commandhistory.append(self._builder.get_object('command_entry').get_text())
@@ -354,6 +362,7 @@ class MainWindow(object):
                 logger.debug('Could not open window %s: %s %s' % (windowtitle, str(exc), traceback.format_exc()))
                 return
         self._dialogs[toplevelname]._window.present()
+        return self._dialogs[toplevelname]
 
     def on_menu_file_quit(self, menuitem):
         self._window.destroy()
@@ -451,9 +460,13 @@ class MainWindow(object):
         return False
 
     def on_menu_help_commandhelp(self, menuitem):
-        self.construct_and_run_dialog(CommandHelpDialog, 'commandhelpbrowser', 'help_commandhelpbrowser.glade',
-                                      'Help on commands')
+        chd=self.construct_and_run_dialog(CommandHelpDialog, 'commandhelpbrowser', 'help_commandhelpbrowser.glade',
+                                          'Help on commands')
+        chd.connect('insert', self._on_insert_command)
         return False
+
+    def _on_insert_command(self, commandhelpdialog, command):
+        self._builder.get_object('command_entry').set_text(command)
 
     def on_menu_setup_management_users(self, menuitem):
         self.construct_and_run_dialog(UserManager, 'usermanager', 'accounting_usermanager.glade', 'Manage users')

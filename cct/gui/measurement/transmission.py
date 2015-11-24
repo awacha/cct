@@ -1,4 +1,5 @@
-from gi.repository import GLib
+import pkg_resources
+from gi.repository import GLib, Notify, GdkPixbuf
 
 from ..core.toolwindow import ToolWindow, error_message
 
@@ -80,6 +81,9 @@ class Transmission(ToolWindow):
             del self._pulser_timeout
         except AttributeError:
             pass
+        n=Notify.Notification(summary='Transmission measurement done',body='Measured transmissions for %d sample(s)'%len(self._builder.get_object('transmstore')))
+        n.set_image_from_pixbuf(GdkPixbuf.Pixbuf.new_from_file_at_size(pkg_resources.resource_filename('cct','resource/icons/scalable/cctlogo.svg'),256,256))
+        n.show()
 
     def on_cmd_fail(self, interpreter, commandname, exc, tb):
         error_message(self._window, 'Error during transmission measurement', str(exc)+tb)

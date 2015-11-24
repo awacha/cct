@@ -1,7 +1,8 @@
 import datetime
+import os
 
 import pkg_resources
-from gi.repository import GtkSource, Gdk, Gtk, GObject
+from gi.repository import GtkSource, Gdk, Gtk, GObject, GdkPixbuf, Notify
 
 from ..core.toolwindow import ToolWindow, question_message, error_message, info_message
 from ...core.commands.script import Script, Command
@@ -46,21 +47,29 @@ class ScriptMeasurement(ToolWindow):
     def on_modified_changed(self, sourcebuffer):
         self._builder.get_object('save_toolbutton').set_sensitive(sourcebuffer.get_modified())
         self._builder.get_object('saveas_toolbutton').set_sensitive(sourcebuffer.get_modified())
+        title=self._window.get_title()
+        if title.endswith('*'):
+            title=title[:-1].strip()
+        if sourcebuffer.get_modified():
+            self._window.set_title(title+' *')
+        else:
+            self._window.set_title(title)
 
     def on_toolbutton_new(self, toolbutton):
         self.confirm_save()
         self._sourcebuffer.set_text('')
-
+        self._sourcebuffer.set_modified(False)
 
     def on_toolbutton_open(self, toolbutton):
         self.confirm_save()
         if not hasattr(self, '_filechooser'):
             self._filechooser = Gtk.FileChooserDialog('Open script file', self._window, Gtk.FileChooserAction.OPEN,
-                                                      ['OK', 1, 'Cancel', 0])
+                                                      ['OK', Gtk.ResponseType.OK, 'Cancel', Gtk.ResponseType.CANCEL])
+            self._filechooser.add_shortcut_folder(os.path.join(os.getcwd(),'scripts'))
         self._filechooser.set_action(Gtk.FileChooserAction.OPEN)
         self._filechooser.set_title('Open script file')
         self._filechooser.set_transient_for(self._window)
-        if self._filechooser.run():
+        if self._filechooser.run()==Gtk.ResponseType.OK:
             self._filename=self._filechooser.get_filename()
             self._window.set_title(self._filename)
         self._filechooser.hide()
@@ -76,16 +85,19 @@ class ScriptMeasurement(ToolWindow):
     def on_toolbutton_saveas(self, toolbutton):
         if not hasattr(self, '_filechooser'):
             self._filechooser = Gtk.FileChooserDialog('Save script file as...', self._window,
-                                                      Gtk.FileChooserAction.SAVE, ['OK', 1, 'Cancel', 0])
+                                                      Gtk.FileChooserAction.SAVE, ['OK', Gtk.ResponseType.OK, 'Cancel', Gtk.ResponseType.CANCEL])
+            self._filechooser.add_shortcut_folder(os.path.join(os.getcwd(),'scripts'))
         self._filechooser.set_action(Gtk.FileChooserAction.SAVE)
         self._filechooser.set_do_overwrite_confirmation(True)
         self._filechooser.set_title('Save script file as...')
         self._filechooser.set_transient_for(self._window)
-        if self._filechooser.run():
+        if self._filechooser.run()==Gtk.ResponseType.OK:
             self._filename=self._filechooser.get_filename()
+            if not self._filename.lower().endswith('.cct'):
+                self._filename=self._filename+'.cct'
             self._window.set_title(self._filename)
+            self.on_toolbutton_save(toolbutton)
         self._filechooser.hide()
-        self.on_toolbutton_save(toolbutton)
 
     def on_toolbutton_undo(self, toolbutton):
         self._sourcebuffer.undo()
@@ -155,6 +167,9 @@ class ScriptMeasurement(ToolWindow):
     def on_script_end(self, interpreter, commandname, returnvalue):
         info_message(self._window,'Script ended','Result: %s'%str(returnvalue))
         self._cleanup()
+        n=Notify.Notification(summary='Script ended',body='Script execution ended with result: %s'%str(returnvalue))
+        n.set_image_from_pixbuf(GdkPixbuf.Pixbuf.new_from_file_at_size(pkg_resources.resource_filename('cct','resource/icons/scalable/cctlogo.svg'),256,256))
+        n.show()
 
     def on_script_fail(self, interpreter, commandname, exc, tb):
         error_message(self._window, 'Error while executing script', tb)
@@ -176,6 +191,11 @@ class ScriptMeasurement(ToolWindow):
         buf.insert(buf.get_end_iter(), message+'\n')
         self._builder.get_object('messagesview').scroll_to_iter(buf.get_end_iter(), 0,False, 0,0)
         buf.place_cursor(buf.get_end_iter())
+        try:
+            with open(self._filename[:-len('.cct')]+'.log','at', encoding='utf-8') as f:
+                f.write(str(datetime.datetime.now())+': '+message+'\n')
+        except AttributeError:
+            pass
 
     def on_command_start(self, scriptcmd, lineno, command ):
         it = self._sourcebuffer.get_iter_at_line(lineno)
