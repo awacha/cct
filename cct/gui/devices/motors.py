@@ -7,7 +7,7 @@ from ...core.devices.device import DeviceError
 from ...core.services.accounting import PrivilegeLevel
 
 logger=logging.getLogger(__name__)
-logger.setlevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 class Motors(ToolWindow):
     def _init_gui(self, *args):

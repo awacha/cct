@@ -6,7 +6,7 @@ from ..core.toolwindow import ToolWindow, question_message, error_message
 from ...core.services.accounting import PrivilegeLevel
 
 logger = logging.getLogger(__name__)
-logger.setlevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 
 class UserManager(ToolWindow):

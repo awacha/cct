@@ -100,8 +100,6 @@ class CCTApplication(Gtk.Application):
         kwargs['flags'] = Gio.ApplicationFlags.HANDLES_COMMAND_LINE
         Gtk.Application.__init__(self, *args, **kwargs)
         self._starttime = time.time()
-        # self.connect('activate', self.on_activate)
-        # self.connect('startup', self.on_startup)
 
     def do_activate(self):
         ad = AuthenticatorDialog(self, self._instrument)
@@ -140,7 +138,6 @@ class AuthenticatorDialog(object):
         self._window=self._builder.get_object('accountingdialog')
         self._builder.get_object('password_entry').get_style_context().add_provider(cssprovider,
                                                                                     Gtk.STYLE_PROVIDER_PRIORITY_USER)
-
         self._builder.connect_signals(self)
 
     def on_password_changed(self, password_entry):
@@ -156,13 +153,8 @@ class AuthenticatorDialog(object):
                 username = self._builder.get_object('operator_entry').get_text()
                 if self._application._instrument.accounting.authenticate(
                         username, self._builder.get_object('password_entry').get_text()):
-                    self.update_instrument()
                     return True
                 self._builder.get_object('password_entry').set_name('redbackground')
-            #                self._builder.get_object('password_entry').queue_draw()
-
-    def update_instrument(self):
-        pass
 
 class DeviceStatusBar(Gtk.Box):
     def __init__(self, instrument):
@@ -275,7 +267,6 @@ class MainWindow(object):
                 self._historyindex = min(self._historyindex + 1, len(self._commandhistory) - 1)
                 self._builder.get_object('command_entry').set_text(self._commandhistory[self._historyindex])
             return True  # inhibit further processing of this key event
-        # logger.debug('KeyEvent: %s. Keyval: %s. HW: %d str: %s len: %s'%(str(event), event.keyval, event.hardware_keycode, event.string, event.length))
         return False
 
     def on_interpreter_idle_changed(self, interpreter, idle):

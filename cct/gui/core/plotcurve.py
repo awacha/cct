@@ -9,7 +9,7 @@ from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
 from matplotlib.figure import Figure
 
 logger = logging.getLogger(__name__)
-logger.setlevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 from numpy import ma
 

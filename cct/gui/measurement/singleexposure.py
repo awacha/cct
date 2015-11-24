@@ -7,7 +7,7 @@ from ...core.commands.detector import Expose, ExposeMulti
 from ...core.utils.sasimage import SASImage
 
 logger = logging.getLogger(__name__)
-logger.setlevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 class SingleExposure(ToolWindow):
     def _init_gui(self, *args):

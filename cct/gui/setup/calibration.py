@@ -12,7 +12,7 @@ from ..core.exposureloader import ExposureLoader
 from ...core.utils.errorvalue import ErrorValue
 
 logger = logging.getLogger(__name__)
-logger.setlevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 from ..core.plotcurve import PlotCurveWidget
 from ..core.plotimage import PlotImageWidget

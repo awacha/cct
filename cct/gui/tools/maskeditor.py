@@ -12,7 +12,7 @@ from ..core.plotimage import PlotImageWidget
 from ..core.toolwindow import ToolWindow
 
 logger = logging.getLogger(__name__)
-logger.setlevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 
 class MaskEditor(ToolWindow):

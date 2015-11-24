@@ -38,5 +38,5 @@ class TPG201(ToolWindow):
                 state = IndicatorState.WARNING
             else:
                 state = IndicatorState.OK
-            self._indicator.set_value(str(newvalue) + ' mbar', state)
+            self._indicator.set_value('%.3f mbar' % newvalue, state)
         return False

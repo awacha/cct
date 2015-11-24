@@ -4,7 +4,7 @@ from ..core.indicator import Indicator, IndicatorState
 from ..core.toolwindow import ToolWindow, question_message
 
 logger=logging.getLogger(__name__)
-logger.setlevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 
 class GeniX(ToolWindow):

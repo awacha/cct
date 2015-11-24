@@ -8,7 +8,7 @@ from ...core.utils.pathutils import find_in_subfolders
 from ...core.utils.sasimage import SASImage
 
 logger = logging.getLogger(__name__)
-logger.setlevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 
 class ExposureLoader(Gtk.Box):

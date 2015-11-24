@@ -7,7 +7,7 @@ from ..core.scangraph import ScanGraph
 from ..core.toolwindow import ToolWindow, error_message
 
 logger=logging.getLogger(__name__)
-logger.setlevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 class Scan(ToolWindow):
     def _init_gui(self, *args):
