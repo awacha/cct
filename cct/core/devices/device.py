@@ -166,6 +166,12 @@ class Device(GObject.GObject):
                 self._queue_to_backend.get_nowait()
             except queue.Empty:
                 break
+        self._outstanding_telemetry = False
+        self._properties = {'_status': 'Disconnected'}
+        self._timestamps = {'_status': time.time()}
+        self._queue_to_backend = multiprocessing.Queue()
+        self._queue_to_frontend = multiprocessing.Queue()
+        self._refresh_requested = {}
         self._background_process = multiprocessing.Process(
             target=self._background_worker, daemon=True, name='Background process for device %s' % self._instancename)
         self._idle_handler = GLib.idle_add(self._idle_worker)
@@ -183,7 +189,14 @@ class Device(GObject.GObject):
             self._background_process.join()
             GLib.source_remove(self._idle_handler)
         finally:
-            del self._idle_handler
+            try:
+                del self._idle_handler
+            except AttributeError:
+                pass
+            try:
+                del self._background_process
+            except AttributeError:
+                pass
 
     def get_variable(self, name):
         """Get the value of the variable. If you need the most fresh value,
@@ -350,6 +363,7 @@ class Device(GObject.GObject):
             else:
                 raise NotImplementedError(
                     'Unknown command for _background_worker: %s' % cmd)
+        self._logger.info('Background thread ending for device %s' % self._instancename)
 
     def _get_telemetry(self):
         return {'processname': multiprocessing.current_process().name,
@@ -484,7 +498,10 @@ class Device(GObject.GObject):
         push the appropriate messages into `_queue_to_background` in step 3).
 
         Connection and communication parameters (e.g. host, port, baud rate,
-        timeout etc.) should be given as arguments to this method.
+        timeout etc.) should be given as arguments to this method. These have
+        also to be saved somewhere, where the `reconnect_device()` method can
+        find it. Preferably in the instance attribute `_connection_parameters`,
+        the implementation of which depends on the subclass.
 
         If an exception happens at any step, the state of the device has to be
         returned to disconnected. If the exception happens in 4), 
@@ -504,6 +521,13 @@ class Device(GObject.GObject):
         failure or because of the remote end. In this case this function is
         called on a queue message from the backend.
         """
+        raise NotImplementedError
+
+    def reconnect_device(self):
+        """Try to reconnect the device after a spontaneous disconnection.
+        This method must simply call the `connect_device` method, with
+        the connection parameters stored by a previous invocation of the
+        latter."""
         raise NotImplementedError
 
     def _initialize_after_connect(self):
@@ -574,6 +598,7 @@ class Device_TCP(Device):
         self._logger.debug('Connecting to device: %s:%d' % (host, port))
         if self._get_connected():
             raise DeviceError('Already connected')
+        self._connection_parameters = (host, port, socket_timeout, poll_timeout)
         try:
             self._tcpsocket = socket.create_connection(
                 (host, port), socket_timeout)
@@ -630,6 +655,9 @@ class Device_TCP(Device):
         finally:
             del self._tcpsocket
 
+    def reconnect_device(self):
+        self.connect_device(*self._connection_parameters)
+
     def _send(self, message):
         """Send a message (bytes) to the device"""
         # self._logger.debug('Sending message %s' % str(message))
@@ -674,7 +702,6 @@ class Device_TCP(Device):
                         # remote end hung up on us
                         raise CommunicationError(
                             'Socket has been closed by the remote side')
-                        return
                 if not message:
                     # no message was read, because no message was waiting. Note that
                     # we are not dealing with an empty message, which would signify
@@ -706,6 +733,7 @@ class Device_ModbusTCP(Device):
         self._logger.debug('Connecting to device: %s:%d' % (host, port))
         if self._get_connected():
             raise DeviceError('Already connected')
+        self._connection_parameters = (host, port, modbus_timeout)
         self._modbusclient = ModbusClient(host, port, timeout=modbus_timeout)
         if not self._modbusclient.open():
             raise DeviceError(
@@ -737,6 +765,9 @@ class Device_ModbusTCP(Device):
             self._logger.debug('Closed socket')
         finally:
             del self._modbusclient
+
+    def reconnect_device(self):
+        self.connect_device(*self._connection_parameters)
 
     def _read_integer(self, regno):
         return self._modbusclient.read_holding_registers(regno, 1)[0]

@@ -2,6 +2,7 @@ from gi import require_version
 
 require_version('Gtk', '3.0')
 require_version('GtkSource', '3.0')
+require_version('Notify', '0.7')
 from gi.repository import Gio
 from gi.repository import Gtk
 from gi.repository import GLib
@@ -274,6 +275,9 @@ class MainWindow(object):
             self._builder.get_object('command_entry').set_sensitive(idle)
             if self._builder.get_object('execute_button').get_label()=='Execute':
                 self._builder.get_object('execute_button').set_sensitive(idle)
+        if idle:
+            self._builder.get_object('command_entry').set_sensitive(idle)
+            self._builder.get_object('execute_button').set_sensitive(idle)
 
     def on_command_execute(self, button):
         if button.get_label() == 'Execute':

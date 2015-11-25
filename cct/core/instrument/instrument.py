@@ -3,6 +3,7 @@ import logging
 import multiprocessing
 import os
 import resource
+import time
 import traceback
 
 from .motor import Motor
@@ -390,7 +391,20 @@ class Instrument(GObject.GObject):
             self.emit('devices-ready')
 
     def on_disconnect(self, device, because_of_failure):
-        pass
+        if because_of_failure:
+            # attempt to reconnect
+            self._waiting_for_ready = [w for w in self._waiting_for_ready if w != device.name]
+            for i in range(3):
+                try:
+                    device.reconnect_device()
+                    self._waiting_for_ready.append(device.name)
+                    break
+                except Exception as exc:
+                    logger.warning('Exception while reconnecting to device %s: %s, %s' % (
+                    device.name, exc, traceback.format_exc()))
+                    time.sleep(1)  # a blocking sleep. Keep the other parts of this program from accessing the device.
+            if device.name not in self._waiting_for_ready:
+                logger.error('Cannot reconnect to device %s.' % device.name)
 
     def start_services(self):
         self.interpreter = Interpreter(self)
