@@ -174,6 +174,15 @@ class HaakePhoenix(Device_TCP):
                     pass
 
     def _query_variable(self, variablename):
+        if not hasattr(self, '_lastsent'):
+            try:
+                msg = self._sendqueue.get_nowait()
+                self._lastsent = msg
+                Device_TCP._send(self, msg)
+                self._logger.warning('Recovered from a possible deadlock situation!')
+            except queue.Empty:
+                pass
+
         if variablename is None:
             if self._sendqueue.qsize() > 3:
                 # skip autoupdate

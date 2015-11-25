@@ -169,8 +169,6 @@ class Device(GObject.GObject):
         self._outstanding_telemetry = False
         self._properties = {'_status': 'Disconnected'}
         self._timestamps = {'_status': time.time()}
-        self._queue_to_backend = multiprocessing.Queue()
-        self._queue_to_frontend = multiprocessing.Queue()
         self._refresh_requested = {}
         self._background_process = multiprocessing.Process(
             target=self._background_worker, daemon=True, name='Background process for device %s' % self._instancename)
