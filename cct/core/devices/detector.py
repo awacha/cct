@@ -176,7 +176,8 @@ class Pilatus(Device_TCP):
             if message == b'/tmp/setthreshold.cmd':
                 # a new threshold has been set, update the variables
                 self._update_variable('_status', 'idle')
-                self._send(b'SetThreshold\n')
+                self._query_variable('threshold')
+                self._query_variable('tau')
             else:
                 if idnum not in pilatus_replies_compiled:
                     raise DeviceError(
@@ -242,9 +243,10 @@ class Pilatus(Device_TCP):
         if commandname == 'setthreshold':
             if self.get_variable('_status') != 'idle':
                 raise DeviceError('Cannot trim when not idle')
-            self._send(b'SetThreshold %f %s\n' % (arguments[0], arguments[1]))
+            self._send(b'SetThreshold %s %f\n' % (arguments[1], arguments[0]))
             # after trimming, a camsetup call will reset this to idle.
             self._update_variable('_status', 'trimming')
+            logger.debug('Setting threshold to %f (gain %s)' % (arguments[0], arguments[1]))
         elif commandname == 'expose':
             if self.get_variable('_status') != 'idle':
                 raise DeviceError('Cannot start exposure when not idle')
@@ -298,6 +300,7 @@ class Pilatus(Device_TCP):
             raise NotImplementedError(gain)
         self.execute_command(
             'setthreshold', thresholdvalue, gain.encode('utf-8'))
+        logger.debug('Setting threshold to %f (gain %s)' % (thresholdvalue, gain))
 
     def expose(self, filename):
         self.execute_command('expose', filename.encode('utf-8'))

@@ -1,5 +1,10 @@
+import logging
+
 from ..core.indicator import Indicator, IndicatorState
 from ..core.toolwindow import ToolWindow
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class Pilatus(ToolWindow):
@@ -161,8 +166,10 @@ class Pilatus(ToolWindow):
             self._builder.get_object('threshold_adjustment').set_value(value)
 
     def on_trim(self, button):
-        self._instrument.devices['pilatus'].set_threshold(self._builder.get_object('threshold_adjustment').get_value(),
-                                                          self._builder.get_object('gain_selector').get_active_text())
+        threshold = self._builder.get_object('threshold_adjustment').get_value()
+        gain = self._builder.get_object('gain_selector').get_active_text()
+        logger.info('Setting threshold to %f eV (gain %s).' % (threshold, gain))
+        self._instrument.devices['pilatus'].set_threshold(threshold, gain)
 
     def on_gain_changed(self, gainselector):
         # set threshold limits from
