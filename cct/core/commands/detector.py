@@ -42,7 +42,13 @@ class Trim(Command):
         self._install_pulse_handler('Trimming detector', 0.5)
         instrument.detector.set_threshold(thresholdvalue, gain)
         instrument.detector.refresh_variable('threshold')
+        self._instrument = instrument
 
+    def do_return(self, retval):
+        self.emit('message', 'New threshold set: %f. Gain: %s' % (
+            self._instrument.detector.get_variable('threshold'),
+            self._instrument.detector.get_variable('gain')))
+        return False
 
 class StopExposure(Command):
     """Stop the current exposure in pilatus
