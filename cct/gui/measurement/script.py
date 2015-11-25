@@ -75,12 +75,14 @@ class ScriptMeasurement(ToolWindow):
         self._filechooser.hide()
         with open(self._filename, 'rt', encoding='utf-8') as f:
             self._sourcebuffer.set_text(f.read())
+        self._sourcebuffer.set_modified(False)
 
     def on_toolbutton_save(self, toolbutton):
         if not hasattr(self, '_filename'):
             self.on_toolbutton_saveas(toolbutton)
         with open(self._filename, 'wt', encoding='utf-8') as f:
             f.write(self._sourcebuffer.get_text(self._sourcebuffer.get_start_iter(), self._sourcebuffer.get_end_iter(), True))
+        self._sourcebuffer.set_modified(False)
 
     def on_toolbutton_saveas(self, toolbutton):
         if not hasattr(self, '_filechooser'):
