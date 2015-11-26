@@ -29,11 +29,11 @@ class Scan(Command):
     def execute(self, interpreter, arglist, instrument, namespace):
         self._myinterpreter = interpreter.__class__(instrument)
         self._motor, self._start, self._end, self._N, self._exptime, self._comment = arglist
-        if self._motor in ['BeamStop_X', 'BeamStop_Y'] and not self._instrument.accounting.has_privilege(
+        if self._motor in ['BeamStop_X', 'BeamStop_Y'] and not instrument.accounting.has_privilege(
                 PrivilegeLevel.BEAMSTOP):
             raise CommandError('Insufficient privileges to move the beamstop')
         if self._motor in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
-                           'PH3_Y'] and not self._instrument.accounting.has_privilege(PrivilegeLevel.PINHOLE):
+                           'PH3_Y'] and not instrument.accounting.has_privilege(PrivilegeLevel.PINHOLE):
             raise CommandError('Insufficient privileges to move pinholes')
         assert(instrument.motors[self._motor].checklimits(self._start))
         assert(instrument.motors[self._motor].checklimits(self._end))
@@ -141,6 +141,8 @@ class Scan(Command):
                 if self._scan_end and self._exposureanalyzer_idle:
                     self._cleanup()
                     self.emit('return', None)
+                else:
+                    logger.debug('Scan ended but exposureanalyzer not idle.')
         return False
 
     def on_idle(self, exposureanalyzer):
@@ -148,6 +150,8 @@ class Scan(Command):
         if self._scan_end and self._exposureanalyzer_idle:
             self._cleanup()
             self.emit('return', None)
+        else:
+            logger.debug('Exposureanalyzer idle but scan not ended.')
 
     def on_myintr_command_fail(self, interpreter, commandname, exc, failmessage):
         self.emit('fail', exc, failmessage)
