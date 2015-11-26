@@ -181,7 +181,7 @@ class Motors(ToolWindow):
         model, treeiter=self._builder.get_object('motortreeview').get_selection().get_selected()
         motorname=model[treeiter][0]
         movewindow = MotorMover('devices_motors_move.glade', 'motormover', self._instrument, self._application,
-                                'Move motor', PrivilegeLevel.LAYMAN, motorname)
+                                'Move motor', motorname)
         movewindow._window.show_all()
 
     def on_config(self, button):
