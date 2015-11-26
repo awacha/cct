@@ -94,7 +94,7 @@ class ExposureAnalyzer(Service):
         # since we are running in a different process
         self._config = self.instrument.config
         self._backendprocess.start()
-        self._working=0
+        self._working = {}
 
     def get_mask(self, maskname):
         if not hasattr(self, '_masks'):
@@ -196,7 +196,13 @@ class ExposureAnalyzer(Service):
     def _idle_function(self):
         try:
             prefix_fsn, what, arguments = self._queue_to_frontend.get_nowait()
-            self._working-=1
+            if what in ['image', 'scanpoint', 'error', 'transmdata']:
+                if prefix_fsn[0] in self._working:
+                    self._working[prefix_fsn[0]] -= 1
+                    if self._working[prefix_fsn[0]] < 0:
+                        raise ServiceError(
+                            'Working[%s]==%d less than zero!' % (prefix_fsn[0], self._working[prefix_fsn[0]]))
+            self._logger.debug('Exposureanalyzer working on %d jobs' % sum(self._working.values()))
         except queue.Empty:
             return True
         if what == 'error':
@@ -215,14 +221,16 @@ class ExposureAnalyzer(Service):
             self.emit('telemetry', arguments)
         elif what == 'log':
             logger.handle(arguments)
-        if self._working==0:
+        if all([self._working[k] <= 0 for k in self._working]):
             self.emit('idle')
         return True
 
     def submit(self, fsn, filename, prefix, args):
 #        logger.debug('Submitting to exposureanalyzer: %s, %d, %s, %s'%(prefix,fsn,filename,str(args)))
         self._queue_to_backend.put_nowait((prefix, fsn, filename, args))
-        self._working+=1
+if prefix not in self._working:
+    self._working[prefix] = 0
+self._working[prefix] += 1
 
     def _get_telemetry(self):
         return {'processname': multiprocessing.current_process().name,
