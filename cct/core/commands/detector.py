@@ -149,8 +149,7 @@ class Expose(Command):
         timeleft = self._exptime - \
             (datetime.datetime.now() - self._starttime).total_seconds()
         # timeleft=detector.get_variable('timeleft')
-        self.emit('progress', 'Exposing to %s. Remaining time: %4.1f' % (
-            detector.get_variable('targetfile'), timeleft), 1 - timeleft / self._exptime)
+        self.emit('progress', 'Exposing. Remaining time: %4.1f' % timeleft, 1 - timeleft / self._exptime)
         return True
 
     def on_variable_change(self, device, variablename, newvalue):
