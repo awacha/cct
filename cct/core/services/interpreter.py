@@ -246,6 +246,6 @@ def get_parentheses_pairs(cmdline, opening_types='([{'):
                 openparens[-1]] = (parens[openparens[-1]][0], parens[openparens[-1]][1], i)
             del openparens[-1]
     if openparens:
-        raise ValueError('Open parentheses', openparens, parens)
+        raise ValueError('Open parentheses', openparens, parens, cmdline)
     return parens
 
