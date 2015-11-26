@@ -278,7 +278,7 @@ class Sample(Command):
                 raise CommandError(
                     'Error on moving sample: target position could not be reached with motor ' + motorname)
             except Exception as ce:
-                self.emit('fail', (ce, traceback.format_exc()))
+                self.emit('fail', ce, traceback.format_exc())
         if motorname == 'Sample_X':
             self._motorconnections = [self._instrument.motors['Sample_Y'].connect('stop', self.on_stop, 'Sample_Y'),
                                       self._instrument.motors['Sample_Y'].connect('variable-change', self.on_varchange, 'Sample_Y')]
