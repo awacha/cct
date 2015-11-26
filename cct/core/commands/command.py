@@ -239,13 +239,16 @@ def cleanup_commandline(commandline):
     """Clean up the commandline: remove trailing spaces and comments"""
 
     commandline = commandline.strip()  # remove trailing whitespace
-    # remove comments from command line. Comments are marked by a hash (#)
-    # sign. Double hash sign is an escape for the single hash.
-    commandline = commandline.replace('##', '__DoUbLeHaSh__')
-    try:
-        commandline = commandline[:commandline.index('#')]
-    except ValueError:
-        # if # is not in the commandline
-        pass
-    commandline.replace('__DoUbLeHaSh__', '#')
+    instring = None
+    for i in range(len(commandline)):
+        if commandline[i] in ['"', "'"]:
+            if instring == commandline[i]:
+                instring = None
+            elif instring is None:
+                instring = commandline[i]
+        if (commandline[i] == '#') and (instring is None):
+            return commandline[:i].strip()
+    if instring is not None:
+        raise ValueError('Unterminated string in command line', commandline)
+    return commandline.strip()
     return commandline.strip()
