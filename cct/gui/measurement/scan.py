@@ -85,7 +85,8 @@ class Scan(ToolWindow):
         elif commandname=='shutter' and not returnvalue:
             self._cleanup_after_scan()
             logger.info('Scan finished')
-            n=Notify.Notification(summary='Scan ended',body='Scan %d ended'%str(self._instrument.filesequence.get_lastscan()))
+            n = Notify.Notification(summary='Scan ended',
+                                    body='Scan %d ended' % (self._instrument.filesequence.get_lastscan()))
             n.set_image_from_pixbuf(GdkPixbuf.Pixbuf.new_from_file_at_size(pkg_resources.resource_filename('cct','resource/icons/scalable/cctlogo.svg'),256,256))
             n.show()
         else:
