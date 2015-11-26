@@ -321,10 +321,16 @@ class FileSequence(Service):
                 params['environment']['vacuum_pressure'] = self.instrument.environmentcontrollers[
                     'vacuum'].get_variable('pressure')
             if 'temperature' in self.instrument.environmentcontrollers:
-                params['environment']['temperature_setpoint'] = self.instrument.environmentcontrollers[
-                    'temperature'].get_variable('setpoint')
-                params['environment']['temperature'] = self.instrument.environmentcontrollers[
-                    'temperature'].get_variable('temperature_internal')
+                try:
+                    params['environment']['temperature_setpoint'] = self.instrument.environmentcontrollers[
+                        'temperature'].get_variable('setpoint')
+                except KeyError as ke:
+                    logger.warning('Cannot write property: %s'%ke.args[0])
+                try:
+                    params['environment']['temperature'] = self.instrument.environmentcontrollers[
+                        'temperature'].get_variable('temperature_internal')
+                except KeyError as ke:
+                    logger.warning('Cannot write property: %s'%ke.args[0])
             params['accounting'] = {}
             for k in config['services']['accounting']:
                 params['accounting'][k] = config['services']['accounting'][k]
