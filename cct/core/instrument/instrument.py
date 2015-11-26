@@ -2,6 +2,7 @@ import json
 import logging
 import multiprocessing
 import os
+import pickle
 import resource
 import time
 import traceback
@@ -62,7 +63,7 @@ class Instrument(GObject.GObject):
         self.motorcontrollers = {}
         self.motors = {}
         self.environmentcontrollers = {}
-        self.configfile = os.path.join(self.configdir, 'cct.json')
+        self.configfile = os.path.join(self.configdir, 'cct.pickle')
         self._initialize_config()
         self._signalconnections = {}
         self._waiting_for_ready = []
@@ -227,8 +228,10 @@ class Instrument(GObject.GObject):
         for service in ['interpreter', 'samplestore', 'filesequence', 'exposureanalyzer', 'accounting']:
             self.config['services'][service] = getattr(
                 self, service)._save_state()
-        with open(self.configfile, 'wt', encoding='utf-8') as f:
-            json.dump(self.config, f)
+        with open(self.configfile, 'wb') as f:
+            pickle.dump(self.config, f)
+        #with open(self.configfile, 'wt', encoding='utf-8') as f:
+        #    json.dump(self.config, f)
         logger.info('Saved state to %s'%self.configfile)
         self.exposureanalyzer.sendconfig()
 
@@ -247,10 +250,14 @@ class Instrument(GObject.GObject):
         connecting to devices, because status of the back-end process is
         not updated by Device._load_state()."""
         try:
-            with open(self.configfile, 'rt', encoding='utf-8') as f:
-                config_loaded = json.load(f)
-        except IOError:
-            return
+            with open(self.configfile, 'rb') as f:
+                config_loaded=pickle.load(f)
+        except FileNotFoundError:
+            try:
+                with open(self.configfile.replace('.pickle','.json'),'rt', encoding='utf-8') as f:
+                    config_loaded = json.load(f)
+            except FileNotFoundError:
+                return
         self._update_config(self.config, config_loaded)
 
 
