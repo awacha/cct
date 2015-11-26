@@ -8,6 +8,8 @@ from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
 from matplotlib.figure import Figure
 from sastool.misc.basicfit import findpeak_single
 
+from .toolwindow import error_message
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -246,7 +248,10 @@ class ScanGraph(object):
         signal=self._data[signalname]
         left,right,bottom,top=self._axes.axis()
         index=(abscissa>=left)&(abscissa<=right)&(signal<=top)&(signal>=bottom)
-        position, hwhm, baseline, amplitude, stat=findpeak_single(abscissa[index],signal[index],None,return_stat=True,curve=curvetype, signs=signs)
+        try:
+            position, hwhm, baseline, amplitude, stat=findpeak_single(abscissa[index],signal[index],None,return_stat=True,curve=curvetype, signs=signs)
+        except ValueError:
+            error_message(self._window,'Fitting error','Probably no points of the selected curve are in the beam.')
         x=np.linspace(abscissa[index].min(),abscissa[index].max(),index.sum()*5)
         if curvetype=='Gaussian':
             y= amplitude * np.exp(-0.5 * (x - position) ** 2 / hwhm ** 2) + baseline
@@ -258,13 +263,13 @@ class ScanGraph(object):
         self._axes.text(position.val, amplitude.val+baseline.val,str(position),ha='center',va='bottom')
         self._canvas.draw()
         self._lastpeakposition=position
-        self._builder.get_object('move_to_peak_button').set_sensitive(False)
+        self._builder.get_object('move_to_peak_button').set_sensitive(True)
 
 
     def on_movetocursor(self, button):
+        button.set_sensitive(False)
         self._motorconnection=self._instrument.motors[self.get_abscissaname()].connect('stop', self.on_endmove, button)
         self._instrument.motors[self.get_abscissaname()].moveto(self._data[self.get_abscissaname()][self._cursorindex])
-        pass
 
     def on_endmove(self, motor, targetreached, button):
         button.set_sensitive(False)
@@ -283,6 +288,7 @@ class ScanGraph(object):
 
     def on_movetopeak(self, button):
         button.set_sensitive(False)
+        self._motorconnection=self._instrument.motors[self.get_abscissaname()].connect('stop', self.on_endmove, button)
         self._instrument.motors[self.get_abscissaname()].moveto(self._lastpeakposition.val)
 
     def on_showallsignals(self, button):
