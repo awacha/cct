@@ -150,6 +150,11 @@ class ScriptMeasurement(ToolWindow):
         except Exception:
             self._cleanup()
             raise
+        try:
+            with open(self._filename[:-len('.cct')] + '.log', 'at', encoding='utf-8') as f:
+                f.write(str(datetime.datetime.now()) + ': ----------------------- Started -----------------------\n')
+        except AttributeError:
+            pass
 
     def _cleanup(self):
         self._make_sensitive()
