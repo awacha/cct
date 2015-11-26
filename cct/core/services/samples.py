@@ -1,12 +1,9 @@
 import logging
-import os
 
-import dateutil.parser
 from gi.repository import GObject
 
 from .service import Service, ServiceError
 from ..instrument.sample import Sample
-from ..utils.errorvalue import ErrorValue
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -33,58 +30,58 @@ class SampleStore(Service):
         else:
             self._list=[Sample.fromdict(sampledict) for sampledict in dictionary['list'].values()]
         self._active = dictionary['active']
-        try:
-            with open(os.path.join(self.instrument.config['path']['directories']['config'], 'samples.conf'), 'rt', encoding='utf-8') as f:
-                for l in f:
-                    try:
-                        rhs = l.split('=', 1)[1].strip()
-                    except IndexError:
-                        pass
-                    if l.startswith('['):
-                        sample = {}
-                    elif l.startswith('title ='):
-                        sample['title'] = rhs
-                    elif l.startswith('positionx ='):
-                        sample['positionx'] = ErrorValue(float(rhs), 0)
-                    elif l.startswith('positionxerror ='):
-                        sample['positionx'].err = float(rhs)
-                    elif l.startswith('positiony ='):
-                        sample['positiony'] = ErrorValue(float(rhs), 0)
-                    elif l.startswith('positionyerror ='):
-                        sample['positiony'].err = float(rhs)
-                    elif l.startswith('transmission ='):
-                        sample['transmission'] = ErrorValue(float(rhs), 0)
-                    elif l.startswith('transmissionerror ='):
-                        sample['transmission'].err = float(rhs)
-                    elif l.startswith('thickness ='):
-                        sample['thickness'] = ErrorValue(float(rhs), 0)
-                    elif l.startswith('thicknesserror ='):
-                        sample['thickness'].err = float(rhs)
-                    elif l.startswith('distminus ='):
-                        sample['distminus'] = ErrorValue(float(rhs), 0)
-                    elif l.startswith('distminuserror ='):
-                        sample['distminus'].err = float(rhs)
-                    elif l.startswith('preparedby ='):
-                        sample['preparedby'] = rhs
-                    elif l.startswith('preparetime ='):
-                        sample['preparetime'] = dateutil.parser.parse(rhs)
-                    elif l.startswith('description ='):
-                        sample['description'] = rhs
-                    elif l.startswith('category ='):
-                        sample['category'] = rhs
-                    elif l.startswith('situation ='):
-                        sample['situation'] = rhs
-                    else:
-                        if sample['title'] in self:
-                            self.remove(sample['title'])
-                        self.add(Sample(**sample))
-        except IOError:
-            pass
+#        try:
+#            with open(os.path.join(self.instrument.config['path']['directories']['config'], 'samples.conf'), 'rt', encoding='utf-8') as f:
+#                for l in f:
+#                    try:
+#                        rhs = l.split('=', 1)[1].strip()
+#                    except IndexError:
+#                        pass
+#                    if l.startswith('['):
+#                        sample = {}
+#                    elif l.startswith('title ='):
+#                        sample['title'] = rhs
+#                    elif l.startswith('positionx ='):
+#                        sample['positionx'] = ErrorValue(float(rhs), 0)
+#                    elif l.startswith('positionxerror ='):
+#                        sample['positionx'].err = float(rhs)
+#                    elif l.startswith('positiony ='):
+#                        sample['positiony'] = ErrorValue(float(rhs), 0)
+#                    elif l.startswith('positionyerror ='):
+#                        sample['positiony'].err = float(rhs)
+#                    elif l.startswith('transmission ='):
+#                        sample['transmission'] = ErrorValue(float(rhs), 0)
+#                    elif l.startswith('transmissionerror ='):
+#                        sample['transmission'].err = float(rhs)
+#                    elif l.startswith('thickness ='):
+#                        sample['thickness'] = ErrorValue(float(rhs), 0)
+#                    elif l.startswith('thicknesserror ='):
+#                        sample['thickness'].err = float(rhs)
+#                    elif l.startswith('distminus ='):
+#                        sample['distminus'] = ErrorValue(float(rhs), 0)
+#                    elif l.startswith('distminuserror ='):
+#                        sample['distminus'].err = float(rhs)
+#                    elif l.startswith('preparedby ='):
+#                        sample['preparedby'] = rhs
+#                    elif l.startswith('preparetime ='):
+#                        sample['preparetime'] = dateutil.parser.parse(rhs)
+#                    elif l.startswith('description ='):
+#                        sample['description'] = rhs
+#                    elif l.startswith('category ='):
+#                        sample['category'] = rhs
+#                    elif l.startswith('situation ='):
+#                        sample['situation'] = rhs
+#                    else:
+#                        if sample['title'] in self:
+#                            self.remove(sample['title'])
+#                        self.add(Sample(**sample))
+#        except IOError:
+#            pass
         self.emit('list-changed')
 
     def _save_state(self):
         dic = Service._save_state(self)
-        dic['active'] = self._active.title
+        dic['active'] = self._active
         dic['list'] = {x.title:x.todict() for x in self._list}
         return dic
 
@@ -140,10 +137,11 @@ class SampleStore(Service):
                 return None
 
     def get_active_name(self):
-        if self._active is None:
+        a=self.get_active()
+        if a is None:
             return None
         else:
-            return self.get_active().title
+            return a.title
 
     def __iter__(self):
         for l in self._list:
