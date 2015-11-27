@@ -98,3 +98,9 @@ def write_legacy_paramfile(paramfilename, params):
         for k in params['accounting']:
             f.write('accounting.%s:\t%s\n' %
                     (k, params['accounting'][k]))
+        for k in params['exposure']:
+            f.write('exposure.%s\t%s\n' %
+                    (k, params['exposure'][k]))
+        if 'datareduction' in params:
+            f.write('datareduction.%s\t%s\n'%
+                    (k,params['datareduction'][k]))
