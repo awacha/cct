@@ -21,7 +21,7 @@ from ..utils.pathutils import find_in_subfolders
 from ..utils.sasimage import SASImage
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DataReductionEnd(Exception):
@@ -298,9 +298,6 @@ self._working[prefix] += 1
             self._logger.debug('Q-range of absint dataset: %g to %g, %d points.' % (
             dataset[:, 0].min(), dataset[:, 0].max(), len(dataset[:, 0])))
             q, dq, I, dI, area = im.radial_average(qrange=dataset[:, 0], raw_result=True)
-            self._logger.debug(
-                'Results of radial average: %s, %s, %s, %s, %s' % (str(q), str(dq), str(I), str(dI), str(area)))
-            self._logger.debug('Sum pixels: ' + str(area.sum()))
             dataset = dataset[area > 0, :]
             I = I[area > 0]
             dI = dI[area > 0]
