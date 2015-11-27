@@ -205,14 +205,36 @@ class TMCMcard(Device_TCP):
 
     def _process_incoming_message(self, message):
         try:
+            cleartosend = True
             if not hasattr(self, '_lastsent'):
                 # incoming messages are always replies to our recent request.
                 # This clause is not expected to run ever, but who knows...
                 raise DeviceError(
                     'Asynchronous message received from motor controller')
-            if len(message) != 9:
+            try:
+                message = self._incomplete_remainder + message
+                self._logger.warning(
+                    'Remainder of an incomplete message received. Total message length now: %d' % len(message))
+                del self._incomplete_remainder
+            except AttributeError:
+                pass
+            if len(message) == 9:
+                # everything OK, this is the expected case.
+                pass
+            elif len(message) < 9:
+                self._incomplete_remainder = message
+                self._logger.warning('Incomplete message received, storing. Waiting for the remainder to arrive.')
+                cleartosend = False
+                return
+            elif len(message) > 9 and len(message) < 18:
+                self._incomplete_remainder = message[9:]
+                message = message[:9]
+                self._logger.warning(
+                    'One and a half message received, storing second half. Waiting for the remainder to arrive.')
+            else:
                 raise DeviceError(
-                    'Invalid message (length must be 9): ' + str(message))
+                    'More than two messages received at once. Total length: %d. This should not happen normally.' % len(
+                        message))
             if (sum(message[:-1]) % 256) != message[-1]:
                 raise DeviceError(
                     'Invalid message (checksum error): ' + str(message))
@@ -356,22 +378,20 @@ class TMCMcard(Device_TCP):
             if self._has_all_variables():
                 self._logger.error('TMCM conversion error.')
         finally:
-            try:
-                msg = self._sendqueue.get_nowait()
-                #                if self._instancename=='tmcm351a':
-                #                    print('Sendqueue size: '+str(self._sendqueue.qsize()))
-                #                    print('Backend queue size: '+str(self._queue_to_backend.qsize()))
-                self._lastsent = msg
-                Device_TCP._send(self, msg)
-            except queue.Empty:
+            if cleartosend:
                 try:
-                    del self._lastsent
-                except AttributeError:
-                    pass
-                if (self._moving is not None):
-                    # if we are moving, queue an immediate check for all variables.
-                    for vn in VOLATILE_VARIABLES:
-                        self.refresh_variable(vn + '$%d' % self._moving['index'], signal_needed=False)
+                    msg = self._sendqueue.get_nowait()
+                    self._lastsent = msg
+                    Device_TCP._send(self, msg)
+                except queue.Empty:
+                    try:
+                        del self._lastsent
+                    except AttributeError:
+                        pass
+                    if (self._moving is not None):
+                        # if we are moving, queue an immediate check for all variables.
+                        for vn in VOLATILE_VARIABLES:
+                            self.refresh_variable(vn + '$%d' % self._moving['index'], signal_needed=False)
 
     def _is_moving(self, motoridx):
         """Check if the motor is moving in the following way:
@@ -732,12 +752,19 @@ class TMCMcard(Device_TCP):
             self._logger.debug(
                 'Not saving positions yet (process %s): file exists and up to now no complete loading happened.' % multiprocessing.current_process().name)
             return
-        with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'wt', encoding='utf-8') as f:
+        posfile = ''
+        try:
             for mot in range(self._motorcount):
-                f.write('%d: %g (%g, %g)\n' % (
+                posfile = posfile + '%d: %g (%g, %g)\n' % (
                     mot, self.where(mot), self._properties['softleft$%d' % mot],
-                    self._properties['softright$%d' % mot]))
-            self._logger.debug('Positions saved for controller %s' % self._instancename)
+                    self._properties['softright$%d' % mot])
+        except KeyError as ke:
+            self._logger.error('Error saving motor position file for controller %s, because of missing key: %s' % (
+            self._instancename, ke.args[0]))
+            return
+        with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'wt', encoding='utf-8') as f:
+            f.write(posfile)
+        self._logger.debug('Positions saved for controller %s' % self._instancename)
 
     def _load_positions(self):
         self._logger.debug('Loading positions for controller %s' % self._instancename)
@@ -773,8 +800,12 @@ class TMCMcard(Device_TCP):
                             self._calibrate(idx, float(gd['position']))
                         loaded.append(idx)
                 if lines != self._motorcount:
-                    raise ValueError('Invalid motor position file: ' + os.path.join(self.configdir,
-                                                                                    self._instancename + '.motorpos'))
+                    self._logger.error('Invalid motor position file: ' + os.path.join(self.configdir,
+                                                                                      self._instancename + '.motorpos'))
+                    for i in range(self._motorcount):
+                        self._update_variable('softleft$%d' % i, -100)
+                        self._update_variable('softright$%d' % i, 100)
+                    self._positions_loaded.set()
             if len(loaded) == self._motorcount:
                 self._logger.info('Positions loaded for controller %s in process %s' % (
                     self._instancename, multiprocessing.current_process().name))
@@ -782,6 +813,9 @@ class TMCMcard(Device_TCP):
         except FileNotFoundError:
             self._logger.info('Positions loaded (no file) for controller %s in process %s' % (
                 self._instancename, multiprocessing.current_process().name))
+            for i in range(self._motorcount):
+                self._update_variable('softleft$%d' % i, -100)
+                self._update_variable('softright$%d' % i, 100)
             self._positions_loaded.set()
         finally:
             self._busyflag.release()
