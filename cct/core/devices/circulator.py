@@ -31,6 +31,18 @@ class HaakePhoenix(Device_TCP):
         self._urgency_counter = 0
         self._stashmessage = b''
 
+    def _on_start_backgroundprocess(self):
+        while True:
+            try:
+                self._sendqueue.get_nowait()
+            except queue.Empty:
+                break
+        try:
+            del self._lastsent
+        except AttributeError:
+            pass
+        Device_TCP._on_start_backgroundprocess(self)
+
     def _execute_command(self, commandname, arguments):
         if commandname == 'start':
             self._send(b'W TS 1\r')
@@ -53,10 +65,10 @@ class HaakePhoenix(Device_TCP):
         #        print('RECEIVED: '+message.decode('ascii')+'\n')
         #        print('LASTSENT: '+self._lastsent[:-1].decode('ascii'))
         message = self._stashmessage + message
+        self._stashmessage = b''
         try:
             if not hasattr(self, '_lastsent'):
-                self._logger.debug('No lastsent for message: %s' % message.decode('utf-8').replace('\r', ''))
-                # print('!!! NOLASTSENT')
+                self._logger.warning('No lastsent for message: %s' % message.decode('utf-8').replace('\r', ''))
                 return
             if message == b'F001\r':
                 # unknown command
@@ -74,7 +86,6 @@ class HaakePhoenix(Device_TCP):
                 self._logger.warning('Malformed message: does not end with "$\\r": %s' % message)
                 self._stashmessage = self._stashmessage + message
                 return
-            self._stashmessage = b''
             message = message[:-1]
             if self._lastsent == b'R V1\r':
                 self._update_variable('firmwareversion', message[:-1].decode('utf-8'))

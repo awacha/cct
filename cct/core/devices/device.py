@@ -260,11 +260,15 @@ class Device(GObject.GObject):
                 self._queue_to_frontend.put_nowait(('_startup_done', None))
                 self._on_startupdone()
                 self._juststarted = False
-        if (time.time() - self._watchdogtime > self.watchdog_timeout) and self._watchdog_alive:
+        if ((time.time() - self._watchdogtime) > self.watchdog_timeout) and self._watchdog_alive:
             try:
                 self._logger.error(
                     'Watchdog timeout in device %s. Last query was %f seconds ago.' % (
                     self._instancename, time.time() - self._lastquerytime))
+                try:
+                    self._logger.error('Last send was %f seconds ago.' % (time.time() - self._lastsendtime))
+                except AttributeError:
+                    pass
                 raise CommunicationError(
                     'Watchdog timeout: no message received from device %s. Last query was %f seconds ago.' % (
                     self._instancename, time.time() - self._lastquerytime))
@@ -276,6 +280,11 @@ class Device(GObject.GObject):
             self._lastquerytime = time.time()
             self._log()  # log the values of variables
 
+    def _on_start_backgroundprocess(self):
+        """Called just before the infinite loop of the background process starts."""
+        self._query_variable(None)
+        self._lastquerytime = time.time()
+        self._logger.debug('Starting background process for %s' % self._instancename)
 
     def _background_worker(self):
         """Worker function of the background thread. The main job of this is
@@ -297,13 +306,12 @@ class Device(GObject.GObject):
             self._logger.addHandler(QueueLogHandler(self._queue_to_frontend))
             self._logger.addHandler(logging.StreamHandler())
             self._logger.setLevel(logging.getLogger(__name__).getEffectiveLevel())
-        self._query_variable(None)
-        self._lastquerytime = time.time()
-        self._watchdogtime = time.time()
-        self._watchdog_alive = True
         # empty the properties dictionary
         self._properties = {}
         self._juststarted = True
+        self._on_start_backgroundprocess()
+        self._watchdogtime = time.time()
+        self._watchdog_alive = True
         while True:
             try:
                 cmd, propname, argument = self._queue_to_backend.get(
@@ -592,6 +600,10 @@ class Device_TCP(Device):
         this directly."""
         return hasattr(self, '_tcpsocket')
 
+    def _on_start_backgroundprocess(self):
+        self._flushoutqueue()
+        return Device._on_start_backgroundprocess(self)
+
     def connect_device(self, host, port, socket_timeout, poll_timeout):
         self._logger.debug('Connecting to device: %s:%d' % (host, port))
         if self._get_connected():
@@ -656,10 +668,18 @@ class Device_TCP(Device):
     def reconnect_device(self):
         self.connect_device(*self._connection_parameters)
 
+    def _flushoutqueue(self):
+        while True:
+            try:
+                self._outqueue.get_nowait()
+            except queue.Empty:
+                break
+
     def _send(self, message):
         """Send a message (bytes) to the device"""
         # self._logger.debug('Sending message %s' % str(message))
         self._outqueue.put_nowait(('send', message))
+        self._lastsendtime = time.time()
 
     def _communication_worker(self):
         """Background process for communication."""
@@ -768,11 +788,18 @@ class Device_ModbusTCP(Device):
         self.connect_device(*self._connection_parameters)
 
     def _read_integer(self, regno):
-        return self._modbusclient.read_holding_registers(regno, 1)[0]
+        result = self._modbusclient.read_holding_registers(regno, 1)[0]
+        if result is None:
+            raise CommunicationError('Error reading integer from register #%d' % regno)
+        return result
+
 
     def _write_coil(self, coilno, val):
-        self._modbusclient.write_single_coil(coilno, val)
+        if self._modbusclient.write_single_coil(coilno, val) is None:
+            raise CommunicationError('Error writing %s to coil #%d' % (val, coilno))
 
     def _read_coils(self, coilstart, coilnum):
-        return self._modbusclient.read_coils(coilstart, coilnum)
-
+        result = self._modbusclient.read_coils(coilstart, coilnum)
+        if result is None:
+            raise CommunicationError('Error reading coils #%d - #%d' % (coilstart, coilstart + coilnum))
+        return result

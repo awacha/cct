@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 import queue
 import re
+import time
 import traceback
 
 import dateutil.parser
@@ -137,6 +138,14 @@ class Pilatus(Device_TCP):
 
     def _process_incoming_message(self, message):
         try:
+            if time.time() > self._exposureendsat:
+                self._update_variable('_status', 'idle')
+                self._update_variable('starttime', None)
+                self._release_watchdog()
+                del self._exposureendsat
+        except AttributeError:
+            pass
+        try:
             origmessage = message
             # self._logger.debug('Pilatus message received: %s' % str(message))
             try:
@@ -251,6 +260,10 @@ class Pilatus(Device_TCP):
             if self.get_variable('_status') != 'idle':
                 raise DeviceError('Cannot start exposure when not idle')
             self._send(b'Exposure ' + arguments[0] + b'\n')
+            nimages = self.get_variable('nimages')
+            exptime = self.get_variable('exptime')
+            expdelay = self.get_variable('expperiod') - exptime
+            self._exposureendsat = time.time() + nimages * exptime + (nimages - 1) * expdelay
             if self.get_variable('nimages') == 1:
                 self._expected_status = 'exposing'
                 self._update_variable('_status', 'exposing')
