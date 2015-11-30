@@ -234,7 +234,7 @@ class ExposeMulti(Command):
         self.timeout = self._totaltime + 30
 
         instrument.detector.set_variable('exptime', exptime)
-        instrument.detector.set_variable('imgpath', self._instrument.config['path']['directories']['images_detector'][
+        instrument.detector.set_variable('imgpath', instrument.config['path']['directories']['images_detector'][
             0] + '/' + self._prefix)
         instrument.detector.set_variable('expperiod', exptime+expdelay)
         self._progresshandler = GLib.timeout_add(500,
@@ -245,11 +245,15 @@ class ExposeMulti(Command):
         self._imgpath = instrument.detector.get_variable('imgpath')
         self.emit('message', 'Starting exposure of %d images. First: %s' % (nimages, self._filenames_pending[0]))
         self._instrument = instrument
+        self._file_received = False
 
     def _progress(self, detector):
         if not hasattr(self, '_starttime'):
             try:
                 self._starttime = detector.get_variable('starttime')
+                if self._starttime is None:
+                    del self._starttime
+                    raise KeyError
             except KeyError:
                 return True
         timeleft = self._totaltime - \
