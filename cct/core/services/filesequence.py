@@ -270,7 +270,7 @@ class FileSequence(Service):
         if (prefix not in self._lastfsn) or (fsn > self._lastfsn[prefix]):
             self._lastfsn[prefix] = fsn
             self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
-        logger.info('New exposure: %s (fsn: %d, prefix: %s)' %
+        logger.debug('New exposure: %s (fsn: %d, prefix: %s)' %
                     (filename, fsn, prefix))
         filename = filename[filename.index('images') + 7:]
         # write header file if needed
