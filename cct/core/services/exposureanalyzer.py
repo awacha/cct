@@ -226,11 +226,10 @@ class ExposureAnalyzer(Service):
         return True
 
     def submit(self, fsn, filename, prefix, args):
-#        logger.debug('Submitting to exposureanalyzer: %s, %d, %s, %s'%(prefix,fsn,filename,str(args)))
         self._queue_to_backend.put_nowait((prefix, fsn, filename, args))
-if prefix not in self._working:
-    self._working[prefix] = 0
-self._working[prefix] += 1
+        if prefix not in self._working:
+            self._working[prefix] = 0
+        self._working[prefix] += 1
 
     def _get_telemetry(self):
         return {'processname': multiprocessing.current_process().name,
