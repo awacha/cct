@@ -661,9 +661,9 @@ class Device_TCP(Device):
             except OSError:
                 pass
             self._logger.debug('Closed socket')
-            self.emit('disconnect', because_of_failure)
         finally:
             del self._tcpsocket
+            self.emit('disconnect', because_of_failure)
 
     def reconnect_device(self):
         self.connect_device(*self._connection_parameters)
@@ -783,6 +783,7 @@ class Device_ModbusTCP(Device):
             self._logger.debug('Closed socket')
         finally:
             del self._modbusclient
+            self.emit('disconnect', because_of_failure)
 
     def reconnect_device(self):
         self.connect_device(*self._connection_parameters)
