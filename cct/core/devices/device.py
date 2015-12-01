@@ -789,10 +789,10 @@ class Device_ModbusTCP(Device):
         self.connect_device(*self._connection_parameters)
 
     def _read_integer(self, regno):
-        result = self._modbusclient.read_holding_registers(regno, 1)[0]
+        result = self._modbusclient.read_holding_registers(regno, 1)
         if result is None:
             raise CommunicationError('Error reading integer from register #%d' % regno)
-        return result
+        return result[0]
 
 
     def _write_coil(self, coilno, val):
