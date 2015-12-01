@@ -417,12 +417,12 @@ class PlotCurveWidget(object):
 
     def get_zoom_xrange(self):
         xminlim, xmaxlim, yminlim, ymaxlim = self._axes.axis()
-        xmin = xminlim;
+        xmin = xminlim
         xmax = xmaxlim
         for c in self._curves:
             idx = (xminlim <= c['_x']) & (xmaxlim >= c['_x']) & (yminlim <= c['_y']) & (ymaxlim >= c['_y'])
-            xmin = max(xmin, c['_x'][idx])
-            xmax = min(xmin, c['_x'][idx])
+            xmin = max(xmin, np.min(c['_x'][idx]))
+            xmax = min(xmax, np.max(c['_x'][idx]))
         return xmin, xmax
 
 
