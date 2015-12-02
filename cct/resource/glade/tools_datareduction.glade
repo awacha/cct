@@ -92,7 +92,6 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
                 <signal name="clicked" handler="on_reload" swapped="no"/>
               </object>
               <packing>
