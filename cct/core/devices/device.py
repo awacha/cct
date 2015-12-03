@@ -180,21 +180,27 @@ class Device(GObject.GObject):
     def _stop_background_process(self):
         """Stops the background process and deregisters the queue-handler idle
         function in the foreground"""
-        if not hasattr(self, '_idle_handler'):
-            raise DeviceError('Background process not running')
+        #if not hasattr(self, '_idle_handler'):
+        #    raise DeviceError('Background process not running')
         try:
             self._queue_to_backend.put_nowait(('exit', None, None))
             self._background_process.join()
+        except (AttributeError, AssertionError):
+            pass
+        try:
+            del self._background_process
+        except AttributeError:
+            pass
+        try:
             GLib.source_remove(self._idle_handler)
-        finally:
-            try:
-                del self._idle_handler
-            except AttributeError:
-                pass
-            try:
-                del self._background_process
-            except AttributeError:
-                pass
+        except AttributeError:
+            pass
+        try:
+            del self._idle_handler
+        except AttributeError:
+            pass
+
+
 
     def get_variable(self, name):
         """Get the value of the variable. If you need the most fresh value,
@@ -336,18 +342,29 @@ class Device(GObject.GObject):
                 try:
                     self._query_variable(propname)
                     self._lastquerytime = time.time()
+                except CommunicationError as ce:
+                    self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
                 except Exception as exc:
                     self._queue_to_frontend.put_nowait(
                         (propname, (exc, traceback.format_exc())))
+
             elif cmd == 'set':
                 try:
                     self._set_variable(propname, argument)
                 except NotImplementedError as ne:
                     self._queue_to_frontend.put_nowait(
                         (propname, (ne, traceback.format_exc())))
+                except CommunicationError as ce:
+                    self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
+                except Exception as exc:
+                    self._queue_to_frontend.put_nowait(
+                        (propname, (exc, traceback.format_exc())))
+
             elif cmd == 'execute':
                 try:
                     self._execute_command(propname, argument)
+                except CommunicationError as ce:
+                    self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
                 except DeviceError as exc:
                     if len(exc.args)>1:
                         self._queue_to_frontend.put_nowait(
@@ -363,6 +380,8 @@ class Device(GObject.GObject):
             elif cmd == 'incoming':
                 try:
                     self._process_incoming_message(argument)
+                except CommunicationError as ce:
+                    self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
                 except Exception as exc:
                     self._queue_to_frontend.put_nowait(
                         ('_error', (exc, traceback.format_exc())))
@@ -592,8 +611,6 @@ class Device_TCP(Device):
         Device.__init__(self, *args, **kwargs)
         self._outqueue = multiprocessing.Queue()
         self._poll_timeout = None
-        self._communication_subprocess = multiprocessing.Process(
-            target=self._communication_worker, daemon=True)
 
     def _get_connected(self):
         """Check if we have a connection to the device. You should not call
@@ -618,6 +635,9 @@ class Device_TCP(Device):
             self._logger.error(
                 'Error initializing socket connection to device %s:%d' % (host, port))
             raise DeviceError('Cannot connect to device.',exc)
+        self._communication_subprocess = multiprocessing.Process(
+            target=self._communication_worker)
+        self._communication_subprocess.daemon=True
         self._communication_subprocess.start()
         self._logger.debug(
             'Communication subprocess started for device %s:%d' % (host, port))
@@ -625,7 +645,11 @@ class Device_TCP(Device):
             self._start_background_process()
         except Exception as exc:
             self._outqueue.put_nowait(('exit', None))
-            self._communication_subprocess.join()
+            try:
+                self._communication_subprocess.join()
+            except AssertionError:
+                pass
+            del self._communication_subprocess
             self._tcpsocket.shutdown(socket.SHUT_RDWR)
             self._tcpsocket.close()
             del self._tcpsocket
@@ -635,7 +659,11 @@ class Device_TCP(Device):
         except Exception as exc:
             self._stop_background_process()
             self._outqueue.put_nowait(('exit', None))
-            self._communication_subprocess.join()
+            try:
+                self._communication_subprocess.join()
+            except AssertionError:
+                pass
+            del self._communication_subprocess
             self._tcpsocket.shutdown(socket.SHUT_RDWR)
             self._tcpsocket.close()
             del self._tcpsocket
@@ -650,10 +678,16 @@ class Device_TCP(Device):
         try:
             self._stop_background_process()
             self._logger.debug('Stopped background process')
-            self._finalize_after_disconnect()
-            self._logger.debug('Finalized')
+            try:
+                self._finalize_after_disconnect()
+                self._logger.debug('Finalized')
+            except Exception as exc:
+                logger.error('Error while finalizing %s after disconnect: %s %s'%(self._instancename,exc,traceback.format_exc()))
             self._outqueue.put_nowait(('exit', None))
-            self._communication_subprocess.join()
+            try:
+                self._communication_subprocess.join()
+            except AssertionError:
+                pass
             self._logger.debug('Closed communication subprocess')
             try:
                 self._tcpsocket.shutdown(socket.SHUT_RDWR)
@@ -662,6 +696,7 @@ class Device_TCP(Device):
                 pass
             self._logger.debug('Closed socket')
         finally:
+            del self._communication_subprocess
             del self._tcpsocket
             self.emit('disconnect', because_of_failure)
 
@@ -731,6 +766,11 @@ class Device_TCP(Device):
         except CommunicationError as exc:
             self._queue_to_backend.put_nowait(
                 ('communication_error', exc, traceback.format_exc()))
+        except Exception as exc:
+            try:
+                raise CommunicationError(exc)
+            except CommunicationError as exc:
+                self._queue_to_backend.put_nowait(('communication_error',exc,traceback.format_exc()))
         finally:
             polling.unregister(self._tcpsocket)
 
