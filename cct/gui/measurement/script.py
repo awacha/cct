@@ -46,7 +46,6 @@ class ScriptMeasurement(ToolWindow):
 
     def on_modified_changed(self, sourcebuffer):
         self._builder.get_object('save_toolbutton').set_sensitive(sourcebuffer.get_modified())
-        self._builder.get_object('saveas_toolbutton').set_sensitive(sourcebuffer.get_modified())
         title=self._window.get_title()
         if title.endswith('*'):
             title=title[:-1].strip()
