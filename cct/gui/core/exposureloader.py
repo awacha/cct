@@ -1,11 +1,7 @@
 import logging
 
 import pkg_resources
-from gi.repository import GObject
-from gi.repository import Gtk
-
-from ...core.utils.pathutils import find_in_subfolders
-from ...core.utils.sasimage import SASImage
+from gi.repository import GObject, GLib, Gtk
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -78,15 +74,13 @@ class ExposureLoader(Gtk.Box):
         return False
 
     def on_load(self, button):
+        GLib.idle_add(self._do_load)
+
+    def _do_load(self):
         prefix = self._builder.get_object('prefix_selector').get_active_text()
         fsn = self._builder.get_object('fsn_spin').get_value_as_int()
-        fsndigits = self._instrument.config['path']['fsndigits']
-        imgdir = self._instrument.config['path']['directories']['images']
-        pickledir = self._instrument.config['path']['directories']['param']
-        basename = prefix + '_' + '%%0%dd' % fsndigits % fsn
-        twodname = find_in_subfolders(imgdir, basename + '.cbf')
-        picklename = find_in_subfolders(pickledir, basename + '.pickle')
-        im = SASImage.new_from_file(twodname, picklename)
+        im = self._instrument.filesequence.load_exposure(prefix,fsn)
         if self._builder.get_object('maskoverride_check').get_active():
             im._mask = self._instrument.filesequence.get_mask(self._builder.get_object('mask_chooser').get_filename())
         self.emit('open', im)
+        return False # inhibit calling us once again as an idle function

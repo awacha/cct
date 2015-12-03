@@ -9,6 +9,7 @@ import time
 import dateutil.parser
 import numpy as np
 from gi.repository import GObject
+from sastool.io.twodim import readcbf
 from scipy.io import loadmat
 
 from .service import Service
@@ -358,31 +359,47 @@ class FileSequence(Service):
             return False
         return True
 
+    def load_cbf(self, prefix, fsn):
+        cbfbasename=prefix+'_'+'%%0%dd.cbf'%self.instrument.config['path']['fsndigits']%fsn
+        for subpath in [prefix, '']:
+            cbfname=os.path.join(
+                self.instrument.config['path']['directories']['images'],
+                subpath,cbfbasename)
+            try:
+                return readcbf(cbfname)[0]
+            except FileNotFoundError:
+                pass
+        raise FileNotFoundError(cbfbasename)
+
     def load_exposure(self, prefix, fsn):
-        picklename = os.path.join(
-            self.instrument.config['path']['directories']['param'],
-            prefix + '_' + '%%0%dd.pickle' %
-            self.instrument.config['path']['fsndigits'] % fsn)
+        param=self.load_param(prefix, fsn)
         try:
             cbfname = os.path.join(
                 self.instrument.config['path']['directories']['images'], prefix,
                 prefix + '_' + '%%0%dd.cbf' %
                 self.instrument.config['path']['fsndigits'] % fsn)
-            return SASImage.new_from_file(cbfname, picklename)
+            return SASImage.new_from_file(cbfname, param)
         except FileNotFoundError:
             cbfname = os.path.join(
                 self.instrument.config['path']['directories']['images'],
                 prefix + '_' + '%%0%dd.cbf' %
                 self.instrument.config['path']['fsndigits'] % fsn)
-            return SASImage.new_from_file(cbfname, picklename)
+            return SASImage.new_from_file(cbfname, param)
 
     def load_param(self, prefix, fsn):
-        picklename = os.path.join(
-            self.instrument.config['path']['directories']['param'],
-            prefix + '_' + '%%0%dd.pickle' %
-            self.instrument.config['path']['fsndigits'] % fsn)
-        with open(picklename, 'rb') as f:
-            return pickle.load(f)
+        picklebasename=prefix + '_' + '%%0%dd.pickle' % \
+            self.instrument.config['path']['fsndigits'] % fsn
+        for path in [
+            self.instrument.config['path']['directories']['param_override'],
+            self.instrument.config['path']['directories']['param']]:
+            try:
+                picklename = os.path.join(
+                    path, picklebasename)
+                with open(picklename, 'rb') as f:
+                    return pickle.load(f)
+            except FileNotFoundError:
+                continue
+        raise FileNotFoundError(picklebasename)
 
     def get_mask(self, maskname):
         if not hasattr(self, '_masks'):

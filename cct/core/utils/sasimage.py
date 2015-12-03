@@ -45,8 +45,13 @@ class SASImage(ErrorValue):
             error = intensity ** 0.5
         else:
             raise NotImplementedError(twodname.lower())
-        with open(picklename, 'rb') as f:
-            param = pickle.load(f)
+        if isinstance(picklename, str):
+            with open(picklename, 'rb') as f:
+                param = pickle.load(f)
+        elif isinstance(picklename, dict):
+            param=picklename
+        else:
+            raise NotImplementedError(type(picklename))
         if header is None:
             param['cbf'] = header
         maskfile = loadmat(find_in_subfolders('mask', param['geometry']['mask']))
