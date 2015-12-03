@@ -123,11 +123,13 @@ class Command(GObject.GObject):
                 device.disconnect(c)
             del self._device_connections[device]
 
-    def _install_timeout_handler(self, timeout):
+    def _install_timeout_handler(self, timeout=None):
         """Install a timeout handler. After `timeout` seconds the command will
         be interrupted and a `fail` signal is sent. Override on_timeout() if
         you want a different behaviour."""
-        self._timeout = GLib.timeout_add(1000 * self.timeout, self.on_timeout)
+        if timeout is None:
+            timeout=self.timeout
+        self._timeout = GLib.timeout_add(1000 * timeout, self.on_timeout)
 
     def _uninstall_timeout_handler(self):
         """Uninstall the timeout handler"""
