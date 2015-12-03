@@ -8,10 +8,10 @@ from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
 from matplotlib.figure import Figure
 from sastool.misc.basicfit import findpeak_single
 
+from .plotimage import PlotImageWindow
 from .toolwindow import error_message
-
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class ScanGraph(object):
     def __init__(self, signals=[], data=None, instrument=None, fsn=None, comment=None):
@@ -165,6 +165,17 @@ class ScanGraph(object):
                 self._builder.get_object('cursorscale').set_value(cursorpos)
             finally:
                 del self._in_scalechanged
+        if self._builder.get_object('show2d_checkbutton').get_active():
+            fsn=self._data['FSN'][self._cursorindex]
+            data=self._instrument.filesequence.load_cbf(self._instrument.config['path']['prefixes']['scn'],fsn)
+            mask=self._instrument.filesequence.get_mask(self._instrument.config['scan']['mask_total'])
+            piw=PlotImageWindow.get_latest_window()
+            piw.set_distance(self._instrument.config['geometry']['dist_sample_det'])
+            piw.set_wavelength(self._instrument.config['geometry']['wavelength'])
+            piw.set_image(data)
+            piw.set_mask(mask)
+            piw.set_pixelsize(self._instrument.config['geometry']['pixelsize'])
+            piw.set_beampos(self._instrument.config['geometry']['beamposx'],self._instrument.config['geometry']['beamposy'])
 
     def _redraw_signals(self):
         try:
@@ -224,14 +235,23 @@ class ScanGraph(object):
 
     def on_cursortomax(self, button):
         model, it=self._builder.get_object('counterview').get_selection().get_selected()
+        if it is None:
+            return
         signal=model[it][0]
         self._cusorindex=self._data[signal].argmax()
+        logger.debug('New cursorindex (max of signal %s): %d. Signal: %s' %(signal, self._cursorindex, ', '.join(['%f'%x for x in self._data[signal]])))
         self._redraw_cursor()
 
     def on_cursortomin(self, button):
         model, it=self._builder.get_object('counterview').get_selection().get_selected()
+        if it is None:
+            return
         signal=model[it][0]
         self._cusorindex=self._data[signal].argmin()
+        logger.debug('New cursorindex (min of signal %s): %d. Signal: %s' %(signal, self._cursorindex, ', '.join(['%f'%x for x in self._data[signal]])))
+        self._redraw_cursor()
+
+    def on_show2d_toggled(self, checkbutton):
         self._redraw_cursor()
 
     def on_fitpeak(self, menuentry):
@@ -252,6 +272,7 @@ class ScanGraph(object):
             position, hwhm, baseline, amplitude, stat=findpeak_single(abscissa[index],signal[index],None,return_stat=True,curve=curvetype, signs=signs)
         except ValueError:
             error_message(self._window,'Fitting error','Probably no points of the selected curve are in the beam.')
+            return
         x=np.linspace(abscissa[index].min(),abscissa[index].max(),index.sum()*5)
         if curvetype=='Gaussian':
             y= amplitude * np.exp(-0.5 * (x - position) ** 2 / hwhm ** 2) + baseline
