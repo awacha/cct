@@ -14,6 +14,9 @@ class TPG201(Device_TCP):
 
     log_formatstr = '{pressure}'
 
+    def _has_all_variables(self):
+        return all([v in self._properties for v in ['pressure','version','units','_status']])
+
     def _query_variable(self, variablename):
         if variablename is None:
             variablenames = ['pressure', 'version', 'units']
