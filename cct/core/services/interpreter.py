@@ -50,7 +50,7 @@ class Interpreter(Service):
         if namespace is not None:
             self.command_namespace_locals=namespace
         else:
-            self.command_namespace_locals = {'_config': instrument.config}
+            self.command_namespace_locals = {'_config': instrument.config, '_':None}
         exec('import os', self.command_namespace_globals,
              self.command_namespace_locals)
         exec('import numpy as np', self.command_namespace_globals,
@@ -78,7 +78,7 @@ class Interpreter(Service):
             if not commandline_cleaned:
                 # if the command line was empty or contained only comments, ignore
                 GLib.idle_add(
-                    lambda cmd='empty', rv=None: self.on_command_return(cmd, rv))
+                    lambda cmd='empty', rv=self.command_namespace_locals['_']: self.on_command_return(cmd, rv))
                 return None
             if commandline_cleaned.startswith('@'):
                 # this is a definition of a label, ignore this.
