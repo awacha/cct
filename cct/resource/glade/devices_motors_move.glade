@@ -103,6 +103,7 @@
               <object class="GtkSpinButton" id="target_spin">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="activates_default">True</property>
                 <property name="adjustment">target_adjustment</property>
                 <property name="digits">3</property>
               </object>
@@ -129,6 +130,8 @@
                 <property name="label" translatable="yes">Move</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="can_default">True</property>
+                <property name="has_default">True</property>
                 <property name="receives_default">True</property>
                 <signal name="clicked" handler="on_move" swapped="no"/>
               </object>
