@@ -20,8 +20,8 @@ from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders
 from ..utils.sasimage import SASImage
 
-logger=logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class DataReductionEnd(Exception):
@@ -121,18 +121,25 @@ class ExposureAnalyzer(Service):
             self._logger.propagate = False
             self._logger.addHandler(QueueLogHandler(self._queue_to_frontend))
             self._logger.addHandler(logging.StreamHandler())
+            self._logger.setLevel(logger.getEffectiveLevel())
         while True:
             prefix, fsn, filename, args = self._queue_to_backend.get()
             #            self._logger.debug(
-#                'Exposureanalyzer background process got work: %s, %d, %s, %s' % (prefix, fsn, filename, str(args)))
+            #                'Exposureanalyzer background process got work: %s, %d, %s, %s' % (prefix, fsn, filename, str(args)))
             if not prefix.startswith('_'):
-                try:
-                    # first try to load from a per-prefix directory.
-                    cbfdata = readcbf(os.path.join(self._config['path']['directories']['images'], prefix, filename))[0]
-                except FileNotFoundError:
-                    # try the root 'images' directory
-                    cbfdata = readcbf(
-                        os.path.join(self._config['path']['directories']['images'], filename))[0]
+                cbfdata = None
+                for fn in [filename, os.path.split(filename)[-1]]:
+                    for subpath in [prefix, '']:
+                        try:
+                            cbfdata = readcbf(os.path.join(self._config['path']['directories']['images'],
+                                                           subpath, fn))[0]
+                            break
+                        except FileNotFoundError as fe:
+                            cbfdata = (fe, traceback.format_exc())
+                if isinstance(cbfdata, tuple) and (isinstance(cbfdata[0], FileNotFoundError)):
+                    # could not load cbf file
+                    self._queue_to_frontend.put_nowait(((prefix, fsn), 'error', cbfdata))
+                    continue
             else:
                 cbfdata = None
             if prefix == '_exit':
@@ -196,6 +203,7 @@ class ExposureAnalyzer(Service):
     def _idle_function(self):
         try:
             prefix_fsn, what, arguments = self._queue_to_frontend.get_nowait()
+            self._logger.debug('what=%s' % what)
             if what in ['image', 'scanpoint', 'error', 'transmdata']:
                 if prefix_fsn[0] in self._working:
                     self._working[prefix_fsn[0]] -= 1
@@ -206,12 +214,14 @@ class ExposureAnalyzer(Service):
         except queue.Empty:
             return True
         if what == 'error':
+            logger.error('Error in exposureanalyzer while treating exposure (prefix %s, fsn %d): %s %s' % (
+            prefix_fsn[0], prefix_fsn[1], arguments[0], arguments[1]))
             self.emit(
                 'error', prefix_fsn[0], prefix_fsn[1], arguments[0], arguments[1])
         elif what == 'scanpoint':
-#            logger.debug('Emitting scanpoint with arguments: %s'%str(arguments))
             self.emit('scanpoint', prefix_fsn[0], prefix_fsn[1], arguments)
-        elif what == 'datareduction':
+        elif what == 'datareduction-done':
+            self._logger.debug('Emitting datareduction-done message')
             self.emit('datareduction-done', prefix_fsn[0], prefix_fsn[1], arguments[0])
         elif what == 'transmdata':
             self.emit('transmdata', prefix_fsn[0], prefix_fsn[1], arguments)
@@ -226,6 +236,7 @@ class ExposureAnalyzer(Service):
         return True
 
     def submit(self, fsn, filename, prefix, args):
+        logger.debug('Submitting work to exposureanalyzer. Prefix: %s, fsn: %d. Filename: %s' % (prefix, fsn, filename))
         self._queue_to_backend.put_nowait((prefix, fsn, filename, args))
         if prefix not in self._working:
             self._working[prefix] = 0
@@ -279,7 +290,7 @@ class ExposureAnalyzer(Service):
                                                 self._config['datareduction']['mu_air.err'])
             im.params['datareduction']['history'].append(
                 'Corrected for angle-dependent air absorption. Pressure: %f mbar' % (
-                im.params['environment']['vacuum_pressure']))
+                    im.params['environment']['vacuum_pressure']))
         else:
             im.params['datareduction']['history'].append(
                 'Skipped angle-dependent air absorption correction: no pressure value.')
@@ -295,7 +306,7 @@ class ExposureAnalyzer(Service):
         if im.params['sample']['title'] == self._config['datareduction']['absintrefname']:
             dataset = np.loadtxt(self._config['datareduction']['absintrefdata'])
             self._logger.debug('Q-range of absint dataset: %g to %g, %d points.' % (
-            dataset[:, 0].min(), dataset[:, 0].max(), len(dataset[:, 0])))
+                dataset[:, 0].min(), dataset[:, 0].max(), len(dataset[:, 0])))
             q, dq, I, dI, area = im.radial_average(qrange=dataset[:, 0], raw_result=True)
             dataset = dataset[area > 0, :]
             I = I[area > 0]
@@ -313,8 +324,8 @@ class ExposureAnalyzer(Service):
             self._absintqrange = q
             im.params['datareduction']['history'].append(
                 'Determined absolute intensity scaling factor: %s. Reduced Chi2: %f. DoF: %d. This corresponds to beam flux %s photons*eta/sec' % (
-                self._absintscalingfactor, self._absintstat['Chi2_reduced'], self._absintstat['DoF'],
-                1 / self._absintscalingfactor))
+                    self._absintscalingfactor, self._absintstat['Chi2_reduced'], self._absintstat['DoF'],
+                    1 / self._absintscalingfactor))
             self._logger.debug('History:\n  ' + '\n  '.join(h for h in im.params['datareduction']['history']))
         if abs(im.params['geometry']['truedistance'] - self._lastabsintref.params['geometry']['truedistance']) < \
                 self._config['datareduction']['distancetolerance']:
