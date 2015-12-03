@@ -11,7 +11,7 @@ class StartStop(Command):
         <state>: 'start', 'on', True, 1 or 'stop', 'off', False, 0
     """
     name = 'circulator'
-
+    timeout=5
     def execute(self, interpreter, arglist, instrument, namespace):
         if isinstance(arglist[0], str):
             if arglist[0].upper() in ['START', 'ON']:
