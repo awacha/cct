@@ -1,10 +1,14 @@
+import logging
 import time
+import traceback
 
 from gi.repository import GLib
 
 from .command import Command, CommandError
 from ..services.accounting import PrivilegeLevel
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class GetVariable(Command):
     """Get the value of a device variable
@@ -76,13 +80,14 @@ class SetVariable(Command):
         value = arglist[2]
         self._require_device(instrument, devicename)
         self._install_timeout_handler(self.timeout)
-        self._check_for_variable = value
+        self._check_for_variable = variablename
         try:
             instrument.devices[devicename].set_variable(variablename, value)
-        except NotImplementedError:
+        except NotImplementedError as ne:
             # there are variables which cannot be queried
             self._uninstall_timeout_handler()
             self._unrequire_device(None)
+            self.emit('fail',ne,traceback.format_exc())
             GLib.idle_add(lambda dev=instrument.devices[devicename], var=variablename, val=instrument.devices[
                 devicename].get_variable(variablename): self.on_variable_change(dev, var, val) and False)
 
