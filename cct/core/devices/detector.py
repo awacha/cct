@@ -276,9 +276,11 @@ class Pilatus(Device_TCP):
             if self.get_variable('_status') == 'exposing':
                 self._logger.debug('Killing single exposure')
                 self._send(b'K\nresetcam\n')
+                self._exposureendsat=time.time()+3
             elif self.get_variable('_status') == 'exposing multi':
                 self._send(b'K\nresetcam\n')
                 self._logger.debug('Killing multiple exposure')
+                self._exposureendsat=time.time()+3
             else:
                 raise DeviceError('No running exposures to be killed')
             self._release_watchdog()

@@ -38,7 +38,7 @@ class Transmission(ToolWindow):
             self._builder.get_object('emptyname_combo').set_active(0)
 
     def on_add(self, button):
-        self._builder.get_object('transmstore').append(('','','','','','',False,0,-1))
+        self._builder.get_object('transmstore').append(('','--','--','--','--','--','--',False,0,-1))
 
     def on_remove(self, button):
         model, it=self._builder.get_object('transmselection').get_selected()
@@ -60,9 +60,15 @@ class Transmission(ToolWindow):
                 self._builder.get_object('samplenamestore')[self._builder.get_object('emptyname_combo').get_active()][0]))
             transmstore=self._builder.get_object('transmstore')
             for row in transmstore:
-                row[6]=False
-                row[7]=0
-            transmstore[0][6]=True
+                row[1]='--'
+                row[2]='--'
+                row[3]='--'
+                row[4]='--'
+                row[5]='--'
+                row[6]='--'
+                row[7]=False
+                row[8]=0
+            transmstore[0][7]=True
             self._pulser_timeout=GLib.timeout_add(100,self.pulser)
         else:
             self._instrument.interpreter.kill()
@@ -101,18 +107,20 @@ class Transmission(ToolWindow):
                     transmstore[i][3]=str(value)
                 elif what=='transmission':
                     transmstore[i][4]=str(value)
-                    transmstore[i][5]=str(-value.log()/self._instrument.samplestore.get_sample(samplename).thickness)
-                    transmstore[i][6]=False
-                    transmstore[i][7]=0
+                    mu=-value.log()/self._instrument.samplestore.get_sample(samplename).thickness
+                    transmstore[i][5]=str(mu)
+                    transmstore[i][6]=str(1/mu)
+                    transmstore[i][7]=False
+                    transmstore[i][8]=0
                     if i+1<len(transmstore):
-                        transmstore[i+1][6]=True
+                        transmstore[i+1][7]=True
                 else:
                     raise NotImplementedError(what)
         return
 
     def pulser(self):
         for row in self._builder.get_object('transmstore'):
-            row[7]+=1
+            row[8]+=1
         return True
 
     def on_samplenamerenderercombo_changed(self, samplenamerenderercombo, path, it):

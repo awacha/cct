@@ -11,9 +11,19 @@
   <styles>
     <style id="comment" _name="Comment" map-to="def:comment"/>
     <style id="keyword" _name="Keyword" map-to="def:keyword"/>
+    <style id="string" _name="String" map-to="def:string"/>
   </styles>
 
   <definitions>
+    <context id="string1" end-at-line-end="true" style-ref="string" class="string">
+      <start>'</start>
+      <end>'</end>
+    </context>
+
+    <context id="string2" end-at-line-end="true" style-ref="string" class="string">
+      <start>"</start>
+      <end>"</end>
+    </context>
 
     <context id="line-comment" style-ref="comment" end-at-line-end="true" class="comment" class-disabled="no-spell-check">
       <start>#</start>
@@ -29,6 +39,8 @@
     <context id="cct" class="no-spell-check">
       <include>
         <context ref="line-comment"/>
+        <context ref="string1"/>
+        <context ref="string2"/>
         <context ref="keywords"/>
       </include>
     </context>

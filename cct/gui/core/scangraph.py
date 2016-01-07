@@ -10,8 +10,9 @@ from sastool.misc.basicfit import findpeak_single
 
 from .plotimage import PlotImageWindow
 from .toolwindow import error_message
+
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class ScanGraph(object):
     def __init__(self, signals=[], data=None, instrument=None, fsn=None, comment=None):
@@ -238,8 +239,7 @@ class ScanGraph(object):
         if it is None:
             return
         signal=model[it][0]
-        self._cusorindex=self._data[signal].argmax()
-        logger.debug('New cursorindex (max of signal %s): %d. Signal: %s' %(signal, self._cursorindex, ', '.join(['%f'%x for x in self._data[signal]])))
+        self._cursorindex=self._data[signal].argmax()
         self._redraw_cursor()
 
     def on_cursortomin(self, button):
@@ -247,8 +247,7 @@ class ScanGraph(object):
         if it is None:
             return
         signal=model[it][0]
-        self._cusorindex=self._data[signal].argmin()
-        logger.debug('New cursorindex (min of signal %s): %d. Signal: %s' %(signal, self._cursorindex, ', '.join(['%f'%x for x in self._data[signal]])))
+        self._cursorindex=self._data[signal].argmin()
         self._redraw_cursor()
 
     def on_show2d_toggled(self, checkbutton):
@@ -293,7 +292,7 @@ class ScanGraph(object):
         self._instrument.motors[self.get_abscissaname()].moveto(self._data[self.get_abscissaname()][self._cursorindex])
 
     def on_endmove(self, motor, targetreached, button):
-        button.set_sensitive(False)
+        button.set_sensitive(True)
         try:
             motor.disconnect(self._motorconnection)
             del self._motorconnection

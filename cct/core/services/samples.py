@@ -29,6 +29,7 @@ class SampleStore(Service):
                           for sampledict in dictionary['list']]
         else:
             self._list=[Sample.fromdict(sampledict) for sampledict in dictionary['list'].values()]
+        self._list=sorted(self._list, key=lambda s:s.title)
         self._active = dictionary['active']
 #        try:
 #            with open(os.path.join(self.instrument.config['path']['directories']['config'], 'samples.conf'), 'rt', encoding='utf-8') as f:

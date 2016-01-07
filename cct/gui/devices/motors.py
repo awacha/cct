@@ -20,21 +20,6 @@ class Motors(ToolWindow):
                                 mot.rightlimitswitch(), '%d'%mot.load(), ', '.join(mot.decode_error_flags())))
             self._motorconnections.append((mot,mot.connect('variable-change', self.on_motor_variable_change, m)))
             self._motorconnections.append((mot, mot.connect('stop', self.on_motor_stop, m)))
-        self._view=self._builder.get_object('motortreeview')
-        columns=[
-            Gtk.TreeViewColumn('Motor name',Gtk.CellRendererText(), text=0),
-            Gtk.TreeViewColumn('Left limit',Gtk.CellRendererText(), text=1),
-            Gtk.TreeViewColumn('Right limit',Gtk.CellRendererText(), text=2),
-            Gtk.TreeViewColumn('Position', Gtk.CellRendererText(), text=3),
-            Gtk.TreeViewColumn('Speed', Gtk.CellRendererText(), text=4),
-            Gtk.TreeViewColumn('Left switch', Gtk.CellRendererToggle(), active=5),
-            Gtk.TreeViewColumn('Right switch', Gtk.CellRendererToggle(), active=6),
-            Gtk.TreeViewColumn('Load', Gtk.CellRendererText(), text=7),
-            Gtk.TreeViewColumn('Driver error flags', Gtk.CellRendererText(), text=8)
-        ]
-        for c in columns:
-            c.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            self._view.append_column(c)
         self.on_samplelist_changed(self._instrument.samplestore)
         self._check_beamstop_state()
 

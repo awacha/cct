@@ -11,7 +11,7 @@ logger.setLevel(logging.INFO)
 
 
 def error_message(parentwindow, message, reason=None):
-    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.INFO,
+    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL|Gtk.DialogFlags.DESTROY_WITH_PARENT|Gtk.DialogFlags.USE_HEADER_BAR, type=Gtk.MessageType.INFO,
                          buttons=Gtk.ButtonsType.OK, message_format=message)
     if reason is not None:
         md.format_secondary_text('Reason: '+reason)
@@ -20,7 +20,7 @@ def error_message(parentwindow, message, reason=None):
     return result
 
 def question_message(parentwindow, question, detail=None):
-    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.QUESTION,
+    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL|Gtk.DialogFlags.DESTROY_WITH_PARENT|Gtk.DialogFlags.USE_HEADER_BAR, type=Gtk.MessageType.QUESTION,
                          buttons=Gtk.ButtonsType.YES_NO, message_format=question)
     if detail is not None:
         md.format_secondary_text(detail)
@@ -29,7 +29,7 @@ def question_message(parentwindow, question, detail=None):
     return result==Gtk.ResponseType.YES
 
 def info_message(parentwindow, info, detail=None):
-    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL, type=Gtk.MessageType.INFO,
+    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL|Gtk.DialogFlags.DESTROY_WITH_PARENT|Gtk.DialogFlags.USE_HEADER_BAR, type=Gtk.MessageType.INFO,
                          buttons=Gtk.ButtonsType.OK, message_format=info)
     if detail is not None:
         md.format_secondary_text(detail)

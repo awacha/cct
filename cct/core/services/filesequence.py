@@ -19,7 +19,7 @@ from ..utils.pathutils import find_in_subfolders, find_subfolders
 from ..utils.sasimage import SASImage
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 """Default path settings in working directory:
 

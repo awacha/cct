@@ -88,6 +88,7 @@ class Transmission(Script):
             instrument.exposureanalyzer.connect('transmdata', self.on_transmdata),
         ]
         self._intensities = {}
+        self._instrument=instrument
         self._cannot_return_yet = True
         self._nsamples = len(samplenames)
         self.emit('message', 'Starting transmission measurement of %d sample(s).' % self._nsamples)
@@ -123,10 +124,14 @@ class Transmission(Script):
                     del self._cannot_return_yet
 
     def cleanup(self):
+        logger.debug('Cleaning up transmission command.')
         try:
+
             for c in self._instrument_connections:
-                self._instrument.disconnect(c)
+                self._instrument.exposureanalyzer.disconnect(c)
+                logger.debug('Disconnected a handler from exposureanalyzer')
             del self._instrument_connections
         except AttributeError:
             pass
+        logger.debug('Calling Script.cleanup()')
         return Script.cleanup(self)

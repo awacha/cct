@@ -2,7 +2,7 @@ import datetime
 import os
 
 import pkg_resources
-from gi.repository import GtkSource, Gdk, Gtk, GObject, GdkPixbuf, Notify
+from gi.repository import GtkSource, Gdk, Gtk, GObject, GdkPixbuf, Notify, GLib
 
 from ..core.toolwindow import ToolWindow, question_message, error_message, info_message
 from ...core.commands.script import Script, Command
@@ -138,7 +138,8 @@ class ScriptMeasurement(ToolWindow):
                 self._instrument.interpreter.set_flag(b.get_label())
 
         self._builder.get_object('sourceview').set_editable(False)
-        self._scriptconnections = [self._scriptcommand.connect('cmd-start', self.on_command_start)]
+        self._scriptconnections = [self._scriptcommand.connect('cmd-start', self.on_command_start),
+                                   self._scriptcommand.connect('paused', self.on_script_paused)]
         buf = self._builder.get_object('messagesbuffer')
         buf.insert(buf.get_end_iter(),
                    '----------------------- %s -----------------------\n' % str(datetime.datetime.now()))
@@ -214,7 +215,34 @@ class ScriptMeasurement(ToolWindow):
         self._builder.get_object('progressbar').hide()
 
     def on_toolbutton_pause(self, toolbutton):
-        pass
+        if toolbutton.get_active():
+            self._scriptcommand.pause()
+            self._pausingdlg=Gtk.Dialog('Waiting for script to pause', self._window,
+                                        Gtk.DialogFlags.DESTROY_WITH_PARENT| Gtk.DialogFlags.USE_HEADER_BAR | Gtk.DialogFlags.MODAL,
+                                        )
+            self._pausingprogress=Gtk.ProgressBar()
+            self._pausingprogress.set_text('Pausing...')
+            self._pausingdlg.get_content_area().pack_start(self._pausingprogress, False, True, False)
+            self._pausingdlg.show_all()
+            self._pausingpulsehandler=GLib.timeout_add(300,self._pausing_pulse)
+        else:
+            self._scriptcommand.resume()
+
+    def _pausing_pulse(self):
+        self._pausingprogress.pulse()
+        return True
+
+    def on_script_paused(self, script):
+        try:
+            GLib.source_remove(self._pausingpulsehandler)
+            self._pausingdlg.destroy()
+            del self._pausingdlg
+            del self._pausingpulsehandler
+            del self._pausingprogress
+            notif=Notify.Notification.new('Script has been paused')
+            notif.show()
+        except AttributeError:
+            pass
 
     def on_toolbutton_stop(self, toolbutton):
         self._instrument.interpreter.kill()

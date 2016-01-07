@@ -63,3 +63,7 @@ class ScanViewer(ToolWindow):
         model = self._builder.get_object('scanstore')
         scans = self._instrument.filesequence.get_scans(scanfileselector.get_active_text())
         model.append((lastscan, scans[lastscan]['cmd'], str(scans[lastscan]['date']), scans[lastscan]['comment']))
+
+    def reload_scans(self, button):
+        self._instrument.filesequence.reload()
+        self._update_gui()

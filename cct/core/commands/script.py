@@ -34,9 +34,11 @@ class Script(Command):
     e.g. to disconnect signal handlers.
     """
 
-    __gsignals__={#emitted at the start of a command
-                  'cmd-start':(GObject.SignalFlags.RUN_FIRST, None, (int, object,))
-                  }
+    __gsignals__ = {
+        #emitted at the start of a command
+        'cmd-start':(GObject.SignalFlags.RUN_FIRST, None, (int, object,)),
+        'paused':(GObject.SignalFlags.RUN_FIRST, None, ()),
+    }
 
     script='' # a default value for the script
 
@@ -48,6 +50,14 @@ class Script(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         namespace['_scriptargs']=arglist
+        try:
+            del self._pause
+        except AttributeError:
+            pass
+        try:
+            del self._kill
+        except AttributeError:
+            pass
         self._cursor=-1
         self._jumpstack=[]
         self._myinterpreter = interpreter.create_child(namespace)
@@ -66,6 +76,11 @@ class Script(Command):
                 self.cleanup()
             finally:
                 self.emit('return', 'Killed')
+            return False
+        if hasattr(self, '_pause'):
+            if not self._pause:
+                self._pause=True
+                self.emit('paused')
             return False
         self._cursor+=1
         logger.debug('Executing line %d' % self._cursor)
@@ -168,6 +183,26 @@ class Script(Command):
     def kill(self):
         self._kill = True
         self._myinterpreter.kill()
+
+    def pause(self):
+        self._pause=False
+
+    def is_paused(self):
+        try:
+            return self._pause
+        except AttributeError:
+            return False
+
+    def resume(self):
+        if not hasattr(self,'_pause'):
+            raise ScriptError('Cannot resume a script which has not been paused.')
+        if self._pause:
+            del self._pause
+            self.nextcommand()
+        else:
+            del self._pause
+
+
 
 class End(Command):
     """End a script and return a value.

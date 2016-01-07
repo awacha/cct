@@ -252,3 +252,8 @@ class Accounting(Service):
         assert (self.has_privilege(PrivilegeLevel.MANAGE_USERS))
         self._users.append(User(username, firstname, lastname, privlevel))
         self.instrument.save_state()
+
+    def delete_project(self, projectid):
+        assert(not projectid==self._project.projectid)
+        self._projects=[p for p in self._projects if p.projectid != projectid]
+        self.instrument.save_state()

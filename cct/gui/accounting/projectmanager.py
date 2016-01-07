@@ -71,3 +71,14 @@ class ProjectManager(ToolWindow):
                 error_message(dlg, 'Cannot add new project', str(exc))
         dlg.destroy()
         self._update_gui()
+
+    def on_removeproject(self, button):
+        model, iterator = self._builder.get_object('project-selection').get_selected()
+        if iterator is None:
+            return
+        projectid=model[iterator][0]
+        try:
+            self._instrument.accounting.delete_project(projectid)
+        except AssertionError:
+            error_message(self._window, 'Cannot delete current project')
+        self._update_gui()

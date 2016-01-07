@@ -213,7 +213,7 @@ class TMCMcard(Device_TCP):
                     'Asynchronous message received from motor controller')
             try:
                 message = self._incomplete_remainder + message
-                self._logger.warning(
+                self._logger.debug(
                     'Remainder of an incomplete message received. Total message length now: %d' % len(message))
                 del self._incomplete_remainder
             except AttributeError:
@@ -223,13 +223,13 @@ class TMCMcard(Device_TCP):
                 pass
             elif len(message) < 9:
                 self._incomplete_remainder = message
-                self._logger.warning('Incomplete message received, storing. Waiting for the remainder to arrive.')
+                self._logger.debug('Incomplete message received, storing. Waiting for the remainder to arrive.')
                 cleartosend = False
                 return
             elif len(message) > 9 and len(message) < 18:
                 self._incomplete_remainder = message[9:]
                 message = message[:9]
-                self._logger.warning(
+                self._logger.debug(
                     'One and a half message received, storing second half. Waiting for the remainder to arrive.')
             else:
                 raise DeviceError(

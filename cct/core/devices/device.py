@@ -133,6 +133,7 @@ class Device(GObject.GObject):
         self._queue_to_backend = multiprocessing.Queue()
         self._queue_to_frontend = multiprocessing.Queue()
         self._refresh_requested = {}
+        self._background_startup_count=0
         # the backend process must be started only after the connection to the device
         # has been established.
 
@@ -170,8 +171,9 @@ class Device(GObject.GObject):
         self._properties = {'_status': 'Disconnected'}
         self._timestamps = {'_status': time.time()}
         self._refresh_requested = {}
+        self._background_startup_count+=1
         self._background_process = multiprocessing.Process(
-            target=self._background_worker, daemon=True, name='Background process for device %s' % self._instancename)
+            target=self._background_worker, daemon=True, name='Background process for device %s' % self._instancename, args=(self._background_startup_count,))
         self._idle_handler = GLib.idle_add(self._idle_worker)
         self._background_process.start()
         self._logger.debug('Background process for %s has been started' %
@@ -199,8 +201,6 @@ class Device(GObject.GObject):
             del self._idle_handler
         except AttributeError:
             pass
-
-
 
     def get_variable(self, name):
         """Get the value of the variable. If you need the most fresh value,
@@ -275,6 +275,11 @@ class Device(GObject.GObject):
                     self._logger.error('Last send was %f seconds ago.' % (time.time() - self._lastsendtime))
                 except AttributeError:
                     pass
+                try:
+                    self._logger.error('Sendqueue length: %d'%self._sendqueue.qsize())
+                except AttributeError:
+                    pass
+                self._logger.error('Number of outmessages: %d. Number of inmessages: %d'%(self._count_outmessages, self._count_inmessages))
                 raise CommunicationError(
                     'Watchdog timeout: no message received from device %s. Last query was %f seconds ago.' % (
                     self._instancename, time.time() - self._lastquerytime))
@@ -282,9 +287,18 @@ class Device(GObject.GObject):
                 self._queue_to_frontend.put_nowait(
                     ('_watchdog', (exc, traceback.format_exc())))
         if self._watchdog_alive:
-            self._query_variable(None)  # query all variables.
-            self._lastquerytime = time.time()
-            self._log()  # log the values of variables
+            try:
+                self._query_variable(None)  #query all variables
+                self._lastquerytime = time.time()
+            except CommunicationError as ce:
+                self._logger.error('CommunicationError in background thread of %s: %s %s'%(self._instancename,ce,traceback.format_exc()))
+                self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
+            except Exception as exc:
+                self._logger.error('Other exception in background thread of %s: %s %s'%(self._instancename,exc,traceback.format_exc()))
+                self._queue_to_frontend.put_nowait(
+                    ('_error', (exc, traceback.format_exc())))
+            else:
+                self._log()  # log the values of variables
 
     def _on_start_backgroundprocess(self):
         """Called just before the infinite loop of the background process starts."""
@@ -292,7 +306,7 @@ class Device(GObject.GObject):
         self._lastquerytime = time.time()
         self._logger.debug('Starting background process for %s' % self._instancename)
 
-    def _background_worker(self):
+    def _background_worker(self, startup_number):
         """Worker function of the background thread. The main job of this is
         to run periodic checks on the hardware (polling) and updating 
         `self._properties` accordingly, as well as writing log files.
@@ -306,8 +320,12 @@ class Device(GObject.GObject):
         work is delegated to `_set_variable()`, `_execute_command()` and
         `_query_variable()`, which should be overridden case-by-case.
         """
+        self._background_startup_count=startup_number
         self._logger = logging.getLogger(__name__ + '::' + self._instancename + '/backgroundprocess')
         self._logger.propagate = False
+        self._count_queries=0
+        self._count_inmessages=0
+        self._count_outmessages=0
         if not self._logger.hasHandlers():
             self._logger.addHandler(QueueLogHandler(self._queue_to_frontend))
             self._logger.addHandler(logging.StreamHandler())
@@ -318,6 +336,7 @@ class Device(GObject.GObject):
         self._on_start_backgroundprocess()
         self._watchdogtime = time.time()
         self._watchdog_alive = True
+        self._logger.info('Background thread started for %s, this is startup #%d'%(self._instancename, self._background_startup_count))
         while True:
             try:
                 cmd, propname, argument = self._queue_to_backend.get(
@@ -343,8 +362,10 @@ class Device(GObject.GObject):
                     self._query_variable(propname)
                     self._lastquerytime = time.time()
                 except CommunicationError as ce:
+                    self._logger.error('CommunicationError in background thread of %s: %s %s'%(self._instancename,ce,traceback.format_exc()))
                     self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
                 except Exception as exc:
+                    self._logger.error('Other exception in background thread of %s: %s %s'%(self._instancename,exc,traceback.format_exc()))
                     self._queue_to_frontend.put_nowait(
                         (propname, (exc, traceback.format_exc())))
 
@@ -378,6 +399,7 @@ class Device(GObject.GObject):
                 self._queue_to_frontend.put_nowait((
                     '_error', (propname, argument)))
             elif cmd == 'incoming':
+                self._count_inmessages+=1
                 try:
                     self._process_incoming_message(argument)
                 except CommunicationError as ce:
@@ -388,7 +410,7 @@ class Device(GObject.GObject):
             else:
                 raise NotImplementedError(
                     'Unknown command for _background_worker: %s' % cmd)
-        self._logger.info('Background thread ending for device %s' % self._instancename)
+        self._logger.info('Background thread ending for device %s. Messages sent: %d. Messages received: %d.' % (self._instancename, self._count_outmessages, self._count_inmessages))
 
     def _get_telemetry(self):
         return {'processname': multiprocessing.current_process().name,
@@ -715,6 +737,7 @@ class Device_TCP(Device):
         # self._logger.debug('Sending message %s' % str(message))
         self._outqueue.put_nowait(('send', message))
         self._lastsendtime = time.time()
+        self._count_outmessages+=1
 
     def _communication_worker(self):
         """Background process for communication."""
@@ -831,16 +854,19 @@ class Device_ModbusTCP(Device):
     def _read_integer(self, regno):
         result = self._modbusclient.read_holding_registers(regno, 1)
         if result is None:
-            raise CommunicationError('Error reading integer from register #%d' % regno)
+            if not self._modbusclient.is_open():
+                raise CommunicationError('Error reading integer from register #%d' % regno)
         return result[0]
 
 
     def _write_coil(self, coilno, val):
         if self._modbusclient.write_single_coil(coilno, val) is None:
-            raise CommunicationError('Error writing %s to coil #%d' % (val, coilno))
+            if not self._modbusclient.is_open():
+                raise CommunicationError('Error writing %s to coil #%d' % (val, coilno))
 
     def _read_coils(self, coilstart, coilnum):
         result = self._modbusclient.read_coils(coilstart, coilnum)
         if result is None:
-            raise CommunicationError('Error reading coils #%d - #%d' % (coilstart, coilstart + coilnum))
+            if not self._modbusclient.is_open():
+                raise CommunicationError('Error reading coils #%d - #%d' % (coilstart, coilstart + coilnum))
         return result
