@@ -35,6 +35,10 @@ class Scan(ToolWindow):
 
     def start_scan(self, button):
         if button.get_label()=='Start':
+            try:
+                del self._scanfsn
+            except AttributeError:
+                pass
             self._make_insensitive('Scan sequence is running', ['close_button', 'entry_grid'])
             self._builder.get_object('start_button').set_label('Stop')
             try:
@@ -74,7 +78,7 @@ class Scan(ToolWindow):
     def on_command_return(self, interpreter, commandname, returnvalue):
         if commandname=='shutter' and returnvalue:
             scanfsn = self._instrument.filesequence.get_nextfreescan(acquire=False)
-            self._instrument.interpreter.execute_command(self._commandline)
+            self._scanfsn=self._instrument.interpreter.execute_command(self._commandline)._scanfsn
             self._scangraph = ScanGraph([self._motor] + self._instrument.config['scan']['columns'], self._nsteps,
                                         self._instrument, scanfsn, self._builder.get_object('comment_entry').get_text())
         elif commandname=='scan' or commandname=='scanrel':
@@ -86,7 +90,7 @@ class Scan(ToolWindow):
             self._cleanup_after_scan()
             logger.info('Scan finished')
             n = Notify.Notification(summary='Scan ended',
-                                    body='Scan %d ended' % (self._instrument.filesequence.get_lastscan()))
+                                    body='Scan %d ended' % (self._scanfsn))
             n.set_image_from_pixbuf(GdkPixbuf.Pixbuf.new_from_file_at_size(pkg_resources.resource_filename('cct','resource/icons/scalable/cctlogo.svg'),256,256))
             n.show()
         else:

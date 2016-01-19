@@ -174,6 +174,7 @@ class Scan(Command):
 
     def _cleanup(self):
         logger.debug('Cleaning up scan')
+        self._instrument.filesequence.scan_done(self._scanfsn)
         try:
             for c in self._myinterpreter_connections:
                 self._myinterpreter.disconnect(c)

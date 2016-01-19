@@ -107,6 +107,10 @@ class FileSequence(Service):
         logger.info('Written entry for scan %d into scanfile %s'%(scanidx, self._scanfile))
         return scanidx
 
+    def scan_done(self, scannumber):
+        self._lastscan = max(self._lastscan, scannumber)
+        self.emit('lastscan-changed', self._lastscan)
+
     def load_scan(self, index, scanfile=None):
         if scanfile is None:
             scanfile=self._scanfile
