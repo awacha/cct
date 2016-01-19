@@ -128,7 +128,7 @@ class SampleEdit(ToolWindow):
         self._builder.get_object('distminuserr_spin').set_value(sample.distminus.err)
         self._builder.get_object('transmissionval_spin').set_value(sample.transmission.val)
         self._builder.get_object('transmissionerr_spin').set_value(sample.transmission.err)
-        self._builder.get_object('preparetime_calendar').select_month(sample.preparetime.month,
+        self._builder.get_object('preparetime_calendar').select_month(sample.preparetime.month-1,
                                                                       sample.preparetime.year)
         self._builder.get_object('preparetime_calendar').select_day(sample.preparetime.day)
         try:
@@ -140,6 +140,8 @@ class SampleEdit(ToolWindow):
     def _save_changes(self):
         if not hasattr(self, '_changedselection'):
             return
+        date=self._builder.get_object('preparetime_calendar').get_date()
+        date=datetime.date(date[0],date[1]+1,date[2])
         sample=Sample(self._builder.get_object('title_entry').get_text(),
                       ErrorValue(self._builder.get_object('positionxval_spin').get_value(),
                                  self._builder.get_object('positionxerr_spin').get_value()),
@@ -150,7 +152,7 @@ class SampleEdit(ToolWindow):
                       ErrorValue(self._builder.get_object('transmissionval_spin').get_value(),
                                  self._builder.get_object('transmissionerr_spin').get_value()),
                       self._builder.get_object('preparedby_entry').get_text(),
-                      datetime.date(*self._builder.get_object('preparetime_calendar').get_date()),
+                      date,
                       ErrorValue(self._builder.get_object('distminusval_spin').get_value(),
                                  self._builder.get_object('distminuserr_spin').get_value()),
                       self._builder.get_object('description_entry').get_text(),
