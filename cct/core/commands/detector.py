@@ -256,6 +256,9 @@ class ExposeMulti(Command):
                     raise KeyError
             except KeyError:
                 return True
+        if self._starttime is None:
+            del self._starttime
+            return True
         timeleft = self._totaltime - \
                    (datetime.datetime.now() - self._starttime).total_seconds()
         # timeleft=detector.get_variable('timeleft')
@@ -272,6 +275,9 @@ class ExposeMulti(Command):
             return False
         try:
             starttime = self._starttime
+            if starttime is None:
+                del self._starttime
+                raise AttributeError('_starttime')
         except AttributeError:
             starttime = self._alt_starttime
         # the time in seconds elapsed from issuing the "exposure" command.
