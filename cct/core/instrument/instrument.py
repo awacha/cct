@@ -398,6 +398,9 @@ class Instrument(GObject.GObject):
             self.emit('devices-ready')
 
     def on_disconnect(self, device, because_of_failure):
+        if device.name in self._waiting_for_ready:
+            logger.warning('Not reconnecting to device %s: disconnected while waiting for get ready.'%device.name)
+            return False
         if because_of_failure:
             # attempt to reconnect
             self._waiting_for_ready = [w for w in self._waiting_for_ready if w != device.name]
