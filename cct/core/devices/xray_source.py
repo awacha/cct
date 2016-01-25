@@ -30,16 +30,20 @@ class GeniX(Device_ModbusTCP):
             for vn in set(variablenames):
                 if vn == 'ht':
                     ht = self._read_integer(50) / 100
-                    self._update_variable('ht', ht)
-                    if 'current' in self._properties:
-                        self._update_variable(
-                            'power', ht * self._properties['current'])
+                    if self._update_variable('ht', ht):
+                        if 'current' in self._properties:
+                            self._update_variable(
+                                'power', ht * self._properties['current'])
+                            self._update_variable('_auxstatus','%.1f kV %.1f mA'%(
+                                self._properties['ht'],self._properties['current']))
                 elif vn == 'current':
                     current = self._read_integer(51) / 100
-                    self._update_variable('current', current)
-                    if 'ht' in self._properties:
-                        self._update_variable(
-                            'power', self._properties['ht'] * current)
+                    if self._update_variable('current', current):
+                        if 'ht' in self._properties:
+                            self._update_variable(
+                                'power', self._properties['ht'] * current)
+                            self._update_variable('_auxstatus','%.1f kV %.1f mA'%(
+                                self._properties['ht'],self._properties['current']))
                 elif vn == 'tubetime':
                     self._update_variable(
                         'tubetime', (self._read_integer(55) / 60.0 + self._read_integer(56)))

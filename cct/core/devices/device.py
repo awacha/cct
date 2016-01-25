@@ -128,8 +128,8 @@ class Device(GObject.GObject):
             self.config = {}
         self._instancename = instancename
         self._outstanding_telemetry = False
-        self._properties = {'_status': 'Disconnected'}
-        self._timestamps = {'_status': time.time()}
+        self._properties = {'_status': 'Disconnected', '_auxstatus':None}
+        self._timestamps = {'_status': time.time(), '_auxstatus':time.time()}
         self._queue_to_backend = multiprocessing.Queue()
         self._queue_to_frontend = multiprocessing.Queue()
         self._refresh_requested = {}
@@ -168,8 +168,8 @@ class Device(GObject.GObject):
             except queue.Empty:
                 break
         self._outstanding_telemetry = False
-        self._properties = {'_status': 'Disconnected'}
-        self._timestamps = {'_status': time.time()}
+        self._properties = {'_status': 'Disconnected','_auxstatus':None}
+        self._timestamps = {'_status': time.time(),'_auxstatus':time.time()}
         self._refresh_requested = {}
         self._background_startup_count+=1
         self._background_process = multiprocessing.Process(
@@ -469,8 +469,9 @@ class Device(GObject.GObject):
                 f.write(
                     ('%.3f\t' % time.time()) + self.log_formatstr.format(**self._properties) + '\n')
             except KeyError as ke:
-                self._logger.warn('KeyError while producing log line for device %s. Missing key: %s' % (
-                    self._instancename, ke.args[0]))
+                if not self._juststarted:
+                    self._logger.warn('KeyError while producing log line for device %s. Missing key: %s' % (
+                        self._instancename, ke.args[0]))
 
     def _idle_worker(self):
         """This function, called as an idle procedure, queries the queue for results from the 

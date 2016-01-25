@@ -40,7 +40,6 @@ class TMCMConversionError(DeviceError):
 class TMCMcard(Device_TCP):
     """Motor controller card from Trinamic GmbH, Hamburg, Germany. Developed for TMCM351 and TMCM6110, may or may not
     work for other models."""
-
     def __init__(self, *args, **kwargs):
         self._logger = logger
         Device_TCP.__init__(self, *args, **kwargs)

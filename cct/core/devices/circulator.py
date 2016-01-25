@@ -10,14 +10,16 @@ logger.setLevel(logging.INFO)
 
 
 class HaakePhoenix(Device_TCP):
+    log_formatstr = '{setpoint}\t{temperature_internal}\t{faultstatus}\t{pump_power}\t{cooling_on}'
+
     allvariables = ['firmwareversion', 'faultstatus', 'fuzzycontrol', 'fuzzystatus', 'temperature_internal',
                     'temperature_external', 'setpoint', 'highlimit', 'lowlimit', 'diffcontrol_on', 'autostart',
                     'fuzzyid', 'beep', 'time', 'date', 'watchdog_on',
                     'watchdog_setpoint', 'cooling_on', 'pump_power']
 
-    urgentvariables = ['faultstatus', 'time', 'temperature_internal', 'temperature_external']
+    urgentvariables = ['faultstatus', 'time', 'temperature_internal', 'temperature_external', 'pump_power']
 
-    notsourgentvariables = ['cooling_on', 'pump_power', 'setpoint', 'date', 'date']
+    notsourgentvariables = ['cooling_on', 'setpoint', 'date']
 
     backend_interval = 0.1
 
@@ -32,15 +34,15 @@ class HaakePhoenix(Device_TCP):
         self._stashmessage = b''
 
     def _on_start_backgroundprocess(self):
-        while True:
-            try:
-                self._sendqueue.get_nowait()
-            except queue.Empty:
-                break
-        try:
-            del self._lastsent
-        except AttributeError:
-            pass
+#        while True:
+#            try:
+#                self._sendqueue.get_nowait()
+#            except queue.Empty:
+#                break
+#        try:
+#            del self._lastsent
+#        except AttributeError:
+#            pass
         Device_TCP._on_start_backgroundprocess(self)
 
     def _execute_command(self, commandname, arguments):
@@ -109,7 +111,8 @@ class HaakePhoenix(Device_TCP):
             elif message.startswith(b'FE'):
                 self._update_variable('fuzzystatus', int(message[2:-1]))
             elif message.startswith(b'T1'):
-                self._update_variable('temperature_internal', float(message[2:-1]))
+                if self._update_variable('temperature_internal', float(message[2:-1])):
+                    self._update_variable('_auxstatus','%.2f°C'%float(message[2:-1]))
             elif message.startswith(b'T3'):
                 self._update_variable('temperature_external', float(message[2:-1]))
             elif message.startswith(b'SW'):
