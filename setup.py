@@ -33,7 +33,7 @@ extensions = [Extension("cct.core.utils.radint", ["cct/core/utils/radint.pyx"], 
 
   
 update_languagespec()
-setup(name='cct', version='1.0.0', author='Andras Wacha',
+setup(name='cct', version='1.1.1', author='Andras Wacha',
       author_email='awacha@gmail.com', url='http://github.com/awacha/cct',
       description='CREDO Control Tool',
       packages=find_packages(),
