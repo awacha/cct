@@ -134,6 +134,7 @@ class Device(GObject.GObject):
         self._queue_to_frontend = multiprocessing.Queue()
         self._refresh_requested = {}
         self._background_startup_count=0
+        self._ready=False
         # the backend process must be started only after the connection to the device
         # has been established.
 
@@ -167,6 +168,7 @@ class Device(GObject.GObject):
                 self._queue_to_backend.get_nowait()
             except queue.Empty:
                 break
+        self._ready=False
         self._outstanding_telemetry = False
         self._properties = {'_status': 'Disconnected','_auxstatus':None}
         self._timestamps = {'_status': time.time(),'_auxstatus':time.time()}
@@ -489,9 +491,13 @@ class Device(GObject.GObject):
                 elif (propertyname == '_telemetry'):
                     self.emit('telemetry', newvalue)
                 elif (propertyname == '_watchdog'):
-                    self._logger.warning('Watchdog timeout in device %s: restarting background process.' % self.name)
-                    self._stop_background_process()
-                    self._start_background_process()
+                    if self._ready:
+                        self._logger.warning('Watchdog timeout in device %s: restarting background process.' % self.name)
+                        self._stop_background_process()
+                        self._start_background_process()
+                    else:
+                        self._stop_background_process()
+                        self.disconnect_device(True)
                 elif (propertyname == '_log'):
                     if newvalue.levelno >= logging.getLogger(__name__).getEffectiveLevel():
                         self._logger.handle(newvalue)
@@ -510,6 +516,7 @@ class Device(GObject.GObject):
             'Device error. Variable name: %s. Exception: %s. Traceback: %s' % (propertyname, str(exception), tb))
 
     def do_startupdone(self):
+        self._ready=True
         self._logger.info('Device %s is ready.' % self._instancename)
         return False
 
