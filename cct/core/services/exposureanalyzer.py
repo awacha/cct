@@ -151,7 +151,13 @@ class ExposureAnalyzer(Service):
             elif prefix == self._config['path']['prefixes']['crd']:
                 # data reduction needed
                 try:
-                    mask = self.get_mask(self._config['geometry']['mask'])
+                    maskfilename=args[0]['geometry']['mask']
+                    logger.debug('Mask found from parameter dictionary: '+maskfilename)
+                except (KeyError,TypeError):
+                    maskfilename=self._config['geometry']['mask']
+                    logger.debug('Using default mask from _config hierarchy: '+maskfilename)
+                try:
+                    mask = self.get_mask(maskfilename)
                     im = self.datareduction(cbfdata, mask, args[0])
                     self.savecorrected(prefix, fsn, im)
                     self._queue_to_frontend.put_nowait(
@@ -254,6 +260,7 @@ class ExposureAnalyzer(Service):
         im /= transmission
         im.params['datareduction']['history'].append('Divided by exposure time')
         im.params['datareduction']['history'].append('Divided by transmission: %s' % str(transmission))
+        im.params['datareduction']['statistics']['02_prescaling']=im.get_statistics()
         self._logger.debug('Done prescaling FSN %d' % im.params['exposure']['fsn'])
         return im
 
@@ -271,34 +278,48 @@ class ExposureAnalyzer(Service):
             im.params['datareduction']['emptybeamFSN'] = self._lastbackground.params['exposure']['fsn']
         else:
             raise ServiceError('Last seen background measurement does not match the exposure under reduction.')
+        im.params['datareduction']['statistics']['03_subtractbackground']=im.get_statistics()
         self._logger.debug('Done bgsub FSN %d' % im.params['exposure']['fsn'])
         return im
 
     def correctgeometry(self, im):
         tth = im.twotheta_rad
-        im *= solidangle(tth.val, tth.err, im.params['geometry']['truedistance'],
-                         im.params['geometry']['truedistance.err'], im.params['geometry']['pixelsize'])
+        im.params['datareduction']['tthval_statistics']=self._get_matrix_statistics(tth.val)
+        im.params['datareduction']['ttherr_statistics']=self._get_matrix_statistics(tth.err)
+        corr_sa=solidangle(tth.val, tth.err, im.params['geometry']['truedistance'],
+                           im.params['geometry']['truedistance.err'], im.params['geometry']['pixelsize'])
+        im *= corr_sa
         im.params['datareduction']['history'].append('Corrected for solid angle')
-        im *= angledependentabsorption(tth.val, tth.err, im.params['sample']['transmission.val'],
-                                       im.params['sample']['transmission.err'])
+        im.params['datareduction']['solidangle_matrixval_statistics']=self._get_matrix_statistics(corr_sa.val)
+        im.params['datareduction']['solidangle_matrixerr_statistics']=self._get_matrix_statistics(corr_sa.err)
+        corr_ada = angledependentabsorption(tth.val, tth.err, im.params['sample']['transmission.val'],
+                                            im.params['sample']['transmission.err'])
+        im *= corr_ada
+        im.params['datareduction']['angledependentabsorption_matrixval_statistics']=self._get_matrix_statistics(corr_ada.val)
+        im.params['datareduction']['angledependentabsorption_matrixerr_statistics']=self._get_matrix_statistics(corr_ada.err)
         im.params['datareduction']['history'].append('Corrected for angle-dependent absorption')
         if 'vacuum_pressure' in im.params['environment']:
-            im *= angledependentairtransmission(tth.val, tth.err, im.params['environment']['vacuum_pressure'],
+            corr_adat = angledependentairtransmission(tth.val, tth.err, im.params['environment']['vacuum_pressure'],
                                                 im.params['geometry']['truedistance'],
                                                 im.params['geometry']['truedistance.err'],
                                                 self._config['datareduction']['mu_air'],
                                                 self._config['datareduction']['mu_air.err'])
+            im *=corr_adat
+            im.params['datareduction']['angledependentairtransmission_matrixval_statistics']=self._get_matrix_statistics(corr_adat.val)
+            im.params['datareduction']['angledependentairtransmission_matrixerr_statistics']=self._get_matrix_statistics(corr_adat.err)
             im.params['datareduction']['history'].append(
                 'Corrected for angle-dependent air absorption. Pressure: %f mbar' % (
                     im.params['environment']['vacuum_pressure']))
         else:
             im.params['datareduction']['history'].append(
                 'Skipped angle-dependent air absorption correction: no pressure value.')
+        im.params['datareduction']['statistics']['04_correctgeometry']=im.get_statistics()
         self._logger.debug('Done correctgeometry FSN %d' % im.params['exposure']['fsn'])
         return im
 
     def dividebythickness(self, im):
         im /= ErrorValue(im.params['sample']['thickness.val'], im.params['sample']['thickness.err'])
+        im.params['datareduction']['statistics']['05_dividebythickness']=im.get_statistics()
         self._logger.debug('Done dividebythickness FSN %d' % im.params['exposure']['fsn'])
         return im
 
@@ -314,6 +335,7 @@ class ExposureAnalyzer(Service):
             q = q[area > 0]
             self._logger.debug('Common q-range: %g to %g, %d points.' % (q.min(), q.max(), len(q)))
             scalingfactor, stat = nonlinear_odr(I, dataset[:, 1], dI, dataset[:, 2], lambda x, a: a * x, [1])
+            im.params['datareduction']['absintscaling']={'q':q,'area':area,'Imeas':I,'dImeas':dI,'Iref':dataset[:,1],'dIref':dataset[:,2],'factor.val':scalingfactor.val,'factor.err':scalingfactor.err,'stat':stat}
             scalingfactor = ErrorValue(scalingfactor.val,
                                        scalingfactor.err)  # convert from sastool's ErrorValue to ours
             self._logger.debug('Scaling factor: %s' % scalingfactor)
@@ -330,6 +352,7 @@ class ExposureAnalyzer(Service):
         if abs(im.params['geometry']['truedistance'] - self._lastabsintref.params['geometry']['truedistance']) < \
                 self._config['datareduction']['distancetolerance']:
             im *= self._absintscalingfactor
+            im.params['datareduction']['statistics']['06_absolutescaling']=im.get_statistics()
             im.params['datareduction']['history'].append(
                 'Using absolute intensity factor %s from measurement FSN #%d for absolute intensity calibration.' % (
                     self._absintscalingfactor, self._lastabsintref.params['exposure']['fsn']))
@@ -361,7 +384,7 @@ class ExposureAnalyzer(Service):
 
     def datareduction(self, intensity, mask, params):
         im = SASImage(intensity, intensity ** 0.5, params, mask)
-        im.params['datareduction'] = {'history': []}
+        im.params['datareduction'] = {'history': [], 'statistics':{'01_initial':im.get_statistics()}}
         try:
             self.prescaling(im)
             self.subtractbackground(im)
@@ -374,3 +397,7 @@ class ExposureAnalyzer(Service):
 
     def sendconfig(self):
         self._queue_to_backend.put_nowait(('_config', None, self.instrument.config, None))
+
+    def _get_matrix_statistics(self, matrix):
+        return {'NaNs':np.isnan(matrix).sum(),'finites':np.isfinite(matrix).sum(),'negatives':(matrix<0).sum(),
+                }

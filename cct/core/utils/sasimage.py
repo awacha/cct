@@ -119,7 +119,12 @@ class SASImage(ErrorValue):
                            self._param['geometry']['wavelength.err']))
 
 
-
+    def get_statistics(self):
+        return {'NaNs':np.isnan(self.intensity).sum(),'finites':np.isfinite(self.intensity).sum(),'negatives':(self.intensity<0).sum(),
+                'unmaskedNaNs':np.isnan(self.intensity[self._mask!=0]).sum(),
+                'unmaskednegatives':(self.intensity[self._mask!=0]<0).sum(),
+                'masked':(self._mask==0).sum(),
+                }
 
 
 
