@@ -295,6 +295,7 @@ class Device(GObject.GObject):
             except CommunicationError as ce:
                 self._logger.error('CommunicationError in background thread of %s: %s %s'%(self._instancename,ce,traceback.format_exc()))
                 self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
+                raise
             except Exception as exc:
                 self._logger.error('Other exception in background thread of %s: %s %s'%(self._instancename,exc,traceback.format_exc()))
                 self._queue_to_frontend.put_nowait(
@@ -341,77 +342,91 @@ class Device(GObject.GObject):
         self._logger.info('Background thread started for %s, this is startup #%d'%(self._instancename, self._background_startup_count))
         while True:
             try:
-                cmd, propname, argument = self._queue_to_backend.get(
-                    block=True, timeout=self.backend_interval)
-            except queue.Empty:
-                self._on_background_queue_empty()
-                continue
-            if cmd == 'config':
-                self.config = argument
-                self._on_background_queue_empty()
-            elif cmd == 'telemetry':
-                tm = self._get_telemetry()
-                self._queue_to_frontend.put_nowait(('_telemetry', tm))
-                self._on_background_queue_empty()
-            elif cmd == 'exit':
-                break  # the while True loop
-            elif cmd in ['query']:
-                if propname not in self._refresh_requested:
-                    self._refresh_requested[propname] = 0
-                if argument:
-                    self._refresh_requested[propname] += 1
                 try:
-                    self._query_variable(propname)
-                    self._lastquerytime = time.time()
-                except CommunicationError as ce:
-                    self._logger.error('CommunicationError in background thread of %s: %s %s'%(self._instancename,ce,traceback.format_exc()))
-                    self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
-                except Exception as exc:
-                    self._logger.error('Other exception in background thread of %s: %s %s'%(self._instancename,exc,traceback.format_exc()))
-                    self._queue_to_frontend.put_nowait(
-                        (propname, (exc, traceback.format_exc())))
+                    cmd, propname, argument = self._queue_to_backend.get(
+                        block=True, timeout=self.backend_interval)
+                except queue.Empty:
+                    self._on_background_queue_empty()
+                    continue
+                if cmd == 'config':
+                    self.config = argument
+                    self._on_background_queue_empty()
 
-            elif cmd == 'set':
-                try:
-                    self._set_variable(propname, argument)
-                except NotImplementedError as ne:
-                    self._queue_to_frontend.put_nowait(
-                        (propname, (ne, traceback.format_exc())))
-                except CommunicationError as ce:
-                    self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
-                except Exception as exc:
-                    self._queue_to_frontend.put_nowait(
-                        (propname, (exc, traceback.format_exc())))
-
-            elif cmd == 'execute':
-                try:
-                    self._execute_command(propname, argument)
-                except CommunicationError as ce:
-                    self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
-                except DeviceError as exc:
-                    if len(exc.args)>1:
+                elif cmd == 'telemetry':
+                    tm = self._get_telemetry()
+                    self._queue_to_frontend.put_nowait(('_telemetry', tm))
+                    self._on_background_queue_empty()
+                elif cmd == 'exit':
+                    break  # the while True loop
+                elif cmd in ['query']:
+                    if propname not in self._refresh_requested:
+                        self._refresh_requested[propname] = 0
+                    if argument:
+                        self._refresh_requested[propname] += 1
+                    try:
+                        self._query_variable(propname)
+                        self._lastquerytime = time.time()
+                    except CommunicationError as ce:
+                        self._logger.error('CommunicationError in background thread of %s: %s %s'%(self._instancename,ce,traceback.format_exc()))
+                        #self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
+                        raise
+                    except Exception as exc:
+                        self._logger.error('Other exception in background thread of %s: %s %s'%(self._instancename,exc,traceback.format_exc()))
                         self._queue_to_frontend.put_nowait(
-                            (exc.args[1], (exc, traceback.format_exc())))
-                    else:
-                        self._queue_to_frontend.put_nowait(('_error', (exc, traceback.format_exc())))
-                except Exception as exc:
-                    self._queue_to_frontend.put_nowait(
-                        ('_error', (exc, traceback.format_exc())))
-            elif cmd == 'communication_error':
-                self._queue_to_frontend.put_nowait((
-                    '_error', (propname, argument)))
-            elif cmd == 'incoming':
-                self._count_inmessages+=1
-                try:
-                    self._process_incoming_message(argument)
-                except CommunicationError as ce:
-                    self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
-                except Exception as exc:
-                    self._queue_to_frontend.put_nowait(
-                        ('_error', (exc, traceback.format_exc())))
-            else:
-                raise NotImplementedError(
-                    'Unknown command for _background_worker: %s' % cmd)
+                            (propname, (exc, traceback.format_exc())))
+
+                elif cmd == 'set':
+                    try:
+                        self._set_variable(propname, argument)
+                    except NotImplementedError as ne:
+                        self._queue_to_frontend.put_nowait(
+                            (propname, (ne, traceback.format_exc())))
+                    except CommunicationError as ce:
+                        raise
+#                        self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
+                    except Exception as exc:
+                        self._queue_to_frontend.put_nowait(
+                            (propname, (exc, traceback.format_exc())))
+
+                elif cmd == 'execute':
+                    try:
+                        self._execute_command(propname, argument)
+                    except CommunicationError as ce:
+                        #self._queue_to_frontend.put_nowait(('_error',(ce, traceback.format_exc())))
+                        raise
+                    except DeviceError as exc:
+                        if len(exc.args)>1:
+                            self._queue_to_frontend.put_nowait(
+                                (exc.args[1], (exc, traceback.format_exc())))
+                        else:
+                            self._queue_to_frontend.put_nowait(('_error', (exc, traceback.format_exc())))
+                    except Exception as exc:
+                        self._queue_to_frontend.put_nowait(
+                            ('_error', (exc, traceback.format_exc())))
+                elif cmd == 'communication_error':
+                    raise propname # raise the CommunicationError instance we got.
+#                    self._queue_to_frontend.put_nowait((
+#                        '_error', (propname, argument)))
+                elif cmd == 'incoming':
+                    self._count_inmessages+=1
+                    try:
+                        self._process_incoming_message(argument)
+                    except CommunicationError as ce:
+                        raise
+                    except Exception as exc:
+                        self._queue_to_frontend.put_nowait(
+                            ('_error', (exc, traceback.format_exc())))
+                else:
+                    raise NotImplementedError(
+                        'Unknown command for _background_worker: %s' % cmd)
+            except CommunicationError as ce:
+                self._logger.error('Communication error in the background thread for device %s, exiting loop.'%(self._instancename))
+                self._queue_to_frontend.put_nowait(('_dead', (ce, traceback.format_exc())))
+                break
+            except Exception as ex:
+                self._logger.error('Other exception in the background thread for device %s, exiting loop.'%(self._instancename))
+                self._queue_to_frontend.put_nowait(('_dead', (ex, traceback.format_exc())))
+                break
         self._logger.info('Background thread ending for device %s. Messages sent: %d. Messages received: %d.' % (self._instancename, self._count_outmessages, self._count_inmessages))
 
     def _get_telemetry(self):
@@ -481,9 +496,11 @@ class Device(GObject.GObject):
         while True:
             try:
                 propertyname, newvalue = self._queue_to_frontend.get_nowait()
-                if (propertyname == '_error') and isinstance(newvalue[0], CommunicationError):
+                if (propertyname=='_dead'):
+                    # backend process died.
                     self._logger.error(
                         'Communication error in device %s, disconnecting.' % self._instancename)
+                    # disconnect from the device, attempt to reconnect to it.
                     self.disconnect_device(because_of_failure=True)
                     self.emit('error', '', newvalue[0], newvalue[1])
                 elif (propertyname == '_startup_done'):

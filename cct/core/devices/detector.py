@@ -198,7 +198,7 @@ class Pilatus(Device_TCP):
                     except CommunicationError as exc:
                         self._queue_to_frontend.put_nowait(
                             ('_error', (exc, traceback.format_exc())))
-                        return
+                        raise
                 if idnum == 7:  # and status == b'OK':
                     # exposing finished, we can release the watchdog
                     self._update_variable('_status', 'idle')
