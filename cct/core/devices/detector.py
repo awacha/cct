@@ -2,12 +2,12 @@ import logging
 import multiprocessing
 import queue
 import re
+import sys
 import time
-import traceback
 
 import dateutil.parser
 
-from .device import Device_TCP, DeviceError, CommunicationError
+from .device import Device_TCP, DeviceError, ReadOnlyVariable, CommunicationError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -100,7 +100,12 @@ class Pilatus(Device_TCP):
         self._expected_status = 'idle'
 
     def _query_variable(self, variablename):
+        if variablename is None and self._properties['_status'] in ['exposing', 'exposing multi']:
+            # do not initiate query-all-variables if we are exposing: the pilatus detector is known
+            # to become unresponsive during these times.
+            return
         if variablename is None:
+            # these are the parameters which have to be checked.
             variablenames = ['gain', 'trimfile', 'nimages',
                              'cameradef', 'imgpath', 'imgmode', 'PID', 'expperiod', 'diskfree', 'tau']
         else:
@@ -137,7 +142,9 @@ class Pilatus(Device_TCP):
                 raise NotImplementedError(vn)
 
     def _process_incoming_message(self, message):
+        self._pat_watchdog()
         try:
+            # a safety measure to end the exposure if for some reason we miss the exposure end message.
             if time.time() > self._exposureendsat:
                 self._update_variable('_status', 'idle')
                 self._update_variable('starttime', None)
@@ -150,7 +157,8 @@ class Pilatus(Device_TCP):
             # self._logger.debug('Pilatus message received: %s' % str(message))
             try:
                 if message.count(b' ') < 2:
-                    idnum, status = message.split(b' ')
+                    # empty message, like '15 OK'
+                    idnum, status = message.split(b' ') # this can raise ValueError, see below.
                     status = status[:-1]  # cut the b'\x18' from the end
                     message = b'\x18'
                 else:
@@ -176,10 +184,9 @@ class Pilatus(Device_TCP):
             if status != b'OK':
                 try:
                     raise DeviceError('Status of message is not "OK", but "%s": %s' % (
-                    status.decode('utf-8'), origmessage.decode('utf-8')))
+                        status.decode('utf-8'), origmessage.decode('utf-8')))
                 except DeviceError as exc:
-                    self._queue_to_frontend.put_nowait(
-                        ('_error', (exc, traceback.format_exc())))
+                    self._send_to_frontend('error', exception=exc, traceback=sys.exc_info()[2], variablename=None)
 
             # handle special cases
             if message == b'/tmp/setthreshold.cmd':
@@ -192,13 +199,8 @@ class Pilatus(Device_TCP):
                     raise DeviceError(
                         'Unknown command ID in message: %d %s %s (original: %s)' % (idnum, status, message, origmessage))
                 if idnum == -1 and message == b'access denied':
-                    try:
-                        raise CommunicationError(
-                            'We could only connect to Pilatus in read-only mode')
-                    except CommunicationError as exc:
-                        self._queue_to_frontend.put_nowait(
-                            ('_error', (exc, traceback.format_exc())))
-                        raise
+                    raise CommunicationError(
+                        'We could only connect to Pilatus in read-only mode')
                 if idnum == 7:  # and status == b'OK':
                     # exposing finished, we can release the watchdog
                     self._update_variable('_status', 'idle')
@@ -301,7 +303,7 @@ class Pilatus(Device_TCP):
         elif variable == 'exptime':
             self._send(b'exptime %f\n' % value)
         else:
-            raise NotImplementedError(variable)
+            raise ReadOnlyVariable(variable)
 
     def _send(self, message, dont_expect_reply=False):
         if hasattr(self, '_lastsent'):
