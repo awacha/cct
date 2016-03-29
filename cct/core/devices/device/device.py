@@ -129,18 +129,37 @@ class Device(GObject.GObject):
         'telemetry': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
     }
 
+    # List containing the names of all variables defined for this instrument
+    _all_variables=None
+
+    # A minimal list of variable names, which, when queried, result in the
+    # updating of all the variables in __all_variables__
+    _minimum_query_variables=None
+
     backend_interval = 1
 
     watchdog_timeout = 10
 
     log_formatstr = None
 
+    # A dict of outstanding variable queries. Whenever a variable query is
+    # requested (either from the front-end thread or by an automatic "idle"
+    # query), a key in this dict with the variable name is inserted in this
+    # dict, the corresponding value being the actual value of time.monotonic().
+    # Whenever a value for the variable is obtained from the device, the key
+    # should be deleted from this dict. If a subsequent query of this variable
+    # is issued, while there is still an outstanding (not yet executed) query,
+    # it is quietly dropped, i.e. no communication is initiated with the device.
+    # However, if the timestamp is older than a given age (specified in seconds
+    # in `_query_timeout`), the timestamp is re-set.
+    _query_requested=None
+
+    # Timeout for re-query, see `_query_requested`.
+    _query_timeout=30
+
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
         GObject.GObject.__init__(self)
         self._msgidcounter=0
-        if not hasattr(self, '_logger'):
-            # do not override _loggers set by children classes.
-            self._logger = logger
         # the folder where config files are stored.
         self.configdir = configdir
         # this is the parameter logfile. Note that this is another kind of logging, not related to the logging module.
@@ -246,11 +265,11 @@ class Device(GObject.GObject):
         self._refresh_requested = {}
         self._background_startup_count+=1
         self._background_process = multiprocessing.Process(
-            target=self._background_worker, daemon=True, name=self.name+'_background', args=(self._background_startup_count,))
+            target=self._background_worker, daemon=True,
+            name=self.name+'_background', args=(self._background_startup_count,))
         self._background_process.start()
         self._idle_handler = GLib.idle_add(self._idle_worker)
-        self._logger.debug('Background process for %s has been started' %
-                           self.name)
+        logger.debug('Background process for %s has been started' %self.name)
 
     def _stop_background_process(self):
         """Stops the background process."""
@@ -366,6 +385,7 @@ class Device(GObject.GObject):
         every time a new message comes. It is responsible to call
         `self._update_variable`.
         """
+        self._query_requested={} # re-initialize this dict.
         self._background_startup_count=startup_number
         self._logger = logging.getLogger(
             __name__ + '::' + self.name + '__backgroundprocess')
@@ -418,7 +438,8 @@ class Device(GObject.GObject):
                     raise message['exception'].with_traceback(message['traceback'])
                 elif message['type'] == 'incoming':
                     self._count_inmessages+=1
-                    self._process_incoming_message(message['message'])
+                    self._process_incoming_message(message=message['message'],
+                                                   original_sent=message['sent'])
                 else:
                     raise NotImplementedError(
                         'Unknown command for _background_worker: %s' % message['type'])
@@ -466,9 +487,9 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
 
     def _has_all_variables(self):
         """Checks if all the variables have been requested and received at least once.
-        The basic implementation just returns True. You should probably override this
-        in the actual device."""
-        return True
+        The default implementation compares the keys in _properties to those in
+        _all_variables."""
+        return bool([k for k in self._all_variables if k not in self._properties])
 
     def _on_startupdone(self):
         """BACKGROUND_PROCESS:
@@ -512,6 +533,10 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         # first of all, pat the watchdog.
         self._pat_watchdog()
         try:
+            del self._query_requested[varname]
+        except KeyError:
+            pass
+        try:
             assert(self._properties[varname] == value) # can raise AssertionError and KeyError
             if force:
                 raise KeyError
@@ -531,7 +556,9 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
             self._timestamps[varname] = time.time()
 
     def _log(self):
-        """Write a line in the log-file, according to `self.log_formatstr`.
+        """BACKGROUND_PROCESS:
+
+        Write a line in the log-file, according to `self.log_formatstr`.
         """
         if (not self.logfile) or (not self.log_formatstr):
             return
@@ -587,12 +614,12 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         return True  # this is an idle function, we want to be called again.
 
     def do_error(self, propertyname, exception, tb):
-        self._logger.error(
+        logger.error(
             'Device error. Variable name: %s. Exception: %s. Traceback: %s' % (propertyname, str(exception), tb))
 
     def do_startupdone(self):
         self._ready=True
-        self._logger.info('Device %s is ready.' % self.name)
+        logger.info('Device %s is ready.' % self.name)
         return False
 
     @property
@@ -600,7 +627,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         return self._ready
 
     def do_disconnect(self, because_of_failure):
-        self._logger.warning('Disconnecting from device %s. Failure flag: %s' % (
+        logger.warning('Disconnecting from device %s. Failure flag: %s' % (
             self.name, because_of_failure))
         if self._properties['_status'] != 'Disconnected':
             self._properties['_status'] = 'Disconnected'
@@ -702,15 +729,15 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         """
         if not self._get_connected():
             raise DeviceError('Not connected')
-        self._logger.debug('Disconnecting from device%s' %
+        logger.debug('Disconnecting from device%s' %
                            (['', ' because of a failure'][because_of_failure]))
         self._stop_background_process()
         try:
             self._stop_background_process()
-            self._logger.debug('Stopped background process')
+            logger.debug('Stopped background process')
             self._breakdown_connection()
             self._finalize_after_disconnect()
-            self._logger.debug('Finalized')
+            logger.debug('Finalized')
         finally:
             self.emit('disconnect', because_of_failure)
 
@@ -730,11 +757,11 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         """
         pass
 
-    def _query_variable(self, variablename):
+    def _query_variable(self, variablename, minimum_query_variables=None):
         """BACKGROUND_PROCESS:
 
-        Queries the value of the current variable. Abstract method: override in
-        derivative classes.
+        Queries the value of the current variable. This should typically be
+        overridden in derivative classes, but with care (see below).
 
         If `variablename` is None, query ALL known variables.
 
@@ -751,8 +778,48 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         reply will come in a form of an 'incoming' message to `_queue_to_background`,
         and `_update_variable` will be called from the `_process_incoming_message`
         method.
+
+        The default implementation of this method enables smart querying:
+
+        1) If the `variablename` argument is None, this method calls itself again
+        with the elements of `minimum_query_variables`, finally returning
+        False.
+
+        2) If the `variablename` argument is not None, it checks that it is
+        present as a key in `self._query_requested`, and if it is, then it
+        also checks if the timestamp in the value is not older than
+        `self._query_timeout`. If both of these are true, this function returns
+        False, Otherwise we return True.
+
+        An overridden method in a derived class typically would call its
+        ancestor's method, and only if it returns True, it must start taking
+        steps to contact the device for a new value.
+
+        Note that if for some reason you cannot start the query of this variable,
+        you should take care to remove the corresponding key from
+        `self._query_requested`.
+
+        Whenever an update to this variable arrives from the device, the default
+        `self._update_variable` clears the key from `self._query_requested`, if
+        present.
+
+        If the argument `minimum_query_variables` is None,
+        `self._minimum_query_variables` is used instead of it.
         """
-        raise NotImplementedError
+        if variablename is None:
+            # query all variables
+            if minimum_query_variables is None:
+                minimum_query_variables=self._minimum_query_variables
+            for vn in minimum_query_variables:
+                self._query_variable(vn)
+            return False
+        try:
+            if (self._query_requested[variablename]-time.monotonic())<self._query_timeout:
+                return False
+            raise KeyError(variablename)
+        except KeyError as ke:
+            self._query_requested[variablename]=time.monotonic()
+            return True
 
     def _set_variable(self, variable, value):
         """BACKGROUND_PROCESS:
@@ -784,11 +851,18 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         """
         raise NotImplementedError
 
-    def _process_incoming_message(self, message):
+    def _process_incoming_message(self, message, original_sent=None):
         """BACKGROUND_PROCESS:
 
         This is run if a message arrives from the device. Must call
         `_update_variable` with the obtained new values.
+
+        The argument `message` is the message as received from the device,
+        an instance of `bytes`. The actual subclass of Device, which is
+        responsible for the way of communication (TCP, RS232, Modbus, etc.),
+        usually ensures that the character string `message` is a single and
+        complete message. `original_sent` is the message sent to the device,
+        to which `message` is a reply.
         """
         raise NotImplementedError
 

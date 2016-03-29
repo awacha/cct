@@ -5,7 +5,7 @@ Created on Oct 13, 2015
 '''
 import logging
 
-from .device import Device_TCP, DeviceError
+from .device import Device_TCP, DeviceError, UnknownVariable
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,38 +14,46 @@ class TPG201(Device_TCP):
 
     log_formatstr = '{pressure}'
 
+    _all_variables = ['pressure', 'version', 'units']
+
+    _minimum_query_variables = ['pressure', 'version', 'units']
+
     def _has_all_variables(self):
         return all([v in self._properties for v in ['pressure','version','units','_status']])
 
     def _query_variable(self, variablename):
-        if variablename is None:
-            variablenames = ['pressure', 'version', 'units']
+        if not super()._query_variable(variablename):
+            return
+        if variablename == 'pressure':
+            self._send(b'001M^\r')
+        elif variablename == 'version':
+            self._send(b'001Te\r')
+        elif variablename == 'units':
+            self._send(b'001Uf\r')
         else:
-            variablenames = [variablename]
+            raise UnknownVariable(variablename)
 
-        for vn in variablenames:
-            if vn == 'pressure':
-                self._send(b'001M^\r')
-            elif vn == 'version':
-                self._send(b'001Te\r')
-            elif vn == 'units':
-                self._send(b'001Uf\r')
-            else:
-                raise NotImplementedError(vn)
+    def _get_complete_messages(self, message):
+        messages = message.split(b'\r')
+        for i in range(len(messages) - 1):
+            messages[i] = messages[i] + b'\r'
+        return messages
 
-    def _process_incoming_message(self, message):
+    def _process_incoming_message(self, message, original_sent=None):
+        # The TPG-201 Pirani Gauge always gives exactly 1 reply for each
+        # sent message, therefore we are safe to release the cleartosend
+        # semaphore at this point, so while we are handling this message,
+        # the sending process can commence sending the next message.
+        self._cleartosend_semaphore.release()
         if not (message.startswith(b'001') and message.endswith(b'\r')):
             raise DeviceError('Invalid message: %s' % str(message))
         message = message[:-1]
-        if b'\r' in message:
-            # if we got multiple replies in a single message, process each one
-            # individually
-            for m in message.split(b'\r'):
-                self._process_incoming_message(m)
         if not (sum(message[0:-1]) % 64 + 64 == message[-1]):
             # checksum error
             raise DeviceError('Checksum error on message %s' % str(message))
-        if message[3] == 77:  # M
+        if message[3] == 77:
+            # The 4th character of the message is an M. Note that message[3]
+            # has a type of int, thus it cannot be equal to b'M'.
             pressure = float(message[4:8]) * 10**(-23 + float(message[8:10]))
             if self._update_variable('pressure', pressure):
                 if pressure > 1:
@@ -62,11 +70,3 @@ class TPG201(Device_TCP):
         else:
             raise DeviceError(
                 'Unknown message code %s in message %s' % (chr(message[3]), str(message)))
-
-    def _initialize_after_connect(self):
-        Device_TCP._initialize_after_connect(self)
-        self.refresh_variable('version', check_backend_alive=False)
-
-    def __init__(self, *args, **kwargs):
-        self._logger = logger
-        Device_TCP.__init__(self, *args, **kwargs)

@@ -19,3 +19,11 @@ class ReadOnlyVariable(DeviceError):
 class CommunicationError(DeviceError):
     """Raised when a fatal communication error occurs. The connection to the device must immediately be shut down and possibly reinitialized"""
     pass
+
+class UnknownVariable(DeviceError):
+    """Raised on an attempted read/write of an unknown variable"""
+    pass
+
+class UnknownCommand(DeviceError):
+    """Raised on an attempted execution of an unknown command"""
+    pass
