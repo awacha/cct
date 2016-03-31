@@ -2,12 +2,11 @@ import logging
 import multiprocessing
 import queue
 import re
-import sys
 import time
 
 import dateutil.parser
 
-from .device import Device_TCP, DeviceError, ReadOnlyVariable, CommunicationError
+from .device import Device_TCP, DeviceError, ReadOnlyVariable, CommunicationError, UnknownVariable
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,16 +17,34 @@ RE_FLOAT = br"[+-]?(\d+)*\.?\d+([eE][+-]?\d+)?"
 RE_DATE = br"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+"
 RE_INT = br"[+-]?\d+"
 
+# integer type variables
 pilatus_int_variables = ['wpix', 'hpix', 'sel_bank', 'sel_module',
                          'sel_chip', 'diskfree', 'nimages', 'masterPID', 'controllingPID', 'pid']
+
+# float type variables
 pilatus_float_variables = ['tau', 'cutoff', 'exptime', 'expperiod', 'temperature0',
                            'temperature1', 'temperature2', 'humidity0', 'humidity1', 'humidity2', 'threshold', 'vcmp',
                            'timeleft']
+
+# datetime type variables
 pilatus_date_variables = ['starttime']
+
+# string variables
 pilatus_str_variables = ['version', 'gain', 'trimfile', 'cameradef', 'cameraname', 'cameraSN', '_status', 'targetfile',
                          'lastimage', 'lastcompletedimage', 'shutterstate', 'imgpath', 'imgmode', 'filename',
                          'camstate']
 
+# list of regular expressions matching messages from the Pilatus detector. Each
+# element of this list is a tuple, the first element being the message class
+# code (Socket connection return code in the Pilatus-300k manual), idnum in
+# this code. The second element is a regular expression.
+#
+# Messages from the camserver follow the scheme:
+#
+# <idnum><space><statuscode><space><message>
+#
+# where <statuscode> is OK or ERR.
+#
 pilatus_replies = [(15, br'Rate correction is on; tau = (?P<tau>' + RE_FLOAT +
                     br') s, cutoff = (?P<cutoff>' + RE_INT + br') counts'),
                    (15, br'Rate correction is off, cutoff = (?P<cutoff>' +
@@ -93,55 +110,64 @@ class Pilatus(Device_TCP):
 
     watchdog_timeout = 20
 
+    backend_interval = 0.5
+    
+    _minimum_query_variables = ['gain', 'trimfile', 'nimages', 'cameradef',
+                                'imgpath', 'imgmode', 'PID', 'expperiod', 
+                                'diskfree', 'tau']
+
     def __init__(self, *args, **kwargs):
-        self._logger = logger
         Device_TCP.__init__(self, *args, **kwargs)
-        self._sendqueue = multiprocessing.Queue()
         self._expected_status = 'idle'
+        # a flag which has to be acquired when the detector is busy: trimming or exposing.
+        self._busysemaphore=multiprocessing.BoundedSemaphore(1)
 
-    def _query_variable(self, variablename):
-        if variablename is None and self._properties['_status'] in ['exposing', 'exposing multi']:
-            # do not initiate query-all-variables if we are exposing: the pilatus detector is known
-            # to become unresponsive during these times.
-            return
+    def is_busy(self):
+        return self._busysemaphore.get_value()==0
+
+    def _query_variable(self, variablename, minimum_query_variables=None):
         if variablename is None:
-            # these are the parameters which have to be checked.
-            variablenames = ['gain', 'trimfile', 'nimages',
-                             'cameradef', 'imgpath', 'imgmode', 'PID', 'expperiod', 'diskfree', 'tau']
+            if self.is_busy():
+                # do not initiate query-all-variables if we are exposing or 
+                # trimming: the pilatus detector is known to become unresponsive
+                # during these times.
+                return False
+        if not super()._query_variable(variablename):
+            # the above call takes care of the variablename==None case as well.
+            return False
+        if variablename in ['gain', 'threshold', 'vcmp']:
+            self._send(b'SetThreshold\n')
+        elif variablename in ['trimfile', 'wpix', 'hpix', 'sel_bank', 'sel_module', 'sel_chip']:
+            self._send(b'Telemetry\n')
+        elif variablename.startswith('humidity') or variablename.startswith('temperature'):
+            self._send(b'THread\n')
+        elif variablename == 'nimages':
+            self._send(b'NImages\n')
+        elif variablename in ['cameradef', 'cameraname', 'cameraSN', 'camstate', 'targetfile',
+                    'timeleft', 'lastimage', 'masterPID', 'controllingPID',
+                    'exptime', 'lastcompletedimage', 'shutterstate']:
+            self._send(b'camsetup\n')
+        elif variablename == 'imgpath':
+            self._send(b'imgpath\n')
+        elif variablename == 'imgmode':
+            self._send(b'imgmode\n')
+        elif variablename == 'PID':
+            self._send(b'ShowPID\n')
+        elif variablename == 'expperiod':
+            self._send(b'expperiod\n')
+        elif variablename in ['tau', 'cutoff']:
+            self._send(b'tau\n')
+        elif variablename == 'diskfree':
+            self._send(b'df\n')
+        elif variablename == 'version':
+            self._send(b'version\n')
         else:
-            variablenames = [variablename]
+            raise UnknownVariable(variablename)
 
-        for vn in variablenames:
-            if vn in ['gain', 'threshold', 'vcmp']:
-                self._send(b'SetThreshold\n')
-            elif vn in ['trimfile', 'wpix', 'hpix', 'sel_bank', 'sel_module', 'sel_chip']:
-                self._send(b'Telemetry\n')
-            elif vn.startswith('humidity') or vn.startswith('temperature'):
-                self._send(b'THread\n')
-            elif vn == 'nimages':
-                self._send(b'NImages\n')
-            elif vn in ['cameradef', 'cameraname', 'cameraSN', 'camstate', 'targetfile',
-                        'timeleft', 'lastimage', 'masterPID', 'controllingPID',
-                        'exptime', 'lastcompletedimage', 'shutterstate']:
-                self._send(b'camsetup\n')
-            elif vn == 'imgpath':
-                self._send(b'imgpath\n')
-            elif vn == 'imgmode':
-                self._send(b'imgmode\n')
-            elif vn == 'PID':
-                self._send(b'ShowPID\n')
-            elif vn == 'expperiod':
-                self._send(b'expperiod\n')
-            elif vn in ['tau', 'cutoff']:
-                self._send(b'tau\n')
-            elif vn == 'diskfree':
-                self._send(b'df\n')
-            elif vn == 'version':
-                self._send(b'version\n')
-            else:
-                raise NotImplementedError(vn)
+    def _get_complete_messages(self, message):
+        return message.split(b'\x18')
 
-    def _process_incoming_message(self, message):
+    def _process_incoming_message(self, message, original_sent=None):
         self._pat_watchdog()
         try:
             # a safety measure to end the exposure if for some reason we miss the exposure end message.
@@ -160,7 +186,7 @@ class Pilatus(Device_TCP):
                     # empty message, like '15 OK'
                     idnum, status = message.split(b' ') # this can raise ValueError, see below.
                     status = status[:-1]  # cut the b'\x18' from the end
-                    message = b'\x18'
+                    message=''
                 else:
                     idnum, status, message = message.split(b' ', 2)
                 idnum = int(idnum)
@@ -169,24 +195,13 @@ class Pilatus(Device_TCP):
                 # upon completion.
                 idnum = -1
                 status = b'OK'
-                if not message.endswith(b'\x18'):
-                    message = message + b'\x18'
             message = message.strip()
-            if not message.endswith(b'\x18'):
-                raise DeviceError(
-                    'Invalid message (does not end with \\x18): %s' % str(message))
-            message = message[:-1]
-            if b'\x18' in message:
-                #self._logger.warning('Multipart message: %s' % message)
-                for m in message.split(b'\x18'):
-                    self._process_incoming_message(m.strip() + b'\x18')
-                return
-            if status != b'OK':
-                try:
-                    raise DeviceError('Status of message is not "OK", but "%s": %s' % (
-                        status.decode('utf-8'), origmessage.decode('utf-8')))
-                except DeviceError as exc:
-                    self._send_to_frontend('error', exception=exc, traceback=sys.exc_info()[2], variablename=None)
+#            if status != b'OK':
+#                try:
+#                    raise DeviceError('Status of message is not "OK", but "%s": %s' % (
+#                        status.decode('utf-8'), origmessage.decode('utf-8')))
+#                except DeviceError as exc:
+#                    self._send_to_frontend('error', exception=exc, traceback=sys.exc_info()[2], variablename=None)
 
             # handle special cases
             if message == b'/tmp/setthreshold.cmd':

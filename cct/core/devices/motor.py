@@ -6,7 +6,7 @@ import re
 import struct
 import time
 
-from .device import Device_TCP, DeviceError, UnknownCommand, UnknownVariable, ReadOnlyVariable
+from .device import Device_TCP, DeviceError, UnknownCommand, UnknownVariable, ReadOnlyVariable, InvalidValue
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -32,7 +32,7 @@ PER_MOTOR_VARIABLES = ['pulsedivisor', 'rampdivisor', 'microstepresolution',
                        'freewheelingdelay', 'load', 'drivererror',
                        'targetposition', 'actualposition', 'actualspeed',
                        'targetspeed', 'maxspeed', 'maxacceleration',
-                       'actualacceleration']
+                       'actualacceleration', 'softleft', 'softright']
 
 DEVICE_VARIABLES = ['firmwareversion']
 
@@ -74,10 +74,12 @@ class TMCMcard(Device_TCP):
         # 'starttime': time of issuing the move command
         # 'startposition': RAW starting position
         # This dict belongs entirely to the backend process
-        self._moving = None
+        #self._moving = None
+
+
         # if this flag is set, no movement is possible. This is inherited by the
         # backend process.
-        self._busyflag = multiprocessing.BoundedSemaphore(1)
+        self._busysemaphore = multiprocessing.BoundedSemaphore(1)
         # this flag signifies that the stored position file has been loaded
         # successfully, or did not exist when trying to load it. Until this
         # flag has been set, the position file cannot be overwritten.
@@ -88,14 +90,15 @@ class TMCMcard(Device_TCP):
 
     def _query_variable(self, variablename, minimum_query_variables=None):
         if variablename is None:
-            if hasattr(self._moving):
+            moving_idx=self._moving_idx()
+            if moving_idx is not None:
                 # if a motor is moving, only queue the essential variables
-                variablenames = [vn + '$%d' % self._moving['index'] for vn in VOLATILE_VARIABLES]
+                variablenames = [vn + '$%d' % moving_idx for vn in VOLATILE_VARIABLES]
             else:
                 variablenames = []
                 # if no motor is moving, query all volatile variables, i.e.
                 # those which can change without user interaction.
-                for motor in range(self._motorcount):
+                for motor in range(self._N_axes):
                     variablenames.extend([vn + '$%d' % motor for vn in VOLATILE_VARIABLES])
                 # If there are not yet queried one apart from those already in
                 # variablenames, query them as well
@@ -104,12 +107,11 @@ class TMCMcard(Device_TCP):
                                         (vn not in variablenames))]
                 variablenames.extend(missingvariables)
             super()._query_variable(None, variablenames)
-            return  # do no actual querying.
+            return  # do not do the actual querying, the previous line will take care of it by calling us again.
         try:
             motor_idx = int(variablename.split('$')[1])
-            if motor_idx < 0 or motor_idx >= self._N_axes:
-                raise DeviceError(
-                    'Invalid motor index', motor_idx)
+            if (motor_idx < 0) or (motor_idx >= self._N_axes):
+                raise DeviceError('Invalid motor index', motor_idx)
         except (IndexError, ValueError):
             motor_idx = None
         if variablename == 'firmwareversion':
@@ -117,91 +119,83 @@ class TMCMcard(Device_TCP):
                 self._construct_tmcl_command(136, 1, 0, 0))
         elif (variablename.startswith('targetposition$') or
                   variablename.startswith('targetpositionraw$')):
-            self._send(
-                self._construct_tmcl_command(6, 0, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 0, motor_idx, 0))
         elif (variablename.startswith('actualposition$') or
                   variablename.startswith('actualpositionraw$')):
-            self._send(
-                self._construct_tmcl_command(6, 1, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 1, motor_idx, 0))
         elif variablename.startswith('targetspeed$'):
-            self._send(
-                self._construct_tmcl_command(6, 2, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 2, motor_idx, 0))
         elif variablename.startswith('actualspeed$'):
-            self._send(
-                self._construct_tmcl_command(6, 3, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 3, motor_idx, 0))
         elif variablename.startswith('maxspeed$'):
-            self._send(
-                self._construct_tmcl_command(6, 4, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 4, motor_idx, 0))
         elif variablename.startswith('maxacceleration$'):
-            self._send(
-                self._construct_tmcl_command(6, 5, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 5, motor_idx, 0))
         elif variablename.startswith('maxcurrent$'):
-            self._send(
-                self._construct_tmcl_command(6, 6, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 6, motor_idx, 0))
         elif variablename.startswith('standbycurrent$'):
-            self._send(
-                self._construct_tmcl_command(6, 7, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 7, motor_idx, 0))
         elif variablename.startswith('targetpositionreached$'):
-            self._send(
-                self._construct_tmcl_command(6, 8, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 8, motor_idx, 0))
         elif variablename.startswith('rightswitchstatus$'):
-            self._send(
-                self._construct_tmcl_command(6, 10, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 10, motor_idx, 0))
         elif variablename.startswith('leftswitchstatus$'):
-            self._send(
-                self._construct_tmcl_command(6, 11, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 11, motor_idx, 0))
         elif variablename.startswith('rightswitchenable$'):
-            self._send(
-                self._construct_tmcl_command(6, 12, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 12, motor_idx, 0))
         elif variablename.startswith('leftswitchenable$'):
-            self._send(
-                self._construct_tmcl_command(6, 13, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 13, motor_idx, 0))
         elif variablename.startswith('actualacceleration$'):
-            self._send(
-                self._construct_tmcl_command(6, 135, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 135, motor_idx, 0))
         elif variablename.startswith('rampmode$'):
-            self._send(
-                self._construct_tmcl_command(6, 138, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 138, motor_idx, 0))
         elif variablename.startswith('microstepresolution$'):
-            self._send(
-                self._construct_tmcl_command(6, 140, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 140, motor_idx, 0))
         elif variablename.startswith('rampdivisor$'):
-            self._send(
-                self._construct_tmcl_command(6, 153, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 153, motor_idx, 0))
         elif variablename.startswith('pulsedivisor$'):
-            self._send(
-                self._construct_tmcl_command(6, 154, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 154, motor_idx, 0))
         elif variablename.startswith('freewheelingdelay$'):
-            self._send(
-                self._construct_tmcl_command(6, 204, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 204, motor_idx, 0))
         elif variablename.startswith('load$'):
-            self._send(
-                self._construct_tmcl_command(6, 206, motor_idx, 0))
+            self._send(self._construct_tmcl_command(6, 206, motor_idx, 0))
         elif variablename.startswith('drivererror$'):
-            self._send(
-                self._construct_tmcl_command(6, 208, motor_idx, 0))
-        elif variablename.startswith('softleft$') or variablename.startswith('softright$'):
+            self._send(self._construct_tmcl_command(6, 208, motor_idx, 0))
+        elif (variablename.startswith('softleft$') or
+                  variablename.startswith('softright$')):
             # these are pseudo-(device variables)
-            self._update_variable(variablename, self._properties[variablename], force=True)
+            if variablename not in self._properties:
+                if variablename.startswith('softleft$'):
+                    self._update_variable(variablename, -100)
+                elif variablename.startswith('softright$'):
+                    self._update_variable(variablename, 100)
+                else:
+                    raise NotImplementedError
+            self._update_variable(variablename, self._properties[variablename])
         else:
             raise UnknownVariable(variablename)
 
     def _get_complete_messages(self, message):
         messages=[]
+        # messages from the TMCM cards always consist of 9 bytes.
         while len(message)>=9:
             messages.append(message[:9])
             message=message[9:]
-        # now add the remainder
+        # now add the remainder as the last item of the list
         messages.append(message)
         return messages
 
     def _moving_idx(self):
+        """Get the index of the currently moving motor. If no motor is moving,
+        return None."""
         try:
             return self._moving['index']
         except AttributeError:
             return None
 
     def _process_incoming_message(self, message, original_sent=None):
+        # first of all, release the cleartosend semaphore, because the TMCM
+        # modules give exactly one reply for each message sent.
         self._cleartosend_semaphore.release()
         if (sum(message[:-1]) % 256) != message[-1]:
             raise DeviceError(
@@ -228,8 +222,9 @@ class TMCMcard(Device_TCP):
         elif status != 100:
             raise DeviceError(
                 'TMCL error: unspecified error in message: ' + str(message))
-
         cmdnum = message[3]
+        if cmdnum != original_sent[1]:
+            raise DeviceError('Invalid reply: command number not the same.')
         value = struct.unpack('>i', message[4:8])[0]
         if cmdnum == 6:  # get axis parameter
             typenum = original_sent[2]
@@ -248,87 +243,87 @@ class TMCMcard(Device_TCP):
                             # if no motor is moving or the moving motor is not
                             # this one, and the position of this motor has
                             # changed, save the motor positions
-                            self._logger.debug(
-                                'Position of motor %s on %s changed (to %f, raw %f), saving positions' % (
-                                motor_idx, self._instancename, self._convert_pos_to_phys(value, motoridx), value))
+                            self._logger.info(
+                                'Position of motor %s on %s changed (to %f, raw %f), saving positions. This might not be needed!' % (
+                                motor_idx, self.name, self._convert_pos_to_phys(value, motoridx), value))
                             self._save_positions()
                 elif typenum == 2:  # targetspeed
                     self._update_variable(
-                        'targetspeed$' + motor_idx, self._convert_speed_to_phys(value, motoridx))
+                        'targetspeed$' + motor_idx,
+                        self._convert_speed_to_phys(value, motoridx))
                 elif typenum == 3:  # actualspeed
                     self._update_variable(
-                        'actualspeed$' + motor_idx, self._convert_speed_to_phys(value, motoridx))
+                        'actualspeed$' + motor_idx,
+                        self._convert_speed_to_phys(value, motoridx))
                 elif typenum == 4:
                     self._update_variable(
-                        'maxspeed$' + motor_idx, self._convert_speed_to_phys(value, motoridx))
+                        'maxspeed$' + motor_idx,
+                        self._convert_speed_to_phys(value, motoridx))
                 elif typenum == 5:
                     self._update_variable(
-                        'maxacceleration$' + motor_idx, self._convert_accel_to_phys(value, motoridx))
+                        'maxacceleration$' + motor_idx,
+                        self._convert_accel_to_phys(value, motoridx))
                 elif typenum == 6:
                     self._update_variable(
-                        'maxcurrent$' + motor_idx, self._convert_current_to_phys(value, motoridx))
+                        'maxcurrent$' + motor_idx,
+                        self._convert_current_to_phys(value, motoridx))
                 elif typenum == 7:
                     self._update_variable(
-                        'standbycurrent$' + motor_idx, self._convert_current_to_phys(value, motoridx))
+                        'standbycurrent$' + motor_idx,
+                        self._convert_current_to_phys(value, motoridx))
                 elif typenum == 8:
-                    self._update_variable(
-                        'targetpositionreached$' + motor_idx, bool(value))
+                    self._update_variable('targetpositionreached$' + motor_idx,
+                                          bool(value))
                 elif typenum == 10:
-                    self._update_variable(
-                        'rightswitchstatus$' + motor_idx, bool(value))
+                    self._update_variable('rightswitchstatus$' + motor_idx,
+                                          bool(value))
                 elif typenum == 11:
-                    self._update_variable(
-                        'leftswitchstatus$' + motor_idx, bool(value))
+                    self._update_variable('leftswitchstatus$' + motor_idx,
+                                          bool(value))
                 elif typenum == 12:
-                    self._update_variable(
-                        'rightswitchenable$' + motor_idx, not bool(value))
+                    # the corresponding register in the TMCM card is "Right
+                    # limit switch DISABLE".
+                    self._update_variable('rightswitchenable$' + motor_idx,
+                                          not bool(value))
                 elif typenum == 13:
-                    self._update_variable(
-                        'leftswitchenable$' + motor_idx, not bool(value))
+                    # the corresponding register in the TMCM card is "Left
+                    # limit switch DISABLE".
+                    self._update_variable('leftswitchenable$' + motor_idx,
+                                          not bool(value))
                 elif typenum == 135:
                     self._update_variable(
-                        'actualacceleration$' + motor_idx, self._convert_accel_to_phys(value, motoridx))
+                        'actualacceleration$' + motor_idx,
+                        self._convert_accel_to_phys(value, motoridx))
                 elif typenum == 138:
                     self._update_variable('rampmode$' + motor_idx, value)
                 elif typenum == 140:
-                    self._update_variable(
-                        'microstepresolution$' + motor_idx, value)
+                    self._update_variable('microstepresolution$' + motor_idx,
+                                          value)
                 elif typenum == 154:
-                    self._update_variable(
-                        'pulsedivisor$' + motor_idx, value)
+                    self._update_variable('pulsedivisor$' + motor_idx, value)
                 elif typenum == 153:
-                    self._update_variable(
-                        'rampdivisor$' + motor_idx, value)
+                    self._update_variable('rampdivisor$' + motor_idx, value)
                 elif typenum == 204:
-                    self._update_variable(
-                        'freewheelingdelay$' + motor_idx, value / 1000)
+                    self._update_variable('freewheelingdelay$' + motor_idx,
+                                          value / 1000)
                 elif typenum == 206:
                     self._update_variable('load$' + motor_idx, value)
                 elif typenum == 208:
-                    self._update_variable(
-                        'drivererror$' + motor_idx, value)
+                    self._update_variable('drivererror$' + motor_idx, value)
                 else:
                     raise NotImplementedError(typenum)
             except TMCMConversionError:
                 if self._has_all_variables():
+                    # Some TMCMConversionErrors are expected until all the
+                    # variables have been obtained.
                     self._logger.error('TMCM conversion error.')
-            if ((self._moving_idx()== motoridx) and
+            if ((self._moving_idx() == motoridx) and
                     (typenum in [0, 1, 3, 8, 10, 11])):
                 # the current motor is moving and we just got updates to
                 # one of the essential variables self._is_moving() is based
                 # on. We must decide if the motor has stopped or not
                 if not self._is_moving(motoridx):
-                    # the motor has stopped
-                    self._busyflag.release()
-                    try:
-                        del self._moving
-                    except AttributeError:
-                        # should not happen, but who knows.
-                        pass
-                    self._update_variable('_status', 'idle')
-                    self._update_variable('_status$' + motor_idx, 'idle')
-                    self._logger.debug('Saving positions for %s: moving just ended.' % self.name)
-                    self._save_positions()
+                    self._handle_motor_stopped()
         elif cmdnum == 136:
             self._update_variable('firmwareversion', 'TMCM%d' % (
                 value // 0x10000) + ', firmware v%d.%d' % ((value % 0x10000) / 0x100, value % 0x100))
@@ -346,10 +341,26 @@ class TMCMcard(Device_TCP):
             pass
         else:
             raise NotImplementedError(cmdnum)
-        if hasattr(self,'_moving'):
-            # if we are moving, queue an immediate check for all variables.
+        moving_idx=self._moving_idx()
+        if moving_idx is not None:
+            # if we are moving, queue an immediate check for all variables of
+            # this motor, to ensure quick responses.
             for vn in VOLATILE_VARIABLES:
-                self.refresh_variable(vn + '$%d' % self._moving['index'], signal_needed=False)
+                self.refresh_variable(vn + '$%d' % moving_idx, signal_needed=False)
+
+    def _handle_motor_stopped(self):
+        """This method performs the housekeeping tasks when a motor is stopped."""
+        self._busysemaphore.release()
+        motor_idx=self._moving_idx()
+        try:
+            del self._moving
+        except AttributeError:
+            # should not happen, but who knows.
+            pass
+        self._update_variable('_status', 'idle', force=True)
+        self._update_variable('_status$%d' % motor_idx, 'idle', force=True)
+        self._logger.debug('Saving positions for %s: moving just ended.' % self.name)
+        self._save_positions()
 
     def _is_moving(self, motoridx):
         """Check if the motor is moving in the following way:
@@ -465,48 +476,63 @@ class TMCMcard(Device_TCP):
 
     def _convert_current_to_phys(self, current, motoridx):
         try:
-            return current * self._top_rms_current / 255
+            return current * self._top_RMS_current / 255
         except KeyError as ke:
             raise TMCMConversionError(ke)
 
     def _convert_current_to_raw(self, current, motoridx):
         try:
-            return int(current * 255 / self._top_rms_currnet)
+            return int(current * 255 / self._top_RMS_current)
         except KeyError as ke:
             raise TMCMConversionError(ke)
 
     def _construct_tmcl_command(self, cmdnum, typenum, motor_or_bank, value):
+        """Construct the bytes representation of the command to be sent to the
+        TMCM card. The bytes are:
+        - Module address (always 1)
+        - Command number
+        - Type number
+        - Motor or Bank number
+        - Value (MSB)
+        - Value
+        - Value
+        - Value (LSB)
+        - Checksum: the sum of all the previous bytes, module 256.
+
+        In total, 9 bytes compose the sent message.
+        """
         cmd = bytes([1, cmdnum, typenum, motor_or_bank]) + \
               struct.pack('>i', int(value))
         return cmd + bytes([sum(cmd) % 256])
 
     def moveto(self, motor:int, pos:float):
-        """Move motor to the a given (physical) position.
-
+        """Move motor to the a given absolute (physical) position.
         """
         if not self._positions_loaded.is_set():
             raise DeviceError('Cannot move motors until positions and soft limits have been loaded')
         if not self.get_variable('_status') == 'idle':
             raise DeviceError('Can only move if the controller is idle.')
-        if not self._busyflag.acquire(False):
+        if not self._busysemaphore.acquire(False):
             raise DeviceError('Cannot start motor movement: one motor on the controller is moving')
         self.execute_command('moveto',motor, pos)
 
     def moverel(self, motor, pos):
+        """Move motor to a given relative (physical) position."""
         if not self._positions_loaded.is_set():
             raise DeviceError('Cannot move motors until positions and soft limits have been loaded')
         if not self.get_variable('_status') == 'idle':
             raise DeviceError('Can only move if the controller is idle.')
-        if not self._busyflag.acquire(False):
+        if not self._busysemaphore.acquire(False):
             raise DeviceError('Cannot start motor movement: one motor on the controller is moving')
         self.execute_command('moverel',motor, pos)
 
     def stop(self, motor):
+        """Commence stopping of a motor"""
         self.execute_command('stop', motor)
 
     def calibrate(self, motor, pos):
         """Calibrate the position of the motor. To be called from the FRONTEND"""
-        if not self._busyflag.acquire(False):
+        if not self._busysemaphore.acquire(False):
             raise DeviceError('Cannot calibrate: motor controller is busy')
         self.execute_command('calibrate', motor, pos)
 
@@ -515,27 +541,23 @@ class TMCMcard(Device_TCP):
         try:
             if not self.checklimits(motor, pos):
                 raise DeviceError('Cannot calibrate outside soft limits')
-            self.set_variable('rampmode$%d' % motor, 2)
-            self.set_variable('actualposition$%d' % motor, pos)
-            self.set_variable('targetposition$%d' % motor, pos)
+            self._set_variable('rampmode$%d' % motor, 2)
+            self._set_variable('actualposition$%d' % motor, pos)
+            self._set_variable('targetposition$%d' % motor, pos)
+            self._save_positions()
         finally:
-            self._busyflag.release()
+            self._busysemaphore.release()
 
     def where(self, motor):
+        """Return the actual position of the selected motor."""
         return self.get_variable('actualposition$%d' % motor)
 
-    def _save_state(self):
-        dic = Device_TCP._save_state(self)
-        #        dic['softlimits'] = self._softlimits
-        return dic
-
     def _on_startupdone(self):
-        self._load_positions()
-        self._update_variable('_status', 'idle')
-        for i in range(self._motorcount):
+        # initialization after all variables have been obtained
+        self._load_positions() # load the positions from the state file.
+        self._update_variable('_status', 'idle') # set our status to idle.
+        for i in range(self._N_axes):
             self._update_variable('_status$%d' % i, 'idle')
-        #        for key in [k for k in self._properties if k.startswith('_status')]:
-        #            self._update_variable(key, 'idle')
         return True
 
     def _execute_command(self, commandname, arguments):
@@ -546,7 +568,7 @@ class TMCMcard(Device_TCP):
                 # Check the validity of the motor index
                 assert((motor >= 0) and (motor < self._N_axes))
                 # if another motor is moving (not expected to happen,
-                # since self._busyflag should ensure this, but
+                # since self._busysemaphore should ensure this, but
                 # anyway...
                 assert(not hasattr(self,'_moving'))
                 # get actual position
@@ -559,10 +581,7 @@ class TMCMcard(Device_TCP):
                     abspos = pos + where
                 if relpos == 0:
                     # do not execute null-moves.
-                    self._busyflag.release()
-                    self._update_variable('_status', 'idle', force=True)
-                    self._update_variable(
-                        '_status$%d' % motor, 'idle', force=True)
+                    self._handle_motor_stopped()
                     return
 
                 # check soft limits: do not allow movement to go outside them.
@@ -591,16 +610,8 @@ class TMCMcard(Device_TCP):
                 self._send(self._construct_tmcl_command(4, int(commandname == 'moverel'), motor, posraw))
             except Exception as exc:
                 # if an error happened above, we are not moving.
-                self._busyflag.release()
+                self._handle_motor_stopped()
                 self._logger.warning('Exception while starting move: ' + str(exc))
-                try:
-                    del self._moving
-                except AttributeError:
-                    pass
-                # force updates on _status: this will ensure that higher-level
-                # motor interfaces will issue stop signals
-                self._update_variable('_status', 'idle', force=True)
-                self._update_variable('_status$%d' % motor, 'idle', force=True)
                 raise
         elif commandname == 'stop':
             motor = arguments
@@ -615,7 +626,7 @@ class TMCMcard(Device_TCP):
             raise UnknownCommand(commandname)
 
     def _set_variable(self, variable, value):
-        self._logger.debug('Set_variable in %s: %s <- %s' % (self._instancename, variable, str(value)))
+        self._logger.debug('Set_variable in %s: %s <- %s' % (self.name, variable, str(value)))
 
         try:
             motor_idx = int(variable.split('$')[1])
@@ -650,59 +661,60 @@ class TMCMcard(Device_TCP):
                     5, 5, motor_idx, self._convert_accel_to_raw(
                         value, motor_idx)))
                 self._send(self._construct_tmcl_command(
-                    7, 5, motor_idx, 0))
+                    7, 5, motor_idx, 0)) # issue a STAP command as well
             elif variable.startswith('maxcurrent$'):
-                self._send(
-                    self._construct_tmcl_command(5, 6, motor_idx,
-                                                 self._convert_current_to_raw(value, motor_idx)))
+                self._send(self._construct_tmcl_command(
+                    5, 6, motor_idx, self._convert_current_to_raw(
+                        value, motor_idx)))
             elif variable.startswith('standbycurrent$'):
-                self._send(
-                    self._construct_tmcl_command(5, 7, motor_idx,
-                                                 self._convert_current_to_raw(value, motor_idx)))
+                self._send(self._construct_tmcl_command(
+                    5, 7, motor_idx, self._convert_current_to_raw(
+                        value, motor_idx)))
             elif variable.startswith('rightswitchenable$'):
-                self._send(
-                    self._construct_tmcl_command(5, 12, motor_idx, not bool(value)))
-                self._send(
-                    self._construct_tmcl_command(7, 12, motor_idx, 0))
+                self._send(self._construct_tmcl_command(
+                    5, 12, motor_idx, not bool(value)))
+                self._send(self._construct_tmcl_command(
+                    7, 12, motor_idx, 0)) # issue a STAP command as well
             elif variable.startswith('leftswitchenable$'):
-                self._send(
-                    self._construct_tmcl_command(5, 13, motor_idx, not bool(value)))
-                self._send(
-                    self._construct_tmcl_command(7, 13, motor_idx, 0))
+                self._send(self._construct_tmcl_command(
+                    5, 13, motor_idx, not bool(value)))
+                self._send(self._construct_tmcl_command(
+                    7, 13, motor_idx, 0)) # issue a STAP command as well
             elif variable.startswith('rampmode$'):
                 if value not in [0, 1, 2]:
-                    raise ValueError('Invalid ramp mode: %d' % value)
-                self._send(
-                    self._construct_tmcl_command(5, 138, motor_idx, value))
+                    raise InvalidValue('Invalid ramp mode: %d' % value)
+                self._send(self._construct_tmcl_command(
+                    5, 138, motor_idx, value))
             elif variable.startswith('microstepresolution$'):
                 if value < 0 or value > self._max_microsteps:
-                    raise ValueError(
+                    raise InvalidValue(
                         'Invalid microstep resolution: %d' % value)
-                self._send(
-                    self._construct_tmcl_command(5, 140, motor_idx, value))
-                self._send(
-                    self._construct_tmcl_command(7, 140, motor_idx, 0))
+                self._send(self._construct_tmcl_command(
+                    5, 140, motor_idx, value))
+                self._send(self._construct_tmcl_command(
+                    7, 140, motor_idx, 0)) # issue a STAP command as well
             elif variable.startswith('rampdivisor$'):
                 if value < 0 or value > 13:
-                    raise ValueError('Invalid ramp divisor: %d' % value)
-                self._send(
-                    self._construct_tmcl_command(5, 153, motor_idx, value))
-                self._send(
-                    self._construct_tmcl_command(7, 153, motor_idx, 0))
+                    raise InvalidValue('Invalid ramp divisor: %d' % value)
+                self._send(self._construct_tmcl_command(
+                    5, 153, motor_idx, value))
+                self._send(self._construct_tmcl_command(
+                    7, 153, motor_idx, 0)) # issue a STAP command as well
             elif variable.startswith('pulsedivisor$'):
                 if value < 0 or value > 13:
-                    raise ValueError('Invalid pulse divisor: %d' % value)
-                self._send(
-                    self._construct_tmcl_command(5, 154, motor_idx, value))
-                self._send(
-                    self._construct_tmcl_command(7, 154, motor_idx, 0))
+                    raise InvalidValue('Invalid pulse divisor: %d' % value)
+                self._send(self._construct_tmcl_command(
+                    5, 154, motor_idx, value))
+                self._send(self._construct_tmcl_command(
+                    7, 154, motor_idx, 0)) # issue a STAP command as well
             elif variable.startswith('freewheelingdelay$'):
                 if value < 0 or value > 65.535:
-                    raise ValueError('Invalid freewheeling delay: %d' % value)
-                self._send(
-                    self._construct_tmcl_command(5, 204, motor_idx, value * 1000))
-                self._send(
-                    self._construct_tmcl_command(7, 204, motor_idx, 0))
+                    raise InvalidValue(
+                        'Invalid freewheeling delay: %d' % value)
+                self._send(self._construct_tmcl_command(
+                    5, 204, motor_idx, value * 1000))
+                self._send(self._construct_tmcl_command(
+                    7, 204, motor_idx, 0)) # issue a STAP command as well
             elif variable.startswith('softleft$'):
                 if self._update_variable(variable, value):
                     self._save_positions()
@@ -714,9 +726,13 @@ class TMCMcard(Device_TCP):
             else:
                 raise UnknownVariable(variable)
         except TMCMConversionError:
-            self._queue_to_backend.put_nowait(('set', variable, value))
+            if not self._has_all_variables():
+                # This can happen at the very beginning, re-queue the set command.
+                self._send_to_backend('set', name=variable, value=value)
 
     def _save_positions(self):
+        """Save the motor positions and the values of soft limits to a file.
+        """
         if not self._positions_loaded.is_set():
             # avoid overwriting the position file before it can be loaded.
             self._logger.debug(
@@ -724,78 +740,94 @@ class TMCMcard(Device_TCP):
             return
         posfile = ''
         try:
-            for mot in range(self._motorcount):
-                posfile+= '%d: %g (%g, %g)\n' % (
-                    mot, self.where(mot), self._properties['softleft$%d' % mot],
+            for mot in range(self._N_axes):
+                posfile+= '%d: %.16f (%.16f, %.16f)\n' % (
+                    mot, self._properties['actualposition$%d']%mot,
+                    self._properties['softleft$%d' % mot],
                     self._properties['softright$%d' % mot])
         except KeyError as ke:
-            self._logger.error('Error saving motor position file for controller %s, because of missing key: %s' % (
-            self._instancename, ke.args[0]))
+            self._logger.error(
+                'Error saving motor position file for controller %s because of missing key: %s' % (
+                    self.name, ke.args[0]))
             return
-        with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'wt', encoding='utf-8') as f:
+        with open(os.path.join(self.configdir, self.name + '.motorpos'), 'wt',
+                  encoding='utf-8') as f:
             f.write(posfile)
-        self._logger.debug('Positions saved for controller %s' % self._instancename)
+        self._logger.debug('Positions saved for controller %s' % self.name)
 
     def _load_positions(self):
-        self._logger.debug('Loading positions for controller %s' % self._instancename)
-        if not self._busyflag.acquire(False):
+        """Load the motor positions and the values of soft limits from a file.
+        """
+        self._logger.debug('Loading positions for controller %s' % self.name)
+        if not self._busysemaphore.acquire(False):
             raise DeviceError(
                 'Cannot load positions from file if motor is moving!')
+        loaded={}
         try:
-            with open(os.path.join(self.configdir, self._instancename + '.motorpos'), 'rt', encoding='utf-8') as f:
-                loaded = []
-                lines = 0
+            with open(os.path.join(self.configdir, self.name + '.motorpos'),
+                      'rt', encoding='utf-8') as f:
                 for l in f:
-                    lines += 1
                     m = re.match('(?P<motoridx>\d+): (?P<position>' + RE_FLOAT +
                                  ') \((?P<leftlim>' + RE_FLOAT + '), (?P<rightlim>' + RE_FLOAT + ')\)', l)
                     if not m:
+                        # since the file is broken, consider the motor
+                        # positions to be set, so they can be saved later on,
+                        # ensuring a good motor position file.
+                        self._positions_loaded.set()
                         raise DeviceError(
                             'Invalid line in motor position file: ' + l)
                     gd = m.groupdict()
                     idx = int(gd['motoridx'])
-                    self._update_variable('softleft$%d' % idx, float(gd['leftlim']))
-                    self._update_variable('softright$%d' % idx, float(gd['rightlim']))
-                    if 'actualposition$%d' % idx not in self._properties:
-                        self._logger.warning(
-                            'Actualposition for motor %d on controller %s not yet received. Not calibrating.' % (
-                                idx, self._instancename))
-                        continue
-                    else:
-                        if abs(self._properties['actualposition$%d' % idx] - float(gd['position'])) > 0.001:
-                            self._logger.warning(
-                                'Current position (%.3f) of motor %d on controller %s differs from the stored one (%.3f): calibrating to the stored value.' % (
-                                    self._properties['actualposition$%d' % idx], idx, self._instancename,
-                                    float(gd['position'])))
-                            self._calibrate(idx, float(gd['position']))
-                        loaded.append(idx)
-                if lines != self._motorcount:
-                    self._logger.error('Invalid motor position file: ' + os.path.join(self.configdir,
-                                                                                      self._instancename + '.motorpos'))
-                    for i in range(self._motorcount):
-                        self._update_variable('softleft$%d' % i, -100)
-                        self._update_variable('softright$%d' % i, 100)
-                    self._positions_loaded.set()
-            if len(loaded) == self._motorcount:
-                self._logger.info('Positions loaded for controller %s in process %s' % (
-                    self._instancename, multiprocessing.current_process().name))
+                    loaded[idx]={'pos':float(gd['position']),
+                                 'leftlim':float(gd['leftlim']),
+                                 'rightlim':float(gd['rightlim'])}
+
+            if len(loaded) != self._N_axes:
+                # since the file is broken, consider the motor
+                # positions to be set, so they can be saved later on,
+                # ensuring a good motor position file.
                 self._positions_loaded.set()
+                raise DeviceError('Invalid motor position file: ' +
+                                  os.path.join(self.configdir,
+                                               self.name + '.motorpos'))
+            allupdated=True
+            for idx in loaded:
+                self._update_variable('softleft$%d' % idx, loaded['leftlim'])
+                self._update_variable('softright$%d' % idx, loaded['rightlim'])
+                if 'actualposition$%d' % idx not in self._properties:
+                    self._logger.warning(
+                        'Actualposition for motor %d on controller %s not yet received. Not calibrating.' % (
+                            idx, self.name))
+                    allupdated=False
+                    continue
+                elif abs(self._properties['actualposition$%d' % idx] -
+                                 loaded['position']) > 0.0001:
+                        self._logger.warning(
+                            'Current position (%.5f) of motor %d on controller %s differs from the stored one (%.5f): calibrating to the stored value.' % (
+                                self._properties['actualposition$%d' % idx], idx, self.name,
+                                loaded['position']))
+                        self._calibrate(idx, float(loaded['position']))
+            if allupdated:
+                self._logger.info('Positions loaded for controller %s in process %s' % (
+                    self.name, multiprocessing.current_process().name))
+                self._positions_loaded.set()
+
         except FileNotFoundError:
-            self._logger.info('Positions loaded (no file) for controller %s in process %s' % (
-                self._instancename, multiprocessing.current_process().name))
-            for i in range(self._motorcount):
-                self._update_variable('softleft$%d' % i, -100)
-                self._update_variable('softright$%d' % i, 100)
+            self._logger.info('No motor position cache file found for controller'+self.name)
             self._positions_loaded.set()
         finally:
-            self._busyflag.release()
+            self._busysemaphore.release()
 
     def _initialize_after_connect(self):
         Device_TCP._initialize_after_connect(self)
         self.refresh_variable('firmwareversion', check_backend_alive=False)
 
     def moving(self):
-        return self._moving is not None
+        """Check if any of the motors move.
+
+        This function is callable from both the front-end and the back-end
+        process. It checks `self._busysemaphore` to determine if we are moving or not."""
+        return self._busysemaphore.get_value() == 0
 
     def checklimits(self, motor, position):
         return (position >= self._properties['softleft$%d' % motor]) and \
@@ -815,15 +847,9 @@ class TMCMcard(Device_TCP):
 
 
 class TMCM351(TMCMcard):
-    def __init__(self, *args, **kwargs):
-        TMCMcard.__init__(self, *args, **kwargs)
-        self._motorcount = 3
-        self._top_rms_current = 2.8
-        self._motor_indices = [0, 1, 2]
-        self._max_microsteps = 6
-        for i in range(self._motorcount):
-            self._properties['softleft$%d' % i] = -100
-            self._properties['softright$%d' % i] = 100
+    _N_axes=3
+    _top_RMS_current = 2.8
+    _max_microsteps = 6
 
     def decode_error_flags(self, flags):
         lis = []
@@ -847,15 +873,9 @@ class TMCM351(TMCMcard):
 
 
 class TMCM6110(TMCMcard):
-    def __init__(self, *args, **kwargs):
-        TMCMcard.__init__(self, *args, **kwargs)
-        self._motorcount = 6
-        self._top_rms_current = 1.1
-        self._motor_indices = [0, 1, 2, 3, 4, 5]
-        self._max_microsteps = 8
-        for i in range(self._motorcount):
-            self._properties['softleft$%d' % i] = -100
-            self._properties['softright$%d' % i] = 100
+    _N_axes = 6
+    _top_RMS_current = 1.1
+    _max_microsteps = 8
 
     def decode_error_flags(self, flags):
         lis = []

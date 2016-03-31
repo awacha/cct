@@ -16,7 +16,7 @@ class GeniX(Device_ModbusTCP):
         Device_ModbusTCP.__init__(self, *args, **kwargs)
         self.backend_interval = 0.4
 
-    def _query_variable(self, variablename):
+    def _query_variable(self, variablename, minimum_query_variables=None):
         if not super()._query_variable(variablename):
             return False
 

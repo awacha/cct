@@ -21,7 +21,7 @@ class TPG201(Device_TCP):
     def _has_all_variables(self):
         return all([v in self._properties for v in ['pressure','version','units','_status']])
 
-    def _query_variable(self, variablename):
+    def _query_variable(self, variablename, minimum_query_variables=None):
         if not super()._query_variable(variablename):
             return
         if variablename == 'pressure':
