@@ -5,15 +5,21 @@ import select
 import socket
 import sys
 import time
+from logging.handlers import QueueHandler
 
 from .device import Device
 from .exceptions import DeviceError, CommunicationError
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
+
+class QueueLogHandler(QueueHandler):
+    def prepare(self, record):
+        return {'type':'log', 'logrecord':record,'timestamp':time.monotonic(),'id':0}
+
 
 class TCPCommunicator(multiprocessing.Process):
-    def __init__(self, tcpsocket, sendqueue, incomingqueue, poll_timeout, cleartosend_semaphore, getcompletemessages):
+    def __init__(self, instancename, tcpsocket, sendqueue, incomingqueue, poll_timeout, cleartosend_semaphore, getcompletemessages, killflag):
         super().__init__()
         self._tcpsocket=tcpsocket
         self._sendqueue=sendqueue
@@ -23,6 +29,15 @@ class TCPCommunicator(multiprocessing.Process):
         self._get_complete_messages=getcompletemessages
         self._message=b''
         self._lastsent=[]
+        self._killflag=killflag
+        self._asynchronous=False
+        self._logger = logging.getLogger(
+            __name__ + '::' + instancename + '__tcpprocess')
+        self._logger.propagate = False
+        if not self._logger.hasHandlers():
+            self._logger.addHandler(QueueLogHandler(incomingqueue))
+            self._logger.addHandler(logging.StreamHandler())
+            self._logger.setLevel(logging.getLogger(__name__).getEffectiveLevel())
 
     def _send_to_backend(self, msgtype, **kwargs):
         msg={'type':msgtype,'id':0,'timestamp':time.monotonic()}
@@ -41,16 +56,23 @@ class TCPCommunicator(multiprocessing.Process):
                 sent = 0
                 while sent < len(outmsg):
                     sent += self._tcpsocket.send(outmsg[sent:])
-                for i in range(expected_replies):
-                    self._lastsent.insert(0,outmsg)
+                if expected_replies is not None:
+                    for i in range(expected_replies):
+                        self._lastsent.insert(0,outmsg)
+                else:
+                    self._asynchronous=True
                 if expected_replies==0:
                     # we do not expect a reply, so we release the
                     # cleartosend semaphore
                     self._cleartosend_semaphore.release()
-            elif command == 'exit':
-                raise StopIteration
+            else:
+                raise NotImplementedError(command)
         except queue.Empty:
-            pass
+            # if we did not sent anything, release the semaphore
+            try:
+                self._cleartosend_semaphore.release()
+            except ValueError:
+                pass
 
     def _receive_message_from_device(self, polling):
         message=b''
@@ -82,7 +104,10 @@ class TCPCommunicator(multiprocessing.Process):
             # thread
             messages=self._get_complete_messages(self._message)
             for message in messages[:-1]:
-                self._send_to_backend('incoming', message=message, sent=self._lastsent.pop())
+                if self._asynchronous:
+                    self._send_to_backend('incoming',message=message,sent=None)
+                else:
+                    self._send_to_backend('incoming', message=message, sent=self._lastsent.pop())
             self._message=messages[-1]
         # Otherwise, if 'message' is empty, it means that no message has been
         # read, because no message was waiting. Note that this is not the same
@@ -98,6 +123,8 @@ class TCPCommunicator(multiprocessing.Process):
                          select.POLLERR | select.POLLHUP | select.POLLNVAL)
         try:
             while True:
+                if self._killflag.is_set():
+                    break
                 try:
                     self._send_message_to_device()
                 except StopIteration:
@@ -130,6 +157,7 @@ class Device_TCP(Device):
         Device.__init__(self, *args, **kwargs)
         self._outqueue = multiprocessing.Queue()
         self._poll_timeout = None
+        self._killflag = multiprocessing.Event()
 
     def _get_connected(self):
         """Check if we have a connection to the device. You should not call
@@ -171,32 +199,36 @@ class Device_TCP(Device):
 
     def _establish_connection(self):
         host, port, socket_timeout, poll_timeout = self._connection_parameters
-        self._logger.debug('Connecting over TCP/IP to device %s: %s:%d' % (self.name, host, port))
+        logger.debug('Connecting over TCP/IP to device %s: %s:%d' % (self.name, host, port))
         try:
             self._tcpsocket = socket.create_connection(
                 (host, port), socket_timeout)
             self._tcpsocket.setblocking(False)
             self._poll_timeout = poll_timeout
         except (socket.error, socket.gaierror, socket.herror, ConnectionRefusedError) as exc:
-            self._logger.error(
+            logger.error(
                 'Error initializing socket connection to device %s:%d' % (host, port))
             raise DeviceError('Cannot connect to device.',exc)
         self._flushoutqueue()
+        self._killflag.clear()
         self._cleartosend_semaphore=multiprocessing.BoundedSemaphore(1)
         self._communication_subprocess = TCPCommunicator(
-            self._tcpsocket, self._outqueue, self._queue_to_backend, self._poll_timeout, self._cleartosend_semaphore,
-            self._get_complete_messages)
+            self.name, self._tcpsocket, self._outqueue, self._queue_to_backend,
+            self._poll_timeout, self._cleartosend_semaphore,
+            self._get_complete_messages, self._killflag)
         self._communication_subprocess.daemon=True
         self._communication_subprocess.start()
-        self._logger.debug(
+        logger.debug(
             'Communication subprocess started for device %s:%d' % (host, port))
 
     def _breakdown_connection(self):
-        self._outqueue.put_nowait(('exit', None, None))
+        logger.debug('Sending kill pill to TCP worker of '+self.name)
+        self._killflag.set()
         try:
             self._communication_subprocess.join()
         except AssertionError:
             pass
+        logger.debug('Joined communication subprocess of '+self.name)
         del self._communication_subprocess
         self._tcpsocket.shutdown(socket.SHUT_RDWR)
         self._tcpsocket.close()
