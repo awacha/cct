@@ -2,7 +2,7 @@ import datetime
 import logging
 import multiprocessing
 
-from .device import Device_TCP, ReadOnlyVariable, InvalidValue, UnknownCommand, UnknownVariable
+from .device import Device_TCP, ReadOnlyVariable, InvalidValue, UnknownCommand, UnknownVariable, CommunicationError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -53,6 +53,8 @@ class HaakePhoenix(Device_TCP):
             raise UnknownCommand(commandname)
 
     def _get_complete_messages(self, message):
+        if len(message)>64:
+            raise CommunicationError('Haake Phoenix circulator not connected or not turned on, receiving garbage messages.')
         messages=message.split(b'\r')
         for i in range(len(messages)-1):
             messages[i]=messages[i]+b'\r'
@@ -163,7 +165,7 @@ class HaakePhoenix(Device_TCP):
             self._logger.debug(
                 'Confirmation for message %s received.' % original_sent.decode('utf-8').replace('\r', ''))
         else:
-            self._logger.debug('Unknown message: %s' % message.decode('utf-8').replace('\r', ''))
+            raise CommunicationError('Unknown message: %s' % message.decode('utf-8').replace('\r', ''))
 
     def _query_variable(self, variablename, minimum_query_variables=None):
         if variablename is None:

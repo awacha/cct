@@ -19,7 +19,7 @@ class QueueLogHandler(QueueHandler):
 
 
 class TCPCommunicator(multiprocessing.Process):
-    def __init__(self, instancename, tcpsocket, sendqueue, incomingqueue, poll_timeout, cleartosend_semaphore, getcompletemessages, killflag):
+    def __init__(self, instancename, tcpsocket, sendqueue, incomingqueue, poll_timeout, cleartosend_semaphore, getcompletemessages, killflag,reply_timeout):
         super().__init__()
         self._tcpsocket=tcpsocket
         self._sendqueue=sendqueue
@@ -29,11 +29,13 @@ class TCPCommunicator(multiprocessing.Process):
         self._get_complete_messages=getcompletemessages
         self._message=b''
         self._lastsent=[]
+        self._reply_timeout=reply_timeout
         self._killflag=killflag
         self._asynchronous=False
         self._logger = logging.getLogger(
             __name__ + '::' + instancename + '__tcpprocess')
         self._logger.propagate = False
+        self._instancename=instancename
         if not self._logger.hasHandlers():
             self._logger.addHandler(QueueLogHandler(incomingqueue))
             self._logger.addHandler(logging.StreamHandler())
@@ -54,6 +56,8 @@ class TCPCommunicator(multiprocessing.Process):
             command, outmsg, expected_replies = self._sendqueue.get_nowait()
             if command == 'send':
                 sent = 0
+                if self._instancename=='haakephoenix':
+                    self._logger.debug('Sending %s, queue length: %d'%(outmsg, self._sendqueue.qsize()))
                 while sent < len(outmsg):
                     sent += self._tcpsocket.send(outmsg[sent:])
                 if expected_replies is not None:
@@ -65,6 +69,8 @@ class TCPCommunicator(multiprocessing.Process):
                     # we do not expect a reply, so we release the
                     # cleartosend semaphore
                     self._cleartosend_semaphore.release()
+                else:
+                    self._lastsendtime=time.monotonic()
             else:
                 raise NotImplementedError(command)
         except queue.Empty:
@@ -109,6 +115,7 @@ class TCPCommunicator(multiprocessing.Process):
                 else:
                     self._send_to_backend('incoming', message=message, sent=self._lastsent.pop())
             self._message=messages[-1]
+            self._lastsendtime=None
         # Otherwise, if 'message' is empty, it means that no message has been
         # read, because no message was waiting. Note that this is not the same
         # as receiving an empty message, which signifies the breakdown of the
@@ -121,6 +128,7 @@ class TCPCommunicator(multiprocessing.Process):
         polling = select.poll()
         polling.register(self._tcpsocket, select.POLLIN | select.POLLPRI |
                          select.POLLERR | select.POLLHUP | select.POLLNVAL)
+        self._lastsendtime=None
         try:
             while True:
                 if self._killflag.is_set():
@@ -130,12 +138,17 @@ class TCPCommunicator(multiprocessing.Process):
                 except StopIteration:
                     break
                 self._receive_message_from_device(polling)
-
+                if ((self._lastsendtime is not None) and
+                            (time.monotonic()-self._lastsendtime)>
+                            self._reply_timeout):
+                    raise CommunicationError('Reply timeout')
         except Exception as exc:
-            self._send_to_backend('communication_error', exception=exc, traceback=sys.exc_info()[2])
+            self._logger.debug('Sending communication error to backend process of %s'%self._instancename)
+            self._send_to_backend('communication_error', exception=exc, traceback=str(sys.exc_info()[2]))
 
         finally:
             polling.unregister(self._tcpsocket)
+            self._logger.debug('Exiting TCP backend for %s'%self._instancename)
 
 
 class Device_TCP(Device):
@@ -199,7 +212,7 @@ class Device_TCP(Device):
 
     def _establish_connection(self):
         host, port, socket_timeout, poll_timeout = self._connection_parameters
-        logger.debug('Connecting over TCP/IP to device %s: %s:%d' % (self.name, host, port))
+        #logger.debug('Connecting over TCP/IP to device %s: %s:%d' % (self.name, host, port))
         try:
             self._tcpsocket = socket.create_connection(
                 (host, port), socket_timeout)
@@ -215,11 +228,11 @@ class Device_TCP(Device):
         self._communication_subprocess = TCPCommunicator(
             self.name, self._tcpsocket, self._outqueue, self._queue_to_backend,
             self._poll_timeout, self._cleartosend_semaphore,
-            self._get_complete_messages, self._killflag)
+            self._get_complete_messages, self._killflag, self.reply_timeout)
         self._communication_subprocess.daemon=True
         self._communication_subprocess.start()
-        logger.debug(
-            'Communication subprocess started for device %s:%d' % (host, port))
+        #logger.debug(
+        #    'Communication subprocess started for device %s:%d' % (host, port))
 
     def _breakdown_connection(self):
         logger.debug('Sending kill pill to TCP worker of '+self.name)

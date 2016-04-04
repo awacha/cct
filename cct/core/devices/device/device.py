@@ -13,7 +13,7 @@ from gi.repository import GLib, GObject
 from .exceptions import DeviceError, CommunicationError, WatchdogTimeout
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class QueueLogHandler(QueueHandler):
     def prepare(self, record):
@@ -79,7 +79,8 @@ class Device(GObject.GObject):
             'variablename': if the error can be tied to a variable, this is its
                 name. Otherwise it should be None
             'exception': the exception instance
-            'traceback': the traceback
+            'traceback': the traceback, not a traceback object, but a string,
+                since traceback instances are not pickleable.
         'exited': signifies that the background process exited. This is the
             last message the background process sends over the queue to the
             front-end. Fields:
@@ -142,6 +143,8 @@ class Device(GObject.GObject):
 
     log_formatstr = None
 
+    reply_timeout = 5
+
     # A dict of outstanding variable queries. Whenever a variable query is
     # requested (either from the front-end thread or by an automatic "idle"
     # query), a key in this dict with the variable name is inserted in this
@@ -163,6 +166,7 @@ class Device(GObject.GObject):
         # the folder where config files are stored.
         self.configdir = configdir
         # this is the parameter logfile. Note that this is another kind of logging, not related to the logging module.
+        print('instancename:',instancename,'(',str(type(instancename))+')')
         self.logfile = os.path.join(logdir, instancename + '.log')
         # some devices keep a copy of the configuration dictionary
         if configdict is not None:
@@ -273,7 +277,7 @@ class Device(GObject.GObject):
 
     def _stop_background_process(self):
         """Stops the background process."""
-        if hasattr(self._background_process):
+        if hasattr(self,'_background_process'):
             self._send_to_backend('exit')
 
     def get_variable(self, name):
@@ -308,7 +312,7 @@ class Device(GObject.GObject):
         if (not check_backend_alive) or self._background_process.is_alive():
             self._send_to_backend('query',name=name, signal_needed=signal_needed)
         else:
-            raise DeviceError('Backend process not running')
+            raise DeviceError('Backend process not running. Alive: %s'%str(self._background_process.is_alive()))
 
     def execute_command(self, command, *args):
         """Initiate the execution of a command on the device.
@@ -347,6 +351,7 @@ class Device(GObject.GObject):
         Do housekeeping tasks when the input queue is empty.
         """
         if (not self._ready) and (self._has_all_variables()):
+            #self._logger.debug('Device %s became ready.\n'%self.name + 'Variables:\n\t'+'\n\t'.join([k+' = '+str(self._properties[k]) for k in sorted(self._properties)]))
             self._on_startupdone()
             self._ready=True
             self._send_to_frontend('ready')
@@ -362,7 +367,7 @@ class Device(GObject.GObject):
         self._update_variable('_status','Initializing')
         #self._query_variable(None)
         #self._lastquerytime = time.time()
-        self._logger.debug('Starting background process for %s' % self.name)
+        #self._logger.debug('Starting background process for %s' % self.name)
 
     def _background_worker(self, startup_number):
         """Worker function of the background thread. The main job of this is
@@ -386,21 +391,22 @@ class Device(GObject.GObject):
         every time a new message comes. It is responsible to call
         `self._update_variable`.
         """
+        self._ready=False
+        self._last_queryall=0
         self._query_requested={} # re-initialize this dict.
         self._background_startup_count=startup_number
-        self._logger = logging.getLogger(
-            __name__ + '::' + self.name + '__backgroundprocess')
-        self._logger.propagate = False
         self._count_queries=0
         self._count_inmessages=0
         self._count_outmessages=0
+        self._logger = logging.getLogger(
+            __name__ + '::' + self.name + '__backgroundprocess')
+        self._logger.propagate = False
         if not self._logger.hasHandlers():
             self._logger.addHandler(QueueLogHandler(self._queue_to_frontend))
             self._logger.addHandler(logging.StreamHandler())
             self._logger.setLevel(logging.getLogger(__name__).getEffectiveLevel())
         # empty the properties dictionary
         self._properties = {}
-        self._ready = False
         self._on_start_backgroundprocess()
         self._pat_watchdog()
         self._release_watchdog()
@@ -436,11 +442,13 @@ class Device(GObject.GObject):
                 elif message['type'] == 'execute':
                     self._execute_command(message['name'], message['arguments'])
                 elif message['type'] == 'communication_error':
-                    raise message['exception'].with_traceback(message['traceback'])
+                    raise message['exception']
                 elif message['type'] == 'incoming':
                     self._count_inmessages+=1
                     self._process_incoming_message(message=message['message'],
                                                    original_sent=message['sent'])
+                elif message['type'] == 'log':
+                    self._queue_to_frontend.put_nowait(message)
                 else:
                     raise NotImplementedError(
                         'Unknown command for _background_worker: %s' % message['type'])
@@ -460,10 +468,11 @@ class Device(GObject.GObject):
             except DeviceError as de:
                 self._logger.error('DeviceError in the background process for %s: %s'%(
                     self.name, traceback.format_exc()))
-                self._send_to_frontend('error', exception=de, traceback=sys.exc_info()[2])
+                self._send_to_frontend('error', variablename=None, exception=de, traceback=str(sys.exc_info()[2]))
             except Exception as ex:
-                self._logger.error('Exception in the background process for %s, exiting.'%(
-                    self.name))
+                self._logger.error('Exception in the background process for %s, exiting. %s'%(
+                    self.name, traceback.format_exc()))
+                self._send_to_frontend('error',variablename=None, exception=ex, traceback=str(sys.exc_info()[2]))
                 exit_status=False # abnormal termination
                 break
         self._logger.info('Background process ending for %s. Messages sent: %d.\
@@ -490,7 +499,11 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         """Checks if all the variables have been requested and received at least once.
         The default implementation compares the keys in _properties to those in
         _all_variables."""
-        return bool([k for k in self._all_variables if k not in self._properties])
+        missing=[k for k in self._all_variables if k not in self._properties]
+#        if self.name=='tmcm351a':
+#            self._logger.debug('Missing variables for %s: %s'%(self.name, missing))
+#            self._logger.debug('Outstanding queries for %s: %s'%(self.name, self._query_requested))
+        return not bool(missing)
 
     def _on_startupdone(self):
         """BACKGROUND_PROCESS:
@@ -546,9 +559,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
                 raise AssertionError
             return False
         except (AssertionError, KeyError):
-            if varname.startswith('_status'):
-                self._logger.debug('Setting %s for %s to %s' %
-                                   (varname, self.name, value))
+#            self._logger.debug('Setting %s for %s to %s' % (varname, self.name, value))
             self._properties[varname] = value
             self._send_to_frontend('update',name=varname,value=value)
             return True
@@ -569,7 +580,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
                     ('%.3f\t' % time.time()) +
                     self.log_formatstr.format(**self._properties) + '\n')
             except KeyError as ke:
-                if not self._juststarted:
+                if self._ready:
                     self._logger.warn('KeyError while producing log line for %s: %s' % (
                         self.name, ke.args[0]))
 
@@ -587,11 +598,14 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
                         logger.error(
                             'Communication error in device %s, disconnecting.' % self.name)
                         # disconnect from the device, attempt to reconnect to it.
+                    logger.debug('Calling disconnect_device on %s'%self.name)
                     self.disconnect_device(
                         because_of_failure = not message['normaltermination'])
+                    logger.debug('Joining background process for %s'%self.name)
                     self._background_process.join()
                     del self._background_process
                     del self._idle_handler
+                    logger.debug('Disconnected from device %s'%self.name)
                     return False # prevent re-scheduling this idle handler
                 elif (message['type']== 'ready'):
                     self.emit('startupdone')
@@ -670,11 +684,13 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         returned to disconnected. If the exception happens in 4), 
         _finalize_after_disconnect() has to be called.
         """
-        logger.debug('Connecting to device %s'%self.name)
+        #logger.debug('Connecting to device %s'%self.name)
         if self._get_connected():
             raise DeviceError('Already connected')
         self._connection_parameters=args
-        self._establish_connection(*args)
+        # We don't supply arguments directly to the next function, it takes
+        # them from `self._connection_parameters`
+        self._establish_connection()
         try:
             self._start_background_process()
         except:
@@ -737,12 +753,11 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
             self._stop_background_process()
             logger.debug('Stopped background process')
             self._breakdown_connection()
+            logger.debug('Connection broken down.')
             self._finalize_after_disconnect()
             logger.debug('Finalized')
         finally:
             self.emit('disconnect', because_of_failure)
-
-        raise NotImplementedError
 
     def reconnect_device(self):
         """Try to reconnect the device after a spontaneous disconnection."""
@@ -810,10 +825,14 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         """
         if variablename is None:
             # query all variables
+            if (time.monotonic()-self._last_queryall)<self.backend_interval:
+                return False
+            self._last_queryall=time.monotonic()
             if minimum_query_variables is None:
                 minimum_query_variables=self._minimum_query_variables
             for vn in minimum_query_variables:
                 self._query_variable(vn)
+                #self._logger.debug('Queried variable %s for %s'%(vn,self.name))
             return False
         try:
             if (self._query_requested[variablename]-time.monotonic())<self._query_timeout:

@@ -61,7 +61,7 @@ class TMCMcard(Device_TCP):
     backend_interval = 0.1
 
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self._all_variables=DEVICE_VARIABLES+['%s$%d'%(vn,motidx)
                                               for vn, motidx in itertools.product(
@@ -108,6 +108,9 @@ class TMCMcard(Device_TCP):
                 variablenames.extend(missingvariables)
             super()._query_variable(None, variablenames)
             return  # do not do the actual querying, the previous line will take care of it by calling us again.
+        if not super()._query_variable(variablename, minimum_query_variables=minimum_query_variables):
+            # skip querying
+            return
         try:
             motor_idx = int(variablename.split('$')[1])
             if (motor_idx < 0) or (motor_idx >= self._N_axes):
@@ -230,15 +233,17 @@ class TMCMcard(Device_TCP):
             typenum = original_sent[2]
             motor_idx = str(original_sent[3])
             motoridx = original_sent[3]
+            varname=None
             try:
                 if typenum == 0:  # targetposition
-                    self._update_variable(
-                        'targetposition$' + motor_idx, self._convert_pos_to_phys(value, motoridx))
+                    varname='targetposition$'+motor_idx
+                    self._update_variable(varname, self._convert_pos_to_phys(value, motoridx))
                     self._update_variable('targetpositionraw$' + motor_idx, value)
                 elif typenum == 1:  # actualposition
+                    varname = 'actualposition$'+motor_idx
                     newvalue = self._convert_pos_to_phys(value, motoridx)
                     self._update_variable('actualpositionraw$' + motor_idx, value)
-                    if self._update_variable('actualposition$' + motor_idx, newvalue):
+                    if self._update_variable(varname, newvalue):
                         if self._moving_idx()!=motoridx:
                             # if no motor is moving or the moving motor is not
                             # this one, and the position of this motor has
@@ -248,18 +253,22 @@ class TMCMcard(Device_TCP):
                                 motor_idx, self.name, self._convert_pos_to_phys(value, motoridx), value))
                             self._save_positions()
                 elif typenum == 2:  # targetspeed
+                    varname='targetspeed$'+motor_idx
                     self._update_variable(
                         'targetspeed$' + motor_idx,
                         self._convert_speed_to_phys(value, motoridx))
                 elif typenum == 3:  # actualspeed
+                    varname='actualspeed$'+motor_idx
                     self._update_variable(
                         'actualspeed$' + motor_idx,
                         self._convert_speed_to_phys(value, motoridx))
                 elif typenum == 4:
+                    varname='maxspeed$'+motor_idx
                     self._update_variable(
                         'maxspeed$' + motor_idx,
                         self._convert_speed_to_phys(value, motoridx))
                 elif typenum == 5:
+                    varname='maxacceleration$'+motor_idx
                     self._update_variable(
                         'maxacceleration$' + motor_idx,
                         self._convert_accel_to_phys(value, motoridx))
@@ -291,6 +300,7 @@ class TMCMcard(Device_TCP):
                     self._update_variable('leftswitchenable$' + motor_idx,
                                           not bool(value))
                 elif typenum == 135:
+                    varname='actualacceleration$'+motor_idx
                     self._update_variable(
                         'actualacceleration$' + motor_idx,
                         self._convert_accel_to_phys(value, motoridx))
@@ -313,6 +323,10 @@ class TMCMcard(Device_TCP):
                 else:
                     raise NotImplementedError(typenum)
             except TMCMConversionError:
+                # if we reach this, _update_variable() has not been called with
+                # the new value. We must manually remove the variable name from
+                # self._query_requested, in order to allow re-querying it.
+                del self._query_requested[varname]
                 if self._has_all_variables():
                     # Some TMCMConversionErrors are expected until all the
                     # variables have been obtained.
@@ -564,6 +578,7 @@ class TMCMcard(Device_TCP):
         if commandname in ['moveto', 'moverel']:
             # handle moving commands
             motor, pos = arguments
+            self._logger.debug('Starting %s of motor %d to %f'%(commandname,motor,pos))
             try:
                 # Check the validity of the motor index
                 assert((motor >= 0) and (motor < self._N_axes))
@@ -608,13 +623,14 @@ class TMCMcard(Device_TCP):
                 self._update_variable('_status', 'Moving #%d' % motor)
                 self._update_variable('_status$%d' % motor, 'Moving')
                 self._send(self._construct_tmcl_command(4, int(commandname == 'moverel'), motor, posraw))
+                self._logger.debug('Issued move command.')
             except Exception as exc:
                 # if an error happened above, we are not moving.
                 self._handle_motor_stopped()
                 self._logger.warning('Exception while starting move: ' + str(exc))
                 raise
         elif commandname == 'stop':
-            motor = arguments
+            motor = arguments[0]
             self._send(self._construct_tmcl_command(3, 0, motor, 0))
         elif commandname == 'load_positions':
             self._load_positions()
@@ -742,7 +758,7 @@ class TMCMcard(Device_TCP):
         try:
             for mot in range(self._N_axes):
                 posfile+= '%d: %.16f (%.16f, %.16f)\n' % (
-                    mot, self._properties['actualposition$%d']%mot,
+                    mot, self._properties['actualposition$%d'%mot],
                     self._properties['softleft$%d' % mot],
                     self._properties['softright$%d' % mot])
         except KeyError as ke:
@@ -792,8 +808,8 @@ class TMCMcard(Device_TCP):
                                                self.name + '.motorpos'))
             allupdated=True
             for idx in loaded:
-                self._update_variable('softleft$%d' % idx, loaded['leftlim'])
-                self._update_variable('softright$%d' % idx, loaded['rightlim'])
+                self._update_variable('softleft$%d' % idx, loaded[idx]['leftlim'])
+                self._update_variable('softright$%d' % idx, loaded[idx]['rightlim'])
                 if 'actualposition$%d' % idx not in self._properties:
                     self._logger.warning(
                         'Actualposition for motor %d on controller %s not yet received. Not calibrating.' % (
@@ -801,12 +817,13 @@ class TMCMcard(Device_TCP):
                     allupdated=False
                     continue
                 elif abs(self._properties['actualposition$%d' % idx] -
-                                 loaded['position']) > 0.0001:
+                                 loaded[idx]['pos']) > 0.0001:
                         self._logger.warning(
                             'Current position (%.5f) of motor %d on controller %s differs from the stored one (%.5f): calibrating to the stored value.' % (
                                 self._properties['actualposition$%d' % idx], idx, self.name,
-                                loaded['position']))
-                        self._calibrate(idx, float(loaded['position']))
+                                loaded[idx]['pos']))
+                        self._calibrate(idx, float(loaded[idx]['pos']))
+                        self._busysemaphore.acquire()
             if allupdated:
                 self._logger.info('Positions loaded for controller %s in process %s' % (
                     self.name, multiprocessing.current_process().name))
