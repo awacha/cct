@@ -195,6 +195,7 @@ class Device(GObject.GObject):
         self._ready=False
         # the backend process must be started only after the connection to the device
         # has been established.
+        self._loglevel=logger.level
 
     @property
     def name(self):
@@ -270,7 +271,8 @@ class Device(GObject.GObject):
         self._background_startup_count+=1
         self._background_process = multiprocessing.Process(
             target=self._background_worker, daemon=True,
-            name=self.name+'_background', args=(self._background_startup_count,))
+            name=self.name+'_background', args=(self._background_startup_count,
+                                                self._loglevel))
         self._background_process.start()
         self._idle_handler = GLib.idle_add(self._idle_worker)
         logger.debug('Background process for %s has been started' %self.name)
@@ -369,7 +371,7 @@ class Device(GObject.GObject):
         #self._lastquerytime = time.time()
         #self._logger.debug('Starting background process for %s' % self.name)
 
-    def _background_worker(self, startup_number):
+    def _background_worker(self, startup_number, loglevel):
         """Worker function of the background thread. The main job of this is
         to run periodic checks on the hardware (polling) and updating 
         `self._properties` accordingly, as well as writing log files.
@@ -404,7 +406,7 @@ class Device(GObject.GObject):
         if not self._logger.hasHandlers():
             self._logger.addHandler(QueueLogHandler(self._queue_to_frontend))
             self._logger.addHandler(logging.StreamHandler())
-            self._logger.setLevel(logging.getLogger(__name__).getEffectiveLevel())
+        self._logger.setLevel(loglevel)
         # empty the properties dictionary
         self._properties = {}
         self._on_start_backgroundprocess()
@@ -500,9 +502,6 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         The default implementation compares the keys in _properties to those in
         _all_variables."""
         missing=[k for k in self._all_variables if k not in self._properties]
-#        if self.name=='tmcm351a':
-#            self._logger.debug('Missing variables for %s: %s'%(self.name, missing))
-#            self._logger.debug('Outstanding queries for %s: %s'%(self.name, self._query_requested))
         return not bool(missing)
 
     def _on_startupdone(self):
@@ -599,13 +598,14 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
                             'Communication error in device %s, disconnecting.' % self.name)
                         # disconnect from the device, attempt to reconnect to it.
                     logger.debug('Calling disconnect_device on %s'%self.name)
-                    self.disconnect_device(
-                        because_of_failure = not message['normaltermination'])
+                    del self._idle_handler
                     logger.debug('Joining background process for %s'%self.name)
                     self._background_process.join()
                     del self._background_process
-                    del self._idle_handler
+                    self.disconnect_device(
+                        because_of_failure = not message['normaltermination'])
                     logger.debug('Disconnected from device %s'%self.name)
+
                     return False # prevent re-scheduling this idle handler
                 elif (message['type']== 'ready'):
                     self.emit('startupdone')
@@ -748,7 +748,6 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
             raise DeviceError('Not connected')
         logger.debug('Disconnecting from device%s' %
                            (['', ' because of a failure'][because_of_failure]))
-        self._stop_background_process()
         try:
             self._stop_background_process()
             logger.debug('Stopped background process')

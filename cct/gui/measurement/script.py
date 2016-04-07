@@ -195,7 +195,7 @@ class ScriptMeasurement(ToolWindow):
 
     def on_script_message(self, interpreter, commandname, message):
         buf=self._builder.get_object('messagesview').get_buffer()
-        buf.insert(buf.get_end_iter(), message+'\n')
+        buf.insert(buf.get_end_iter(), str(datetime.datetime.now())+': '+message+'\n')
         self._builder.get_object('messagesview').scroll_to_iter(buf.get_end_iter(), 0,False, 0,0)
         buf.place_cursor(buf.get_end_iter())
         try:

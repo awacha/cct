@@ -18,6 +18,10 @@ class TPG201(Device_TCP):
 
     _minimum_query_variables = ['pressure', 'version', 'units']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._loglevel = logger.level
+
     def _has_all_variables(self):
         return all([v in self._properties for v in ['pressure','version','units','_status']])
 

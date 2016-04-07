@@ -87,9 +87,6 @@ class Scan(Command):
         if hasattr(self, '_we_can_start_the_exposure'):
             # we need to start the exposure
             del self._we_can_start_the_exposure
-            self._myinterpreter.execute_command(
-                'expose(%f, "%s", %f)' % (self._exptime, self._exposure_prefix, where))
-            self._exposureanalyzer_idle = False
 
     def on_scanpoint(self, exposureanalyzer, prefix, fsn, scandata):
         logger.debug('Writing scan line for position %f' % scandata[0])
@@ -116,6 +113,7 @@ class Scan(Command):
                 return False
         if commandname == 'moveto':
             # check if we are in the desired place
+            logger.info('Motor moved.')
             try:
                 if (not returnvalue):
                     logger.warning('Positioning error: moveto command returned with False')
@@ -125,8 +123,9 @@ class Scan(Command):
                                 self._motor, self._instrument.motors[self._motor].where(), self._whereto))
             except CommandError as ce:
                 self._die(ce, traceback.format_exc())
-            self._instrument.motors[self._motor].refresh_variable('actualposition')
-            self._we_can_start_the_exposure = True
+            self._myinterpreter.execute_command(
+                'expose(%f, "%s", %f)' % (self._exptime, self._exposure_prefix, self._whereto))
+            self._exposureanalyzer_idle = False
 
         elif commandname == 'expose':
             self._idx += 1

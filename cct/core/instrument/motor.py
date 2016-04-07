@@ -24,6 +24,7 @@ class Motor(GObject.GObject):
         self._connection = [self._controller.connect(
             'variable-change', self.on_variable_change),
             self._controller.connect('error', self.on_error)]
+        self._moving=False
 
     def on_variable_change(self, controller, variable, newvalue):
         try:
@@ -33,7 +34,8 @@ class Motor(GObject.GObject):
             return  # message cannot be split: not for us
         if index != self._index:
             return  # message not for us
-        if variable == '_status' and newvalue == 'idle':
+        if variable == '_status' and newvalue == 'idle' and self._moving:
+            self._moving=False
             self.emit('stop', self.get_variable('targetpositionreached'))
         if variable == 'actualposition':
             self.emit('position-change', newvalue)
@@ -74,9 +76,11 @@ class Motor(GObject.GObject):
         return self._controller.get_variable('rightswitchstatus$%d'%self._index)
 
     def moveto(self, position):
+        self._moving=True
         return self._controller.moveto(self._index, position)
 
     def moverel(self, position):
+        self._moving=True
         return self._controller.moverel(self._index, position)
 
     def calibrate(self, position):

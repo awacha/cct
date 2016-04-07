@@ -58,7 +58,7 @@ class TMCMcard(Device_TCP):
     # step is 1/200 mm.
     _full_step_size = 1 / 200.
 
-    backend_interval = 0.1
+    backend_interval = 0.5
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,6 +87,7 @@ class TMCMcard(Device_TCP):
         # is only permitted from the backend. The frontend can only initiate
         # this via a well-crafted execute_command()
         self._positions_loaded = multiprocessing.Event()
+        self._loglevel = logger.level
 
     def _query_variable(self, variablename, minimum_query_variables=None):
         if variablename is None:
@@ -177,6 +178,12 @@ class TMCMcard(Device_TCP):
             self._update_variable(variablename, self._properties[variablename])
         else:
             raise UnknownVariable(variablename)
+        midx=self._moving_idx()
+        if midx is not None:
+            # if one motor is moving, quickly re-queue the check for
+            # the essential variables needed to ascertain the end of movement.
+            for vn in [vn_+'$%d'%midx for vn_ in ['targetpositionreached']]:
+                self.refresh_variable(vn,signal_needed=False)
 
     def _get_complete_messages(self, message):
         messages=[]
@@ -248,8 +255,8 @@ class TMCMcard(Device_TCP):
                             # if no motor is moving or the moving motor is not
                             # this one, and the position of this motor has
                             # changed, save the motor positions
-                            self._logger.info(
-                                'Position of motor %s on %s changed (to %f, raw %f), saving positions. This might not be needed!' % (
+                            self._logger.debug(
+                                'Position of motor %s on %s changed (to %f, raw %f), saving positions.' % (
                                 motor_idx, self.name, self._convert_pos_to_phys(value, motoridx), value))
                             self._save_positions()
                 elif typenum == 2:  # targetspeed
@@ -337,7 +344,7 @@ class TMCMcard(Device_TCP):
                 # one of the essential variables self._is_moving() is based
                 # on. We must decide if the motor has stopped or not
                 if not self._is_moving(motoridx):
-                    self._handle_motor_stopped()
+                    self._handle_motor_stopped(motoridx)
         elif cmdnum == 136:
             self._update_variable('firmwareversion', 'TMCM%d' % (
                 value // 0x10000) + ', firmware v%d.%d' % ((value % 0x10000) / 0x100, value % 0x100))
@@ -362,18 +369,20 @@ class TMCMcard(Device_TCP):
             for vn in VOLATILE_VARIABLES:
                 self.refresh_variable(vn + '$%d' % moving_idx, signal_needed=False)
 
-    def _handle_motor_stopped(self):
+    def _handle_motor_stopped(self, motoridx):
         """This method performs the housekeeping tasks when a motor is stopped."""
-        self._busysemaphore.release()
-        motor_idx=self._moving_idx()
+        try:
+            self._busysemaphore.release()
+        except ValueError:
+            pass
         try:
             del self._moving
         except AttributeError:
             # should not happen, but who knows.
             pass
         self._update_variable('_status', 'idle', force=True)
-        self._update_variable('_status$%d' % motor_idx, 'idle', force=True)
-        self._logger.debug('Saving positions for %s: moving just ended.' % self.name)
+        self._update_variable('_status$%d'%motoridx, 'idle', force=True)
+        #self._logger.debug('Saving positions for %s: moving just ended.' % self.name)
         self._save_positions()
 
     def _is_moving(self, motoridx):
@@ -406,6 +415,13 @@ class TMCMcard(Device_TCP):
         # command has been confirmed, thus before using the values, their
         # timestamps will be checked.
 
+
+        # check if the target position is reached
+        if self._timestamps['targetpositionreached$%d' % motoridx] > self._moving['starttime']:
+            if self._properties['targetpositionreached$%d' % motoridx]:
+                self._logger.debug('Target reached')
+                return False
+
         # check if the actual speed has been updated after the start of the
         # move, and if it has, see if it is zero. If not, we are moving.
         if self._timestamps['actualspeed$%d' % motoridx] > self._moving['starttime']:
@@ -431,11 +447,6 @@ class TMCMcard(Device_TCP):
                 self._logger.debug('Stopped by switch')
                 return False
 
-        # check if the target position is reached
-        if self._timestamps['targetpositionreached$%d' % motoridx] > self._moving['starttime']:
-            if self._properties['targetpositionreached$%d' % motoridx]:
-                self._logger.debug('Target reached')
-                return False
 
         # we could not rule out that we are moving
         return True
@@ -596,7 +607,7 @@ class TMCMcard(Device_TCP):
                     abspos = pos + where
                 if relpos == 0:
                     # do not execute null-moves.
-                    self._handle_motor_stopped()
+                    self._handle_motor_stopped(motor)
                     return
 
                 # check soft limits: do not allow movement to go outside them.
@@ -626,7 +637,7 @@ class TMCMcard(Device_TCP):
                 self._logger.debug('Issued move command.')
             except Exception as exc:
                 # if an error happened above, we are not moving.
-                self._handle_motor_stopped()
+                self._handle_motor_stopped(motor)
                 self._logger.warning('Exception while starting move: ' + str(exc))
                 raise
         elif commandname == 'stop':
@@ -774,7 +785,7 @@ class TMCMcard(Device_TCP):
     def _load_positions(self):
         """Load the motor positions and the values of soft limits from a file.
         """
-        self._logger.debug('Loading positions for controller %s' % self.name)
+        self._logger.info('Loading positions for controller %s' % self.name)
         if not self._busysemaphore.acquire(False):
             raise DeviceError(
                 'Cannot load positions from file if motor is moving!')

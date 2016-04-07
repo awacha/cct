@@ -107,7 +107,7 @@ class Pilatus(ToolWindow):
                 else:
                     state = IndicatorState.OK
             else:
-                raise NotImplementedError(variablename)
+                pass
             self._indicators[variablename].set_value('%.2f °C' % value, state)
         elif variablename.startswith('humidity'):
             if variablename.endswith('0') or variablename.endswith('1'):
@@ -125,7 +125,7 @@ class Pilatus(ToolWindow):
                 else:
                     state = IndicatorState.OK
             else:
-                raise NotImplementedError(variablename)
+                pass
             self._indicators[variablename].set_value('%.2f %%' % value, state)
         elif variablename in ['cutoff', 'nimages', 'sel_chip', 'sel_bank', 'sel_module', 'pid', 'controllingPID',
                               'masterPID']:
@@ -157,7 +157,7 @@ class Pilatus(ToolWindow):
                                                           self._instrument.devices['pilatus'].get_variable('hpix')),
                                                IndicatorState.NEUTRAL)
         else:
-            raise NotImplementedError(variablename)
+            pass
         if variablename == 'gain':
             for i, gainlabel in enumerate(self._builder.get_object('gain_selector').get_model()):
                 if gainlabel[0].startswith(value):

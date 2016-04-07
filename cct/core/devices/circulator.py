@@ -39,6 +39,7 @@ class HaakePhoenix(Device_TCP):
         # Refresh of the variables in `self.notsourgentvariables` is initiated
         # only if the value of this counter is zero.
         self._urgency_counter = 0
+        self._loglevel=logger.level
 
     def _execute_command(self, commandname, arguments):
         if commandname == 'start':

@@ -7,7 +7,7 @@ from gi.repository import GLib
 from .command import Command
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class Trim(Command):
     """Trim the Pilatus detector
@@ -127,8 +127,8 @@ class Expose(Command):
         instrument.detector.set_variable('exptime', exptime)
         self._exptime = exptime
         self.timeout = exptime + 30
-        self._progresshandler = GLib.timeout_add(500,
-                                                 lambda d=instrument.detector: self._progress(d))
+        self._progresshandler = GLib.timeout_add(
+            500, lambda d=instrument.detector: self._progress(d))
         self._check_for_variable = '_status'
         self._check_for_value = 'idle'
         self._install_timeout_handler(self.timeout)
@@ -138,17 +138,14 @@ class Expose(Command):
         self.emit('message', 'Starting exposure of file: %s' % (self._filename))
 
     def _progress(self, detector):
-        if not hasattr(self, '_starttime'):
-            try:
-                self._starttime = detector.get_variable('starttime')
-                if self._starttime is None:
-                    del self._starttime
-                    raise KeyError
-            except KeyError:
-                return True
+        try:
+            starttime = detector.get_variable('starttime')
+        except KeyError:
+            return True
+        if starttime is None:
+            return True
         timeleft = self._exptime - \
-            (datetime.datetime.now() - self._starttime).total_seconds()
-        # timeleft=detector.get_variable('timeleft')
+            (datetime.datetime.now() - starttime).total_seconds()
         self.emit('progress', 'Exposing. Remaining time: %4.1f' % timeleft, 1 - timeleft / self._exptime)
         return True
 
@@ -248,19 +245,14 @@ class ExposeMulti(Command):
         self._file_received = False
 
     def _progress(self, detector):
-        if not hasattr(self, '_starttime'):
-            try:
-                self._starttime = detector.get_variable('starttime')
-                if self._starttime is None:
-                    del self._starttime
-                    raise KeyError
-            except KeyError:
-                return True
-        if self._starttime is None:
-            del self._starttime
+        try:
+            starttime=detector.get_variable('starttime')
+        except KeyError:
+            return True
+        if starttime is None:
             return True
         timeleft = self._totaltime - \
-                   (datetime.datetime.now() - self._starttime).total_seconds()
+                   (datetime.datetime.now() - starttime).total_seconds()
         # timeleft=detector.get_variable('timeleft')
         self.emit('progress', 'Exposing %d images, %d remaining. Remaining time: %4.1f sec' % (self._nimages,
                                                                                                len(
@@ -274,12 +266,11 @@ class ExposeMulti(Command):
         if hasattr(self, '_kill'):
             return False
         try:
-            starttime = self._starttime
-            if starttime is None:
-                del self._starttime
-                raise AttributeError('_starttime')
-        except AttributeError:
-            starttime = self._alt_starttime
+            starttime = self._instrument.detector.get_variable('starttime')
+        except KeyError:
+            return True
+        if starttime is None:
+            return True
         # the time in seconds elapsed from issuing the "exposure" command.
         elapsedtime = (datetime.datetime.now() - starttime).total_seconds()
         # check the times when images are due
@@ -325,10 +316,9 @@ class ExposeMulti(Command):
             if not hasattr(self,'_alt_starttime'):
                 device.expose(self._filenames_pending[0])
                 self._alt_starttime = datetime.datetime.now()
-                self._filechecker_handle = GLib.timeout_add(self._exptime * 1000, self._filechecker)
         elif variablename == 'starttime':
-            self._starttime = newvalue
-            logger.debug('start confirmation obtained')
+            if newvalue is not None:
+                self._filechecker_handle = GLib.timeout_add(self._exptime * 1000, self._filechecker)
         elif variablename == '_status' and newvalue == 'idle':
             self._detector_idle=True
         self._try_to_end()

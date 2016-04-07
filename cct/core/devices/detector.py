@@ -10,7 +10,7 @@ from .device import Device_TCP, DeviceError, ReadOnlyVariable, CommunicationErro
     UnknownCommand
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # integer type variables
 pilatus_int_variables = ['wpix', 'hpix', 'sel_bank', 'sel_module',
@@ -154,6 +154,8 @@ class Pilatus(Device_TCP):
 
     reply_timeout = 20
 
+    idle_wait=2
+
     _minimum_query_variables = ['gain', 'trimfile', 'nimages', 'cameradef',
                                 'imgpath', 'imgmode', 'pid', 'expperiod',
                                 'diskfree', 'tau', 'version']
@@ -173,6 +175,7 @@ class Pilatus(Device_TCP):
         self._expected_status = 'idle'
         # a flag which has to be acquired when the detector is busy: trimming or exposing.
         self._busysemaphore = multiprocessing.BoundedSemaphore(1)
+        self._loglevel = logger.level
 
     def is_busy(self) -> bool:
         return self._busysemaphore.get_value() == 0
@@ -183,6 +186,12 @@ class Pilatus(Device_TCP):
                 # do not initiate query-all-variables if we are exposing or 
                 # trimming: the pilatus detector is known to become unresponsive
                 # during these times.
+                return False
+            elif ((self._properties['_status']=='idle') and
+                          (time.time()-self._timestamps['_status'])<self.idle_wait):
+                # if the previous exposure has just finished, wait a little,
+                # in case we are in a scan and want to start another exposure
+                # shortly.
                 return False
         if not super()._query_variable(variablename):
             # the above call takes care of the variablename==None case as well.
@@ -220,12 +229,14 @@ class Pilatus(Device_TCP):
         return message.split(b'\x18')
 
     def _handle_end_exposure(self, status: bool, message: bytes) -> None:
+        self._logger.debug('Exposure ended.')
         try:
             self._busysemaphore.release()
         except ValueError:
             return
         self._update_variable('_status', 'idle')
         self._update_variable('lastimage', message.decode('utf-8'))
+        self._update_variable('filename', message.decode('utf-8'))
         self._update_variable('starttime', None)
         if status:
             self._update_variable('lastcompletedimage', message.decode('utf-8'))
@@ -247,7 +258,10 @@ class Pilatus(Device_TCP):
 
     def _process_incoming_message(self, message: bytes, original_sent: Optional[bytes] = None):
         self._pat_watchdog()
-        self._cleartosend_semaphore.release()
+        try:
+            self._cleartosend_semaphore.release()
+        except ValueError:
+            pass
         origmessage = message
         if message.count(b' ') < 2:
             # empty message, like '15 OK', or one without anything, e.g.
@@ -275,6 +289,8 @@ class Pilatus(Device_TCP):
                 gd[k] = int(gd[k])
             for k in ['exptime', 'timeleft']:
                 gd[k] = float(gd[k])
+            for k in [k_ for k_ in gd if k_ not in  ['controllingPID', 'masterPID', 'exptime', 'timeleft']]:
+                gd[k] = gd[k].decode('utf-8')
             for k in gd:
                 self._update_variable(k, gd[k])
         elif idnum == 5:
@@ -289,7 +305,7 @@ class Pilatus(Device_TCP):
             m = RE_IMGPATH.match(message)
             if m is None:
                 raise DeviceError('Invalid imgpath message from Pilatus: %s' % origmessage)
-            self._update_variable('imgpath', m.group('imgpath'))
+            self._update_variable('imgpath', m.group('imgpath').decode('utf-8'))
         elif idnum == 13:
             # killed
             m = RE_KILL.match(message)
@@ -328,15 +344,15 @@ class Pilatus(Device_TCP):
             m = RE_EXPSTART.match(message)
             if m is not None:
                 self._update_variable('exptime', float(m.group('exptime')))
-                self._update_variable('starttime', dateutil.parser.parse(m.group('starttime')))
+                self._update_variable('starttime', dateutil.parser.parse(m.group('starttime').decode('utf-8')))
                 self._handle_start_exposure()
                 return
             m = RE_SETTHRESHOLD.match(message)
             if m is not None:
                 self._update_variable('threshold', float(m.group('threshold')))
                 self._update_variable('vcmp', float(m.group('vcmp')))
-                self._update_variable('gain', m.group('gain'))
-                self._update_variable('trimfile', m.group('trimfile'))
+                self._update_variable('gain', m.group('gain').decode('utf-8'))
+                self._update_variable('trimfile', m.group('trimfile').decode('utf-8'))
                 return
             m = RE_SETTHRESHOLD_ACK.match(message)
             if m is not None:
@@ -344,7 +360,7 @@ class Pilatus(Device_TCP):
                 return
             m = RE_IMGMODE.match(message)
             if m is not None:
-                self._update_variable('imgmode', m.group('imgmode'))
+                self._update_variable('imgmode', m.group('imgmode').decode('utf-8'))
                 return
             if not message:
                 # empty message
@@ -367,7 +383,7 @@ class Pilatus(Device_TCP):
             self._update_variable('sel_bank', int(gd['sel_bank']))
             self._update_variable('sel_module', int(gd['sel_module']))
             self._update_variable('sel_chip', int(gd['sel_chip']))
-            self._update_variable('telemetry_date', dateutil.parser.parse(gd['telemetry_date']))
+            self._update_variable('telemetry_date', dateutil.parser.parse(gd['telemetry_date'].decode('utf-8')))
             self._update_variable('temperature0', float(gd['temperature0']))
             self._update_variable('temperature1', float(gd['temperature1']))
             self._update_variable('temperature2', float(gd['temperature2']))
@@ -378,7 +394,7 @@ class Pilatus(Device_TCP):
             m = RE_VERSION.match(message)
             if m is None:
                 raise DeviceError('Invalid version message received from Pilatus: %s' % origmessage)
-            self._update_variable('version', m.group('version'))
+            self._update_variable('version', m.group('version').decode('utf-8'))
         elif idnum == 215:
             m = RE_THREAD.match(message)
             if m is None:

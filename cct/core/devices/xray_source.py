@@ -1,9 +1,10 @@
 import logging
+import time
 
 from .device import Device_ModbusTCP, UnknownVariable, UnknownCommand
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class GeniX(Device_ModbusTCP):
     log_formatstr = '{_status}\t{ht}\t{current}\t{shutter}'
@@ -11,12 +12,15 @@ class GeniX(Device_ModbusTCP):
     _all_variables = ['ht', 'current', 'tubetime', 'shutter', 'power']
 
     _minimum_query_variables = ['ht', 'current', 'tubetime', 'shutter']
+
+    backend_interval = 0.3
+
     def __init__(self, *args, **kwargs):
-        self._logger = logger
-        Device_ModbusTCP.__init__(self, *args, **kwargs)
-        self.backend_interval = 0.4
+        super().__init__(*args, **kwargs)
+        self._loglevel = logger.level
 
     def _query_variable(self, variablename, minimum_query_variables=None):
+
         if not super()._query_variable(variablename):
             return False
 
@@ -109,7 +113,7 @@ class GeniX(Device_ModbusTCP):
                         elif self._properties['power']==9:
                             self._update_variable('_status', 'Low power')
                         elif self._properties['power']==30:
-                            self._update_variable('_status',    'Full power')
+                            self._update_variable('_status', 'Full power')
             except KeyError:
                 pass
         else:
@@ -119,6 +123,8 @@ class GeniX(Device_ModbusTCP):
         if commandname == 'shutter':
             self._write_coil(247 + int(not arguments[0]), True)
             self._write_coil(247 + int(not arguments[0]), False)
+            time.sleep(1)
+            self._query_variable('shutter')
         elif commandname == 'poweroff':
             self._write_coil(250, False) # Not standby
             # Pulse the power-off coil

@@ -214,8 +214,9 @@ class Beamstop(Command):
     def on_varchange(self, device, variablename, newvalue, motorname):
         if variablename=='actualposition':
             target=device.get_variable('targetposition')
-            self.emit('progress', 'Moving beamstop %s. Motor %s to %.3f, Now at: %.3f'%(self._direction, motorname, target, newvalue),
-                      1-(newvalue-target)/(self._startpos-target))
+            if self._startpos!=target:
+                self.emit('progress', 'Moving beamstop %s. Motor %s to %.3f, Now at: %.3f'%(self._direction, motorname, target, newvalue),
+                          1-(newvalue-target)/(self._startpos-target))
 
 
     def end_command(self):
@@ -267,6 +268,7 @@ class Sample(Command):
                                   self._instrument.motors['Sample_X'].connect('variable-change', self.on_varchange, 'Sample_X')]
         self._startpos=self._instrument.motors['Sample_X'].where()
         self.emit('message', 'Moving sample %s into the beam.' % (sample.title))
+        logger.debug('Moving Sample_X motor to %f'%self._xpos)
         self._instrument.motors['Sample_X'].moveto(self._xpos)
 
     def on_stop(self, motor, targetpositionreached, motorname):
@@ -279,25 +281,32 @@ class Sample(Command):
                     'Error on moving sample: target position could not be reached with motor ' + motorname)
             except Exception as ce:
                 self.emit('fail', ce, traceback.format_exc())
+        logger.debug('Movement ended for motor %s'%motorname)
         if motorname == 'Sample_X':
             self._motorconnections = [self._instrument.motors['Sample_Y'].connect('stop', self.on_stop, 'Sample_Y'),
                                       self._instrument.motors['Sample_Y'].connect('variable-change', self.on_varchange, 'Sample_Y')]
             self._startpos=self._instrument.motors['Sample_Y'].where()
             try:
+                logger.debug('Moving Sample_Y motor to %f'%self._ypos)
                 self._instrument.motors['Sample_Y'].moveto(self._ypos)
             except Exception as exc:
-                self._instrument.motors['Sample_Y'].disconnect(self._stopconnection)
-                del self._stopconnection
+                try:
+                    self._instrument.motors['Sample_Y'].disconnect(self._stopconnection)
+                    del self._stopconnection
+                except AttributeError:
+                    pass
                 self.emit('fail',exc,traceback.format_exc())
                 self.emit('return',None)
         else:
+            logger.debug('Ending command gracefully.')
             self.end_command()
 
     def on_varchange(self, device, variablename, newvalue, motorname):
         if variablename=='actualposition':
             target=device.get_variable('targetposition')
-            self.emit('progress', 'Moving motor %s to %.3f. Now at: %.3f'%(motorname, target, newvalue),
-                      1-(newvalue-target)/(self._startpos-target))
+            if self._startpos != target:
+                self.emit('progress', 'Moving motor %s to %.3f. Now at: %.3f'%(motorname, target, newvalue),
+                          1-(newvalue-target)/(self._startpos-target))
 
     def end_command(self):
         self.emit('message', 'Current sample is: %s' % self._instrument.samplestore.get_active_name())

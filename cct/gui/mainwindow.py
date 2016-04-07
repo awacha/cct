@@ -15,6 +15,7 @@ from logging.handlers import TimedRotatingFileHandler
 from logging import StreamHandler
 import traceback
 import time
+import datetime
 import argparse
 from ..core.instrument.instrument import Instrument
 from ..core.commands.command import CommandError
@@ -331,7 +332,7 @@ class MainWindow(object):
         self._statusbar.pop(1)
         self._statusbar.push(1, message)
         enditer = self._logbuffer.get_end_iter()
-        self._logbuffer.insert_with_tags(enditer, message + '\n', self._logtags.lookup('normal'))
+        self._logbuffer.insert_with_tags(enditer, str(datetime.datetime.now())+': MESSAGE: '+message + '\n', self._logtags.lookup('normal'))
         self._logview.scroll_to_mark(
             self._logbuffer.get_mark('log_end'), 0.1, False, 0, 0)
 
