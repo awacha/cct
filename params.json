@@ -1,0 +1,6 @@
+{
+  "name": "Cct",
+  "tagline": "SAXSCtrl revisited",
+  "body": "# cct\r\nSAXSCtrl revisited\r\n\r\n## Introduction\r\ncct stands for CREDO Control Tool: an instrument control, data acquisition and processing software for CREDO, a laboratory-based small-angle X-ray scattering instrument (http://credo.ttk.mta.hu).\r\n\r\n## Derivative works\r\nAs this program is strongly tied to the instrument, it is not practical to use without it on its own. However, forking this project and adapting to other instruments is highly encouraged. Until we have a decent documentation, please contact the author of the project (András Wacha) directly, if you need help.\r\n\r\n",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
