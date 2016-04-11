@@ -7,6 +7,8 @@ import resource
 import time
 import traceback
 
+import psutil
+
 from .motor import Motor
 from ..devices.circulator import HaakePhoenix
 from ..devices.detector import Pilatus
@@ -17,7 +19,7 @@ from ..devices.xray_source import GeniX
 from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 from gi.repository import GObject, GLib
 
@@ -39,10 +41,19 @@ class InstrumentError(Exception):
 
 
 def get_telemetry():
+    vm=psutil.virtual_memory()
+    sm=psutil.swap_memory()
+    la=', '.join([str(f) for f in os.getloadavg()])
     return {'processname': multiprocessing.current_process().name,
             'self': resource.getrusage(resource.RUSAGE_SELF),
             'children': resource.getrusage(resource.RUSAGE_CHILDREN),
-            'inqueuelen': 0}
+            'inqueuelen': 0,
+            'freephysmem':vm.available,
+            'totalphysmem':vm.total,
+            'freeswap':sm.free,
+            'totalswap':sm.total,
+            'loadavg':la,
+            }
 
 class Instrument(GObject.GObject):
     configdir = 'config'
@@ -51,6 +62,11 @@ class Instrument(GObject.GObject):
     __gsignals__ = {
         # emitted when all devices have been initialized.
         'devices-ready': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        # emitted when telemetry data is obtained from a component. The first
+        # argument is the name of the component, the second is the type of the
+        # component (service or device), and the third one is the telemetry
+        # dictionary.
+        'telemetry': (GObject.SignalFlags.RUN_FIRST, None, (object, str, object)),
     }
 
     def __init__(self, online):
@@ -73,7 +89,6 @@ class Instrument(GObject.GObject):
         self.busy=multiprocessing.Event()
         self.load_state()
         self.start_services()
-
 
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from sratch."""
@@ -222,7 +237,7 @@ class Instrument(GObject.GObject):
 
     def save_state(self):
         """Save the current configuration (including that of all devices) to a
-        JSON file."""
+        pickle file."""
         for d in self.devices:
             self.config['devices'][d] = self.devices[d]._save_state()
         for service in ['interpreter', 'samplestore', 'filesequence', 'exposureanalyzer', 'accounting']:
@@ -230,12 +245,12 @@ class Instrument(GObject.GObject):
                 self, service)._save_state()
         with open(self.configfile, 'wb') as f:
             pickle.dump(self.config, f)
-        #with open(self.configfile, 'wt', encoding='utf-8') as f:
-        #    json.dump(self.config, f)
         logger.info('Saved state to %s'%self.configfile)
         self.exposureanalyzer.sendconfig()
 
     def _update_config(self, config_orig, config_loaded):
+        """Uppdate the config dictionary in `config_orig` with the loaded
+        dictionary in `config_loaded`, recursively."""
         for c in config_loaded:
             if c not in config_orig:
                 config_orig[c] = config_loaded[c]
@@ -260,13 +275,20 @@ class Instrument(GObject.GObject):
                 return
         self._update_config(self.config, config_loaded)
 
-
     def _connect_signals(self, devicename, device):
+        """Connect signal handlers of a device.
+
+        devicename: the name of the device (string)
+        device: the device object, an instance of
+            cct.core.devices.device.Device
+        """
         self._signalconnections[devicename] = [device.connect('startupdone', self.on_ready),
                                                device.connect('disconnect', self.on_disconnect),
                                                device.connect('telemetry', self.on_telemetry, devicename)]
-        if devicename in self._outstanding_telemetries:
+        try:
             self._outstanding_telemetries.remove(devicename)
+        except ValueError:
+            pass
 
     def _disconnect_signals(self, devicename, device):
         try:
@@ -274,6 +296,10 @@ class Instrument(GObject.GObject):
                 device.disconnect(c)
             del self._signalconnections[device]
         except (AttributeError, KeyError):
+            pass
+        try:
+            self._outstanding_telemetries.remove(devicename)
+        except ValueError:
             pass
 
     def connect_devices(self):
@@ -388,6 +414,7 @@ class Instrument(GObject.GObject):
         self._telemetries[devicename] = telemetry
         if devicename in self._outstanding_telemetries:
             self._outstanding_telemetries.remove(devicename)
+        self.emit('telemetry', devicename, 'device', telemetry)
 
     def on_ready(self, device):
         try:
@@ -433,6 +460,8 @@ class Instrument(GObject.GObject):
         self.accounting._load_state(self.config['services']['accounting'])
 
     def on_telemetry_timeout(self):
+        """Timer function which periodically requests telemetry from all the
+        components."""
         self._telemetries['main'] = get_telemetry()
         for d in self.devices:
             if d in self._outstanding_telemetries:
@@ -445,6 +474,7 @@ class Instrument(GObject.GObject):
                 continue
             self._outstanding_telemetries.append(s)
             getattr(self, s).get_telemetry()
+        self.emit('telemetry',None, 'service', self.get_telemetry(None))
         return True
 
     def get_telemetry(self, process=None):
@@ -461,6 +491,14 @@ class Instrument(GObject.GObject):
                 tm[what].ru_oublock = sum([self._telemetries[k][what].ru_oublock for k in self._telemetries])
                 tm[what].ru_nvcsw = sum([self._telemetries[k][what].ru_nvcsw for k in self._telemetries])
                 tm[what].ru_nivcsw = sum([self._telemetries[k][what].ru_nivcsw for k in self._telemetries])
+            sm=psutil.swap_memory()
+            vm=psutil.virtual_memory()
+            la=', '.join([str(f) for f in os.getloadavg()])
+            tm['freephysmem']=vm.available
+            tm['totalphysmem']=vm.total
+            tm['freeswap']=sm.free
+            tm['totalswap']=sm.total
+            tm['loadavg']=la
         else:
             tm = {'self': self._telemetries[process]['self'],
                   'children': self._telemetries[process]['children'],

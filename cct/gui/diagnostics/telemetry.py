@@ -1,34 +1,34 @@
 import logging
 import resource
 
-from gi.repository import GLib
-
 from ..core.toolwindow import ToolWindow
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-class Telemetry(ToolWindow):
-    def on_unmap(self, window):
+class ResourceUsage(ToolWindow):
+    def _disconnect_signalhandlers(self):
         try:
-            GLib.source_remove(self._idle_handler)
-            del self._idle_handler
+            self._instrument.disconnect(self._telemetry_connection)
+            del self._telemetry_connection
         except AttributeError:
             pass
+
+    def on_unmap(self, window):
+        self._disconnect_signalhandlers()
 
     def on_map(self, window):
         if ToolWindow.on_map(self, window):
             return True
-        self.on_timeout()
-        try:
-            GLib.source_remove(self._idle_handler)
-            del self._idle_handler
-        except AttributeError:
-            pass
-        self._idle_handler = GLib.timeout_add(1000, self.on_timeout)
+        self._disconnect_signalhandlers()
+        self.on_telemetry(self._instrument, 'main' ,'service', self._instrument.get_telemetry())
+        self._telemetry_connection=self._instrument.connect('telemetry',self.on_telemetry)
 
     def on_process_changed(self, selector):
-        self.update_telemetry()
+        process=selector.get_active_text()
+        if process=='-- overall --':
+            process=None
+        self.update_telemetry(process, None, self._instrument.get_telemetry(process))
 
     def update_selector(self):
         selector = self._builder.get_object('process_selector')
@@ -41,17 +41,14 @@ class Telemetry(ToolWindow):
         if selector.get_active_text() is None:
             selector.set_active(0)
 
-    def update_telemetry(self):
+    def update_telemetry(self, devicename, devicetype, tm):
         selector = self._builder.get_object('process_selector')
         model = self._builder.get_object('telemetrymodel')
         process = selector.get_active_text()
-        if process is None:
-            return
         if process == '-- overall --':
-            tm = self._instrument.get_telemetry(None)
-        else:
-            logger.debug('Process: %s' % process)
-            tm = self._instrument.get_telemetry(process)
+            tm=self._instrument.get_telemetry(None)
+        elif devicename != process:
+            return
         model.clear()
         model.append(['User time (sec):', '%.2f' % tm['self'].ru_utime, '%.2f' % tm['children'].ru_utime,
                       '%.2f' % (tm['self'].ru_utime + tm['children'].ru_utime)])
@@ -75,13 +72,17 @@ class Telemetry(ToolWindow):
             ['Number of involuntary context switches:', str(tm['self'].ru_nivcsw), str(tm['children'].ru_nivcsw),
              str(tm['self'].ru_nivcsw + tm['children'].ru_nivcsw)])
 
+        model=self._builder.get_object('telemetry_store')
+        model.clear()
+        for q in sorted([q_ for q_ in tm if q_ not in ['self', 'children']]):
+            model.append([q, str(tm[q])])
 
-    def on_timeout(self):
+    def on_telemetry(self, instrument, devicename, devicetype, telemetry):
         newkeys = list(self._instrument.get_telemetrykeys())
         if not (hasattr(self, '_telemetrykeys')):
             self._telemetrykeys = []
         if self._telemetrykeys != newkeys:
             self._telemetrykeys = newkeys
             self.update_selector()
-        self.update_telemetry()
-        return True
+        self.update_telemetry(devicename, devicetype, telemetry)
+        return False

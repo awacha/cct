@@ -30,7 +30,9 @@ class HaakePhoenix(Device_TCP):
                                 'cooling_on', 'setpoint', 'date', 'firmwareversion', 'fuzzycontrol','fuzzystatus',
                                 'highlimit', 'lowlimit', 'diffcontrol_on', 'autostart', 'fuzzyid', 'beep',
                                 'watchdog_on', 'watchdog_setpoint']
-    backend_interval = 0.1
+    backend_interval = 1
+
+    wait_before_send = 0.0
 
     def __init__(self, *args, **kwargs):
         Device_TCP.__init__(self, *args, **kwargs)
@@ -67,21 +69,28 @@ class HaakePhoenix(Device_TCP):
         # semaphore at this point, so while we are handling this message,
         # the sending process can commence sending the next message.
         self._cleartosend_semaphore.release()
-
+        self._pat_watchdog()
         if message == b'F001\r':
             # unknown command
             lastcommand = original_sent.decode('ascii').replace('\r', '')
             self._logger.debug(
                 'Unknown command reported by circulator. Lastcommand: *%s*' % lastcommand)
+            self._logger.debug('Outqueue size: %d'%self._outqueue.qsize())
+            self._send(original_sent)
+            self._query_requested.clear()
             return
         if message == b'F123\r':
             self._logger.warning('Error 123 reported by circulator.')
+            self._query_requested.clear()
             return
         elif message == b'FE00\r':
-            # might be a bug in the firmware
+            # might be a bug in the firmware, this message must end with a $\r
             message = b'FE00$\r'
         # At this point, all messages should end with b"$\r"
-        assert(message.endswith(b'$\r'))
+        if not message.endswith(b'$\r'):
+            self._query_requested.clear()
+            self._logger.warning('Message does not end with "$\\r": %s'%message)
+            return
         message = message[:-2]
         if original_sent == b'R V1\r':
             self._update_variable('firmwareversion', message.decode('utf-8'))
@@ -119,6 +128,7 @@ class HaakePhoenix(Device_TCP):
             if len(message) == 1:
                 self._update_variable('control_on', bool(int(message)))
             else:
+                self._query_requested.clear()
                 self._logger.debug('Invalid message for control_on: %s' % message.decode('utf-8'))
                 raise NotImplementedError((original_sent, message))
         elif original_sent == b'IN MODE 2\r':
@@ -126,6 +136,7 @@ class HaakePhoenix(Device_TCP):
                 self._update_variable('control_external', bool(int(message)))
             else:
                 self._logger.debug('Invalid message for control_external: %s' % message.decode('utf-8'))
+                self._query_requested.clear()
                 raise NotImplementedError((original_sent, message))
         elif message.startswith(b'FR'):
             self._update_variable('diffcontrol_on', bool(int(message[2:3])))
@@ -166,7 +177,9 @@ class HaakePhoenix(Device_TCP):
             self._logger.debug(
                 'Confirmation for message %s received.' % original_sent.decode('utf-8').replace('\r', ''))
         else:
-            raise CommunicationError('Unknown message: %s' % message.decode('utf-8').replace('\r', ''))
+            self._query_requested.clear()
+            self._logger.debug('Unknown message: %s' % message.decode('utf-8').replace('\r', ''))
+            self._send(original_sent)
 
     def _query_variable(self, variablename, minimum_query_variables=None):
         if variablename is None:
@@ -231,7 +244,9 @@ class HaakePhoenix(Device_TCP):
         self._logger.debug('Setting circulator variable from process %s' % multiprocessing.current_process().name)
         try:
             if variable == 'setpoint':
+                self._logger.debug('Setting setpoint to %f'%value)
                 self._send(b'W SW %.2f\r' % value)
+                self._logger.debug('Setpoint setting message queued.')
             elif variable == 'highlimit':
                 self._send(b'W HL %.2f\r' % value)
             elif variable == 'lowlimit':

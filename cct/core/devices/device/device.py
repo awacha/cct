@@ -158,7 +158,7 @@ class Device(GObject.GObject):
     _query_requested=None
 
     # Timeout for re-query, see `_query_requested`.
-    _query_timeout=30
+    _query_timeout=10
 
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
         GObject.GObject.__init__(self)
@@ -166,7 +166,6 @@ class Device(GObject.GObject):
         # the folder where config files are stored.
         self.configdir = configdir
         # this is the parameter logfile. Note that this is another kind of logging, not related to the logging module.
-        print('instancename:',instancename,'(',str(type(instancename))+')')
         self.logfile = os.path.join(logdir, instancename + '.log')
         # some devices keep a copy of the configuration dictionary
         if configdict is not None:
@@ -299,6 +298,13 @@ class Device(GObject.GObject):
         """Return the names of all currently defined properties as a list"""
         return list(self._properties.keys())
 
+    def is_background_process_alive(self):
+        """Checks if the background process is alive"""
+        try:
+            return self._background_process.is_alive()
+        except AttributeError:
+            return False
+
     def refresh_variable(self, name, check_backend_alive=True, signal_needed=True):
         """Request a refresh of the value of the named variable.
 
@@ -311,10 +317,10 @@ class Device(GObject.GObject):
         signal_needed: if you expect a variable-change signal even if no change
             occurred
         """
-        if (not check_backend_alive) or self._background_process.is_alive():
+        if (not check_backend_alive) or self.is_background_process_alive():
             self._send_to_backend('query',name=name, signal_needed=signal_needed)
         else:
-            raise DeviceError('Backend process not running. Alive: %s'%str(self._background_process.is_alive()))
+            raise DeviceError('Backend process not running.')
 
     def execute_command(self, command, *args):
         """Initiate the execution of a command on the device.
@@ -359,7 +365,6 @@ class Device(GObject.GObject):
             self._send_to_frontend('ready')
         self._check_watchdog()
         self._query_variable(None) # query all variables
-        self._lastquerytime=time.time()
         self._log()
 
     def _on_start_backgroundprocess(self):
@@ -367,9 +372,6 @@ class Device(GObject.GObject):
 
         Called just before the infinite loop of the background process starts."""
         self._update_variable('_status','Initializing')
-        #self._query_variable(None)
-        #self._lastquerytime = time.time()
-        #self._logger.debug('Starting background process for %s' % self.name)
 
     def _background_worker(self, startup_number, loglevel):
         """Worker function of the background thread. The main job of this is
@@ -395,6 +397,9 @@ class Device(GObject.GObject):
         """
         self._ready=False
         self._last_queryall=0
+        self._lastquerytime=0
+        self._lastsendtime=0
+        self._lastrecvtime=0
         self._query_requested={} # re-initialize this dict.
         self._background_startup_count=startup_number
         self._count_queries=0
@@ -418,55 +423,63 @@ class Device(GObject.GObject):
         exit_status=False # abnormal termination
         while True:
             try:
-                message = self._queue_to_backend.get(
-                    block=True, timeout=self.backend_interval)
-                # if no message was pending, a queue.Empty exception has
-                # already been raised at this point.
-                if message['type'] == 'config':
-                    self.config = message['configdict']
-                elif message['type'] == 'telemetry':
-                    tm = self._get_telemetry()
-                    self._send_to_frontend('telemetry',data=tm)
-                elif message['type'] == 'exit':
-                    exit_status=True # normal termination
-                    break  # the while True loop
-                elif message['type'] == 'query':
-                    if message['signal_needed']:
-                        try:
-                            self._refresh_requested[message['name']] +=1
-                        except KeyError:
-                            self._refresh_requested[message['name']] = 1
-                    self._lastquerytime=time.monotonic()
-                    self._query_variable(message['name'])
-                elif message['type'] == 'set':
-                    # the following command can raise a ReadOnlyVariable exception
-                    self._set_variable(message['name'], message['value'])
-                elif message['type'] == 'execute':
-                    self._execute_command(message['name'], message['arguments'])
-                elif message['type'] == 'communication_error':
-                    raise message['exception']
-                elif message['type'] == 'incoming':
-                    self._count_inmessages+=1
-                    self._process_incoming_message(message=message['message'],
-                                                   original_sent=message['sent'])
-                elif message['type'] == 'log':
-                    self._queue_to_frontend.put_nowait(message)
+                try:
+                    message = self._queue_to_backend.get(
+                        block=True, timeout=self.backend_interval)
+                except queue.Empty:
+                    pass
                 else:
-                    raise NotImplementedError(
-                        'Unknown command for _background_worker: %s' % message['type'])
+                    # if no message was pending, a queue.Empty exception has
+                    # already been raised at this point.
+                    if message['type'] == 'config':
+                        self.config = message['configdict']
+                    elif message['type'] == 'telemetry':
+                        tm = self._get_telemetry()
+                        self._send_to_frontend('telemetry',data=tm)
+                    elif message['type'] == 'exit':
+                        exit_status=True # normal termination
+                        break  # the while True loop
+                    elif message['type'] == 'query':
+                        if message['signal_needed']:
+                            try:
+                                self._refresh_requested[message['name']] +=1
+                            except KeyError:
+                                self._refresh_requested[message['name']] = 1
+                        self._lastquerytime=time.monotonic()
+                        self._query_variable(message['name'])
+                    elif message['type'] == 'set':
+                        # the following command can raise a ReadOnlyVariable exception
+                        self._set_variable(message['name'], message['value'])
+                    elif message['type'] == 'execute':
+                        self._execute_command(message['name'], message['arguments'])
+                    elif message['type'] == 'communication_error':
+                        raise message['exception']
+                    elif message['type'] == 'incoming':
+                        self._lastrecvtime=message['timestamp']
+                        self._count_inmessages+=1
+                        self._process_incoming_message(message=message['message'],
+                                                       original_sent=message['sent'])
+                    elif message['type'] == 'log':
+                        self._queue_to_frontend.put_nowait(message)
+                    elif message['type'] == 'send_complete':
+                        # sending of a message finished.
+                        self._lastsendtime=message['timestamp']
+                    else:
+                        raise NotImplementedError(
+                            'Unknown command for _background_worker: %s' % message['type'])
                 # call the housekeeping tasks
-                self._on_background_queue_empty()
-            except queue.Empty:
                 self._on_background_queue_empty()
             except CommunicationError as ce:
                 self._logger.error(
                     'Communication error for device %s, exiting background process.'%(
                         self.name))
+                self._send_to_frontend('error',variablename=None, exception=ce, traceback=str(sys.exc_info()[2]))
                 exit_status=False # abnormal termination
                 break
             except WatchdogTimeout as wt:
                 self._logger.error('Watchdog timeout for device %s, exiting loop.'%
                                    self.name)
+                break
             except DeviceError as de:
                 self._logger.error('DeviceError in the background process for %s: %s'%(
                     self.name, traceback.format_exc()))
@@ -488,10 +501,18 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         return {'processname': multiprocessing.current_process().name,
                 'self': resource.getrusage(resource.RUSAGE_SELF),
                 'children': resource.getrusage(resource.RUSAGE_CHILDREN),
-                'inqueuelen': self._queue_to_backend.qsize()}
+                'inqueuelen': self._queue_to_backend.qsize(),
+                'outqueuelen': self._queue_to_frontend.qsize(),
+                'last_queryall':time.monotonic()-self._last_queryall,
+                'last_recv':time.monotonic()-self._lastrecvtime,
+                'last_query':time.monotonic()-self._lastquerytime,
+                'last_send':time.monotonic()-self._lastsendtime,
+                'watchdog':time.monotonic()-self._watchdogtime}
 
     def get_telemetry(self):
         """Request telemetry data from the background process."""
+        if not self.is_background_process_alive():
+            raise DeviceError('Background process not running, no telemetry.')
         if not self._outstanding_telemetry:
             self._send_to_backend('telemetry')
         else:
@@ -839,6 +860,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
             raise KeyError(variablename)
         except KeyError as ke:
             self._query_requested[variablename]=time.monotonic()
+            self._lastquerytime=time.monotonic()
             return True
 
     def _set_variable(self, variable:str, value:object):

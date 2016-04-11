@@ -35,10 +35,10 @@ from .tools.capillarymeasurement import CapillaryMeasurement
 from .tools.scanviewer import ScanViewer
 from .tools.maskeditor import MaskEditor
 from .tools.datareduction import DataReduction
-from .diagnostics.telemetry import Telemetry
+from .diagnostics.telemetry import ResourceUsage
 from .devices.haakephoenix import HaakePhoenix
 from .devices.pilatus import Pilatus
-from .toolframes.resourceusage import ResourceUsage
+from .toolframes.resourceusage import ResourceUsageFrame
 from .toolframes.nextfsn import NextFSN
 from .toolframes.shutter import ShutterBeamstop
 from .toolframes.accounting import AccountingFrame
@@ -236,7 +236,7 @@ class MainWindow(object):
         self._devicestatus=DeviceStatusBar(self._instrument)
         self._builder.get_object('devicestatus_box').pack_start(self._devicestatus, True, True, 0)
 
-        self._toolframes = {'resourceusage': ResourceUsage('toolframe_telemetry.glade',
+        self._toolframes = {'resourceusage': ResourceUsageFrame('toolframe_telemetry.glade',
                                                            'telemetryframe',
                                                            self._instrument,
                                                            self._application),
@@ -368,16 +368,17 @@ class MainWindow(object):
         return False
 
     def construct_and_run_dialog(self, windowclass, toplevelname, gladefile, windowtitle):
-        if toplevelname not in self._dialogs:
+        key=str(windowclass)+str(toplevelname)
+        if key not in self._dialogs:
             try:
-                self._dialogs[toplevelname] = windowclass(gladefile, toplevelname, self._instrument, self._application,
+                self._dialogs[key] = windowclass(gladefile, toplevelname, self._instrument, self._application,
                                                           windowtitle)
             except Exception as exc:
                 # this has already been handled with an error dialog
                 logger.debug('Could not open window %s: %s %s' % (windowtitle, str(exc), traceback.format_exc()))
                 return
-        self._dialogs[toplevelname]._window.present()
-        return self._dialogs[toplevelname]
+        self._dialogs[key]._window.present()
+        return self._dialogs[key]
 
     def on_menu_file_quit(self, menuitem):
         self._window.destroy()
@@ -399,7 +400,6 @@ class MainWindow(object):
     def on_menu_setup_calibration(self, menuitem):
         self.construct_and_run_dialog(Calibration, 'calibration', 'setup_calibration.glade', 'Calibration')
         return False
-
 
     def on_menu_devices_xraysource(self, menuitem):
         self.construct_and_run_dialog(GeniX, 'genix', 'devices_genix.glade', 'X-ray source')
@@ -462,7 +462,7 @@ class MainWindow(object):
         return False
 
     def on_menu_tools_diagnostics_resourceusage(self, menuitem):
-        self.construct_and_run_dialog(Telemetry, 'telemetrywindow', 'diagnostics_telemetry.glade', 'Resource usage')
+        self.construct_and_run_dialog(ResourceUsage, 'resourceusagewindow', 'diagnostics_resourceusage.glade', 'Resource usage')
 
     def on_menu_help_about(self, menuitem):
         builder = Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct', 'resource/glade/help_about.glade'))

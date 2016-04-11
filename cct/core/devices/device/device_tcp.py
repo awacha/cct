@@ -19,9 +19,10 @@ class QueueLogHandler(QueueHandler):
 
 
 class TCPCommunicator(multiprocessing.Process):
-    def __init__(self, instancename, tcpsocket, sendqueue, incomingqueue, poll_timeout, cleartosend_semaphore, getcompletemessages, killflag,reply_timeout):
+    def __init__(self, instancename, tcpsocket, sendqueue, incomingqueue, poll_timeout, cleartosend_semaphore, getcompletemessages, killflag,reply_timeout, waitbeforesend=0.0):
         super().__init__()
         self._tcpsocket=tcpsocket
+        self._waitbeforesend=waitbeforesend
         self._sendqueue=sendqueue
         self._incomingqueue=incomingqueue
         self._poll_timeout=poll_timeout
@@ -56,8 +57,9 @@ class TCPCommunicator(multiprocessing.Process):
             command, outmsg, expected_replies = self._sendqueue.get_nowait()
             if command == 'send':
                 sent = 0
-                if self._instancename=='haakephoenix':
-                    self._logger.debug('Sending %s, queue length: %d'%(outmsg, self._sendqueue.qsize()))
+#                if self._instancename=='haakephoenix':
+#                    self._logger.debug('Sending %s to haakephoenix'%outmsg)
+                time.sleep(self._waitbeforesend)
                 while sent < len(outmsg):
                     sent += self._tcpsocket.send(outmsg[sent:])
                 if expected_replies is not None:
@@ -71,6 +73,7 @@ class TCPCommunicator(multiprocessing.Process):
                     self._cleartosend_semaphore.release()
                 else:
                     self._lastsendtime=time.monotonic()
+                self._send_to_backend('send_complete',message=outmsg)
             else:
                 raise NotImplementedError(command)
         except queue.Empty:
@@ -166,6 +169,10 @@ class Device_TCP(Device):
     back-end.
     """
 
+    wait_before_send=0.0 # seconds to wait before sending message
+
+    outqueue_query_limit=10 # skip query all if the outqueue is larger than this limit
+
     def __init__(self, *args, **kwargs):
         Device.__init__(self, *args, **kwargs)
         self._outqueue = multiprocessing.Queue()
@@ -176,6 +183,11 @@ class Device_TCP(Device):
         """Check if we have a connection to the device. You should not call
         this directly."""
         return hasattr(self, '_tcpsocket')
+
+    def _get_telemetry(self):
+        tm=super()._get_telemetry()
+        tm['sendqueuelen']=self._outqueue.qsize()
+        return tm
 
     def _get_complete_messages(self, message):
         """Check if the received message is complete. All devices signify the
@@ -228,7 +240,8 @@ class Device_TCP(Device):
         self._communication_subprocess = TCPCommunicator(
             self.name, self._tcpsocket, self._outqueue, self._queue_to_backend,
             self._poll_timeout, self._cleartosend_semaphore,
-            self._get_complete_messages, self._killflag, self.reply_timeout)
+            self._get_complete_messages, self._killflag, self.reply_timeout,
+            self.wait_before_send)
         self._communication_subprocess.daemon=True
         self._communication_subprocess.start()
         #logger.debug(
@@ -263,3 +276,8 @@ class Device_TCP(Device):
         # self._logger.debug('Sending message %s' % str(message))
         self._outqueue.put_nowait(('send', message, expected_replies))
         self._count_outmessages+=1
+
+    def _query_variable(self, variablename: object, minimum_query_variables: object = None):
+        if (variablename is None) and (self._outqueue.qsize()>self.outqueue_query_limit):
+            return False
+        return super()._query_variable(variablename, minimum_query_variables)
