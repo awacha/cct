@@ -408,11 +408,66 @@ class Instrument(GObject.GObject):
         subs['xraysource_status']=xray
 
         #detector status
+        detstat=self.detector.get_all_variables()
+        if detstat['temperature0'] <15 or detstat['temperature0']>55:
+            detstat['temperature0_bg']='red'
+        elif detstat['temperature0'] <20 or detstat['temperature0']>37:
+            detstat['temperature0_bg']='orange'
+        else:
+            detstat['temperature0_bg']='green'
+        if detstat['temperature1'] <15 or detstat['temperature1']>35:
+            detstat['temperature1_bg']='red'
+        elif detstat['temperature1'] <20 or detstat['temperature1']>33:
+            detstat['temperature1_bg']='orange'
+        else:
+            detstat['temperature1_bg']='green'
+        if detstat['temperature2'] <15 or detstat['temperature2']>45:
+            detstat['temperature2_bg']='red'
+        elif detstat['temperature2'] <20 or detstat['temperature2']>35:
+            detstat['temperature2_bg']='orange'
+        else:
+            detstat['temperature2_bg']='green'
+        if detstat['humidity0']>80:
+            detstat['humidity0_bg']='red'
+        elif detstat['humidity0']>45:
+            detstat['humidity0_bg']='orange'
+        else:
+            detstat['humidity0_bg']='green'
+        if detstat['humidity1']>80:
+            detstat['humidity1_bg']='red'
+        elif detstat['humidity1']>45:
+            detstat['humidity1_bg']='orange'
+        else:
+            detstat['humidity1_bg']='green'
+        if detstat['humidity2']>30:
+            detstat['humidity2_bg']='red'
+        elif detstat['humidity2']>10:
+            detstat['humidity2_bg']='orange'
+        else:
+            detstat['humidity2_bg']='green'
+
         detector="""
         <tr>
+            <td>Exposure time:</td><td>%(exptime).2f sec</td>
+            <td>Exposure period:</td><td>%(expperiod).2f sec</td>
+        <tr>
+            <td>Number of images:</td><td>%(nimages).2f sec</td>
+            <td>Threshold:</td><td>%(threshold).0f eV (%(gain)s gain)</td>
         </tr>
-        """
-
+        <tr>
+            <td>Power board temperature:</td><td style="background-color:%(temperature0_bg)s">%(temperature0).1f °C</td>
+            <td>Power board humidity:</td><td style="background-color:%(humidity0_bg)s">%(humidity0).1f %%</td>
+        </tr>
+        <tr>
+            <td>Base plate temperature:</td><td style="background-color:%(temperature1_bg)s">%(temperature1).1f °C</td>
+            <td>Base plate humidity:</td><td style="background-color:%(humidity1_bg)s">%(humidity1).1f %%</td>
+        </tr>
+        <tr>
+            <td>Sensor temperature:</td><td style="background-color:%(temperature2_bg)s">%(temperature2).1f °C</td>
+            <td>Sensor humidity:</td><td style="background-color:%(humidity2_bg)s">%(humidity2).1f %%</td>
+        </tr>
+        """%detstat
+        subs['detector_status']=detector
         shutil.copy2(pkg_resources.resource_filename('cct','resource/cct_status/credo_status.css'),
                      os.path.join(self.config['path']['directories']['status'],'credo_status.css'))
         with open(os.path.join(self.config['path']['directories']['status'],'index.html'), 'wt', encoding='utf-8') as f:

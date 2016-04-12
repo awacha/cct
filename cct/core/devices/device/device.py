@@ -909,6 +909,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         """
         raise NotImplementedError
 
-
+    def get_all_variables(self):
+        return self._properties.copy()
 
 
