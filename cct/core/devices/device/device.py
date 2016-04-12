@@ -507,7 +507,8 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
                 'last_recv':time.monotonic()-self._lastrecvtime,
                 'last_query':time.monotonic()-self._lastquerytime,
                 'last_send':time.monotonic()-self._lastsendtime,
-                'watchdog':time.monotonic()-self._watchdogtime}
+                'watchdog':time.monotonic()-self._watchdogtime,
+                'missing_variables':', '.join([v for v in self._all_variables if v not in self._properties])}
 
     def get_telemetry(self):
         """Request telemetry data from the background process."""
