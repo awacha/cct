@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="30">
+    <link rel="stylesheet" href="credo_status.css">
+    <title>CREDO status</title>
+</head>
+<body>
+    <div id="header">
+        CREDO status
+    </div>
+
+    <div id="devicehealth">
+        <table border="2pt" style="width:100%">
+            <caption style="text-align:left"><h2>Device health</h2></caption>
+            $devicehealth_tablecontents
+        </table>
+    </div>
+    <div id="motorpositions">
+        <table border="2pt" style="width:100%">
+            <caption style="text-align:left"><h2>Motor positions</h2></caption>
+            $motorpositions_tablecontents
+        </table>
+    </div>
+
+    <div id="xraysourcestatus">
+        <table border="2pt" style="width:100%">
+            <caption style="text-align:left"><h2>X-ray source</h2></caption>
+            $xraysource_status
+        </table>
+    </div>
+
+    <div style="clear:both;width=100%"></div>
+    <div id="footer" >
+        <div style="float:left">Uptime: $uptime</div>
+        <div style="float:right">$timestamp</div>
+    </div>
+
+</body>
+</html>

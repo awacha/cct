@@ -1,12 +1,15 @@
-import json
+import datetime
 import logging
 import multiprocessing
 import os
 import pickle
 import resource
+import shutil
+import string
 import time
 import traceback
 
+import pkg_resources
 import psutil
 
 from .motor import Motor
@@ -58,6 +61,7 @@ def get_telemetry():
 class Instrument(GObject.GObject):
     configdir = 'config'
     telemetry_timeout = 0.9
+    statusfile_timeout = 30
 
     __gsignals__ = {
         # emitted when all devices have been initialized.
@@ -70,6 +74,7 @@ class Instrument(GObject.GObject):
     }
 
     def __init__(self, online):
+        self._starttime=datetime.datetime.now()
         GObject.GObject.__init__(self)
         self._online = online
         self.devices = {}
@@ -89,6 +94,7 @@ class Instrument(GObject.GObject):
         self.busy=multiprocessing.Event()
         self.load_state()
         self.start_services()
+        self._statusfile_timeout = GLib.timeout_add(self.statusfile_timeout * 1000, self.write_statusfile)
 
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from sratch."""
@@ -105,6 +111,7 @@ class Instrument(GObject.GObject):
                                               'param_override': 'param_override',
                                               'scan': 'scan',
                                               'images_detector': ['/disk2/images', '/home/det/p2_det/images'],
+                                              'status': 'status',
                                               }
         self.config['path']['fsndigits'] = 5
         self.config['path']['prefixes'] = {'crd': 'crd',
@@ -248,6 +255,170 @@ class Instrument(GObject.GObject):
         logger.info('Saved state to %s'%self.configfile)
         self.exposureanalyzer.sendconfig()
 
+    def write_statusfile(self):
+        """This method writes a status file: a HTML file and other auxiliary
+        files (e.g. images to include), which can be published over the net.
+        """
+        #if not hasattr(self,'_statusfile_template'):
+        if True:
+            with open(pkg_resources.resource_filename(
+                    'cct','resource/cct_status/credo_status.html'),
+                    'rt', encoding='utf-8') as f:
+                self._statusfile_template=string.Template(f.read())
+        uptime=(datetime.datetime.now()-self._starttime).total_seconds()
+        uptime_hour=uptime//3600
+        uptime=uptime-uptime_hour*3600
+        uptime_min=uptime//60
+        uptime_sec=uptime-uptime_min*60
+        subs={'timestamp':str(datetime.datetime.now()),
+              'uptime':'%d:%d:%.2f'%(uptime_hour,uptime_min,uptime_sec)
+              }
+        # create contents of devicehealth table.
+        dhtc=''
+        # First row: device names
+        dhtc+='<tr>\n  <th>Device</th>\n'
+        for d in sorted(self.devices):
+            dhtc+='  <td>'+d.capitalize()+'</td>\n'
+        dhtc+='</tr>\n<tr>\n  <th>Status</th>\n'
+        for d in sorted(self.devices):
+            status=self.devices[d].get_variable('_status')
+            if self.devices[d]._get_connected():
+                bg='green'
+            else:
+                bg='red'
+            dhtc+='  <td style="background:%s">'%bg+str(status)+'</td>\n'
+        dhtc += '</tr>\n<tr>\n  <th>Verbose status</th>\n'
+        for d in sorted(self.devices):
+            status = self.devices[d].get_variable('_auxstatus')
+            dhtc += "  <td>" + str(status) + '</td>\n'
+        dhtc += '</tr>\n<tr>\n  <th>Last send time</th>\n'
+        for d in sorted(self.devices):
+            lastsend=self._telemetries[d]['last_send']
+            if lastsend>5:
+                bg='red'
+            else:
+                bg='green'
+            dhtc += '  <td style="background:%s">%.2f</td>\n'%(bg,lastsend)
+        dhtc += '</tr>\n<tr>\n  <th>Last recv time</th>\n'
+        for d in sorted(self.devices):
+            lastrecv = self._telemetries[d]['last_recv']
+            if lastrecv > 5:
+                bg = 'red'
+            else:
+                bg = 'green'
+            dhtc += '  <td style="background:%s">%.2f</td>\n' % (bg,lastrecv)
+
+        dhtc += '</tr>\n<tr>\n  <th>Background process restarts</h>\n'
+        for d in sorted(self.devices):
+            restarts=self.devices[d]._background_startup_count
+            dhtc += '  <td>'+str(restarts-1) +'</td>\n'
+        dhtc+='</tr>\n'
+        subs['devicehealth_tablecontents']=dhtc
+
+        # Make motor status table
+        mst="""
+        <tr>
+            <th>Motor</th>
+            <th>Position</th>
+            <th>Left limit</th>
+            <th>Right limit</th>
+            <th>Left switch</th>
+            <th>Right switch</th>
+            <th>Status flags</th>
+        </tr>\n"""
+        def endswitch_text(state):
+            if state:
+                return 'Hit'
+            else:
+                return ''
+        def endswitch_color(state):
+            if state:
+                return 'red'
+            else:
+                return 'green'
+        for m in sorted(self.motors):
+            mot=self.motors[m]
+            mst+="""
+            <tr>
+                <td>%s</td>
+                <td><b>%.3f</b></td>
+                <td>%.3f</td>
+                <td>%.3f</td>
+                <td style="background:%s">%s</td>
+                <td style="background:%s">%s</td>
+                <td>%s</td>
+            </tr>
+            """ % (m,mot.where(),mot.get_variable('softleft'),
+                   mot.get_variable('softright'), endswitch_color(mot.leftlimitswitch()),
+                   endswitch_text(mot.leftlimitswitch()), endswitch_color(mot.rightlimitswitch()),
+                   endswitch_text(mot.rightlimitswitch()),', '.join(mot.decode_error_flags()))
+        subs['motorpositions_tablecontents']=mst
+
+        # make X-ray source status
+        def format_faultvalue(name):
+            value=self.xray_source.get_variable(name+'_fault')
+            if value:
+                bg='red'
+            else:
+                bg='green'
+            return bg, name.replace('_',' ').capitalize()
+
+        xray="""
+        <tr>
+            <td>HV: %.2f V</td>
+            <td>Current: %.2f mA</td>
+            <td>Power: %.2f W</td>
+            <td>Shutter: %s</td>
+        </tr>
+        <tr>
+            <td style="background-color:%s">%s</td>
+            <td style="background-color:%s">%s</td>
+            <td style="background-color:%s">%s</td>
+            <td style="background-color:%s">%s</td>
+        </tr>
+        <tr>
+            <td style="background-color:%s">%s</td>
+            <td style="background-color:%s">%s</td>
+            <td style="background-color:%s">%s</td>
+            <td style="background-color:%s">%s</td>
+        </tr>
+        <tr>
+            <td style="background-color:%s">%s</td>
+            <td style="background-color:%s">%s</td>
+            <td style="background-color:%s">%s</td>
+            <td style="background-color:%s">%s</td>
+        </tr>
+        """ % (self.xray_source.get_variable('ht'),
+               self.xray_source.get_variable('current'),
+               self.xray_source.get_variable('power'),
+               ['Closed','Open'][self.xray_source.get_variable('shutter')],
+               *format_faultvalue('xray_light'),
+               *format_faultvalue('shutter_light'),
+               *format_faultvalue('sensor1'),
+               *format_faultvalue('sensor2'),
+               *format_faultvalue('tube_position'),
+               *format_faultvalue('vacuum'),
+               *format_faultvalue('waterflow'),
+               *format_faultvalue('safety_shutter'),
+               *format_faultvalue('temperature'),
+               *format_faultvalue('relay_interlock'),
+               *format_faultvalue('door'),
+               *format_faultvalue('filament'),
+               )
+        subs['xraysource_status']=xray
+
+        #detector status
+        detector="""
+        <tr>
+        </tr>
+        """
+
+        shutil.copy2(pkg_resources.resource_filename('cct','resource/cct_status/credo_status.css'),
+                     os.path.join(self.config['path']['directories']['status'],'credo_status.css'))
+        with open(os.path.join(self.config['path']['directories']['status'],'index.html'), 'wt', encoding='utf-8') as f:
+            f.write(self._statusfile_template.safe_substitute(**subs))
+        return True
+
     def _update_config(self, config_orig, config_loaded):
         """Uppdate the config dictionary in `config_orig` with the loaded
         dictionary in `config_loaded`, recursively."""
@@ -264,15 +435,8 @@ class Instrument(GObject.GObject):
         """Load the saved configuration file. This is only useful before
         connecting to devices, because status of the back-end process is
         not updated by Device._load_state()."""
-        try:
-            with open(self.configfile, 'rb') as f:
-                config_loaded=pickle.load(f)
-        except FileNotFoundError:
-            try:
-                with open(self.configfile.replace('.pickle','.json'),'rt', encoding='utf-8') as f:
-                    config_loaded = json.load(f)
-            except FileNotFoundError:
-                return
+        with open(self.configfile, 'rb') as f:
+            config_loaded=pickle.load(f)
         self._update_config(self.config, config_loaded)
 
     def _connect_signals(self, devicename, device):
@@ -423,6 +587,10 @@ class Instrument(GObject.GObject):
             pass
         if not self._waiting_for_ready:
             self.emit('devices-ready')
+            self.write_statusfile()
+            logger.debug('All ready.')
+        else:
+            logger.debug('Waiting for ready: '+', '.join(self._waiting_for_ready))
 
     def on_disconnect(self, device, because_of_failure):
         if device.name in self._waiting_for_ready:
@@ -466,8 +634,11 @@ class Instrument(GObject.GObject):
         for d in self.devices:
             if d in self._outstanding_telemetries:
                 continue
-            self._outstanding_telemetries.append(d)
-            self.devices[d].get_telemetry()
+            try:
+                self.devices[d].get_telemetry()
+                self._outstanding_telemetries.append(d)
+            except DeviceError:
+                pass # cannot get telemetry, background process not running
 
         for s in ['exposureanalyzer']:
             if s in self._outstanding_telemetries:

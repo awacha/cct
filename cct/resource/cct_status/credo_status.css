@@ -1,0 +1,39 @@
+#header {
+    background-color:black;
+    color:white;
+    text-align:center;
+    font-size:200%;
+    width:100%;
+    }
+
+#devicehealth {
+    background-color:#eeeeee;
+    float:left;
+    width:49%;
+    padding:5px;
+    }
+
+#xraysourcestatus {
+    background-color:#eeeeee;
+    float:left;
+    width:49%;
+    padding:5px;
+    }
+
+
+#motorpositions {
+    background-color:#eeeeee;
+    float:right;
+    width:49%;
+    padding:5px;
+}
+
+#footer {
+    background-color:black;
+    color:white;
+    font-size:100%;
+}
+
+.clearfix {
+    overflow:auto;
+}
