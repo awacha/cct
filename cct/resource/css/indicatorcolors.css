@@ -1,15 +1,15 @@
-GtkEventBox#indicator_ok {
+#indicator_ok {
     background-color: #007c08
 }
 
-GtkEventBox#indicator_warning {
+#indicator_warning {
     background-color: #ffac00
 }
 
-GtkEventBox#indicator_error {
+#indicator_error {
     background-color: #ff0000
 }
 
-GtkEventBox#indicator_neutral {
+#indicator_neutral {
     background-color: #ffffff
 }
