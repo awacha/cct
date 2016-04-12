@@ -11,25 +11,31 @@ logger.setLevel(logging.INFO)
 class HaakePhoenix(Device_TCP):
     log_formatstr = '{setpoint}\t{temperature_internal}\t{faultstatus}\t{pump_power}\t{cooling_on}'
 
-    _all_variables = ['firmwareversion', 'faultstatus', 'fuzzycontrol', 'fuzzystatus', 'temperature_internal',
-                    'temperature_external', 'setpoint', 'highlimit', 'lowlimit', 'diffcontrol_on', 'autostart',
-                    'fuzzyid', 'beep', 'time', 'date', 'watchdog_on',
-                    'watchdog_setpoint', 'cooling_on', 'pump_power', 'external_pt100_error', 'internal_pt100_error',
-                      'liquid_level_low_error',
-                      'cooling_error',
-                      'external_alarm_error', 'pump_overload_error', 'liquid_level_alarm_error',
-                      'overtemperature_error',
-                      'main_relay_missing_error', 'status_control_external', 'status_temperature_control'
-                      ]
+    _all_variables = ['firmwareversion', 'faultstatus', 'fuzzycontrol',
+                      'fuzzystatus', 'temperature_internal',
+                      'temperature_external', 'setpoint', 'highlimit',
+                      'lowlimit', 'diffcontrol_on', 'autostart', 'fuzzyid',
+                      'beep', 'time', 'date', 'watchdog_on',
+                      'watchdog_setpoint', 'cooling_on', 'pump_power',
+                      'external_pt100_error', 'internal_pt100_error',
+                      'liquid_level_low_error', 'cooling_error',
+                      'external_alarm_error', 'pump_overload_error',
+                      'liquid_level_alarm_error', 'overtemperature_error',
+                      'main_relay_missing_error', 'control_external',
+                      'control_on']
 
-    _urgentvariables = ['faultstatus', 'time', 'temperature_internal', 'temperature_external', 'pump_power']
+    _urgentvariables = ['faultstatus', 'time', 'temperature_internal',
+                        'temperature_external', 'pump_power']
 
     _notsourgentvariables = ['cooling_on', 'setpoint','date']
 
-    _minimum_query_variables = ['faultstatus', 'time', 'temperature_internal', 'temperature_external', 'pump_power',
-                                'cooling_on', 'setpoint', 'date', 'firmwareversion', 'fuzzycontrol','fuzzystatus',
-                                'highlimit', 'lowlimit', 'diffcontrol_on', 'autostart', 'fuzzyid', 'beep',
-                                'watchdog_on', 'watchdog_setpoint']
+    _minimum_query_variables = ['faultstatus', 'time', 'temperature_internal',
+                                'temperature_external', 'pump_power',
+                                'cooling_on', 'setpoint', 'date',
+                                'firmwareversion', 'fuzzycontrol',
+                                'fuzzystatus', 'highlimit', 'lowlimit',
+                                'diffcontrol_on', 'autostart', 'fuzzyid',
+                                'beep', 'watchdog_on', 'watchdog_setpoint']
     backend_interval = 1
 
     wait_before_send = 0.0

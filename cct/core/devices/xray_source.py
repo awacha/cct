@@ -9,7 +9,15 @@ logger.setLevel(logging.DEBUG)
 class GeniX(Device_ModbusTCP):
     log_formatstr = '{_status}\t{ht}\t{current}\t{shutter}'
 
-    _all_variables = ['ht', 'current', 'tubetime', 'shutter', 'power']
+    _all_variables = ['ht', 'current', 'tubetime', 'shutter', 'power', 'remote_mode', 'xrays', 'conditions_auto',
+                              'tube_power', 'faults', 'xray_light_fault',
+                              'shutter_light_fault', 'sensor2_fault',
+                              'tube_position_fault', 'vacuum_fault',
+                              'waterflow_fault', 'safety_shutter_fault',
+                              'temperature_fault', 'sensor1_fault',
+                              'relay_interlock_fault', 'door_fault',
+                              'filament_fault', 'tube_warmup_needed',
+                              'interlock', 'overridden']
 
     _minimum_query_variables = ['ht', 'current', 'tubetime', 'shutter']
 
