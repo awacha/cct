@@ -7,7 +7,7 @@ class AccountingFrame(ToolFrame):
         sel.remove_all()
         for i, pl in enumerate(self._instrument.accounting.get_accessible_privlevels_str()):
             sel.append_text(pl)
-            if pl == PrivilegeLevel.tostr(self._instrument.accounting.get_privilegelevel()):
+            if PrivilegeLevel.get_priv(pl) == self._instrument.accounting.get_privilegelevel():
                 sel.set_active(i)
         if sel.get_active() is None:
             sel.set_active(0)

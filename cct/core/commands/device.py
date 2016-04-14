@@ -5,7 +5,7 @@ import traceback
 from gi.repository import GLib
 
 from .command import Command, CommandError
-from ..services.accounting import PrivilegeLevel
+from ..services.accounting import PRIV_MOTORCONFIG
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -74,7 +74,7 @@ class SetVariable(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         devicename = arglist[0]
-        if devicename.startswith('tmcm') and not instrument.accounting.has_privilege(PrivilegeLevel.CONFIGURE_MOTORS):
+        if devicename.startswith('tmcm') and not instrument.accounting.has_privilege(PRIV_MOTORCONFIG):
             raise CommandError('Insufficient privileges to configure motors.')
         variablename = arglist[1]
         value = arglist[2]
@@ -182,7 +182,7 @@ class Help(Command):
             cmdname = arglist[0]
         except IndexError:
             GLib.idle_add(lambda m='Please give the name of a command as an argument. Known commands: ' +
-                          ', '.join(c for c in sorted(interpreter.commands)): self._idlefunc(m))
+                          ', '.join([cmd for cmd in sorted(interpreter.commands)]): self._idlefunc(m))
         else:
             GLib.idle_add(
                 lambda m='Help on command ' + cmdname + ':\n' + interpreter.commands[cmdname].__doc__: self._idlefunc(m))

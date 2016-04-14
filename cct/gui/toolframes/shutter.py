@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 from ..core.toolframe import ToolFrame
-from ...core.services.accounting import PrivilegeLevel
+from ...core.services.accounting import PRIV_BEAMSTOP
 
 class ShutterBeamstop(ToolFrame):
     def _init_gui(self, *args):
@@ -31,7 +31,7 @@ class ShutterBeamstop(ToolFrame):
         self.on_privlevel_changed(self._instrument.accounting, self._instrument.accounting.get_privilegelevel())
 
     def on_privlevel_changed(self, accounting, newprivlevel):
-        if not accounting.has_privilege(PrivilegeLevel.BEAMSTOP):
+        if not accounting.has_privilege(PRIV_BEAMSTOP):
             self._builder.get_object('beamstop_in_button').set_sensitive(False)
             self._builder.get_object('beamstop_out_button').set_sensitive(False)
         else:

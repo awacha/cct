@@ -3,7 +3,7 @@ import logging
 from gi.repository import Gtk
 
 from ..core.toolwindow import ToolWindow, info_message
-from ...core.services.accounting import PrivilegeLevel
+from ...core.services.accounting import PRIV_SUPERUSER
 
 logger=logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -11,7 +11,7 @@ logger.setLevel(logging.INFO)
 class EditConfig(ToolWindow):
     def _init_gui(self, *args):
         self._changedpaths=[]
-        self._privlevel = PrivilegeLevel.SUPERUSER
+        self._privlevel = PRIV_SUPERUSER
         tv=self._builder.get_object('configtreeview')
         tc=Gtk.TreeViewColumn('Label', Gtk.CellRendererText(), text=0)
         tv.append_column(tc)

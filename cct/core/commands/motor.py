@@ -4,7 +4,7 @@ import traceback
 from gi.repository import GLib
 
 from .command import Command, CommandError
-from ..services.accounting import PrivilegeLevel
+from ..services.accounting import PRIV_BEAMSTOP, PRIV_PINHOLE
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,10 +26,10 @@ class Moveto(Command):
     def execute(self, interpreter, arglist, instrument, namespace):
         motorname = arglist[0]
         if motorname in ['BeamStop_X', 'BeamStop_Y'] and not instrument.accounting.has_privilege(
-                PrivilegeLevel.BEAMSTOP):
+                PRIV_BEAMSTOP):
             raise CommandError('Insufficient privileges to move the beamstop')
         if motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
-                         'PH3_Y'] and not instrument.accounting.has_privilege(PrivilegeLevel.PINHOLE):
+                         'PH3_Y'] and not instrument.accounting.has_privilege(PRIV_PINHOLE):
             raise CommandError('Insufficient privileges to move pinholes')
 
         position = arglist[1]
@@ -78,10 +78,10 @@ class Moverel(Command):
     def execute(self, interpreter, arglist, instrument, namespace):
         motorname = arglist[0]
         if motorname in ['BeamStop_X', 'BeamStop_Y'] and not instrument.accounting.has_privilege(
-                PrivilegeLevel.BEAMSTOP):
+                PRIV_BEAMSTOP):
             raise CommandError('Insufficient privileges to move the beamstop')
         if motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
-                         'PH3_Y'] and not instrument.accounting.has_privilege(PrivilegeLevel.PINHOLE):
+                         'PH3_Y'] and not instrument.accounting.has_privilege(PRIV_PINHOLE):
             raise CommandError('Insufficient privileges to move pinholes')
         position = arglist[1]
 
@@ -171,16 +171,25 @@ class Beamstop(Command):
         if not arglist:
             GLib.idle_add(self.end_command)
             return
-        if not self._instrument.accounting.has_privilege(PrivilegeLevel.BEAMSTOP):
+        if not self._instrument.accounting.has_privilege(PRIV_BEAMSTOP):
             raise CommandError('Insufficient privileges to move beamstop')
-        if (arglist[0] == 'in') or ((isinstance(arglist[0],int) or isinstance(arglist[0], bool) or isinstance(arglist[0],float) and bool(arglist[0]))):
+        if isinstance(arglist[0],str):
+            if (arglist[0].upper() == 'IN'):
+                arglist[0]=True
+            elif (arglist[0].upper() == 'OUT'):
+                arglist[0]=False
+            else:
+                raise ValueError(arglist[0])
+        elif isinstance(arglist[0],int) or isinstance(arglist[0],float) or isinstance(arglist[0],bool):
+            arglist[0]=bool(arglist[0])
+        else:
+            raise TypeError(arglist[0])
+        if arglist[0]:
             self._xpos, self._ypos = self._instrument.config['beamstop']['in']
             self._direction='in'
-        elif (arglist[0] == 'out') or ((isinstance(arglist[0],int) or isinstance(arglist[0], bool) or isinstance(arglist[0],float) and not bool(arglist[0]))):
+        else:
             self._xpos, self._ypos = self._instrument.config['beamstop']['out']
             self._direction='out'
-        else:
-            raise ConnectionError('Invalid argument: ' + str(arglist[0]))
         self._motorconnections = [self._instrument.motors['BeamStop_X'].connect('stop', self.on_stop, 'BeamStop_X'),
                                   self._instrument.motors['BeamStop_X'].connect('variable-change', self.on_varchange, 'BeamStop_X')]
         self._startpos=self._instrument.motors['BeamStop_X'].where()

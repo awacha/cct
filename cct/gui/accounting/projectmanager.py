@@ -1,7 +1,7 @@
 from gi.repository import Gtk
 
 from ..core.toolwindow import ToolWindow, question_message, error_message
-from ...core.services.accounting import PrivilegeLevel
+from ...core.services.accounting import PRIV_PROJECTMAN
 
 
 class ProjectManager(ToolWindow):
@@ -10,7 +10,7 @@ class ProjectManager(ToolWindow):
             return True
 
     def _init_gui(self, *args):
-        self._privlevel = PrivilegeLevel.MANAGE_PROJECTS
+        self._privlevel = PRIV_PROJECTMAN
         self._update_gui()
 
     def _update_gui(self):

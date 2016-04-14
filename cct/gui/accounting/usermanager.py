@@ -3,7 +3,7 @@ import logging
 from gi.repository import Gtk
 
 from ..core.toolwindow import ToolWindow, question_message, error_message
-from ...core.services.accounting import PrivilegeLevel
+from ...core.services.accounting import PrivilegeLevel, PRIV_USERMAN, PRIV_LAYMAN
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -16,10 +16,10 @@ class UserManager(ToolWindow):
         self._update_gui()
 
     def _init_gui(self, *args):
-        self._privlevel = PrivilegeLevel.MANAGE_USERS
+        self._privlevel = PRIV_USERMAN
         ps = self._builder.get_object('privilege_selector')
-        for pl in PrivilegeLevel.all_levels_str():
-            ps.append_text(pl)
+        for pl in PrivilegeLevel.all_privileges():
+            ps.append_text(pl.name)
         self._update_gui()
 
     def _update_gui(self):
@@ -49,7 +49,7 @@ class UserManager(ToolWindow):
         ps.set_active(-1)
         for i, priv in enumerate(ps.get_model()):
             logger.debug('Comparing privilege level with %s.' % priv[0])
-            if priv[0] == PrivilegeLevel.tostr(self._instrument.accounting.get_user(username).privlevel):
+            if PrivilegeLevel.get_priv(priv[0]) == self._instrument.accounting.get_user(username).privlevel:
                 ps.set_active(i)
         assert (ps.get_active_text() is not None)
         self._builder.get_object('firstname_entry').set_text(self._instrument.accounting.get_user(username).firstname)
@@ -90,7 +90,7 @@ class UserManager(ToolWindow):
         # dlg.show_all()
         if dlg.run() == Gtk.ResponseType.OK:
             try:
-                self._instrument.accounting.add_user(entry.get_text(), '', '', PrivilegeLevel.LAYMAN)
+                self._instrument.accounting.add_user(entry.get_text(), '', '', PRIV_LAYMAN)
             except Exception as exc:
                 error_message(dlg, 'Cannot add new user', str(exc))
         dlg.destroy()

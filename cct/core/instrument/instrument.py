@@ -4,12 +4,9 @@ import multiprocessing
 import os
 import pickle
 import resource
-import shutil
-import string
 import time
 import traceback
 
-import pkg_resources
 import psutil
 
 from .motor import Motor
@@ -19,7 +16,7 @@ from ..devices.device import DeviceError
 from ..devices.motor import TMCM351, TMCM6110
 from ..devices.vacuumgauge import TPG201
 from ..devices.xray_source import GeniX
-from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting
+from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -94,7 +91,6 @@ class Instrument(GObject.GObject):
         self.busy=multiprocessing.Event()
         self.load_state()
         self.start_services()
-        self._statusfile_timeout = GLib.timeout_add(self.statusfile_timeout * 1000, self.write_statusfile)
 
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from sratch."""
@@ -241,6 +237,7 @@ class Instrument(GObject.GObject):
                                         'mu_air': 1000,  # ToDo
                                         'mu_air.err': 0  # ToDo
                                         }
+        self.config['services']['webstatefilewriter'] = {}
 
     def save_state(self):
         """Save the current configuration (including that of all devices) to a
@@ -255,224 +252,6 @@ class Instrument(GObject.GObject):
         logger.info('Saved state to %s'%self.configfile)
         self.exposureanalyzer.sendconfig()
 
-    def write_statusfile(self):
-        """This method writes a status file: a HTML file and other auxiliary
-        files (e.g. images to include), which can be published over the net.
-        """
-        #if not hasattr(self,'_statusfile_template'):
-        if True:
-            with open(pkg_resources.resource_filename(
-                    'cct','resource/cct_status/credo_status.html'),
-                    'rt', encoding='utf-8') as f:
-                self._statusfile_template=string.Template(f.read())
-        uptime=(datetime.datetime.now()-self._starttime).total_seconds()
-        uptime_hour=uptime//3600
-        uptime=uptime-uptime_hour*3600
-        uptime_min=uptime//60
-        uptime_sec=uptime-uptime_min*60
-        subs={'timestamp':str(datetime.datetime.now()),
-              'uptime':'%d:%d:%.2f'%(uptime_hour,uptime_min,uptime_sec)
-              }
-        # create contents of devicehealth table.
-        dhtc=''
-        # First row: device names
-        dhtc+='<tr>\n  <th>Device</th>\n'
-        for d in sorted(self.devices):
-            dhtc+='  <td>'+d.capitalize()+'</td>\n'
-        dhtc+='</tr>\n<tr>\n  <th>Status</th>\n'
-        for d in sorted(self.devices):
-            status=self.devices[d].get_variable('_status')
-            if self.devices[d]._get_connected():
-                bg='green'
-            else:
-                bg='red'
-            dhtc+='  <td style="background:%s">'%bg+str(status)+'</td>\n'
-        dhtc += '</tr>\n<tr>\n  <th>Verbose status</th>\n'
-        for d in sorted(self.devices):
-            status = self.devices[d].get_variable('_auxstatus')
-            dhtc += "  <td>" + str(status) + '</td>\n'
-        dhtc += '</tr>\n<tr>\n  <th>Last send time</th>\n'
-        for d in sorted(self.devices):
-            lastsend=self._telemetries[d]['last_send']
-            if lastsend>5:
-                bg='red'
-            else:
-                bg='green'
-            dhtc += '  <td style="background:%s">%.2f</td>\n'%(bg,lastsend)
-        dhtc += '</tr>\n<tr>\n  <th>Last recv time</th>\n'
-        for d in sorted(self.devices):
-            lastrecv = self._telemetries[d]['last_recv']
-            if lastrecv > 5:
-                bg = 'red'
-            else:
-                bg = 'green'
-            dhtc += '  <td style="background:%s">%.2f</td>\n' % (bg,lastrecv)
-
-        dhtc += '</tr>\n<tr>\n  <th>Background process restarts</h>\n'
-        for d in sorted(self.devices):
-            restarts=self.devices[d]._background_startup_count
-            dhtc += '  <td>'+str(restarts-1) +'</td>\n'
-        dhtc+='</tr>\n'
-        subs['devicehealth_tablecontents']=dhtc
-
-        # Make motor status table
-        mst="""
-        <tr>
-            <th>Motor</th>
-            <th>Position</th>
-            <th>Left limit</th>
-            <th>Right limit</th>
-            <th>Left switch</th>
-            <th>Right switch</th>
-            <th>Status flags</th>
-        </tr>\n"""
-        def endswitch_text(state):
-            if state:
-                return 'Hit'
-            else:
-                return ''
-        def endswitch_color(state):
-            if state:
-                return 'red'
-            else:
-                return 'green'
-        for m in sorted(self.motors):
-            mot=self.motors[m]
-            mst+="""
-            <tr>
-                <td>%s</td>
-                <td><b>%.3f</b></td>
-                <td>%.3f</td>
-                <td>%.3f</td>
-                <td style="background:%s">%s</td>
-                <td style="background:%s">%s</td>
-                <td>%s</td>
-            </tr>
-            """ % (m,mot.where(),mot.get_variable('softleft'),
-                   mot.get_variable('softright'), endswitch_color(mot.leftlimitswitch()),
-                   endswitch_text(mot.leftlimitswitch()), endswitch_color(mot.rightlimitswitch()),
-                   endswitch_text(mot.rightlimitswitch()),', '.join(mot.decode_error_flags()))
-        subs['motorpositions_tablecontents']=mst
-
-        # make X-ray source status
-        def format_faultvalue(name):
-            value=self.xray_source.get_variable(name+'_fault')
-            if value:
-                bg='red'
-            else:
-                bg='green'
-            return bg, name.replace('_',' ').capitalize()
-
-        xray="""
-        <tr>
-            <td>HV: %.2f V</td>
-            <td>Current: %.2f mA</td>
-            <td>Power: %.2f W</td>
-            <td>Shutter: %s</td>
-        </tr>
-        <tr>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-        </tr>
-        <tr>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-        </tr>
-        <tr>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-        </tr>
-        """ % (self.xray_source.get_variable('ht'),
-               self.xray_source.get_variable('current'),
-               self.xray_source.get_variable('power'),
-               ['Closed','Open'][self.xray_source.get_variable('shutter')],
-               *format_faultvalue('xray_light'),
-               *format_faultvalue('shutter_light'),
-               *format_faultvalue('sensor1'),
-               *format_faultvalue('sensor2'),
-               *format_faultvalue('tube_position'),
-               *format_faultvalue('vacuum'),
-               *format_faultvalue('waterflow'),
-               *format_faultvalue('safety_shutter'),
-               *format_faultvalue('temperature'),
-               *format_faultvalue('relay_interlock'),
-               *format_faultvalue('door'),
-               *format_faultvalue('filament'),
-               )
-        subs['xraysource_status']=xray
-
-        #detector status
-        detstat=self.detector.get_all_variables()
-        if detstat['temperature0'] <15 or detstat['temperature0']>55:
-            detstat['temperature0_bg']='red'
-        elif detstat['temperature0'] <20 or detstat['temperature0']>37:
-            detstat['temperature0_bg']='orange'
-        else:
-            detstat['temperature0_bg']='green'
-        if detstat['temperature1'] <15 or detstat['temperature1']>35:
-            detstat['temperature1_bg']='red'
-        elif detstat['temperature1'] <20 or detstat['temperature1']>33:
-            detstat['temperature1_bg']='orange'
-        else:
-            detstat['temperature1_bg']='green'
-        if detstat['temperature2'] <15 or detstat['temperature2']>45:
-            detstat['temperature2_bg']='red'
-        elif detstat['temperature2'] <20 or detstat['temperature2']>35:
-            detstat['temperature2_bg']='orange'
-        else:
-            detstat['temperature2_bg']='green'
-        if detstat['humidity0']>80:
-            detstat['humidity0_bg']='red'
-        elif detstat['humidity0']>45:
-            detstat['humidity0_bg']='orange'
-        else:
-            detstat['humidity0_bg']='green'
-        if detstat['humidity1']>80:
-            detstat['humidity1_bg']='red'
-        elif detstat['humidity1']>45:
-            detstat['humidity1_bg']='orange'
-        else:
-            detstat['humidity1_bg']='green'
-        if detstat['humidity2']>30:
-            detstat['humidity2_bg']='red'
-        elif detstat['humidity2']>10:
-            detstat['humidity2_bg']='orange'
-        else:
-            detstat['humidity2_bg']='green'
-
-        detector="""
-        <tr>
-            <td>Exposure time:</td><td>%(exptime).2f sec</td>
-            <td>Exposure period:</td><td>%(expperiod).2f sec</td>
-        <tr>
-            <td>Number of images:</td><td>%(nimages).2f sec</td>
-            <td>Threshold:</td><td>%(threshold).0f eV (%(gain)s gain)</td>
-        </tr>
-        <tr>
-            <td>Power board temperature:</td><td style="background-color:%(temperature0_bg)s">%(temperature0).1f °C</td>
-            <td>Power board humidity:</td><td style="background-color:%(humidity0_bg)s">%(humidity0).1f %%</td>
-        </tr>
-        <tr>
-            <td>Base plate temperature:</td><td style="background-color:%(temperature1_bg)s">%(temperature1).1f °C</td>
-            <td>Base plate humidity:</td><td style="background-color:%(humidity1_bg)s">%(humidity1).1f %%</td>
-        </tr>
-        <tr>
-            <td>Sensor temperature:</td><td style="background-color:%(temperature2_bg)s">%(temperature2).1f °C</td>
-            <td>Sensor humidity:</td><td style="background-color:%(humidity2_bg)s">%(humidity2).1f %%</td>
-        </tr>
-        """%detstat
-        subs['detector_status']=detector
-        shutil.copy2(pkg_resources.resource_filename('cct','resource/cct_status/credo_status.css'),
-                     os.path.join(self.config['path']['directories']['status'],'credo_status.css'))
-        with open(os.path.join(self.config['path']['directories']['status'],'index.html'), 'wt', encoding='utf-8') as f:
-            f.write(self._statusfile_template.safe_substitute(**subs))
-        return True
 
     def _update_config(self, config_orig, config_loaded):
         """Uppdate the config dictionary in `config_orig` with the loaded
@@ -520,6 +299,15 @@ class Instrument(GObject.GObject):
             self._outstanding_telemetries.remove(devicename)
         except ValueError:
             pass
+
+    def get_beamstop_state(self):
+        bsy=self.motors['BeamStop_Y'].where()
+        bsx=self.motors['BeamStop_X'].where()
+        if abs(bsx-self.config['beamstop']['in'][0])<0.001 and abs(bsy-self.config['beamstop']['in'][1])<0.001:
+            return 'in'
+        if abs(bsx-self.config['beamstop']['out'][0])<0.001 and abs(bsy-self.config['beamstop']['out'][1])<0.001:
+            return 'out'
+        return 'unknown'
 
     def connect_devices(self):
         """Try to connect to all devices. Send error logs on failures. Return
@@ -642,7 +430,7 @@ class Instrument(GObject.GObject):
             pass
         if not self._waiting_for_ready:
             self.emit('devices-ready')
-            self.write_statusfile()
+            self.webstatefilewriter.write_statusfile()
             logger.debug('All ready.')
         else:
             logger.debug('Waiting for ready: '+', '.join(self._waiting_for_ready))
@@ -650,6 +438,8 @@ class Instrument(GObject.GObject):
     def on_disconnect(self, device, because_of_failure):
         if device.name in self._waiting_for_ready:
             logger.warning('Not reconnecting to device %s: disconnected while waiting for get ready.'%device.name)
+            self._waiting_for_ready.remove(device.name)
+            self.on_ready(device)
             return False
         if not device.ready:
             logger.warning('Not reconnecting to device %s: it has disconnected before ready.'%device.name)
@@ -681,6 +471,8 @@ class Instrument(GObject.GObject):
             self.config['services']['exposureanalyzer'])
         self.accounting = Accounting(self)
         self.accounting._load_state(self.config['services']['accounting'])
+        self.webstatefilewriter = WebStateFileWriter(self)
+        self.webstatefilewriter._load_state(self.config['services']['webstatefilewriter'])
 
     def on_telemetry_timeout(self):
         """Timer function which periodically requests telemetry from all the

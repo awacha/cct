@@ -4,7 +4,7 @@ import weakref
 import pkg_resources
 from gi.repository import Gtk, GObject
 
-from ...core.services.accounting import PrivilegeLevel
+from ...core.services.accounting import PRIV_LAYMAN
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -43,7 +43,7 @@ class ToolWindow(GObject.GObject):
         GObject.GObject.__init__(self)
         self._toplevelname=toplevelname
         self._hide_on_close=True
-        self._privlevel = PrivilegeLevel.LAYMAN
+        self._privlevel = PRIV_LAYMAN
         self._application=application
         self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/%s'%gladefile))
         self._builder.set_application(application)

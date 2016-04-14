@@ -4,7 +4,7 @@ from gi.repository import Gtk, GLib
 
 from ..core.toolwindow import ToolWindow, error_message, question_message
 from ...core.devices.device import DeviceError
-from ...core.services.accounting import PrivilegeLevel
+from ...core.services.accounting import PRIV_MOTORCONFIG, PRIV_MOTORCALIB, PRIV_BEAMSTOP, PRIV_PINHOLE
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -82,7 +82,7 @@ class Motors(ToolWindow):
             self._builder.get_object('beamstopstatuslabel').set_label('Beamstop position inconsistent')
 
     def on_calibratebeamstop_in(self, button):
-        if not self._instrument.accounting.has_privilege(PrivilegeLevel.CALIBRATE_MOTORS):
+        if not self._instrument.accounting.has_privilege(PRIV_MOTORCALIB):
             error_message(self._window, 'Cannot calibrate beamstop position', 'Insufficient privileges')
             return
         xpos = self._instrument.motors['BeamStop_X'].where()
@@ -93,7 +93,7 @@ class Motors(ToolWindow):
             self._check_beamstop_state()
 
     def on_calibratebeamstop_out(self, button):
-        if not self._instrument.accounting.has_privilege(PrivilegeLevel.CALIBRATE_MOTORS):
+        if not self._instrument.accounting.has_privilege(PRIV_MOTORCALIB):
             error_message(self._window, 'Cannot calibrate beamstop position', 'Insufficient privileges')
             return
         xpos = self._instrument.motors['BeamStop_X'].where()
@@ -111,7 +111,7 @@ class Motors(ToolWindow):
 
     def movebeamstop(self, out):
         assert (not hasattr(self, '_movebeamstop'))
-        if not self._instrument.accounting.has_privilege(PrivilegeLevel.BEAMSTOP):
+        if not self._instrument.accounting.has_privilege(PRIV_BEAMSTOP):
             error_message(self._window, 'Cannot move beamstop', 'Insufficient privileges')
             return
         try:
@@ -178,7 +178,7 @@ class Motors(ToolWindow):
 
 class MotorConfig(ToolWindow):
     def _init_gui(self, motorname):
-        self._privlevel = PrivilegeLevel.CONFIGURE_MOTORS
+        self._privlevel = PRIV_MOTORCONFIG
         self._hide_on_close=False
         self._motorname=motorname
         motor=self._instrument.motors[motorname]
@@ -285,12 +285,12 @@ class MotorMover(ToolWindow):
     def on_move(self, button):
         if button.get_label()=='Move':
             if ((self._builder.get_object('motorselector').get_active_text() in ['BeamStop_X', 'BeamStop_Y']) and
-                    not self._instrument.accounting.has_privilege(PrivilegeLevel.BEAMSTOP)):
+                    not self._instrument.accounting.has_privilege(PRIV_BEAMSTOP)):
                 error_message(self._window, 'Cannot move beamstop', 'Insufficient privileges')
                 return
             if ((self._builder.get_object('motorselector').get_active_text() in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y',
                                                                                  'PH3_X', 'PH3_Y']) and
-                    not self._instrument.accounting.has_privilege(PrivilegeLevel.PINHOLE)):
+                    not self._instrument.accounting.has_privilege(PRIV_PINHOLE)):
                 error_message(self._window, 'Cannot move pinholes', 'Insufficient privileges')
                 return
             self._builder.get_object('move_button').set_label('Stop')

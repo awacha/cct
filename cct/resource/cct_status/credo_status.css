@@ -4,28 +4,30 @@
     text-align:center;
     font-size:200%;
     width:100%;
+    padding:0px;
     }
 
+#leftpane{
+	width:49%;
+	float:left;
+	padding-top:0px;
+	}
 
-#xraysourcestatus, #detectorstatus, #devicehealth {
+#rightpane{
+	width:49%;
+	float:right;
+	padding-top:0px;
+	}
+
+#devicehealth, #xraysourcestatus, #detectorstatus,#motorpositions, #filesequencestatus, #accounting {
     background-color:#dddddd;
-    float:left;
-    width:49%;
-    padding:5px;
+    width:100%;
+    padding-top:10px;
     }
-
-
-#motorpositions {
-    background-color:#dddddd;
-    float:right;
-    width:49%;
-    padding:5px;
-}
 
 #footer {
     background-color:black;
     color:white;
-    font-size:100%;
 }
 
 .clearfix {
@@ -42,4 +44,9 @@ caption {
 
 table {
     width:100%;
+}
+
+table, td, tr, th {
+    border:2pt;
+    border-collapse:collapse;
 }
