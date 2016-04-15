@@ -1,7 +1,7 @@
 from gi.repository import Gtk
 
 from ..core.toolwindow import ToolWindow, question_message, error_message
-from ...core.services.accounting import PRIV_PROJECTMAN
+from ...core.instrument.privileges import PRIV_PROJECTMAN
 
 
 class ProjectManager(ToolWindow):
@@ -66,7 +66,7 @@ class ProjectManager(ToolWindow):
         # dlg.show_all()
         if dlg.run() == Gtk.ResponseType.OK:
             try:
-                self._instrument.accounting.new_project(entry.get_text(), '', '')
+                project=self._instrument.accounting.new_project(entry.get_text(), '', '')
             except Exception as exc:
                 error_message(dlg, 'Cannot add new project', str(exc))
         dlg.destroy()

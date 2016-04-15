@@ -5,7 +5,7 @@ import traceback
 from gi.repository import GLib
 
 from .command import Command, CommandError
-from ..services.accounting import PRIV_MOTORCONFIG
+from ..instrument.privileges import PRIV_MOTORCONFIG
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

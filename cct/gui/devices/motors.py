@@ -4,7 +4,7 @@ from gi.repository import Gtk, GLib
 
 from ..core.toolwindow import ToolWindow, error_message, question_message
 from ...core.devices.device import DeviceError
-from ...core.services.accounting import PRIV_MOTORCONFIG, PRIV_MOTORCALIB, PRIV_BEAMSTOP, PRIV_PINHOLE
+from ...core.instrument.privileges import PRIV_MOTORCONFIG, PRIV_MOTORCALIB, PRIV_BEAMSTOP, PRIV_PINHOLE
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

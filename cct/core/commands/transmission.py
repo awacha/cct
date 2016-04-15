@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from .script import Script, CommandError
-from ..services.accounting import PRIV_BEAMSTOP
+from ..instrument.privileges import PRIV_BEAMSTOP
 from ..utils.errorvalue import ErrorValue
 
 logger = logging.getLogger(__name__)

@@ -3,7 +3,7 @@ import logging
 from gi.repository import Gtk
 
 from ..core.toolwindow import ToolWindow, question_message, error_message
-from ...core.services.accounting import PrivilegeLevel, PRIV_USERMAN, PRIV_LAYMAN
+from ...core.instrument.privileges import PrivilegeLevel, PRIV_USERMAN, PRIV_LAYMAN
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 from ..core.toolframe import ToolFrame
-from ...core.services.accounting import PRIV_BEAMSTOP
+from ...core.instrument.privileges import PRIV_BEAMSTOP
 
 class ShutterBeamstop(ToolFrame):
     def _init_gui(self, *args):

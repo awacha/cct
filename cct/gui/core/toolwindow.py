@@ -4,7 +4,7 @@ import weakref
 import pkg_resources
 from gi.repository import Gtk, GObject
 
-from ...core.services.accounting import PRIV_LAYMAN
+from ...core.instrument.privileges import PRIV_LAYMAN
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

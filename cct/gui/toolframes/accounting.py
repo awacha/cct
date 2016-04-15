@@ -1,5 +1,5 @@
 from ..core.toolframe import ToolFrame
-from ...core.services.accounting import PrivilegeLevel
+from ...core.instrument.privileges import PrivilegeLevel
 
 class AccountingFrame(ToolFrame):
     def _init_gui(self, *args):

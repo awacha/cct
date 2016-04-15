@@ -4,7 +4,7 @@ import traceback
 from gi.repository import GLib
 
 from .command import Command, CommandError
-from ..services.accounting import PRIV_BEAMSTOP, PRIV_PINHOLE
+from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
