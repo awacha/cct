@@ -21,6 +21,8 @@ class GeniX(Device_ModbusTCP):
 
     _minimum_query_variables = ['ht', 'current', 'tubetime', 'shutter']
 
+    _interlock_fixing_time = 3 # time to ascertain if the interlock is really OK.
+
     backend_interval = 0.3
 
     def __init__(self, *args, **kwargs):
@@ -98,7 +100,30 @@ class GeniX(Device_ModbusTCP):
             self._update_variable('tube_warmup_needed', statusbits[22])
             # statusbits[23] is unknown
             # statusbits[24] is just an 1Hz pulse signal
-            self._update_variable('interlock', statusbits[25])
+            # statusbits[25] is the interlock. It is tricky, because three
+            # situations can exist:
+            # 1) constantly False: interlock is broken, because of a fault.
+            #     The shutter cannot be opened in this case.
+            # 2) constantly True: interlock is set, shutter can be opened.
+            # 3) alternating between True and False with 1 Hz: this is the
+            #     case when the safety circuit (door interlock) is not closed.
+            #
+            # We have an interlock_lowlevel variable, which carries the most
+            # recent reading on statusbits[25]. The `interlock` variable is
+            # adjusted in a way that it is False in case 1) and 3) above, and
+            # only true in the case 2).
+            if self._update_variable('interlock_lowlevel',statusbits[25]):
+                self._interlock_lastchange=time.monotonic()
+            if statusbits[25]:
+                if time.monotonic()-self._interlock_lastchange>self._interlock_fixing_time:
+                    # if a given amount of time has elapsed since we have
+                    # last seen an interlock broken state, this means that
+                    # we are truly in interlock OK state.
+                    self._update_variable('interlock',True)
+                # otherwise do nothing.
+            else:
+                # if interlock_lowlevel signals Broken, set interlock to broken.
+                self._update_variable('interlock',False)
             if statusbits[26] and not statusbits[27]:
                 self._update_variable('shutter', False)
             elif statusbits[27] and not statusbits[26]:
