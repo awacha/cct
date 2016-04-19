@@ -19,7 +19,7 @@ from ..devices.xray_source import GeniX
 from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 from gi.repository import GObject, GLib
 
@@ -86,11 +86,17 @@ class Instrument(GObject.GObject):
         self._signalconnections = {}
         self._waiting_for_ready = []
         self._telemetries = {}
-        self._outstanding_telemetries = []
-        self._telemetry_timeout = GLib.timeout_add(self.telemetry_timeout * 1000, self.on_telemetry_timeout)
         self.busy=multiprocessing.Event()
         self.load_state()
-        self.start_services()
+        self.create_services()
+
+    def start(self):
+        """Start operation"""
+        self._telemetry_timeout = GLib.timeout_add(self.telemetry_timeout * 1000,
+                                                   self.on_telemetry_timeout)
+        for s in self.services:
+            s.start()
+        logger.info('Started services.')
 
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from sratch."""
@@ -283,10 +289,6 @@ class Instrument(GObject.GObject):
         self._signalconnections[devicename] = [device.connect('startupdone', self.on_ready),
                                                device.connect('disconnect', self.on_disconnect),
                                                device.connect('telemetry', self.on_telemetry, devicename)]
-        try:
-            self._outstanding_telemetries.remove(devicename)
-        except ValueError:
-            pass
 
     def _disconnect_signals(self, devicename, device):
         try:
@@ -294,10 +296,6 @@ class Instrument(GObject.GObject):
                 device.disconnect(c)
             del self._signalconnections[device]
         except (AttributeError, KeyError):
-            pass
-        try:
-            self._outstanding_telemetries.remove(devicename)
-        except ValueError:
             pass
 
     def get_beamstop_state(self):
@@ -419,8 +417,6 @@ class Instrument(GObject.GObject):
 
     def on_telemetry(self, device, telemetry, devicename):
         self._telemetries[devicename] = telemetry
-        if devicename in self._outstanding_telemetries:
-            self._outstanding_telemetries.remove(devicename)
         self.emit('telemetry', devicename, 'device', telemetry)
 
     def on_ready(self, device):
@@ -436,10 +432,12 @@ class Instrument(GObject.GObject):
             logger.debug('Waiting for ready: '+', '.join(self._waiting_for_ready))
 
     def on_disconnect(self, device, because_of_failure):
+        logger.debug('Device %s disconnected. Because of failure: %s'%(
+            device.name, because_of_failure))
         if device.name in self._waiting_for_ready:
             logger.warning('Not reconnecting to device %s: disconnected while waiting for get ready.'%device.name)
             self._waiting_for_ready.remove(device.name)
-            self.on_ready(device)
+            self.on_ready(device) # check if all other devices are ready
             return False
         if not device.ready:
             logger.warning('Not reconnecting to device %s: it has disconnected before ready.'%device.name)
@@ -451,15 +449,16 @@ class Instrument(GObject.GObject):
                 try:
                     device.reconnect_device()
                     self._waiting_for_ready.append(device.name)
-                    break
+                    return True
                 except Exception as exc:
                     logger.warning('Exception while reconnecting to device %s: %s, %s' % (
                     device.name, exc, traceback.format_exc()))
                     time.sleep(1)  # a blocking sleep. Keep the other parts of this program from accessing the device.
             if device.name not in self._waiting_for_ready:
                 logger.error('Cannot reconnect to device %s.' % device.name)
+            return False
 
-    def start_services(self):
+    def create_services(self):
         self.interpreter = Interpreter(self)
         self.interpreter._load_state(self.config['services']['interpreter'])
         self.filesequence = FileSequence(self)
@@ -478,19 +477,7 @@ class Instrument(GObject.GObject):
         """Timer function which periodically requests telemetry from all the
         components."""
         self._telemetries['main'] = get_telemetry()
-        for d in self.devices:
-            if d in self._outstanding_telemetries:
-                continue
-            try:
-                self.devices[d].get_telemetry()
-                self._outstanding_telemetries.append(d)
-            except DeviceError:
-                pass # cannot get telemetry, background process not running
-
         for s in ['exposureanalyzer']:
-            if s in self._outstanding_telemetries:
-                continue
-            self._outstanding_telemetries.append(s)
             getattr(self, s).get_telemetry()
         self.emit('telemetry',None, 'service', self.get_telemetry(None))
         return True

@@ -13,7 +13,7 @@ from gi.repository import GLib, GObject
 from .exceptions import DeviceError, CommunicationError, WatchdogTimeout
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class QueueLogHandler(QueueHandler):
     def prepare(self, record):
@@ -145,6 +145,8 @@ class Device(GObject.GObject):
 
     reply_timeout = 5
 
+    telemetry_interval = 2
+
     # A dict of outstanding variable queries. Whenever a variable query is
     # requested (either from the front-end thread or by an automatic "idle"
     # query), a key in this dict with the variable name is inserted in this
@@ -195,6 +197,8 @@ class Device(GObject.GObject):
         # the backend process must be started only after the connection to the device
         # has been established.
         self._loglevel=logger.level
+        # last telemetry date
+        self._last_telemetry=0
 
     @property
     def name(self):
@@ -366,6 +370,10 @@ class Device(GObject.GObject):
         self._check_watchdog()
         self._query_variable(None) # query all variables
         self._log()
+        if (time.monotonic()-self._last_telemetry)>self.telemetry_interval:
+            tm = self._get_telemetry()
+            self._send_to_frontend('telemetry', data=tm)
+            self._last_telemetry=time.monotonic()
 
     def _on_start_backgroundprocess(self):
         """BACKGROUND_PROCESS:
@@ -420,6 +428,7 @@ class Device(GObject.GObject):
         self._logger.info(
             'Background thread started for %s, this is startup #%d'%(
                 self.name, self._background_startup_count))
+        self._last_telemetry=0
         exit_status=False # abnormal termination
         while True:
             try:
@@ -433,9 +442,6 @@ class Device(GObject.GObject):
                     # already been raised at this point.
                     if message['type'] == 'config':
                         self.config = message['configdict']
-                    elif message['type'] == 'telemetry':
-                        tm = self._get_telemetry()
-                        self._send_to_frontend('telemetry',data=tm)
                     elif message['type'] == 'exit':
                         exit_status=True # normal termination
                         break  # the while True loop
@@ -624,9 +630,9 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
                     logger.debug('Joining background process for %s'%self.name)
                     self._background_process.join()
                     del self._background_process
+                    logger.debug('Calling disconnect_device() for %s'%self.name)
                     self.disconnect_device(
                         because_of_failure = not message['normaltermination'])
-                    logger.debug('Disconnected from device %s'%self.name)
 
                     return False # prevent re-scheduling this idle handler
                 elif (message['type']== 'ready'):
