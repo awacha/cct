@@ -22,7 +22,7 @@ class HaakePhoenix(Device_TCP):
                       'external_alarm_error', 'pump_overload_error',
                       'liquid_level_alarm_error', 'overtemperature_error',
                       'main_relay_missing_error', 'control_external',
-                      'control_on']
+                      'control_on', 'temperature']
 
     _urgentvariables = ['faultstatus', 'time', 'temperature_internal',
                         'temperature_external', 'pump_power']
@@ -122,8 +122,18 @@ class HaakePhoenix(Device_TCP):
         elif message.startswith(b'T1'):
             if self._update_variable('temperature_internal', float(message[2:])):
                 self._update_variable('_auxstatus','%.2f°C'%float(message[2:]))
+            try:
+                if not self._properties['control_external']:
+                    self._update_variable('temperature',float(message[2:]))
+            except KeyError:
+                pass
         elif message.startswith(b'T3'):
             self._update_variable('temperature_external', float(message[2:]))
+            try:
+                if self._properties['control_external']:
+                    self._update_variable('temperature',float(message[2:]))
+            except KeyError:
+                pass
         elif message.startswith(b'SW'):
             self._update_variable('setpoint', float(message[2:]))
         elif message.startswith(b'HL'):
@@ -139,7 +149,18 @@ class HaakePhoenix(Device_TCP):
                 raise NotImplementedError((original_sent, message))
         elif original_sent == b'IN MODE 2\r':
             if len(message) == 1:
-                self._update_variable('control_external', bool(int(message)))
+                if self._update_variable('control_external', bool(int(message))):
+                    try:
+                        if int(message):
+                            self._update_variable('temperature',
+                                                  self._properties[
+                                                      'temperature_external'])
+                        else:
+                            self._update_variable('temperature',
+                                                  self._properties[
+                                                      'temperature_internal'])
+                    except KeyError:
+                        pass
             else:
                 self._logger.debug('Invalid message for control_external: %s' % message.decode('utf-8'))
                 self._query_requested.clear()
@@ -180,6 +201,10 @@ class HaakePhoenix(Device_TCP):
                     self._update_variable('_status', 'stopped')
         elif message == b'':
             # confirmation for the last command
+            if original_sent==b'W TS 1\r':
+                self._update_variable('_status', 'running', force=True)
+            elif original_sent==b'W TS 0\r':
+                self._update_variable('_status', 'stopped', force=True)
             self._logger.debug(
                 'Confirmation for message %s received.' % original_sent.decode('utf-8').replace('\r', ''))
         else:
