@@ -10,7 +10,7 @@ from .device import Device_TCP, DeviceError, ReadOnlyVariable, CommunicationErro
     UnknownCommand
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # integer type variables
 pilatus_int_variables = ['wpix', 'hpix', 'sel_bank', 'sel_module',
@@ -100,7 +100,8 @@ RE_TAU_OFF = re.compile("Rate correction is off, cutoff = (?P<cutoff>{int}) coun
 RE_NIMAGES = re.compile("N images set to: (?P<nimages>{int})".format(int=RE_INT).encode('ascii'))
 
 RE_EXPSTART = re.compile(
-    "Starting (?P<exptime>{float}) second background: (?P<starttime>{date})".format(float=RE_FLOAT, date=RE_DATE).encode(
+    "Starting (?P<exptime>{float}) second background: (?P<starttime>{date})".format(float=RE_FLOAT,
+                                                                                    date=RE_DATE).encode(
         'ascii'))
 
 RE_SETTHRESHOLD = re.compile(
@@ -154,7 +155,7 @@ class Pilatus(Device_TCP):
 
     reply_timeout = 20
 
-    idle_wait=2
+    idle_wait = 2
 
     _minimum_query_variables = ['gain', 'trimfile', 'nimages', 'cameradef',
                                 'imgpath', 'imgmode', 'pid', 'expperiod',
@@ -187,8 +188,8 @@ class Pilatus(Device_TCP):
                 # trimming: the pilatus detector is known to become unresponsive
                 # during these times.
                 return False
-            elif ((self._properties['_status']=='idle') and
-                          (time.time()-self._timestamps['_status'])<self.idle_wait):
+            elif ((self._properties['_status'] == 'idle') and
+                          (time.time() - self._timestamps['_status']) < self.idle_wait):
                 # if the previous exposure has just finished, wait a little,
                 # in case we are in a scan and want to start another exposure
                 # shortly.
@@ -289,7 +290,7 @@ class Pilatus(Device_TCP):
                 gd[k] = int(gd[k])
             for k in ['exptime', 'timeleft']:
                 gd[k] = float(gd[k])
-            for k in [k_ for k_ in gd if k_ not in  ['controllingPID', 'masterPID', 'exptime', 'timeleft']]:
+            for k in [k_ for k_ in gd if k_ not in ['controllingPID', 'masterPID', 'exptime', 'timeleft']]:
                 gd[k] = gd[k].decode('utf-8')
             for k in gd:
                 self._update_variable(k, gd[k])
@@ -410,15 +411,15 @@ class Pilatus(Device_TCP):
         self._logger.debug('Executing command: %s(%s)' %
                            (commandname, repr(arguments)))
         if commandname == 'setthreshold':
-#            if self.is_busy():
-#                raise DeviceError('Cannot trim when not idle')
+            #            if self.is_busy():
+            #                raise DeviceError('Cannot trim when not idle')
             self._update_variable('_status', 'trimming')
             self._suppress_watchdog()
             self._send(b'SetThreshold %s %f\n' % (arguments[1], arguments[0]), expected_replies=None)
             logger.debug('Setting threshold to %f (gain %s)' % (arguments[0], arguments[1]))
         elif commandname == 'expose':
-#            if self.is_busy():
-#                raise DeviceError('Cannot start exposure when not idle')
+            #            if self.is_busy():
+            #                raise DeviceError('Cannot start exposure when not idle')
             self._send(b'Exposure ' + arguments[0] + b'\n', expected_replies=None)
             nimages = self._properties['nimages']
             exptime = self._properties['exptime']

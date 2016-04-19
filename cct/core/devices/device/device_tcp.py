@@ -11,7 +11,7 @@ from .device import Device
 from .exceptions import DeviceError, CommunicationError
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class QueueLogHandler(QueueHandler):
     def prepare(self, record):

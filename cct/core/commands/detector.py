@@ -7,7 +7,7 @@ from gi.repository import GLib
 from .command import Command
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class Trim(Command):
     """Trim the Pilatus detector

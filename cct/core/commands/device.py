@@ -8,7 +8,7 @@ from .command import Command, CommandError
 from ..instrument.privileges import PRIV_MOTORCONFIG
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class GetVariable(Command):
     """Get the value of a device variable

@@ -1,52 +1,52 @@
 #header {
-    background-color:black;
-    color:white;
-    text-align:center;
-    font-size:200%;
-    width:100%;
-    padding:0px;
-    }
+    background-color: black;
+    color: white;
+    text-align: center;
+    font-size: 200%;
+    width: 100%;
+    padding: 0px;
+}
 
-#leftpane{
-	width:49%;
-	float:left;
-	padding-top:0px;
-	}
+#leftpane {
+    width: 49%;
+    float: left;
+    padding-top: 0px;
+}
 
-#rightpane{
-	width:49%;
-	float:right;
-	padding-top:0px;
-	}
+#rightpane {
+    width: 49%;
+    float: right;
+    padding-top: 0px;
+}
 
-#devicehealth, #xraysourcestatus, #detectorstatus,#motorpositions, #filesequencestatus, #accounting {
-    background-color:#dddddd;
-    width:100%;
-    padding-top:10px;
-    }
+#devicehealth, #xraysourcestatus, #detectorstatus, #motorpositions, #filesequencestatus, #accounting {
+    background-color: #dddddd;
+    width: 100%;
+    padding-top: 10px;
+}
 
 #footer {
-    background-color:black;
-    color:white;
+    background-color: black;
+    color: white;
 }
 
 .clearfix {
-    overflow:auto;
+    overflow: auto;
 }
 
 caption {
-    font-size:150%;
-    background-color:#aaaaaa;
-    color:white;
-    text-align:left;
-    width:100%;
+    font-size: 150%;
+    background-color: #aaaaaa;
+    color: white;
+    text-align: left;
+    width: 100%;
 }
 
 table {
-    width:100%;
+    width: 100%;
 }
 
 table, td, tr, th {
-    border:2pt;
-    border-collapse:collapse;
+    border: 2pt;
+    border-collapse: collapse;
 }

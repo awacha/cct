@@ -7,18 +7,18 @@
     <title>CREDO status</title>
 </head>
 <body>
-    <div id="header">
-        CREDO status
-    </div>
+<div id="header">
+    CREDO status
+</div>
 
 
-    <div id="devicehealth">
-        <table border="2pt">
-            <caption>Device health</caption>
-            $devicehealth_tablecontents
-        </table>
-    </div>
-	<div id="leftpane">
+<div id="devicehealth">
+    <table border="2pt">
+        <caption>Device health</caption>
+        $devicehealth_tablecontents
+    </table>
+</div>
+<div id="leftpane">
     <img src="scheme.svg" alt="Interactive schema" width="100%">
     <div id="xraysourcestatus">
         <table border="2pt">
@@ -33,21 +33,21 @@
             $detector_status
         </table>
     </div>
-	</div>
-	<div id="rightpane">
-        <div id="accounting">
-            <table>
-                <caption>Accounting</caption>
-                $accounting_data
-            </table>
-        </div>
+</div>
+<div id="rightpane">
+    <div id="accounting">
+        <table>
+            <caption>Accounting</caption>
+            $accounting_data
+        </table>
+    </div>
 
-	<div id="filesequencestatus">
-		<table border="2pt">
-			<caption>File sequence numbers</caption>
-			$filesequence_data
-		</table>
-	</div>
+    <div id="filesequencestatus">
+        <table border="2pt">
+            <caption>File sequence numbers</caption>
+            $filesequence_data
+        </table>
+    </div>
 
     <div id="motorpositions">
         <table border="2pt">
@@ -55,15 +55,15 @@
             $motorpositions_tablecontents
         </table>
     </div>
-	</div>
+</div>
 
-    <div style="clear:both;width:100%;height:2pt;background-color:black;"></div>
+<div style="clear:both;width:100%;height:2pt;background-color:black;"></div>
 
-    <div id="footer">
-        <div style="float:left">Uptime: $uptime</div>
-        &nbsp;<a href="http://credo.ttk.mta.hu">http://credo.ttk.mta.hu</a>&nbsp;
-        <div style="float:right">$timestamp</div>
-    </div>
+<div id="footer">
+    <div style="float:left">Uptime: $uptime</div>
+    &nbsp;<a href="http://credo.ttk.mta.hu">http://credo.ttk.mta.hu</a>&nbsp;
+    <div style="float:right">$timestamp</div>
+</div>
 
 </body>
 </html>

@@ -121,7 +121,7 @@ class ExposureAnalyzer(Service):
             self._logger.propagate = False
             self._logger.addHandler(QueueLogHandler(self._queue_to_frontend))
             self._logger.addHandler(logging.StreamHandler())
-            self._logger.setLevel(logger.getEffectiveLevel())
+            self._logger.setLevel(logger.level)
         while True:
             prefix, fsn, filename, args = self._queue_to_backend.get()
             #            self._logger.debug(

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.19.0 -->
+<!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.16"/>
   <object class="GtkAdjustment" id="lefterr_adjustment">
@@ -92,7 +92,6 @@
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
                                 <property name="hexpand">True</property>
-                                <property name="xalign">0</property>
                                 <property name="draw_indicator">True</property>
                                 <signal name="toggled" handler="on_plotderivative_changed" swapped="no"/>
                               </object>
@@ -120,6 +119,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="hexpand">True</property>
+                                <property name="button_sensitivity">on</property>
                                 <signal name="changed" handler="on_signalname_changed" swapped="no"/>
                               </object>
                               <packing>
@@ -165,7 +165,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
-                                <property name="label" translatable="yes">Left:</property>
+                                <property name="label" translatable="yes">Negative:</property>
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
@@ -177,7 +177,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
-                                <property name="label" translatable="yes">Right:</property>
+                                <property name="label" translatable="yes">Positive:</property>
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
@@ -266,7 +266,7 @@
                                 <property name="layout_style">expand</property>
                                 <child>
                                   <object class="GtkButton" id="fitleft_button">
-                                    <property name="label" translatable="yes">Fit left</property>
+                                    <property name="label" translatable="yes">Fit negative peak</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
@@ -280,7 +280,7 @@
                                 </child>
                                 <child>
                                   <object class="GtkButton" id="fitright_button">
-                                    <property name="label" translatable="yes">Fit right</property>
+                                    <property name="label" translatable="yes">Fit positive peak</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>

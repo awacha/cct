@@ -7,7 +7,7 @@ from .device import Device
 from .exceptions import DeviceError, CommunicationError
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class Device_ModbusTCP(Device):
     """Device with Modbus over TCP connection.

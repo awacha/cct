@@ -1,5 +1,6 @@
-from gi.repository import GObject
 import weakref
+
+from gi.repository import GObject
 
 
 class ServiceError(Exception):
@@ -27,3 +28,7 @@ class Service(GObject.GObject):
     def _save_state(self):
         """Save the state to a dictionary"""
         return {}
+
+    def start(self):
+        """Start operation."""
+        return

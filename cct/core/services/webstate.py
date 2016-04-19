@@ -28,6 +28,9 @@ class WebStateFileWriter(Service):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._timeouthandler=None
+
+    def start(self):
         self._timeouthandler = GLib.timeout_add(self.webstate_timeout*1000, self.write_statusfile)
 
     def reload_statusfile_template(self):

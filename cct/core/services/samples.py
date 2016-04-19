@@ -6,7 +6,7 @@ from .service import Service, ServiceError
 from ..instrument.sample import Sample
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class SampleStoreError(ServiceError):
     pass

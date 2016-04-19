@@ -1,22 +1,24 @@
+import argparse
+import datetime
+import logging
+import sys
+import time
+import traceback
+from logging import StreamHandler
+from logging.handlers import TimedRotatingFileHandler
+
+import pkg_resources
 from gi import require_version
 
 require_version('Gtk', '3.0')
 require_version('GtkSource', '3.0')
 require_version('Notify', '0.7')
+
 from gi.repository import Gio
 from gi.repository import Gtk
 from gi.repository import GLib
 from gi.repository import GdkPixbuf
 from gi.repository import Notify
-import pkg_resources
-import sys
-import logging
-from logging.handlers import TimedRotatingFileHandler
-from logging import StreamHandler
-import traceback
-import time
-import datetime
-import argparse
 from ..core.instrument.instrument import Instrument
 from ..core.commands.command import CommandError
 from .measurement.scan import Scan
@@ -73,10 +75,11 @@ itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons
 itheme.append_search_path(pkg_resources.resource_filename('cct', 'resource/icons/8x8'))
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
+
+oldexcepthook = sys.excepthook
 
 
-oldexcepthook=sys.excepthook
 def my_excepthook(type_, value, traceback_):
     try:
         logger.critical(
@@ -85,7 +88,10 @@ def my_excepthook(type_, value, traceback_):
         logger.critical(
             'Error in excepthook: ' + traceback.format_exc())
     oldexcepthook(type_, value, traceback_)
+
+
 sys.excepthook = my_excepthook
+
 
 class MyLogHandler(logging.Handler):
     def __init__(self, logfunction):
@@ -113,6 +119,7 @@ class CCTApplication(Gtk.Application):
             self.add_window(self._mw._window)
             self._mw._window.set_show_menubar(True)
             self._mw._window.show_all()
+            self._instrument.start()
         finally:
             ad._window.destroy()
         return True
@@ -127,17 +134,18 @@ class CCTApplication(Gtk.Application):
         self._instrument = Instrument(args.online)
         self._instrument.load_state()
         self._online = args.online
-        self._skipauthentication=args.root
+        self._skipauthentication = args.root
         self.do_activate()
         return 0
 
 
 class AuthenticatorDialog(object):
     def __init__(self, application, instrument):
-        self._application=application
+        self._application = application
         self._instrument = instrument
-        self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/accounting_login.glade'))
-        self._window=self._builder.get_object('accountingdialog')
+        self._builder = Gtk.Builder.new_from_file(
+            pkg_resources.resource_filename('cct', 'resource/glade/accounting_login.glade'))
+        self._window = self._builder.get_object('accountingdialog')
         self._builder.get_object('password_entry').get_style_context().add_provider(cssprovider,
                                                                                     Gtk.STYLE_PROVIDER_PRIORITY_USER)
         self._builder.connect_signals(self)
@@ -158,26 +166,27 @@ class AuthenticatorDialog(object):
                     return True
                 self._builder.get_object('password_entry').set_name('redbackground')
 
+
 class DeviceStatusBar(Gtk.Box):
     def __init__(self, instrument):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.HORIZONTAL)
-        self._instrument=instrument
-        self._statuslabels={}
-        self._connections={}
-        self._status={}
-        self._auxstatus={}
+        self._instrument = instrument
+        self._statuslabels = {}
+        self._connections = {}
+        self._status = {}
+        self._auxstatus = {}
         for device in sorted(self._instrument.devices):
-            dev=self._instrument.devices[device]
-            frame=Gtk.Frame(label=device)
-            self._status[dev]=dev.get_variable('_status')
+            dev = self._instrument.devices[device]
+            frame = Gtk.Frame(label=device)
+            self._status[dev] = dev.get_variable('_status')
             try:
-                self._auxstatus[dev]=dev.get_variable('_auxstatus')
+                self._auxstatus[dev] = dev.get_variable('_auxstatus')
             except KeyError:
-                self._auxstatus[dev]=None
-            self._statuslabels[device]=Gtk.Label(label=self.get_labeltext(dev))
+                self._auxstatus[dev] = None
+            self._statuslabels[device] = Gtk.Label(label=self.get_labeltext(dev))
             frame.add(self._statuslabels[device])
             self.pack_start(frame, True, True, 0)
-            self._connections[dev]=dev.connect('variable-change', self.on_variable_change, device)
+            self._connections[dev] = dev.connect('variable-change', self.on_variable_change, device)
 
     def get_labeltext(self, device):
         if (device not in self._auxstatus):
@@ -185,7 +194,7 @@ class DeviceStatusBar(Gtk.Box):
         elif (self._auxstatus[device] is None):
             return str(self._status[device])
         else:
-            return '%s (%s)'%(self._status[device],self._auxstatus[device])
+            return '%s (%s)' % (self._status[device], self._auxstatus[device])
 
     def do_destroy(self):
         try:
@@ -196,13 +205,14 @@ class DeviceStatusBar(Gtk.Box):
             pass
 
     def on_variable_change(self, device, variablename, newvalue, devicename):
-        if variablename=='_status':
-            self._status[device]=newvalue
+        if variablename == '_status':
+            self._status[device] = newvalue
             self._statuslabels[devicename].set_text(self.get_labeltext(device))
-        elif variablename=='_auxstatus':
-            self._auxstatus[device]=newvalue
+        elif variablename == '_auxstatus':
+            self._auxstatus[device] = newvalue
             self._statuslabels[devicename].set_text(self.get_labeltext(device))
         return False
+
 
 class MainWindow(object):
     def __init__(self, app, instrument):
@@ -215,8 +225,8 @@ class MainWindow(object):
         self._window.set_show_menubar(True)
         self._window.connect('delete-event', self.on_delete_event)
         self._window.set_default_icon_list([GdkPixbuf.Pixbuf.new_from_file_at_size(
-            pkg_resources.resource_filename('cct','resource/icons/scalable/cctlogo.svg'),
-            sz,sz) for sz in [16, 32, 48, 64, 128, 256]])
+            pkg_resources.resource_filename('cct', 'resource/icons/scalable/cctlogo.svg'),
+            sz, sz) for sz in [16, 32, 48, 64, 128, 256]])
         self._window.show_all()
         self._loghandler = MyLogHandler(self._writelogline)
         self._loghandler.setLevel(logging.DEBUG)
@@ -233,13 +243,13 @@ class MainWindow(object):
         self._instrument = instrument
         if self._instrument._online:
             self._instrument.connect_devices()
-        self._devicestatus=DeviceStatusBar(self._instrument)
+        self._devicestatus = DeviceStatusBar(self._instrument)
         self._builder.get_object('devicestatus_box').pack_start(self._devicestatus, True, True, 0)
 
         self._toolframes = {'resourceusage': ResourceUsageFrame('toolframe_telemetry.glade',
-                                                           'telemetryframe',
-                                                           self._instrument,
-                                                           self._application),
+                                                                'telemetryframe',
+                                                                self._instrument,
+                                                                self._application),
                             'nextfsn': NextFSN('toolframe_nextfsn.glade',
                                                'nextfsnframe',
                                                self._instrument,
@@ -267,7 +277,7 @@ class MainWindow(object):
             self._instrument.interpreter.connect('pulse', self.on_interpreter_cmd_pulse),
             self._instrument.interpreter.connect('progress', self.on_interpreter_cmd_progress),
             self._instrument.interpreter.connect('cmd-message', self.on_interpreter_cmd_message),
-            self._instrument.interpreter.connect('idle-changed', self.on_interpreter_idle_changed),]
+            self._instrument.interpreter.connect('idle-changed', self.on_interpreter_idle_changed), ]
         self._commandhistory = []
         self._historyindex = None
 
@@ -293,7 +303,7 @@ class MainWindow(object):
     def on_interpreter_idle_changed(self, interpreter, idle):
         if not idle:
             self._builder.get_object('command_entry').set_sensitive(idle)
-            if self._builder.get_object('execute_button').get_label()=='Execute':
+            if self._builder.get_object('execute_button').get_label() == 'Execute':
                 self._builder.get_object('execute_button').set_sensitive(idle)
         if idle:
             self._builder.get_object('command_entry').set_sensitive(idle)
@@ -332,7 +342,8 @@ class MainWindow(object):
         self._statusbar.pop(1)
         self._statusbar.push(1, message)
         enditer = self._logbuffer.get_end_iter()
-        self._logbuffer.insert_with_tags(enditer, str(datetime.datetime.now())+': MESSAGE: '+message + '\n', self._logtags.lookup('normal'))
+        self._logbuffer.insert_with_tags(enditer, str(datetime.datetime.now()) + ': MESSAGE: ' + message + '\n',
+                                         self._logtags.lookup('normal'))
         self._logview.scroll_to_mark(
             self._logbuffer.get_mark('log_end'), 0.1, False, 0, 0)
 
@@ -368,11 +379,11 @@ class MainWindow(object):
         return False
 
     def construct_and_run_dialog(self, windowclass, toplevelname, gladefile, windowtitle):
-        key=str(windowclass)+str(toplevelname)
+        key = str(windowclass) + str(toplevelname)
         if key not in self._dialogs:
             try:
                 self._dialogs[key] = windowclass(gladefile, toplevelname, self._instrument, self._application,
-                                                          windowtitle)
+                                                 windowtitle)
             except Exception as exc:
                 # this has already been handled with an error dialog
                 logger.debug('Could not open window %s: %s %s' % (windowtitle, str(exc), traceback.format_exc()))
@@ -462,7 +473,8 @@ class MainWindow(object):
         return False
 
     def on_menu_tools_diagnostics_resourceusage(self, menuitem):
-        self.construct_and_run_dialog(ResourceUsage, 'resourceusagewindow', 'diagnostics_resourceusage.glade', 'Resource usage')
+        self.construct_and_run_dialog(ResourceUsage, 'resourceusagewindow', 'diagnostics_resourceusage.glade',
+                                      'Resource usage')
 
     def on_menu_help_about(self, menuitem):
         builder = Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct', 'resource/glade/help_about.glade'))
@@ -475,8 +487,8 @@ class MainWindow(object):
         return False
 
     def on_menu_help_commandhelp(self, menuitem):
-        chd=self.construct_and_run_dialog(CommandHelpDialog, 'commandhelpbrowser', 'help_commandhelpbrowser.glade',
-                                          'Help on commands')
+        chd = self.construct_and_run_dialog(CommandHelpDialog, 'commandhelpbrowser', 'help_commandhelpbrowser.glade',
+                                            'Help on commands')
         chd.connect('insert', self._on_insert_command)
         return False
 
@@ -491,6 +503,7 @@ class MainWindow(object):
         self.construct_and_run_dialog(ProjectManager, 'projectmanager', 'accounting_projectmanager.glade',
                                       'Manage projects')
         return False
+
 
 def run():
     app = CCTApplication(

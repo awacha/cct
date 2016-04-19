@@ -4,7 +4,7 @@ import time
 from .device import Device_ModbusTCP, UnknownVariable, UnknownCommand
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class GeniX(Device_ModbusTCP):
     log_formatstr = '{_status}\t{ht}\t{current}\t{shutter}'
