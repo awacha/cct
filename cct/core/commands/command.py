@@ -152,7 +152,7 @@ class Command(GObject.GObject):
             self._pulse_handler = GLib.timeout_add(
                 period * 1000, lambda m=message_or_func: self.emit('pulse', m) or True)
         elif callable(message_or_func):
-            self._pulse_handler = GLib.timeout.add(
+            self._pulse_handler = GLib.timeout_add(
                 period * 1000, lambda m=message_or_func: self.emit('pulse', m()) or True)
 
     def _uninstall_pulse_handler(self):
