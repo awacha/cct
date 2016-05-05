@@ -18,7 +18,7 @@ class Shutter(Command):
 
     name = 'shutter'
 
-    timeout = 2
+    timeout = 3
 
     def execute(self, interpreter, arglist, instrument, namespace):
         self._check_for_variable = 'shutter'

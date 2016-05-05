@@ -82,10 +82,9 @@ class ExposureAnalyzer(Service):
     }
 
     def __init__(self, *args, **kwargs):
-        self._logger = logger
         Service.__init__(self, *args, **kwargs)
         self._backendprocess = multiprocessing.Process(
-            target=self._backgroundworker, daemon=True)
+            target=self._backgroundworker, daemon=True, args=(logger.level,))
         self._queue_to_backend = multiprocessing.Queue()
         self._queue_to_frontend = multiprocessing.Queue()
         self._handler = GLib.idle_add(self._idle_function)
@@ -115,13 +114,13 @@ class ExposureAnalyzer(Service):
     def get_telemetry(self):
         self._queue_to_backend.put_nowait(('_telemetry', None, None, None))
 
-    def _backgroundworker(self):
+    def _backgroundworker(self, loglevel):
         self._logger = logging.getLogger(__name__ + '::backgroundprocess')
         if not self._logger.hasHandlers():
             self._logger.propagate = False
             self._logger.addHandler(QueueLogHandler(self._queue_to_frontend))
             self._logger.addHandler(logging.StreamHandler())
-            self._logger.setLevel(logger.level)
+            self._logger.setLevel(loglevel)
         while True:
             prefix, fsn, filename, args = self._queue_to_backend.get()
             #            self._logger.debug(
@@ -209,14 +208,14 @@ class ExposureAnalyzer(Service):
     def _idle_function(self):
         try:
             prefix_fsn, what, arguments = self._queue_to_frontend.get_nowait()
-            self._logger.debug('what=%s' % what)
+            logger.debug('what=%s' % what)
             if what in ['image', 'scanpoint', 'error', 'transmdata']:
                 if prefix_fsn[0] in self._working:
                     self._working[prefix_fsn[0]] -= 1
                     if self._working[prefix_fsn[0]] < 0:
                         raise ServiceError(
                             'Working[%s]==%d less than zero!' % (prefix_fsn[0], self._working[prefix_fsn[0]]))
-            self._logger.debug('Exposureanalyzer working on %d jobs' % sum(self._working.values()))
+            logger.debug('Exposureanalyzer working on %d jobs' % sum(self._working.values()))
         except queue.Empty:
             return True
         if what == 'error':
@@ -227,7 +226,7 @@ class ExposureAnalyzer(Service):
         elif what == 'scanpoint':
             self.emit('scanpoint', prefix_fsn[0], prefix_fsn[1], arguments)
         elif what == 'datareduction-done':
-            self._logger.debug('Emitting datareduction-done message')
+            logger.debug('Emitting datareduction-done message')
             self.emit('datareduction-done', prefix_fsn[0], prefix_fsn[1], arguments[0])
         elif what == 'transmdata':
             self.emit('transmdata', prefix_fsn[0], prefix_fsn[1], arguments)

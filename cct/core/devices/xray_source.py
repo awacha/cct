@@ -69,6 +69,7 @@ class GeniX(Device_ModbusTCP):
                               'filament_fault', 'tube_warmup_needed',
                               'interlock', 'overridden', '_status']:
             statusbits = self._read_coils(210, 36)
+            self._last_readstatus=time.monotonic()
             self._update_variable('remote_mode', statusbits[0])
             self._update_variable('xrays', statusbits[1])
             if not statusbits[1]:
@@ -196,3 +197,9 @@ class GeniX(Device_ModbusTCP):
     def reset_faults(self):
         """Try to reset faults."""
         self.execute_command('reset_faults')
+
+    def _get_telemetry(self):
+        tm=super()._get_telemetry()
+        if hasattr(self, '_last_readstatus'):
+            tm['last_readstatus']=time.monotonic()-self._last_readstatus
+        return tm

@@ -75,7 +75,7 @@ class Instrument(GObject.GObject):
         GObject.GObject.__init__(self)
         self._online = online
         self.devices = {}
-        self.services = {}
+        self.services = []
         self.xray_source = None
         self.detector = None
         self.motorcontrollers = {}
@@ -472,6 +472,12 @@ class Instrument(GObject.GObject):
         self.accounting._load_state(self.config['services']['accounting'])
         self.webstatefilewriter = WebStateFileWriter(self)
         self.webstatefilewriter._load_state(self.config['services']['webstatefilewriter'])
+        self.services.extend([self.interpreter,
+                              self.filesequence,
+                              self.samplestore,
+                              self.exposureanalyzer,
+                              self.accounting,
+                              self.webstatefilewriter])
 
     def on_telemetry_timeout(self):
         """Timer function which periodically requests telemetry from all the
