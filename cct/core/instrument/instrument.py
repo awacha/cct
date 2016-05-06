@@ -237,6 +237,7 @@ class Instrument(GObject.GObject):
                                               '(111)': {'val': 26.18000, 'err': 0.00004}},
                                      }
         self.config['datareduction'] = {'backgroundname': 'Empty_Beam',
+                                        'darkbackgroundname': 'Dark',
                                         'absintrefname': 'Glassy_Carbon',
                                         'absintrefdata': 'config/GC_data_nm.dat',
                                         'distancetolerance': 100,  # mm

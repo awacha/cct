@@ -253,17 +253,37 @@ class ExposureAnalyzer(Service):
                 'children': resource.getrusage(resource.RUSAGE_CHILDREN),
                 'inqueuelen': self._queue_to_backend.qsize()}
 
-    def prescaling(self, im):
+    def normalize_flux(self, im):
         im /= im.params['exposure']['exptime']
-        transmission = ErrorValue(im.params['sample']['transmission.val'], im.params['sample']['transmission.err'])
-        im /= transmission
         im.params['datareduction']['history'].append('Divided by exposure time')
-        im.params['datareduction']['history'].append('Divided by transmission: %s' % str(transmission))
-        im.params['datareduction']['statistics']['02_prescaling']=im.get_statistics()
-        self._logger.debug('Done prescaling FSN %d' % im.params['exposure']['fsn'])
+        im.params['datareduction']['statistics']['02_normalize_flux']=im.get_statistics()
+        self._logger.debug('Done normalizing by flux FSN %d' % im.params['exposure']['fsn'])
         return im
 
-    def subtractbackground(self, im):
+    def subtractdarkbackground(self, im):
+        if im.params['sample']['title'] == self._config['datareduction']['darkbackgroundname']:
+            self._lastdarkbackground = im.mean()
+            self._logger.debug('Determined background level: %g cps per pixel'%self._lastdarkbackground)
+            self._logger.debug('Done darkbgsub FSN %d: this is dark background' % im.params['exposure']['fsn'])
+            raise DataReductionEnd()
+        # otherwise subtract the background.
+        im -= self._lastdarkbackground
+        im.params['datareduction']['history'].append(
+            'Subtracted dark background level: %g cps per pixel' % self._lastdarkbackground)
+        im.params['datareduction']['darkbackgroundlevel'] = self._lastdarkbackground
+        im.params['datareduction']['statistics']['03_subtractdarkbackground']=im.get_statistics()
+        self._logger.debug('Done darkbgsub FSN %d' % im.params['exposure']['fsn'])
+        return im
+
+    def normalize_transmission(self, im):
+        transmission = ErrorValue(im.params['sample']['transmission.val'], im.params['sample']['transmission.err'])
+        im /= transmission
+        im.params['datareduction']['history'].append('Divided by transmission: %s' % str(transmission))
+        im.params['datareduction']['statistics']['04_normalize_transmission']=im.get_statistics()
+        self._logger.debug('Done normalizing by transmission FSN %d' % im.params['exposure']['fsn'])
+        return im
+
+    def subtractemptybeambackground(self, im):
         if im.params['sample']['title'] == self._config['datareduction']['backgroundname']:
             self._lastbackground = im
             self._logger.debug('Done bgsub FSN %d: this is background' % im.params['exposure']['fsn'])
@@ -277,9 +297,10 @@ class ExposureAnalyzer(Service):
             im.params['datareduction']['emptybeamFSN'] = self._lastbackground.params['exposure']['fsn']
         else:
             raise ServiceError('Last seen background measurement does not match the exposure under reduction.')
-        im.params['datareduction']['statistics']['03_subtractbackground']=im.get_statistics()
+        im.params['datareduction']['statistics']['05_subtractbackground']=im.get_statistics()
         self._logger.debug('Done bgsub FSN %d' % im.params['exposure']['fsn'])
         return im
+
 
     def correctgeometry(self, im):
         tth = im.twotheta_rad
@@ -312,13 +333,13 @@ class ExposureAnalyzer(Service):
         else:
             im.params['datareduction']['history'].append(
                 'Skipped angle-dependent air absorption correction: no pressure value.')
-        im.params['datareduction']['statistics']['04_correctgeometry']=im.get_statistics()
+        im.params['datareduction']['statistics']['06_correctgeometry']=im.get_statistics()
         self._logger.debug('Done correctgeometry FSN %d' % im.params['exposure']['fsn'])
         return im
 
     def dividebythickness(self, im):
         im /= ErrorValue(im.params['sample']['thickness.val'], im.params['sample']['thickness.err'])
-        im.params['datareduction']['statistics']['05_dividebythickness']=im.get_statistics()
+        im.params['datareduction']['statistics']['07_dividebythickness']=im.get_statistics()
         self._logger.debug('Done dividebythickness FSN %d' % im.params['exposure']['fsn'])
         return im
 
@@ -351,7 +372,7 @@ class ExposureAnalyzer(Service):
         if abs(im.params['geometry']['truedistance'] - self._lastabsintref.params['geometry']['truedistance']) < \
                 self._config['datareduction']['distancetolerance']:
             im *= self._absintscalingfactor
-            im.params['datareduction']['statistics']['06_absolutescaling']=im.get_statistics()
+            im.params['datareduction']['statistics']['08_absolutescaling']=im.get_statistics()
             im.params['datareduction']['history'].append(
                 'Using absolute intensity factor %s from measurement FSN #%d for absolute intensity calibration.' % (
                     self._absintscalingfactor, self._lastabsintref.params['exposure']['fsn']))
@@ -385,8 +406,10 @@ class ExposureAnalyzer(Service):
         im = SASImage(intensity, intensity ** 0.5, params, mask)
         im.params['datareduction'] = {'history': [], 'statistics':{'01_initial':im.get_statistics()}}
         try:
-            self.prescaling(im)
-            self.subtractbackground(im)
+            self.normalize_flux(im)
+            self.subtractdarkbackground(im)
+            self.normalize_transmission(im)
+            self.subtractemptybeambackground(im)
             self.correctgeometry(im)
             self.dividebythickness(im)
             self.absolutescaling(im)

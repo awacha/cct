@@ -126,6 +126,16 @@ class SASImage(ErrorValue):
                 'masked':(self._mask==0).sum(),
                 }
 
+    def sum(self, respect_mask=True):
+        if respect_mask:
+            return self.intensity[self._mask!=0].sum()
+        else:
+            return self.intensity.sum()
 
+    def mean(self, respect_mask=True):
+        if respect_mask:
+            return self.intensity[self._mask!=0].mean()
+        else:
+            return self.intensity.mean()
 
 
