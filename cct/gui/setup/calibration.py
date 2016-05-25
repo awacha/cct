@@ -169,8 +169,13 @@ class Calibration(ToolWindow):
             idx = (x >= xmin) & (x <= xmax)
             x = x[idx]
             y = y[idx]
-            dx = self._curve.dq
-            dy = self._curve.error
+            dx = self._curve.dq[idx]
+            dy = self._curve.error[idx]
+            print(x.shape, x.dtype, x)
+            print(y.shape, y.dtype, y)
+            print(dx.shape, dx.dtype, dx)
+            print(dy.shape, dy.dtype,dy)
+
             pos, hwhm, baseline, ampl = findpeak_single(x, y, dy)
             x_ = np.linspace(x.min(), x.max(), len(x) * 10)
             if curvetype == 'Gauss':

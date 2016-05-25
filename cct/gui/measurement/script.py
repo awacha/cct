@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 
 import pkg_resources
@@ -6,6 +7,9 @@ from gi.repository import GtkSource, Gdk, Gtk, GObject, GdkPixbuf, Notify, GLib
 
 from ..core.toolwindow import ToolWindow, question_message, error_message, info_message
 from ...core.commands.script import Script, Command
+
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # ToDo: closing the script window results in GtkWarnings (not a GTK_WIDGET etc.). Something to do with buffer marks.
 
@@ -61,17 +65,21 @@ class ScriptMeasurement(ToolWindow):
 
     def on_toolbutton_open(self, toolbutton):
         self.confirm_save()
-        if not hasattr(self, '_filechooser'):
-            self._filechooser = Gtk.FileChooserDialog('Open script file', self._window, Gtk.FileChooserAction.OPEN,
+        if not hasattr(self, '_filechooser_open'):
+            self._filechooser_open = Gtk.FileChooserDialog('Open script file', self._window, Gtk.FileChooserAction.OPEN,
                                                       ['OK', Gtk.ResponseType.OK, 'Cancel', Gtk.ResponseType.CANCEL])
-            self._filechooser.add_shortcut_folder(os.path.join(os.getcwd(),'scripts'))
-        self._filechooser.set_action(Gtk.FileChooserAction.OPEN)
-        self._filechooser.set_title('Open script file')
-        self._filechooser.set_transient_for(self._window)
-        if self._filechooser.run()==Gtk.ResponseType.OK:
-            self._filename=self._filechooser.get_filename()
+            self._filechooser_open.add_shortcut_folder(os.path.join(os.getcwd(),'scripts'))
+        self._filechooser_open.set_action(Gtk.FileChooserAction.OPEN)
+        self._filechooser_open.set_title('Open script file')
+        self._filechooser_open.set_transient_for(self._window)
+        if hasattr(self, '_filename'):
+            self._filechooser_open.set_filename(self._filename)
+            self._filechooser_open.set_current_folder(self._filename)
+        if self._filechooser_open.run()==Gtk.ResponseType.OK:
+            self._filename=self._filechooser_open.get_filename()
             self._window.set_title(self._filename)
-        self._filechooser.hide()
+            self._filechooser_open.set_filename(self._filename)
+        self._filechooser_open.hide()
         with open(self._filename, 'rt', encoding='utf-8') as f:
             self._sourcebuffer.set_text(f.read())
         self._sourcebuffer.set_modified(False)
@@ -84,21 +92,25 @@ class ScriptMeasurement(ToolWindow):
         self._sourcebuffer.set_modified(False)
 
     def on_toolbutton_saveas(self, toolbutton):
-        if not hasattr(self, '_filechooser'):
-            self._filechooser = Gtk.FileChooserDialog('Save script file as...', self._window,
+        if not hasattr(self, '_filechooser_save'):
+            self._filechooser_save = Gtk.FileChooserDialog('Save script file as...', self._window,
                                                       Gtk.FileChooserAction.SAVE, ['OK', Gtk.ResponseType.OK, 'Cancel', Gtk.ResponseType.CANCEL])
-            self._filechooser.add_shortcut_folder(os.path.join(os.getcwd(),'scripts'))
-        self._filechooser.set_action(Gtk.FileChooserAction.SAVE)
-        self._filechooser.set_do_overwrite_confirmation(True)
-        self._filechooser.set_title('Save script file as...')
-        self._filechooser.set_transient_for(self._window)
-        if self._filechooser.run()==Gtk.ResponseType.OK:
-            self._filename=self._filechooser.get_filename()
+            self._filechooser_save.add_shortcut_folder(os.path.join(os.getcwd(),'scripts'))
+        self._filechooser_save.set_action(Gtk.FileChooserAction.SAVE)
+        self._filechooser_save.set_do_overwrite_confirmation(True)
+        self._filechooser_save.set_title('Save script file as...')
+        self._filechooser_save.set_transient_for(self._window)
+        if hasattr(self, '_filename'):
+            self._filechooser_save.set_filename(self._filename)
+            self._filechooser_save.set_current_folder(self._filename)
+        if self._filechooser_save.run()==Gtk.ResponseType.OK:
+            self._filename=self._filechooser_save.get_filename()
             if not self._filename.lower().endswith('.cct'):
                 self._filename=self._filename+'.cct'
+            self._filechooser_save.set_filename(self._filename)
             self._window.set_title(self._filename)
             self.on_toolbutton_save(toolbutton)
-        self._filechooser.hide()
+        self._filechooser_save.hide()
 
     def on_toolbutton_undo(self, toolbutton):
         self._sourcebuffer.undo()
@@ -130,8 +142,9 @@ class ScriptMeasurement(ToolWindow):
             self._instrument.interpreter.connect('pulse', self.on_script_pulse),
             self._instrument.interpreter.connect('progress',self.on_script_progress),
             self._instrument.interpreter.connect('cmd-message', self.on_script_message),
+            self._instrument.interpreter.connect('flag', self.on_interpreter_flag),
                                        ]
-        self._instrument.interpreter.clear_flag(None)  # clear all flags
+        #self._instrument.interpreter.clear_flag(None)  # clear all flags
         flagsbb = self._builder.get_object('flags_buttonbox')
         for b in flagsbb:
             if b.get_active():
@@ -267,6 +280,13 @@ class ScriptMeasurement(ToolWindow):
         else:
             self._instrument.interpreter.clear_flag(flagtoggle.get_label())
 
+    def on_interpreter_flag(self, interpreter, flagname, newstate):
+        logger.info('Flag state changed: %s, %s'%(flagname, newstate))
+        tb=self._builder.get_object('flag'+flagname+'_button')
+        if tb is None:
+            raise('No flag button: %s'%flagname)
+        tb.set_active(newstate)
+        return False
 
 class CommandHelpDialog(ToolWindow):
     __gsignals__ = {'insert': (GObject.SignalFlags.RUN_FIRST, None, (str,))}

@@ -216,7 +216,10 @@ class FileSequence(Service):
                         elif l.startswith('#D') and idx is not None:
                             self._scanfile_toc[scanfile][idx]['date'] = dateutil.parser.parse(l.split(None, 1)[1])
                         elif l.startswith('#C') and idx is not None:
-                            self._scanfile_toc[scanfile][idx]['comment'] = l.split(None, 1)[1]
+                            try:
+                                self._scanfile_toc[scanfile][idx]['comment'] = l.split(None, 1)[1]
+                            except IndexError:
+                                self._scanfile_toc[scanfile][idx]['comment'] = 'no comment'
                         l=f.readline()
 #        for sf in self._scanfile_toc:
 #            logger.debug('Max. scan index in file %s: %d'%(sf, max([k for k in self._scanfile_toc[sf]]+[0])))

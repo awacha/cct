@@ -1,4 +1,7 @@
+from gi.repository import GLib
+
 from .command import Command
+
 
 class JumpException(Exception):
     pass
@@ -147,3 +150,51 @@ class GosubOnFlag(Command):
             raise GosubException(arglist[0])
         else:
             raise PassException()
+
+class ClearFlag(Command):
+    """Set a flag to OFF state.
+
+    Invocation: clearflag(<flagname>)
+
+    Arguments:
+        <flagname>: a string containing the name of the flag
+
+    Remarks:
+        Can only be used in scripts.
+    """
+    name = 'clearflag'
+
+    def execute(self, interpreter, arglist, instrument, namespace):
+        self._flag=str(arglist[0])
+        self._interpreter=interpreter
+        GLib.idle_add(self._return)
+
+    def _return(self):
+        self._interpreter.clear_flag(self._flag)
+        self.emit('message','Clearing flag: %s'%self._flag)
+        self.emit('return', None)
+        return False
+
+class SetFlag(Command):
+    """Set a flag to ON state.
+
+    Invocation: setflag(<flagname>)
+
+    Arguments:
+        <flagname>: a string containing the name of the flag
+
+    Remarks:
+        Can only be used in scripts.
+    """
+    name = 'setflag'
+
+    def execute(self, interpreter, arglist, instrument, namespace):
+        self._flag=str(arglist[0])
+        self._interpreter=interpreter
+        GLib.idle_add(self._return)
+
+    def _return(self):
+        self._interpreter.set_flag(self._flag)
+        self.emit('message','Setting flag: %s'%self._flag)
+        self.emit('return', None)
+        return False

@@ -38,6 +38,8 @@ class Interpreter(Service):
         'cmd-message': (GObject.SignalFlags.RUN_FIRST, None, (str, str,)),
         # emitted when work started (False) or work finished (True).
         'idle-changed': (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
+        # emitted when a flag changes. Arguments: the name and the new state of the flag.
+        'flag': (GObject.SignalFlags.RUN_FIRST, None, (str, bool,)),
     }
 
     def __init__(self, instrument, namespace=None, **kwargs):
@@ -58,7 +60,7 @@ class Interpreter(Service):
         self._command_connections = {}
 
     def create_child(self, namespace=None, **kwargs):
-        """Create a child interpreter. Children and parents share the same set of flags."""
+        """Create a child interpreter. Children and parents share the same set of flags, which are owned by the parent."""
         child = Interpreter(self.instrument, namespace, **kwargs)
         child._parent = self
         return child
@@ -210,6 +212,7 @@ class Interpreter(Service):
             # we have no parent
             if flagname not in self._flags:
                 self._flags.append(flagname)
+                self.emit('flag', flagname, True)
 
     def clear_flag(self, flagname=None):
         try:
@@ -217,9 +220,15 @@ class Interpreter(Service):
         except AttributeError:
             # we have no parent
             if flagname is None:
+                logger.debug('Clearing all flags')
+                for f in self._flags:
+                    self.emit('flag', f, False)
                 self._flags = []
             else:
-                self._flags = [f for f in self._flags if f != flagname]
+                if flagname in self._flags:
+                    self._flags = [f for f in self._flags if f != flagname]
+                    logger.debug('Clearing flag %s'%flagname)
+                    self.emit('flag', flagname, False)
 
     def is_flag(self, flagname):
         try:

@@ -50,6 +50,7 @@ class Scan(ToolWindow):
                     error_message(self._window, 'Cannot start scan', 'Please give the details of this scan in the "Comment" field.')
                     self._make_sensitive()
                     self._builder.get_object('start_button').set_label('Start')
+                    return True
                 if self._builder.get_object('symmetric_checkbutton').get_active():
                     width=self._builder.get_object('start_or_width_spin').get_value()
                     self._commandline='scanrel("%s", %f, %d, %f, "%s")'%(self._motor, width, self._nsteps, exptime, comment)
