@@ -233,6 +233,10 @@ class Device_TCP(Device):
         except (socket.error, socket.gaierror, socket.herror, ConnectionRefusedError) as exc:
             logger.error(
                 'Error initializing socket connection to device %s:%d' % (host, port))
+            try:
+                del self._tcpsocket
+            except AttributeError:
+                pass
             raise DeviceError('Cannot connect to device.',exc)
         self._flushoutqueue()
         self._killflag.clear()
@@ -252,14 +256,20 @@ class Device_TCP(Device):
         self._killflag.set()
         try:
             self._communication_subprocess.join()
-        except AssertionError:
+        except (AssertionError, AttributeError):
             pass
         logger.debug('Joined communication subprocess of '+self.name)
-        del self._communication_subprocess
-        self._tcpsocket.shutdown(socket.SHUT_RDWR)
-        self._tcpsocket.close()
+        try:
+            del self._communication_subprocess
+        except AttributeError:
+            pass
+        try:
+            self._tcpsocket.shutdown(socket.SHUT_RDWR)
+            self._tcpsocket.close()
+            del self._tcpsocket
+        except AttributeError:
+            pass
         self._flushoutqueue()
-        del self._tcpsocket
 
     def _flushoutqueue(self):
         while True:

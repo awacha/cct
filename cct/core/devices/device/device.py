@@ -675,6 +675,8 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         if self._properties['_status'] != 'Disconnected':
             self._properties['_status'] = 'Disconnected'
             self.emit('variable-change', '_status', 'Disconnected')
+        else:
+            return True
         return False
 
     def do_telemetry(self, telemetry):
@@ -772,8 +774,6 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         failure or because of the remote end. In this case this function is
         called on a queue message from the backend.
         """
-        if not self._get_connected():
-            raise DeviceError('Not connected')
         logger.debug('Disconnecting from device%s' %
                            (['', ' because of a failure'][because_of_failure]))
         try:
@@ -784,7 +784,8 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
             self._finalize_after_disconnect()
             logger.debug('Finalized')
         finally:
-            self.emit('disconnect', because_of_failure)
+            if self.get_variable('_status') != 'Disconnected':
+                self.emit('disconnect', because_of_failure)
 
     def reconnect_device(self):
         """Try to reconnect the device after a spontaneous disconnection."""

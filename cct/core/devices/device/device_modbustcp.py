@@ -20,18 +20,21 @@ class Device_ModbusTCP(Device):
 
     def _establish_connection(self):
         host, port, modbus_timeout = self._connection_parameters
-        logger.debug('Connecting to device: %s:%d' % (host, port))
+        logger.debug('Connecting to device: {}:{:d}'.format(host, port))
         self._modbusclient = ModbusClient(host, port, timeout=modbus_timeout)
         if not self._modbusclient.open():
             raise DeviceError(
-                'Error initializing Modbus over TCP connection to device %s:%d' % (host, port))
-        logger.debug('Connected to device %s:%d' % (host, port))
+                'Error initializing Modbus over TCP connection to device {}:{:d}'.format(host, port))
+        logger.debug('Connected to device {}:{:d}'.format(host, port))
 
     def _breakdown_connection(self):
-        logger.debug('Disconnecting from device %s:%d' % (
-            self._modbusclient.host(), self._modbusclient.port()))
-        self._modbusclient.close()
-        del self._modbusclient
+        try:
+            logger.debug('Disconnecting from device {}:{:d}'.format(
+                self._modbusclient.host(), self._modbusclient.port()))
+            self._modbusclient.close()
+            del self._modbusclient
+        except AttributeError:
+            pass
 
     def _read_integer(self, regno):
         self._lastsendtime=time.monotonic()
@@ -39,7 +42,7 @@ class Device_ModbusTCP(Device):
         result = self._modbusclient.read_holding_registers(regno, 1)
         if result is None:
             if not self._modbusclient.is_open():
-                raise CommunicationError('Error reading integer from register #%d' % regno)
+                raise CommunicationError('Error reading integer from register #{:d}'.format(regno))
         self._lastrecvtime=time.monotonic()
         self._count_inmessages+=1
         return result[0]
@@ -50,7 +53,7 @@ class Device_ModbusTCP(Device):
         result = self._modbusclient.write_single_coil(coilno, val)
         if result is None:
             if not self._modbusclient.is_open():
-                raise CommunicationError('Error writing %s to coil #%d' % (val, coilno))
+                raise CommunicationError('Error writing {} to coil #{:d}'.format(val, coilno))
         self._lastrecvtime=time.monotonic()
         self._count_inmessages += 1
 
@@ -60,7 +63,7 @@ class Device_ModbusTCP(Device):
         result = self._modbusclient.read_coils(coilstart, coilnum)
         if result is None:
             if not self._modbusclient.is_open():
-                raise CommunicationError('Error reading coils #%d - #%d' % (coilstart, coilstart + coilnum))
+                raise CommunicationError('Error reading coils #{:d} - #{:d}'.format(coilstart, coilstart + coilnum))
         self._lastrecvtime=time.monotonic()
         self._count_inmessages += 1
         return result

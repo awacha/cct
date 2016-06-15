@@ -45,7 +45,8 @@ class ToolWindow(GObject.GObject):
         self._hide_on_close=True
         self._privlevel = PRIV_LAYMAN
         self._application=application
-        self._builder=Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct','resource/glade/%s'%gladefile))
+        self._builder = Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct', 'resource/glade/' + gladefile))
+        assert (self._builder, Gtk.Builder)
         self._builder.set_application(application)
         try:
             self._instrument=weakref.proxy(instrument)
@@ -62,7 +63,7 @@ class ToolWindow(GObject.GObject):
         try:
             self._init_gui(*args)
         except Exception as exc:
-            error_message(self._window, 'Cannot initialize window %s' % windowtitle, str(exc))
+            error_message(self._window, 'Cannot initialize window ' + windowtitle, str(exc))
             raise
         self._builder.connect_signals(self)
         self._window.foreach(lambda x: x.show_all())
@@ -80,16 +81,16 @@ class ToolWindow(GObject.GObject):
                 self._window.set_sensitive(True)
 
     def on_window_delete(self, window, event):
-        logger.debug('On_window_delete for %s'%self._toplevelname)
+        logger.debug('On_window_delete for ' + self._toplevelname)
         if not self.can_close():
             error_message(self._window, 'Cannot close this window', self._inhibit_close_reason)
             return True
         if self._hide_on_close:
-            logger.debug('Hiding %s toolwindow'%self._toplevelname)
+            logger.debug('Hiding {} toolwindow'.format(self._toplevelname))
             self._window.hide()
             return True
         else:
-            logger.debug('Not hiding %s toolwindow: letting it be destroyed.'%self._toplevelname)
+            logger.debug('Not hiding {} toolwindow: letting it be destroyed.'.format(self._toplevelname))
             return False
 
     def _init_gui(self, *args):
@@ -108,7 +109,7 @@ class ToolWindow(GObject.GObject):
     def on_close(self, widget, event=None):
         #callback for the close button
         if not self._hide_on_close:
-            logger.debug('on_close called for toolwindow %s: requesting destroy'%self._toplevelname)
+            logger.debug('on_close called for toolwindow {}: requesting destroy'.format(self._toplevelname))
             self._window.destroy()
         return self.on_window_delete(self._window, event=None)
 

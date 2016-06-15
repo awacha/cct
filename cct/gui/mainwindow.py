@@ -1,4 +1,3 @@
-import argparse
 import datetime
 import logging
 import sys
@@ -7,6 +6,7 @@ import traceback
 from logging import StreamHandler
 from logging.handlers import TimedRotatingFileHandler
 
+import argparse
 import pkg_resources
 from gi import require_version
 
@@ -47,6 +47,7 @@ from .toolframes.accounting import AccountingFrame
 from .accounting.usermanager import UserManager
 from .accounting.projectmanager import ProjectManager
 from .core.toolwindow import error_message
+from .devices.connections import DeviceConnections
 
 Notify.init('cct')
 
@@ -194,7 +195,7 @@ class DeviceStatusBar(Gtk.Box):
         elif (self._auxstatus[device] is None):
             return str(self._status[device])
         else:
-            return '%s (%s)' % (self._status[device], self._auxstatus[device])
+            return '{} ({})'.format(self._status[device], self._auxstatus[device])
 
     def do_destroy(self):
         try:
@@ -336,7 +337,7 @@ class MainWindow(object):
         self._statusbar.pop(1)
 
     def on_interpreter_cmd_fail(self, interpreter, commandname, exc, tb):
-        logger.error('Command %s failed: %s %s' % (commandname, str(exc), tb))
+        logger.error('Command {} failed: {} {}'.format(commandname, str(exc), tb))
 
     def on_interpreter_cmd_message(self, interpreter, commandname, message):
         self._statusbar.pop(1)
@@ -386,7 +387,7 @@ class MainWindow(object):
                                                  windowtitle)
             except Exception as exc:
                 # this has already been handled with an error dialog
-                logger.debug('Could not open window %s: %s %s' % (windowtitle, str(exc), traceback.format_exc()))
+                logger.warning('Could not open window {}: {} {}'.format(windowtitle, str(exc), traceback.format_exc()))
                 return
         self._dialogs[key]._window.present()
         return self._dialogs[key]
@@ -432,6 +433,13 @@ class MainWindow(object):
         self.construct_and_run_dialog(HaakePhoenix, 'haakephoenix', 'devices_haakephoenix.glade',
                                       'Temperature controller')
         return False
+
+    def on_menu_devices_connections(self, menuitem):
+        print('on_menu_devices_connections')
+        self.construct_and_run_dialog(DeviceConnections, 'deviceconnections', 'devices_connection.glade',
+                                      'Connected devices')
+        return False
+
 
     def on_menu_measurement_scan(self, menuitem):
         self.construct_and_run_dialog(Scan, 'scan', 'measurement_scan.glade', 'Scan measurements')

@@ -77,9 +77,11 @@ class PrivilegeLevel(object):
 
 PRIV_LAYMAN=PrivilegeLevel('Layman',0)
 PRIV_BEAMSTOP=PrivilegeLevel('Beamstop',10)
+PRIV_CONNECTDEVICES = PrivilegeLevel('(Dis)connect Devices', 15)
 PRIV_PINHOLE=PrivilegeLevel('Pinhole',20)
 PRIV_PROJECTMAN=PrivilegeLevel('Manage Projects',30)
 PRIV_MOTORCALIB=PrivilegeLevel('Calibrate Motors',40)
 PRIV_MOTORCONFIG=PrivilegeLevel('Configure Motors',50)
+PRIV_DEVICECONFIG = PrivilegeLevel('Configure Devices', 55)
 PRIV_USERMAN=PrivilegeLevel('Manage Users',60)
 PRIV_SUPERUSER=PrivilegeLevel('Superuser',100)
