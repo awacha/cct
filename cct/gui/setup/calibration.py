@@ -223,7 +223,7 @@ class Calibration(ToolWindow):
                 return
             elif method == 'Peak amplitude':
                 xmin, xmax = self._plot1d.get_zoom_xrange()
-                logger.debug('Peak amplitude method: xmin: %f. xmax: %f. Original beampos: %f, %f.' % (
+                logger.debug('Peak amplitude method: xmin: {:f}. xmax: {:f}. Original beampos: {:f}, {:f}.'.format(
                 xmin, xmax, self._im.params['geometry']['beamposx'], self._im.params['geometry']['beamposy']))
                 posx, posy = findbeam_radialpeak(self._im.val, [self._im.params['geometry']['beamposx'],
                                                                 self._im.params['geometry']['beamposy']],
@@ -239,10 +239,10 @@ class Calibration(ToolWindow):
                                                               self._im.params['geometry']['beamposy']],
                                                self._im._mask, xmin, xmax)
             else:
-                raise NotImplementedError(method)
+                raise ValueError(method)
         self._im.params['geometry']['beamposx'] = posx
         self._im.params['geometry']['beamposy'] = posy
-        self._builder.get_object('center_label').set_text('(%.3f, %.3f)' % (posy, posx))
+        self._builder.get_object('center_label').set_text('({:.3f}, {:.3f})'.format(posy, posx))
         self._plot2d.set_beampos(posx, posy)
         self._radial_average()
         self._builder.get_object('savecenter_button').set_sensitive(True)
@@ -251,9 +251,9 @@ class Calibration(ToolWindow):
         self._instrument.config['geometry']['beamposx'] = self._im.params['geometry']['beamposx']
         self._instrument.config['geometry']['beamposy'] = self._im.params['geometry']['beamposy']
         self._instrument.save_state()
-        logger.info('Beam center updated to (%.3f, %.3f) [(x, y) or (col, row)].' % (
-        self._instrument.config['geometry']['beamposy'],
-        self._instrument.config['geometry']['beamposx']))
+        logger.info('Beam center updated to ({:.3f}, {:.3f}) [(x, y) or (col, row)].'.format(
+            self._instrument.config['geometry']['beamposy'],
+            self._instrument.config['geometry']['beamposx']))
         self._instrument.save_state()
         button.set_sensitive(False)
 
@@ -263,9 +263,9 @@ class Calibration(ToolWindow):
     def on_savedistance(self, button):
         self._instrument.config['geometry']['dist_sample_det'] = self._dist.val
         self._instrument.config['geometry']['dist_sample_det.err'] = self._dist.err
-        logger.info('Sample-to-detector distance updated to %.4f \u00b1 %.4f mm.' % (
-        self._instrument.config['geometry']['dist_sample_det'],
-        self._instrument.config['geometry']['dist_sample_det.err']))
+        logger.info('Sample-to-detector distance updated to {:.4f} \u00b1 {:.4f} mm.'.format(
+            self._instrument.config['geometry']['dist_sample_det'],
+            self._instrument.config['geometry']['dist_sample_det.err']))
         self._instrument.save_state()
         button.set_sensitive(False)
 
@@ -276,7 +276,7 @@ class Calibration(ToolWindow):
         except KeyError:
             sampletitle = 'no sample'
         self._plot1d.addcurve(self._curve.q, self._curve.intensity, self._curve.dq, self._curve.error,
-                              'FSN #%d: %s. Beam: (%.3f, %.3f)' % (
+                              'FSN #{:d}: {}. Beam: ({:.3f}, {:.3f})'.format(
                                   self._im.params['exposure']['fsn'], sampletitle,
                                   self._im.params['geometry']['beamposy'],
                                   self._im.params['geometry']['beamposx']), 'pixel')
@@ -288,7 +288,8 @@ class Calibration(ToolWindow):
         self._plot2d.set_distance(im.params['geometry']['truedistance'])
         self._plot2d.set_mask(im._mask)
         self._plot2d.set_pixelsize(im.params['geometry']['pixelsize'])
-        self._builder.get_object('center_label').set_text('(%.3f, %.3f)' % (im.params['geometry']['beamposy'],
-                                                                            im.params['geometry']['beamposx']))
+        self._builder.get_object('center_label').set_text('({:.3f}, {:.3f})'.format(
+            im.params['geometry']['beamposy'],
+            im.params['geometry']['beamposx']))
         self._im = im
         self._radial_average()
