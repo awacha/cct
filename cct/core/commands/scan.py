@@ -69,7 +69,7 @@ class Scan(Command):
         try:
             cmdline = namespace['commandline']
         except KeyError:
-            cmdline = '%s("%s", %f, %f, %d, %f, "%s")' % (
+            cmdline = '{}("{}", {:f}, {:f}, {:d}, {:f}, "{}")'.format(
                 self.name, self._motor, self._start, self._end, self._N, self._exptime, self._comment)
         self._scanfsn=self._instrument.filesequence.new_scan(cmdline, self._comment, self._exptime, self._N, self._motor)
 
@@ -77,11 +77,11 @@ class Scan(Command):
             self._notyetstarted=True
             self._scan_end=False
             self._myinterpreter.execute_command(
-                'moveto("%s", %f)' % (self._motor, self._start))
+                'moveto("{}", {:f})'.format(self._motor, self._start))
         except Exception:
             self._cleanup()
             raise
-        self.emit('message', 'Scan #%d started.' % self._scanfsn)
+        self.emit('message', 'Scan #{:d} started.'.format(self._scanfsn))
 
     def on_motor_position_change(self, motor, where):
         if hasattr(self, '_we_can_start_the_exposure'):
@@ -89,7 +89,7 @@ class Scan(Command):
             del self._we_can_start_the_exposure
 
     def on_scanpoint(self, exposureanalyzer, prefix, fsn, scandata):
-        logger.debug('Writing scan line for position %f' % scandata[0])
+        logger.debug('Writing scan line for position {:f}'.format(scandata[0]))
         line=str(scandata[0])+'  '+' '.join(str(f) for f in scandata[1:])
         with open(self._scanfilename,'at', encoding='utf-8') as f:
             f.write(line+'\n')
@@ -97,17 +97,17 @@ class Scan(Command):
 
     def on_myintr_command_return(self, interpreter, commandname, returnvalue):
         self._notyetstarted=False
-        logger.debug('Scan subcommand %s returned'%commandname)
+        logger.debug('Scan subcommand {} returned'.format(commandname))
         if self._in_fail:
             try:
-                raise CommandError('Subcommand %s failed' % commandname)
+                raise CommandError('Subcommand {} failed'.format(commandname))
             except CommandError as ce:
                 self._die(ce, traceback.format_exc())
                 return False
         if self._kill:
             try:
                 raise CommandError(
-                    'Command %s killed in subcommand %s' % (self.name, commandname))
+                    'Command {} killed in subcommand {}'.format(self.name, commandname))
             except CommandError as ce:
                 self._die(ce, traceback.format_exc())
                 return False
@@ -119,22 +119,22 @@ class Scan(Command):
                     logger.warning('Positioning error: moveto command returned with False')
                     if (abs(self._instrument.motors[self._motor].where() - self._whereto) > 0.001):
                         raise CommandError(
-                            'Positioning error: current position of motor %s (%f) is not the expected one (%f)' % (
+                            'Positioning error: current position of motor {} ({:f}) is not the expected one ({:f})'.format(
                                 self._motor, self._instrument.motors[self._motor].where(), self._whereto))
             except CommandError as ce:
                 self._die(ce, traceback.format_exc())
             self._myinterpreter.execute_command(
-                'expose(%f, "%s", %f)' % (self._exptime, self._exposure_prefix, self._whereto))
+                'expose({:f}, "{}", {:f})'.format(self._exptime, self._exposure_prefix, self._whereto))
             self._exposureanalyzer_idle = False
 
         elif commandname == 'expose':
             self._idx += 1
-            self.emit('progress','Scan running: %d/%d'%(self._idx,self._N),self._idx/self._N)
+            self.emit('progress', 'Scan running: {:d}/{:d}'.format(self._idx, self._N), self._idx / self._N)
             if self._idx < self._N:
                 self._whereto = self._start + self._idx * \
                     (self._end - self._start) / (self._N - 1)
                 self._myinterpreter.execute_command(
-                    'moveto("%s", %f)' % (self._motor, self._whereto))
+                    'moveto("{}", {:f})'.format(self._motor, self._whereto))
             else:
                 self._scan_end=True
                 if self._scan_end and self._exposureanalyzer_idle:

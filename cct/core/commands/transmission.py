@@ -91,11 +91,11 @@ class Transmission(Script):
         self._instrument=instrument
         self._cannot_return_yet = True
         self._nsamples = len(samplenames)
-        self.emit('message', 'Starting transmission measurement of %d sample(s).' % self._nsamples)
+        self.emit('message', 'Starting transmission measurement of {:d} sample(s).'.format(self._nsamples))
         Script.execute(self, interpreter, (samplenames, nimages, exptime, emptyname), instrument, namespace)
 
     def on_transmdata(self, exposureanalyzer, prefix, fsn, data):
-        logger.debug('Transmission data received: %s, %d, %s' % (prefix, fsn, data))
+        logger.debug('Transmission data received: {}, {:d}, {}'.format(prefix, fsn, data))
         samplename, what, nimages, I = data
         if samplename not in self._intensities:
             self._intensities[samplename] = {'dark': [], 'empty': [], 'sample': []}
@@ -106,7 +106,7 @@ class Transmission(Script):
                 np.mean(self._intensities[samplename][what]),
                 np.std(self._intensities[samplename][what])
             )
-            self.emit('message', 'I_%s for sample %s is: %s' % (
+            self.emit('message', 'I_{} for sample {} is: {}'.format(
                 what, samplename, self._intensities[samplename][what].tostring()))
             self.emit('detail', (what, samplename, self._intensities[samplename][what]))
             if what == 'sample':
@@ -118,7 +118,7 @@ class Transmission(Script):
                 sam.transmission = transm
                 self._instrument.samplestore.set_sample(sam.title, sam)
                 self.emit('message',
-                          'Transmission value %s has been saved for sample %s.' % (transm.tostring(), sam.title))
+                          'Transmission value {} has been saved for sample {}.'.format(transm.tostring(), sam.title))
                 self.emit('detail', ('transmission', samplename, transm))
                 if self._nsamples == len(self._intensities):
                     del self._cannot_return_yet

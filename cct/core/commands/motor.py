@@ -42,11 +42,11 @@ class Moveto(Command):
 
         if instrument.motors[motorname].where()==position:
             GLib.idle_add(lambda m=instrument.motors[motorname],tr=True, mn=motorname:self.on_stop(m,tr,mn))
-        self.emit('message', 'Moving motor %s to %.3f.' % (motorname, position))
+        self.emit('message', 'Moving motor {} to {:.3f}.'.format(motorname, position))
         instrument.motors[motorname].moveto(position)
 
     def on_position_change(self, motor, newpos, motorname):
-        self.emit('pulse', 'Moving motor %s: %-8.3f' % (motorname, newpos))
+        self.emit('pulse', 'Moving motor {}: {:<8.3f}'.format(motorname, newpos))
 
     def on_stop(self, motor, targetreached, motorname):
         try:
@@ -92,11 +92,11 @@ class Moverel(Command):
                              motor.connect('error', self.on_motorerror, motorname)]
         if position==0:
             GLib.idle_add(lambda m=instrument.motors[motorname],tr=True, mn=motorname:self.on_stop(m,tr,mn))
-        self.emit('message', 'Moving motor %s by %.3f.' % (motorname, position))
+        self.emit('message', 'Moving motor {} by {:.3f}.'.format(motorname, position))
         instrument.motors[motorname].moverel(position)
 
     def on_position_change(self, motor, newpos, motorname):
-        self.emit('pulse', 'Moving motor %s: %-8.2f' % (motorname, newpos))
+        self.emit('pulse', 'Moving motor {}: {:<8.3f}'.format(motorname, newpos))
 
     def on_stop(self, motor, targetreached, motorname):
         try:
@@ -128,19 +128,20 @@ class Where(Command):
     def execute(self, interpreter, arglist, instrument, namespace):
         if arglist:
             ret = instrument.motors[arglist[0]].where()
-            txt = arglist[0] + ': %8.3f' % ret
+            txt = arglist[0] + ': {:8.3f}'.format(ret)
         else:
-            longestmotorname = max(
-                max([len(m) for m in instrument.motors]), len('Motor name'))
-
-            heading = '| ' + \
-                ('%%-%ds' % longestmotorname) % 'Motor name' + \
-                ' | Position |'
-            separator = '+' + '-' * (len(heading) - 2) + '+'
             ret = dict([(m, instrument.motors[m].where())
                         for m in instrument.motors])
+            poslabels = {m: '{:8.3f}'.format(ret[m]) for m in ret}
+            longestmotorname = max(
+                max([len(m) for m in instrument.motors]), len('Motor name'))
+            longestposlabel = max(len(poslabels[m]) for m in poslabels)
+
+            heading = '| {:<{:d}} | {:<{:d}} |'.format('Motor name', longestmotorname, 'Position', longestposlabel)
+            separator = '+' + '-' * (longestmotorname + 2) + '+' + '-' * (longestposlabel + 2) + '+'
             txt = '\n'.join(
-                [separator, heading, separator] + [('| %%-%ds | %%8.3f |' % longestmotorname) % (m, ret[m]) for m in sorted(ret)] + [separator])
+                [separator, heading, separator] + ['| {:<{:d}} | {:<{:d}} |'.format(
+                    m, longestmotorname, poslabels[m], longestposlabel) for m in sorted(poslabels)] + [separator])
         GLib.idle_add(lambda m=txt, r=ret: self._idlefunc(m, r))
 
     def _idlefunc(self, message, ret):
@@ -193,7 +194,7 @@ class Beamstop(Command):
         self._motorconnections = [self._instrument.motors['BeamStop_X'].connect('stop', self.on_stop, 'BeamStop_X'),
                                   self._instrument.motors['BeamStop_X'].connect('variable-change', self.on_varchange, 'BeamStop_X')]
         self._startpos=self._instrument.motors['BeamStop_X'].where()
-        self.emit('message', 'Moving beamstop %s.' % (self._direction))
+        self.emit('message', 'Moving beamstop {}.'.format(self._direction))
         self._instrument.motors['BeamStop_X'].moveto(self._xpos)
 
     def on_stop(self, motor, targetpositionreached, motorname):
@@ -224,8 +225,10 @@ class Beamstop(Command):
         if variablename=='actualposition':
             target=device.get_variable('targetposition')
             if self._startpos!=target:
-                self.emit('progress', 'Moving beamstop %s. Motor %s to %.3f, Now at: %.3f'%(self._direction, motorname, target, newvalue),
-                          1-(newvalue-target)/(self._startpos-target))
+                self.emit('progress',
+                          'Moving beamstop {}. Motor {} to {:.3f}, Now at: {:.3f}'.format(self._direction, motorname,
+                                                                                          target, newvalue),
+                          1 - (newvalue-target) / (self._startpos-target))
 
 
     def end_command(self):
@@ -276,8 +279,8 @@ class Sample(Command):
         self._motorconnections = [self._instrument.motors['Sample_X'].connect('stop', self.on_stop, 'Sample_X'),
                                   self._instrument.motors['Sample_X'].connect('variable-change', self.on_varchange, 'Sample_X')]
         self._startpos=self._instrument.motors['Sample_X'].where()
-        self.emit('message', 'Moving sample %s into the beam.' % (sample.title))
-        logger.debug('Moving Sample_X motor to %f'%self._xpos)
+        self.emit('message', 'Moving sample {} into the beam.'.format(sample.title))
+        logger.debug('Moving Sample_X motor to {:f}'.format(self._xpos))
         self._instrument.motors['Sample_X'].moveto(self._xpos)
 
     def on_stop(self, motor, targetpositionreached, motorname):
@@ -290,13 +293,13 @@ class Sample(Command):
                     'Error on moving sample: target position could not be reached with motor ' + motorname)
             except Exception as ce:
                 self.emit('fail', ce, traceback.format_exc())
-        logger.debug('Movement ended for motor %s'%motorname)
+        logger.debug('Movement ended for motor {}'.format(motorname))
         if motorname == 'Sample_X':
             self._motorconnections = [self._instrument.motors['Sample_Y'].connect('stop', self.on_stop, 'Sample_Y'),
                                       self._instrument.motors['Sample_Y'].connect('variable-change', self.on_varchange, 'Sample_Y')]
             self._startpos=self._instrument.motors['Sample_Y'].where()
             try:
-                logger.debug('Moving Sample_Y motor to %f'%self._ypos)
+                logger.debug('Moving Sample_Y motor to {:f}'.format(self._ypos))
                 self._instrument.motors['Sample_Y'].moveto(self._ypos)
             except Exception as exc:
                 try:
@@ -314,10 +317,10 @@ class Sample(Command):
         if variablename=='actualposition':
             target=device.get_variable('targetposition')
             if self._startpos != target:
-                self.emit('progress', 'Moving motor %s to %.3f. Now at: %.3f'%(motorname, target, newvalue),
-                          1-(newvalue-target)/(self._startpos-target))
+                self.emit('progress', 'Moving motor {} to {:.3f}. Now at: {:.3f}'.format(motorname, target, newvalue),
+                          1 - (newvalue-target) / (self._startpos-target))
 
     def end_command(self):
-        self.emit('message', 'Current sample is: %s' % self._instrument.samplestore.get_active_name())
+        self.emit('message', 'Current sample is: ' + self._instrument.samplestore.get_active_name())
         self.emit('return', self._instrument.samplestore.get_active_name())
         return False

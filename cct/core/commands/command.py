@@ -100,7 +100,7 @@ class Command(GObject.GObject):
         and set up basic signal handlers (on_variable_change() and on_error())."""
         device = instrument.devices[devicename]
         if device in self._device_connections:
-            raise CommandError('Device %s already required' % devicename)
+            raise CommandError('Device {} already required'.format(devicename))
         self._device_connections[device] = [device.connect('variable-change', self.on_variable_change),
                                             device.connect(
             'error', self.on_error),
@@ -176,7 +176,7 @@ class Command(GObject.GObject):
         """
         self._unrequire_device()
         try:
-            raise CommandTimeoutError('Command %s timed out' % self.name)
+            raise CommandTimeoutError('Command {} timed out'.format(self.name))
         except CommandTimeoutError as exc:
             self.emit('fail', exc, traceback.format_exc())
         self.emit('return', None)
@@ -213,7 +213,7 @@ class Command(GObject.GObject):
     def on_disconnect(self, device, because_of_failure):
         """Emit a fail signal."""
         self.emit('fail', CommandError(
-            'Sudden disconnect of device %s' % device._instancename), 'no traceback')
+            'Sudden disconnect of device ' + device.name), 'no traceback')
         return False
 
     @classmethod

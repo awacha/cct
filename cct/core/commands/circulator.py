@@ -108,13 +108,13 @@ class WaitTemperature(Command):
 
     def pulser(self):
         if self._in_tolerance_interval is None:
-            self.emit('pulse', 'Waiting for temperature stability: %.2f °C' %
-                      self._instrument.devices['haakephoenix'].get_variable('temperature'))
+            self.emit('pulse', 'Waiting for temperature stability: {:.2f} °C'.format(
+                self._instrument.devices['haakephoenix'].get_variable('temperature')))
         else:
             remainingtime = (self.delay - (time.monotonic() - self._in_tolerance_interval))
             fraction= (time.monotonic()-self._in_tolerance_interval)/self.delay
             self.emit('progress',
-                      'Temperature stability reached (%.2f °C), waiting for %.0f seconds' % (
+                      'Temperature stability reached ({:.2f} °C), waiting for {:.0f} seconds'.format(
                           self._instrument.devices['haakephoenix'].get_variable('temperature'),
                           remainingtime),
                       fraction)

@@ -171,7 +171,7 @@ class ClearFlag(Command):
 
     def _return(self):
         self._interpreter.clear_flag(self._flag)
-        self.emit('message','Clearing flag: %s'%self._flag)
+        self.emit('message', 'Clearing flag: {}'.format(self._flag))
         self.emit('return', None)
         return False
 
@@ -195,6 +195,6 @@ class SetFlag(Command):
 
     def _return(self):
         self._interpreter.set_flag(self._flag)
-        self.emit('message','Setting flag: %s'%self._flag)
+        self.emit('message', 'Setting flag: {}'.format(self._flag))
         self.emit('return', None)
         return False

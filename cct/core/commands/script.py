@@ -83,7 +83,7 @@ class Script(Command):
                 self.emit('paused')
             return False
         self._cursor+=1
-        logger.debug('Executing line %d' % self._cursor)
+        logger.debug('Executing line {:d}'.format(self._cursor))
         try:
             commandline=self._script[self._cursor]
         except IndexError:
@@ -164,9 +164,9 @@ class Script(Command):
             if not line:
                 continue
             if line.split()[0].startswith('@'+labelname):
-                logger.debug('Label "%s" is on line #%d\n' % (labelname, i))
+                logger.debug('Label "{}" is on line #{:d}\n'.format(labelname, i))
                 return i
-        raise ScriptError('Unknown label in script: %s'%labelname)
+        raise ScriptError('Unknown label in script: {}'.format(labelname))
 
     def _try_to_return(self, returnvalue):
         if hasattr(self,'_cannot_return_yet'):

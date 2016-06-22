@@ -9,6 +9,7 @@ from .command import Command
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class Trim(Command):
     """Trim the Pilatus detector
 
@@ -28,13 +29,13 @@ class Trim(Command):
     def execute(self, interpreter, arglist, instrument, namespace):
         thresholdvalue = round(float(arglist[0]))
         gain = arglist[1]
-        assert(gain.upper() in ['HIGHG', 'LOWG', 'MIDG'])
+        assert (gain.upper() in ['HIGHG', 'LOWG', 'MIDG'])
         if gain.upper() == 'HIGHG':
-            assert((thresholdvalue >= 3814) and (thresholdvalue <= 11614))
+            assert ((thresholdvalue >= 3814) and (thresholdvalue <= 11614))
         elif gain.upper() == 'MIDG':
-            assert((thresholdvalue >= 4425) and (thresholdvalue <= 14328))
+            assert ((thresholdvalue >= 4425) and (thresholdvalue <= 14328))
         elif gain.upper() == 'LOWG':
-            assert((thresholdvalue >= 6685) and (thresholdvalue <= 20202))
+            assert ((thresholdvalue >= 6685) and (thresholdvalue <= 20202))
         self._install_timeout_handler(self.timeout)
         self._require_device(instrument, 'pilatus')
         self._check_for_variable = 'threshold'
@@ -45,10 +46,11 @@ class Trim(Command):
         self._instrument = instrument
 
     def do_return(self, retval):
-        self.emit('message', 'New threshold set: %f. Gain: %s' % (
+        self.emit('message', 'New threshold set: {:f}. Gain: {}'.format(
             self._instrument.detector.get_variable('threshold'),
             self._instrument.detector.get_variable('gain')))
         return False
+
 
 class StopExposure(Command):
     """Stop the current exposure in pilatus
@@ -104,7 +106,7 @@ class Expose(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         exptime = float(arglist[0])
-        assert(exptime > 0)
+        assert (exptime > 0)
         try:
             self._prefix = arglist[1]
         except IndexError:
@@ -112,16 +114,16 @@ class Expose(Command):
         try:
             self._otherarg = arglist[2]
         except IndexError:
-            self._otherarg=None
+            self._otherarg = None
         try:
             assert (instrument.detector.get_variable('nimages') == 1)
         except AssertionError:
             instrument.detector.set_variable('nimages', 1)
         self._require_device(instrument, 'pilatus')
         self._fsn = instrument.filesequence.get_nextfreefsn(self._prefix)
-        self._filename = self._prefix + '_' + \
-            ('%%0%dd' %
-             instrument.config['path']['fsndigits']) % self._fsn + '.cbf'
+        self._filename = '{prefix}_{fsn:0{ndigits:d}d}.cbf'.format(
+            prefix=self._prefix, ndigits=instrument.config['path']['fsndigits'],
+            fsn=self._fsn)
         instrument.detector.set_variable('imgpath', instrument.config['path']['directories']['images_detector'][
             0] + '/' + self._prefix)
         instrument.detector.set_variable('exptime', exptime)
@@ -133,9 +135,9 @@ class Expose(Command):
         self._check_for_value = 'idle'
         self._install_timeout_handler(self.timeout)
         self._instrument = instrument
-        self._file_received=False
-        self._detector_idle=False
-        self.emit('message', 'Starting exposure of file: %s' % (self._filename))
+        self._file_received = False
+        self._detector_idle = False
+        self.emit('message', 'Starting exposure of file: {}'.format(self._filename))
 
     def _progress(self, detector):
         try:
@@ -145,13 +147,13 @@ class Expose(Command):
         if starttime is None:
             return True
         timeleft = self._exptime - \
-            (datetime.datetime.now() - starttime).total_seconds()
-        self.emit('progress', 'Exposing. Remaining time: %4.1f' % timeleft, 1 - timeleft / self._exptime)
+                   (datetime.datetime.now() - starttime).total_seconds()
+        self.emit('progress', 'Exposing. Remaining time: {:4.1f}'.format(timeleft), 1 - timeleft / self._exptime)
         return True
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'exptime':
-            if not hasattr(self,'_alt_starttime'):
+            if not hasattr(self, '_alt_starttime'):
                 device.expose(self._filename)
                 self._alt_starttime = datetime.datetime.now()
         elif variablename == 'filename':
@@ -159,10 +161,10 @@ class Expose(Command):
                 self._starttime = self._alt_starttime
 
             GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime, oa=self._otherarg:
-                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st,oa) and False)
-            self._file_received=True
+                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st, oa) and False)
+            self._file_received = True
         elif variablename == '_status' and newvalue == 'idle':
-            self._detector_idle=True
+            self._detector_idle = True
         if (self._detector_idle and self._file_received) or hasattr(self, '_kill'):
             self._uninstall_timeout_handler()
             self._uninstall_pulse_handler()
@@ -202,27 +204,28 @@ class ExposeMulti(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         exptime = float(arglist[0])
-        assert(exptime > 0)
+        assert (exptime > 0)
         nimages = int(arglist[1])
-        assert(nimages>0)
+        assert (nimages > 0)
         try:
             prefix = arglist[2]
         except IndexError:
             prefix = namespace['expose_prefix']
         try:
-            expdelay=arglist[3]
+            expdelay = arglist[3]
         except IndexError:
-            expdelay=0.003
+            expdelay = 0.003
         try:
-            self._otherarg=arglist[4]
+            self._otherarg = arglist[4]
         except IndexError:
-            self._otherarg=None
-        assert(expdelay>0.003)
-        instrument.detector.set_variable('nimages',nimages)
+            self._otherarg = None
+        assert (expdelay > 0.003)
+        instrument.detector.set_variable('nimages', nimages)
         self._require_device(instrument, 'pilatus')
         self._fsns = list(instrument.filesequence.get_nextfreefsns(prefix, nimages))
         self._prefix = prefix
-        self._filenames_pending = [prefix + '_' + ('%%0%dd' % instrument.config['path']['fsndigits']) % f + '.cbf'
+        self._filenames_pending = ['{prefix}_{fsn:0{ndigits:d}d}.cbf'.format(
+            prefix=prefix, ndigits=instrument.config['path']['fsndigits'], fsn=f)
                                    for f in self._fsns]
         self._expected_due_times = [exptime + i * (exptime + expdelay) for i in range(nimages)]
         self._exptime = exptime
@@ -233,20 +236,20 @@ class ExposeMulti(Command):
         instrument.detector.set_variable('exptime', exptime)
         instrument.detector.set_variable('imgpath', instrument.config['path']['directories']['images_detector'][
             0] + '/' + self._prefix)
-        instrument.detector.set_variable('expperiod', exptime+expdelay)
+        instrument.detector.set_variable('expperiod', exptime + expdelay)
         self._progresshandler = GLib.timeout_add(500,
                                                  lambda d=instrument.detector: self._progress(d))
         self._install_timeout_handler(self.timeout)
-        self._file_received=False
-        self._detector_idle=False
+        self._file_received = False
+        self._detector_idle = False
         self._imgpath = instrument.detector.get_variable('imgpath')
-        self.emit('message', 'Starting exposure of %d images. First: %s' % (nimages, self._filenames_pending[0]))
+        self.emit('message', 'Starting exposure of {:d} images. First: {}'.format(nimages, self._filenames_pending[0]))
         self._instrument = instrument
         self._file_received = False
 
     def _progress(self, detector):
         try:
-            starttime=detector.get_variable('starttime')
+            starttime = detector.get_variable('starttime')
         except KeyError:
             return True
         if starttime is None:
@@ -254,10 +257,10 @@ class ExposeMulti(Command):
         timeleft = self._totaltime - \
                    (datetime.datetime.now() - starttime).total_seconds()
         # timeleft=detector.get_variable('timeleft')
-        self.emit('progress', 'Exposing %d images, %d remaining. Remaining time: %4.1f sec' % (self._nimages,
-                                                                                               len(
-                                                                                                   self._expected_due_times),
-                                                                                               timeleft),
+        self.emit('progress', 'Exposing {:d} images, {:d} remaining. Remaining time: {:4.1f} sec'.format(self._nimages,
+                                                                                                         len(
+                                                                                                             self._expected_due_times),
+                                                                                                         timeleft),
                   1 - timeleft / self._totaltime)
         return True
 
@@ -283,7 +286,7 @@ class ExposeMulti(Command):
             for filename, fsn, dt in zip(due_files, due_fsns, due_times):
                 if self._instrument.filesequence.is_cbf_ready(self._prefix + '/' + filename):
                     # if the file is present, let it be processed.
-                    logger.debug('We have %s' % filename)
+                    logger.debug('We have {}'.format(filename))
                     GLib.idle_add(
                         lambda fs=fsn, fn=os.path.join(self._imgpath, filename), prf=self._prefix, st=starttime,
                                oa=self._otherarg:
@@ -307,20 +310,20 @@ class ExposeMulti(Command):
                                                         self._filechecker)
         else:
             # all files received:
-            self._file_received=True
+            self._file_received = True
             self._try_to_end()
         return False
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'exptime':
-            if not hasattr(self,'_alt_starttime'):
+            if not hasattr(self, '_alt_starttime'):
                 device.expose(self._filenames_pending[0])
                 self._alt_starttime = datetime.datetime.now()
         elif variablename == 'starttime':
             if newvalue is not None:
                 self._filechecker_handle = GLib.timeout_add(self._exptime * 1000, self._filechecker)
         elif variablename == '_status' and newvalue == 'idle':
-            self._detector_idle=True
+            self._detector_idle = True
         self._try_to_end()
         return False
 
@@ -331,8 +334,8 @@ class ExposeMulti(Command):
             self._unrequire_device()
             GLib.source_remove(self._progresshandler)
             self.emit('return', None)
-            self._detector_idle=False
-            self._file_received=False
+            self._detector_idle = False
+            self._file_received = False
 
     def kill(self):
         GLib.source_remove(self._filechecker_handle)
