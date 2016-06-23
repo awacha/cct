@@ -41,19 +41,20 @@ class InstrumentError(Exception):
 
 
 def get_telemetry():
-    vm=psutil.virtual_memory()
-    sm=psutil.swap_memory()
-    la=', '.join([str(f) for f in os.getloadavg()])
+    vm = psutil.virtual_memory()
+    sm = psutil.swap_memory()
+    la = ', '.join([str(f) for f in os.getloadavg()])
     return {'processname': multiprocessing.current_process().name,
             'self': resource.getrusage(resource.RUSAGE_SELF),
             'children': resource.getrusage(resource.RUSAGE_CHILDREN),
             'inqueuelen': 0,
-            'freephysmem':vm.available,
-            'totalphysmem':vm.total,
-            'freeswap':sm.free,
-            'totalswap':sm.total,
-            'loadavg':la,
+            'freephysmem': vm.available,
+            'totalphysmem': vm.total,
+            'freeswap': sm.free,
+            'totalswap': sm.total,
+            'loadavg': la,
             }
+
 
 class Instrument(GObject.GObject):
     configdir = 'config'
@@ -71,7 +72,7 @@ class Instrument(GObject.GObject):
     }
 
     def __init__(self, online):
-        self._starttime=datetime.datetime.now()
+        self._starttime = datetime.datetime.now()
         GObject.GObject.__init__(self)
         self._online = online
         self.devices = {}
@@ -86,7 +87,7 @@ class Instrument(GObject.GObject):
         self._signalconnections = {}
         self._waiting_for_ready = []
         self._telemetries = {}
-        self.busy=multiprocessing.Event()
+        self.busy = multiprocessing.Event()
         self.load_state()
         self.create_services()
 
@@ -180,28 +181,28 @@ class Instrument(GObject.GObject):
             'timeout': 0.01,
             'poll_timeout': 0.01,
             'name': 'tmcm6110'}
-        self.config['motors'] = {'0':{'name': 'Unknown1', 'controller': 'tmcm351a', 'index': 0},
-                                 '1':{'name': 'Sample_X',
-                                     'controller': 'tmcm351a', 'index': 1},
-                                 '2':{'name': 'Sample_Y',
-                                     'controller': 'tmcm351a', 'index': 2},
+        self.config['motors'] = {'0': {'name': 'Unknown1', 'controller': 'tmcm351a', 'index': 0},
+                                 '1': {'name': 'Sample_X',
+                                       'controller': 'tmcm351a', 'index': 1},
+                                 '2': {'name': 'Sample_Y',
+                                       'controller': 'tmcm351a', 'index': 2},
                                  '3': {'name': 'PH1_X',
-                                     'controller': 'tmcm6110', 'index': 0},
+                                       'controller': 'tmcm6110', 'index': 0},
                                  '4': {'name': 'PH1_Y',
-                                     'controller': 'tmcm6110', 'index': 1},
+                                       'controller': 'tmcm6110', 'index': 1},
                                  '5': {'name': 'PH2_X',
-                                     'controller': 'tmcm6110', 'index': 2},
+                                       'controller': 'tmcm6110', 'index': 2},
                                  '6': {'name': 'PH2_Y',
-                                     'controller': 'tmcm6110', 'index': 3},
+                                       'controller': 'tmcm6110', 'index': 3},
                                  '7': {'name': 'PH3_X',
-                                     'controller': 'tmcm6110', 'index': 4},
+                                       'controller': 'tmcm6110', 'index': 4},
                                  '8': {'name': 'PH3_Y',
-                                     'controller': 'tmcm6110', 'index': 5},
-                                 '9':{'name': 'BeamStop_X',
-                                     'controller': 'tmcm351b', 'index': 0},
-                                 '10':{'name': 'BeamStop_Y',
-                                     'controller': 'tmcm351b', 'index': 1},
-                                 '11':{'name': 'Unknown2', 'controller': 'tmcm351b', 'index': 2}}
+                                       'controller': 'tmcm6110', 'index': 5},
+                                 '9': {'name': 'BeamStop_X',
+                                       'controller': 'tmcm351b', 'index': 0},
+                                 '10': {'name': 'BeamStop_Y',
+                                        'controller': 'tmcm351b', 'index': 1},
+                                 '11': {'name': 'Unknown2', 'controller': 'tmcm351b', 'index': 2}}
         self.config['devices'] = {}
         self.config['services'] = {
             'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {}}
@@ -214,8 +215,10 @@ class Instrument(GObject.GObject):
 
         self.config['scan'] = {'mask': 'mask.mat',
                                'mask_total': 'mask.mat',
-                               'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx', 'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay', 'total_sigma', 'sigma'],
-                               'scanfile':'credoscan2.spec'}
+                               'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx',
+                                           'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay',
+                                           'total_sigma', 'sigma'],
+                               'scanfile': 'credoscan2.spec'}
         self.config['transmission'] = {'empty_sample': 'Empty_Beam', 'nimages': 10, 'exptime': 0.5, 'mask': 'mask.mat'}
         self.config['beamstop'] = {'in': (3, 3), 'out': (3, 10)}
         self.config['calibrants'] = {'Silver behenate': {'Peak #1': {'val': 1.0759, 'err': 0.0007},
@@ -256,9 +259,8 @@ class Instrument(GObject.GObject):
                 self, service)._save_state()
         with open(self.configfile, 'wb') as f:
             pickle.dump(self.config, f)
-        logger.info('Saved state to %s'%self.configfile)
+        logger.info('Saved state to ' + self.configfile)
         self.exposureanalyzer.sendconfig()
-
 
     def _update_config(self, config_orig, config_loaded):
         """Uppdate the config dictionary in `config_orig` with the loaded
@@ -277,7 +279,7 @@ class Instrument(GObject.GObject):
         connecting to devices, because status of the back-end process is
         not updated by Device._load_state()."""
         with open(self.configfile, 'rb') as f:
-            config_loaded=pickle.load(f)
+            config_loaded = pickle.load(f)
         self._update_config(self.config, config_loaded)
 
     def _connect_signals(self, devicename, device):
@@ -300,11 +302,12 @@ class Instrument(GObject.GObject):
             pass
 
     def get_beamstop_state(self):
-        bsy=self.motors['BeamStop_Y'].where()
-        bsx=self.motors['BeamStop_X'].where()
-        if abs(bsx-self.config['beamstop']['in'][0])<0.001 and abs(bsy-self.config['beamstop']['in'][1])<0.001:
+        bsy = self.motors['BeamStop_Y'].where()
+        bsx = self.motors['BeamStop_X'].where()
+        if abs(bsx - self.config['beamstop']['in'][0]) < 0.001 and abs(bsy - self.config['beamstop']['in'][1]) < 0.001:
             return 'in'
-        if abs(bsx-self.config['beamstop']['out'][0])<0.001 and abs(bsy-self.config['beamstop']['out'][1])<0.001:
+        if abs(bsx - self.config['beamstop']['out'][0]) < 0.001 and abs(
+                        bsy - self.config['beamstop']['out'][1]) < 0.001:
             return 'out'
         return 'unknown'
 
@@ -376,8 +379,8 @@ class Instrument(GObject.GObject):
             except DeviceError:
                 self._disconnect_signals(
                     cfg['name'], self.motorcontrollers[motcont])
-                logger.error('Cannot connect to motor driver %s: %s' %
-                             (cfg['name'], traceback.format_exc()))
+                logger.error('Cannot connect to motor driver {}: {}'.format(
+                    cfg['name'], traceback.format_exc()))
                 del self.motorcontrollers[cfg['name']]
                 del self.devices[cfg['name']]
                 unsuccessful.append(cfg['name'])
@@ -387,7 +390,7 @@ class Instrument(GObject.GObject):
                     self.motorcontrollers[self.config['motors'][m]['controller']],
                     self.config['motors'][m]['index'])
             except KeyError:
-                logger.error('Cannot find motor %s' % self.config['motors'][m]['name'])
+                logger.error('Cannot find motor ' + self.config['motors'][m]['name'])
         for envcont in self.config['connections']['environmentcontrollers']:
             cfg = self.config['connections']['environmentcontrollers'][envcont]
             if envcont not in self.environmentcontrollers:
@@ -406,8 +409,8 @@ class Instrument(GObject.GObject):
             except DeviceError:
                 self._disconnect_signals(
                     cfg['name'], self.environmentcontrollers[envcont])
-                logger.error('Cannot connect to %s controller: %s' %
-                             (envcont, traceback.format_exc()))
+                logger.error('Cannot connect to {} controller: {}'.format(
+                    envcont, traceback.format_exc()))
                 del self.environmentcontrollers[envcont]
                 del self.devices[cfg['name']]
                 unsuccessful.append(cfg['name'])
@@ -430,18 +433,18 @@ class Instrument(GObject.GObject):
             self.webstatefilewriter.write_statusfile()
             logger.debug('All ready.')
         else:
-            logger.debug('Waiting for ready: '+', '.join(self._waiting_for_ready))
+            logger.debug('Waiting for ready: ' + ', '.join(self._waiting_for_ready))
 
     def on_disconnect(self, device, because_of_failure):
-        logger.debug('Device %s disconnected. Because of failure: %s'%(
+        logger.debug('Device {} disconnected. Because of failure: {}'.format(
             device.name, because_of_failure))
         if device.name in self._waiting_for_ready:
-            logger.warning('Not reconnecting to device %s: disconnected while waiting for get ready.'%device.name)
+            logger.warning('Not reconnecting to device ' + device.name + ': disconnected while waiting for get ready.')
             self._waiting_for_ready.remove(device.name)
-            self.on_ready(device) # check if all other devices are ready
+            self.on_ready(device)  # check if all other devices are ready
             return False
         if not device.ready:
-            logger.warning('Not reconnecting to device %s: it has disconnected before ready.'%device.name)
+            logger.warning('Not reconnecting to device ' + device.name + ': it has disconnected before ready.')
             return False
         if because_of_failure:
             # attempt to reconnect
@@ -452,11 +455,11 @@ class Instrument(GObject.GObject):
                     self._waiting_for_ready.append(device.name)
                     return True
                 except Exception as exc:
-                    logger.warning('Exception while reconnecting to device %s: %s, %s' % (
-                    device.name, exc, traceback.format_exc()))
+                    logger.warning('Exception while reconnecting to device {}: {}, {}'.format(
+                        device.name, exc, traceback.format_exc()))
                     time.sleep(1)  # a blocking sleep. Keep the other parts of this program from accessing the device.
             if device.name not in self._waiting_for_ready:
-                logger.error('Cannot reconnect to device %s.' % device.name)
+                logger.error('Cannot reconnect to device ' + device.name + '.')
             return False
 
     def create_services(self):
@@ -486,7 +489,7 @@ class Instrument(GObject.GObject):
         self._telemetries['main'] = get_telemetry()
         for s in ['exposureanalyzer']:
             getattr(self, s).get_telemetry()
-        self.emit('telemetry',None, 'service', self.get_telemetry(None))
+        self.emit('telemetry', None, 'service', self.get_telemetry(None))
         return True
 
     def get_telemetry(self, process=None):
@@ -503,14 +506,14 @@ class Instrument(GObject.GObject):
                 tm[what].ru_oublock = sum([self._telemetries[k][what].ru_oublock for k in self._telemetries])
                 tm[what].ru_nvcsw = sum([self._telemetries[k][what].ru_nvcsw for k in self._telemetries])
                 tm[what].ru_nivcsw = sum([self._telemetries[k][what].ru_nivcsw for k in self._telemetries])
-            sm=psutil.swap_memory()
-            vm=psutil.virtual_memory()
-            la=', '.join([str(f) for f in os.getloadavg()])
-            tm['freephysmem']=vm.available
-            tm['totalphysmem']=vm.total
-            tm['freeswap']=sm.free
-            tm['totalswap']=sm.total
-            tm['loadavg']=la
+            sm = psutil.swap_memory()
+            vm = psutil.virtual_memory()
+            la = ', '.join([str(f) for f in os.getloadavg()])
+            tm['freephysmem'] = vm.available
+            tm['totalphysmem'] = vm.total
+            tm['freeswap'] = sm.free
+            tm['totalswap'] = sm.total
+            tm['loadavg'] = la
         else:
             tm = {'self': self._telemetries[process]['self'],
                   'children': self._telemetries[process]['children'],

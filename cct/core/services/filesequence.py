@@ -51,17 +51,17 @@ class FileSequence(Service):
     """A class to keep track on file sequence numbers and folders"""
     name = 'filesequence'
 
-    __gsignals__={'nextfsn-changed':(GObject.SignalFlags.RUN_FIRST, None, (str, int,)),
-                  'nextscan-changed':(GObject.SignalFlags.RUN_FIRST, None, (int,)),
-                  'lastfsn-changed':(GObject.SignalFlags.RUN_FIRST, None, (str, int,)),
-                  'lastscan-changed':(GObject.SignalFlags.RUN_FIRST, None, (int,))}
+    __gsignals__ = {'nextfsn-changed': (GObject.SignalFlags.RUN_FIRST, None, (str, int,)),
+                    'nextscan-changed': (GObject.SignalFlags.RUN_FIRST, None, (int,)),
+                    'lastfsn-changed': (GObject.SignalFlags.RUN_FIRST, None, (str, int,)),
+                    'lastscan-changed': (GObject.SignalFlags.RUN_FIRST, None, (int,))}
 
     def __init__(self, *args, **kwargs):
         Service.__init__(self, *args, **kwargs)
         self._lastfsn = {}
         self._lastscan = 0
         self._nextfreefsn = {}
-        self._scanfile_toc={}
+        self._scanfile_toc = {}
         self.init_scanfile()
         self.reload()
 
@@ -82,29 +82,29 @@ class FileSequence(Service):
                 f.write('\n')
 
     def new_scan(self, cmdline, comment, exptime, N, motorname):
-        scanidx=self.get_nextfreescan(acquire=True)
+        scanidx = self.get_nextfreescan(acquire=True)
         with open(self._scanfile, 'at', encoding='utf-8') as f:
             self._scanfile_toc[self._scanfile][scanidx] = {'pos': f.tell() + 1, 'cmd': cmdline,
                                                            'date': datetime.datetime.now()}
             f.write('\n#S %d  %s\n' % (scanidx, cmdline))
-            f.write('#D %s\n'%time.asctime())
-            f.write('#C %s\n'%comment)
-            f.write('#T %f  (Seconds)\n'%exptime)
+            f.write('#D %s\n' % time.asctime())
+            f.write('#C %s\n' % comment)
+            f.write('#T %f  (Seconds)\n' % exptime)
             f.write('#G0 0\n')
             f.write('#G1 0\n')
             f.write('#Q 0 0 0')
-            entry_index=8
-            p_index=-1
+            entry_index = 8
+            p_index = -1
             for m in sorted(self.instrument.motors):
-                if entry_index>=8:
-                    p_index+=1
-                    f.write('\n#P%d'%p_index)
-                    entry_index=0
-                f.write(' %f'%self.instrument.motors[m].where())
-                entry_index+=1
-            f.write('\n#N %d\n'%N)
-            f.write('#L '+'  '.join([motorname]+self.instrument.config['scan']['columns'])+'\n')
-        logger.info('Written entry for scan %d into scanfile %s'%(scanidx, self._scanfile))
+                if entry_index >= 8:
+                    p_index += 1
+                    f.write('\n#P%d' % p_index)
+                    entry_index = 0
+                f.write(' %f' % self.instrument.motors[m].where())
+                entry_index += 1
+            f.write('\n#N %d\n' % N)
+            f.write('#L ' + '  '.join([motorname] + self.instrument.config['scan']['columns']) + '\n')
+        logger.info('Written entry for scan %d into scanfile %s' % (scanidx, self._scanfile))
         return scanidx
 
     def scan_done(self, scannumber):
@@ -113,42 +113,43 @@ class FileSequence(Service):
 
     def load_scan(self, index, scanfile=None):
         if scanfile is None:
-            scanfile=self._scanfile
-        result={}
+            scanfile = self._scanfile
+        result = {}
         with open(scanfile, 'rt', encoding='utf-8') as f:
             f.seek(self._scanfile_toc[scanfile][index]['pos'], 0)
-            l=f.readline().strip()
-            assert(l.startswith('#S'))
-            assert(int(l.split()[1])==index)
-            length=None
-            index=None
+            l = f.readline().strip()
+            assert (l.startswith('#S'))
+            assert (int(l.split()[1]) == index)
+            length = None
+            index = None
             while l:
                 if l.startswith('#S'):
-                    result['index']=int(l.split()[1])
-                    result['command']=l.split(None,2)[2]
+                    result['index'] = int(l.split()[1])
+                    result['command'] = l.split(None, 2)[2]
                 elif l.startswith('#D'):
-                    result['date']=dateutil.parser.parse(l[3:])
+                    result['date'] = dateutil.parser.parse(l[3:])
                 elif l.startswith('#C'):
-                    result['comment']=l[3:]
+                    result['comment'] = l[3:]
                 elif l.startswith('#T') and l.endswith('(Seconds)'):
-                    result['countingtime']=float(l.split()[1])
+                    result['countingtime'] = float(l.split()[1])
                 elif l.startswith('#P'):
                     if 'positions' not in result:
-                        result['positions']=[]
+                        result['positions'] = []
                     result['positions'].append([float(x) for x in l.split()[1:]])
                 elif l.startswith('#N'):
-                    length=int(l[3:])
+                    length = int(l[3:])
                 elif l.startswith('#L'):
-                    result['signals']=l[3:].split('  ')
-                    assert(length is not None)
-                    result['data']=np.zeros(length, dtype=list(zip(result['signals'], [np.float]*len(result['signals']))))
-                    index=0
+                    result['signals'] = l[3:].split('  ')
+                    assert (length is not None)
+                    result['data'] = np.zeros(length,
+                                              dtype=list(zip(result['signals'], [np.float] * len(result['signals']))))
+                    index = 0
                 elif l.startswith('#'):
                     pass
                 else:
-                    result['data'][index]=tuple(float(x) for x in l.split())
-                    index+=1
-                l=f.readline().strip()
+                    result['data'][index] = tuple(float(x) for x in l.split())
+                    index += 1
+                l = f.readline().strip()
             if 'data' in result:
                 result['data'] = result['data'][:index]
         return result
@@ -203,13 +204,13 @@ class FileSequence(Service):
                              if f.endswith('.spec')]:
                 scanfile = os.path.join(subdir, scanfile)
                 with open(scanfile, 'rt', encoding='utf-8') as f:
-                    self._scanfile_toc[scanfile]={}
-                    l=f.readline()
+                    self._scanfile_toc[scanfile] = {}
+                    l = f.readline()
                     idx = None
                     while l:
-                        l=l.strip()
+                        l = l.strip()
                         if l.startswith('#S'):
-                            pos=f.tell()-len(l)-1
+                            pos = f.tell() - len(l) - 1
                             start, idx, cmd = l.split(None, 2)
                             idx = int(idx)
                             self._scanfile_toc[scanfile][idx] = {'pos': pos, 'cmd': cmd}
@@ -220,17 +221,17 @@ class FileSequence(Service):
                                 self._scanfile_toc[scanfile][idx]['comment'] = l.split(None, 1)[1]
                             except IndexError:
                                 self._scanfile_toc[scanfile][idx]['comment'] = 'no comment'
-                        l=f.readline()
-#        for sf in self._scanfile_toc:
-#            logger.debug('Max. scan index in file %s: %d'%(sf, max([k for k in self._scanfile_toc[sf]]+[0])))
+                        l = f.readline()
+                        #        for sf in self._scanfile_toc:
+                        #            logger.debug('Max. scan index in file %s: %d'%(sf, max([k for k in self._scanfile_toc[sf]]+[0])))
 
-        lastscan=max([max([k for k in self._scanfile_toc[sf]] + [0])
-                              for sf in self._scanfile_toc] + [0])
-        if self._lastscan !=lastscan:
-            self._lastscan=lastscan
+        lastscan = max([max([k for k in self._scanfile_toc[sf]] + [0])
+                        for sf in self._scanfile_toc] + [0])
+        if self._lastscan != lastscan:
+            self._lastscan = lastscan
             self.emit('lastscan-changed', self._lastscan)
 
- #       logger.debug('Max. scan index: %d'%self._lastscan)
+            #       logger.debug('Max. scan index: %d'%self._lastscan)
         self._nextfreescan = self._lastscan + 1
         self.emit('nextscan-changed', self._nextfreescan)
 
@@ -279,7 +280,7 @@ class FileSequence(Service):
             self._lastfsn[prefix] = fsn
             self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
         logger.debug('New exposure: %s (fsn: %d, prefix: %s)' %
-                    (filename, fsn, prefix))
+                     (filename, fsn, prefix))
         filename = filename[filename.index('images') + 7:]
         # write header file if needed
         config = self.instrument.config
@@ -333,12 +334,12 @@ class FileSequence(Service):
                     params['environment']['temperature_setpoint'] = self.instrument.environmentcontrollers[
                         'temperature'].get_variable('setpoint')
                 except KeyError as ke:
-                    logger.warning('Cannot write property: %s'%ke.args[0])
+                    logger.warning('Cannot write property: %s' % ke.args[0])
                 try:
                     params['environment']['temperature'] = self.instrument.environmentcontrollers[
                         'temperature'].get_variable('temperature_internal')
                 except KeyError as ke:
-                    logger.warning('Cannot write property: %s'%ke.args[0])
+                    logger.warning('Cannot write property: %s' % ke.args[0])
             params['accounting'] = {}
             for k in config['services']['accounting']:
                 params['accounting'][k] = config['services']['accounting'][k]
@@ -367,11 +368,11 @@ class FileSequence(Service):
         return True
 
     def load_cbf(self, prefix, fsn):
-        cbfbasename=prefix+'_'+'%%0%dd.cbf'%self.instrument.config['path']['fsndigits']%fsn
+        cbfbasename = prefix + '_' + '%%0%dd.cbf' % self.instrument.config['path']['fsndigits'] % fsn
         for subpath in [prefix, '']:
-            cbfname=os.path.join(
+            cbfname = os.path.join(
                 self.instrument.config['path']['directories']['images'],
-                subpath,cbfbasename)
+                subpath, cbfbasename)
             try:
                 return readcbf(cbfname)[0]
             except FileNotFoundError:
@@ -379,7 +380,7 @@ class FileSequence(Service):
         raise FileNotFoundError(cbfbasename)
 
     def load_exposure(self, prefix, fsn):
-        param=self.load_param(prefix, fsn)
+        param = self.load_param(prefix, fsn)
         try:
             cbfname = os.path.join(
                 self.instrument.config['path']['directories']['images'], prefix,
@@ -394,8 +395,8 @@ class FileSequence(Service):
             return SASImage.new_from_file(cbfname, param)
 
     def load_param(self, prefix, fsn):
-        picklebasename=prefix + '_' + '%%0%dd.pickle' % \
-            self.instrument.config['path']['fsndigits'] % fsn
+        picklebasename = prefix + '_' + '%%0%dd.pickle' % \
+                                        self.instrument.config['path']['fsndigits'] % fsn
         for path in [
             self.instrument.config['path']['directories']['param_override'],
             self.instrument.config['path']['directories']['param']]:

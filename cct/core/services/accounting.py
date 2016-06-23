@@ -10,6 +10,7 @@ from ..instrument.privileges import PRIV_LAYMAN, PRIV_SUPERUSER, PRIV_PROJECTMAN
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class User(object):
     username = None
     firstname = None
@@ -21,6 +22,7 @@ class User(object):
         self.firstname = firstname
         self.lastname = lastname
         self.privlevel = privlevel
+
 
 class Project(object):
     projectid = None
@@ -54,7 +56,7 @@ class Accounting(Service):
                     self._user = self._users[-1]
                 self.set_privilegelevel(self._user.privlevel)
                 self.instrument.config['services']['accounting']['operator'] = self._user.username
-                logger.info('Authenticated user %s.' % self._user.username)
+                logger.info('Authenticated user ' + self._user.username + '.')
                 return True
         except kerberos.BasicAuthError:
             return False
@@ -97,7 +99,7 @@ class Accounting(Service):
 
     def has_privilege(self, what):
         logger.debug(
-            'Checking privilege: %s (%s) <=? %s (%s)' % (what, type(what), self._privlevel, type(self._privlevel)))
+            'Checking privilege: {} ({}) <=? {} ({})'.format(what, type(what), self._privlevel, type(self._privlevel)))
         return self._privlevel.is_allowed(what)
 
     def set_privilegelevel(self, level):
@@ -123,8 +125,8 @@ class Accounting(Service):
                 userdb = pickle.load(f)
             self._users = userdb['users']
             for u in self._users:
-                if not isinstance(u.privlevel,PrivilegeLevel):
-                    u.privlevel=PrivilegeLevel.get_priv(u.privlevel)
+                if not isinstance(u.privlevel, PrivilegeLevel):
+                    u.privlevel = PrivilegeLevel.get_priv(u.privlevel)
             self._projects = userdb['projects']
         except FileNotFoundError:
             logger.debug('Could not load dbfile.')
@@ -157,13 +159,13 @@ class Accounting(Service):
         self._projects = [p for p in self._projects if p.projectid != projectid]
         prj = Project(projectid, projectname, proposer)
         self._projects.append(prj)
-        logger.debug('Added project: %s, %s, %s' % (projectid, projectname, proposer))
+        logger.debug('Added project: {}, {}, {}'.format(projectid, projectname, proposer))
         self.select_project(projectid)
         return prj
 
     def select_project(self, projectid):
         self._project = self.get_project(projectid)
-        logger.debug('Selected project: %s' % self._project.projectid)
+        logger.debug('Selected project: ' + self._project.projectid)
         self.instrument.config['services']['accounting']['projectid'] = self._project.projectid
         self.instrument.config['services']['accounting']['projectname'] = self._project.projectname
         self.instrument.config['services']['accounting']['proposer'] = self._project.proposer
@@ -189,9 +191,9 @@ class Accounting(Service):
             if user.username == self.get_user().username:
                 raise ServiceError('Setting privileges of the current user is not allowed.')
             assert (self.has_privilege(PRIV_USERMAN))
-            user.privlevel=PrivilegeLevel.get_priv(maxpriv)
+            user.privlevel = PrivilegeLevel.get_priv(maxpriv)
         self.instrument.save_state()
-        logger.info('Updated user %s' % username)
+        logger.info('Updated user ' + username)
 
     def delete_user(self, username):
         if username == self.get_user().username:
@@ -207,7 +209,7 @@ class Accounting(Service):
         self.instrument.save_state()
 
     def delete_project(self, projectid):
-        assert(not projectid==self._project.projectid)
-        assert(self.has_privilege(PRIV_PROJECTMAN))
-        self._projects=[p for p in self._projects if p.projectid != projectid]
+        assert (not projectid == self._project.projectid)
+        assert (self.has_privilege(PRIV_PROJECTMAN))
+        self._projects = [p for p in self._projects if p.projectid != projectid]
         self.instrument.save_state()

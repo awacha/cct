@@ -414,7 +414,8 @@ class Pilatus(Device_TCP):
             #                raise DeviceError('Cannot trim when not idle')
             self._update_variable('_status', 'trimming')
             self._suppress_watchdog()
-            self._send(b'SetThreshold {0[1]} {0[0]:f}\n'.format(arguments), expected_replies=None)
+            self._send('SetThreshold {} {:f}\n'.format(arguments[1].decode('ascii'), arguments[0]).encode('ascii'),
+                       expected_replies=None)
             logger.debug('Setting threshold to {0[0]:f} (gain {0[1]})'.format(arguments))
         elif commandname == 'expose':
             #            if self.is_busy():

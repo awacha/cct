@@ -346,7 +346,7 @@ class TMCMcard(Device_TCP):
                     self._handle_motor_stopped(motoridx)
         elif cmdnum == 136:
             self._update_variable('firmwareversion', 'TMCM{:d}, firmware v{:d}.{:d}'.format(
-                value // 0x10000, (value % 0x10000) / 0x100, value % 0x100))
+                value // 0x10000, (value % 0x10000) // 0x100, value % 0x100))
         elif cmdnum == 4:
             # acknowledgement of start move
             self._moving['starttime'] = time.time()

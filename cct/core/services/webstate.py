@@ -12,26 +12,26 @@ from .service import Service
 
 
 def get_svg_object_by_id(dom, idname):
-    results=[]
+    results = []
     for d in dom.childNodes:
         results.extend(get_svg_object_by_id(d, idname))
     try:
-        if dom.getAttribute('id')==idname:
+        if dom.getAttribute('id') == idname:
             results.append(dom)
     except AttributeError:
         pass
     return results
 
-class WebStateFileWriter(Service):
 
+class WebStateFileWriter(Service):
     webstate_timeout = 30
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._timeouthandler=None
+        self._timeouthandler = None
 
     def start(self):
-        self._timeouthandler = GLib.timeout_add(self.webstate_timeout*1000, self.write_statusfile)
+        self._timeouthandler = GLib.timeout_add(self.webstate_timeout * 1000, self.write_statusfile)
 
     def reload_statusfile_template(self):
         # if not hasattr(self,'_statusfile_template'):
@@ -247,23 +247,23 @@ class WebStateFileWriter(Service):
         return detector
 
     def create_fsnlist_data(self):
-        fl="<tr>\n    <th>Prefix:</th>\n"
+        fl = "<tr>\n    <th>Prefix:</th>\n"
         for p in sorted(self.instrument.filesequence.get_prefixes()):
-            fl+="    <td>%s</td>\n"%p
-        fl+='    <td>Scan</td>\n</tr>\n<tr>\n    <th>Last FSN:</th>\n'
+            fl += "    <td>%s</td>\n" % p
+        fl += '    <td>Scan</td>\n</tr>\n<tr>\n    <th>Last FSN:</th>\n'
         for p in sorted(self.instrument.filesequence.get_prefixes()):
-            fl+="    <td>%d</td>\n"%self.instrument.filesequence.get_lastfsn(p)
-        fl+='    <td>%d</td>\n'%self.instrument.filesequence.get_lastscan()
-        fl+='</tr>\n<tr>\n    <th>Next FSN:</th>\n'
+            fl += "    <td>%d</td>\n" % self.instrument.filesequence.get_lastfsn(p)
+        fl += '    <td>%d</td>\n' % self.instrument.filesequence.get_lastscan()
+        fl += '</tr>\n<tr>\n    <th>Next FSN:</th>\n'
         for p in sorted(self.instrument.filesequence.get_prefixes()):
-            fl+='    <td>%d</td>\n'%self.instrument.filesequence.get_nextfreefsn(p,False)
-        fl+='    <td>%d</td>\n'%self.instrument.filesequence.get_nextfreescan(False)
-        fl+='</tr>'
+            fl += '    <td>%d</td>\n' % self.instrument.filesequence.get_nextfreefsn(p, False)
+        fl += '    <td>%d</td>\n' % self.instrument.filesequence.get_nextfreescan(False)
+        fl += '</tr>'
         return fl
 
     def create_accountingdata(self):
         # user, project ID, project title, proposer
-        ad="""
+        ad = """
         <tr>
             <td>Operator:</td>
             <td>%(operator)s</td>
@@ -277,11 +277,11 @@ class WebStateFileWriter(Service):
             <td>%(proposer)s</td>
         </tr>
         <tr>
-        """%{'operator':self.instrument.accounting.get_user().username,
-             'privilegelevel':self.instrument.accounting.get_privilegelevel().name,
-             'project':self.instrument.accounting.get_project().projectid,
-             'proposer':self.instrument.accounting.get_project().proposer,
-             }
+        """ % {'operator': self.instrument.accounting.get_user().username,
+               'privilegelevel': self.instrument.accounting.get_privilegelevel().name,
+               'project': self.instrument.accounting.get_project().projectid,
+               'proposer': self.instrument.accounting.get_project().proposer,
+               }
         return ad
 
     def write_statusfile(self):
@@ -301,7 +301,7 @@ class WebStateFileWriter(Service):
                 'xraysource_status': self.create_xraysource_status(),
                 'detector_status': self.create_detector_status(),
                 'filesequence_data': self.create_fsnlist_data(),
-                'accounting_data':self.create_accountingdata(),
+                'accounting_data': self.create_accountingdata(),
                 }
         shutil.copy2(pkg_resources.resource_filename('cct', 'resource/cct_status/credo_status.css'),
                      os.path.join(self.instrument.config['path']['directories']['status'], 'credo_status.css'))
@@ -312,54 +312,51 @@ class WebStateFileWriter(Service):
         return True
 
     def adjust_svg(self):
-        dom=parse(pkg_resources.resource_filename('cct','resource/cct_status/scheme_interactive.svg'))
-        shutter=self.instrument.xray_source.get_variable('shutter')
-        beamstop=self.instrument.get_beamstop_state()
-        for x in get_svg_object_by_id(dom,'xray'):
+        dom = parse(pkg_resources.resource_filename('cct', 'resource/cct_status/scheme_interactive.svg'))
+        shutter = self.instrument.xray_source.get_variable('shutter')
+        beamstop = self.instrument.get_beamstop_state()
+        for x in get_svg_object_by_id(dom, 'xray'):
             if shutter:
                 x.setAttribute('visibility', 'visible')
             else:
                 x.setAttribute('visibility', 'hidden')
         for x in get_svg_object_by_id(dom, 'hitting_xray'):
-            if shutter and (beamstop!='in'):
+            if shutter and (beamstop != 'in'):
                 x.setAttribute('visibility', 'visible')
             else:
                 x.setAttribute('visibility', 'hidden')
         for x in get_svg_object_by_id(dom, 'beamstop_in'):
-            if beamstop=='out':
+            if beamstop == 'out':
                 x.setAttribute('visibility', 'hidden')
             else:
                 x.setAttribute('visibility', 'visible')
         for x in get_svg_object_by_id(dom, 'beamstop_out'):
-            if beamstop=='in':
+            if beamstop == 'in':
                 x.setAttribute('visibility', 'hidden')
             else:
                 x.setAttribute('visibility', 'visible')
         for x in get_svg_object_by_id(dom, 'hv'):
-            x.firstChild.firstChild.data='%.2f kV'%self.instrument.xray_source.get_variable('ht')
+            x.firstChild.firstChild.data = '%.2f kV' % self.instrument.xray_source.get_variable('ht')
         for x in get_svg_object_by_id(dom, 'current'):
-            x.firstChild.firstChild.data='%.2f mA'%self.instrument.xray_source.get_variable('current')
+            x.firstChild.firstChild.data = '%.2f mA' % self.instrument.xray_source.get_variable('current')
         for x in get_svg_object_by_id(dom, 'detector_state'):
-            x.firstChild.firstChild.data='%s'%self.instrument.detector.get_variable('_status')
+            x.firstChild.firstChild.data = '%s' % self.instrument.detector.get_variable('_status')
         for x in get_svg_object_by_id(dom, 'vacuum'):
-            x.firstChild.firstChild.data='%.3f mbar'%self.instrument.devices['tpg201'].get_variable('pressure')
+            x.firstChild.firstChild.data = '%.3f mbar' % self.instrument.devices['tpg201'].get_variable('pressure')
         for x in get_svg_object_by_id(dom, 'samplename'):
-            x.firstChild.firstChild.data=str(self.instrument.samplestore.get_active_name())
+            x.firstChild.firstChild.data = str(self.instrument.samplestore.get_active_name())
         for x in get_svg_object_by_id(dom, 'temperature'):
             try:
-                temperature=self.instrument.devices['haakephoenix'].get_variable('temperature_internal')
-                temperature='%.2f °C'%temperature
+                temperature = self.instrument.devices['haakephoenix'].get_variable('temperature_internal')
+                temperature = '%.2f °C' % temperature
                 if not self.instrument.devices['haakephoenix']._get_connected():
-                    temperature='Uncontrolled'
+                    temperature = 'Uncontrolled'
             except KeyError:
-                temperature='Uncontrolled'
-            x.firstChild.firstChild.data=temperature
+                temperature = 'Uncontrolled'
+            x.firstChild.firstChild.data = temperature
         for m in self.instrument.motors:
-            for x in get_svg_object_by_id(dom,m):
-                x.firstChild.firstChild.data='%.3f'%(self.instrument.motors[m].where())
+            for x in get_svg_object_by_id(dom, m):
+                x.firstChild.firstChild.data = '%.3f' % (self.instrument.motors[m].where())
         with open(os.path.join(self.instrument.config['path']['directories']['status'], 'scheme.svg'), 'wt',
                   encoding='utf-8') as f:
             dom.writexml(f)
-
-
-

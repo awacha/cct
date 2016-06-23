@@ -62,8 +62,8 @@ class Sample(object):
                 'situation': self.situation}
 
     def toparam(self):
-        dic=self.todict()
-        return '\n'.join(['sample.' + k + ':\t%s' % dic[k] for k in dic]) + '\n'
+        dic = self.todict()
+        return '\n'.join(['sample.' + k + ':\t' + str(dic[k]) for k in dic]) + '\n'
 
     def __init__(self, title, positionx=0.0, positiony=0.0, thickness=1.0,
                  transmission=1.0, preparedby='Anonymous', preparetime=None,
@@ -107,12 +107,12 @@ class Sample(object):
             self.distminus = ErrorValue(self.distminus, 0)
 
     def __repr__(self):
-        return 'Sample(%s, (%.3f, %.3f), %.4f, %.4f)' % (self.title,
-                                                         self.positionx, self.positiony, self.thickness, self.transmission)
+        return 'Sample({0.title}, ({0.positionx:.3f}, {0.positiony:.3f}), {0.thickness:.4f}, {0.transmission:.4f})'.format(
+            self)
 
     def __str__(self):
-        return '%s, (%.3f, %.3f), %.4f cm, transm: %.4f' % (self.title,
-                                                            self.positionx, self.positiony, self.thickness, self.transmission)
+        return '{0.title}, ({0.positionx:.3f}, {0.positiony:.3f}), {0.thickness:.4f} cm, transm: {0.transmission:.4f}'.format(
+            self)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -127,7 +127,7 @@ class Sample(object):
 
     def get_header(self):
         hed = {'Title': self.title, 'Preparedby':
-               self.preparedby, 'Preparetime': self.preparetime,
+            self.preparedby, 'Preparetime': self.preparetime,
                'SampleDescription': self.description}
         for attr, key in [('thickness', 'Thickness'),
                           ('transmission', 'Transm'),

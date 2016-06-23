@@ -14,7 +14,6 @@ class InterpreterError(ServiceError):
 
 
 class Interpreter(Service):
-
     name = 'interpreter'
 
     __gsignals__ = {
@@ -50,9 +49,9 @@ class Interpreter(Service):
             self.commands[commandclass.name] = commandclass
         self.command_namespace_globals = {}
         if namespace is not None:
-            self.command_namespace_locals=namespace
+            self.command_namespace_locals = namespace
         else:
-            self.command_namespace_locals = {'_config': instrument.config, '_':None}
+            self.command_namespace_locals = {'_config': instrument.config, '_': None}
         exec('import os', self.command_namespace_globals,
              self.command_namespace_locals)
         exec('import numpy as np', self.command_namespace_globals,
@@ -71,12 +70,12 @@ class Interpreter(Service):
         if isinstance(commandline, Command):
             # we got a Command instance, not a string. Arguments are supplied as well
             if arguments is None:
-                arguments=[]
-            command=commandline
+                arguments = []
+            command = commandline
             self.command_namespace_locals['_commandline'] = '<none>'
         elif isinstance(commandline, str):
             # we have to parse the command line. `arguments` is disregarded.
-            commandline_cleaned=cleanup_commandline(commandline)
+            commandline_cleaned = cleanup_commandline(commandline)
             if not commandline_cleaned:
                 # if the command line was empty or contained only comments, ignore
                 GLib.idle_add(
@@ -227,7 +226,7 @@ class Interpreter(Service):
             else:
                 if flagname in self._flags:
                     self._flags = [f for f in self._flags if f != flagname]
-                    logger.debug('Clearing flag %s'%flagname)
+                    logger.debug('Clearing flag %s' % flagname)
                     self.emit('flag', flagname, False)
 
     def is_flag(self, flagname):
@@ -257,4 +256,3 @@ def get_parentheses_pairs(cmdline, opening_types='([{'):
     if openparens:
         raise ValueError('Open parentheses', openparens, parens, cmdline)
     return parens
-
