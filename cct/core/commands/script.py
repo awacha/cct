@@ -13,8 +13,10 @@ from .jump import JumpException, GotoException, GosubException, ReturnException,
 class ScriptEndException(JumpException):
     pass
 
+
 class ScriptError(CommandError):
     pass
+
 
 class Script(Command):
     """Implement a script, i.e. a compound of commands.
@@ -35,21 +37,21 @@ class Script(Command):
     """
 
     __gsignals__ = {
-        #emitted at the start of a command
-        'cmd-start':(GObject.SignalFlags.RUN_FIRST, None, (int, object,)),
-        'paused':(GObject.SignalFlags.RUN_FIRST, None, ()),
+        # emitted at the start of a command
+        'cmd-start': (GObject.SignalFlags.RUN_FIRST, None, (int, object,)),
+        'paused': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
-    script='' # a default value for the script
+    script = ''  # a default value for the script
 
     def __init__(self, script=None):
         Command.__init__(self)
         if script is None:
-            script=self.script
-        self._script=script.split('\n')
+            script = self.script
+        self._script = script.split('\n')
 
     def execute(self, interpreter, arglist, instrument, namespace):
-        namespace['_scriptargs']=arglist
+        namespace['_scriptargs'] = arglist
         try:
             del self._pause
         except AttributeError:
@@ -58,10 +60,10 @@ class Script(Command):
             del self._kill
         except AttributeError:
             pass
-        self._cursor=-1
-        self._jumpstack=[]
+        self._cursor = -1
+        self._jumpstack = []
         self._myinterpreter = interpreter.create_child(namespace)
-        self._myinterpreter_connections=[
+        self._myinterpreter_connections = [
             self._myinterpreter.connect('cmd-return', self.on_cmd_return),
             self._myinterpreter.connect('cmd-fail', self.on_cmd_fail),
             self._myinterpreter.connect('pulse', self.on_pulse),
@@ -79,40 +81,40 @@ class Script(Command):
             return False
         if hasattr(self, '_pause'):
             if not self._pause:
-                self._pause=True
+                self._pause = True
                 self.emit('paused')
             return False
-        self._cursor+=1
+        self._cursor += 1
         logger.debug('Executing line {:d}'.format(self._cursor))
         try:
-            commandline=self._script[self._cursor]
+            commandline = self._script[self._cursor]
         except IndexError:
             # last command, return with the result of the last command.
             GLib.idle_add(lambda rv=self._myinterpreter.command_namespace_locals['_']: self._try_to_return(rv))
             return False
         try:
-            cmd=self._myinterpreter.execute_command(commandline)
+            cmd = self._myinterpreter.execute_command(commandline)
             self.emit('cmd-start', self._cursor, cmd)
         except ReturnException:
-            self._cursor=self._jumpstack.pop()
+            self._cursor = self._jumpstack.pop()
             GLib.idle_add(self.nextcommand)
             return False
         except GotoException as ge:
-            self._cursor=self.find_label(ge.args[0])
+            self._cursor = self.find_label(ge.args[0])
             GLib.idle_add(self.nextcommand)
             return False
         except GosubException as gse:
             self._jumpstack.append(self._cursor)
-            self._cursor=self.find_label(gse.args[0])
+            self._cursor = self.find_label(gse.args[0])
             GLib.idle_add(self.nextcommand)
             return False
         except ScriptEndException as se:
-            GLib.idle_add(lambda returnvalue=se.args[0]:self._try_to_return(returnvalue))
+            GLib.idle_add(lambda returnvalue=se.args[0]: self._try_to_return(returnvalue))
             return False
         except PassException:
             # raised by a conditional goto/gosub command if the condition evaluated to False
             # jump to the next command.
-            GLib.idle_add(lambda :self.nextcommand() and False)
+            GLib.idle_add(lambda: self.nextcommand() and False)
             return False
         except JumpException as je:
             raise NotImplementedError(je)
@@ -131,13 +133,13 @@ class Script(Command):
             try:
                 self.cleanup()
             finally:
-                self.emit('return',None)
+                self.emit('return', None)
             del self._failure
         else:
             GLib.idle_add(self.nextcommand)
 
     def on_cmd_fail(self, myinterpreter, cmdname, exc, tb):
-        self._failure=True
+        self._failure = True
         self.emit('fail', exc, tb)
 
     def on_pulse(self, myinterpreter, cmdname, pulsemessage):
@@ -160,18 +162,18 @@ class Script(Command):
 
     def find_label(self, labelname):
         for i, line in enumerate(self._script):
-            line=cleanup_commandline(line)
+            line = cleanup_commandline(line)
             if not line:
                 continue
-            if line.split()[0].startswith('@'+labelname):
+            if line.split()[0].startswith('@' + labelname):
                 logger.debug('Label "{}" is on line #{:d}\n'.format(labelname, i))
                 return i
         raise ScriptError('Unknown label in script: {}'.format(labelname))
 
     def _try_to_return(self, returnvalue):
-        if hasattr(self,'_cannot_return_yet'):
+        if hasattr(self, '_cannot_return_yet'):
             self.emit('pulse', 'Waiting for finalization')
-            GLib.timeout_add(100, lambda rv=returnvalue:self._try_to_return(rv))
+            GLib.timeout_add(100, lambda rv=returnvalue: self._try_to_return(rv))
             return False
         else:
             try:
@@ -185,7 +187,7 @@ class Script(Command):
         self._myinterpreter.kill()
 
     def pause(self):
-        self._pause=False
+        self._pause = False
 
     def is_paused(self):
         try:
@@ -194,14 +196,13 @@ class Script(Command):
             return False
 
     def resume(self):
-        if not hasattr(self,'_pause'):
+        if not hasattr(self, '_pause'):
             raise ScriptError('Cannot resume a script which has not been paused.')
         if self._pause:
             del self._pause
             self.nextcommand()
         else:
             del self._pause
-
 
 
 class End(Command):
@@ -215,7 +216,7 @@ class End(Command):
     Remarks:
         Can only be used in scripts
     """
-    name='end'
+    name = 'end'
 
     def execute(self, interpreter, arglist, instrument, namespace):
         if not arglist:

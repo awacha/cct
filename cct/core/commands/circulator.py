@@ -6,8 +6,9 @@ from gi.repository import GLib
 from .command import Command
 from .script import Script
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class StartStop(Command):
     """Start or stop the circulator
@@ -103,7 +104,7 @@ class WaitTemperature(Command):
         self.delay = float(arglist[1])
         self._require_device(instrument, 'haakephoenix')
         self._in_tolerance_interval = None
-        self._pulser=GLib.timeout_add(1000,self.pulser)
+        self._pulser = GLib.timeout_add(1000, self.pulser)
         self._instrument = instrument
 
     def pulser(self):
@@ -112,13 +113,14 @@ class WaitTemperature(Command):
                 self._instrument.devices['haakephoenix'].get_variable('temperature')))
         else:
             remainingtime = (self.delay - (time.monotonic() - self._in_tolerance_interval))
-            fraction= (time.monotonic()-self._in_tolerance_interval)/self.delay
+            fraction = (time.monotonic() - self._in_tolerance_interval) / self.delay
             self.emit('progress',
                       'Temperature stability reached ({:.2f} °C), waiting for {:.0f} seconds'.format(
                           self._instrument.devices['haakephoenix'].get_variable('temperature'),
                           remainingtime),
                       fraction)
-        self.on_variable_change(self._instrument.devices['haakephoenix'],'temperature',self._instrument.devices['haakephoenix'].get_variable('temperature'))
+        self.on_variable_change(self._instrument.devices['haakephoenix'], 'temperature',
+                                self._instrument.devices['haakephoenix'].get_variable('temperature'))
         return True
 
     def on_variable_change(self, device, variablename, newvalue):

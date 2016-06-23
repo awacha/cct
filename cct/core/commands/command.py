@@ -103,8 +103,8 @@ class Command(GObject.GObject):
             raise CommandError('Device {} already required'.format(devicename))
         self._device_connections[device] = [device.connect('variable-change', self.on_variable_change),
                                             device.connect(
-            'error', self.on_error),
-            device.connect('disconnect', self.on_disconnect)]
+                                                'error', self.on_error),
+                                            device.connect('disconnect', self.on_disconnect)]
 
     def _unrequire_device(self, devicename=None):
         """Disconnect basic signal handlers from the device. If argument
@@ -128,7 +128,7 @@ class Command(GObject.GObject):
         be interrupted and a `fail` signal is sent. Override on_timeout() if
         you want a different behaviour."""
         if timeout is None:
-            timeout=self.timeout
+            timeout = self.timeout
         self._timeout = GLib.timeout_add(1000 * timeout, self.on_timeout)
 
     def _uninstall_timeout_handler(self):
@@ -222,7 +222,7 @@ class Command(GObject.GObject):
         subclasses = cls.__subclasses__()
         while True:
             all_commands.extend(
-                [s for s in subclasses if not(s.name.startswith('_'))])
+                [s for s in subclasses if not (s.name.startswith('_'))])
             newsubclasses = []
             for sc in [x for x in [c.__subclasses__()
                                    for c in subclasses] if x]:
@@ -236,6 +236,7 @@ class Command(GObject.GObject):
     @classmethod
     def __str__(cls):
         return cls.name
+
 
 def cleanup_commandline(commandline):
     """Clean up the commandline: remove trailing spaces and comments"""

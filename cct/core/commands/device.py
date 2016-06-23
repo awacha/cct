@@ -7,8 +7,9 @@ from gi.repository import GLib
 from .command import Command, CommandError
 from ..instrument.privileges import PRIV_MOTORCONFIG
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class GetVariable(Command):
     """Get the value of a device variable
@@ -39,7 +40,7 @@ class GetVariable(Command):
             self._uninstall_timeout_handler()
             self._unrequire_device(None)
             GLib.idle_add(lambda dev=instrument.devices[devicename], var=variablename, val=instrument.devices[
-                          devicename].get_variable(variablename): self.on_variable_change(dev, var, val) and False)
+                devicename].get_variable(variablename): self.on_variable_change(dev, var, val) and False)
 
     def on_variable_change(self, device, variable, newvalue):
         if variable == self._check_for_variable:
@@ -87,7 +88,7 @@ class SetVariable(Command):
             # there are variables which cannot be queried
             self._uninstall_timeout_handler()
             self._unrequire_device(None)
-            self.emit('fail',ne,traceback.format_exc())
+            self.emit('fail', ne, traceback.format_exc())
             GLib.idle_add(lambda dev=instrument.devices[devicename], var=variablename, val=instrument.devices[
                 devicename].get_variable(variablename): self.on_variable_change(dev, var, val) and False)
 
@@ -182,10 +183,11 @@ class Help(Command):
             cmdname = arglist[0]
         except IndexError:
             GLib.idle_add(lambda m='Please give the name of a command as an argument. Known commands: ' +
-                          ', '.join([cmd for cmd in sorted(interpreter.commands)]): self._idlefunc(m))
+                                   ', '.join([cmd for cmd in sorted(interpreter.commands)]): self._idlefunc(m))
         else:
             GLib.idle_add(
-                lambda m='Help on command ' + cmdname + ':\n' + interpreter.commands[cmdname].__doc__: self._idlefunc(m))
+                lambda m='Help on command ' + cmdname + ':\n' + interpreter.commands[cmdname].__doc__: self._idlefunc(
+                    m))
 
     def _idlefunc(self, msg):
         self.emit('message', msg)
@@ -233,6 +235,7 @@ class Echo(Command):
         self.emit('message', msg)
         self.emit('return', '')
 
+
 class Print(Echo):
     """A print command similar to that in Python.
 
@@ -244,11 +247,11 @@ class Print(Echo):
     Remarks:
         keyword arguments not supported
     """
-    name='print'
+    name = 'print'
 
     def execute(self, interpreter, arglist, instrument, namespace):
-        text=' '.join([str(x) for x in arglist])
-        GLib.idle_add(lambda m=text:self._idlefunc(m))
+        text = ' '.join([str(x) for x in arglist])
+        GLib.idle_add(lambda m=text: self._idlefunc(m))
 
 
 class Set(Command):

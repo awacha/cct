@@ -5,8 +5,9 @@ import traceback
 from .command import Command, CommandError
 from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class Scan(Command):
     """Do a scan measurement
@@ -35,11 +36,11 @@ class Scan(Command):
         if self._motor in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
                            'PH3_Y'] and not instrument.accounting.has_privilege(PRIV_PINHOLE):
             raise CommandError('Insufficient privileges to move pinholes')
-        assert(instrument.motors[self._motor].checklimits(self._start))
-        assert(instrument.motors[self._motor].checklimits(self._end))
-        assert(self._N >= 2)
-        assert(self._exptime > 0)
-        assert(self._motor in instrument.motors)
+        assert (instrument.motors[self._motor].checklimits(self._start))
+        assert (instrument.motors[self._motor].checklimits(self._end))
+        assert (self._N >= 2)
+        assert (self._exptime > 0)
+        assert (self._motor in instrument.motors)
         self._idx = 0
         self._scanfsn = instrument.filesequence.get_nextfreescan(acquire=False)
         self._instrument = instrument
@@ -64,18 +65,19 @@ class Scan(Command):
         self._motor_connections = [
             instrument.motors[self._motor].connect('position-change', self.on_motor_position_change)
         ]
-        self._scanfilename=os.path.join(self._instrument.config['path']['directories']['scan'],
-                                        self._instrument.config['scan']['scanfile'])
+        self._scanfilename = os.path.join(self._instrument.config['path']['directories']['scan'],
+                                          self._instrument.config['scan']['scanfile'])
         try:
             cmdline = namespace['commandline']
         except KeyError:
             cmdline = '{}("{}", {:f}, {:f}, {:d}, {:f}, "{}")'.format(
                 self.name, self._motor, self._start, self._end, self._N, self._exptime, self._comment)
-        self._scanfsn=self._instrument.filesequence.new_scan(cmdline, self._comment, self._exptime, self._N, self._motor)
+        self._scanfsn = self._instrument.filesequence.new_scan(cmdline, self._comment, self._exptime, self._N,
+                                                               self._motor)
 
         try:
-            self._notyetstarted=True
-            self._scan_end=False
+            self._notyetstarted = True
+            self._scan_end = False
             self._myinterpreter.execute_command(
                 'moveto("{}", {:f})'.format(self._motor, self._start))
         except Exception:
@@ -90,13 +92,13 @@ class Scan(Command):
 
     def on_scanpoint(self, exposureanalyzer, prefix, fsn, scandata):
         logger.debug('Writing scan line for position {:f}'.format(scandata[0]))
-        line=str(scandata[0])+'  '+' '.join(str(f) for f in scandata[1:])
-        with open(self._scanfilename,'at', encoding='utf-8') as f:
-            f.write(line+'\n')
+        line = str(scandata[0]) + '  ' + ' '.join(str(f) for f in scandata[1:])
+        with open(self._scanfilename, 'at', encoding='utf-8') as f:
+            f.write(line + '\n')
             # self.emit('message',line)
 
     def on_myintr_command_return(self, interpreter, commandname, returnvalue):
-        self._notyetstarted=False
+        self._notyetstarted = False
         logger.debug('Scan subcommand {} returned'.format(commandname))
         if self._in_fail:
             try:
@@ -132,11 +134,11 @@ class Scan(Command):
             self.emit('progress', 'Scan running: {:d}/{:d}'.format(self._idx, self._N), self._idx / self._N)
             if self._idx < self._N:
                 self._whereto = self._start + self._idx * \
-                    (self._end - self._start) / (self._N - 1)
+                                              (self._end - self._start) / (self._N - 1)
                 self._myinterpreter.execute_command(
                     'moveto("{}", {:f})'.format(self._motor, self._whereto))
             else:
-                self._scan_end=True
+                self._scan_end = True
                 if self._scan_end and self._exposureanalyzer_idle:
                     self._cleanup()
                     self.emit('return', None)
@@ -145,7 +147,7 @@ class Scan(Command):
         return False
 
     def on_idle(self, exposureanalyzer):
-        self._exposureanalyzer_idle=True
+        self._exposureanalyzer_idle = True
         if self._scan_end and self._exposureanalyzer_idle:
             self._cleanup()
             self.emit('return', None)
@@ -224,5 +226,6 @@ class ScanRel(Scan):
         self._motor, self._halfwidth, self._N, self._exptime, self._comment = arglist
         pos = instrument.motors[self._motor].where()
         return Scan.execute(self, interpreter, (
-        self._motor, pos - self._halfwidth, pos + self._halfwidth, self._N, self._exptime, self._comment), instrument,
+            self._motor, pos - self._halfwidth, pos + self._halfwidth, self._N, self._exptime, self._comment),
+                            instrument,
                             namespace)

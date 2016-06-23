@@ -27,7 +27,7 @@ class HaakePhoenix(Device_TCP):
     _urgentvariables = ['faultstatus', 'time', 'temperature_internal',
                         'temperature_external', 'pump_power']
 
-    _notsourgentvariables = ['cooling_on', 'setpoint','date']
+    _notsourgentvariables = ['cooling_on', 'setpoint', 'date']
 
     _minimum_query_variables = ['faultstatus', 'time', 'temperature_internal',
                                 'temperature_external', 'pump_power',
@@ -47,7 +47,7 @@ class HaakePhoenix(Device_TCP):
         # Refresh of the variables in `self.notsourgentvariables` is initiated
         # only if the value of this counter is zero.
         self._urgency_counter = 0
-        self._loglevel=logger.level
+        self._loglevel = logger.level
 
     def _execute_command(self, commandname, arguments):
         if commandname == 'start':
@@ -62,11 +62,12 @@ class HaakePhoenix(Device_TCP):
             raise UnknownCommand(commandname)
 
     def _get_complete_messages(self, message):
-        if len(message)>64:
-            raise CommunicationError('Haake Phoenix circulator not connected or not turned on, receiving garbage messages.')
-        messages=message.split(b'\r')
-        for i in range(len(messages)-1):
-            messages[i]=messages[i]+b'\r'
+        if len(message) > 64:
+            raise CommunicationError(
+                'Haake Phoenix circulator not connected or not turned on, receiving garbage messages.')
+        messages = message.split(b'\r')
+        for i in range(len(messages) - 1):
+            messages[i] = messages[i] + b'\r'
         return messages
 
     def _process_incoming_message(self, message, original_sent=None):
@@ -124,14 +125,14 @@ class HaakePhoenix(Device_TCP):
                 self._update_variable('_auxstatus', '{:.2f}°C'.format(float(message[2:])))
             try:
                 if not self._properties['control_external']:
-                    self._update_variable('temperature',float(message[2:]))
+                    self._update_variable('temperature', float(message[2:]))
             except KeyError:
                 pass
         elif message.startswith(b'T3'):
             self._update_variable('temperature_external', float(message[2:]))
             try:
                 if self._properties['control_external']:
-                    self._update_variable('temperature',float(message[2:]))
+                    self._update_variable('temperature', float(message[2:]))
             except KeyError:
                 pass
         elif message.startswith(b'SW'):
@@ -201,9 +202,9 @@ class HaakePhoenix(Device_TCP):
                     self._update_variable('_status', 'stopped')
         elif message == b'':
             # confirmation for the last command
-            if original_sent==b'W TS 1\r':
+            if original_sent == b'W TS 1\r':
                 self._update_variable('_status', 'running', force=True)
-            elif original_sent==b'W TS 0\r':
+            elif original_sent == b'W TS 0\r':
                 self._update_variable('_status', 'stopped', force=True)
             self._logger.debug(
                 'Confirmation for message {} received.'.format(original_sent.decode('utf-8').replace('\r', '')))
@@ -214,7 +215,8 @@ class HaakePhoenix(Device_TCP):
 
     def _query_variable(self, variablename, minimum_query_variables=None):
         if variablename is None:
-            toberefreshed = [x for x in self._minimum_query_variables if x not in self._properties] + self._urgentvariables
+            toberefreshed = [x for x in self._minimum_query_variables if
+                             x not in self._properties] + self._urgentvariables
             if not self._urgency_counter:
                 toberefreshed.extend(self._notsourgentvariables)
             super()._query_variable(None, minimum_query_variables=toberefreshed)

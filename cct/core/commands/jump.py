@@ -6,17 +6,22 @@ from .command import Command
 class JumpException(Exception):
     pass
 
+
 class GotoException(JumpException):
     pass
+
 
 class GosubException(JumpException):
     pass
 
+
 class ReturnException(JumpException):
     pass
 
+
 class PassException(JumpException):
     pass
+
 
 class Goto(Command):
     """Unconditional one-way jump to a label.
@@ -29,7 +34,7 @@ class Goto(Command):
     Remarks:
         Can only be used in scripts.
     """
-    name='goto'
+    name = 'goto'
 
     def execute(self, interpreter, arglist, instrument, namespace):
         raise GotoException(arglist[0])
@@ -46,10 +51,11 @@ class Gosub(Command):
     Remarks:
         Can only be used in scripts.
     """
-    name='gosub'
+    name = 'gosub'
 
     def execute(self, interpreter, arglist, instrument, namespace):
         raise GosubException(arglist[0])
+
 
 class GoIf(Command):
     """Conditional one-way jump to a label
@@ -64,13 +70,14 @@ class GoIf(Command):
     Remarks:
         Can only be used in scripts.
     """
-    name='goif'
+    name = 'goif'
 
     def execute(self, interpreter, arglist, instrument, namespace):
         if arglist[1]:
             raise GotoException(arglist[0])
         else:
             raise PassException()
+
 
 class GosubIf(Command):
     """Conditional returnable jump to a label
@@ -85,13 +92,14 @@ class GosubIf(Command):
     Remarks:
         Can only be used in scripts.
     """
-    name='gosubif'
+    name = 'gosubif'
 
     def execute(self, interpreter, arglist, instrument, namespace):
         if arglist[1]:
             raise GosubException(arglist[0])
         else:
             raise PassException()
+
 
 class Return(Command):
     """Return to the previous gosub command
@@ -104,7 +112,7 @@ class Return(Command):
     Remarks:
         Can only be used in scripts.
     """
-    name='return'
+    name = 'return'
 
     def execute(self, interpreter, arglist, instrument, namespace):
         raise ReturnException()
@@ -151,6 +159,7 @@ class GosubOnFlag(Command):
         else:
             raise PassException()
 
+
 class ClearFlag(Command):
     """Set a flag to OFF state.
 
@@ -165,8 +174,8 @@ class ClearFlag(Command):
     name = 'clearflag'
 
     def execute(self, interpreter, arglist, instrument, namespace):
-        self._flag=str(arglist[0])
-        self._interpreter=interpreter
+        self._flag = str(arglist[0])
+        self._interpreter = interpreter
         GLib.idle_add(self._return)
 
     def _return(self):
@@ -174,6 +183,7 @@ class ClearFlag(Command):
         self.emit('message', 'Clearing flag: {}'.format(self._flag))
         self.emit('return', None)
         return False
+
 
 class SetFlag(Command):
     """Set a flag to ON state.
@@ -189,8 +199,8 @@ class SetFlag(Command):
     name = 'setflag'
 
     def execute(self, interpreter, arglist, instrument, namespace):
-        self._flag=str(arglist[0])
-        self._interpreter=interpreter
+        self._flag = str(arglist[0])
+        self._interpreter = interpreter
         GLib.idle_add(self._return)
 
     def _return(self):

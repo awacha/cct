@@ -6,22 +6,23 @@ from .device import Device_ModbusTCP, UnknownVariable, UnknownCommand
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class GeniX(Device_ModbusTCP):
     log_formatstr = '{_status}\t{ht}\t{current}\t{shutter}'
 
     _all_variables = ['ht', 'current', 'tubetime', 'shutter', 'power', 'remote_mode', 'xrays', 'conditions_auto',
-                              'tube_power', 'faults', 'xray_light_fault',
-                              'shutter_light_fault', 'sensor2_fault',
-                              'tube_position_fault', 'vacuum_fault',
-                              'waterflow_fault', 'safety_shutter_fault',
-                              'temperature_fault', 'sensor1_fault',
-                              'relay_interlock_fault', 'door_fault',
-                              'filament_fault', 'tube_warmup_needed',
-                              'interlock', 'overridden']
+                      'tube_power', 'faults', 'xray_light_fault',
+                      'shutter_light_fault', 'sensor2_fault',
+                      'tube_position_fault', 'vacuum_fault',
+                      'waterflow_fault', 'safety_shutter_fault',
+                      'temperature_fault', 'sensor1_fault',
+                      'relay_interlock_fault', 'door_fault',
+                      'filament_fault', 'tube_warmup_needed',
+                      'interlock', 'overridden']
 
     _minimum_query_variables = ['ht', 'current', 'tubetime', 'shutter']
 
-    _interlock_fixing_time = 3 # time to ascertain if the interlock is really OK.
+    _interlock_fixing_time = 3  # time to ascertain if the interlock is really OK.
 
     backend_interval = 0.3
 
@@ -40,13 +41,13 @@ class GeniX(Device_ModbusTCP):
             ht = self._read_integer(50) / 100
             if self._update_variable('ht', ht):
                 try:
-                    power = self._properties['ht']* self._properties['current']
-                    self._update_variable('power',power)
+                    power = self._properties['ht'] * self._properties['current']
+                    self._update_variable('power', power)
                     self._update_variable('_auxstatus', '{0[ht]:.2f} kV {0[current]:.2f} mA'.format(
                         self._properties))
                 except KeyError:
                     pass
-        elif variablename=='current':
+        elif variablename == 'current':
             current = self._read_integer(51) / 100
             if self._update_variable('current', current):
                 try:
@@ -69,7 +70,7 @@ class GeniX(Device_ModbusTCP):
                               'filament_fault', 'tube_warmup_needed',
                               'interlock', 'overridden', '_status']:
             statusbits = self._read_coils(210, 36)
-            self._last_readstatus=time.monotonic()
+            self._last_readstatus = time.monotonic()
             self._update_variable('remote_mode', statusbits[0])
             self._update_variable('xrays', statusbits[1])
             if not statusbits[1]:
@@ -113,18 +114,18 @@ class GeniX(Device_ModbusTCP):
             # recent reading on statusbits[25]. The `interlock` variable is
             # adjusted in a way that it is False in case 1) and 3) above, and
             # only true in the case 2).
-            if self._update_variable('interlock_lowlevel',statusbits[25]):
-                self._interlock_lastchange=time.monotonic()
+            if self._update_variable('interlock_lowlevel', statusbits[25]):
+                self._interlock_lastchange = time.monotonic()
             if statusbits[25]:
-                if time.monotonic()-self._interlock_lastchange>self._interlock_fixing_time:
+                if time.monotonic() - self._interlock_lastchange > self._interlock_fixing_time:
                     # if a given amount of time has elapsed since we have
                     # last seen an interlock broken state, this means that
                     # we are truly in interlock OK state.
-                    self._update_variable('interlock',True)
-                # otherwise do nothing.
+                    self._update_variable('interlock', True)
+                    # otherwise do nothing.
             else:
                 # if interlock_lowlevel signals Broken, set interlock to broken.
-                self._update_variable('interlock',False)
+                self._update_variable('interlock', False)
             if statusbits[26] and not statusbits[27]:
                 self._update_variable('shutter', False)
             elif statusbits[27] and not statusbits[26]:
@@ -136,17 +137,17 @@ class GeniX(Device_ModbusTCP):
             # statusbits[28] is unknown
             self._update_variable('overridden', statusbits[29])
             try:
-                if statusbits[1]: # X-rays ON
+                if statusbits[1]:  # X-rays ON
                     if not (statusbits[2] or statusbits[3] or statusbits[5] or statusbits[6]):
                         # if not going to standby, not ramping up,
                         # not powering down and not warming up, decide the
                         # value of _status by the current output power
-                        if (self._properties['ht']==0 and
+                        if (self._properties['ht'] == 0 and
                                     self._properties['current'] == 0):
                             self._update_variable('_status', 'Power off')
-                        elif self._properties['power']==9:
+                        elif self._properties['power'] == 9:
                             self._update_variable('_status', 'Low power')
-                        elif self._properties['power']==30:
+                        elif self._properties['power'] == 30:
                             self._update_variable('_status', 'Full power')
             except KeyError:
                 pass
@@ -160,7 +161,7 @@ class GeniX(Device_ModbusTCP):
             time.sleep(1)
             self._query_variable('shutter')
         elif commandname == 'poweroff':
-            self._write_coil(250, False) # Not standby
+            self._write_coil(250, False)  # Not standby
             # Pulse the power-off coil
             self._write_coil(244, True)
             self._write_coil(244, False)
@@ -171,19 +172,19 @@ class GeniX(Device_ModbusTCP):
             self._write_coil(249, True)
             self._write_coil(249, False)
         elif commandname == 'start_warmup':
-            self._write_coil(250, False) # Not standby
+            self._write_coil(250, False)  # Not standby
             # Pulse the start warmup coil
             self._write_coil(245, True)
             self._write_coil(245, False)
         elif commandname == 'stop_warmup':
-            self._write_coil(250, False) # Not standby
+            self._write_coil(250, False)  # Not standby
             # Pulse the stop warmup coil
             self._write_coil(246, True)
             self._write_coil(246, False)
         elif commandname == 'standby':
-            self._write_coil(250, True) # Standby
+            self._write_coil(250, True)  # Standby
         elif commandname == 'full_power':
-            self._write_coil(250, False) # Not standby
+            self._write_coil(250, False)  # Not standby
             # Pulse the full-power coil
             self._write_coil(252, True)
             self._write_coil(252, False)
@@ -199,7 +200,7 @@ class GeniX(Device_ModbusTCP):
         self.execute_command('reset_faults')
 
     def _get_telemetry(self):
-        tm=super()._get_telemetry()
+        tm = super()._get_telemetry()
         if hasattr(self, '_last_readstatus'):
-            tm['last_readstatus']=time.monotonic()-self._last_readstatus
+            tm['last_readstatus'] = time.monotonic() - self._last_readstatus
         return tm

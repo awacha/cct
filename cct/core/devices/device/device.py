@@ -15,9 +15,11 @@ from .exceptions import DeviceError, CommunicationError, WatchdogTimeout
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class QueueLogHandler(QueueHandler):
     def prepare(self, record):
-        return {'type':'log', 'logrecord':record,'timestamp':time.monotonic(),'id':0}
+        return {'type': 'log', 'logrecord': record, 'timestamp': time.monotonic(), 'id': 0}
+
 
 class Device(GObject.GObject):
     """The abstract base class of a device, i.e. a component of the SAXS
@@ -131,11 +133,11 @@ class Device(GObject.GObject):
     }
 
     # List containing the names of all variables defined for this instrument
-    _all_variables=None
+    _all_variables = None
 
     # A minimal list of variable names, which, when queried, result in the
     # updating of all the variables in __all_variables__
-    _minimum_query_variables=None
+    _minimum_query_variables = None
 
     backend_interval = 1
 
@@ -157,14 +159,14 @@ class Device(GObject.GObject):
     # it is quietly dropped, i.e. no communication is initiated with the device.
     # However, if the timestamp is older than a given age (specified in seconds
     # in `_query_timeout`), the timestamp is re-set.
-    _query_requested=None
+    _query_requested = None
 
     # Timeout for re-query, see `_query_requested`.
-    _query_timeout=10
+    _query_timeout = 10
 
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
         GObject.GObject.__init__(self)
-        self._msgidcounter=0
+        self._msgidcounter = 0
         # the folder where config files are stored.
         self.configdir = configdir
         # this is the parameter logfile. Note that this is another kind of logging, not related to the logging module.
@@ -179,9 +181,9 @@ class Device(GObject.GObject):
         # True if a telemetry request has not yet been processed. If another telemetry request arrives, it will be skipped.
         self._outstanding_telemetry = False
         # The property dictionary
-        self._properties = {'_status': 'Disconnected', '_auxstatus':None}
+        self._properties = {'_status': 'Disconnected', '_auxstatus': None}
         # Timestamp dictionary, containing the times of the last update
-        self._timestamps = {'_status': time.time(), '_auxstatus':time.time()}
+        self._timestamps = {'_status': time.time(), '_auxstatus': time.time()}
         # Queue for messages sent to the backend. Multiple processes might use it, but only the backend should read it.
         self._queue_to_backend = multiprocessing.Queue()
         # Queue for the frontend. Only the backend process should write it, and only the frontend should read it.
@@ -190,15 +192,15 @@ class Device(GObject.GObject):
         # names, and the values are integers: how many times the refresh has been requested.
         self._refresh_requested = {}
         # How many times the background thread has been started up.
-        self._background_startup_count=0
+        self._background_startup_count = 0
         # This is True when a connection to the device has been established AND the device has been initialized AND the
         # values of all parameters have been obtained.
-        self._ready=False
+        self._ready = False
         # the backend process must be started only after the connection to the device
         # has been established.
-        self._loglevel=logger.level
+        self._loglevel = logger.level
         # last telemetry date
-        self._last_telemetry=0
+        self._last_telemetry = 0
 
     @property
     def name(self):
@@ -212,10 +214,10 @@ class Device(GObject.GObject):
         The common required fields (id, timestamp) are computed automatically.
         Give all the other required fields as keyword arguments.
         """
-        self._msgidcounter+=1
-        msg={'type':msgtype,
-             'id':self._msgidcounter,
-             'timestamp':time.monotonic()}
+        self._msgidcounter += 1
+        msg = {'type': msgtype,
+               'id': self._msgidcounter,
+               'timestamp': time.monotonic()}
         msg.update(kwargs)
         self._queue_to_backend.put(msg)
 
@@ -229,17 +231,17 @@ class Device(GObject.GObject):
         The common required fields (id, timestamp) are computed automatically.
         Give all the other required fields as keyword arguments.
         """
-        self._msgidcounter+=1
-        msg={'type':msgtype,
-             'id':self._msgidcounter,
-             'timestamp':time.monotonic()}
+        self._msgidcounter += 1
+        msg = {'type': msgtype,
+               'id': self._msgidcounter,
+               'timestamp': time.monotonic()}
         msg.update(kwargs)
         self._queue_to_frontend.put(msg)
 
     def send_config(self, configdict):
         """Update the config dictionary in the main process and the backend as well."""
         self.config = configdict
-        self._send_to_backend('config',configdict=configdict)
+        self._send_to_backend('config', configdict=configdict)
 
     def _load_state(self, dictionary):
         """Load the state of this device to a dictionary. You probably need to
@@ -266,23 +268,23 @@ class Device(GObject.GObject):
                 self._queue_to_backend.get_nowait()
             except queue.Empty:
                 break
-        self._ready=False
+        self._ready = False
         self._outstanding_telemetry = False
-        self._properties = {'_status': 'Disconnected','_auxstatus':None}
-        self._timestamps = {'_status': time.time(),'_auxstatus':time.time()}
+        self._properties = {'_status': 'Disconnected', '_auxstatus': None}
+        self._timestamps = {'_status': time.time(), '_auxstatus': time.time()}
         self._refresh_requested = {}
-        self._background_startup_count+=1
+        self._background_startup_count += 1
         self._background_process = multiprocessing.Process(
             target=self._background_worker, daemon=True,
-            name=self.name+'_background', args=(self._background_startup_count,
-                                                self._loglevel))
+            name=self.name + '_background', args=(self._background_startup_count,
+                                                  self._loglevel))
         self._background_process.start()
         self._idle_handler = GLib.idle_add(self._idle_worker)
         logger.debug('Background process for {} has been started'.format(self.name))
 
     def _stop_background_process(self):
         """Stops the background process."""
-        if hasattr(self,'_background_process'):
+        if hasattr(self, '_background_process'):
             self._send_to_backend('exit')
 
     def get_variable(self, name):
@@ -295,7 +297,7 @@ class Device(GObject.GObject):
         """Set the value of the variable. In order to ensure that the variable
         has really been updated, connect to 'variable-change' before calling
         this."""
-        self._send_to_backend('set',name=name,value=value)
+        self._send_to_backend('set', name=name, value=value)
         self.refresh_variable(name)
 
     def list_variables(self):
@@ -322,7 +324,7 @@ class Device(GObject.GObject):
             occurred
         """
         if (not check_backend_alive) or self.is_background_process_alive():
-            self._send_to_backend('query',name=name, signal_needed=signal_needed)
+            self._send_to_backend('query', name=name, signal_needed=signal_needed)
         else:
             raise DeviceError('Backend process not running.')
 
@@ -340,7 +342,7 @@ class Device(GObject.GObject):
         of the command. Command completion can be signalled by the backend
         via changes in parameters (using 'update' messages)
         """
-        self._send_to_backend('execute',name=command,arguments=args)
+        self._send_to_backend('execute', name=command, arguments=args)
 
     def _suppress_watchdog(self):
         """BACKGROUND_PROCESS:
@@ -365,21 +367,21 @@ class Device(GObject.GObject):
         if (not self._ready) and (self._has_all_variables()):
             # self._logger.debug('Device {} became ready.\n'.format(self.name) + 'Variables:\n\t'+'\n\t'.join([k+' = '+str(self._properties[k]) for k in sorted(self._properties)]))
             self._on_startupdone()
-            self._ready=True
+            self._ready = True
             self._send_to_frontend('ready')
         self._check_watchdog()
-        self._query_variable(None) # query all variables
+        self._query_variable(None)  # query all variables
         self._log()
-        if (time.monotonic()-self._last_telemetry)>self.telemetry_interval:
+        if (time.monotonic() - self._last_telemetry) > self.telemetry_interval:
             tm = self._get_telemetry()
             self._send_to_frontend('telemetry', data=tm)
-            self._last_telemetry=time.monotonic()
+            self._last_telemetry = time.monotonic()
 
     def _on_start_backgroundprocess(self):
         """BACKGROUND_PROCESS:
 
         Called just before the infinite loop of the background process starts."""
-        self._update_variable('_status','Initializing')
+        self._update_variable('_status', 'Initializing')
 
     def _background_worker(self, startup_number, loglevel):
         """Worker function of the background thread. The main job of this is
@@ -403,16 +405,16 @@ class Device(GObject.GObject):
         every time a new message comes. It is responsible to call
         `self._update_variable`.
         """
-        self._ready=False
-        self._last_queryall=0
-        self._lastquerytime=0
-        self._lastsendtime=0
-        self._lastrecvtime=0
-        self._query_requested={} # re-initialize this dict.
-        self._background_startup_count=startup_number
-        self._count_queries=0
-        self._count_inmessages=0
-        self._count_outmessages=0
+        self._ready = False
+        self._last_queryall = 0
+        self._lastquerytime = 0
+        self._lastsendtime = 0
+        self._lastrecvtime = 0
+        self._query_requested = {}  # re-initialize this dict.
+        self._background_startup_count = startup_number
+        self._count_queries = 0
+        self._count_inmessages = 0
+        self._count_outmessages = 0
         self._logger = logging.getLogger(
             __name__ + '::' + self.name + '__backgroundprocess')
         self._logger.propagate = False
@@ -428,8 +430,8 @@ class Device(GObject.GObject):
         self._logger.info(
             'Background thread started for {}, this is startup #{:d}'.format(
                 self.name, self._background_startup_count))
-        self._last_telemetry=0
-        exit_status=False # abnormal termination
+        self._last_telemetry = 0
+        exit_status = False  # abnormal termination
         while True:
             try:
                 try:
@@ -443,15 +445,15 @@ class Device(GObject.GObject):
                     if message['type'] == 'config':
                         self.config = message['configdict']
                     elif message['type'] == 'exit':
-                        exit_status=True # normal termination
+                        exit_status = True  # normal termination
                         break  # the while True loop
                     elif message['type'] == 'query':
                         if message['signal_needed']:
                             try:
-                                self._refresh_requested[message['name']] +=1
+                                self._refresh_requested[message['name']] += 1
                             except KeyError:
                                 self._refresh_requested[message['name']] = 1
-                        self._lastquerytime=time.monotonic()
+                        self._lastquerytime = time.monotonic()
                         self._query_variable(message['name'])
                     elif message['type'] == 'set':
                         # the following command can raise a ReadOnlyVariable exception
@@ -461,15 +463,15 @@ class Device(GObject.GObject):
                     elif message['type'] == 'communication_error':
                         raise message['exception']
                     elif message['type'] == 'incoming':
-                        self._lastrecvtime=message['timestamp']
-                        self._count_inmessages+=1
+                        self._lastrecvtime = message['timestamp']
+                        self._count_inmessages += 1
                         self._process_incoming_message(message=message['message'],
                                                        original_sent=message['sent'])
                     elif message['type'] == 'log':
                         self._queue_to_frontend.put_nowait(message)
                     elif message['type'] == 'send_complete':
                         # sending of a message finished.
-                        self._lastsendtime=message['timestamp']
+                        self._lastsendtime = message['timestamp']
                     else:
                         raise NotImplementedError(
                             'Unknown command for _background_worker: {}'.format(message['type']))
@@ -478,8 +480,8 @@ class Device(GObject.GObject):
             except CommunicationError as ce:
                 self._logger.error(
                     'Communication error for device ' + self.name + ', exiting background process.')
-                self._send_to_frontend('error',variablename=None, exception=ce, traceback=str(sys.exc_info()[2]))
-                exit_status=False # abnormal termination
+                self._send_to_frontend('error', variablename=None, exception=ce, traceback=str(sys.exc_info()[2]))
+                exit_status = False  # abnormal termination
                 break
             except WatchdogTimeout as wt:
                 self._logger.error('Watchdog timeout for device ' + self.name + ', exiting loop.')
@@ -491,8 +493,8 @@ class Device(GObject.GObject):
             except Exception as ex:
                 self._logger.error('Exception in the background process for {}, exiting. {}'.format(
                     self.name, traceback.format_exc()))
-                self._send_to_frontend('error',variablename=None, exception=ex, traceback=str(sys.exc_info()[2]))
-                exit_status=False # abnormal termination
+                self._send_to_frontend('error', variablename=None, exception=ex, traceback=str(sys.exc_info()[2]))
+                exit_status = False  # abnormal termination
                 break
         self._logger.info('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
             self.name, self._count_outmessages, self._count_inmessages))
@@ -507,12 +509,12 @@ class Device(GObject.GObject):
                 'children': resource.getrusage(resource.RUSAGE_CHILDREN),
                 'inqueuelen': self._queue_to_backend.qsize(),
                 'outqueuelen': self._queue_to_frontend.qsize(),
-                'last_queryall':time.monotonic()-self._last_queryall,
-                'last_recv':time.monotonic()-self._lastrecvtime,
-                'last_query':time.monotonic()-self._lastquerytime,
-                'last_send':time.monotonic()-self._lastsendtime,
-                'watchdog':time.monotonic()-self._watchdogtime,
-                'missing_variables':', '.join([v for v in self._all_variables if v not in self._properties])}
+                'last_queryall': time.monotonic() - self._last_queryall,
+                'last_recv': time.monotonic() - self._lastrecvtime,
+                'last_query': time.monotonic() - self._lastquerytime,
+                'last_send': time.monotonic() - self._lastsendtime,
+                'watchdog': time.monotonic() - self._watchdogtime,
+                'missing_variables': ', '.join([v for v in self._all_variables if v not in self._properties])}
 
     def get_telemetry(self):
         """Request telemetry data from the background process."""
@@ -527,7 +529,7 @@ class Device(GObject.GObject):
         """Checks if all the variables have been requested and received at least once.
         The default implementation compares the keys in _properties to those in
         _all_variables."""
-        missing=[k for k in self._all_variables if k not in self._properties]
+        missing = [k for k in self._all_variables if k not in self._properties]
         return not bool(missing)
 
     def _on_startupdone(self):
@@ -543,7 +545,7 @@ class Device(GObject.GObject):
         Check if the connection to the device is alive.
         """
         if ((self._watchdog_alive) and
-                ((time.monotonic()-self._watchdogtime)>self.watchdog_timeout)):
+                ((time.monotonic() - self._watchdogtime) > self.watchdog_timeout)):
             raise WatchdogTimeout
 
     def _pat_watchdog(self):
@@ -553,9 +555,9 @@ class Device(GObject.GObject):
         a communication error will be assumed and the connection to the device
         will be torn down and rebuilt.
         """
-        self._watchdogtime=time.monotonic()
+        self._watchdogtime = time.monotonic()
 
-    def _update_variable(self, varname:str, value:object, force:bool=False) -> bool:
+    def _update_variable(self, varname: str, value: object, force: bool = False) -> bool:
         """BACKGROUND_PROCESS:
 
         Check if the new value (`value`) of the variable `varname` is different
@@ -586,7 +588,7 @@ class Device(GObject.GObject):
         except (AssertionError, KeyError):
             #            self._logger.debug('Setting {} for {} to {}'.format(varname, self.name, value))
             self._properties[varname] = value
-            self._send_to_frontend('update',name=varname,value=value)
+            self._send_to_frontend('update', name=varname, value=value)
             return True
         finally:
             # set the timestamp
@@ -602,7 +604,7 @@ class Device(GObject.GObject):
         with open(self.logfile, 'a+', encoding='utf-8') as f:
             try:
                 f.write('{:.3f}'.format(time.time()) + '\t' +
-                    self.log_formatstr.format(**self._properties) + '\n')
+                        self.log_formatstr.format(**self._properties) + '\n')
             except KeyError as ke:
                 if self._ready:
                     self._logger.warn('KeyError while producing log line for {}: {}'.format(
@@ -616,7 +618,7 @@ class Device(GObject.GObject):
         while True:
             try:
                 message = self._queue_to_frontend.get_nowait()
-                if (message['type']=='exited'):
+                if (message['type'] == 'exited'):
                     if not message['normaltermination']:
                         # backend process died abnormally
                         logger.error(
@@ -629,10 +631,10 @@ class Device(GObject.GObject):
                     del self._background_process
                     logger.debug('Calling disconnect_device() for ' + self.name)
                     self.disconnect_device(
-                        because_of_failure = not message['normaltermination'])
+                        because_of_failure=not message['normaltermination'])
 
-                    return False # prevent re-scheduling this idle handler
-                elif (message['type']== 'ready'):
+                    return False  # prevent re-scheduling this idle handler
+                elif (message['type'] == 'ready'):
                     self.emit('startupdone')
                 elif (message['type'] == 'telemetry'):
                     self.emit('telemetry', message['data'])
@@ -653,12 +655,12 @@ class Device(GObject.GObject):
                 break
         return True  # this is an idle function, we want to be called again.
 
-    def do_error(self, propertyname:str, exception:Exception, tb) -> bool:
+    def do_error(self, propertyname: str, exception: Exception, tb) -> bool:
         logger.error(
             'Device error. Variable name: {}. Exception: {}. Traceback: {}'.format(propertyname, str(exception), tb))
 
     def do_startupdone(self) -> bool:
-        self._ready=True
+        self._ready = True
         logger.info('Device ' + self.name + ' is ready.')
         return False
 
@@ -666,7 +668,7 @@ class Device(GObject.GObject):
     def ready(self) -> bool:
         return self._ready
 
-    def do_disconnect(self, because_of_failure:bool):
+    def do_disconnect(self, because_of_failure: bool):
         logger.warning('Disconnecting from device {}. Failure flag: {}'.format(
             self.name, because_of_failure))
         if self._properties['_status'] != 'Disconnected':
@@ -711,10 +713,10 @@ class Device(GObject.GObject):
         returned to disconnected. If the exception happens in 4), 
         _finalize_after_disconnect() has to be called.
         """
-        #logger.debug('Connecting to device '+self.name)
+        # logger.debug('Connecting to device '+self.name)
         if self._get_connected():
             raise DeviceError('Already connected')
-        self._connection_parameters=args
+        self._connection_parameters = args
         # We don't supply arguments directly to the next function, it takes
         # them from `self._connection_parameters`
         self._establish_connection()
@@ -759,7 +761,7 @@ class Device(GObject.GObject):
         """
         raise NotImplementedError
 
-    def disconnect_device(self, because_of_failure:bool=False):
+    def disconnect_device(self, because_of_failure: bool = False):
         """Disconnect from the device. This consists of the following steps:
         1) ensure that the environment is sane: the connection is established
         2) stop (and wait for) the background process
@@ -850,25 +852,25 @@ class Device(GObject.GObject):
         """
         if variablename is None:
             # query all variables
-            if (time.monotonic()-self._last_queryall)<self.backend_interval:
+            if (time.monotonic() - self._last_queryall) < self.backend_interval:
                 return False
-            self._last_queryall=time.monotonic()
+            self._last_queryall = time.monotonic()
             if minimum_query_variables is None:
-                minimum_query_variables=self._minimum_query_variables
+                minimum_query_variables = self._minimum_query_variables
             for vn in minimum_query_variables:
                 self._query_variable(vn)
-                #self._logger.debug('Queried variable {} for {}'.format(vn,self.name))
+                # self._logger.debug('Queried variable {} for {}'.format(vn,self.name))
             return False
         try:
-            if (self._query_requested[variablename]-time.monotonic())<self._query_timeout:
+            if (self._query_requested[variablename] - time.monotonic()) < self._query_timeout:
                 return False
             raise KeyError(variablename)
         except KeyError as ke:
-            self._query_requested[variablename]=time.monotonic()
-            self._lastquerytime=time.monotonic()
+            self._query_requested[variablename] = time.monotonic()
+            self._lastquerytime = time.monotonic()
             return True
 
-    def _set_variable(self, variable:str, value:object):
+    def _set_variable(self, variable: str, value: object):
         """BACKGROUND_PROCESS:
 
         Does the actual job of setting a device variable by contacting
@@ -889,7 +891,7 @@ class Device(GObject.GObject):
         """
         raise NotImplementedError
 
-    def _execute_command(self, commandname:str, arguments:tuple):
+    def _execute_command(self, commandname: str, arguments: tuple):
         """BACKGROUND_PROCESS:
 
         Does the actual job of executing the command by contacting the
@@ -898,7 +900,7 @@ class Device(GObject.GObject):
         """
         raise NotImplementedError
 
-    def _process_incoming_message(self, message:bytes, original_sent:bytes=None):
+    def _process_incoming_message(self, message: bytes, original_sent: bytes = None):
         """BACKGROUND_PROCESS:
 
         This is run if a message arrives from the device. Must call
@@ -915,5 +917,3 @@ class Device(GObject.GObject):
 
     def get_all_variables(self):
         return self._properties.copy()
-
-

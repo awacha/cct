@@ -88,7 +88,7 @@ class Transmission(Script):
             instrument.exposureanalyzer.connect('transmdata', self.on_transmdata),
         ]
         self._intensities = {}
-        self._instrument=instrument
+        self._instrument = instrument
         self._cannot_return_yet = True
         self._nsamples = len(samplenames)
         self.emit('message', 'Starting transmission measurement of {:d} sample(s).'.format(self._nsamples))

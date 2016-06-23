@@ -42,7 +42,7 @@ class WaitVacuum(Command):
 
     def _pulsemessage(self):
         return 'Waiting for vacuum to get below {:.3f} mbar. Currently: {:.3f} mbar'.format(
-        self._limit, self._device.get_variable('pressure'))
+            self._limit, self._device.get_variable('pressure'))
 
     def on_error(self, device, propname, exc, tb):
         self.emit('fail', exc, tb)

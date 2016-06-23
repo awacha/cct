@@ -6,8 +6,9 @@ from pyModbusTCP.client import ModbusClient
 from .device import Device
 from .exceptions import DeviceError, CommunicationError
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class Device_ModbusTCP(Device):
     """Device with Modbus over TCP connection.
@@ -37,33 +38,33 @@ class Device_ModbusTCP(Device):
             pass
 
     def _read_integer(self, regno):
-        self._lastsendtime=time.monotonic()
-        self._count_outmessages+=1
+        self._lastsendtime = time.monotonic()
+        self._count_outmessages += 1
         result = self._modbusclient.read_holding_registers(regno, 1)
         if result is None:
             if not self._modbusclient.is_open():
                 raise CommunicationError('Error reading integer from register #{:d}'.format(regno))
-        self._lastrecvtime=time.monotonic()
-        self._count_inmessages+=1
+        self._lastrecvtime = time.monotonic()
+        self._count_inmessages += 1
         return result[0]
 
     def _write_coil(self, coilno, val):
-        self._lastsendtime=time.monotonic()
-        self._count_outmessages+=1
+        self._lastsendtime = time.monotonic()
+        self._count_outmessages += 1
         result = self._modbusclient.write_single_coil(coilno, val)
         if result is None:
             if not self._modbusclient.is_open():
                 raise CommunicationError('Error writing {} to coil #{:d}'.format(val, coilno))
-        self._lastrecvtime=time.monotonic()
+        self._lastrecvtime = time.monotonic()
         self._count_inmessages += 1
 
     def _read_coils(self, coilstart, coilnum):
-        self._lastsendtime=time.monotonic()
-        self._count_outmessages+=1
+        self._lastsendtime = time.monotonic()
+        self._count_outmessages += 1
         result = self._modbusclient.read_coils(coilstart, coilnum)
         if result is None:
             if not self._modbusclient.is_open():
                 raise CommunicationError('Error reading coils #{:d} - #{:d}'.format(coilstart, coilstart + coilnum))
-        self._lastrecvtime=time.monotonic()
+        self._lastrecvtime = time.monotonic()
         self._count_inmessages += 1
         return result
