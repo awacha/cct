@@ -80,8 +80,8 @@ class HaakePhoenix(Device_TCP):
             # unknown command
             lastcommand = original_sent.decode('ascii').replace('\r', '')
             self._logger.debug(
-                'Unknown command reported by circulator. Lastcommand: *%s*' % lastcommand)
-            self._logger.debug('Outqueue size: %d'%self._outqueue.qsize())
+                'Unknown command reported by circulator. Lastcommand: *{}*'.format(lastcommand))
+            self._logger.debug('Outqueue size: {:d}'.format(self._outqueue.qsize()))
             self._send(original_sent)
             self._query_requested.clear()
             return
@@ -95,7 +95,7 @@ class HaakePhoenix(Device_TCP):
         # At this point, all messages should end with b"$\r"
         if not message.endswith(b'$\r'):
             self._query_requested.clear()
-            self._logger.warning('Message does not end with "$\\r": %s'%message)
+            self._logger.warning('Message does not end with "$\\r": {}'.format(message))
             return
         message = message[:-2]
         if original_sent == b'R V1\r':
@@ -121,7 +121,7 @@ class HaakePhoenix(Device_TCP):
             self._update_variable('fuzzystatus', int(message[2:]))
         elif message.startswith(b'T1'):
             if self._update_variable('temperature_internal', float(message[2:])):
-                self._update_variable('_auxstatus','%.2f°C'%float(message[2:]))
+                self._update_variable('_auxstatus', '{:.2f}°C'.format(float(message[2:])))
             try:
                 if not self._properties['control_external']:
                     self._update_variable('temperature',float(message[2:]))
@@ -145,7 +145,7 @@ class HaakePhoenix(Device_TCP):
                 self._update_variable('control_on', bool(int(message)))
             else:
                 self._query_requested.clear()
-                self._logger.debug('Invalid message for control_on: %s' % message.decode('utf-8'))
+                self._logger.debug('Invalid message for control_on: ' + message.decode('utf-8'))
                 raise NotImplementedError((original_sent, message))
         elif original_sent == b'IN MODE 2\r':
             if len(message) == 1:
@@ -162,7 +162,7 @@ class HaakePhoenix(Device_TCP):
                     except KeyError:
                         pass
             else:
-                self._logger.debug('Invalid message for control_external: %s' % message.decode('utf-8'))
+                self._logger.debug('Invalid message for control_external: ' + message.decode('utf-8'))
                 self._query_requested.clear()
                 raise NotImplementedError((original_sent, message))
         elif message.startswith(b'FR'):
@@ -206,10 +206,10 @@ class HaakePhoenix(Device_TCP):
             elif original_sent==b'W TS 0\r':
                 self._update_variable('_status', 'stopped', force=True)
             self._logger.debug(
-                'Confirmation for message %s received.' % original_sent.decode('utf-8').replace('\r', ''))
+                'Confirmation for message {} received.'.format(original_sent.decode('utf-8').replace('\r', '')))
         else:
             self._query_requested.clear()
-            self._logger.debug('Unknown message: %s' % message.decode('utf-8').replace('\r', ''))
+            self._logger.debug('Unknown message: ' + message.decode('utf-8').replace('\r', ''))
             self._send(original_sent)
 
     def _query_variable(self, variablename, minimum_query_variables=None):
@@ -272,44 +272,44 @@ class HaakePhoenix(Device_TCP):
             raise UnknownVariable(variablename)
 
     def _set_variable(self, variable, value):
-        self._logger.debug('Setting circulator variable from process %s' % multiprocessing.current_process().name)
+        self._logger.debug('Setting circulator variable from process ' + multiprocessing.current_process().name)
         try:
             if variable == 'setpoint':
-                self._logger.debug('Setting setpoint to %f'%value)
-                self._send(b'W SW %.2f\r' % value)
+                self._logger.debug('Setting setpoint to {:f}'.format(value))
+                self._send('W SW {:.2f}\r'.format(value).encode('ascii'))
                 self._logger.debug('Setpoint setting message queued.')
             elif variable == 'highlimit':
-                self._send(b'W HL %.2f\r' % value)
+                self._send('W HL {:.2f}\r'.format(value).encode('ascii'))
             elif variable == 'lowlimit':
-                self._send(b'W LL %.2f\r' % value)
+                self._send('W LL {:.2f}\r'.format(value).encode('ascii'))
             elif variable == 'highlimit':
-                self._send(b'W HL %.2f\r' % value)
+                self._send('W HL {:.2f}\r'.format(value).encode('ascii'))
             elif variable == 'control_external':
-                self._send(b'OUT MODE 2 %d\r' % bool(value))
+                self._send('OUT MODE 2 {:d}\r'.format(bool(value)).encode('ascii'))
             elif variable == 'diffcontrol_on':
-                self._send(b'W FR %d\r' % bool(value))
+                self._send('W FR {:d}\r'.format(bool(value)).encode('ascii'))
             elif variable == 'autostart':
-                self._send(b'W ZA %d\r' % bool(value))
+                self._send('W ZA {:d}\r'.format(bool(value)).encode('ascii'))
             elif variable == 'fuzzyid':
-                self._send(b'W ZI %d\r' % bool(value))
+                self._send('W ZI {:d}\r'.format(bool(value)).encode('ascii'))
             elif variable == 'beep':
-                self._send(b'W ZB %d\r' % bool(value))
+                self._send('W ZB {:d}\r'.format(bool(value)).encode('ascii'))
             elif variable == 'date':
                 assert (isinstance(value, datetime.date))
-                self._send(b'W XD %02d.%02d.%02d\r' % (value.day, value.month, value.year % 100))
+                self._send('W XD {0.day:02d}.{0.month:02d}.{1:02d}\r'.format(value, value.year % 100).encode('ascii'))
             elif variable == 'time':
                 assert (isinstance(value, datetime.time))
-                self._send(b'W XT %02d:%02d:%02d\r' % (value.hour, value.minute, value.second))
+                self._send('W XT {0.hour:02d}:{0.minute:02d}:{0.second:02d}\r'.format(value).encode('ascii'))
             elif variable == 'watchdog_on':
-                self._send(b'W WD %d\r' % bool(value))
+                self._send('W WD {:d}\r'.format(bool(value)).encode('ascii'))
             elif variable == 'watchdog_setpoint':
-                self._send(b'W WS %6.2f\r' % value)
+                self._send('W WS {:6.2}f\r'.format(value).encode('ascii'))
             elif variable == 'cooling_on':
-                self._send(b'W CC %d\r' % bool(value))
+                self._send('W CC {:d}\r'.format(bool(value)).encode('ascii'))
             elif variable == 'pump_power':
                 assert (value >= 5)
                 assert (value <= 100)
-                self._send(b'W PF %5.2f\r' % value)
+                self._send('W PF {:5.2f}\r'.format(value).encode('ascii'))
             elif variable in self.allvariables:
                 raise ReadOnlyVariable(variable)
             else:

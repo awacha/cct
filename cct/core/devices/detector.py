@@ -280,11 +280,11 @@ class Pilatus(Device_TCP):
                 raise CommunicationError(
                     'We could only connect to Pilatus in read-only mode')
             else:
-                raise DeviceError('Unknown message received from Pilatus: %s' % origmessage)
+                raise DeviceError('Unknown message received from Pilatus: ' + origmessage.decode('utf-8'))
         elif idnum == 2:
             m = RE_CAMSETUP.match(message)
             if m is None:
-                raise DeviceError('Invalid camsetup message from Pilatus: %s' % origmessage)
+                raise DeviceError('Invalid camsetup message from Pilatus: ' + origmessage.decode('utf-8'))
             gd = m.groupdict()
             for k in ['controllingPID', 'masterPID']:
                 gd[k] = int(gd[k])
@@ -297,7 +297,7 @@ class Pilatus(Device_TCP):
         elif idnum == 5:
             m = RE_DISKFREE.match(message)
             if m is None:
-                raise DeviceError('Invalid diskfree message from Pilatus: %s' % origmessage)
+                raise DeviceError('Invalid diskfree message from Pilatus: ' + origmessage.decode('utf-8'))
             self._update_variable('diskfree', int(m.group('diskfree')))
         elif idnum == 7:
             # end of exposure
@@ -305,13 +305,13 @@ class Pilatus(Device_TCP):
         elif idnum == 10:
             m = RE_IMGPATH.match(message)
             if m is None:
-                raise DeviceError('Invalid imgpath message from Pilatus: %s' % origmessage)
+                raise DeviceError('Invalid imgpath message from Pilatus: ' + origmessage.decode('utf-8'))
             self._update_variable('imgpath', m.group('imgpath').decode('utf-8'))
         elif idnum == 13:
             # killed
             m = RE_KILL.match(message)
             if m is None:
-                raise DeviceError('Unknown kill message from Pilatus: %s' % origmessage)
+                raise DeviceError('Unknown kill message from Pilatus: ' + origmessage.decode('utf-8'))
             self._handle_end_exposure(status == b'OK', b'')
         elif idnum == 15:
             m = RE_EXPTIME.match(message)
@@ -367,17 +367,17 @@ class Pilatus(Device_TCP):
                 # empty message
                 return
             if status == b'ERR':
-                raise DeviceError('Pilatus error: %s' % (message.decode('ascii')))
-            raise DeviceError('Unknown message from Pilatus with idnum==15: %s' % origmessage)
+                raise DeviceError('Pilatus error: ' + message.decode('utf-8'))
+            raise DeviceError('Unknown message from Pilatus with idnum==15: ' + origmessage.decode('utf-8'))
         elif idnum == 16:
             m = RE_PID.match(message)
             if m is None:
-                raise DeviceError('Unknown ShowPID message from Pilatus: %s' % origmessage)
+                raise DeviceError('Unknown ShowPID message from Pilatus: ' + origmessage.decode('utf-8'))
             self._update_variable('pid', int(m.group('pid')))
         elif idnum == 18:  # telemetry
             m = RE_TELEMETRY.match(message)
             if m is None:
-                raise DeviceError('Invalid telemetry message received: %s' % message)
+                raise DeviceError('Invalid telemetry message received: ' + message.decode('utf-8'))
             gd = m.groupdict()
             self._update_variable('wpix', int(gd['wpix']))
             self._update_variable('hpix', int(gd['hpix']))
@@ -394,29 +394,28 @@ class Pilatus(Device_TCP):
         elif idnum == 24:
             m = RE_VERSION.match(message)
             if m is None:
-                raise DeviceError('Invalid version message received from Pilatus: %s' % origmessage)
+                raise DeviceError('Invalid version message received from Pilatus: ' + origmessage.decode('utf-8'))
             self._update_variable('version', m.group('version').decode('utf-8'))
         elif idnum == 215:
             m = RE_THREAD.match(message)
             if m is None:
-                raise DeviceError('Invalid THread message received from Pilatus: %s' % origmessage)
+                raise DeviceError('Invalid THread message received from Pilatus: ' + origmessage.decode('utf-8'))
             gd = m.groupdict()
             for k in gd:
                 self._update_variable(k, float(gd[k]))
         else:
             raise DeviceError(
-                'Unknown command ID in message from Pilatus: %s' % origmessage)
+                'Unknown command ID in message from Pilatus: ' + origmessage.decode('utf-8'))
 
     def _execute_command(self, commandname: str, arguments: tuple) -> None:
-        self._logger.debug('Executing command: %s(%s)' %
-                           (commandname, repr(arguments)))
+        self._logger.debug('Executing command: {}({})'.format(commandname, repr(arguments)))
         if commandname == 'setthreshold':
             #            if self.is_busy():
             #                raise DeviceError('Cannot trim when not idle')
             self._update_variable('_status', 'trimming')
             self._suppress_watchdog()
-            self._send(b'SetThreshold %s %f\n' % (arguments[1], arguments[0]), expected_replies=None)
-            logger.debug('Setting threshold to %f (gain %s)' % (arguments[0], arguments[1]))
+            self._send(b'SetThreshold {0[1]} {0[0]:f}\n'.format(arguments), expected_replies=None)
+            logger.debug('Setting threshold to {0[0]:f} (gain {0[1]})'.format(arguments))
         elif commandname == 'expose':
             #            if self.is_busy():
             #                raise DeviceError('Cannot start exposure when not idle')
@@ -452,23 +451,23 @@ class Pilatus(Device_TCP):
     def _set_variable(self, variable: str, value: object):
         if variable == 'expperiod':
             if value < 1e-7:
-                raise InvalidValue('Illegal exposure period: %f' % value)
-            self._send(b'expperiod %f\n' % value, expected_replies=None)
+                raise InvalidValue('Illegal exposure period: {:f}'.format(value))
+            self._send('expperiod {:f}\n'.format(value).encode('ascii'), expected_replies=None)
         elif variable == 'nimages':
             if value < 1:
-                raise InvalidValue('Illegal nimages: %d' % value)
-            self._send(b'nimages %d\n' % value, expected_replies=None)
+                raise InvalidValue('Illegal nimages: {:d}'.format(value))
+            self._send('nimages {:d}\n'.format(value).encode('ascii'), expected_replies=None)
         elif variable == 'tau':
             if value < 0.1e-9 or value > 1000e-9:
-                raise InvalidValue('Illegal tau: %f' % value)
-            self._send(b'tau %f\n' % value, expected_replies=None)
+                raise InvalidValue('Illegal tau: {:f}'.format(value))
+            self._send('tau {:f}\n'.format(value).encode('ascii'), expected_replies=None)
         elif variable == 'imgpath':
             assert (isinstance(value, str))
-            self._send(b'imgpath %s\n' % value.encode('utf-8'), expected_replies=None)
+            self._send('imgpath {}\n'.format(value).encode('utf-8'), expected_replies=None)
         elif variable == 'exptime':
             if value < 1e-7:
-                raise InvalidValue('Illegal exposure time: %f' % value)
-            self._send(b'exptime %f\n' % value, expected_replies=None)
+                raise InvalidValue('Illegal exposure time: {:f}'.format(value))
+            self._send('exptime {:f}\n'.format(value).encode('ascii'), expected_replies=None)
         elif variable in self._all_variables:
             raise ReadOnlyVariable(variable)
         else:
@@ -481,7 +480,7 @@ class Pilatus(Device_TCP):
             raise DeviceError('Cannot start trimming when not idle.')
         self.execute_command(
             'setthreshold', thresholdvalue, gain.encode('ascii'))
-        logger.debug('Setting threshold to %f (gain %s)' % (thresholdvalue, gain))
+        logger.debug('Setting threshold to {:f} (gain {})'.format(thresholdvalue, gain))
 
     def expose(self, filename: str):
         if not self._busysemaphore.acquire(False):

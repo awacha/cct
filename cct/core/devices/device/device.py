@@ -278,7 +278,7 @@ class Device(GObject.GObject):
                                                 self._loglevel))
         self._background_process.start()
         self._idle_handler = GLib.idle_add(self._idle_worker)
-        logger.debug('Background process for %s has been started' %self.name)
+        logger.debug('Background process for {} has been started'.format(self.name))
 
     def _stop_background_process(self):
         """Stops the background process."""
@@ -363,7 +363,7 @@ class Device(GObject.GObject):
         Do housekeeping tasks when the input queue is empty.
         """
         if (not self._ready) and (self._has_all_variables()):
-            #self._logger.debug('Device %s became ready.\n'%self.name + 'Variables:\n\t'+'\n\t'.join([k+' = '+str(self._properties[k]) for k in sorted(self._properties)]))
+            # self._logger.debug('Device {} became ready.\n'.format(self.name) + 'Variables:\n\t'+'\n\t'.join([k+' = '+str(self._properties[k]) for k in sorted(self._properties)]))
             self._on_startupdone()
             self._ready=True
             self._send_to_frontend('ready')
@@ -426,7 +426,7 @@ class Device(GObject.GObject):
         self._pat_watchdog()
         self._release_watchdog()
         self._logger.info(
-            'Background thread started for %s, this is startup #%d'%(
+            'Background thread started for {}, this is startup #{:d}'.format(
                 self.name, self._background_startup_count))
         self._last_telemetry=0
         exit_status=False # abnormal termination
@@ -472,32 +472,30 @@ class Device(GObject.GObject):
                         self._lastsendtime=message['timestamp']
                     else:
                         raise NotImplementedError(
-                            'Unknown command for _background_worker: %s' % message['type'])
+                            'Unknown command for _background_worker: {}'.format(message['type']))
                 # call the housekeeping tasks
                 self._on_background_queue_empty()
             except CommunicationError as ce:
                 self._logger.error(
-                    'Communication error for device %s, exiting background process.'%(
-                        self.name))
+                    'Communication error for device ' + self.name + ', exiting background process.')
                 self._send_to_frontend('error',variablename=None, exception=ce, traceback=str(sys.exc_info()[2]))
                 exit_status=False # abnormal termination
                 break
             except WatchdogTimeout as wt:
-                self._logger.error('Watchdog timeout for device %s, exiting loop.'%
-                                   self.name)
+                self._logger.error('Watchdog timeout for device ' + self.name + ', exiting loop.')
                 break
             except DeviceError as de:
-                self._logger.error('DeviceError in the background process for %s: %s'%(
+                self._logger.error('DeviceError in the background process for {}: {}'.format(
                     self.name, traceback.format_exc()))
                 self._send_to_frontend('error', variablename=None, exception=de, traceback=str(sys.exc_info()[2]))
             except Exception as ex:
-                self._logger.error('Exception in the background process for %s, exiting. %s'%(
+                self._logger.error('Exception in the background process for {}, exiting. {}'.format(
                     self.name, traceback.format_exc()))
                 self._send_to_frontend('error',variablename=None, exception=ex, traceback=str(sys.exc_info()[2]))
                 exit_status=False # abnormal termination
                 break
-        self._logger.info('Background process ending for %s. Messages sent: %d.\
-Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmessages))
+        self._logger.info('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
+            self.name, self._count_outmessages, self._count_inmessages))
         self._send_to_frontend('exited', normaltermination=exit_status)
 
     def _get_telemetry(self):
@@ -578,7 +576,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         except KeyError:
             pass
         try:
-            assert(self._properties[varname] == value) # can raise AssertionError and KeyError
+            assert (self._properties[varname] == value)  # can raie AssertionError and KeyError
             if force:
                 raise KeyError
             if varname in self._refresh_requested and self._refresh_requested[varname] > 0:
@@ -586,7 +584,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
                 raise AssertionError
             return False
         except (AssertionError, KeyError):
-#            self._logger.debug('Setting %s for %s to %s' % (varname, self.name, value))
+            #            self._logger.debug('Setting {} for {} to {}'.format(varname, self.name, value))
             self._properties[varname] = value
             self._send_to_frontend('update',name=varname,value=value)
             return True
@@ -603,12 +601,11 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
             return
         with open(self.logfile, 'a+', encoding='utf-8') as f:
             try:
-                f.write(
-                    ('%.3f\t' % time.time()) +
+                f.write('{:.3f}'.format(time.time()) + '\t' +
                     self.log_formatstr.format(**self._properties) + '\n')
             except KeyError as ke:
                 if self._ready:
-                    self._logger.warn('KeyError while producing log line for %s: %s' % (
+                    self._logger.warn('KeyError while producing log line for {}: {}'.format(
                         self.name, ke.args[0]))
 
     def _idle_worker(self) -> bool:
@@ -623,14 +620,14 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
                     if not message['normaltermination']:
                         # backend process died abnormally
                         logger.error(
-                            'Communication error in device %s, disconnecting.' % self.name)
+                            'Communication error in device ' + self.name + ', disconnecting.')
                         # disconnect from the device, attempt to reconnect to it.
-                    logger.debug('Calling disconnect_device on %s'%self.name)
+                    logger.debug('Calling disconnect_device on ' + self.name)
                     del self._idle_handler
-                    logger.debug('Joining background process for %s'%self.name)
+                    logger.debug('Joining background process for ' + self.name)
                     self._background_process.join()
                     del self._background_process
-                    logger.debug('Calling disconnect_device() for %s'%self.name)
+                    logger.debug('Calling disconnect_device() for ' + self.name)
                     self.disconnect_device(
                         because_of_failure = not message['normaltermination'])
 
@@ -658,11 +655,11 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
 
     def do_error(self, propertyname:str, exception:Exception, tb) -> bool:
         logger.error(
-            'Device error. Variable name: %s. Exception: %s. Traceback: %s' % (propertyname, str(exception), tb))
+            'Device error. Variable name: {}. Exception: {}. Traceback: {}'.format(propertyname, str(exception), tb))
 
     def do_startupdone(self) -> bool:
         self._ready=True
-        logger.info('Device %s is ready.' % self.name)
+        logger.info('Device ' + self.name + ' is ready.')
         return False
 
     @property
@@ -670,7 +667,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         return self._ready
 
     def do_disconnect(self, because_of_failure:bool):
-        logger.warning('Disconnecting from device %s. Failure flag: %s' % (
+        logger.warning('Disconnecting from device {}. Failure flag: {}'.format(
             self.name, because_of_failure))
         if self._properties['_status'] != 'Disconnected':
             self._properties['_status'] = 'Disconnected'
@@ -714,7 +711,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         returned to disconnected. If the exception happens in 4), 
         _finalize_after_disconnect() has to be called.
         """
-        #logger.debug('Connecting to device %s'%self.name)
+        #logger.debug('Connecting to device '+self.name)
         if self._get_connected():
             raise DeviceError('Already connected')
         self._connection_parameters=args
@@ -732,7 +729,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
             self._stop_background_process()
             self._breakdown_connection()
             raise
-        logger.info('Connected to device %s'%self.name)
+        logger.info('Connected to device ' + self.name)
         return
 
     def _establish_connection(self):
@@ -774,8 +771,8 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
         failure or because of the remote end. In this case this function is
         called on a queue message from the backend.
         """
-        logger.debug('Disconnecting from device%s' %
-                           (['', ' because of a failure'][because_of_failure]))
+        logger.debug('Disconnecting from device' +
+                     ['', ' because of a failure'][because_of_failure])
         try:
             self._stop_background_process()
             logger.debug('Stopped background process')
@@ -860,7 +857,7 @@ Messages received: %d.' % (self.name, self._count_outmessages, self._count_inmes
                 minimum_query_variables=self._minimum_query_variables
             for vn in minimum_query_variables:
                 self._query_variable(vn)
-                #self._logger.debug('Queried variable %s for %s'%(vn,self.name))
+                #self._logger.debug('Queried variable {} for {}'.format(vn,self.name))
             return False
         try:
             if (self._query_requested[variablename]-time.monotonic())<self._query_timeout:

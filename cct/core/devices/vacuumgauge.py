@@ -50,11 +50,11 @@ class TPG201(Device_TCP):
         # the sending process can commence sending the next message.
         self._cleartosend_semaphore.release()
         if not (message.startswith(b'001') and message.endswith(b'\r')):
-            raise DeviceError('Invalid message: %s' % str(message))
+            raise DeviceError('Invalid message: ' + str(message))
         message = message[:-1]
         if not (sum(message[0:-1]) % 64 + 64 == message[-1]):
             # checksum error
-            raise DeviceError('Checksum error on message %s' % str(message))
+            raise DeviceError('Checksum error on message ' + str(message))
         if message[3] == 77:
             # The 4th character of the message is an M. Note that message[3]
             # has a type of int, thus it cannot be equal to b'M'.
@@ -66,11 +66,11 @@ class TPG201(Device_TCP):
                     self._update_variable('_status', 'Medium vacuum')
                 else:
                     self._update_variable('_status', 'Vacuum OK')
-                self._update_variable('_auxstatus', '%.2f mbar'%pressure)
+                self._update_variable('_auxstatus', '{:.2f} mbar'.format(pressure))
         elif message[3] == 84:  # T
             self._update_variable('version', str(message[4:10]))
         elif message[3] == 85:  # U
             self._update_variable('units', str(message[4:10]))
         else:
             raise DeviceError(
-                'Unknown message code %s in message %s' % (chr(message[3]), str(message)))
+                'Unknown message code {} in message {}'.format(chr(message[3]), str(message)))

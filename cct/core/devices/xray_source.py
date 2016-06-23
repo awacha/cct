@@ -42,8 +42,8 @@ class GeniX(Device_ModbusTCP):
                 try:
                     power = self._properties['ht']* self._properties['current']
                     self._update_variable('power',power)
-                    self._update_variable('_auxstatus', '%.2f kV %.2f mA'%(
-                        self._properties['ht'],self._properties['current']))
+                    self._update_variable('_auxstatus', '{0[ht]:.2f} kV {0[current]:.2f} mA'.format(
+                        self._properties))
                 except KeyError:
                     pass
         elif variablename=='current':
@@ -52,8 +52,8 @@ class GeniX(Device_ModbusTCP):
                 try:
                     power = self._properties['ht'] * self._properties['current']
                     self._update_variable('power', power)
-                    self._update_variable('_auxstatus', '%.2f kV %.2f mA' % (
-                        self._properties['ht'], self._properties['current']))
+                    self._update_variable('_auxstatus', '{0[ht]:.2f} kV 0[current]:.2f} mA'.format(
+                        self._properties))
                 except KeyError:
                     pass
         elif variablename == 'tubetime':

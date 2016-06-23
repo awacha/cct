@@ -47,6 +47,10 @@ class TCPCommunicator(multiprocessing.Process):
         msg.update(kwargs)
         self._incomingqueue.put_nowait(msg)
 
+    @property
+    def name(self):
+        return self._instancename
+
     def _send_message_to_device(self):
         if not self._cleartosend_semaphore.acquire(block=False):
             # Do not send a message to the device if we are not allowed to.
@@ -57,8 +61,6 @@ class TCPCommunicator(multiprocessing.Process):
             command, outmsg, expected_replies = self._sendqueue.get_nowait()
             if command == 'send':
                 sent = 0
-#                if self._instancename=='haakephoenix':
-#                    self._logger.debug('Sending %s to haakephoenix'%outmsg)
                 time.sleep(self._waitbeforesend)
                 while sent < len(outmsg):
                     sent += self._tcpsocket.send(outmsg[sent:])
@@ -97,7 +99,7 @@ class TCPCommunicator(multiprocessing.Process):
             if (event & (select.POLLERR | select.POLLHUP | select.POLLNVAL)):
                 # fatal socket error, we have to close communications.
                 raise CommunicationError(
-                    'Socket is in exceptional state: %d' % event)
+                    'Socket is in exceptional state: {:d}'.format(event))
                 # end watching the socket.
             # read the incoming message
             message = message + self._tcpsocket.recv(4096)
@@ -146,12 +148,12 @@ class TCPCommunicator(multiprocessing.Process):
                             self._reply_timeout):
                     raise CommunicationError('Reply timeout')
         except Exception as exc:
-            self._logger.debug('Sending communication error to backend process of %s'%self._instancename)
+            self._logger.debug('Sending communication error to backend process of ' + self.name)
             self._send_to_backend('communication_error', exception=exc, traceback=str(sys.exc_info()[2]))
 
         finally:
             polling.unregister(self._tcpsocket)
-            self._logger.debug('Exiting TCP backend for %s'%self._instancename)
+            self._logger.debug('Exiting TCP backend for ' + self.name)
 
 
 class Device_TCP(Device):
@@ -224,7 +226,7 @@ class Device_TCP(Device):
 
     def _establish_connection(self):
         host, port, socket_timeout, poll_timeout = self._connection_parameters
-        #logger.debug('Connecting over TCP/IP to device %s: %s:%d' % (self.name, host, port))
+        # logger.debug('Connecting over TCP/IP to device {}: {}:{:d}'.format(self.name, host, port))
         try:
             self._tcpsocket = socket.create_connection(
                 (host, port), socket_timeout)
@@ -232,7 +234,7 @@ class Device_TCP(Device):
             self._poll_timeout = poll_timeout
         except (socket.error, socket.gaierror, socket.herror, ConnectionRefusedError) as exc:
             logger.error(
-                'Error initializing socket connection to device %s:%d' % (host, port))
+                'Error initializing socket connection to device {}:{:d}'.format(host, port))
             try:
                 del self._tcpsocket
             except AttributeError:
@@ -249,7 +251,7 @@ class Device_TCP(Device):
         self._communication_subprocess.daemon=True
         self._communication_subprocess.start()
         #logger.debug(
-        #    'Communication subprocess started for device %s:%d' % (host, port))
+        #    'Communication subprocess started for device {}:{:d}'.format(host, port))
 
     def _breakdown_connection(self):
         logger.debug('Sending kill pill to TCP worker of '+self.name)
@@ -283,7 +285,7 @@ class Device_TCP(Device):
 
         If the number of expected replies is not one, also give it.
         """
-        # self._logger.debug('Sending message %s' % str(message))
+        # self._logger.debug('Sending message '+ str(message))
         self._outqueue.put_nowait(('send', message, expected_replies))
         self._count_outmessages+=1
 
