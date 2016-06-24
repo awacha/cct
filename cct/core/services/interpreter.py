@@ -99,13 +99,13 @@ class Interpreter(Service):
                 # split the argument string at commas. Beware that arguments can be valid
                 # Python expressions, thus may contain commas in various kinds of
                 # parentheses, brackets, curly brackets, strings etc. Skip these.
-                logger.debug('Trying to split argumentstring *%s*' % argumentstring)
+                logger.debug('Trying to split argumentstring *{}*'.format(argumentstring))
                 arguments = []
                 currentargument = ''
                 openparens = {'(': 0, '[': 0, '{': 0, '"': 0, "'": 0}
                 for i in range(len(argumentstring)):
                     if argumentstring[i] == ',' and all([x == 0 for x in openparens.values()]):
-                        logger.debug('Separating comma at index %d' % i)
+                        logger.debug('Separating comma at index ' + str(i))
                         arguments.append(currentargument)
                         currentargument = ''
                     else:
@@ -128,7 +128,7 @@ class Interpreter(Service):
                         elif c == "'":
                             openparens["'"] = 1 - openparens["'"]
                         elif c == ',':
-                            logger.debug('Comma in parenthesized region at index %d' % i)
+                            logger.debug('Comma in parenthesized region at index ' + str(i))
                 if currentargument:
                     arguments.append(currentargument)
                 arguments = [eval(a, self.command_namespace_globals,
@@ -167,7 +167,7 @@ class Interpreter(Service):
         return hasattr(self, '_command')
 
     def on_command_return(self, command, retval):
-        #        logger.debug("Command %s returned:" % str(command) + str(retval))
+        #        logger.debug("Command {} returned: {}".format(str(command),str(retval)))
         self.command_namespace_locals['_'] = retval
         try:
             for c in self._command_connections[command]:
@@ -199,7 +199,7 @@ class Interpreter(Service):
 
     def kill(self):
         try:
-            logger.debug('Interpreter: killing currently running command %s' % self._command.name)
+            logger.debug('Interpreter: killing currently running command ' + self._command.name)
             self._command.kill()
         except AttributeError:
             pass
@@ -226,7 +226,7 @@ class Interpreter(Service):
             else:
                 if flagname in self._flags:
                     self._flags = [f for f in self._flags if f != flagname]
-                    logger.debug('Clearing flag %s' % flagname)
+                    logger.debug('Clearing flag {}'.format(flagname))
                     self.emit('flag', flagname, False)
 
     def is_flag(self, flagname):
@@ -249,7 +249,7 @@ def get_parentheses_pairs(cmdline, opening_types='([{'):
         elif cmdline[i] in closing_types:
             if parens[openparens[-1]][0] != pair[cmdline[i]]:
                 raise ValueError(
-                    'Mismatched parentheses at position %d' % i, i)
+                    'Mismatched parentheses at position {:d}'.format(i), i)
             parens[
                 openparens[-1]] = (parens[openparens[-1]][0], parens[openparens[-1]][1], i)
             del openparens[-1]

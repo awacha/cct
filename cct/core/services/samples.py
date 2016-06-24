@@ -103,7 +103,7 @@ class SampleStore(Service):
         if isinstance(sample, Sample):
             sample = sample.title
         if not [s for s in self._list if s.title == sample]:
-            raise KeyError('Unknown sample with title %s' % sample)
+            raise KeyError('Unknown sample with title ' + str(sample))
         self._list = [s for s in self._list if s.title != sample]
         if sample == self._active:
             try:
@@ -126,7 +126,7 @@ class SampleStore(Service):
             self._active = sample
             self.emit('active-changed')
         else:
-            raise SampleStoreError('No sample %s defined.' % sample)
+            raise SampleStoreError('No sample {} defined.'.format(sample))
 
     def get_active(self):
         if self._active is None:

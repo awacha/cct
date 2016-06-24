@@ -55,7 +55,7 @@ class WebStateFileWriter(Service):
                 bg = 'green'
             else:
                 bg = 'red'
-            dhtc += '  <td style="background:%s">' % bg + str(status) + '</td>\n'
+            dhtc += '  <td style="background:{}">'.format(bg) + str(status) + '</td>\n'
         dhtc += '</tr>\n<tr>\n  <th>Verbose status</th>\n'
         for d in sorted(self.instrument.devices):
             status = self.instrument.devices[d].get_variable('_auxstatus')
@@ -67,7 +67,7 @@ class WebStateFileWriter(Service):
                 bg = 'red'
             else:
                 bg = 'green'
-            dhtc += '  <td style="background:%s">%.2f</td>\n' % (bg, lastsend)
+            dhtc += '  <td style="background:{}">{:.2f}</td>\n'.format(bg, lastsend)
         dhtc += '</tr>\n<tr>\n  <th>Last recv time</th>\n'
         for d in sorted(self.instrument.devices):
             lastrecv = self.instrument._telemetries[d]['last_recv']
@@ -75,7 +75,7 @@ class WebStateFileWriter(Service):
                 bg = 'red'
             else:
                 bg = 'green'
-            dhtc += '  <td style="background:%s">%.2f</td>\n' % (bg, lastrecv)
+            dhtc += '  <td style="background:{}">{:.2f}</td>\n'.format(bg, lastrecv)
 
         dhtc += '</tr>\n<tr>\n  <th>Background process restarts</h>\n'
         for d in sorted(self.instrument.devices):
@@ -113,21 +113,21 @@ class WebStateFileWriter(Service):
             mot = self.instrument.motors[m]
             mst += """
             <tr>
-                <td>%s</td>
-                <td><b>%.3f</b></td>
-                <td>%.3f</td>
-                <td>%.3f</td>
-                <td style="background:%s;text-align:center">%s</td>
-                <td style="background:%s;text-align:center">%s</td>
-                <td>%s</td>
+                <td>{}</td>
+                <td><b>{:.3f}</b></td>
+                <td>{:.3f}</td>
+                <td>{:.3f}</td>
+                <td style="background:{};text-align:center">{}</td>
+                <td style="background:{};text-align:center">{}</td>
+                <td>{}</td>
             </tr>
-            """ % (m, mot.where(), mot.get_variable('softleft'),
-                   mot.get_variable('softright'), endswitch_color(mot.leftlimitswitch()),
-                   endswitch_text(mot.leftlimitswitch()), endswitch_color(mot.rightlimitswitch()),
-                   endswitch_text(mot.rightlimitswitch()), ', '.join(mot.decode_error_flags()))
+            """.format(m, mot.where(), mot.get_variable('softleft'),
+                       mot.get_variable('softright'), endswitch_color(mot.leftlimitswitch()),
+                       endswitch_text(mot.leftlimitswitch()), endswitch_color(mot.rightlimitswitch()),
+                       endswitch_text(mot.rightlimitswitch()), ', '.join(mot.decode_error_flags()))
         return mst
 
-    def format_faultvalue(self, name):
+    def format_genix_faultvalue(self, name):
         value = self.instrument.xray_source.get_variable(name + '_fault')
         if value:
             bg = 'red'
@@ -139,48 +139,26 @@ class WebStateFileWriter(Service):
         # make X-ray source status
 
         # noinspection PyStringFormat
+        vars = {'ht': self.instrument.xray_source.get_variable('ht'),
+                'current': self.instrument.xray_source.get_variable('current'),
+                'power': self.instrument.xray_source.get_variable('power'),
+                'shutter': ['Closed', 'Open'][self.instrument.xray_source.get_variable('shutter')]}
         xray = """
         <tr>
-            <td>HV: %.2f V</td>
-            <td>Current: %.2f mA</td>
-            <td>Power: %.2f W</td>
-            <td>Shutter: %s</td>
+            <td>HV: {ht:.2f} V</td>
+            <td>Current: {current:.2f} mA</td>
+            <td>Power: {power:.2f} W</td>
+            <td>Shutter: {shutter}</td>
         </tr>
-        <tr>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-        </tr>
-        <tr>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-        </tr>
-        <tr>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-            <td style="background-color:%s">%s</td>
-        </tr>
-        """ % (self.instrument.xray_source.get_variable('ht'),
-               self.instrument.xray_source.get_variable('current'),
-               self.instrument.xray_source.get_variable('power'),
-               ['Closed', 'Open'][self.instrument.xray_source.get_variable('shutter')],
-               *self.format_faultvalue('xray_light'),
-               *self.format_faultvalue('shutter_light'),
-               *self.format_faultvalue('sensor1'),
-               *self.format_faultvalue('sensor2'),
-               *self.format_faultvalue('tube_position'),
-               *self.format_faultvalue('vacuum'),
-               *self.format_faultvalue('waterflow'),
-               *self.format_faultvalue('safety_shutter'),
-               *self.format_faultvalue('temperature'),
-               *self.format_faultvalue('relay_interlock'),
-               *self.format_faultvalue('door'),
-               *self.format_faultvalue('filament'),
-               )
+        """.format(vars)
+        for i, fault in enumerate(
+                ['xray_light', 'shutter_light', 'sensor1', 'sensor2', 'tube_position', 'vacuum', 'waterflow',
+                 'safety_shutter', 'temperature', 'relay_interlock', 'door', 'filament']):
+            if i % 4 == 0:
+                xray = xray + "<tr>\n"
+            xray = xray + '<td style="background-color":{}>{}</td>\n'.format(*self.format_genix_faultvalue(fault))
+            if i % 4 == 3:
+                xray = xray + '</tr>\n'
         return xray
 
     def create_detector_status(self):
@@ -223,41 +201,40 @@ class WebStateFileWriter(Service):
         else:
             detstat['humidity2_bg'] = 'green'
 
-        detector = """
+        return """
         <tr>
-            <td>Exposure time:</td><td>%(exptime).2f sec</td>
-            <td>Exposure period:</td><td>%(expperiod).2f sec</td>
+            <td>Exposure time:</td><td>{exptime:.2f} sec</td>
+            <td>Exposure period:</td><td>{expperiod:.2f} sec</td>
         <tr>
-            <td>Number of images:</td><td>%(nimages).2f sec</td>
-            <td>Threshold:</td><td>%(threshold).0f eV (%(gain)s gain)</td>
+            <td>Number of images:</td><td>{nimages:.2f} sec</td>
+            <td>Threshold:</td><td>{threshold:.0f} eV ({gain} gain)</td>
         </tr>
         <tr>
-            <td>Power board temperature:</td><td style="background-color:%(temperature0_bg)s">%(temperature0).1f °C</td>
-            <td>Power board humidity:</td><td style="background-color:%(humidity0_bg)s">%(humidity0).1f %%</td>
+            <td>Power board temperature:</td><td style="background-color:{temperature0_bg}">{temperature0:.1f} °C</td>
+            <td>Power board humidity:</td><td style="background-color:{humidity0_bg}">{humidity0:.1f} %</td>
         </tr>
         <tr>
-            <td>Base plate temperature:</td><td style="background-color:%(temperature1_bg)s">%(temperature1).1f °C</td>
-            <td>Base plate humidity:</td><td style="background-color:%(humidity1_bg)s">%(humidity1).1f %%</td>
+            <td>Base plate temperature:</td><td style="background-color:{temperature1_bg}">{temperature1:.1f} °C</td>
+            <td>Base plate humidity:</td><td style="background-color:{humidity1_bg}">{humidity1:.1f} %</td>
         </tr>
         <tr>
-            <td>Sensor temperature:</td><td style="background-color:%(temperature2_bg)s">%(temperature2).1f °C</td>
-            <td>Sensor humidity:</td><td style="background-color:%(humidity2_bg)s">%(humidity2).1f %%</td>
+            <td>Sensor temperature:</td><td style="background-color:{temperature2_bg}">{temperature2:.1f} °C</td>
+            <td>Sensor humidity:</td><td style="background-color:{humidity2_bg}">{humidity2:.1f} %</td>
         </tr>
-        """ % detstat
-        return detector
+        """.format(**detstat)
 
     def create_fsnlist_data(self):
         fl = "<tr>\n    <th>Prefix:</th>\n"
         for p in sorted(self.instrument.filesequence.get_prefixes()):
-            fl += "    <td>%s</td>\n" % p
+            fl += "    <td>{}</td>\n".format(p)
         fl += '    <td>Scan</td>\n</tr>\n<tr>\n    <th>Last FSN:</th>\n'
         for p in sorted(self.instrument.filesequence.get_prefixes()):
-            fl += "    <td>%d</td>\n" % self.instrument.filesequence.get_lastfsn(p)
-        fl += '    <td>%d</td>\n' % self.instrument.filesequence.get_lastscan()
+            fl += "    <td>{:d}</td>\n".format(self.instrument.filesequence.get_lastfsn(p))
+        fl += '    <td>{:d}</td>\n'.format(self.instrument.filesequence.get_lastscan())
         fl += '</tr>\n<tr>\n    <th>Next FSN:</th>\n'
         for p in sorted(self.instrument.filesequence.get_prefixes()):
-            fl += '    <td>%d</td>\n' % self.instrument.filesequence.get_nextfreefsn(p, False)
-        fl += '    <td>%d</td>\n' % self.instrument.filesequence.get_nextfreescan(False)
+            fl += '    <td>{:d}</td>\n'.format(self.instrument.filesequence.get_nextfreefsn(p, False))
+        fl += '    <td>{:d}</td>\n'.format(self.instrument.filesequence.get_nextfreescan(False))
         fl += '</tr>'
         return fl
 
@@ -266,22 +243,21 @@ class WebStateFileWriter(Service):
         ad = """
         <tr>
             <td>Operator:</td>
-            <td>%(operator)s</td>
+            <td>{operator}</td>
             <td>Privilege level:</td>
-            <td>%(privilegelevel)s</td>
+            <td>{privilegelevel}</td>
         </tr>
         <tr>
             <td>Project ID:</td>
-            <td>%(project)s</td>
+            <td>{project}</td>
             <td>Principal investigator:</td>
-            <td>%(proposer)s</td>
+            <td>{proposer}</td>
         </tr>
         <tr>
-        """ % {'operator': self.instrument.accounting.get_user().username,
-               'privilegelevel': self.instrument.accounting.get_privilegelevel().name,
-               'project': self.instrument.accounting.get_project().projectid,
-               'proposer': self.instrument.accounting.get_project().proposer,
-               }
+        """.format(operator=self.instrument.accounting.get_user().username,
+                   privilegelevel=self.instrument.accounting.get_privilegelevel().name,
+                   project=self.instrument.accounting.get_project().projectid,
+                   proposer=self.instrument.accounting.get_project().proposer)
         return ad
 
     def write_statusfile(self):
@@ -295,7 +271,7 @@ class WebStateFileWriter(Service):
         uptime_min = uptime // 60
         uptime_sec = uptime - uptime_min * 60
         subs = {'timestamp': str(datetime.datetime.now()),
-                'uptime': '%d:%d:%.2f' % (uptime_hour, uptime_min, uptime_sec),
+                'uptime': '{:02d}:{:02d}:{:05.2f}'.format(uptime_hour, uptime_min, uptime_sec),
                 'devicehealth_tablecontents': self.create_devicehealth_data(),
                 'motorpositions_tablecontents': self.create_motorstatus_data(),
                 'xraysource_status': self.create_xraysource_status(),
@@ -336,19 +312,20 @@ class WebStateFileWriter(Service):
             else:
                 x.setAttribute('visibility', 'visible')
         for x in get_svg_object_by_id(dom, 'hv'):
-            x.firstChild.firstChild.data = '%.2f kV' % self.instrument.xray_source.get_variable('ht')
+            x.firstChild.firstChild.data = '{:.2f} kV'.format(self.instrument.xray_source.get_variable('ht'))
         for x in get_svg_object_by_id(dom, 'current'):
-            x.firstChild.firstChild.data = '%.2f mA' % self.instrument.xray_source.get_variable('current')
+            x.firstChild.firstChild.data = '{:.2f} mA'.format(self.instrument.xray_source.get_variable('current'))
         for x in get_svg_object_by_id(dom, 'detector_state'):
-            x.firstChild.firstChild.data = '%s' % self.instrument.detector.get_variable('_status')
+            x.firstChild.firstChild.data = self.instrument.detector.get_variable('_status')
         for x in get_svg_object_by_id(dom, 'vacuum'):
-            x.firstChild.firstChild.data = '%.3f mbar' % self.instrument.devices['tpg201'].get_variable('pressure')
+            x.firstChild.firstChild.data = '{:.3f} mbar'.format(
+                self.instrument.devices['tpg201'].get_variable('pressure'))
         for x in get_svg_object_by_id(dom, 'samplename'):
             x.firstChild.firstChild.data = str(self.instrument.samplestore.get_active_name())
         for x in get_svg_object_by_id(dom, 'temperature'):
             try:
                 temperature = self.instrument.devices['haakephoenix'].get_variable('temperature_internal')
-                temperature = '%.2f °C' % temperature
+                temperature = '{:.2f} °C'.format(temperature)
                 if not self.instrument.devices['haakephoenix']._get_connected():
                     temperature = 'Uncontrolled'
             except KeyError:
@@ -356,7 +333,7 @@ class WebStateFileWriter(Service):
             x.firstChild.firstChild.data = temperature
         for m in self.instrument.motors:
             for x in get_svg_object_by_id(dom, m):
-                x.firstChild.firstChild.data = '%.3f' % (self.instrument.motors[m].where())
+                x.firstChild.firstChild.data = '{:.3f}'.format(self.instrument.motors[m].where())
         with open(os.path.join(self.instrument.config['path']['directories']['status'], 'scheme.svg'), 'wt',
                   encoding='utf-8') as f:
             dom.writexml(f)

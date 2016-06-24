@@ -33,7 +33,7 @@ class QueueLogHandler(QueueHandler):
         return (None, 'log', record)
 
 
-def get_statistics(matrix, masktotal=None, mask=None):
+def get_statistics(matrix: np.ndarray, masktotal=None, mask=None):
     """Calculate different statistics of a detector image, such as sum, max,
     center of gravity, etc."""
     assert (isinstance(matrix, np.ndarray))
@@ -400,14 +400,16 @@ class ExposureAnalyzer(Service):
 
     def savecorrected(self, prefix, fsn, im):
         npzname = os.path.join(self._config['path']['directories']['eval2d'],
-                               prefix + '_%%0%dd' % self._config['path']['fsndigits'] % fsn + '.npz')
+                               '{prefix}_{fsn:0{fsndigits:d}d}.npz'.format(
+                                   prefix=prefix, fsndigits=self._config['path']['fsndigits'], fsn=fsn))
         np.savez_compressed(npzname, Intensity=im.val, Error=im.err)
         picklefilename = os.path.join(self._config['path']['directories']['eval2d'],
-                                      prefix + '_%%0%dd' % self._config['path']['fsndigits'] % fsn + '.pickle')
+                                      '{prefix}_{fsn:0{fsndigits:d}d}.pickle'.format(
+                                          prefix=prefix, fsndigits=self._config['path']['fsndigits'], fsn=fsn))
         with open(picklefilename, 'wb') as f:
             pickle.dump(im.params, f)
         write_legacy_paramfile(picklefilename[:-len('.pickle')] + '.param', im.params)
-        self._logger.debug('Done savecorrected FSN %d' % im.params['exposure']['fsn'])
+        self._logger.debug('Done savecorrected FSN ' + str(im.params['exposure']['fsn']))
 
     def datareduction(self, intensity: np.ndarray, mask, params):
         im = SASImage(intensity, intensity ** 0.5, params, mask)

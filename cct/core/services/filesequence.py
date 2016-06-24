@@ -44,8 +44,6 @@ logger.setLevel(logging.INFO)
 
 """
 
-FILENAME_RE = re.compile(r'(.*/)?\w+_\d+\.\w+')
-
 
 class FileSequence(Service):
     """A class to keep track on file sequence numbers and folders"""
@@ -72,9 +70,9 @@ class FileSequence(Service):
 
         if not os.path.exists(self._scanfile):
             with open(self._scanfile, 'wt', encoding='utf-8') as f:
-                f.write('#F %s' % os.path.abspath(self._scanfile) + '\n')
-                f.write('#E %d\n' % time.time())
-                f.write('#D %s\n' % time.asctime())
+                f.write('#F ' + os.path.abspath(self._scanfile) + '\n')
+                f.write('#E {}\n'.format(time.time()))
+                f.write('#D {}\n'.format(time.asctime()))
                 f.write('#C CREDO scan file\n')
                 f.write('#O0 ' + '  '.join(sorted([m['name'] for m in
                                                    self.instrument.config['motors']],
@@ -86,10 +84,10 @@ class FileSequence(Service):
         with open(self._scanfile, 'at', encoding='utf-8') as f:
             self._scanfile_toc[self._scanfile][scanidx] = {'pos': f.tell() + 1, 'cmd': cmdline,
                                                            'date': datetime.datetime.now()}
-            f.write('\n#S %d  %s\n' % (scanidx, cmdline))
-            f.write('#D %s\n' % time.asctime())
-            f.write('#C %s\n' % comment)
-            f.write('#T %f  (Seconds)\n' % exptime)
+            f.write('\n#S {:d}  {}\n'.format(scanidx, cmdline))
+            f.write('#D {}\n'.format(time.asctime()))
+            f.write('#C {}\n'.format(comment))
+            f.write('#T {:f}  (Seconds)\n'.format(exptime))
             f.write('#G0 0\n')
             f.write('#G1 0\n')
             f.write('#Q 0 0 0')
@@ -98,13 +96,13 @@ class FileSequence(Service):
             for m in sorted(self.instrument.motors):
                 if entry_index >= 8:
                     p_index += 1
-                    f.write('\n#P%d' % p_index)
+                    f.write('\n#P{:d}'.format(p_index))
                     entry_index = 0
-                f.write(' %f' % self.instrument.motors[m].where())
+                f.write(' {:f}'.format(self.instrument.motors[m].where()))
                 entry_index += 1
-            f.write('\n#N %d\n' % N)
+            f.write('\n#N {:d}\n'.format(N))
             f.write('#L ' + '  '.join([motorname] + self.instrument.config['scan']['columns']) + '\n')
-        logger.info('Written entry for scan %d into scanfile %s' % (scanidx, self._scanfile))
+        logger.info('Written entry for scan {:d} into scanfile {}'.format(scanidx, self._scanfile))
         return scanidx
 
     def scan_done(self, scannumber):
@@ -161,41 +159,46 @@ class FileSequence(Service):
         return sorted(self._scanfile_toc.keys())
 
     def reload(self):
+        """Check the well-known directories and their subfolders for sequential files.
+
+        A sequential file here means a file whose name follows the <prefix>_<fsn>.<extension>
+        scheme.
+        """
         # check raw detector images
-        for subdir, extension in [('images', '.cbf'), ('param', '.param'),
-                                  ('param_override', '.param'),
-                                  ('eval2d', '.npz'), ('eval1d', '.txt')]:
+        for subdir, extension in [('images', 'cbf'), ('param', 'param'),
+                                  ('param_override', 'param'),
+                                  ('eval2d', 'npz'), ('eval1d', 'txt')]:
             # find all subdirectories in `directory`, including `directory`
             # itself
             directory = self.instrument.config['path']['directories'][subdir]
-            filename_regex = re.compile('(.*/)?\\w+_\\d+\\' + extension + '$')
+            filename_regex = re.compile(r'^(?P<prefix>\w+)_(?P<fsn>\d+)\.' + extension + '$')
             for d in [directory] + find_subfolders(directory):
                 # find all files
-                filelist = [
-                    f for f in os.listdir(d) if filename_regex.match(f) is not None]
+                matchlist = [m for m in [filename_regex.match(f) for f in os.listdir(d)] if m is not None]
                 # find all file prefixes, like 'crd', 'tst', 'tra', 'scn', etc.
-                for c in {f.rsplit('.')[0].split('_')[0] for f in filelist}:
-                    if c not in self._lastfsn:
-                        self._lastfsn[c] = 0
-                        self.emit('lastfsn-changed', c, self._lastfsn[c])
+                for prefix in {m.group('prefix') for m in matchlist}:
+                    if prefix not in self._lastfsn:
+                        self._lastfsn[prefix] = 0
+                        self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
                     # find the highest available FSN of the current prefix in
                     # this directory
-                    maxfsn = max([int(f.split('_')[1][:-len(extension)])
-                                  for f in filelist if (f.split('_')[0] == c)])
-                    if maxfsn > self._lastfsn[c]:
-                        self._lastfsn[c] = maxfsn
-                        self.emit('lastfsn-changed', c, self._lastfsn[c])
+                    maxfsn = max([int(m.group('fsn')) for m in matchlist])
+                    if maxfsn > self._lastfsn[prefix]:
+                        self._lastfsn[prefix] = maxfsn
+                        self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
 
-        for p in self.instrument.config['path']['prefixes'].values():
-            if p not in self._lastfsn:
-                self._lastfsn[p] = 0
+        # add known prefixes to self._lastfsn if they were not yet added.
+        for prefix in self.instrument.config['path']['prefixes'].values():
+            if prefix not in self._lastfsn:
+                self._lastfsn[prefix] = 0
 
-        for c in self._lastfsn:
-            if c not in self._nextfreefsn:
-                self._nextfreefsn[c] = 0
-            if self._nextfreefsn[c] < self._lastfsn[c]:
-                self._nextfreefsn[c] = self._lastfsn[c] + 1
-                self.emit('nextfsn-changed', c, self._nextfreefsn[c])
+        # update self._nextfreefsn
+        for prefix in self._lastfsn:
+            if prefix not in self._nextfreefsn:
+                self._nextfreefsn[prefix] = 0
+            if self._nextfreefsn[prefix] < self._lastfsn[prefix]:
+                self._nextfreefsn[prefix] = self._lastfsn[prefix] + 1
+                self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
         # reload scans
         scanpath = self.instrument.config['path']['directories']['scan']
@@ -223,7 +226,7 @@ class FileSequence(Service):
                                 self._scanfile_toc[scanfile][idx]['comment'] = 'no comment'
                         l = f.readline()
                         #        for sf in self._scanfile_toc:
-                        #            logger.debug('Max. scan index in file %s: %d'%(sf, max([k for k in self._scanfile_toc[sf]]+[0])))
+                        #            logger.debug('Max. scan index in file {}: {:d}'.format(sf, max([k for k in self._scanfile_toc[sf]]+[0])))
 
         lastscan = max([max([k for k in self._scanfile_toc[sf]] + [0])
                         for sf in self._scanfile_toc] + [0])
@@ -231,7 +234,7 @@ class FileSequence(Service):
             self._lastscan = lastscan
             self.emit('lastscan-changed', self._lastscan)
 
-            #       logger.debug('Max. scan index: %d'%self._lastscan)
+            #       logger.debug('Max. scan index: {:d}'.format(self._lastscan))
         self._nextfreescan = self._lastscan + 1
         self.emit('nextscan-changed', self._nextfreescan)
 
@@ -279,8 +282,7 @@ class FileSequence(Service):
         if (prefix not in self._lastfsn) or (fsn > self._lastfsn[prefix]):
             self._lastfsn[prefix] = fsn
             self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
-        logger.debug('New exposure: %s (fsn: %d, prefix: %s)' %
-                     (filename, fsn, prefix))
+        logger.debug('New exposure: {} (fsn: {:d}, prefix: {})'.format(filename, fsn, prefix))
         filename = filename[filename.index('images') + 7:]
         # write header file if needed
         config = self.instrument.config
@@ -291,8 +293,8 @@ class FileSequence(Service):
             params = {}
             paramfilename = os.path.join(
                 self.instrument.config['path']['directories']['param'],
-                prefix + '_' + '%%0%dd.param' %
-                config['path']['fsndigits']) % fsn
+                '{prefix}_{fsn:0{fsndigits:d}:d}.param'.format(
+                    prefix=prefix, fsndigits=config['path']['fsndigits'], fsn=fsn))
             picklefilename = paramfilename[:-len('.param')] + '.pickle'
             sample = self.instrument.samplestore.get_active()
             params['fsn'] = fsn
@@ -334,19 +336,19 @@ class FileSequence(Service):
                     params['environment']['temperature_setpoint'] = self.instrument.environmentcontrollers[
                         'temperature'].get_variable('setpoint')
                 except KeyError as ke:
-                    logger.warning('Cannot write property: %s' % ke.args[0])
+                    logger.warning('Cannot write property: ' + str(ke.args[0]))
                 try:
                     params['environment']['temperature'] = self.instrument.environmentcontrollers[
                         'temperature'].get_variable('temperature_internal')
                 except KeyError as ke:
-                    logger.warning('Cannot write property: %s' % ke.args[0])
+                    logger.warning('Cannot write property: ' + str(ke.args[0]))
             params['accounting'] = {}
             for k in config['services']['accounting']:
                 params['accounting'][k] = config['services']['accounting'][k]
 
             # save the params dictionary
             with open(picklefilename, 'wb') as f:
-                logger.debug('Dumping pickle file %s' % picklefilename)
+                logger.debug('Dumping pickle file ' + picklefilename)
                 pickle.dump(params, f)
 
             write_legacy_paramfile(paramfilename, params)
@@ -368,7 +370,9 @@ class FileSequence(Service):
         return True
 
     def load_cbf(self, prefix, fsn):
-        cbfbasename = prefix + '_' + '%%0%dd.cbf' % self.instrument.config['path']['fsndigits'] % fsn
+        cbfbasename = '{prefix}_{fsn:0{fsndigits:d}d}.cbf'.format(prefix=prefix,
+                                                                  fsndigits=self.instrument.config['path']['fsndigits'],
+                                                                  fsn=fsn)
         for subpath in [prefix, '']:
             cbfname = os.path.join(
                 self.instrument.config['path']['directories']['images'],
@@ -381,22 +385,24 @@ class FileSequence(Service):
 
     def load_exposure(self, prefix, fsn):
         param = self.load_param(prefix, fsn)
+        cbfbasename = '{prefix}_{fsn:0{fsndigits:d}d}.cbf'.format(prefix=prefix,
+                                                                  fsndigits=self.instrument.config['path']['fsndigits'],
+                                                                  fsn=fsn)
         try:
             cbfname = os.path.join(
                 self.instrument.config['path']['directories']['images'], prefix,
-                prefix + '_' + '%%0%dd.cbf' %
-                self.instrument.config['path']['fsndigits'] % fsn)
+                cbfbasename)
             return SASImage.new_from_file(cbfname, param)
         except FileNotFoundError:
             cbfname = os.path.join(
                 self.instrument.config['path']['directories']['images'],
-                prefix + '_' + '%%0%dd.cbf' %
-                self.instrument.config['path']['fsndigits'] % fsn)
+                cbfbasename)
             return SASImage.new_from_file(cbfname, param)
 
     def load_param(self, prefix, fsn):
-        picklebasename = prefix + '_' + '%%0%dd.pickle' % \
-                                        self.instrument.config['path']['fsndigits'] % fsn
+        picklebasename = '{prefix}_{fsn:0{fsndigits:d}d}.pickle'.format(prefix=prefix,
+                                                                        fsndigits=self.instrument.config['path'][
+                                                                            'fsndigits'], fsn=fsn)
         for path in [
             self.instrument.config['path']['directories']['param_override'],
             self.instrument.config['path']['directories']['param']]:
