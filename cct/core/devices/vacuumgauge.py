@@ -66,7 +66,7 @@ class TPG201(Device_TCP):
                     self._update_variable('_status', 'Medium vacuum')
                 else:
                     self._update_variable('_status', 'Vacuum OK')
-                self._update_variable('_auxstatus', '{:.2f} mbar'.format(pressure))
+                self._update_variable('_auxstatus', '{:.3f} mbar'.format(pressure))
         elif message[3] == 84:  # T
             self._update_variable('version', str(message[4:10]))
         elif message[3] == 85:  # U

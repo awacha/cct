@@ -179,6 +179,14 @@ class GeniX(ToolWindow):
                     self._builder.get_object('fullpower_button').set_sensitive(False)
                     self._builder.get_object('warmup_toggle').set_sensitive(False)
                     self._builder.get_object('warmup_toggle').set_active(False)
+                elif newvalue == 'Initializing':
+                    self._builder.get_object('xraystate_toggle').set_sensitive(False)
+                    self._builder.get_object('shutter_toggle').set_sensitive(False)
+                    self._builder.get_object('powerdown_button').set_sensitive(False)
+                    self._builder.get_object('standby_button').set_sensitive(False)
+                    self._builder.get_object('fullpower_button').set_sensitive(False)
+                    self._builder.get_object('warmup_toggle').set_sensitive(False)
+                    self._builder.get_object('warmup_toggle').set_active(False)
                 else:
                     raise ValueError('Invalid status: ' + newvalue)
             finally:

@@ -167,7 +167,7 @@ class ScanGraph(object):
             finally:
                 del self._in_scalechanged
         if self._builder.get_object('show2d_checkbutton').get_active():
-            fsn=self._data['FSN'][self._cursorindex]
+            fsn = int(self._data['FSN'][self._cursorindex])
             data=self._instrument.filesequence.load_cbf(self._instrument.config['path']['prefixes']['scn'],fsn)
             mask=self._instrument.filesequence.get_mask(self._instrument.config['scan']['mask_total'])
             piw=PlotImageWindow.get_latest_window()

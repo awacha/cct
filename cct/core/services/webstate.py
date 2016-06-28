@@ -5,6 +5,7 @@ import shutil
 import string
 from xml.dom.minidom import parse
 
+import numpy as np
 import pkg_resources
 from gi.repository import GLib
 
@@ -50,31 +51,49 @@ class WebStateFileWriter(Service):
             dhtc += '  <td>' + d.capitalize() + '</td>\n'
         dhtc += '</tr>\n<tr>\n  <th>Status</th>\n'
         for d in sorted(self.instrument.devices):
-            status = self.instrument.devices[d].get_variable('_status')
-            if self.instrument.devices[d]._get_connected():
-                bg = 'green'
-            else:
+            try:
+                status = self.instrument.devices[d].get_variable('_status')
+            except KeyError:
+                status = 'Disconnected'
                 bg = 'red'
+            else:
+                if self.instrument.devices[d]._get_connected():
+                    bg = 'green'
+                else:
+                    bg = 'gray'
             dhtc += '  <td style="background:{}">'.format(bg) + str(status) + '</td>\n'
         dhtc += '</tr>\n<tr>\n  <th>Verbose status</th>\n'
         for d in sorted(self.instrument.devices):
-            status = self.instrument.devices[d].get_variable('_auxstatus')
+            try:
+                status = self.instrument.devices[d].get_variable('_auxstatus')
+            except KeyError:
+                status = 'Missing'
             dhtc += "  <td>" + str(status) + '</td>\n'
         dhtc += '</tr>\n<tr>\n  <th>Last send time</th>\n'
         for d in sorted(self.instrument.devices):
-            lastsend = self.instrument._telemetries[d]['last_send']
-            if lastsend > 5:
+            try:
+                lastsend = self.instrument._telemetries[d]['last_send']
+            except KeyError:
+                lastsend = np.nan
                 bg = 'red'
             else:
-                bg = 'green'
+                if lastsend > 5:
+                    bg = 'red'
+                else:
+                    bg = 'green'
             dhtc += '  <td style="background:{}">{:.2f}</td>\n'.format(bg, lastsend)
         dhtc += '</tr>\n<tr>\n  <th>Last recv time</th>\n'
         for d in sorted(self.instrument.devices):
-            lastrecv = self.instrument._telemetries[d]['last_recv']
-            if lastrecv > 5:
+            try:
+                lastrecv = self.instrument._telemetries[d]['last_recv']
+            except KeyError:
+                lastrecv = np.nan
                 bg = 'red'
             else:
-                bg = 'green'
+                if lastrecv > 5:
+                    bg = 'red'
+                else:
+                    bg = 'green'
             dhtc += '  <td style="background:{}">{:.2f}</td>\n'.format(bg, lastrecv)
 
         dhtc += '</tr>\n<tr>\n  <th>Background process restarts</h>\n'
@@ -128,21 +147,30 @@ class WebStateFileWriter(Service):
         return mst
 
     def format_genix_faultvalue(self, name):
-        value = self.instrument.xray_source.get_variable(name + '_fault')
-        if value:
+        try:
+            value = self.instrument.xray_source.get_variable(name + '_fault')
+        except KeyError:
+            value = np.nan
             bg = 'red'
         else:
-            bg = 'green'
+            if value:
+                bg = 'red'
+            else:
+                bg = 'green'
         return bg, name.replace('_', ' ').capitalize()
 
     def create_xraysource_status(self):
         # make X-ray source status
 
         # noinspection PyStringFormat
-        vars = {'ht': self.instrument.xray_source.get_variable('ht'),
-                'current': self.instrument.xray_source.get_variable('current'),
-                'power': self.instrument.xray_source.get_variable('power'),
-                'shutter': ['Closed', 'Open'][self.instrument.xray_source.get_variable('shutter')]}
+        vars = {}
+        for var in ['ht', 'current', 'power', 'shutter']:
+            try:
+                vars[var] = self.instrument.xray_source.get_variable(var)
+            except KeyError:
+                vars[var] = np.nan
+        if isinstance(vars['shutter'], bool):
+            vars['shutter'] = ['Closed', 'Open'][vars['shutter']]
         xray = """
         <tr>
             <td>HV: {ht:.2f} V</td>
@@ -150,7 +178,7 @@ class WebStateFileWriter(Service):
             <td>Power: {power:.2f} W</td>
             <td>Shutter: {shutter}</td>
         </tr>
-        """.format(vars)
+        """.format(**vars)
         for i, fault in enumerate(
                 ['xray_light', 'shutter_light', 'sensor1', 'sensor2', 'tube_position', 'vacuum', 'waterflow',
                  'safety_shutter', 'temperature', 'relay_interlock', 'door', 'filament']):
@@ -271,7 +299,7 @@ class WebStateFileWriter(Service):
         uptime_min = uptime // 60
         uptime_sec = uptime - uptime_min * 60
         subs = {'timestamp': str(datetime.datetime.now()),
-                'uptime': '{:02d}:{:02d}:{:05.2f}'.format(uptime_hour, uptime_min, uptime_sec),
+                'uptime': '{:02.0f}:{:02.0f}:{:05.2f}'.format(uptime_hour, uptime_min, uptime_sec),
                 'devicehealth_tablecontents': self.create_devicehealth_data(),
                 'motorpositions_tablecontents': self.create_motorstatus_data(),
                 'xraysource_status': self.create_xraysource_status(),
@@ -318,8 +346,11 @@ class WebStateFileWriter(Service):
         for x in get_svg_object_by_id(dom, 'detector_state'):
             x.firstChild.firstChild.data = self.instrument.detector.get_variable('_status')
         for x in get_svg_object_by_id(dom, 'vacuum'):
-            x.firstChild.firstChild.data = '{:.3f} mbar'.format(
-                self.instrument.devices['tpg201'].get_variable('pressure'))
+            try:
+                x.firstChild.firstChild.data = '{:.3f} mbar'.format(
+                    self.instrument.devices['tpg201'].get_variable('pressure'))
+            except KeyError:
+                x.firstChild.firstChild.data = 'No data'
         for x in get_svg_object_by_id(dom, 'samplename'):
             x.firstChild.firstChild.data = str(self.instrument.samplestore.get_active_name())
         for x in get_svg_object_by_id(dom, 'temperature'):

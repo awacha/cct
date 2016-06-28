@@ -5,6 +5,7 @@ import os
 import pickle
 import re
 import time
+from typing import Optional, Tuple
 
 import dateutil.parser
 import numpy as np
@@ -19,7 +20,7 @@ from ..utils.pathutils import find_in_subfolders, find_subfolders
 from ..utils.sasimage import SASImage
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 """Default path settings in working directory:
 
@@ -79,7 +80,7 @@ class FileSequence(Service):
                                                   key=lambda x: x['name'])) + '\n')
                 f.write('\n')
 
-    def new_scan(self, cmdline, comment, exptime, N, motorname):
+    def new_scan(self, cmdline: str, comment: str, exptime: float, N: int, motorname: str):
         scanidx = self.get_nextfreescan(acquire=True)
         with open(self._scanfile, 'at', encoding='utf-8') as f:
             self._scanfile_toc[self._scanfile][scanidx] = {'pos': f.tell() + 1, 'cmd': cmdline,
@@ -105,11 +106,11 @@ class FileSequence(Service):
         logger.info('Written entry for scan {:d} into scanfile {}'.format(scanidx, self._scanfile))
         return scanidx
 
-    def scan_done(self, scannumber):
+    def scan_done(self, scannumber: int):
         self._lastscan = max(self._lastscan, scannumber)
         self.emit('lastscan-changed', self._lastscan)
 
-    def load_scan(self, index, scanfile=None):
+    def load_scan(self, index: int, scanfile: Optional[str] = None):
         if scanfile is None:
             scanfile = self._scanfile
         result = {}
@@ -152,7 +153,7 @@ class FileSequence(Service):
                 result['data'] = result['data'][:index]
         return result
 
-    def get_scans(self, scanfile):
+    def get_scans(self, scanfile: str):
         return self._scanfile_toc[scanfile]
 
     def get_scanfiles(self):
@@ -171,32 +172,42 @@ class FileSequence(Service):
             # find all subdirectories in `directory`, including `directory`
             # itself
             directory = self.instrument.config['path']['directories'][subdir]
+            logger.debug('Looking in directory ' + directory)
             filename_regex = re.compile(r'^(?P<prefix>\w+)_(?P<fsn>\d+)\.' + extension + '$')
             for d in [directory] + find_subfolders(directory):
                 # find all files
                 matchlist = [m for m in [filename_regex.match(f) for f in os.listdir(d)] if m is not None]
                 # find all file prefixes, like 'crd', 'tst', 'tra', 'scn', etc.
                 for prefix in {m.group('prefix') for m in matchlist}:
+                    logger.debug('Treating prefix ' + prefix)
                     if prefix not in self._lastfsn:
+                        logger.debug('We haven\'t seen this prefix yet.')
                         self._lastfsn[prefix] = 0
                         self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
                     # find the highest available FSN of the current prefix in
                     # this directory
-                    maxfsn = max([int(m.group('fsn')) for m in matchlist])
+                    maxfsn = max([int(m.group('fsn')) for m in matchlist if m.group('prefix') == prefix])
+                    logger.debug('Maxfsn for prefix {} in this directory: {:d}'.format(prefix, maxfsn))
                     if maxfsn > self._lastfsn[prefix]:
+                        logger.debug('Updating maxfsn.')
                         self._lastfsn[prefix] = maxfsn
                         self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
 
         # add known prefixes to self._lastfsn if they were not yet added.
         for prefix in self.instrument.config['path']['prefixes'].values():
             if prefix not in self._lastfsn:
+                logger.debug('Adding not found prefix to _lastfsn: ' + prefix)
                 self._lastfsn[prefix] = 0
 
         # update self._nextfreefsn
         for prefix in self._lastfsn:
             if prefix not in self._nextfreefsn:
+                logger.debug('Initializing nextfreefsn for prefix ' + prefix)
                 self._nextfreefsn[prefix] = 0
             if self._nextfreefsn[prefix] < self._lastfsn[prefix]:
+                logger.debug(
+                    'Updating nextfreefsn for prefix {} from {:d} to {:d}'.format(prefix, self._nextfreefsn[prefix],
+                                                                                  self._lastfsn[prefix]))
                 self._nextfreefsn[prefix] = self._lastfsn[prefix] + 1
                 self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
@@ -238,13 +249,13 @@ class FileSequence(Service):
         self._nextfreescan = self._lastscan + 1
         self.emit('nextscan-changed', self._nextfreescan)
 
-    def get_lastfsn(self, prefix):
+    def get_lastfsn(self, prefix: str):
         return self._lastfsn[prefix]
 
     def get_lastscan(self):
         return self._lastscan
 
-    def get_nextfreescan(self, acquire=True):
+    def get_nextfreescan(self, acquire: bool = True):
         try:
             return self._nextfreescan
         finally:
@@ -252,7 +263,7 @@ class FileSequence(Service):
                 self._nextfreescan += 1
                 self.emit('nextscan-changed', self._nextfreescan)
 
-    def get_nextfreefsn(self, prefix, acquire=True):
+    def get_nextfreefsn(self, prefix: str, acquire: bool = True):
         if prefix not in self._nextfreefsn:
             self._nextfreefsn[prefix] = 1
         try:
@@ -262,7 +273,7 @@ class FileSequence(Service):
                 self._nextfreefsn[prefix] += 1
                 self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
-    def get_nextfreefsns(self, prefix, N, acquire=True):
+    def get_nextfreefsns(self, prefix: str, N: int, acquire: bool = True):
         assert (N > 0)
         if prefix not in self._nextfreefsn:
             self._nextfreefsn[prefix] = 1
@@ -274,7 +285,8 @@ class FileSequence(Service):
                 self._nextfreefsn[prefix] += N
             self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
-    def new_exposure(self, fsn, filename, prefix, startdate, argstuple=None):
+    def new_exposure(self, fsn: int, filename: str, prefix: str, startdate: datetime.datetime,
+                     argstuple: Optional[Tuple] = None):
         """Called by various parts of the instrument if a new exposure file
         has became available"""
         if argstuple is None:
@@ -293,7 +305,7 @@ class FileSequence(Service):
             params = {}
             paramfilename = os.path.join(
                 self.instrument.config['path']['directories']['param'],
-                '{prefix}_{fsn:0{fsndigits:d}:d}.param'.format(
+                '{prefix}_{fsn:0{fsndigits:d}d}.param'.format(
                     prefix=prefix, fsndigits=config['path']['fsndigits'], fsn=fsn))
             picklefilename = paramfilename[:-len('.param')] + '.pickle'
             sample = self.instrument.samplestore.get_active()
@@ -360,7 +372,7 @@ class FileSequence(Service):
         """Return the known prefixes"""
         return list(self._lastfsn.keys())
 
-    def is_cbf_ready(self, filename):
+    def is_cbf_ready(self, filename: str):
         imgdir = self.instrument.config['path']['directories']['images']
         os.stat(self.instrument.config['path']['directories']['images'])
         try:
@@ -369,7 +381,7 @@ class FileSequence(Service):
             return False
         return True
 
-    def load_cbf(self, prefix, fsn):
+    def load_cbf(self, prefix: str, fsn: int):
         cbfbasename = '{prefix}_{fsn:0{fsndigits:d}d}.cbf'.format(prefix=prefix,
                                                                   fsndigits=self.instrument.config['path']['fsndigits'],
                                                                   fsn=fsn)
@@ -383,7 +395,7 @@ class FileSequence(Service):
                 pass
         raise FileNotFoundError(cbfbasename)
 
-    def load_exposure(self, prefix, fsn):
+    def load_exposure(self, prefix: str, fsn: int):
         param = self.load_param(prefix, fsn)
         cbfbasename = '{prefix}_{fsn:0{fsndigits:d}d}.cbf'.format(prefix=prefix,
                                                                   fsndigits=self.instrument.config['path']['fsndigits'],
@@ -399,7 +411,7 @@ class FileSequence(Service):
                 cbfbasename)
             return SASImage.new_from_file(cbfname, param)
 
-    def load_param(self, prefix, fsn):
+    def load_param(self, prefix: str, fsn: int):
         picklebasename = '{prefix}_{fsn:0{fsndigits:d}d}.pickle'.format(prefix=prefix,
                                                                         fsndigits=self.instrument.config['path'][
                                                                             'fsndigits'], fsn=fsn)
@@ -415,7 +427,7 @@ class FileSequence(Service):
                 continue
         raise FileNotFoundError(picklebasename)
 
-    def get_mask(self, maskname):
+    def get_mask(self, maskname: str):
         if not hasattr(self, '_masks'):
             self._masks = {}
         try:
