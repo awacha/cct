@@ -3,7 +3,6 @@ import multiprocessing
 import os
 import queue
 import resource
-import sys
 import time
 import traceback
 from logging.handlers import QueueHandler
@@ -461,6 +460,9 @@ class Device(GObject.GObject):
                     elif message['type'] == 'execute':
                         self._execute_command(message['name'], message['arguments'])
                     elif message['type'] == 'communication_error':
+                        self._send_to_frontend('error', variablename=None,
+                                               exception=message['exception'],
+                                               traceback=message['traceback'])
                         raise message['exception']
                     elif message['type'] == 'incoming':
                         self._lastrecvtime = message['timestamp']
@@ -480,7 +482,8 @@ class Device(GObject.GObject):
             except CommunicationError as ce:
                 self._logger.error(
                     'Communication error for device ' + self.name + ', exiting background process.')
-                self._send_to_frontend('error', variablename=None, exception=ce, traceback=str(sys.exc_info()[2]))
+                self._send_to_frontend('error', variablename=None, exception=ce,
+                                       traceback=traceback.format_exc())
                 exit_status = False  # abnormal termination
                 break
             except WatchdogTimeout as wt:
@@ -489,11 +492,11 @@ class Device(GObject.GObject):
             except DeviceError as de:
                 self._logger.error('DeviceError in the background process for {}: {}'.format(
                     self.name, traceback.format_exc()))
-                self._send_to_frontend('error', variablename=None, exception=de, traceback=str(sys.exc_info()[2]))
+                self._send_to_frontend('error', variablename=None, exception=de, traceback=traceback.format_exc())
             except Exception as ex:
                 self._logger.error('Exception in the background process for {}, exiting. {}'.format(
                     self.name, traceback.format_exc()))
-                self._send_to_frontend('error', variablename=None, exception=ex, traceback=str(sys.exc_info()[2]))
+                self._send_to_frontend('error', variablename=None, exception=ex, traceback=traceback.format_exc())
                 exit_status = False  # abnormal termination
                 break
         self._logger.info('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
@@ -657,8 +660,12 @@ class Device(GObject.GObject):
         return True  # this is an idle function, we want to be called again.
 
     def do_error(self, propertyname: str, exception: Exception, tb) -> bool:
+        print(tb)
+        print(type(tb))
         logger.error(
-            'Device error. Variable name: {}. Exception: {}. Traceback: {}'.format(propertyname, str(exception), tb))
+            'Device error. Variable name: {}. Exception: {}. Traceback: {}'.format(
+                propertyname, str(exception), tb))
+        return False
 
     def do_startupdone(self) -> bool:
         self._ready = True

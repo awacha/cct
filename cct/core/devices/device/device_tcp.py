@@ -3,8 +3,8 @@ import multiprocessing
 import queue
 import select
 import socket
-import sys
 import time
+import traceback
 from logging.handlers import QueueHandler
 
 from .device import Device
@@ -148,10 +148,10 @@ class TCPCommunicator(multiprocessing.Process):
                 if ((self._lastsendtime is not None) and
                             (time.monotonic() - self._lastsendtime) >
                             self._reply_timeout):
-                    raise CommunicationError('Reply timeout')
+                    raise CommunicationError('Reply timeout. Last sent: {}'.format(self._lastsent[0]))
         except Exception as exc:
             self._logger.debug('Sending communication error to backend process of ' + self.name)
-            self._send_to_backend('communication_error', exception=exc, traceback=str(sys.exc_info()[2]))
+            self._send_to_backend('communication_error', exception=exc, traceback=traceback.format_exc())
 
         finally:
             polling.unregister(self._tcpsocket)
