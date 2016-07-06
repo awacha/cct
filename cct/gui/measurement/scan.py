@@ -54,10 +54,23 @@ class Scan(ToolWindow):
                 if self._builder.get_object('symmetric_checkbutton').get_active():
                     width=self._builder.get_object('start_or_width_spin').get_value()
                     self._commandline='scanrel("%s", %f, %d, %f, "%s")'%(self._motor, width, self._nsteps, exptime, comment)
+                    where = self._instrument.motors[self._motor].where()
+                    if not (self._instrument.motors[self._motor].checklimits(where + width) and
+                                self._instrument.motors[self._motor].checklimits(where - width)):
+                        error_message(self._window, "Cannot start scan",
+                                      "Scan range is outside software limits for motor " + self._motor)
+                        self._cleanup_after_scan()
+                        return True
                 else:
                     start=self._builder.get_object('start_or_width_spin').get_value()
                     end=self._builder.get_object('end_spin').get_value()
                     self._commandline='scan("%s", %f, %f, %d, %f, "%s")' %(self._motor, start, end, self._nsteps, exptime, comment)
+                    if not (self._instrument.motors[self._motor].checklimits(start) and
+                                self._instrument.motors[self._motor].checklimits(end)):
+                        error_message(self._window, "Cannot start scan",
+                                      "Scan range is outside software limits for motor " + self._motor)
+                        self._cleanup_after_scan()
+                        return True
                 self._connections={self._instrument.interpreter:[
                     self._instrument.interpreter.connect('cmd-return',self.on_command_return),
                     self._instrument.interpreter.connect('cmd-fail', self.on_command_fail),
