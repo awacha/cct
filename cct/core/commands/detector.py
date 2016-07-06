@@ -4,7 +4,7 @@ import os
 
 from gi.repository import GLib
 
-from .command import Command
+from .command import Command, CommandError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -29,13 +29,17 @@ class Trim(Command):
     def execute(self, interpreter, arglist, instrument, namespace):
         thresholdvalue = round(float(arglist[0]))
         gain = arglist[1]
-        assert (gain.upper() in ['HIGHG', 'LOWG', 'MIDG'])
         if gain.upper() == 'HIGHG':
-            assert ((thresholdvalue >= 3814) and (thresholdvalue <= 11614))
+            if not ((thresholdvalue >= 3814) and (thresholdvalue <= 11614)):
+                raise CommandError('Invalid threshold value for high gain: {:.2f}'.format(thresholdvalue))
         elif gain.upper() == 'MIDG':
-            assert ((thresholdvalue >= 4425) and (thresholdvalue <= 14328))
+            if not ((thresholdvalue >= 4425) and (thresholdvalue <= 14328)):
+                raise CommandError('Invalid threshold value for mid gain: {:.2f}'.format(thresholdvalue))
         elif gain.upper() == 'LOWG':
-            assert ((thresholdvalue >= 6685) and (thresholdvalue <= 20202))
+            if not ((thresholdvalue >= 6685) and (thresholdvalue <= 20202)):
+                raise CommandError('Invalid threshold value for low gain: {:.2f}'.format(thresholdvalue))
+        else:
+            raise CommandError('Unknown gain: ' + str(gain))
         self._install_timeout_handler(self.timeout)
         self._require_device(instrument, 'pilatus')
         self._check_for_variable = 'threshold'
@@ -106,7 +110,8 @@ class Expose(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         exptime = float(arglist[0])
-        assert (exptime > 0)
+        if exptime <= 0:
+            raise CommandError('Exposure time must be positive')
         try:
             self._prefix = arglist[1]
         except IndexError:
@@ -115,9 +120,7 @@ class Expose(Command):
             self._otherarg = arglist[2]
         except IndexError:
             self._otherarg = None
-        try:
-            assert (instrument.detector.get_variable('nimages') == 1)
-        except AssertionError:
+        if instrument.detector.get_variable('nimages') != 1:
             instrument.detector.set_variable('nimages', 1)
         self._require_device(instrument, 'pilatus')
         self._fsn = instrument.filesequence.get_nextfreefsn(self._prefix)
@@ -204,9 +207,11 @@ class ExposeMulti(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         exptime = float(arglist[0])
-        assert (exptime > 0)
+        if exptime <= 0:
+            raise CommandError('Exposure time must be positive')
         nimages = int(arglist[1])
-        assert (nimages > 0)
+        if nimages <= 0:
+            raise CommandError('The number of images must be a positive integer')
         try:
             prefix = arglist[2]
         except IndexError:
@@ -219,7 +224,8 @@ class ExposeMulti(Command):
             self._otherarg = arglist[4]
         except IndexError:
             self._otherarg = None
-        assert (expdelay > 0.003)
+        if expdelay <= 0.003:
+            raise CommandError('The delay time between subsequent exposures must be larger than 0.003 seconds')
         instrument.detector.set_variable('nimages', nimages)
         self._require_device(instrument, 'pilatus')
         self._fsns = list(instrument.filesequence.get_nextfreefsns(prefix, nimages))

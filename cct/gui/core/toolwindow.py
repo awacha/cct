@@ -46,7 +46,7 @@ class ToolWindow(GObject.GObject):
         self._privlevel = PRIV_LAYMAN
         self._application=application
         self._builder = Gtk.Builder.new_from_file(pkg_resources.resource_filename('cct', 'resource/glade/' + gladefile))
-        assert (self._builder, Gtk.Builder)
+        assert isinstance(self._builder, Gtk.Builder)
         self._builder.set_application(application)
         try:
             self._instrument=weakref.proxy(instrument)

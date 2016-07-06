@@ -30,17 +30,22 @@ class Scan(Command):
     def execute(self, interpreter, arglist, instrument, namespace):
         self._myinterpreter = interpreter.__class__(instrument)
         self._motor, self._start, self._end, self._N, self._exptime, self._comment = arglist
+        if (self._motor not in instrument.motors):
+            raise CommandError('Unknown motor ' + self._motor)
         if self._motor in ['BeamStop_X', 'BeamStop_Y'] and not instrument.accounting.has_privilege(
                 PRIV_BEAMSTOP):
             raise CommandError('Insufficient privileges to move the beamstop')
         if self._motor in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
                            'PH3_Y'] and not instrument.accounting.has_privilege(PRIV_PINHOLE):
             raise CommandError('Insufficient privileges to move pinholes')
-        assert (instrument.motors[self._motor].checklimits(self._start))
-        assert (instrument.motors[self._motor].checklimits(self._end))
-        assert (self._N >= 2)
-        assert (self._exptime > 0)
-        assert (self._motor in instrument.motors)
+        if not instrument.motors[self._motor].checklimits(self._start):
+            raise CommandError('Start position is outside the software limits for the motor')
+        if not instrument.motors[self._motor].checklimits(self._end):
+            raise CommandError('End position is outside the software limits for the motor')
+        if self._N < 2:
+            raise CommandError('Not enough scan points: at least 2 is required')
+        if self._exptime <= 0:
+            raise CommandError('Exposure time must be positive')
         self._idx = 0
         self._scanfsn = instrument.filesequence.get_nextfreescan(acquire=False)
         self._instrument = instrument

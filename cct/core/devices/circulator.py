@@ -275,49 +275,46 @@ class HaakePhoenix(Device_TCP):
 
     def _set_variable(self, variable, value):
         self._logger.debug('Setting circulator variable from process ' + multiprocessing.current_process().name)
-        try:
-            if variable == 'setpoint':
-                self._logger.debug('Setting setpoint to {:f}'.format(value))
-                self._send('W SW {:.2f}\r'.format(value).encode('ascii'))
-                self._logger.debug('Setpoint setting message queued.')
-            elif variable == 'highlimit':
-                self._send('W HL {:.2f}\r'.format(value).encode('ascii'))
-            elif variable == 'lowlimit':
-                self._send('W LL {:.2f}\r'.format(value).encode('ascii'))
-            elif variable == 'highlimit':
-                self._send('W HL {:.2f}\r'.format(value).encode('ascii'))
-            elif variable == 'control_external':
-                self._send('OUT MODE 2 {:d}\r'.format(bool(value)).encode('ascii'))
-            elif variable == 'diffcontrol_on':
-                self._send('W FR {:d}\r'.format(bool(value)).encode('ascii'))
-            elif variable == 'autostart':
-                self._send('W ZA {:d}\r'.format(bool(value)).encode('ascii'))
-            elif variable == 'fuzzyid':
-                self._send('W ZI {:d}\r'.format(bool(value)).encode('ascii'))
-            elif variable == 'beep':
-                self._send('W ZB {:d}\r'.format(bool(value)).encode('ascii'))
-            elif variable == 'date':
-                assert (isinstance(value, datetime.date))
-                self._send('W XD {0.day:02d}.{0.month:02d}.{1:02d}\r'.format(value, value.year % 100).encode('ascii'))
-            elif variable == 'time':
-                assert (isinstance(value, datetime.time))
-                self._send('W XT {0.hour:02d}:{0.minute:02d}:{0.second:02d}\r'.format(value).encode('ascii'))
-            elif variable == 'watchdog_on':
-                self._send('W WD {:d}\r'.format(bool(value)).encode('ascii'))
-            elif variable == 'watchdog_setpoint':
-                self._send('W WS {:6.2}f\r'.format(value).encode('ascii'))
-            elif variable == 'cooling_on':
-                self._send('W CC {:d}\r'.format(bool(value)).encode('ascii'))
-            elif variable == 'pump_power':
-                assert (value >= 5)
-                assert (value <= 100)
-                self._send('W PF {:5.2f}\r'.format(value).encode('ascii'))
-            elif variable in self.allvariables:
-                raise ReadOnlyVariable(variable)
-            else:
-                raise UnknownVariable(variable)
-        except AssertionError as ae:
-            raise InvalidValue(value)
+        if variable == 'setpoint':
+            self._logger.debug('Setting setpoint to {:f}'.format(value))
+            self._send('W SW {:.2f}\r'.format(value).encode('ascii'))
+            self._logger.debug('Setpoint setting message queued.')
+        elif variable == 'highlimit':
+            self._send('W HL {:.2f}\r'.format(value).encode('ascii'))
+        elif variable == 'lowlimit':
+            self._send('W LL {:.2f}\r'.format(value).encode('ascii'))
+        elif variable == 'highlimit':
+            self._send('W HL {:.2f}\r'.format(value).encode('ascii'))
+        elif variable == 'control_external':
+            self._send('OUT MODE 2 {:d}\r'.format(bool(value)).encode('ascii'))
+        elif variable == 'diffcontrol_on':
+            self._send('W FR {:d}\r'.format(bool(value)).encode('ascii'))
+        elif variable == 'autostart':
+            self._send('W ZA {:d}\r'.format(bool(value)).encode('ascii'))
+        elif variable == 'fuzzyid':
+            self._send('W ZI {:d}\r'.format(bool(value)).encode('ascii'))
+        elif variable == 'beep':
+            self._send('W ZB {:d}\r'.format(bool(value)).encode('ascii'))
+        elif variable == 'date':
+            assert isinstance(value, datetime.date)
+            self._send('W XD {0.day:02d}.{0.month:02d}.{1:02d}\r'.format(value, int(value.year) % 100).encode('ascii'))
+        elif variable == 'time':
+            assert isinstance(value, datetime.time)
+            self._send('W XT {0.hour:02d}:{0.minute:02d}:{0.second:02d}\r'.format(value).encode('ascii'))
+        elif variable == 'watchdog_on':
+            self._send('W WD {:d}\r'.format(bool(value)).encode('ascii'))
+        elif variable == 'watchdog_setpoint':
+            self._send('W WS {:6.2}f\r'.format(value).encode('ascii'))
+        elif variable == 'cooling_on':
+            self._send('W CC {:d}\r'.format(bool(value)).encode('ascii'))
+        elif variable == 'pump_power':
+            if (value < 5) or (value > 100):
+                raise InvalidValue(value)
+            self._send('W PF {:5.2f}\r'.format(value).encode('ascii'))
+        elif variable in self.allvariables:
+            raise ReadOnlyVariable(variable)
+        else:
+            raise UnknownVariable(variable)
         self.refresh_variable(variable, signal_needed=False)
 
     def decode_error_flags(self, flags):

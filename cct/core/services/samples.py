@@ -1,4 +1,5 @@
 import logging
+from typing import Optional, Union, Dict
 
 from gi.repository import GObject
 
@@ -23,7 +24,7 @@ class SampleStore(Service):
         self._list = []
         self._active = None
 
-    def _load_state(self, dictionary):
+    def _load_state(self, dictionary: Dict):
         Service._load_state(self, dictionary)
         if isinstance(dictionary['list'], list):
             self._list = [Sample.fromdict(sampledict)
@@ -87,7 +88,7 @@ class SampleStore(Service):
         dic['list'] = {x.title: x.todict() for x in self._list}
         return dic
 
-    def add(self, sample):
+    def add(self, sample: Sample):
         if not [s for s in self._list if s.title == sample.title]:
             self._list.append(sample)
             self._list = sorted(self._list, key=lambda x: x.title)
@@ -99,7 +100,7 @@ class SampleStore(Service):
         #            self.emit('active-changed')
         return True
 
-    def remove(self, sample):
+    def remove(self, sample: Union[Sample, str]):
         if isinstance(sample, Sample):
             sample = sample.title
         if not [s for s in self._list if s.title == sample]:
@@ -113,15 +114,16 @@ class SampleStore(Service):
             self.emit('active-changed')
         self.emit('list-changed')
 
-    def set_active(self, sample):
+    def set_active(self, sample: Optional[str]):
         """sample: string or None"""
-        assert (isinstance(sample, str) or (sample is None))
         if sample is None:
             self._active = None
             self.emit('active-changed')
             return
-        if isinstance(sample, Sample):
+        elif isinstance(sample, Sample):
             sample = sample.title
+        else:
+            sample = str(sample)
         if [s for s in self._list if s.title == sample]:
             self._active = sample
             self.emit('active-changed')
@@ -149,16 +151,16 @@ class SampleStore(Service):
         for l in self._list:
             yield l
 
-    def get_sample(self, title):
+    def get_sample(self, title: str):
         sample = [s for s in self._list if s.title == title]
         if not sample:
             raise KeyError('Unknown sample:', title)
-        assert (len(sample) == 1)
+        assert (len(sample) == 1)  # there should be only one sample titled `title`
         return sample[0]
 
-    def set_sample(self, title, sample):
+    def set_sample(self, title: str, sample: Sample):
         self._list = sorted([s for s in self._list if s.title != title] + [sample], key=lambda x: x.title)
         self.emit('list-changed')
 
-    def __contains__(self, item):
-        return bool([s for s in self._list if s.title == item])
+    def __contains__(self, samplename: str):
+        return bool([s for s in self._list if s.title == samplename])

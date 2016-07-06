@@ -589,7 +589,8 @@ class TMCMcard(Device_TCP):
             self._logger.debug('Starting {} of motor {:d} to {:f}'.format(commandname, motor, pos))
             try:
                 # Check the validity of the motor index
-                assert ((motor >= 0) and (motor < self._N_axes))
+                if motor < 0 or motor >= self._N_axes:
+                    raise InvalidValue(motor)
                 # if another motor is moving (not expected to happen,
                 # since self._busysemaphore should ensure this, but
                 # anyway...
@@ -655,7 +656,8 @@ class TMCMcard(Device_TCP):
 
         try:
             motor_idx = int(variable.split('$')[1])
-            assert ((motor_idx >= 0) and (motor_idx < self._N_axes))
+            if motor_idx < 0 or motor_idx >= self._N_axes:
+                raise InvalidValue(motor_idx)
         except (IndexError, ValueError):
             motor_idx = None
         try:

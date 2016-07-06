@@ -1,20 +1,28 @@
+from typing import Union
+
+
+class PrivilegeError(Exception):
+    pass
+
 class PrivilegeLevel(object):
     _instances = []
 
     @classmethod
-    def register(cls, instance):
+    def register(cls, instance: 'PrivilegeLevel'):
         if not [i for i in cls._instances if i.normalizedname == instance.normalizedname]:
             cls._instances.append(instance)
+        else:
+            raise ValueError('Another instance exists with normalized name ' + instance.normalizedname)
         cls._instances.sort(key=lambda x: x.ordinal)
 
     @classmethod
-    def get_priv(cls, priv):
+    def get_priv(cls, priv: Union['PrivilegeLevel', str, int]):
         if isinstance(priv, cls):
             return priv
         elif isinstance(priv, str):
-            priv = priv.upper().replace(' ', '_').replace('-', '_')
+            priv = cls.normalizename(priv)
             lis = [i for i in cls._instances if i.normalizedname == priv]
-            assert (len(lis) <= 1)
+            assert len(lis) <= 1  # the normalized name is a "key".
             return lis[0]
         elif isinstance(priv, int):
             lis = [i for i in cls._instances if i.ordinal == priv]
@@ -22,49 +30,53 @@ class PrivilegeLevel(object):
         else:
             raise TypeError(priv)
 
-    def __init__(self, name, ordinal):
+    @staticmethod
+    def normalizename(name: str):
+        return name.upper().replace(' ', '_').replace('-', '_')
+
+    def __init__(self, name: str, ordinal: int):
         self.name = name
         self.ordinal = ordinal
-        self.normalizedname = name.upper().replace(' ', '_').replace('-', '_')
+        self.normalizedname = self.normalizename(self.name)
         self.register(self)
 
-    def __eq__(self, privlevel):
+    def __eq__(self, privlevel: 'PrivilegeLevel'):
         if isinstance(privlevel, type(self)):
             return privlevel.ordinal == self.ordinal
         else:
             return NotImplemented
 
-    def __lt__(self, privlevel):
+    def __lt__(self, privlevel: 'PrivilegeLevel'):
         if isinstance(privlevel, type(self)):
             return self.ordinal < privlevel.ordinal
         else:
             return NotImplemented
 
-    def __gt__(self, privlevel):
+    def __gt__(self, privlevel: 'PrivilegeLevel'):
         if isinstance(privlevel, type(self)):
             return self.ordinal > privlevel.ordinal
         else:
             return NotImplemented
 
-    def __le__(self, privlevel):
+    def __le__(self, privlevel: 'PrivilegeLevel'):
         if isinstance(privlevel, type(self)):
             return self.ordinal <= privlevel.ordinal
         else:
             return NotImplemented
 
-    def __ge__(self, privlevel):
+    def __ge__(self, privlevel: 'PrivilegeLevel'):
         if isinstance(privlevel, type(self)):
             return self.ordinal >= privlevel.ordinal
         else:
             return NotImplemented
 
-    def __ne__(self, privlevel):
+    def __ne__(self, privlevel: 'PrivilegeLevel'):
         if isinstance(privlevel, type(self)):
             return self.ordinal != privlevel.ordinal
         else:
             return NotImplemented
 
-    def is_allowed(self, privlevel):
+    def is_allowed(self, privlevel: 'PrivilegeLevel'):
         return privlevel <= self
 
     def get_allowed(self):

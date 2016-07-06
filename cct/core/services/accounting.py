@@ -5,7 +5,8 @@ import pickle
 from gi.repository import GObject
 
 from .service import Service, ServiceError
-from ..instrument.privileges import PRIV_LAYMAN, PRIV_SUPERUSER, PRIV_PROJECTMAN, PRIV_USERMAN, PrivilegeLevel
+from ..instrument.privileges import PRIV_LAYMAN, PRIV_SUPERUSER, PRIV_PROJECTMAN, PRIV_USERMAN, PrivilegeLevel, \
+    PrivilegeError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -88,7 +89,7 @@ class Accounting(Service):
             return self._user
         else:
             user = [u for u in self._users if u.username == username]
-            assert (len(user) == 1)
+            assert (len(user) == 1)  # the username is a "key": duplicates are not allowed
             return user[0]
 
     def get_usernames(self):
@@ -155,7 +156,8 @@ class Accounting(Service):
         return sorted([p.projectid for p in self._projects])
 
     def new_project(self, projectid, projectname, proposer):
-        assert (self.has_privilege(PRIV_PROJECTMAN))
+        if not self.has_privilege(PRIV_PROJECTMAN):
+            raise PrivilegeError()
         self._projects = [p for p in self._projects if p.projectid != projectid]
         prj = Project(projectid, projectname, proposer)
         self._projects.append(prj)

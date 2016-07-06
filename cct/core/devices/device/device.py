@@ -578,14 +578,15 @@ class Device(GObject.GObject):
         except KeyError:
             pass
         try:
-            assert (self._properties[varname] == value)  # can raie AssertionError and KeyError
+            if self._properties[varname] != value:
+                raise KeyError(varname)  # we raise a KeyError, signalling that the variable has to be updated.
             if force:
-                raise KeyError
+                raise KeyError(varname)
             if varname in self._refresh_requested and self._refresh_requested[varname] > 0:
                 self._refresh_requested[varname] -= 1
-                raise AssertionError
+                raise KeyError(varname)
             return False
-        except (AssertionError, KeyError):
+        except KeyError:
             #            self._logger.debug('Setting {} for {} to {}'.format(varname, self.name, value))
             self._properties[varname] = value
             self._send_to_frontend('update', name=varname, value=value)

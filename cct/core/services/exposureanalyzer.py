@@ -6,6 +6,7 @@ import queue
 import resource
 import traceback
 from logging.handlers import QueueHandler
+from typing import Union, Dict
 
 import numpy as np
 from gi.repository import GLib, GObject
@@ -33,7 +34,8 @@ class QueueLogHandler(QueueHandler):
         return (None, 'log', record)
 
 
-def get_statistics(matrix: np.ndarray, masktotal=None, mask=None):
+def get_statistics(matrix: np.ndarray, masktotal: Union[np.ndarray, int, None],
+                   mask: Union[np.ndarray, int, None] = None) -> Dict:
     """Calculate different statistics of a detector image, such as sum, max,
     center of gravity, etc."""
     assert (isinstance(matrix, np.ndarray))
@@ -41,6 +43,8 @@ def get_statistics(matrix: np.ndarray, masktotal=None, mask=None):
         mask = 1
     if masktotal is None:
         masktotal = 1
+    assert isinstance(masktotal, np.ndarray) or isinstance(masktotal, int)
+    assert isinstance(mask, np.ndarray) or isinstance(mask, int)
     result = {}
     matrixorig = matrix
     for prefix, mask in [('total_', masktotal), ('', mask)]:

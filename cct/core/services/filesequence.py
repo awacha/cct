@@ -13,7 +13,7 @@ from gi.repository import GObject
 from sastool.io.twodim import readcbf
 from scipy.io import loadmat
 
-from .service import Service
+from .service import Service, ServiceError
 from ..utils.errorvalue import ErrorValue
 from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders, find_subfolders
@@ -44,6 +44,10 @@ logger.setLevel(logging.DEBUG)
 - log
 
 """
+
+
+class FileSequenceError(ServiceError):
+    pass
 
 
 class FileSequence(Service):
@@ -117,8 +121,10 @@ class FileSequence(Service):
         with open(scanfile, 'rt', encoding='utf-8') as f:
             f.seek(self._scanfile_toc[scanfile][index]['pos'], 0)
             l = f.readline().strip()
-            assert (l.startswith('#S'))
-            assert (int(l.split()[1]) == index)
+            if not l.startswith('#S'):
+                raise FileSequenceError('Error in scan file: line expected to start with "#S"')
+            if int(l.split()[1]) != index:
+                raise FileSequenceError('Error in scan file: line expected to contain "#S {:d}"'.format(index))
             length = None
             index = None
             while l:
@@ -139,7 +145,9 @@ class FileSequence(Service):
                     length = int(l[3:])
                 elif l.startswith('#L'):
                     result['signals'] = l[3:].split('  ')
-                    assert (length is not None)
+                    if length is None:
+                        raise FileSequenceError(
+                            'Encountered a line starting with "#L" before reading a line starting with "#N"')
                     result['data'] = np.zeros(length,
                                               dtype=list(zip(result['signals'], [np.float] * len(result['signals']))))
                     index = 0
@@ -274,7 +282,8 @@ class FileSequence(Service):
                 self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
     def get_nextfreefsns(self, prefix: str, N: int, acquire: bool = True):
-        assert (N > 0)
+        if N <= 0:
+            raise FileSequenceError("Number of FSNs to allocate must be a positive integer")
         if prefix not in self._nextfreefsn:
             self._nextfreefsn[prefix] = 1
         try:

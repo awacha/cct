@@ -1,4 +1,4 @@
-from .command import Command
+from .command import Command, CommandError
 from .script import Script
 
 
@@ -33,7 +33,8 @@ class WaitVacuum(Command):
 
     def execute(self, interpreter, arglist, instrument, namespace):
         self._limit = float(arglist[0])
-        assert (self._limit > 0)
+        if self._limit <= 0:
+            raise CommandError('Target vacuum level must be positive')
         self._device_connections = [instrument.devices['tpg201'].connect('variable-change', self.on_variable_change),
                                     instrument.devices['tpg201'].connect('error', self.on_error)]
         self._device = instrument.devices['tpg201']

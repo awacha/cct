@@ -110,7 +110,12 @@ class Motors(ToolWindow):
         self.movebeamstop(True)
 
     def movebeamstop(self, out):
-        assert (not hasattr(self, '_movebeamstop'))
+        try:
+            error_message(self._window, 'Cannot move beamstop', 'Already moving ' + self._movebeamstop)
+            return True
+        except AttributeError:
+            # this happens when `self` does not have a '_movebeamstop' attribute, i.e. the beamstop is not moving.
+            pass
         if not self._instrument.accounting.has_privilege(PRIV_BEAMSTOP):
             error_message(self._window, 'Cannot move beamstop', 'Insufficient privileges')
             return
@@ -125,6 +130,7 @@ class Motors(ToolWindow):
             self._instrument.motors['BeamStop_X'].moveto(xpos)
         except Exception as exc:
             self._make_sensitive()
+            del self._movebeamstop
             error_message(self._window, 'Cannot start move', str(exc.args[0]))
 
     def on_map(self, window):
@@ -153,7 +159,13 @@ class Motors(ToolWindow):
                 sampleselector.set_active(i)
 
     def on_moveto_sample(self, button):
-        assert (not hasattr(self, '_movetosample'))
+        try:
+            error_message(self._window, 'Cannot move sample motors',
+                          'Already in motion to sample ' + str(self._movetosample))
+            return True
+        except AttributeError:
+            # This happens when `self` does not have a `_movetosample` attribute, i.e. we are not moving.
+            pass
         self._movetosample = self._instrument.samplestore.get_sample(
             self._builder.get_object('sampleselector').get_active_text())
         self._make_insensitive('Moving sample', ['highlevel_expander'])

@@ -71,13 +71,15 @@ class Transmission(Script):
             nimages = self._instrument.config['transmission']['nimages']
         else:
             nimages = int(arglist[1])
-        assert (nimages > 2)
+        if nimages <= 2:
+            raise CommandError('Number of images must be larger than 2 to allow for uncertainty approximation')
 
         if len(arglist) < 3:
             exptime = self._instrument.config['transmission']['exptime']
         else:
             exptime = float(arglist[2])
-        assert (exptime > 0)
+        if nimages <= 0:
+            raise CommandError('Exposure time must be positive')
 
         if len(arglist) < 4:
             emptyname = self._instrument.config['transmission']['empty_sample']
