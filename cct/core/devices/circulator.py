@@ -29,10 +29,10 @@ class HaakePhoenix(Device_TCP):
 
     _notsourgentvariables = ['cooling_on', 'setpoint', 'date']
 
-    _minimum_query_variables = ['faultstatus', 'time', 'temperature_internal',
+    _minimum_query_variables = ['firmwareversion', 'faultstatus', 'time', 'temperature_internal',
                                 'temperature_external', 'pump_power',
                                 'cooling_on', 'setpoint', 'date',
-                                'firmwareversion', 'fuzzycontrol',
+                                'fuzzycontrol',
                                 'fuzzystatus', 'highlimit', 'lowlimit',
                                 'diffcontrol_on', 'autostart', 'fuzzyid',
                                 'beep', 'watchdog_on', 'watchdog_setpoint']
@@ -233,9 +233,19 @@ class HaakePhoenix(Device_TCP):
                               'main_relay_missing_error', 'status_control_external', 'status_temperature_control']:
             self._send(b'R BS\r')
         elif variablename == 'fuzzycontrol':
-            self._send(b'R FB\r')
+            if 'firmwareversion' not in self._properties:
+                self._update_variable('fuzzycontrol', 'not yet read')
+            elif self._properties['firmwareversion'].startswith('2P/H'):
+                self._send(b'R FB\r')
+            else:
+                self._update_variable('fuzzycontrol', 'not supported')
         elif variablename == 'fuzzystatus':
-            self._send(b'R FE\r')
+            if 'firmwareversion' not in self._properties:
+                self._update_variable('fuzzystatus', False)
+            elif self._properties['firmwareversion'].startswith('2P/'):
+                self._send(b'R FE\r')
+            else:
+                self._update_variable('fuzzystatus', False)
         elif variablename == 'temperature_internal':
             self._send(b'R T1\r')
         elif variablename == 'temperature_external':
