@@ -60,6 +60,8 @@ class Instrument(GObject.GObject):
     configdir = 'config'
     telemetry_timeout = 0.9
     statusfile_timeout = 30
+    memlog_timeout = 60  # write memory usage log
+    memlog_file = 'memory.log'
 
     __gsignals__ = {
         # emitted when all devices have been initialized.
@@ -95,6 +97,25 @@ class Instrument(GObject.GObject):
         """Start operation"""
         self._telemetry_timeout = GLib.timeout_add(self.telemetry_timeout * 1000,
                                                    self.on_telemetry_timeout)
+
+        memlogfiles = [f for f in os.listdir(self.config['path']['directories']['log']) if
+                       f.startswith(self.memlog_file)]
+        if not memlogfiles:
+            self.memlog_file = self.memlog_file + '.0'
+        else:
+            maxidx = max([int(f.rsplit('.', 1)[1]) for f in memlogfiles])
+            self.memlog_file = self.memlog_file + '.{:d}'.format(maxidx + 1)
+        self.memlog_file = os.path.join(self.config['path']['directories']['log'], self.memlog_file)
+        with open(self.memlog_file, 'xt', encoding='utf-8') as f:
+            f.write('# CCT memory log file created {}\n'.format(datetime.datetime.now()))
+            f.write('# Epoch (sec)\tUptime (sec)\tMain (MB)')
+            for d in sorted(self.devices):
+                f.write('\t {} (MB)'.format(d))
+            for s in ['exposureanalyzer']:
+                f.write('\t {} (MB)'.format(s))
+            f.write('\n')
+        self._memlog_timeout = GLib.timeout_add(self.memlog_timeout * 1000,
+                                                self.on_memlog_timeout)
         for s in self.services:
             s.start()
         logger.info('Started services.')
@@ -522,3 +543,27 @@ class Instrument(GObject.GObject):
 
     def get_telemetrykeys(self):
         return self._telemetries.keys()
+
+    def on_memlog_timeout(self):
+        with open(self.memlog_file, 'at', encoding='utf-8') as f:
+            tm = self.get_telemetry()
+            s = '{:.3f}\t{:.3f}\t{:.3f}'.format(time.time(),
+                                                (datetime.datetime.now() - self._starttime).total_seconds(),
+                                                (tm['self'].ru_maxrss + tm[
+                                                    'children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
+            for d in sorted(self.devices):
+                try:
+                    tm = self.get_telemetry(d)
+                    s = '{}\t{:.3f}'.format(s, (
+                    tm['self'].ru_maxrss + tm['children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
+                except KeyError:
+                    s = '{}\tNaN'.format(s)
+            for d in ['exposureanalyzer']:
+                try:
+                    tm = self.get_telemetry(d)
+                    s = '{}\t{:.3f}'.format(s, (
+                    tm['self'].ru_maxrss + tm['children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
+                except KeyError:
+                    s = '{}\tNaN'.format(s)
+            f.write(s + '\n')
+        return True
