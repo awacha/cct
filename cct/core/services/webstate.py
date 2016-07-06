@@ -167,7 +167,7 @@ class WebStateFileWriter(Service):
         for var in ['ht', 'current', 'power', 'shutter']:
             try:
                 vars[var] = self.instrument.xray_source.get_variable(var)
-            except KeyError:
+            except (KeyError, AttributeError):
                 vars[var] = np.nan
         if isinstance(vars['shutter'], bool):
             vars['shutter'] = ['Closed', 'Open'][vars['shutter']]
@@ -184,7 +184,7 @@ class WebStateFileWriter(Service):
                  'safety_shutter', 'temperature', 'relay_interlock', 'door', 'filament']):
             if i % 4 == 0:
                 xray = xray + "<tr>\n"
-            xray = xray + '<td style="background-color":{}>{}</td>\n'.format(*self.format_genix_faultvalue(fault))
+            xray = xray + '<td style="background-color:{}">{}</td>\n'.format(*self.format_genix_faultvalue(fault))
             if i % 4 == 3:
                 xray = xray + '</tr>\n'
         return xray
