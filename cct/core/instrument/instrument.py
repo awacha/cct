@@ -6,16 +6,12 @@ import pickle
 import resource
 import time
 import traceback
+from typing import List
 
 import psutil
 
 from .motor import Motor
-from ..devices.circulator import HaakePhoenix
-from ..devices.detector import Pilatus
-from ..devices.device import DeviceError
-from ..devices.motor import TMCM351, TMCM6110
-from ..devices.vacuumgauge import TPG201
-from ..devices.xray_source import GeniX
+from ..devices.device import DeviceError, Device_ModbusTCP, Device_TCP, Device
 from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter
 
 logger = logging.getLogger(__name__)
@@ -79,9 +75,6 @@ class Instrument(GObject.GObject):
         self._online = online
         self.devices = {}
         self.services = []
-        self.xray_source = None
-        self.detector = None
-        self.motorcontrollers = {}
         self.motors = {}
         self.environmentcontrollers = {}
         self.configfile = os.path.join(self.configdir, 'cct.pickle')
@@ -121,7 +114,7 @@ class Instrument(GObject.GObject):
         logger.info('Started services.')
 
     def _initialize_config(self):
-        """Create a sane configuration in `self.config` from sratch."""
+        """Create a sane configuration in `self.config` from scratch."""
         self.config = {}
         self.config['path'] = {}
         self.config['path']['directories'] = {'log': 'log',
@@ -164,44 +157,49 @@ class Instrument(GObject.GObject):
         self.config['connections']['xray_source'] = {'host': 'genix.credo',
                                                      'port': 502,
                                                      'timeout': 1,
-                                                     'name': 'genix'}
+                                                     'name': 'genix',
+                                                     'classname': 'GeniX'}
         self.config['connections']['detector'] = {'host': 'pilatus300k.credo',
                                                   'port': 41234,
                                                   'timeout': 0.01,
                                                   'poll_timeout': 0.01,
-                                                  'name': 'pilatus'}
-        self.config['connections']['environmentcontrollers'] = {}
-        self.config['connections']['environmentcontrollers']['vacuum'] = {
+                                                  'name': 'pilatus',
+                                                  'classname': 'Pilatus'}
+        self.config['connections']['vacuum'] = {
             'host': 'devices.credo',
             'port': 2006,
             'timeout': 0.1,
             'poll_timeout': 0.1,
-            'name': 'tpg201'}
-        self.config['connections']['environmentcontrollers']['temperature'] = {
+            'name': 'tpg201',
+            'classname': 'TPG201'}
+        self.config['connections']['temperature'] = {
             'host': 'devices.credo',
             'port': 2001,
             'timeout': 0.1,
             'poll_timeout': 0.05,
-            'name': 'haakephoenix'}
-        self.config['connections']['motorcontrollers'] = {}
-        self.config['connections']['motorcontrollers']['tmcm351a'] = {
+            'name': 'haakephoenix',
+            'classname': 'HaakePhoenix'}
+        self.config['connections']['tmcm351a'] = {
             'host': 'devices.credo',
             'port': 2003,
             'timeout': 0.01,
             'poll_timeout': 0.01,
-            'name': 'tmcm351a'}
-        self.config['connections']['motorcontrollers']['tmcm351b'] = {
+            'name': 'tmcm351a',
+            'classname': 'TMCM351'}
+        self.config['connections']['tmcm351b'] = {
             'host': 'devices.credo',
             'port': 2004,
             'timeout': 0.01,
             'poll_timeout': 0.01,
-            'name': 'tmcm351b'}
-        self.config['connections']['motorcontrollers']['tmcm6110'] = {
+            'name': 'tmcm351b',
+            'classname': 'TMCM351'}
+        self.config['connections']['tmcm6110'] = {
             'host': 'devices.credo',
             'port': 2005,
             'timeout': 0.01,
             'poll_timeout': 0.01,
-            'name': 'tmcm6110'}
+            'name': 'tmcm6110',
+            'classname': 'TMCM6110'}
         self.config['motors'] = {'0': {'name': 'Unknown1', 'controller': 'tmcm351a', 'index': 0},
                                  '1': {'name': 'Sample_X',
                                        'controller': 'tmcm351a', 'index': 1},
@@ -303,26 +301,33 @@ class Instrument(GObject.GObject):
             config_loaded = pickle.load(f)
         self._update_config(self.config, config_loaded)
 
-    def _connect_signals(self, devicename, device):
+    def _connect_signals(self, device: Device):
         """Connect signal handlers of a device.
 
-        devicename: the name of the device (string)
         device: the device object, an instance of
             cct.core.devices.device.Device
         """
-        self._signalconnections[devicename] = [device.connect('startupdone', self.on_ready),
-                                               device.connect('disconnect', self.on_disconnect),
-                                               device.connect('telemetry', self.on_telemetry, devicename)]
+        self._signalconnections[device.name] = [device.connect('startupdone', self.on_ready),
+                                                device.connect('disconnect', self.on_disconnect),
+                                                device.connect('telemetry', self.on_telemetry, device.name)]
 
-    def _disconnect_signals(self, devicename, device):
+    def _disconnect_signals(self, device: Device):
+        """Disconnect signal handlers from a device."""
         try:
-            for c in self._signalconnections[devicename]:
+            for c in self._signalconnections[device.name]:
                 device.disconnect(c)
-            del self._signalconnections[device]
+            del self._signalconnections[device.name]
         except (AttributeError, KeyError):
             pass
 
     def get_beamstop_state(self):
+        """Check if beamstop is in the beam or not.
+
+        Returns a string:
+            'in' if the beamstop motors are at their calibrated in-beam position
+            'out' if the beamstop motors are at their calibrated out-of-beam position
+            'unknown' otherwise
+        """
         bsy = self.motors['BeamStop_Y'].where()
         bsx = self.motors['BeamStop_X'].where()
         if abs(bsx - self.config['beamstop']['in'][0]) < 0.001 and abs(bsy - self.config['beamstop']['in'][1]) < 0.001:
@@ -332,112 +337,96 @@ class Instrument(GObject.GObject):
             return 'out'
         return 'unknown'
 
+    @property
     def connect_devices(self):
         """Try to connect to all devices. Send error logs on failures. Return
-        a list of unsuccessfully connected devices."""
+        a list of the names of unsuccessfully connected devices."""
         if not self._online:
             logger.info('Not connecting to hardware: we are not on-line.')
+
+        def get_subclasses(cls) -> List:
+            """Recursively get a flat list of subclasses of `cls`"""
+            scl = []
+            scl.append(cls)
+            for c in cls.__subclasses__():
+                scl.extend(get_subclasses(c))
+            return scl
+
+        # get all the device classes, i.e. descendants of Device.
+        device_classes = get_subclasses(Device)
+
+        # initialize all the devices: instantiate classes, connect signal handlers,
+        # establish connections to the hardware and load state information. The class
+        # instances are added to the dict `self.devices`, the keys being those given in
+        # cfg['name'].
         unsuccessful = []
-        if self.xray_source is None:
-            self.xray_source = GeniX(
-                self.config['connections']['xray_source']['name'])
-            self.devices[
-                self.config['connections']['xray_source']['name']] = self.xray_source
-        try:
-            self._connect_signals(
-                self.config['connections']['xray_source']['name'], self.xray_source)
-            self.xray_source.connect_device(self.config['connections']['xray_source']['host'],
-                                            self.config['connections'][
-                                                'xray_source']['port'],
-                                            self.config['connections']['xray_source']['timeout'])
-            self._waiting_for_ready.append(self.xray_source._instancename)
-        except DeviceError:
-            self._disconnect_signals(
-                self.config['connections']['xray_source']['name'], self.xray_source)
-            logger.error(
-                'Cannot connect to X-ray source: ' + traceback.format_exc())
-            self.xray_source = None
-            del self.devices[self.config['connections']['xray_source']['name']]
-            unsuccessful.append(
-                self.config['connections']['xray_source']['name'])
-        if self.detector is None:
-            self.detector = Pilatus(
-                self.config['connections']['detector']['name'])
-            self.devices[
-                self.config['connections']['detector']['name']] = self.detector
-        try:
-            self._connect_signals(
-                self.config['connections']['detector']['name'], self.detector)
-            self.detector.connect_device(self.config['connections']['detector']['host'],
-                                         self.config['connections'][
-                                             'detector']['port'],
-                                         self.config['connections'][
-                                             'detector']['timeout'],
-                                         self.config['connections']['detector']['poll_timeout'])
-            self._waiting_for_ready.append(self.detector._instancename)
-        except DeviceError:
-            self._disconnect_signals(
-                self.config['connections']['detector']['name'], self.detector)
-            logger.error(
-                'Cannot connect to detector: ' + traceback.format_exc())
-            self.detector = None
-            del self.devices[self.config['connections']['detector']['name']]
-            unsuccessful.append(self.config['connections']['detector']['name'])
-        for motcont in self.config['connections']['motorcontrollers']:
-            cfg = self.config['connections']['motorcontrollers'][motcont]
-            if motcont not in self.motorcontrollers:
-                if cfg['name'].startswith('tmcm351'):
-                    self.motorcontrollers[motcont] = TMCM351(cfg['name'])
-                elif cfg['name'].startswith('tmcm6110'):
-                    self.motorcontrollers[motcont] = TMCM6110(cfg['name'])
-                self.devices[cfg['name']] = self.motorcontrollers[motcont]
+        for entryname in self.config['connections']:
+            cfg = self.config['connections'][entryname]  # shortcut
+            # avoid establishing another connection to the device.
+            if cfg['name'] in self.devices:
+                logger.warn('Not connecting {} again.'.format(cfg['name']))
+                continue
+            # get the appropriate class
+            cls = [d for d in device_classes if d.__name__ == cfg['classname']]
+            assert (len(cls) == 1)  # a single class must exist.
+            cls = cls[0]
+
+            dev = cls(cfg['name'])  # instantiate the class
+            assert (isinstance(dev, Device))
+            self.devices[cfg['name']] = dev
             try:
-                self._connect_signals(
-                    cfg['name'], self.motorcontrollers[motcont])
-                self.motorcontrollers[motcont].connect_device(
-                    cfg['host'], cfg['port'], cfg['timeout'], cfg['poll_timeout'])
-                self._waiting_for_ready.append(cfg['name'])
+                # connect signal handlers
+                self._connect_signals(dev)
+                # connect to the hardware
+                if isinstance(cls, Device_ModbusTCP):
+                    dev.connect_device(cfg['host'], cfg['port'], cfg['timeout'])
+                elif isinstance(cls, Device_TCP):
+                    dev.connect_device(cfg['host'], cfg['port'], cfg['timeout'], cfg['poll_timeout'])
+                else:
+                    raise TypeError(type(dev))
+                # load the state
+                try:
+                    dev._load_state(self.config['devices'][cfg['name']])
+                except KeyError:
+                    # skip if there is no saved state to the device
+                    pass
+                self._waiting_for_ready.append(dev.name)
             except DeviceError:
-                self._disconnect_signals(
-                    cfg['name'], self.motorcontrollers[motcont])
-                logger.error('Cannot connect to motor driver {}: {}'.format(
-                    cfg['name'], traceback.format_exc()))
-                del self.motorcontrollers[cfg['name']]
+                # on failure of connecting to the hardware, disconnect signal handlers, delete the instance and
+                # note the name of this entry for returning to the caller.
+                self._disconnect_signals(dev)
+                logger.error(
+                    'Cannot connect to device {}: {}'.format(cfg['name'], traceback.format_exc()))
                 del self.devices[cfg['name']]
+                del dev
                 unsuccessful.append(cfg['name'])
+        # at this point, all devices are initialized. We will create some shortcuts to special devices:
+        try:
+            self.xray_source = self.devices[self.config['connections']['xray_source']['name']]
+        except KeyError:
+            pass
+        try:
+            self.detector = self.devices[self.config['connections']['detector']['name']]
+        except KeyError:
+            pass
+        try:
+            self.environmentcontrollers['vacuum'] = self.devices[self.config['connections']['vacuum']['name']]
+        except KeyError:
+            pass
+        try:
+            self.environmentcontrollers['temperature'] = self.devices[self.config['connections']['temperature']['name']]
+        except KeyError:
+            pass
+
+        # Instantiate motors
         for m in self.config['motors']:
+            cfg = self.config['motors'][m]
             try:
-                self.motors[self.config['motors'][m]['name']] = Motor(
-                    self.motorcontrollers[self.config['motors'][m]['controller']],
-                    self.config['motors'][m]['index'])
+                self.motors[cfg['name']] = Motor(self.devices[cfg['controller']],
+                                                 cfg['index'])
             except KeyError:
-                logger.error('Cannot find motor ' + self.config['motors'][m]['name'])
-        for envcont in self.config['connections']['environmentcontrollers']:
-            cfg = self.config['connections']['environmentcontrollers'][envcont]
-            if envcont not in self.environmentcontrollers:
-                if envcont == 'temperature':
-                    self.environmentcontrollers[envcont] = HaakePhoenix(cfg['name'])
-                elif envcont == 'vacuum':
-                    self.environmentcontrollers[envcont] = TPG201(cfg['name'])
-                self.devices[
-                    cfg['name']] = self.environmentcontrollers[envcont]
-            try:
-                self._connect_signals(
-                    cfg['name'], self.environmentcontrollers[envcont])
-                self.environmentcontrollers[envcont].connect_device(
-                    cfg['host'], cfg['port'], cfg['timeout'], cfg['poll_timeout'])
-                self._waiting_for_ready.append(cfg['name'])
-            except DeviceError:
-                self._disconnect_signals(
-                    cfg['name'], self.environmentcontrollers[envcont])
-                logger.error('Cannot connect to {} controller: {}'.format(
-                    envcont, traceback.format_exc()))
-                del self.environmentcontrollers[envcont]
-                del self.devices[cfg['name']]
-                unsuccessful.append(cfg['name'])
-        for d in self.devices:
-            if d in self.config['devices']:
-                self.devices[d]._load_state(self.config['devices'][d])
+                logger.error('Cannot find controller for motor ' + cfg['name'])
+
         return unsuccessful
 
     def on_telemetry(self, device, telemetry, devicename):
@@ -456,7 +445,7 @@ class Instrument(GObject.GObject):
         else:
             logger.debug('Waiting for ready: ' + ', '.join(self._waiting_for_ready))
 
-    def on_disconnect(self, device, because_of_failure):
+    def on_disconnect(self, device: Device, because_of_failure: bool):
         logger.debug('Device {} disconnected. Because of failure: {}'.format(
             device.name, because_of_failure))
         if device.name in self._waiting_for_ready:
@@ -555,14 +544,14 @@ class Instrument(GObject.GObject):
                 try:
                     tm = self.get_telemetry(d)
                     s = '{}\t{:.3f}'.format(s, (
-                    tm['self'].ru_maxrss + tm['children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
+                        tm['self'].ru_maxrss + tm['children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
                 except KeyError:
                     s = '{}\tNaN'.format(s)
             for d in ['exposureanalyzer']:
                 try:
                     tm = self.get_telemetry(d)
                     s = '{}\t{:.3f}'.format(s, (
-                    tm['self'].ru_maxrss + tm['children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
+                        tm['self'].ru_maxrss + tm['children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
                 except KeyError:
                     s = '{}\tNaN'.format(s)
             f.write(s + '\n')
