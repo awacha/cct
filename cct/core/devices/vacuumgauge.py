@@ -14,9 +14,9 @@ logger.setLevel(logging.INFO)
 class TPG201(Device_TCP):
     log_formatstr = '{pressure}'
 
-    _all_variables = ['pressure', 'version', 'units']
+    all_variables = ['pressure', 'version', 'units']
 
-    _minimum_query_variables = ['pressure', 'version', 'units']
+    minimum_query_variables = ['pressure', 'version', 'units']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

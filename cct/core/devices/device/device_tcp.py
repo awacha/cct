@@ -7,8 +7,9 @@ import time
 import traceback
 from logging.handlers import QueueHandler
 
-from .device import Device
+from .backend import DeviceBackend
 from .exceptions import DeviceError, CommunicationError
+from .message import Message
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -16,113 +17,178 @@ logger.setLevel(logging.INFO)
 
 class QueueLogHandler(QueueHandler):
     def prepare(self, record):
-        return {'type': 'log', 'logrecord': record, 'timestamp': time.monotonic(), 'id': 0}
+        return Message('log', 0, 'logger', logrecord=record)
 
 
-class TCPCommunicator(multiprocessing.Process):
-    def __init__(self, instancename, tcpsocket, sendqueue, incomingqueue, poll_timeout, cleartosend_semaphore,
-                 getcompletemessages, killflag, reply_timeout, waitbeforesend=0.0):
-        super().__init__()
-        self._tcpsocket = tcpsocket
-        self._waitbeforesend = waitbeforesend
-        self._sendqueue = sendqueue
-        self._incomingqueue = incomingqueue
-        self._poll_timeout = poll_timeout
-        self._cleartosend_semaphore = cleartosend_semaphore
-        self._get_complete_messages = getcompletemessages
-        self._message = b''
-        self._lastsent = []
-        self._reply_timeout = reply_timeout
-        self._killflag = killflag
-        self._asynchronous = False
-        self._logger = logging.getLogger(
+class TCPCommunicator:
+    """A class to perform direct communications over TCP/IP with the hardware.
+
+    This class should be instantiated in a separate, dedicated process.
+    Communication with the other parts of the program is done through queues
+    (multiprocessing.Queue). Messages are similar dictionaries as in
+    DeviceBackend, with the following required fields:
+
+    'type' (str): the type of the message
+    'source' (str): the unique identifier of the source of the message
+    'id' (int): a unique integer ID, increasing
+    'timestamp': the value of time.monotonic() at the generation of the message
+
+    The allowed incoming message type:
+
+    'send': send a message
+        'message' (bytes): the message to be send, in the correct format the
+            device can accept. It will be sent without modifications.
+        'expected_replies' (int): the number of expected replies
+        'timeout' (float): the time in seconds, after which the replies are
+            considered lost
+        'asynchronous' (bool): if other messages can be sent before the reply
+            to this message arrives. This is ignored if `expected_replies` is
+            zero.
+
+    This process sends the following types:
+
+    'incoming': a message has been received
+        'message' (bytes): the message received
+        'sent_message' (bytes): the message originally sent
+        'reply_count' (int): from the expected N replies, which this is
+        'referred_id': the ID of the corresponding incoming queue message
+    'send_complete': sending a message completed
+        'message' the message just sent.
+        'referred_id': the ID of the corresponding incoming queue message
+    'timeout': waiting for a reply timed out.
+        'message (bytes): the message sent
+        'received_replies (int)': the replies we received
+        'referred_id': the ID of the corresponding incoming queue message.
+    'communication_error': some error happened
+        'exception' (Exception): the exception instance
+        'traceback' (str): the traceback formatted with traceback.format_exc()
+
+    Because stopping must be a high priority event, the parent process can
+    request this process to terminate by setting a kill flag. The parent is not
+    allowed to feed anything into the input queue of the process after setting
+    this flag. After seeing the kill flag set, this process flushes its input
+    queue, closes the connection to the hardware, sends an 'exited' message to
+    the output queue ('normaltermination': True) and terminates.
+
+    If a fatal error in communication happens, this process must close the
+    communication channel to the hardware device and send an 'exited' message
+    to the output queue ('normaltermination: False) and terminates. The parent
+    thread is responsible to flush the input queue of this process.
+
+    Note that non-solicited messages from the device are considered an error
+    in this class.
+    """
+
+    def __init__(self, instancename, host, port, poll_timeout, sendqueue, incomingqueue,
+                 killflag, exitedflag, getcompletemessages):
+        self.name = instancename
+        self.sendqueue = sendqueue
+        self.incomingqueue = incomingqueue
+        self.poll_timeout = poll_timeout
+        self.get_complete_messages = getcompletemessages
+        self.logger = logging.getLogger(
             __name__ + '::' + instancename + '__tcpprocess')
-        self._logger.propagate = False
-        self._instancename = instancename
-        if not self._logger.hasHandlers():
-            self._logger.addHandler(QueueLogHandler(incomingqueue))
-            self._logger.addHandler(logging.StreamHandler())
-            self._logger.setLevel(logging.getLogger(__name__).getEffectiveLevel())
-
-    def _send_to_backend(self, msgtype, **kwargs):
-        msg = {'type': msgtype, 'id': 0, 'timestamp': time.monotonic()}
-        msg.update(kwargs)
-        self._incomingqueue.put_nowait(msg)
-
-    @property
-    def name(self):
-        return self._instancename
-
-    def _send_message_to_device(self):
-        if not self._cleartosend_semaphore.acquire(block=False):
-            # Do not send a message to the device if we are not allowed to.
-            # We acquire the semaphore for sending, and the background process
-            # should release it when it has processed the returned results.
-            return
+        self.logger.propagate = False
+        self.msgid_counter = 0
+        self.killflag = killflag
+        self.exitedflag = exitedflag
+        if not self.logger.hasHandlers():
+            self.logger.addHandler(QueueLogHandler(incomingqueue))
+            self.logger.addHandler(logging.StreamHandler())
+            self.logger.setLevel(logging.getLogger(__name__).getEffectiveLevel())
+        self.logger.debug('Connecting over TCP/IP to device {}: {}:{:d}'.format(self.name, host, port))
         try:
-            command, outmsg, expected_replies = self._sendqueue.get_nowait()
-            if command == 'send':
-                sent = 0
-                time.sleep(self._waitbeforesend)
-                while sent < len(outmsg):
-                    sent += self._tcpsocket.send(outmsg[sent:])
-                if expected_replies is not None:
-                    for i in range(expected_replies):
-                        self._lastsent.insert(0, outmsg)
-                else:
-                    self._asynchronous = True
-                if expected_replies == 0:
-                    # we do not expect a reply, so we release the
-                    # cleartosend semaphore
-                    self._cleartosend_semaphore.release()
-                else:
-                    self._lastsendtime = time.monotonic()
-                self._send_to_backend('send_complete', message=outmsg)
-            else:
-                raise NotImplementedError(command)
-        except queue.Empty:
-            # if we did not sent anything, release the semaphore
+            self.tcpsocket = socket.create_connection((host, port))
+            self.tcpsocket.setblocking(False)
+        except (socket.error, socket.gaierror, socket.herror, ConnectionRefusedError) as exc:
+            logger.error(
+                'Error initializing socket connection to device {}:{:d}'.format(host, port))
             try:
-                self._cleartosend_semaphore.release()
-            except ValueError:
+                del self.tcpsocket
+            except AttributeError:
                 pass
+            self.send_to_backend('error', exception=exc, traceback=traceback.format_exc())
+            self.send_to_backend('exited', normaltermination=False)
+            raise DeviceError('Cannot connect to device.', exc)
 
-    def _receive_message_from_device(self, polling):
+        self.message_part = b''
+        self.lastsent = []  # a stack of recently sent messages.
+        self.lastsendtime = 0
+        self.cleartosend = True
+
+    def send_to_backend(self, msgtype, **kwargs):
+        self.msgid_counter += 1
+        msg = Message(msgtype, self.msgid_counter, self.name + '__tcpprocess', **kwargs)
+        self.incomingqueue.put_nowait(msg)
+
+    def send_message_to_device(self):
+        """Send a message from the sending queue to the device.
+
+        Before sending, check the cleartosend semaphore. If it cannot be acquired, no message is sent.
+        """
+        if not self.cleartosend:
+            # Do not send a message to the device if we are not allowed to.
+            return False
+        # otherwise we are clear to send a message, not expecting a response from the device.
+        # get the next job
+        try:
+            msg = self.sendqueue.get_nowait()
+        except queue.Empty:
+            # no message to send
+            return False
+        assert isinstance(msg, Message)
+        assert msg['type'] == 'send'
+        # we have to send a message.
+        self.cleartosend = False
+        chars_sent = 0
+        outmsg = msg['message']
+        while chars_sent < len(outmsg):
+            justsent = self.tcpsocket.send(outmsg[chars_sent:])
+            assert justsent > 0
+            chars_sent += justsent
+        # the message has been sent.
+        if msg['expected_replies'] > 0:
+            # if we are expecting replies, save `msg` to the last sent stack.
+            msg['sendtime'] = time.monotonic()
+            msg['received_replies'] = 0
+            self.lastsent.append(msg)
+        else:
+            # we are not expecting replies
+            self.cleartosend = True
+        if msg['asynchronous']:
+            # we can send another message before we obtain reply/replies.
+            self.cleartosend = True
+        self.send_to_backend('send_complete', message=outmsg)
+        self.lastsendtime = time.monotonic()
+
+    def receive_message_from_device(self, polling):
+        """Try to receive a message from the device."""
         message = b''
         while True:
             # read all parts of the message.
             try:
                 # check if an input is waiting on the socket
-                socket, event = polling.poll(self._poll_timeout * 1000)[0]
+                sock, event = polling.poll(self.poll_timeout * 1000)[0]
             except IndexError:
                 # no incoming message
-                break  # this inner while True loop
+                break  # the while True loop
             # an event on the socket is waiting to be processed
-            if (event & (select.POLLERR | select.POLLHUP | select.POLLNVAL)):
+            if event & (select.POLLERR | select.POLLHUP | select.POLLNVAL):
                 # fatal socket error, we have to close communications.
                 raise CommunicationError(
                     'Socket is in exceptional state: {:d}'.format(event))
                 # end watching the socket.
             # read the incoming message
-            message = message + self._tcpsocket.recv(4096)
+            message = message + sock.recv(4096)
             if not message:
                 # remote end hung up on us
                 raise CommunicationError(
                     'Socket has been closed by the remote side')
         # append the currently received message to the previously received,
         # incomplete message, if any
-        self._message = self._message + message
-        if self._message:
-            # the incoming message is ready, send it to the background
-            # thread
-            messages = self._get_complete_messages(self._message)
-            for message in messages[:-1]:
-                if self._asynchronous:
-                    self._send_to_backend('incoming', message=message, sent=None)
-                else:
-                    self._send_to_backend('incoming', message=message, sent=self._lastsent.pop())
-            self._message = messages[-1]
-            self._lastsendtime = None
+        self.message_part = self.message_part + message
+        if self.message_part:
+            self.message_part = self.dispatch_message(self.message_part)
         # Otherwise, if 'message' is empty, it means that no message has been
         # read, because no message was waiting. Note that this is not the same
         # as receiving an empty message, which signifies the breakdown of the
@@ -130,35 +196,78 @@ class TCPCommunicator(multiprocessing.Process):
         # while loop.
         return
 
+    def dispatch_message(self, message: bytes) -> bytes:
+        if message:
+            # The incoming message is ready, send it to the incoming queue.
+            # First dissect the message into different parts, if needed.
+            messages = self.get_complete_messages.__call__(self.message_part)
+            for message in messages[:-1]:
+                if not self.lastsent:
+                    # this is an unsolicited message from the device.
+                    raise CommunicationError('Unsolicited message from device {}: {}'.format(self.name, str(message)))
+                self.send_to_backend('incoming', message=message, sent_message=self.lastsent[-1]['message'],
+                                     referred_id=self.lastsent[-1]['id'],
+                                     reply_count=self.lastsent[-1]['received_replies'])
+                self.lastsent[-1]['received_replies'] += 1
+                if self.lastsent[-1]['expected_replies'] == self.lastsent[-1]['received_replies']:
+                    del self.lastsent[-1]
+                if not self.lastsent:
+                    # if no messages are waiting for replies:
+                    self.cleartosend = True
+                elif self.lastsent[-1]['asynchronous']:
+                    # if the next message we are expecting a reply for is asynchronous,
+                    # we can send another message.
+                    self.cleartosend = True
+                else:
+                    # leave self.cleartosend as is.
+                    pass
+            return messages[-1]
+        else:
+            return b''
+
     def run(self):
         """Background process for communication."""
+        self.exitedflag.clear()
         polling = select.poll()
-        polling.register(self._tcpsocket, select.POLLIN | select.POLLPRI |
+        polling.register(self.tcpsocket, select.POLLIN | select.POLLPRI |
                          select.POLLERR | select.POLLHUP | select.POLLNVAL)
-        self._lastsendtime = None
         try:
             while True:
-                if self._killflag.is_set():
+                if self.killflag.is_set():
                     break
-                try:
-                    self._send_message_to_device()
-                except StopIteration:
-                    break
-                self._receive_message_from_device(polling)
-                if ((self._lastsendtime is not None) and
-                            (time.monotonic() - self._lastsendtime) >
-                            self._reply_timeout):
-                    raise CommunicationError('Reply timeout. Last sent: {}'.format(self._lastsent[0]))
+                self.send_message_to_device()
+                self.receive_message_from_device(polling)
+                if self.lastsent:
+                    if time.monotonic() - self.lastsent[-1]['sendtime'] > self.lastsent[-1]['timeout']:
+                        self.send_to_backend('timeout', message=self.lastsent[-1]['message'],
+                                             received_replies=self.lastsent[-1]['received_replies'],
+                                             referred_id=self.lastsent[-1]['id'])
+                    raise CommunicationError('Reply timeout. Last sent: {}'.format(self.lastsent[-1]['message']))
         except Exception as exc:
-            self._logger.debug('Sending communication error to backend process of ' + self.name)
-            self._send_to_backend('communication_error', exception=exc, traceback=traceback.format_exc())
-
+            self.send_to_backend('communication_error', exception=exc, traceback=traceback.format_exc())
         finally:
-            polling.unregister(self._tcpsocket)
-            self._logger.debug('Exiting TCP backend for ' + self.name)
+            polling.unregister(self.tcpsocket)
+            self.tcpsocket.shutdown(socket.SHUT_RDWR)
+            self.tcpsocket.close()
+            del self.tcpsocket
+            while True:
+                try:
+                    self.sendqueue.get_nowait()
+                except queue.Empty:
+                    break
+            self.logger.debug('Exiting TCP backend for ' + self.name)
+            self.exitedflag.set()
+
+    @classmethod
+    def create_and_run(cls, name, host, port, poll_timeout, sendqueue, incomingqueue, killflag, exitedflag,
+                       getcompletemessages):
+        """Can be used as a target function of multiprocessing.Process"""
+        tcpcomm = cls(name, host, port, poll_timeout, sendqueue, incomingqueue, killflag, exitedflag,
+                      getcompletemessages)
+        tcpcomm.run()
 
 
-class Device_TCP(Device):
+class Device_TCP(DeviceBackend):
     """Device with TCP socket connection.
 
     After the socket has been connected, a background process is started,
@@ -173,27 +282,25 @@ class Device_TCP(Device):
     back-end.
     """
 
-    wait_before_send = 0.0  # seconds to wait before sending message
+    reply_timeout = 1
 
     outqueue_query_limit = 10  # skip query all if the outqueue is larger than this limit
 
     def __init__(self, *args, **kwargs):
-        Device.__init__(self, *args, **kwargs)
-        self._outqueue = multiprocessing.Queue()
-        self._poll_timeout = None
-        self._killflag = multiprocessing.Event()
+        super().__init__(*args, **kwargs)
+        self.tcp_outqueue = multiprocessing.Queue()
+        self.poll_timeout = None
+        self.killflag = multiprocessing.Event()
+        self.tcpprocess_exited = multiprocessing.Event()
+        self.tcp_communicator = None
 
-    def _get_connected(self):
-        """Check if we have a connection to the device. You should not call
-        this directly."""
-        return hasattr(self, '_tcpsocket')
-
-    def _get_telemetry(self):
-        tm = super()._get_telemetry()
-        tm['sendqueuelen'] = self._outqueue.qsize()
+    def get_telemetry(self):
+        tm = super().get_telemetry()
+        tm['sendqueuelen'] = self.tcp_outqueue.qsize()
         return tm
 
-    def _get_complete_messages(self, message):
+    @staticmethod
+    def get_complete_messages(message):
         """Check if the received message is complete. All devices signify the
         end of a message in some way: either by using fixed-length messages,
         or by a sentinel character at the end.
@@ -226,70 +333,56 @@ class Device_TCP(Device):
         not the background process)"""
         raise NotImplementedError
 
-    def _establish_connection(self):
-        host, port, socket_timeout, poll_timeout = self._connection_parameters
-        # logger.debug('Connecting over TCP/IP to device {}: {}:{:d}'.format(self.name, host, port))
-        try:
-            self._tcpsocket = socket.create_connection(
-                (host, port), socket_timeout)
-            self._tcpsocket.setblocking(False)
-            self._poll_timeout = poll_timeout
-        except (socket.error, socket.gaierror, socket.herror, ConnectionRefusedError) as exc:
-            logger.error(
-                'Error initializing socket connection to device {}:{:d}'.format(host, port))
-            try:
-                del self._tcpsocket
-            except AttributeError:
-                pass
-            raise DeviceError('Cannot connect to device.', exc)
-        self._flushoutqueue()
-        self._killflag.clear()
-        self._cleartosend_semaphore = multiprocessing.BoundedSemaphore(1)
-        self._communication_subprocess = TCPCommunicator(
-            self.name, self._tcpsocket, self._outqueue, self._queue_to_backend,
-            self._poll_timeout, self._cleartosend_semaphore,
-            self._get_complete_messages, self._killflag, self.reply_timeout,
-            self.wait_before_send)
-        self._communication_subprocess.daemon = True
-        self._communication_subprocess.start()
-        # logger.debug(
-        #    'Communication subprocess started for device {}:{:d}'.format(host, port))
-
-    def _breakdown_connection(self):
-        logger.debug('Sending kill pill to TCP worker of ' + self.name)
-        self._killflag.set()
-        try:
-            self._communication_subprocess.join()
-        except (AssertionError, AttributeError):
-            pass
-        logger.debug('Joined communication subprocess of ' + self.name)
-        try:
-            del self._communication_subprocess
-        except AttributeError:
-            pass
-        try:
-            self._tcpsocket.shutdown(socket.SHUT_RDWR)
-            self._tcpsocket.close()
-            del self._tcpsocket
-        except AttributeError:
-            pass
-        self._flushoutqueue()
-
-    def _flushoutqueue(self):
-        while True:
-            try:
-                self._outqueue.get_nowait()
-            except queue.Empty:
-                break
-
-    def _send(self, message, expected_replies=1):
-        """Send `message` (bytes) to the device.
-
-        If the number of expected replies is not one, also give it.
+    def get_connected(self) -> bool:
+        """Check if the device is connected.
         """
-        # self._logger.debug('Sending message '+ str(message))
-        self._outqueue.put_nowait(('send', message, expected_replies))
-        self._count_outmessages += 1
+        if self.tcp_communicator is None:
+            return False
+        assert isinstance(self.tcp_communicator, multiprocessing.Process)
+        return self.tcp_communicator.is_alive()
+
+    def establish_connection(self):
+        """Establish a connection to the device.
+
+        Raises an exception if the connection cannot be established.
+        """
+        self.killflag.clear()
+        self.tcp_communicator = multiprocessing.Process(name=self.name + '__tcpcommunicator',
+                                                        target=TCPCommunicator.create_and_run,
+                                                        args=(self.name,
+                                                              self.deviceconnectionparameters[0],
+                                                              self.deviceconnectionparameters[1],
+                                                              self.deviceconnectionparameters[2],
+                                                              self.tcp_outqueue,
+                                                              self.inqueue,
+                                                              self.killflag, self.tcpprocess_exited,
+                                                              self.get_complete_messages))
+        self.tcp_communicator.daemon = True
+        self.tcp_communicator.start()
+
+    def breakdown_connection(self):
+        """Break down the connection to the device.
+
+        Abstract method: override this in subclasses.
+
+        Should not raise an exception.
+
+        This method can safely assume that a connection exists to the
+        device.
+        """
+        self.killflag.set()
+        self.logger.info('Waiting for TCP communication process of {} to exit'.format(self.name))
+        self.tcpprocess_exited.wait()
+        # TODO: avoid race condition: we cannot join() the process until its messages in the inqueue are read.
+        self.logger.info('TCP communication process of {} exited'.format(self.name))
+
+    def send_message(self, message, expected_replies=1, timeout=None, asynchronous=False):
+        if timeout is None:
+            timeout = self.reply_timeout
+        self.counters['outmessages'] += 1
+        msg = Message('send', self.counters['outmessages'], self.name + '__backend', message=message,
+                      expected_replies=expected_replies, timeout=timeout, asynchronous=asynchronous)
+        self.tcp_outqueue.put_nowait(msg)
 
     def _query_variable(self, variablename: object, minimum_query_variables: object = None):
         if (variablename is None) and (self._outqueue.qsize() > self.outqueue_query_limit):

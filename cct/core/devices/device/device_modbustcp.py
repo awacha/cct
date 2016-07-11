@@ -3,68 +3,94 @@ import time
 
 from pyModbusTCP.client import ModbusClient
 
-from .device import Device
+from .backend import DeviceBackend
 from .exceptions import DeviceError, CommunicationError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Device_ModbusTCP(Device):
+class DeviceBackend_ModbusTCP(DeviceBackend):
     """Device with Modbus over TCP connection.
     """
 
-    def _get_connected(self):
-        """Check if we have a connection to the device. You should not call
-        this directly."""
-        return hasattr(self, '_modbusclient')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._modbusclient = None
 
-    def _establish_connection(self):
-        host, port, modbus_timeout = self._connection_parameters
-        logger.debug('Connecting to device: {}:{:d}'.format(host, port))
+    def get_connected(self) -> bool:
+        """Check if the device is connected.
+        """
+        if self._modbusclient is None:
+            return False
+        elif self._modbusclient.is_open():
+            return True
+        else:
+            raise ConnectionError('Modbusclient is not open')
+
+    def establish_connection(self):
+        """Establish a connection to the device.
+
+        Raises a DeviceError if the connection cannot be established.
+
+        Connection and communication parameters are found in
+        self.deviceconnectionparameters
+        """
+        host, port, modbus_timeout = self.deviceconnectionparameters
+        logger.debug('Connecting to ModbusTCP device: {}:{:d}'.format(host, port))
         self._modbusclient = ModbusClient(host, port, timeout=modbus_timeout)
         if not self._modbusclient.open():
+            self._modbusclient = None
             raise DeviceError(
                 'Error initializing Modbus over TCP connection to device {}:{:d}'.format(host, port))
         logger.debug('Connected to device {}:{:d}'.format(host, port))
 
-    def _breakdown_connection(self):
+    def breakdown_connection(self):
+        """Break down the connection to the device.
+
+        Abstract method: override this in subclasses.
+
+        Should not raise an exception.
+
+        This method can safely assume that a connection exists to the
+        device.
+        """
         try:
             logger.debug('Disconnecting from device {}:{:d}'.format(
                 self._modbusclient.host(), self._modbusclient.port()))
             self._modbusclient.close()
-            del self._modbusclient
+            self._modbusclient = None
         except AttributeError:
-            pass
+            self._modbusclient = None
 
-    def _read_integer(self, regno):
-        self._lastsendtime = time.monotonic()
-        self._count_outmessages += 1
+    def read_integer(self, regno):
+        self.lasttimes['send'] = time.monotonic()
+        self.counters['outmessages'] += 1
         result = self._modbusclient.read_holding_registers(regno, 1)
         if result is None:
             if not self._modbusclient.is_open():
                 raise CommunicationError('Error reading integer from register #{:d}'.format(regno))
-        self._lastrecvtime = time.monotonic()
-        self._count_inmessages += 1
+        self.lasttimes['recv'] = time.monotonic()
+        self.counters['inmessages'] += 1
         return result[0]
 
-    def _write_coil(self, coilno, val):
-        self._lastsendtime = time.monotonic()
-        self._count_outmessages += 1
+    def write_coil(self, coilno, val):
+        self.lasttimes['send'] = time.monotonic()
+        self.counters['outmessages'] += 1
         result = self._modbusclient.write_single_coil(coilno, val)
         if result is None:
             if not self._modbusclient.is_open():
                 raise CommunicationError('Error writing {} to coil #{:d}'.format(val, coilno))
-        self._lastrecvtime = time.monotonic()
-        self._count_inmessages += 1
+        self.lasttimes['recv'] = time.monotonic()
+        self.counters['inmessages'] += 1
 
-    def _read_coils(self, coilstart, coilnum):
-        self._lastsendtime = time.monotonic()
-        self._count_outmessages += 1
+    def read_coils(self, coilstart, coilnum):
+        self.lasttimes['send'] = time.monotonic()
+        self.counters['outmessages'] += 1
         result = self._modbusclient.read_coils(coilstart, coilnum)
         if result is None:
             if not self._modbusclient.is_open():
                 raise CommunicationError('Error reading coils #{:d} - #{:d}'.format(coilstart, coilstart + coilnum))
-        self._lastrecvtime = time.monotonic()
-        self._count_inmessages += 1
+        self.lasttimes['recv'] = time.monotonic()
+        self.counters['inmessages'] += 1
         return result

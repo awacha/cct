@@ -10,7 +10,7 @@ logger.setLevel(logging.INFO)
 class GeniX(Device_ModbusTCP):
     log_formatstr = '{_status}\t{ht}\t{current}\t{shutter}'
 
-    _all_variables = ['ht', 'current', 'tubetime', 'shutter', 'power', 'remote_mode', 'xrays', 'conditions_auto',
+    all_variables = ['ht', 'current', 'tubetime', 'shutter', 'power', 'remote_mode', 'xrays', 'conditions_auto',
                       'tube_power', 'faults', 'xray_light_fault',
                       'shutter_light_fault', 'sensor2_fault',
                       'tube_position_fault', 'vacuum_fault',
@@ -18,9 +18,9 @@ class GeniX(Device_ModbusTCP):
                       'temperature_fault', 'sensor1_fault',
                       'relay_interlock_fault', 'door_fault',
                       'filament_fault', 'tube_warmup_needed',
-                      'interlock', 'overridden']
+                     'interlock', 'overridden']
 
-    _minimum_query_variables = ['ht', 'current', 'tubetime', 'shutter']
+    minimum_query_variables = ['ht', 'current', 'tubetime', 'shutter']
 
     _interlock_fixing_time = 3  # time to ascertain if the interlock is really OK.
 

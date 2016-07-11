@@ -62,11 +62,11 @@ class TMCMcard(Device_TCP):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._all_variables = DEVICE_VARIABLES + ['{}${:d}'.format(vn, motidx)
-                                                  for vn, motidx in itertools.product(
+        self.all_variables = DEVICE_VARIABLES + ['{}${:d}'.format(vn, motidx)
+                                                 for vn, motidx in itertools.product(
                 PER_MOTOR_VARIABLES, range(self._N_axes))]
 
-        self._minimum_query_variables = self._all_variables[:]
+        self.minimum_query_variables = self.all_variables[:]
 
         # self._moving: not present if no motor is moving. Otherwise a dict with the
         # following items: 'index': the index of the currently moving motor.
@@ -102,7 +102,7 @@ class TMCMcard(Device_TCP):
                     variablenames.extend([vn + '$' + str(motor) for vn in VOLATILE_VARIABLES])
                 # If there are not yet queried one apart from those already in
                 # variablenames, query them as well
-                missingvariables = [vn for vn in self._all_variables
+                missingvariables = [vn for vn in self.all_variables
                                     if ((vn not in self._properties) and
                                         (vn not in variablenames))]
                 variablenames.extend(missingvariables)
@@ -748,14 +748,14 @@ class TMCMcard(Device_TCP):
             elif variable.startswith('softright$'):
                 if self._update_variable(variable, value):
                     self._save_positions()
-            elif variable in self._all_variables:
+            elif variable in self.all_variables:
                 raise ReadOnlyVariable(variable)
             else:
                 raise UnknownVariable(variable)
         except TMCMConversionError:
             if not self._has_all_variables():
                 # This can happen at the very beginning, re-queue the set command.
-                self._send_to_backend('set', name=variable, value=value)
+                self.send_to_backend('set', name=variable, value=value)
 
     def _save_positions(self):
         """Save the motor positions and the values of soft limits to a file.

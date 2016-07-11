@@ -157,19 +157,19 @@ class Pilatus(Device_TCP):
 
     idle_wait = 2
 
-    _minimum_query_variables = ['gain', 'trimfile', 'nimages', 'cameradef',
+    minimum_query_variables = ['gain', 'trimfile', 'nimages', 'cameradef',
                                 'imgpath', 'imgmode', 'pid', 'expperiod',
                                 'diskfree', 'tau', 'version']
 
-    _all_variables = ['gain', 'threshold', 'vcmp', 'trimfile', 'wpix', 'hpix',
+    all_variables = ['gain', 'threshold', 'vcmp', 'trimfile', 'wpix', 'hpix',
                       'sel_bank', 'sel_module', 'sel_chip', 'humidity0',
                       'humidity1', 'humidity2', 'temperature0', 'temperature1',
                       'temperature2', 'nimages', 'cameradef', 'cameraname',
                       'cameraSN', 'camstate', 'targetfile', 'timeleft',
                       'lastimage', 'masterPID', 'controllingPID', 'exptime',
                       'lastcompletedimage', 'shutterstate', 'imgpath',
-                      'imgmode', 'pid', 'expperiod', 'tau', 'cutoff',
-                      'diskfree', 'version', 'telemetry_date']
+                     'imgmode', 'pid', 'expperiod', 'tau', 'cutoff',
+                     'diskfree', 'version', 'telemetry_date']
 
     def __init__(self, *args, **kwargs):
         Device_TCP.__init__(self, *args, **kwargs)
@@ -469,7 +469,7 @@ class Pilatus(Device_TCP):
             if value < 1e-7:
                 raise InvalidValue('Illegal exposure time: {:f}'.format(value))
             self._send('exptime {:f}\n'.format(value).encode('ascii'), expected_replies=None)
-        elif variable in self._all_variables:
+        elif variable in self.all_variables:
             raise ReadOnlyVariable(variable)
         else:
             raise UnknownVariable(variable)

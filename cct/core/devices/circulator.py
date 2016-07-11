@@ -11,7 +11,7 @@ logger.setLevel(logging.INFO)
 class HaakePhoenix(Device_TCP):
     log_formatstr = '{setpoint}\t{temperature_internal}\t{faultstatus}\t{pump_power}\t{cooling_on}'
 
-    _all_variables = ['firmwareversion', 'faultstatus', 'fuzzycontrol',
+    all_variables = ['firmwareversion', 'faultstatus', 'fuzzycontrol',
                       'fuzzystatus', 'temperature_internal',
                       'temperature_external', 'setpoint', 'highlimit',
                       'lowlimit', 'diffcontrol_on', 'autostart', 'fuzzyid',
@@ -24,12 +24,12 @@ class HaakePhoenix(Device_TCP):
                       'main_relay_missing_error', 'control_external',
                       'control_on', 'temperature']
 
-    _urgentvariables = ['faultstatus', 'time', 'temperature_internal',
+    urgent_variables = ['faultstatus', 'time', 'temperature_internal',
                         'temperature_external', 'pump_power']
 
     _notsourgentvariables = ['cooling_on', 'setpoint', 'date']
 
-    _minimum_query_variables = ['firmwareversion', 'faultstatus', 'time', 'temperature_internal',
+    minimum_query_variables = ['firmwareversion', 'faultstatus', 'time', 'temperature_internal',
                                 'temperature_external', 'pump_power',
                                 'cooling_on', 'setpoint', 'date',
                                 'fuzzycontrol',
@@ -215,7 +215,7 @@ class HaakePhoenix(Device_TCP):
 
     def _query_variable(self, variablename, minimum_query_variables=None):
         if variablename is None:
-            toberefreshed = [x for x in self._minimum_query_variables if
+            toberefreshed = [x for x in self.minimum_query_variables if
                              x not in self._properties] + self._urgentvariables
             if not self._urgency_counter:
                 toberefreshed.extend(self._notsourgentvariables)
