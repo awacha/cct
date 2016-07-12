@@ -7,7 +7,7 @@ import traceback
 from logging.handlers import QueueHandler
 from typing import Optional, List, Dict
 
-from .exceptions import WatchdogTimeout, CommunicationError, DeviceError
+from .exceptions import WatchdogTimeout, CommunicationError, DeviceError, InvalidMessage
 from .message import Message
 
 
@@ -131,8 +131,9 @@ class DeviceBackend(object):
                  inqueue: multiprocessing.Queue, outqueue: multiprocessing.Queue,
                  watchdog_timeout: float, inqueue_timeout: float, query_timeout: float,
                  telemetry_interval: float, queryall_interval: float, all_variables: List[str],
-                 minimum_query_variables: List[str], urgent_variables: Optional[List[str]],
-                 urgency_modulo: int, startup_number: int, loglevel: int, logfile: str, log_formatstr: str):
+                 minimum_query_variables: List[str], constant_variables: Optional[List[str]],
+                 urgent_variables: Optional[List[str]], urgency_modulo: int, startup_number: int,
+                 loglevel: int, logfile: str, log_formatstr: str):
         """Initialize the backend process
 
         :param name: the name of the device. Appears in log/error messages, therefore should be unique
@@ -149,7 +150,8 @@ class DeviceBackend(object):
         :param queryall_interval: Minimum time between automatic queries of _all_ device variables.
         :param all_variables: A list of all device variables
         :param minimum_query_variables: A minimum set of device variables. Querying all of these ensures reading all the
-            state variables.
+            state variables. Must include ALL variables needed for a fully defined state, including constant variables.
+        :param constant_variables: A list of constant variables: these are queried only once, at the beginning.
         :param urgent_variables: Variables that need to be updated more frequently than the others. If None, all
             variables are considered urgent.
         :param urgency_modulo: Auto-queries only query the urgent variables in `urgent_variables`. All the others are
@@ -169,6 +171,7 @@ class DeviceBackend(object):
         self.queryall_interval = queryall_interval
         self.query_timeout = query_timeout
         self.minimum_query_variables = minimum_query_variables
+        self.constant_variables = constant_variables
         self.urgent_variables = urgent_variables
         self.urgency_modulo = urgency_modulo
         self.properties = {}  # dictionary holding the state variables of the instrument
@@ -296,8 +299,14 @@ class DeviceBackend(object):
                     elif message['type'] == 'incoming':
                         self.lasttimes['recv'] = message['timestamp']
                         self.counters['inmessages'] += 1
-                        self.process_incoming_message(message=message['message'],
-                                                      original_sent=message['sent'])
+                        try:
+                            self.process_incoming_message(message=message['message'],
+                                                          original_sent=message['sent'])
+                        except InvalidMessage as exc:
+                            self.send_to_frontend('error', variablename=None,
+                                                  exception=exc,
+                                                  traceback=traceback.format_exc())
+                            self.query_requested.clear()
                     elif message['type'] == 'log':
                         self.send_to_frontend('log', logrecord=message['logrecord'])
                     elif message['type'] == 'send_complete':
@@ -476,6 +485,8 @@ class DeviceBackend(object):
         else:
             # query all variables
             querylist = self.minimum_query_variables
+        # remove constant variables
+        querylist = [v for v in self.constant_variables]
         # add missing variables
         querylist.extend([v for v in self.get_missing_variables() if v not in querylist])
         assert isinstance(querylist, list)
@@ -509,7 +520,7 @@ class DeviceBackend(object):
                 return False
             return True
 
-    def query_variable(self, variablename: str) -> object:
+    def query_variable(self, variablename: str) -> bool:
         """Queries the value of the current variable. This should typically be
         overridden in derivative classes.
 
@@ -529,8 +540,11 @@ class DeviceBackend(object):
         method.
 
         Returns:
-            True if the query has been sent successfully.
-            False if for some reason you cannot start the query.
+            True if the query has been sent successfully AND reply is expected
+                from the device.
+            False if for some reason you cannot start the query, OR the new
+                value for the state variable has been determined by this
+                method.
         """
         raise NotImplementedError
 
@@ -637,3 +651,12 @@ class DeviceBackend(object):
         device.
         """
         raise NotImplementedError
+
+    @classmethod
+    def create_and_run(cls, *args, **kwargs):
+        """Target function for multiprocessing.Process, which instantiates this
+        background class and calls its worker function."""
+        obj = cls(*args, **kwargs)
+        result = obj.worker()
+        del obj
+        return result

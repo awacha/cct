@@ -82,7 +82,9 @@ class TCPCommunicator:
     def __init__(self, instancename, host, port, poll_timeout, sendqueue, incomingqueue,
                  killflag, exitedflag, getcompletemessages):
         self.name = instancename
+        assert isinstance(sendqueue, multiprocessing.Queue)
         self.sendqueue = sendqueue
+        assert isinstance(incomingqueue, multiprocessing.Queue)
         self.incomingqueue = incomingqueue
         self.poll_timeout = poll_timeout
         self.get_complete_messages = getcompletemessages
@@ -246,6 +248,9 @@ class TCPCommunicator:
         except Exception as exc:
             self.send_to_backend('communication_error', exception=exc, traceback=traceback.format_exc())
         finally:
+            # the next line is to avoid a deadlock situation where this process cannot end until the parent process
+            # get-ted all messages from the incomingqueue.
+            self.incomingqueue.cancel_join_thread()
             polling.unregister(self.tcpsocket)
             self.tcpsocket.shutdown(socket.SHUT_RDWR)
             self.tcpsocket.close()
@@ -267,7 +272,7 @@ class TCPCommunicator:
         tcpcomm.run()
 
 
-class Device_TCP(DeviceBackend):
+class DeviceBackend_TCP(DeviceBackend):
     """Device with TCP socket connection.
 
     After the socket has been connected, a background process is started,
@@ -373,7 +378,9 @@ class Device_TCP(DeviceBackend):
         self.killflag.set()
         self.logger.info('Waiting for TCP communication process of {} to exit'.format(self.name))
         self.tcpprocess_exited.wait()
-        # TODO: avoid race condition: we cannot join() the process until its messages in the inqueue are read.
+        self.logger.debug('Join-ing TCP communication process of {}'.format(self.name))
+        self.tcp_communicator.join()
+        self.tcp_communicator = None
         self.logger.info('TCP communication process of {} exited'.format(self.name))
 
     def send_message(self, message, expected_replies=1, timeout=None, asynchronous=False):
@@ -384,7 +391,8 @@ class Device_TCP(DeviceBackend):
                       expected_replies=expected_replies, timeout=timeout, asynchronous=asynchronous)
         self.tcp_outqueue.put_nowait(msg)
 
-    def _query_variable(self, variablename: object, minimum_query_variables: object = None):
-        if (variablename is None) and (self._outqueue.qsize() > self.outqueue_query_limit):
-            return False
-        return super()._query_variable(variablename, minimum_query_variables)
+    def queryall(self):
+        if self.outqueue.qsize() > self.outqueue_query_limit:
+            # do not query all if there are too many messages waiting to be sent to the device.
+            return
+        return super().queryall()

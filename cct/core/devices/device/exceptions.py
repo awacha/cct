@@ -34,3 +34,8 @@ class UnknownVariable(DeviceError):
 class UnknownCommand(DeviceError):
     """Raised on an attempted execution of an unknown command"""
     pass
+
+
+class InvalidMessage(DeviceError):
+    """Raised when the message received from the device could not be interpreted"""
+    pass

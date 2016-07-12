@@ -6,28 +6,11 @@ from typing import Optional
 
 import dateutil.parser
 
-from .device import Device_TCP, DeviceError, ReadOnlyVariable, CommunicationError, UnknownVariable, InvalidValue, \
-    UnknownCommand
+from .device import Device, DeviceError, ReadOnlyVariable, CommunicationError, UnknownVariable, InvalidValue, \
+    UnknownCommand, DeviceBackend_TCP
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-# integer type variables
-pilatus_int_variables = ['wpix', 'hpix', 'sel_bank', 'sel_module',
-                         'sel_chip', 'diskfree', 'nimages', 'masterPID', 'controllingPID', 'pid']
-
-# float type variables
-pilatus_float_variables = ['tau', 'cutoff', 'exptime', 'expperiod', 'temperature0',
-                           'temperature1', 'temperature2', 'humidity0', 'humidity1', 'humidity2', 'threshold', 'vcmp',
-                           'timeleft']
-
-# datetime type variables
-pilatus_date_variables = ['starttime']
-
-# string variables
-pilatus_str_variables = ['version', 'gain', 'trimfile', 'cameradef', 'cameraname', 'cameraSN', '_status', 'targetfile',
-                         'lastimage', 'lastcompletedimage', 'shutterstate', 'imgpath', 'imgmode', 'filename',
-                         'camstate']
 
 # list of regular expressions matching messages from the Pilatus detector. Each
 # element of this list is a tuple, the first element being the message class
@@ -146,142 +129,143 @@ Channel {int}: Temperature = (?P<temperature2>{float})C, Rel. Humidity = (?P<hum
         int=RE_INT, float=RE_FLOAT).encode('ascii'), re.MULTILINE)
 
 
-class Pilatus(Device_TCP):
-    log_formatstr = '{_status}\t{exptime}\t{humidity0}\t{humidity1}\t{humidity2}\t{temperature0}\t{temperature1}\t{temperature2}'
-
-    watchdog_timeout = 20
-
-    backend_interval = 1
-
-    reply_timeout = 20
-
-    idle_wait = 2
-
-    minimum_query_variables = ['gain', 'trimfile', 'nimages', 'cameradef',
-                                'imgpath', 'imgmode', 'pid', 'expperiod',
-                                'diskfree', 'tau', 'version']
-
-    all_variables = ['gain', 'threshold', 'vcmp', 'trimfile', 'wpix', 'hpix',
-                      'sel_bank', 'sel_module', 'sel_chip', 'humidity0',
-                      'humidity1', 'humidity2', 'temperature0', 'temperature1',
-                      'temperature2', 'nimages', 'cameradef', 'cameraname',
-                      'cameraSN', 'camstate', 'targetfile', 'timeleft',
-                      'lastimage', 'masterPID', 'controllingPID', 'exptime',
-                      'lastcompletedimage', 'shutterstate', 'imgpath',
-                     'imgmode', 'pid', 'expperiod', 'tau', 'cutoff',
-                     'diskfree', 'version', 'telemetry_date']
-
+class PilatusBackend(DeviceBackend_TCP):
+    idle_wait = 1.0
+    
     def __init__(self, *args, **kwargs):
-        Device_TCP.__init__(self, *args, **kwargs)
+        super().__init__(self, *args, **kwargs)
         self._expected_status = 'idle'
         # a flag which has to be acquired when the detector is busy: trimming or exposing.
         self._busysemaphore = multiprocessing.BoundedSemaphore(1)
-        self._loglevel = logger.level
 
     def is_busy(self) -> bool:
         return self._busysemaphore.get_value() == 0
 
-    def _query_variable(self, variablename: str, minimum_query_variables: Optional[list] = None) -> bool:
-        if variablename is None:
-            if self.is_busy():
-                # do not initiate query-all-variables if we are exposing or 
-                # trimming: the pilatus detector is known to become unresponsive
-                # during these times.
-                return False
-            elif ((self._properties['_status'] == 'idle') and
-                          (time.time() - self._timestamps['_status']) < self.idle_wait):
-                # if the previous exposure has just finished, wait a little,
-                # in case we are in a scan and want to start another exposure
-                # shortly.
-                return False
-        if not super()._query_variable(variablename):
-            # the above call takes care of the variablename==None case as well.
-            return False
+    def queryall(self):
+        if self.is_busy():
+            # do not initiate query-all-variables if we are exposing or 
+            # trimming: the pilatus detector is known to become unresponsive
+            # during these times.
+            return
+        elif ((self.properties['_status'] == 'idle') and (
+            time.monotonic() - self.timestamps['_status']) < self.idle_wait):
+            # if the previous exposure has just finished, wait a little,
+            # in case we are in a scan and want to start another exposure
+            # shortly.
+            return
+        else:
+            super().queryall()
+
+    def query_variable(self, variablename: str) -> bool:
         if variablename in ['gain', 'threshold', 'vcmp']:
-            self._send(b'SetThreshold\n', expected_replies=None)
+            self.send_message(b'SetThreshold\n', expected_replies=1, asynchronous=False)
         elif variablename in ['trimfile', 'wpix', 'hpix', 'sel_bank', 'sel_module', 'sel_chip']:
-            self._send(b'Telemetry\n', expected_replies=None)
+            self.send_message(b'Telemetry\n', expected_replies=1, asynchronous=False)
         elif variablename.startswith('humidity') or variablename.startswith('temperature'):
-            self._send(b'THread\n', expected_replies=None)
+            self.send_message(b'THread\n', expected_replies=1, asynchronous=False)
         elif variablename == 'nimages':
-            self._send(b'NImages\n', expected_replies=None)
+            self.send_message(b'NImages\n', expected_replies=1, asynchronous=False)
         elif variablename in ['cameradef', 'cameraname', 'cameraSN', 'camstate', 'targetfile',
                               'timeleft', 'lastimage', 'masterPID', 'controllingPID',
                               'exptime', 'lastcompletedimage', 'shutterstate']:
-            self._send(b'camsetup\n', expected_replies=None)
+            self.send_message(b'camsetup\n', expected_replies=1, asynchronous=False)
         elif variablename == 'imgpath':
-            self._send(b'imgpath\n', expected_replies=None)
+            self.send_message(b'imgpath\n', expected_replies=1, asynchronous=False)
         elif variablename == 'imgmode':
-            self._send(b'imgmode\n', expected_replies=None)
+            self.send_message(b'imgmode\n', expected_replies=1, asynchronous=False)
         elif variablename == 'pid':
-            self._send(b'ShowPID\n', expected_replies=None)
+            self.send_message(b'ShowPID\n', expected_replies=1, asynchronous=False)
         elif variablename == 'expperiod':
-            self._send(b'expperiod\n', expected_replies=None)
+            self.send_message(b'expperiod\n', expected_replies=1, asynchronous=False)
         elif variablename in ['tau', 'cutoff']:
-            self._send(b'tau\n', expected_replies=None)
+            self.send_message(b'tau\n', expected_replies=1, asynchronous=False)
         elif variablename == 'diskfree':
-            self._send(b'df\n', expected_replies=None)
+            self.send_message(b'df\n', expected_replies=1, asynchronous=False)
         elif variablename == 'version':
-            self._send(b'version\n', expected_replies=None)
+            self.send_message(b'version\n', expected_replies=1, asynchronous=False)
+        elif variablename == 'starttime':
+            if not self.is_busy():
+                self.update_variable('starttime', None)
+                return False
+        elif variablename == 'filename':
+            if not self.is_busy():
+                self.update_variable('filename', 'lastimage')
+                return False
         else:
             raise UnknownVariable(variablename)
+        return True
 
-    def _get_complete_messages(self, message: bytes) -> list:
+    @staticmethod
+    def get_complete_messages(message: bytes) -> list:
         return message.split(b'\x18')
 
-    def _handle_end_exposure(self, status: bool, message: bytes) -> None:
-        self._logger.debug('Exposure ended.')
+    def on_end_exposure(self, status: bool, message: bytes) -> None:
+        self.logger.debug('Exposure ended.')
         try:
             self._busysemaphore.release()
         except ValueError:
             return
-        self._update_variable('_status', 'idle')
-        self._update_variable('lastimage', message.decode('utf-8'))
-        self._update_variable('filename', message.decode('utf-8'))
-        self._update_variable('starttime', None)
+        self.update_variable('_status', 'idle')
+        self.update_variable('lastimage', message.decode('utf-8'))
+        self.update_variable('filename', message.decode('utf-8'))
+        self.update_variable('starttime', None)
         if status:
-            self._update_variable('lastcompletedimage', message.decode('utf-8'))
-        self._release_watchdog()
+            self.update_variable('lastcompletedimage', message.decode('utf-8'))
+        self.watchdog.enable()
 
-    def _handle_end_trimming(self) -> None:
+    def on_end_trimming(self) -> None:
         # a new threshold has been set, update the variables
         try:
             self._busysemaphore.release()
         except ValueError:
             return
-        self._update_variable('_status', 'idle')
-        self._query_variable('threshold')
-        self._query_variable('tau')
-        self._release_watchdog()
+        self.update_variable('_status', 'idle')
+        self.query_variable('threshold')
+        self.query_variable('tau')
+        self.watchdog.enable()
 
-    def _handle_start_exposure(self) -> None:
-        self._update_variable('_status', self._expected_status)
+    def on_start_exposure(self) -> None:
+        self.update_variable('_status', self._expected_status)
 
-    def _process_incoming_message(self, message: bytes, original_sent: Optional[bytes] = None):
-        self._pat_watchdog()
-        try:
-            self._cleartosend_semaphore.release()
-        except ValueError:
-            pass
+    def process_incoming_message(self, message: bytes, original_sent: Optional[bytes] = None):
         origmessage = message
-        if message.count(b' ') < 2:
-            # empty message, like '15 OK', or one without anything, e.g.
-            # b'/tmp/setthreshold.cmd'
-            idnum, status = message.split(b' ')  # this can raise ValueError, see below.
+        # Messages from the Pilatus detector generally have the following
+        #   format:
+        #
+        # <ID><space>(OK|ERR)<space>[<message>]
+        #
+        # where:
+        #   - ID is a positive integer related to the issued command to which
+        #        this is a reply,
+        #   - the status code is either OK or ERR,
+        #   - the message is dependent on the command, and can be omitted.
+        #
+        # In some cases this format is not followed, e.g.
+        # b'/tmp/setthreshold.cmd' is a typical response to the SetThreshold
+        # command.
+        #
+
+        if b'' not in message:
+            # e.g. b'/tmp/setthreshold.cmd'
+            idnum = b'15'
+            status = b'OK'
+        elif message.count(b' ') == 1:
+            # empty message, like '15 OK'
+            idnum, status = message.split(b' ')
             message = b''
         else:
             idnum, status, message = message.split(b' ', 2)
         idnum = int(idnum)
         message = message.strip()
-        # handle special cases
-        if idnum == 1:
+        # handle cases based on the message ID
+        if idnum == 1:  # happens when b'1 ERR access denied'
             # access denied
             if (message == b'access denied') and (status == b'ERR'):
                 raise CommunicationError(
                     'We could only connect to Pilatus in read-only mode')
             else:
                 raise DeviceError('Unknown message received from Pilatus: ' + origmessage.decode('utf-8'))
-        elif idnum == 2:
+        elif idnum == 2:  # reply to command 'camsetup'
             m = RE_CAMSETUP.match(message)
             if m is None:
                 raise DeviceError('Invalid camsetup message from Pilatus: ' + origmessage.decode('utf-8'))
@@ -293,186 +277,197 @@ class Pilatus(Device_TCP):
             for k in [k_ for k_ in gd if k_ not in ['controllingPID', 'masterPID', 'exptime', 'timeleft']]:
                 gd[k] = gd[k].decode('utf-8')
             for k in gd:
-                self._update_variable(k, gd[k])
-        elif idnum == 5:
+                self.update_variable(k, gd[k])
+        elif idnum == 5:  # reply to command 'df'
             m = RE_DISKFREE.match(message)
             if m is None:
                 raise DeviceError('Invalid diskfree message from Pilatus: ' + origmessage.decode('utf-8'))
-            self._update_variable('diskfree', int(m.group('diskfree')))
-        elif idnum == 7:
+            self.update_variable('diskfree', int(m.group('diskfree')))
+        elif idnum == 7:  # 2nd reply to command 'exposure', at the end.
             # end of exposure
-            self._handle_end_exposure(status == b'OK', message)
-        elif idnum == 10:
+            self.on_end_exposure(status == b'OK', message)
+        elif idnum == 10:  # reply to command 'imgpath'
             m = RE_IMGPATH.match(message)
             if m is None:
                 raise DeviceError('Invalid imgpath message from Pilatus: ' + origmessage.decode('utf-8'))
-            self._update_variable('imgpath', m.group('imgpath').decode('utf-8'))
-        elif idnum == 13:
+            self.update_variable('imgpath', m.group('imgpath').decode('utf-8'))
+        elif idnum == 13:  # reply to command 'K'
             # killed
             m = RE_KILL.match(message)
             if m is None:
                 raise DeviceError('Unknown kill message from Pilatus: ' + origmessage.decode('utf-8'))
-            self._handle_end_exposure(status == b'OK', b'')
-        elif idnum == 15:
-            m = RE_EXPTIME.match(message)
-            if m is not None:
-                self._update_variable('exptime', float(m.group('exptime')))
-                return
-            m = RE_EXPPERIOD.match(message)
-            if m is not None:
-                self._update_variable('expperiod', float(m.group('expperiod')))
-                return
-            m = RE_TAU_ON.match(message)
-            if m is not None:
-                self._update_variable('tau', float(m.group('tau')))
-                self._update_variable('cutoff', int(m.group('cutoff')))
-                return
-            m = RE_TAU_SETON.match(message)
-            if m is not None:
-                self._update_variable('tau', float(m.group('tau')))
-                return
-            m = RE_TAU_SETOFF.match(message)
-            if m is not None:
-                return
-            m = RE_TAU_OFF.match(message)
-            if m is not None:
-                self._update_variable('cutoff', int(m.group('cutoff')))
-                return
-            m = RE_NIMAGES.match(message)
-            if m is not None:
-                self._update_variable('nimages', int(m.group('nimages')))
-                return
-            m = RE_EXPSTART.match(message)
-            if m is not None:
-                self._update_variable('exptime', float(m.group('exptime')))
-                self._update_variable('starttime', dateutil.parser.parse(m.group('starttime').decode('utf-8')))
-                self._handle_start_exposure()
-                return
-            m = RE_SETTHRESHOLD.match(message)
-            if m is not None:
-                self._update_variable('threshold', float(m.group('threshold')))
-                self._update_variable('vcmp', float(m.group('vcmp')))
-                self._update_variable('gain', m.group('gain').decode('utf-8'))
-                self._update_variable('trimfile', m.group('trimfile').decode('utf-8'))
-                return
-            m = RE_SETTHRESHOLD_ACK.match(message)
-            if m is not None:
-                self._handle_end_trimming()
-                return
-            m = RE_IMGMODE.match(message)
-            if m is not None:
-                self._update_variable('imgmode', m.group('imgmode').decode('utf-8'))
-                return
-            if not message:
-                # empty message
-                return
+            self.on_end_exposure(status == b'OK', b'')
+        elif idnum == 15:  # several commands respond with idnum==15, check all.
+            for regex in [RE_EXPTIME, RE_EXPPERIOD, RE_TAU_ON, RE_TAU_SETON, RE_TAU_SETOFF, RE_TAU_OFF, RE_NIMAGES,
+                          RE_EXPSTART, RE_SETTHRESHOLD, RE_SETTHRESHOLD_ACK, RE_IMGMODE]:
+                m = regex.match(message)
+                if m is None:
+                    continue
+                for var, conversion in [('exptime', float), ('expperiod', float),
+                                        ('tau', float), ('cutoff', float),
+                                        ('nimages', float),
+                                        ('starttime', lambda x: dateutil.parser.parse(x.decode('utf-8'))),
+                                        ('threshold', float), ('vcmp', float),
+                                        ('gain', lambda x: x.decode('utf-8')),
+                                        ('trimfile', lambda x: x.decode('utf-8')),
+                                        ('imgmode', lambda x: x.decode('utf-8'))]:
+                    try:
+                        self.update_variable(var, conversion(m.group(var)))
+                    except IndexError:
+                        continue
+                if regex is RE_EXPSTART:
+                    self.on_start_exposure()
+                if regex is RE_SETTHRESHOLD_ACK:
+                    self.on_end_trimming()
+                break  # do not try matching other regexes after one was matched successfully.
             if status == b'ERR':
                 raise DeviceError('Pilatus error: ' + message.decode('utf-8'))
-            raise DeviceError('Unknown message from Pilatus with idnum==15: ' + origmessage.decode('utf-8'))
-        elif idnum == 16:
+            elif not message:
+                # empty message
+                pass
+            else:
+                raise DeviceError('Unknown message from Pilatus with idnum==15: ' + origmessage.decode('utf-8'))
+        elif idnum == 16:  # return of ShowPID command.
             m = RE_PID.match(message)
             if m is None:
                 raise DeviceError('Unknown ShowPID message from Pilatus: ' + origmessage.decode('utf-8'))
-            self._update_variable('pid', int(m.group('pid')))
+            self.update_variable('pid', int(m.group('pid')))
         elif idnum == 18:  # telemetry
             m = RE_TELEMETRY.match(message)
             if m is None:
                 raise DeviceError('Invalid telemetry message received: ' + message.decode('utf-8'))
             gd = m.groupdict()
-            self._update_variable('wpix', int(gd['wpix']))
-            self._update_variable('hpix', int(gd['hpix']))
-            self._update_variable('sel_bank', int(gd['sel_bank']))
-            self._update_variable('sel_module', int(gd['sel_module']))
-            self._update_variable('sel_chip', int(gd['sel_chip']))
-            self._update_variable('telemetry_date', dateutil.parser.parse(gd['telemetry_date'].decode('utf-8')))
-            self._update_variable('temperature0', float(gd['temperature0']))
-            self._update_variable('temperature1', float(gd['temperature1']))
-            self._update_variable('temperature2', float(gd['temperature2']))
-            self._update_variable('humidity0', float(gd['humidity0']))
-            self._update_variable('humidity1', float(gd['humidity1']))
-            self._update_variable('humidity2', float(gd['humidity2']))
-        elif idnum == 24:
+            self.update_variable('wpix', int(gd['wpix']))
+            self.update_variable('hpix', int(gd['hpix']))
+            self.update_variable('sel_bank', int(gd['sel_bank']))
+            self.update_variable('sel_module', int(gd['sel_module']))
+            self.update_variable('sel_chip', int(gd['sel_chip']))
+            self.update_variable('telemetry_date', dateutil.parser.parse(gd['telemetry_date'].decode('utf-8')))
+            self.update_variable('temperature0', float(gd['temperature0']))
+            self.update_variable('temperature1', float(gd['temperature1']))
+            self.update_variable('temperature2', float(gd['temperature2']))
+            self.update_variable('humidity0', float(gd['humidity0']))
+            self.update_variable('humidity1', float(gd['humidity1']))
+            self.update_variable('humidity2', float(gd['humidity2']))
+        elif idnum == 24:  # reply for command 'version'
             m = RE_VERSION.match(message)
             if m is None:
                 raise DeviceError('Invalid version message received from Pilatus: ' + origmessage.decode('utf-8'))
-            self._update_variable('version', m.group('version').decode('utf-8'))
-        elif idnum == 215:
+            self.update_variable('version', m.group('version').decode('utf-8'))
+        elif idnum == 215:  # reply for command 'thread'
             m = RE_THREAD.match(message)
             if m is None:
                 raise DeviceError('Invalid THread message received from Pilatus: ' + origmessage.decode('utf-8'))
             gd = m.groupdict()
             for k in gd:
-                self._update_variable(k, float(gd[k]))
+                self.update_variable(k, float(gd[k]))
         else:
             raise DeviceError(
                 'Unknown command ID in message from Pilatus: ' + origmessage.decode('utf-8'))
 
-    def _execute_command(self, commandname: str, arguments: tuple) -> None:
-        self._logger.debug('Executing command: {}({})'.format(commandname, repr(arguments)))
+    def execute_command(self, commandname: str, arguments: tuple) -> None:
+        self.logger.debug('Executing command: {}({})'.format(commandname, repr(arguments)))
         if commandname == 'setthreshold':
             #            if self.is_busy():
             #                raise DeviceError('Cannot trim when not idle')
-            self._update_variable('_status', 'trimming')
-            self._suppress_watchdog()
-            self._send('SetThreshold {} {:f}\n'.format(arguments[1].decode('ascii'), arguments[0]).encode('ascii'),
-                       expected_replies=None)
+            self.update_variable('_status', 'trimming')
+            self.watchdog.disable()
+            self.send_message(
+                'SetThreshold {} {:f}\n'.format(arguments[1].decode('ascii'), arguments[0]).encode('ascii'),
+                expected_replies=1, asynchronous=False)
             logger.debug('Setting threshold to {0[0]:f} (gain {0[1]})'.format(arguments))
         elif commandname == 'expose':
             #            if self.is_busy():
             #                raise DeviceError('Cannot start exposure when not idle')
-            self._send(b'Exposure ' + arguments[0] + b'\n', expected_replies=None)
-            nimages = self._properties['nimages']
-            exptime = self._properties['exptime']
-            expdelay = self._properties['expperiod'] - exptime
-            self._exposureendsat = time.time() + nimages * exptime + (nimages - 1) * expdelay
+            nimages = self.properties['nimages']
+            exptime = self.properties['exptime']
+            expdelay = self.properties['expperiod'] - exptime
+            timeout = nimages * exptime + (nimages - 1) * expdelay
+            self.send_message(b'Exposure ' + arguments[0] + b'\n', expected_replies=2, asynchronous=False,
+                              timeout=timeout + 60)
+            self._exposureendsat = time.monotonic() + timeout
             if nimages == 1:
                 self._expected_status = 'exposing'
-                self._update_variable('_status', 'exposing')
-                self._suppress_watchdog()
+                self.update_variable('_status', 'exposing')
             else:
                 self._expected_status = 'exposing multi'
-                self._update_variable('_status', 'exposing multi')
-                self._suppress_watchdog()
+                self.update_variable('_status', 'exposing multi')
+            self.watchdog.disable()
         elif commandname == 'kill':
-            if self.get_variable('_status') == 'exposing':
-                self._logger.debug('Killing single exposure')
-                self._send(b'resetcam\n', expected_replies=None)
-                self._exposureendsat = time.time() + 3
-            elif self.get_variable('_status') == 'exposing multi':
-                self._send(b'K\n', expected_replies=None)
-                self._logger.debug('Killing multiple exposure')
-                self._exposureendsat = time.time() + 3
+            if self.properties['_status'] == 'exposing':
+                self.logger.debug('Killing single exposure')
+                self.send_message(b'resetcam\n', expected_replies=1, asynchronous=False)
+                self._exposureendsat = time.monotonic() + 3
+            elif self.properties['_status'] == 'exposing multi':
+                self.send_message(b'K\n', expected_replies=1, asynchronous=False)
+                self.logger.debug('Killing multiple exposure')
+                self._exposureendsat = time.monotonic() + 3
             else:
                 raise DeviceError('No running exposures to be killed')
         elif commandname == 'resetcam':
-            self._send(b'resetcam\n', expected_replies=None)
+            self.send_message(b'resetcam\n', expected_replies=1, asynchronous=False)
         else:
             raise UnknownCommand(commandname)
 
-    def _set_variable(self, variable: str, value: object):
+    def set_variable(self, variable: str, value: object):
         if variable == 'expperiod':
             if value < 1e-7:
                 raise InvalidValue('Illegal exposure period: {:f}'.format(value))
-            self._send('expperiod {:f}\n'.format(value).encode('ascii'), expected_replies=None)
+            self.send_message('expperiod {:f}\n'.format(value).encode('ascii'), expected_replies=1, asynchronous=False)
         elif variable == 'nimages':
             if value < 1:
                 raise InvalidValue('Illegal nimages: {:d}'.format(value))
-            self._send('nimages {:d}\n'.format(value).encode('ascii'), expected_replies=None)
+            self.send_message('nimages {:d}\n'.format(value).encode('ascii'), expected_replies=1, asynchronous=False)
         elif variable == 'tau':
             if value < 0.1e-9 or value > 1000e-9:
                 raise InvalidValue('Illegal tau: {:f}'.format(value))
-            self._send('tau {:f}\n'.format(value).encode('ascii'), expected_replies=None)
+            self.send_message('tau {:f}\n'.format(value).encode('ascii'), expected_replies=1, asynchronous=False)
         elif variable == 'imgpath':
             assert (isinstance(value, str))
-            self._send('imgpath {}\n'.format(value).encode('utf-8'), expected_replies=None)
+            self.send_message('imgpath {}\n'.format(value).encode('utf-8'), expected_replies=1, asynchronous=False)
         elif variable == 'exptime':
             if value < 1e-7:
                 raise InvalidValue('Illegal exposure time: {:f}'.format(value))
-            self._send('exptime {:f}\n'.format(value).encode('ascii'), expected_replies=None)
+            self.send_message('exptime {:f}\n'.format(value).encode('ascii'), expected_replies=1, asynchronous=False)
         elif variable in self.all_variables:
             raise ReadOnlyVariable(variable)
         else:
             raise UnknownVariable(variable)
+
+
+    def _on_startupdone(self):
+        self.update_variable('_status', 'idle')
+        self.update_variable('starttime', None)
+
+
+class Pilatus(Device):
+    log_formatstr = '{_status}\t{exptime}\t{humidity0}\t{humidity1}\t{humidity2}\t{temperature0}\t{temperature1}\t{temperature2}'
+
+    watchdog_timeout = 20
+
+    reply_timeout = 20
+
+    idle_wait = 2
+
+    minimum_query_variables = ['gain', 'trimfile', 'nimages', 'cameradef',
+                               'imgpath', 'imgmode', 'pid', 'expperiod',
+                               'diskfree', 'tau']
+
+    all_variables = ['gain', 'threshold', 'vcmp', 'trimfile', 'wpix', 'hpix',
+                     'sel_bank', 'sel_module', 'sel_chip', 'humidity0',
+                     'humidity1', 'humidity2', 'temperature0', 'temperature1',
+                     'temperature2', 'nimages', 'cameradef', 'cameraname',
+                     'cameraSN', 'camstate', 'targetfile', 'timeleft',
+                     'lastimage', 'masterPID', 'controllingPID', 'exptime',
+                     'lastcompletedimage', 'shutterstate', 'imgpath',
+                     'imgmode', 'pid', 'expperiod', 'tau', 'cutoff',
+                     'diskfree', 'version', 'telemetry_date']
+
+    constant_variables = ['wpix', 'hpix', 'cameradef', 'cameraname',
+                          'cameraSN', 'masterPID', 'controllingPID',
+                          'pid', 'version']
+
+    backend_class = PilatusBackend
 
     def set_threshold(self, thresholdvalue: float, gain: str):
         if gain.upper() not in ['LOWG', 'MIDG', 'HIGHG']:
@@ -493,7 +488,3 @@ class Pilatus(Device_TCP):
         self.refresh_variable('version')
         self.set_threshold(4024, 'highg')
         return super().do_startupdone()
-
-    def _on_startupdone(self):
-        self._update_variable('_status', 'idle')
-        self._update_variable('starttime', None)

@@ -14,14 +14,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def start_background_process(bgclass: type(DeviceBackend), *args, **kwargs):
-    """Target function for multiprocessing.Process, which instantiates the
-    background class and calls its worker function."""
-    bgclass(*args, **kwargs)
-    result = bgclass.worker()
-    del bgclass
-    return result
-
 class Device(GObject.GObject):
     """The abstract base class of a device, i.e. a component of the SAXS
     instrument, such as an X-ray source, a motor controller or a detector.
@@ -144,23 +136,38 @@ class Device(GObject.GObject):
     # updating of all the variables in __all_variables__
     minimum_query_variables = None
 
+    # Constant variables: not expected to change (such as hardware version,
+    # etc.). They will only be autoqueried once.
+    constant_variables = None
+
     # Urgent variables
     urgent_variables = None
 
-    # Urgency modulus
+    # Urgency modulus. Not urgent variables, which have already been read at
+    # least once, will only be checked at every `urgency_modulo`-eth queryall
+    # in the backend process
     urgency_modulo = 1
 
-    backend_interval = 1
+    # How long the backend thread waits on its input queue (seconds)
+    backend_interval = 1.0
 
-    queryall_interval = 1
+    # How frequently a queryall is issued by the backend (seconds)
+    queryall_interval = 1.0
 
+    # A timeout (seconds) for communication with the devices. If no message is
+    # obtained from the device before this time, the connection is considered
+    # dead, and sudden disconnection ensues.
     watchdog_timeout = 10
 
+    # A format string for logging, must be parsable by str.format(). All state
+    # variables are available for substitution. The actual time will be
+    # prepended by the background process
     log_formatstr = None
 
+    # Waiting time before two telemetry data collections (seconds)
     telemetry_interval = 2
 
-    # Timeout for re-query, see `_query_requested`.
+    # Timeout for re-query, see `query_requested` in the backend process.
     query_timeout = 10
 
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
@@ -177,14 +184,12 @@ class Device(GObject.GObject):
             self.config = {}
         # the name of this instance, usually a name of the device, like pilatus300k, tmcm351a, etc.
         self.name = instancename
-        # True if a telemetry request has not yet been processed. If another telemetry request arrives, it will be skipped.
-        self._outstanding_telemetry = False
         # The property dictionary
         self._properties = {'_status': 'Disconnected', '_auxstatus': None}
         # Timestamp dictionary, containing the times of the last update
         self._timestamps = {'_status': time.monotonic(), '_auxstatus': time.monotonic()}
         # Queue for messages sent to the backend. Multiple processes might use it, but only the backend should read it.
-        self.queue_to_backend = multiprocessing.Queue()
+        self._queue_to_backend = multiprocessing.Queue()
         # Queue for the frontend. Only the backend process should write it, and only the frontend should read it.
         self._queue_to_frontend = multiprocessing.Queue()
         # How many times the background thread has been started up.
@@ -194,9 +199,7 @@ class Device(GObject.GObject):
         self._ready = False
         # the backend process must be started only after the connection to the device
         # has been established.
-        self._loglevel = logger.level
-        # last telemetry date
-        self._last_telemetry = 0
+        self.loglevel = logger.level
         self._background_process = None
         self._idle_handler = None
         self.deviceconnectionparameters = None
@@ -211,31 +214,26 @@ class Device(GObject.GObject):
         """
         self._msgidcounter += 1
         msg = Message(msgtype, self._msgidcounter, self.name + '__frontend', **kwargs)
-        self.queue_to_backend.put(msg)
+        self._queue_to_backend.put(msg)
 
     def send_config(self, configdict):
         """Update the config dictionary in the main process and the backend as well."""
         self.config = configdict
         self.send_to_backend('config', configdict=configdict)
 
-    def _load_state(self, dictionary):
+    def load_state(self, dictionary):
         """Load the state of this device to a dictionary. You probably need to
         override this method in subclasses. Do not forget to call the parent's
         method, though."""
         self.log_formatstr = dictionary['log_formatstr']
         self.backend_interval = dictionary['backend_interval']
 
-    def _save_state(self):
+    def save_state(self):
         """Write the state of this device to a dictionary and return it for
         subsequent saving to a file. You probably need to override this method
         in subclasses. Do not forget to call the parent's method, though."""
         return {'log_formatstr': self.log_formatstr,
                 'backend_interval': self.backend_interval}
-
-    def stop_background_process(self):
-        """Stops the background process."""
-        if self._background_process is not None:
-            self.send_to_backend('exit')
 
     def get_variable(self, name):
         """Get the value of the variable. If you need the most fresh value,
@@ -243,23 +241,24 @@ class Device(GObject.GObject):
         """
         return self._properties[name]
 
+    def get_all_variables(self):
+        """Get a dictionary of the present values of all state variables."""
+        return self._properties.copy()
+
+    def list_variables(self):
+        """Return the names of all currently defined properties as a list"""
+        return list(self._properties.keys())
+
+    def missing_variables(self):
+        """Return a list of missing variables"""
+        return [k for k in self.all_variables if k not in self._properties]
+
     def set_variable(self, name, value):
         """Set the value of the variable. In order to ensure that the variable
         has really been updated, connect to 'variable-change' before calling
         this."""
         self.send_to_backend('set', name=name, value=value)
         self.refresh_variable(name)
-
-    def list_variables(self):
-        """Return the names of all currently defined properties as a list"""
-        return list(self._properties.keys())
-
-    def is_background_process_alive(self):
-        """Checks if the background process is alive"""
-        try:
-            return self._background_process.is_alive()
-        except AttributeError:
-            return False
 
     def refresh_variable(self, name, check_backend_alive=True, signal_needed=True):
         """Request a refresh of the value of the named variable.
@@ -273,7 +272,7 @@ class Device(GObject.GObject):
         signal_needed: if you expect a variable-change signal even if no change
             occurred
         """
-        if (not check_backend_alive) or self.is_background_process_alive():
+        if self.get_connected():
             self.send_to_backend('query', name=name, signal_needed=signal_needed)
         else:
             raise DeviceError('Backend process not running.')
@@ -292,20 +291,10 @@ class Device(GObject.GObject):
         of the command. Command completion can be signalled by the backend
         via changes in parameters (using 'update' messages)
         """
-        self.send_to_backend('execute', name=command, arguments=args)
-
-    def get_telemetry(self):
-        """Request telemetry data from the background process."""
-        if not self.is_background_process_alive():
-            raise DeviceError('Background process not running, no telemetry.')
-        if not self._outstanding_telemetry:
-            self.send_to_backend('telemetry')
+        if self.get_connected():
+            self.send_to_backend('execute', name=command, arguments=args)
         else:
-            raise DeviceError('Another telemetry request is pending.')
-
-    def missing_variables(self):
-        """Return a list of missing variables"""
-        return [k for k in self.all_variables if k not in self._properties]
+            raise DeviceError('Backend process not running.')
 
     def _idle_worker(self) -> bool:
         """This function, called as an idle procedure, queries the queue for
@@ -323,7 +312,6 @@ class Device(GObject.GObject):
                     # backend process died abnormally
                     logger.error(
                         'Communication error in device ' + self.name + ', disconnecting.')
-                logger.debug('Calling disconnect_device on ' + self.name)
                 self._idle_handler = None
                 logger.debug('Joining background process for ' + self.name)
                 self._background_process.join()
@@ -332,6 +320,7 @@ class Device(GObject.GObject):
                 self.emit('disconnect', not message['normaltermination'])
                 return False  # prevent re-scheduling this idle handler
             elif message['type'] == 'ready':
+                self._ready = True
                 self.emit('startupdone')
             elif message['type'] == 'telemetry':
                 self.emit('telemetry', message['data'])
@@ -344,58 +333,50 @@ class Device(GObject.GObject):
                           message['exception'], message['traceback'])
             elif message['type'] == 'update':
                 self._properties[message['name']] = message['value']
-                self._timestamps[message['name']] = time.monotonic()
+                self._timestamps[message['name']] = message['timestamp']
                 self.emit('variable-change', message['name'], message['value'])
             else:
-                raise NotImplementedError(message['type'])
+                raise ValueError(message['type'])
         return True  # this is an idle function, we want to be called again.
 
-    def do_error(self, propertyname: str, exception: Exception, tb: str) -> bool:
-        logger.error(
-            'Device error. Variable name: {}. Exception: {}. Traceback: {}'.format(
-                propertyname, str(exception), tb))
+    def do_disconnect(self, because_of_failure: bool):
+        """GObject default handler for the 'disconnect' signal"""
+        logger.warning('Disconnected from device {}. Failure flag: {}'.format(
+            self.name, because_of_failure))
+        if self._properties['_status'] != 'Disconnected':
+            self._properties['_status'] = 'Disconnected'
+            self._timestamps['_status'] = time.monotonic()
+            self.emit('variable-change', '_status', 'Disconnected')
+        else:
+            return True
         return False
 
     def do_startupdone(self) -> bool:
-        self._ready = True
+        """GObject default handler for the 'startupdone' signal"""
         logger.info('Device ' + self.name + ' is ready.')
+        return False
+
+    def do_error(self, propertyname: str, exception: Exception, tb: str) -> bool:
+        """GObject default handler for the 'error' signal"""
+        logger.error(
+            'Device error. Variable name: {}. Exception: {}. Traceback: {}'.format(
+                propertyname, str(exception), tb))
         return False
 
     @property
     def ready(self) -> bool:
         return self._ready
 
-    def do_disconnect(self, because_of_failure: bool):
-        logger.warning('Disconnecting from device {}. Failure flag: {}'.format(
-            self.name, because_of_failure))
-        if self._properties['_status'] != 'Disconnected':
-            self._properties['_status'] = 'Disconnected'
-            self.emit('variable-change', '_status', 'Disconnected')
-        else:
-            return True
-        return False
-
-    def do_telemetry(self, telemetry):
-        """Executed when the "telemetry" signal is emitted."""
-        self._outstanding_telemetry = False
-
     def get_connected(self) -> bool:
-        """Check if we have a connection to the device."""
-        return self.is_background_process_alive()
-
-    def disconnect_device(self):
-        self.stop_background_process()
-
-    def reconnect_device(self):
-        """Try to reconnect the device after a spontaneous disconnection."""
-        return self.connect_device(*self.deviceconnectionparameters)
-
-    def get_all_variables(self):
-        return self._properties.copy()
+        """Checks if the background process is alive"""
+        try:
+            return self._background_process.is_alive()
+        except AttributeError:
+            return False
 
     def connect_device(self, *args):
-        """Establish connection to the device. This means firing up the background process, which will take care of the
-        rest."""
+        """Establish connection to the device. This simply means firing up the
+        background process, which will take care of the rest."""
 
         assert (self._idle_handler is None) == (self._background_process is None)
 
@@ -405,7 +386,7 @@ class Device(GObject.GObject):
         # empty the queues.
         while True:
             try:
-                self.queue_to_backend.get_nowait()
+                self._queue_to_backend.get_nowait()
             except queue.Empty:
                 break
         while True:
@@ -414,31 +395,36 @@ class Device(GObject.GObject):
             except queue.Empty:
                 break
 
+        self._ready = False
+        # note that we do not clear the '_properties' and '_timestamps' in
+        # order to ensure smooth operation of the instrument between sudden
+        # disconnects and automatic reconnections.
+
         assert issubclass(self.backend_class, DeviceBackend)
         self._background_process = multiprocessing.Process(
-            target=start_background_process, name=self.name + '_background', args=(self.backend_class,
-                                                                                   self.name, self.config,
-                                                                                   self.deviceconnectionparameters,
-                                                                                   self.queue_to_backend,
-                                                                                   self._queue_to_frontend,
-                                                                                   self.watchdog_timeout,
-                                                                                   self.backend_interval,
-                                                                                   self.query_timeout,
-                                                                                   self.telemetry_interval,
-                                                                                   self.queryall_interval,
-                                                                                   self.all_variables,
-                                                                                   self.minimum_query_variables,
-                                                                                   self.urgent_variables,
-                                                                                   self.urgency_modulo,
-                                                                                   self.background_startup_count,
-                                                                                   self._loglevel, self.logfile,
-                                                                                   self.log_formatstr))
+            target=self.backend_class.create_and_run, name=self.name + '_background',
+            args=(self.name, self.config, self.deviceconnectionparameters, self._queue_to_backend,
+                  self._queue_to_frontend, self.watchdog_timeout, self.backend_interval, self.query_timeout,
+                  self.telemetry_interval, self.queryall_interval, self.all_variables, self.minimum_query_variables,
+                  self.constant_variables, self.urgent_variables, self.urgency_modulo, self.background_startup_count,
+                  self._loglevel, self.logfile, self.log_formatstr))
         self._background_process.daemon = True
-        self._ready = False
         self.background_startup_count += 1
-        self._outstanding_telemetry = False
-        self._properties = {'_status': 'Starting', '_auxstatus': None}
-        self._timestamps = {'_status': time.monotonic(), '_auxstatus': time.monotonic()}
         self._background_process.start()
         self._idle_handler = GLib.idle_add(self._idle_worker)
         logger.debug('Background process for {} has been started'.format(self.name))
+
+    def disconnect_device(self):
+        """Initiate disconnection from the device: request the background
+        process to stop.
+
+        Just before the background process has finished, it will send us an
+        'exited' message through the queue, which 'self._idle_handler' will
+        pick up and handle.
+        """
+        if self._background_process is not None:
+            self.send_to_backend('exit')
+
+    def reconnect_device(self):
+        """Try to reconnect the device after a spontaneous disconnection."""
+        return self.connect_device(*self.deviceconnectionparameters)

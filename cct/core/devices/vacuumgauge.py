@@ -5,50 +5,32 @@ Created on Oct 13, 2015
 '''
 import logging
 
-from .device import Device_TCP, DeviceError, UnknownVariable
+from .device import DeviceBackend_TCP, DeviceError, UnknownVariable, Device, UnknownCommand
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class TPG201(Device_TCP):
-    log_formatstr = '{pressure}'
-
-    all_variables = ['pressure', 'version', 'units']
-
-    minimum_query_variables = ['pressure', 'version', 'units']
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._loglevel = logger.level
-
-    def _has_all_variables(self):
-        return all([v in self._properties for v in ['pressure', 'version', 'units', '_status']])
-
-    def _query_variable(self, variablename, minimum_query_variables=None):
-        if not super()._query_variable(variablename):
-            return
+class TPG201_Backend(DeviceBackend_TCP):
+    def query_variable(self, variablename: str):
         if variablename == 'pressure':
-            self._send(b'001M^\r')
+            self.send_message(b'001M^\r', expected_replies=1, asynchronous=False)
         elif variablename == 'version':
-            self._send(b'001Te\r')
+            self.send_message(b'001Te\r', expected_replies=1, asynchronous=False)
         elif variablename == 'units':
-            self._send(b'001Uf\r')
+            self.send_message(b'001Uf\r', expected_replies=1, asynchronous=False)
         else:
             raise UnknownVariable(variablename)
+        return True
 
-    def _get_complete_messages(self, message):
+    @staticmethod
+    def get_complete_messages(message):
         messages = message.split(b'\r')
         for i in range(len(messages) - 1):
             messages[i] = messages[i] + b'\r'
         return messages
 
-    def _process_incoming_message(self, message, original_sent=None):
-        # The TPG-201 Pirani Gauge always gives exactly 1 reply for each
-        # sent message, therefore we are safe to release the cleartosend
-        # semaphore at this point, so while we are handling this message,
-        # the sending process can commence sending the next message.
-        self._cleartosend_semaphore.release()
+    def process_incoming_message(self, message, original_sent=None):
         if not (message.startswith(b'001') and message.endswith(b'\r')):
             raise DeviceError('Invalid message: ' + str(message))
         message = message[:-1]
@@ -59,18 +41,36 @@ class TPG201(Device_TCP):
             # The 4th character of the message is an M. Note that message[3]
             # has a type of int, thus it cannot be equal to b'M'.
             pressure = float(message[4:8]) * 10 ** (-23 + float(message[8:10]))
-            if self._update_variable('pressure', pressure):
+            if self.update_variable('pressure', pressure):
                 if pressure > 1:
-                    self._update_variable('_status', 'No vacuum')
+                    self.update_variable('_status', 'No vacuum')
                 elif pressure > 0.1:
-                    self._update_variable('_status', 'Medium vacuum')
+                    self.update_variable('_status', 'Medium vacuum')
                 else:
-                    self._update_variable('_status', 'Vacuum OK')
-                self._update_variable('_auxstatus', '{:.3f} mbar'.format(pressure))
+                    self.update_variable('_status', 'Vacuum OK')
+                self.update_variable('_auxstatus', '{:.3f} mbar'.format(pressure))
         elif message[3] == 84:  # T
-            self._update_variable('version', str(message[4:10]))
+            self.update_variable('version', str(message[4:10]))
         elif message[3] == 85:  # U
-            self._update_variable('units', str(message[4:10]))
+            self.update_variable('units', str(message[4:10]))
         else:
             raise DeviceError(
                 'Unknown message code {} in message {}'.format(chr(message[3]), str(message)))
+
+    def execute_command(self, commandname: str, arguments: tuple):
+        """TPG201 does not implement any commands"""
+        raise UnknownCommand(commandname)
+
+
+class TPG201(Device):
+    log_formatstr = '{pressure:.3f}'
+
+    all_variables = ['pressure', 'version', 'units']
+
+    minimum_query_variables = ['pressure', 'version', 'units']
+
+    backend_class = TPG201_Backend
+
+    urgency_modulo = 10
+
+    urgent_variables = ['pressure']
