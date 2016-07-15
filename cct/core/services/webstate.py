@@ -3,6 +3,7 @@ import datetime
 import os
 import shutil
 import string
+import time
 from xml.dom.minidom import parse
 
 import numpy as np
@@ -25,7 +26,7 @@ def get_svg_object_by_id(dom, idname):
 
 
 class WebStateFileWriter(Service):
-    webstate_timeout = 30
+    state = {'interval': 30}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -34,6 +35,9 @@ class WebStateFileWriter(Service):
     def start(self):
         self._timeouthandler = GLib.timeout_add(self.webstate_timeout * 1000, self.write_statusfile)
 
+    def stop(self):
+        GLib.source_remove(self._timeouthandler)
+        
     def reload_statusfile_template(self):
         # if not hasattr(self,'_statusfile_template'):
         if True:
@@ -57,7 +61,7 @@ class WebStateFileWriter(Service):
                 status = 'Disconnected'
                 bg = 'red'
             else:
-                if self.instrument.devices[d]._get_connected():
+                if self.instrument.devices[d].get_connected():
                     bg = 'green'
                 else:
                     bg = 'gray'
@@ -72,7 +76,7 @@ class WebStateFileWriter(Service):
         dhtc += '</tr>\n<tr>\n  <th>Last send time</th>\n'
         for d in sorted(self.instrument.devices):
             try:
-                lastsend = self.instrument._telemetries[d]['last_send']
+                lastsend = self.instrument.services['telemetrymanager'][d]['last_send']
             except KeyError:
                 lastsend = np.nan
                 bg = 'red'
@@ -85,7 +89,7 @@ class WebStateFileWriter(Service):
         dhtc += '</tr>\n<tr>\n  <th>Last recv time</th>\n'
         for d in sorted(self.instrument.devices):
             try:
-                lastrecv = self.instrument._telemetries[d]['last_recv']
+                lastrecv = self.instrument.services['telemetrymanager'][d]['last_recv']
             except KeyError:
                 lastrecv = np.nan
                 bg = 'red'
@@ -98,7 +102,7 @@ class WebStateFileWriter(Service):
 
         dhtc += '</tr>\n<tr>\n  <th>Background process restarts</h>\n'
         for d in sorted(self.instrument.devices):
-            restarts = self.instrument.devices[d]._background_startup_count
+            restarts = self.instrument.devices[d].background_startup_count
             dhtc += '  <td>' + str(restarts - 1) + '</td>\n'
         dhtc += '</tr>\n'
         return dhtc
@@ -253,16 +257,16 @@ class WebStateFileWriter(Service):
 
     def create_fsnlist_data(self):
         fl = "<tr>\n    <th>Prefix:</th>\n"
-        for p in sorted(self.instrument.filesequence.get_prefixes()):
+        for p in sorted(self.instrument.services['filesequence'].get_prefixes()):
             fl += "    <td>{}</td>\n".format(p)
         fl += '    <td>Scan</td>\n</tr>\n<tr>\n    <th>Last FSN:</th>\n'
-        for p in sorted(self.instrument.filesequence.get_prefixes()):
-            fl += "    <td>{:d}</td>\n".format(self.instrument.filesequence.get_lastfsn(p))
-        fl += '    <td>{:d}</td>\n'.format(self.instrument.filesequence.get_lastscan())
+        for p in sorted(self.instrument.services['filesequence'].get_prefixes()):
+            fl += "    <td>{:d}</td>\n".format(self.instrument.services['filesequence'].get_lastfsn(p))
+        fl += '    <td>{:d}</td>\n'.format(self.instrument.services['filesequence'].get_lastscan())
         fl += '</tr>\n<tr>\n    <th>Next FSN:</th>\n'
-        for p in sorted(self.instrument.filesequence.get_prefixes()):
-            fl += '    <td>{:d}</td>\n'.format(self.instrument.filesequence.get_nextfreefsn(p, False))
-        fl += '    <td>{:d}</td>\n'.format(self.instrument.filesequence.get_nextfreescan(False))
+        for p in sorted(self.instrument.services['filesequence'].get_prefixes()):
+            fl += '    <td>{:d}</td>\n'.format(self.instrument.services['filesequence'].get_nextfreefsn(p, False))
+        fl += '    <td>{:d}</td>\n'.format(self.instrument.services['filesequence'].get_nextfreescan(False))
         fl += '</tr>'
         return fl
 
@@ -282,10 +286,10 @@ class WebStateFileWriter(Service):
             <td>{proposer}</td>
         </tr>
         <tr>
-        """.format(operator=self.instrument.accounting.get_user().username,
-                   privilegelevel=self.instrument.accounting.get_privilegelevel().name,
-                   project=self.instrument.accounting.get_project().projectid,
-                   proposer=self.instrument.accounting.get_project().proposer)
+        """.format(operator=self.instrument.services['accounting'].get_user().username,
+                   privilegelevel=self.instrument.services['accounting'].get_privilegelevel().name,
+                   project=self.instrument.services['accounting'].get_project().projectid,
+                   proposer=self.instrument.services['accounting'].get_project().proposer)
         return ad
 
     def write_statusfile(self):
@@ -293,7 +297,7 @@ class WebStateFileWriter(Service):
         files (e.g. images to include), which can be published over the net.
         """
         self.reload_statusfile_template()
-        uptime = (datetime.datetime.now() - self.instrument._starttime).total_seconds()
+        uptime = time.monotonic() - self.instrument.starttime
         uptime_hour = uptime // 3600
         uptime = uptime - uptime_hour * 3600
         uptime_min = uptime // 60
@@ -352,12 +356,12 @@ class WebStateFileWriter(Service):
             except KeyError:
                 x.firstChild.firstChild.data = 'No data'
         for x in get_svg_object_by_id(dom, 'samplename'):
-            x.firstChild.firstChild.data = str(self.instrument.samplestore.get_active_name())
+            x.firstChild.firstChild.data = str(self.instrument.services['samplestore'].get_active_name())
         for x in get_svg_object_by_id(dom, 'temperature'):
             try:
                 temperature = self.instrument.devices['haakephoenix'].get_variable('temperature_internal')
                 temperature = '{:.2f} °C'.format(temperature)
-                if not self.instrument.devices['haakephoenix']._get_connected():
+                if not self.instrument.devices['haakephoenix'].get_connected():
                     temperature = 'Uncontrolled'
             except KeyError:
                 temperature = 'Uncontrolled'

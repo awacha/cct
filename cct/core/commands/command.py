@@ -254,4 +254,3 @@ def cleanup_commandline(commandline):
     if instring is not None:
         raise ValueError('Unterminated string in command line', commandline)
     return commandline.strip()
-    return commandline.strip()

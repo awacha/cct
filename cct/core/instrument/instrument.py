@@ -3,16 +3,14 @@ import logging
 import multiprocessing
 import os
 import pickle
-import resource
 import time
 import traceback
 from typing import List
 
-import psutil
-
 from .motor import Motor
 from ..devices.device import DeviceError, Device_ModbusTCP, Device_TCP, Device
-from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter
+from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter, Service
+from ..utils.telemetry import acquire_telemetry_info
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -36,23 +34,7 @@ class InstrumentError(Exception):
     pass
 
 
-def get_telemetry():
-    vm = psutil.virtual_memory()
-    sm = psutil.swap_memory()
-    la = ', '.join([str(f) for f in os.getloadavg()])
-    return {'processname': multiprocessing.current_process().name,
-            'self': resource.getrusage(resource.RUSAGE_SELF),
-            'children': resource.getrusage(resource.RUSAGE_CHILDREN),
-            'inqueuelen': 0,
-            'freephysmem': vm.available,
-            'totalphysmem': vm.total,
-            'freeswap': sm.free,
-            'totalswap': sm.total,
-            'loadavg': la,
-            }
-
-
-class Instrument(GObject.GObject):
+class Instrument(object):
     configdir = 'config'
     telemetry_timeout = 0.9
     statusfile_timeout = 30
@@ -74,7 +56,7 @@ class Instrument(GObject.GObject):
         GObject.GObject.__init__(self)
         self._online = online
         self.devices = {}
-        self.services = []
+        self.services = {}
         self.motors = {}
         self.environmentcontrollers = {}
         self.configfile = os.path.join(self.configdir, 'cct.pickle')
@@ -90,27 +72,9 @@ class Instrument(GObject.GObject):
         """Start operation"""
         self._telemetry_timeout = GLib.timeout_add(self.telemetry_timeout * 1000,
                                                    self.on_telemetry_timeout)
-
-        memlogfiles = [f for f in os.listdir(self.config['path']['directories']['log']) if
-                       f.startswith(self.memlog_file)]
-        if not memlogfiles:
-            self.memlog_file = self.memlog_file + '.0'
-        else:
-            maxidx = max([int(f.rsplit('.', 1)[1]) for f in memlogfiles])
-            self.memlog_file = self.memlog_file + '.{:d}'.format(maxidx + 1)
-        self.memlog_file = os.path.join(self.config['path']['directories']['log'], self.memlog_file)
-        with open(self.memlog_file, 'xt', encoding='utf-8') as f:
-            f.write('# CCT memory log file created {}\n'.format(datetime.datetime.now()))
-            f.write('# Epoch (sec)\tUptime (sec)\tMain (MB)')
-            for d in sorted(self.devices):
-                f.write('\t {} (MB)'.format(d))
-            for s in ['exposureanalyzer']:
-                f.write('\t {} (MB)'.format(s))
-            f.write('\n')
-        self._memlog_timeout = GLib.timeout_add(self.memlog_timeout * 1000,
-                                                self.on_memlog_timeout)
         for s in self.services:
-            s.start()
+            self.services[s].start()
+        self.starttime = time.monotonic()
         logger.info('Started services.')
 
     def _initialize_config(self):
@@ -224,7 +188,8 @@ class Instrument(GObject.GObject):
                                  '11': {'name': 'Unknown2', 'controller': 'tmcm351b', 'index': 2}}
         self.config['devices'] = {}
         self.config['services'] = {
-            'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {}}
+            'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {},
+            'webstatefilewriter': {}, 'telemetrymanager': {'memlog_file_basename': 'memlog', 'memlog_interval': 60}}
         self.config['services']['accounting'] = {'operator': 'CREDOoperator',
                                                  'projectid': 'Project ID',
                                                  'projectname': 'Project name',
@@ -271,15 +236,21 @@ class Instrument(GObject.GObject):
     def save_state(self):
         """Save the current configuration (including that of all devices) to a
         pickle file."""
-        for d in self.devices:
-            self.config['devices'][d] = self.devices[d]._save_state()
-        for service in ['interpreter', 'samplestore', 'filesequence', 'exposureanalyzer', 'accounting']:
-            self.config['services'][service] = getattr(
-                self, service)._save_state()
+        for devname, dev in self.devices.items():
+            assert isinstance(dev, Device)
+            self.config['devices'][devname] = dev.save_state()
+        for servname, serv in self.services.items():
+            assert isinstance(serv, Service)
+            self.config['services'][servname] = serv.save_state()
         with open(self.configfile, 'wb') as f:
             pickle.dump(self.config, f)
         logger.info('Saved state to ' + self.configfile)
-        self.exposureanalyzer.sendconfig()
+        for dev in self.devices.values():
+            assert isinstance(dev, Device)
+            dev.update_config(self.config)
+        for serv in self.services.values():
+            assert isinstance(serv, Service)
+            serv.update_config(self.config)
 
     def _update_config(self, config_orig, config_loaded):
         """Uppdate the config dictionary in `config_orig` with the loaded
@@ -429,18 +400,17 @@ class Instrument(GObject.GObject):
 
         return unsuccessful
 
-    def on_telemetry(self, device, telemetry, devicename):
-        self._telemetries[devicename] = telemetry
-        self.emit('telemetry', devicename, 'device', telemetry)
+    def on_telemetry(self, device, telemetry):
+        self.services['telemetrymanager'].incoming_telemetry(device.name, telemetry)
 
     def on_ready(self, device):
         try:
-            self._waiting_for_ready.remove(device._instancename)
+            self._waiting_for_ready.remove(device.name)
         except ValueError:
             pass
         if not self._waiting_for_ready:
             self.emit('devices-ready')
-            self.webstatefilewriter.write_statusfile()
+            self.services['webstatefilewriter'].write_statusfile()
             logger.debug('All ready.')
         else:
             logger.debug('Waiting for ready: ' + ', '.join(self._waiting_for_ready))
@@ -473,86 +443,20 @@ class Instrument(GObject.GObject):
             return False
 
     def create_services(self):
-        self.interpreter = Interpreter(self)
-        self.interpreter._load_state(self.config['services']['interpreter'])
-        self.filesequence = FileSequence(self)
-        self.filesequence._load_state(self.config['services']['filesequence'])
-        self.samplestore = SampleStore(self)
-        self.samplestore._load_state(self.config['services']['samplestore'])
-        self.exposureanalyzer = ExposureAnalyzer(self)
-        self.exposureanalyzer._load_state(
-            self.config['services']['exposureanalyzer'])
-        self.accounting = Accounting(self)
-        self.accounting._load_state(self.config['services']['accounting'])
-        self.webstatefilewriter = WebStateFileWriter(self)
-        self.webstatefilewriter._load_state(self.config['services']['webstatefilewriter'])
-        self.services.extend([self.interpreter,
-                              self.filesequence,
-                              self.samplestore,
-                              self.exposureanalyzer,
-                              self.accounting,
-                              self.webstatefilewriter])
+        for sname, sclass in [('interpreter', Interpreter),
+                              ('filesequence', FileSequence),
+                              ('samplestore', SampleStore),
+                              ('exposureanalyzer', ExposureAnalyzer),
+                              ('accounting', Accounting),
+                              ('webstatefilewriter', WebStateFileWriter),
+                              ]:
+            assert issubclass(sclass, Service)
+            self.services[sname] = sclass(self, self.configdir, self.config['services'][sname])
 
     def on_telemetry_timeout(self):
         """Timer function which periodically requests telemetry from all the
         components."""
-        self._telemetries['main'] = get_telemetry()
-        for s in ['exposureanalyzer']:
-            getattr(self, s).get_telemetry()
-        self.emit('telemetry', None, 'service', self.get_telemetry(None))
+        self.services['telemetrymanager'].incoming_telemetry('main', acquire_telemetry_info())
         return True
 
-    def get_telemetry(self, process=None):
-        if process is None:
-            tm = {}
-            for what in ['self', 'children']:
-                tm[what] = DummyTm()
-                tm[what].ru_utime = sum([self._telemetries[k][what].ru_utime for k in self._telemetries])
-                tm[what].ru_stime = sum([self._telemetries[k][what].ru_stime for k in self._telemetries])
-                tm[what].ru_maxrss = sum([self._telemetries[k][what].ru_maxrss for k in self._telemetries])
-                tm[what].ru_minflt = sum([self._telemetries[k][what].ru_minflt for k in self._telemetries])
-                tm[what].ru_majflt = sum([self._telemetries[k][what].ru_majflt for k in self._telemetries])
-                tm[what].ru_inblock = sum([self._telemetries[k][what].ru_inblock for k in self._telemetries])
-                tm[what].ru_oublock = sum([self._telemetries[k][what].ru_oublock for k in self._telemetries])
-                tm[what].ru_nvcsw = sum([self._telemetries[k][what].ru_nvcsw for k in self._telemetries])
-                tm[what].ru_nivcsw = sum([self._telemetries[k][what].ru_nivcsw for k in self._telemetries])
-            sm = psutil.swap_memory()
-            vm = psutil.virtual_memory()
-            la = ', '.join([str(f) for f in os.getloadavg()])
-            tm['freephysmem'] = vm.available
-            tm['totalphysmem'] = vm.total
-            tm['freeswap'] = sm.free
-            tm['totalswap'] = sm.total
-            tm['loadavg'] = la
-        else:
-            tm = {'self': self._telemetries[process]['self'],
-                  'children': self._telemetries[process]['children'],
-                  }
-        return tm
 
-    def get_telemetrykeys(self):
-        return self._telemetries.keys()
-
-    def on_memlog_timeout(self):
-        with open(self.memlog_file, 'at', encoding='utf-8') as f:
-            tm = self.get_telemetry()
-            s = '{:.3f}\t{:.3f}\t{:.3f}'.format(time.time(),
-                                                (datetime.datetime.now() - self._starttime).total_seconds(),
-                                                (tm['self'].ru_maxrss + tm[
-                                                    'children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
-            for d in sorted(self.devices):
-                try:
-                    tm = self.get_telemetry(d)
-                    s = '{}\t{:.3f}'.format(s, (
-                        tm['self'].ru_maxrss + tm['children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
-                except KeyError:
-                    s = '{}\tNaN'.format(s)
-            for d in ['exposureanalyzer']:
-                try:
-                    tm = self.get_telemetry(d)
-                    s = '{}\t{:.3f}'.format(s, (
-                        tm['self'].ru_maxrss + tm['children'].ru_maxrss) * resource.getpagesize() / 1024 ** 2)
-                except KeyError:
-                    s = '{}\tNaN'.format(s)
-            f.write(s + '\n')
-        return True

@@ -127,17 +127,19 @@ class DeviceBackend(object):
 
     # All timestamps are generated with time.monotonic()
 
-    def __init__(self, name: str, config: Dict, deviceconnectionparameters: Dict,
+    def __init__(self, name: str, configdir: str, config: Dict, deviceconnectionparameters: Dict,
                  inqueue: multiprocessing.Queue, outqueue: multiprocessing.Queue,
                  watchdog_timeout: float, inqueue_timeout: float, query_timeout: float,
                  telemetry_interval: float, queryall_interval: float, all_variables: List[str],
                  minimum_query_variables: List[str], constant_variables: Optional[List[str]],
                  urgent_variables: Optional[List[str]], urgency_modulo: int, startup_number: int,
-                 loglevel: int, logfile: str, log_formatstr: str):
+                 loglevel: int, logfile: str, log_formatstr: str, max_busy_level: int,
+                 busysemaphore: multiprocessing.BoundedSemaphore):
         """Initialize the backend process
 
         :param name: the name of the device. Appears in log/error messages, therefore should be unique
         :param config: the initial configuration dictionary. Can be updated through the queue
+        :param configdir: the path where the configuration files are to be stored
         :param deviceconnectionparameters: a dictionary of the connection parameters (host, port, timeouts etc.). Used
             in subclasses.
         :param inqueue: The input queue for this backend process. See the class-level docstring for valid message types.
@@ -155,16 +157,20 @@ class DeviceBackend(object):
         :param urgent_variables: Variables that need to be updated more frequently than the others. If None, all
             variables are considered urgent.
         :param urgency_modulo: Auto-queries only query the urgent variables in `urgent_variables`. All the others are
-            queried only every `urgency_modulo`-eth "queryall".
+            queried only every `urgency_modulo`-eth "queryall". If zero, only urgent variables are queried, every time.
         :param startup_number: The number of this startup
         :param loglevel: Log level, as in the logger module.
         :param logfile: Log file name. Should be able to be open(<>, 'a', encoding='utf-8')-ed.
         :param log_formatstr: Format string for creating the log line. It is used as
             log_formatstr.format(**self.properties)
+        :param max_busy_level: How many times the busy semaphore can be acquired
+        :param busysemaphore: A semaphore which is acquired (typically from the frontend process) when a special
+            operation is initiated, and released (typically by the backend) when the operation finishes.
         """
         self.name = name  # name of the device
         self.deviceconnectionparameters = deviceconnectionparameters
         self.config = config  # a copy of the configuration dictionary
+        self.configdir = configdir
         self.inqueue = inqueue  # input queue
         self.outqueue = outqueue  # output queue
         self.inqueue_timeout = inqueue_timeout  # timeout for waiting for a message in the inqueue
@@ -199,6 +205,8 @@ class DeviceBackend(object):
         self.logger = logging.getLogger(
             __name__ + '::' + self.name + '__backgroundprocess')
         self.logger.propagate = False
+        self.busysemaphore = busysemaphore
+        self.max_busy_level = max_busy_level
         if not self.logger.hasHandlers():
             self.logger.addHandler(QueueLogHandler(self.outqueue))
             self.logger.addHandler(logging.StreamHandler())
@@ -209,6 +217,11 @@ class DeviceBackend(object):
                 self.name, self.startup_number))
         self.logfile = logfile
         self.log_formatstr = log_formatstr
+
+    def is_busy(self) -> int:
+        """Returns how many times the busy semaphore has been acquired. This
+        way, the return value casted to bool makes sense semantically."""
+        return self.max_busy_level - self.busysemaphore.get_value()
 
     def send_to_frontend(self, msgtype: str, **kwargs):
         """
@@ -476,7 +489,7 @@ class DeviceBackend(object):
             return
         self.lasttimes['queryall'] = time.monotonic()
 
-        if self.counters['queryalls'] % self.urgency_modulo:
+        if (self.urgency_modulo == 0) or (self.counters['queryalls'] % self.urgency_modulo):
             # only query urgent variables
             if self.urgent_variables is not None:
                 querylist = self.urgent_variables
@@ -486,7 +499,7 @@ class DeviceBackend(object):
             # query all variables
             querylist = self.minimum_query_variables
         # remove constant variables
-        querylist = [v for v in self.constant_variables]
+        querylist = [v for v in querylist if v not in self.constant_variables]
         # add missing variables
         querylist.extend([v for v in self.get_missing_variables() if v not in querylist])
         assert isinstance(querylist, list)
@@ -542,9 +555,10 @@ class DeviceBackend(object):
         Returns:
             True if the query has been sent successfully AND reply is expected
                 from the device.
-            False if for some reason you cannot start the query, OR the new
-                value for the state variable has been determined by this
-                method.
+            False if for some reason you cannot start the query, AND
+                self.update_variable is not expected to be called any time soon.
+            True if the new value of the variable has been determined in this
+                method AND self.update_variable has been called.
         """
         raise NotImplementedError
 

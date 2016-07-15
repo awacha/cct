@@ -374,7 +374,7 @@ class FileSequence(Service):
 
             write_legacy_paramfile(paramfilename, params)
             argstuple = argstuple + (params,)
-        self.instrument.exposureanalyzer.submit(
+        self.instrument.services['exposureanalyzer'].submit(
             fsn, filename, prefix, argstuple)
 
     def get_prefixes(self):

@@ -4,6 +4,7 @@ from typing import Union
 class PrivilegeError(Exception):
     pass
 
+
 class PrivilegeLevel(object):
     _instances = []
 

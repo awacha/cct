@@ -1,6 +1,9 @@
 import kerberos
 import logging
+import os
 import pickle
+import time
+from typing import Optional, List, Dict, Union
 
 from gi.repository import GObject
 
@@ -18,7 +21,7 @@ class User(object):
     lastname = None
     privlevel = None
 
-    def __init__(self, uname, firstname, lastname, privlevel=PRIV_LAYMAN):
+    def __init__(self, uname: str, firstname: str, lastname: str, privlevel: PrivilegeLevel = PRIV_LAYMAN):
         self.username = uname
         self.firstname = firstname
         self.lastname = lastname
@@ -30,7 +33,7 @@ class Project(object):
     projectname = None
     proposer = None
 
-    def __init__(self, pid, pname, proposer):
+    def __init__(self, pid: str, pname: str, proposer: str):
         self.projectid = pid
         self.projectname = pname
         self.proposer = proposer
@@ -40,10 +43,19 @@ class Accounting(Service):
     __gsignals__ = {'privlevel-changed': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
                     'project-changed': (GObject.SignalFlags.RUN_FIRST, None, ())}
 
+    state = {'dbfile': 'userdb',
+             'projectid': 'MachineStudies 01',
+             'operator': 'CREDOoperator',
+             'default_realm': 'MTATTKMFIBNO',
+             }
+
     def __init__(self, *args, **kwargs):
-        Service.__init__(self, *args, **kwargs)
-        self._user = User('root', 'System', 'System', PRIV_SUPERUSER)
-        self._privlevel = PRIV_SUPERUSER
+        self.current_user = None
+        self.privlevel = None
+        self.users = []
+        self.project = None
+        self.projects = []
+        super().__init__(*args, **kwargs)
 
     def authenticate(self, username, password):
         if '@' not in username:
@@ -51,20 +63,20 @@ class Accounting(Service):
         try:
             if kerberos.checkPassword(username, password, '', '', 0):
                 try:
-                    self._user = [u for u in self._users if u.username == username.split('@', 1)[0]][0]
+                    self.current_user = [u for u in self.users if u.username == username.split('@', 1)[0]][0]
                 except IndexError:
                     self.add_user(username.split('@', 1)[0], 'Firstname', 'Lastname', PRIV_LAYMAN)
-                    self._user = self._users[-1]
-                self.set_privilegelevel(self._user.privlevel)
-                self.instrument.config['services']['accounting']['operator'] = self._user.username
-                logger.info('Authenticated user ' + self._user.username + '.')
+                    self.current_user = self.users[-1]
+                self.set_privilegelevel(self.current_user.privlevel)
+                self.instrument.config['services']['accounting']['operator'] = self.current_user.username
+                logger.info('Authenticated user ' + self.current_user.username + '.')
                 return True
         except kerberos.BasicAuthError:
             return False
 
     def get_default_realm(self):
         try:
-            return self.instrument.config['services']['accounting']['default_realm']
+            return self.state['default_realm']
         except KeyError:
             try:
                 with open('/etc/krb5.conf', 'rt', encoding='utf-8') as f:
@@ -84,107 +96,110 @@ class Accounting(Service):
             except FileNotFoundError:
                 return None
 
-    def get_user(self, username=None) -> User:
+    def get_user(self, username: Optional[str] = None) -> User:
         if username is None:
-            return self._user
+            return self.current_user
         else:
-            user = [u for u in self._users if u.username == username]
+            user = [u for u in self.users if u.username == username]
             assert (len(user) == 1)  # the username is a "key": duplicates are not allowed
             return user[0]
 
-    def get_usernames(self):
-        return sorted([u.username for u in self._users])
+    def get_usernames(self) -> List[str]:
+        return sorted([u.username for u in self.users])
 
     def get_privilegelevel(self) -> PrivilegeLevel:
-        return self._privlevel
+        return self.privlevel
 
     def has_privilege(self, what):
         logger.debug(
-            'Checking privilege: {} ({}) <=? {} ({})'.format(what, type(what), self._privlevel, type(self._privlevel)))
-        return self._privlevel.is_allowed(what)
+            'Checking privilege: {} ({}) <=? {} ({})'.format(what, type(what), self.privlevel, type(self.privlevel)))
+        return self.privlevel.is_allowed(what)
 
-    def set_privilegelevel(self, level):
+    def set_privilegelevel(self, level: Union[PrivilegeLevel, str, int]):
         level = PrivilegeLevel.get_priv(level)
-        if self._user.privlevel.is_allowed(level):
-            self._privlevel = level
-            self.emit('privlevel-changed', self._privlevel)
+        if self.current_user.privlevel.is_allowed(level):
+            self.privlevel = level
+            self.emit('privlevel-changed', self.privlevel)
         else:
             raise ServiceError('Insufficient privileges')
 
     def get_accessible_privlevels_str(self):
-        return [p.name for p in self._privlevel.get_allowed()]
+        return [p.name for p in self.privlevel.get_allowed()]
 
-    def _load_state(self, dictionary):
+    def load_state(self, dictionary: Dict):
+        super().load_state(dictionary)
         logger.debug('Accounting: load state')
         try:
-            self._dbfilename = dictionary['dbfile']
-        except KeyError:
-            logger.debug('No dbfilename, using default')
-            self._dbfilename = 'config/userdb'
-        try:
-            with open(self._dbfilename, 'rb') as f:
+            with open(os.path.join(self.configdir, self.state['dbfile']), 'rb') as f:
                 userdb = pickle.load(f)
-            self._users = userdb['users']
-            for u in self._users:
-                if not isinstance(u.privlevel, PrivilegeLevel):
-                    u.privlevel = PrivilegeLevel.get_priv(u.privlevel)
-            self._projects = userdb['projects']
+            self.users = userdb['users']
+            #            for u in self.users:
+            #                if not isinstance(u.privlevel, PrivilegeLevel):
+            #                    u.privlevel = PrivilegeLevel.get_priv(u.privlevel)
+            self.projects = userdb['projects']
         except FileNotFoundError:
             logger.debug('Could not load dbfile.')
-            self._users = [User('root', 'System', 'Administrator', PRIV_SUPERUSER)]
-            self._projects = [Project('MS 01', 'Machine Studies', 'System')]
+            self.users = [User('root', 'System', 'Administrator', PRIV_SUPERUSER)]
+            self.projects = [Project('MachineStudies {:2d}/01'.format(time.localtime().tm_year % 100),
+                                     'Machine Studies', 'System')]
         try:
-            self.select_project(dictionary['projectid'])
+            self.select_project(self.state['projectid'])
         except KeyError:
-            logger.debug('Could not select project')
-
-    def _save_state(self):
-        logger.debug('Saving state for accounting')
-        dic = Service._save_state(self)
-        dic['dbfile'] = self._dbfilename
-        dic['projectid'] = self._project.projectid
-        dic['operator'] = self._user.username
-        dic['projectname'] = self._project.projectname
-        dic['proposer'] = self._project.proposer
+            assert isinstance(self.projects[0], Project)
+            self.select_project(self.projects[0].projectid)
+            logger.warning('Could not select project, selected the first one.')
         try:
-            with open(self._dbfilename, 'wb') as f:
-                pickle.dump({'users': self._users, 'projects': self._projects}, f)
+            self.user = [u for u in self.users if u.username == self.state['operator']][0]
+        except IndexError:
+            logger.warning('Could not select user, selecting the first one.')
+            self.user = self.users[0]
+            self.privlevel = self.user.privlevel
+
+    def save_state(self):
+        dic = super().save_state()
+        try:
+            with open(os.path.join(self.configdir, self.state['dbfile']), 'wb') as f:
+                pickle.dump({'users': self.users, 'projects': self.projects}, f)
         finally:
             return dic
 
     def get_projectids(self):
-        return sorted([p.projectid for p in self._projects])
+        return sorted([p.projectid for p in self.projects])
 
-    def new_project(self, projectid, projectname, proposer):
+    def new_project(self, projectid: str, projectname: str, proposer: str):
         if not self.has_privilege(PRIV_PROJECTMAN):
-            raise PrivilegeError()
-        self._projects = [p for p in self._projects if p.projectid != projectid]
+            raise PrivilegeError(PRIV_PROJECTMAN)
+        self.projects = [p for p in self.projects if p.projectid != projectid]
         prj = Project(projectid, projectname, proposer)
-        self._projects.append(prj)
+        self.projects.append(prj)
         logger.debug('Added project: {}, {}, {}'.format(projectid, projectname, proposer))
         self.select_project(projectid)
         return prj
 
-    def select_project(self, projectid):
-        self._project = self.get_project(projectid)
-        logger.debug('Selected project: ' + self._project.projectid)
-        self.instrument.config['services']['accounting']['projectid'] = self._project.projectid
-        self.instrument.config['services']['accounting']['projectname'] = self._project.projectname
-        self.instrument.config['services']['accounting']['proposer'] = self._project.proposer
+    def select_project(self, projectid: str):
+        self.project = self.get_project(projectid)
+        logger.debug('Selected project: ' + self.project.projectid)
+        self.instrument.config['services']['accounting']['projectid'] = self.project.projectid
+        self.instrument.config['services']['accounting']['projectname'] = self.project.projectname
+        self.instrument.config['services']['accounting']['proposer'] = self.project.proposer
         self.emit('project-changed')
 
-    def get_project(self, projectid=None) -> Project:
+    def get_project(self, projectid: Optional[str] = None) -> Project:
+        """Get the project instance with the given ID. If no ID is given, get
+        the default (current) project instance."""
         if projectid is None:
-            projectid = self._project.projectid
-        projects = [p for p in self._projects if p.projectid == projectid]
-        if not projects:
-            prj = self.new_project('MS 01', 'Machine Studies', 'System')
-            projects = [prj]
+            assert self.project in self.projects
+            return self.project
+        projects = [p for p in self.projects if p.projectid == projectid]
         assert (len(projects) == 1)
         return projects[0]
 
-    def update_user(self, username, firstname=None, lastname=None, maxpriv=None):
-        user = [u for u in self._users if u.username == username][0]
+    def update_user(self, username: str, firstname: Optional[str] = None, lastname: Optional[str] = None,
+                    maxpriv: Optional[PrivilegeLevel] = None):
+        if not self.has_privilege(PRIV_USERMAN):
+            raise PrivilegeError(PRIV_USERMAN)
+        user = [u for u in self.users if u.username == username][0]
+        assert len(user) == 1
         if firstname is not None:
             user.firstname = firstname
         if lastname is not None:
@@ -197,21 +212,26 @@ class Accounting(Service):
         self.instrument.save_state()
         logger.info('Updated user ' + username)
 
-    def delete_user(self, username):
+    def delete_user(self, username: str):
+        if not self.has_privilege(PRIV_USERMAN):
+            raise PrivilegeError(PRIV_USERMAN)
         if username == self.get_user().username:
             raise ServiceError('Cannot delete current user')
-        assert (self.has_privilege(PRIV_USERMAN))
-        self._users = [u for u in self._users if u.username != username]
+        self.users = [u for u in self.users if u.username != username]
         self.instrument.save_state()
 
-    def add_user(self, username, firstname, lastname, privlevel):
-        assert (not [u for u in self._users if u.username == username])
-        assert (self.has_privilege(PRIV_USERMAN))
-        self._users.append(User(username, firstname, lastname, privlevel))
+    def add_user(self, username: str, firstname: str, lastname: str, privlevel: Optional[PrivilegeLevel] = PRIV_LAYMAN):
+        if not self.has_privilege(PRIV_USERMAN):
+            raise PrivilegeError(PRIV_USERMAN)
+        if [u for u in self.users if u.username == username]:
+            raise ValueError('Duplicate username {}'.format(username))
+        self.users.append(User(username, firstname, lastname, privlevel))
         self.instrument.save_state()
 
-    def delete_project(self, projectid):
-        assert (not projectid == self._project.projectid)
-        assert (self.has_privilege(PRIV_PROJECTMAN))
-        self._projects = [p for p in self._projects if p.projectid != projectid]
+    def delete_project(self, projectid: str):
+        if not self.has_privilege(PRIV_PROJECTMAN):
+            raise PrivilegeError(PRIV_PROJECTMAN)
+        if projectid == self.project.projectid:
+            raise ValueError('Cannot delete current project')
+        self.projects = [p for p in self.projects if p.projectid != projectid]
         self.instrument.save_state()

@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import re
 import time
 from typing import Optional
@@ -98,6 +97,14 @@ RE_IMGMODE = re.compile(
     """ImgMode is (?P<imgmode>.+)""".encode('ascii')
 )
 
+RE_SETLIMTH = re.compile(
+    """chan\s+Tlo\s+Thi\s+Hlo\s+Hhi\s*
+\s*{i}\s+(?P<limtemp_lo0>{f})\s+(?P<limtemp_hi0>{f})\s+(?P<limhum_lo0>{f})\s+(?P<limhum_hi0>{f})\s*
+\s*{i}\s+(?P<limtemp_lo1>{f})\s+(?P<limtemp_hi1>{f})\s+(?P<limhum_lo1>{f})\s+(?P<limhum_hi1>{f})\s*
+\s*{i}\s+(?P<limtemp_lo2>{f})\s+(?P<limtemp_hi2>{f})\s+(?P<limhum_lo2>{f})\s+(?P<limhum_hi2>{f})""".format(
+        i=RE_INT, f=RE_FLOAT).encode('ascii'), re.MULTILINE
+)
+
 # ----------- IDNUM == 16 ---------------------------
 
 RE_PID = re.compile(
@@ -136,10 +143,6 @@ class PilatusBackend(DeviceBackend_TCP):
         super().__init__(self, *args, **kwargs)
         self._expected_status = 'idle'
         # a flag which has to be acquired when the detector is busy: trimming or exposing.
-        self._busysemaphore = multiprocessing.BoundedSemaphore(1)
-
-    def is_busy(self) -> bool:
-        return self._busysemaphore.get_value() == 0
 
     def queryall(self):
         if self.is_busy():
@@ -169,6 +172,11 @@ class PilatusBackend(DeviceBackend_TCP):
                               'timeleft', 'lastimage', 'masterPID', 'controllingPID',
                               'exptime', 'lastcompletedimage', 'shutterstate']:
             self.send_message(b'camsetup\n', expected_replies=1, asynchronous=False)
+        elif variablename in ['limtemp_lo0', 'limtemp_lo1', 'limtemp_lo2',
+                              'limtemp_hi0', 'limtemp_hi1', 'limtemp_hi2',
+                              'limhum_lo0', 'limhum_lo1', 'limhum_lo2',
+                              'limhum_hi0', 'limhum_hi1', 'limhum_hi2']:
+            self.send_message(b'setlimth\n', expected_replies=1, asynchronous=False)
         elif variablename == 'imgpath':
             self.send_message(b'imgpath\n', expected_replies=1, asynchronous=False)
         elif variablename == 'imgmode':
@@ -186,11 +194,15 @@ class PilatusBackend(DeviceBackend_TCP):
         elif variablename == 'starttime':
             if not self.is_busy():
                 self.update_variable('starttime', None)
-                return False
+            else:
+                # starttime has already been set
+                pass
+            return False
+
         elif variablename == 'filename':
             if not self.is_busy():
                 self.update_variable('filename', 'lastimage')
-                return False
+            return False
         else:
             raise UnknownVariable(variablename)
         return True
@@ -202,7 +214,7 @@ class PilatusBackend(DeviceBackend_TCP):
     def on_end_exposure(self, status: bool, message: bytes) -> None:
         self.logger.debug('Exposure ended.')
         try:
-            self._busysemaphore.release()
+            self.busysemaphore.release()
         except ValueError:
             return
         self.update_variable('_status', 'idle')
@@ -216,7 +228,7 @@ class PilatusBackend(DeviceBackend_TCP):
     def on_end_trimming(self) -> None:
         # a new threshold has been set, update the variables
         try:
-            self._busysemaphore.release()
+            self.busysemaphore.release()
         except ValueError:
             return
         self.update_variable('_status', 'idle')
@@ -227,7 +239,7 @@ class PilatusBackend(DeviceBackend_TCP):
     def on_start_exposure(self) -> None:
         self.update_variable('_status', self._expected_status)
 
-    def process_incoming_message(self, message: bytes, original_sent: Optional[bytes] = None):
+    def process_incoming_message(self, message: bytes, original_sent: Optional[bytes] = None) -> None:
         origmessage = message
         # Messages from the Pilatus detector generally have the following
         #   format:
@@ -434,11 +446,8 @@ class PilatusBackend(DeviceBackend_TCP):
         else:
             raise UnknownVariable(variable)
 
-
-    def _on_startupdone(self):
+    def on_startupdone(self):
         self.update_variable('_status', 'idle')
-        self.update_variable('starttime', None)
-
 
 class Pilatus(Device):
     log_formatstr = '{_status}\t{exptime}\t{humidity0}\t{humidity1}\t{humidity2}\t{temperature0}\t{temperature1}\t{temperature2}'
@@ -451,7 +460,7 @@ class Pilatus(Device):
 
     minimum_query_variables = ['gain', 'trimfile', 'nimages', 'cameradef',
                                'imgpath', 'imgmode', 'pid', 'expperiod',
-                               'diskfree', 'tau']
+                               'diskfree', 'tau', 'limtemp_lo0']
 
     all_variables = ['gain', 'threshold', 'vcmp', 'trimfile', 'wpix', 'hpix',
                      'sel_bank', 'sel_module', 'sel_chip', 'humidity0',
@@ -461,7 +470,12 @@ class Pilatus(Device):
                      'lastimage', 'masterPID', 'controllingPID', 'exptime',
                      'lastcompletedimage', 'shutterstate', 'imgpath',
                      'imgmode', 'pid', 'expperiod', 'tau', 'cutoff',
-                     'diskfree', 'version', 'telemetry_date']
+                     'diskfree', 'version', 'telemetry_date',
+                     'limtemp_lo0', 'limtemp_lo1', 'limtemp_lo2',
+                     'limtemp_hi0', 'limtemp_hi1', 'limtemp_hi2',
+                     'limhum_lo0', 'limhum_lo1', 'limhum_lo2',
+                     'limhum_hi0', 'limhum_hi1', 'limhum_hi2',
+                     ]
 
     constant_variables = ['wpix', 'hpix', 'cameradef', 'cameraname',
                           'cameraSN', 'masterPID', 'controllingPID',
@@ -472,14 +486,14 @@ class Pilatus(Device):
     def set_threshold(self, thresholdvalue: float, gain: str):
         if gain.upper() not in ['LOWG', 'MIDG', 'HIGHG']:
             raise ValueError(gain)
-        if not self._busysemaphore.acquire(False):
+        if not self._busy.acquire(False):
             raise DeviceError('Cannot start trimming when not idle.')
         self.execute_command(
             'setthreshold', thresholdvalue, gain.encode('ascii'))
         logger.debug('Setting threshold to {:f} (gain {})'.format(thresholdvalue, gain))
 
     def expose(self, filename: str):
-        if not self._busysemaphore.acquire(False):
+        if not self._busy.acquire(False):
             raise DeviceError('Cannot start exposure when not idle.')
         self.execute_command('expose', filename.encode('utf-8'))
 

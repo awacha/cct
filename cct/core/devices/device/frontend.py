@@ -145,7 +145,8 @@ class Device(GObject.GObject):
 
     # Urgency modulus. Not urgent variables, which have already been read at
     # least once, will only be checked at every `urgency_modulo`-eth queryall
-    # in the backend process
+    # in the backend process. If zero, only urgent variables are queried every
+    # time.
     urgency_modulo = 1
 
     # How long the backend thread waits on its input queue (seconds)
@@ -169,6 +170,9 @@ class Device(GObject.GObject):
 
     # Timeout for re-query, see `query_requested` in the backend process.
     query_timeout = 10
+
+    # Maximum number the "busy" semaphore can be acquired
+    max_busy_level = 1
 
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
         GObject.GObject.__init__(self)
@@ -202,6 +206,7 @@ class Device(GObject.GObject):
         self.loglevel = logger.level
         self._background_process = None
         self._idle_handler = None
+        self._busy = multiprocessing.BoundedSemaphore(self.max_busy_level)
         self.deviceconnectionparameters = None
 
     def send_to_backend(self, msgtype, **kwargs):
@@ -403,16 +408,24 @@ class Device(GObject.GObject):
         assert issubclass(self.backend_class, DeviceBackend)
         self._background_process = multiprocessing.Process(
             target=self.backend_class.create_and_run, name=self.name + '_background',
-            args=(self.name, self.config, self.deviceconnectionparameters, self._queue_to_backend,
+            args=(self.name, self.configdir, self.config, self.deviceconnectionparameters, self._queue_to_backend,
                   self._queue_to_frontend, self.watchdog_timeout, self.backend_interval, self.query_timeout,
                   self.telemetry_interval, self.queryall_interval, self.all_variables, self.minimum_query_variables,
                   self.constant_variables, self.urgent_variables, self.urgency_modulo, self.background_startup_count,
-                  self._loglevel, self.logfile, self.log_formatstr))
+                  self._loglevel, self.logfile, self.log_formatstr, self.max_busy_level, self._busy),
+            kwargs=self._get_kwargs_for_backend(),
+        )
         self._background_process.daemon = True
         self.background_startup_count += 1
         self._background_process.start()
         self._idle_handler = GLib.idle_add(self._idle_worker)
         logger.debug('Background process for {} has been started'.format(self.name))
+
+    def _get_kwargs_for_backend(self):
+        """You can supply custom keyword arguments to the __init__() method of
+        the backend process by overriding this method and returning the desired
+        'kwargs' dict."""
+        return dict()
 
     def disconnect_device(self):
         """Initiate disconnection from the device: request the background
@@ -428,3 +441,8 @@ class Device(GObject.GObject):
     def reconnect_device(self):
         """Try to reconnect the device after a spontaneous disconnection."""
         return self.connect_device(*self.deviceconnectionparameters)
+
+    def is_busy(self) -> int:
+        """Returns how many times the busy semaphore has been acquired. This
+        way, the return value casted to bool makes sense semantically."""
+        return self.max_busy_level - self._busy.get_value()
