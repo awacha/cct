@@ -1,19 +1,20 @@
 """Keep track of file sequence numbers and do other filesystem-related jobs"""
 import datetime
 import logging
+import math
 import os
 import pickle
 import re
 import time
-from typing import Optional, Tuple
+from typing import Optional, Dict
 
 import dateutil.parser
 import numpy as np
-from gi.repository import GObject
 from sastool.io.twodim import readcbf
 from scipy.io import loadmat
 
 from .service import Service, ServiceError
+from ..utils.callback import SignalFlags
 from ..utils.errorvalue import ErrorValue
 from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders, find_subfolders
@@ -51,27 +52,31 @@ class FileSequenceError(ServiceError):
 
 
 class FileSequence(Service):
-    """A class to keep track on file sequence numbers and folders"""
+    """A class to keep track on file sequence numbers and folders,
+    as well as do some I/O related tasks.
+    """
     name = 'filesequence'
 
-    __gsignals__ = {'nextfsn-changed': (GObject.SignalFlags.RUN_FIRST, None, (str, int,)),
-                    'nextscan-changed': (GObject.SignalFlags.RUN_FIRST, None, (int,)),
-                    'lastfsn-changed': (GObject.SignalFlags.RUN_FIRST, None, (str, int,)),
-                    'lastscan-changed': (GObject.SignalFlags.RUN_FIRST, None, (int,))}
+    __signals__ = {'nextfsn-changed': (SignalFlags.RUN_FIRST, None, (str, int,)),
+                   'nextscan-changed': (SignalFlags.RUN_FIRST, None, (int,)),
+                   'lastfsn-changed': (SignalFlags.RUN_FIRST, None, (str, int,)),
+                   'lastscan-changed': (SignalFlags.RUN_FIRST, None, (int,))}
 
     def __init__(self, *args, **kwargs):
         Service.__init__(self, *args, **kwargs)
         self._lastfsn = {}
         self._lastscan = 0
+        self._nextfreescan = 0
         self._nextfreefsn = {}
-        self._scanfile_toc = {}
+        self.scanfile_toc = {}
+        self._scanfile = os.path.join(
+            self.instrument.config['path']['directories']['scan'],
+            self.instrument.config['scan']['scanfile'])
         self.init_scanfile()
         self.reload()
 
     def init_scanfile(self):
-        self._scanfile = os.path.join(
-            self.instrument.config['path']['directories']['scan'],
-            self.instrument.config['scan']['scanfile'])
+        """Initialize the scanfile."""
 
         if not os.path.exists(self._scanfile):
             with open(self._scanfile, 'wt', encoding='utf-8') as f:
@@ -84,50 +89,96 @@ class FileSequence(Service):
                                                   key=lambda x: x['name'])) + '\n')
                 f.write('\n')
 
-    def new_scan(self, cmdline: str, comment: str, exptime: float, N: int, motorname: str):
+    def new_scan(self, cmdline: str, comment: str, exptime: float, N: int, motorname: str) -> int:
+        """Prepare a new scan measurement. To be called when a start
+        measurement is commenced.
+
+        The main task of this method is to write the header of the next scan
+        in the scan file. This method also acquires a next scan number, which
+        is returned."""
         scanidx = self.get_nextfreescan(acquire=True)
         with open(self._scanfile, 'at', encoding='utf-8') as f:
-            self._scanfile_toc[self._scanfile][scanidx] = {'pos': f.tell() + 1, 'cmd': cmdline,
-                                                           'date': datetime.datetime.now()}
+            self.scanfile_toc[self._scanfile][scanidx] = {'pos': f.tell() + 1, 'cmd': cmdline,
+                                                          'date': datetime.datetime.now()}
             f.write('\n#S {:d}  {}\n'.format(scanidx, cmdline))
             f.write('#D {}\n'.format(time.asctime()))
             f.write('#C {}\n'.format(comment))
             f.write('#T {:f}  (Seconds)\n'.format(exptime))
             f.write('#G0 0\n')
             f.write('#G1 0\n')
-            f.write('#Q 0 0 0')
-            entry_index = 8
-            p_index = -1
-            for m in sorted(self.instrument.motors):
-                if entry_index >= 8:
-                    p_index += 1
-                    f.write('\n#P{:d}'.format(p_index))
-                    entry_index = 0
-                f.write(' {:f}'.format(self.instrument.motors[m].where()))
-                entry_index += 1
-            f.write('\n#N {:d}\n'.format(N))
-            f.write('#L ' + '  '.join([motorname] + self.instrument.config['scan']['columns']) + '\n')
-        logger.info('Written entry for scan {:d} into scanfile {}'.format(scanidx, self._scanfile))
+            f.write('#Q 0 0 0\n')
+            # write the motor positions. Each line starts with a '#P<idx>',
+            # where <idx> starts from zero. Then the motor positions at the
+            # beginning ensue, in the same order as they are in the '#O'
+            # section of the SPEC file header. Each line should contain at
+            # most 8 numbers.
+            for i in range(math.ceil(len(self.instrument.motors) / 8)):
+                f.write('P{:d} '.format(i))
+                f.write(' '.join(['{:f}'.format(
+                    self.instrument.motors[m].where())
+                                  for m in sorted(self.instrument.motors)]))
+                f.write('\n')
+            f.write('#N {:d}\n'.format(N))  # the number of scan points
+            f.write('#L ' + '  '.join([motorname] +
+                                      self.instrument.config['scan']['columns']) + '\n')
+        logger.info('Written entry for scan {:d} into scanfile {}'.format(
+            scanidx, self._scanfile))
         return scanidx
 
     def scan_done(self, scannumber: int):
+        """Called when a scan measurement finishes.
+
+        Responsible for emitting the lastscan-changed signal."""
         self._lastscan = max(self._lastscan, scannumber)
         self.emit('lastscan-changed', self._lastscan)
 
+    def load_scanfile_toc(self, scanfile: str) -> Dict:
+        with open(scanfile, 'rt', encoding='utf-8') as f:
+            self.scanfile_toc[scanfile] = {}
+            l = f.readline()
+            idx = None
+            while l:  # `l` will be readline-d. When the file ends, `l==''`.
+                l = l.strip()  # just for convenience.
+                if l.startswith('#S'):
+                    # calculate the position just before the '#' of this line.
+                    pos = f.tell() - len(l) - 1
+                    start, idx, cmd = l.split(None, 2)
+                    idx = int(idx)
+                    self.scanfile_toc[scanfile][idx] = {'pos': pos, 'cmd': cmd}
+                elif l.startswith('#D') and idx is not None:
+                    # idx can be None if we are in the file header part, before
+                    # the first scan.
+                    self.scanfile_toc[scanfile][idx]['date'] = dateutil.parser.parse(l.split(None, 1)[1])
+                elif l.startswith('#C') and idx is not None:
+                    try:
+                        self.scanfile_toc[scanfile][idx]['comment'] = l.split(None, 1)[1]
+                    except IndexError:
+                        self.scanfile_toc[scanfile][idx]['comment'] = 'no comment'
+                l = f.readline()
+        return self.scanfile_toc[scanfile]
+
     def load_scan(self, index: int, scanfile: Optional[str] = None):
+        """Load a scan with `index` from `scanfile`. If `scanfile` is None,
+        the default scanfile is used.
+
+        Since scan files are text-based SPEC files and can hold many scans,
+        a table-of-contents dictionary is kept in self.scanfile_toc for
+        each scanfile.
+        """
         if scanfile is None:
             scanfile = self._scanfile
+        assert isinstance(scanfile, str)
+        if scanfile not in self.scanfile_toc:
+            self.load_scanfile_toc(scanfile)
         result = {}
         with open(scanfile, 'rt', encoding='utf-8') as f:
-            f.seek(self._scanfile_toc[scanfile][index]['pos'], 0)
+            f.seek(self.scanfile_toc[scanfile][index]['pos'], 0)
             l = f.readline().strip()
-            if not l.startswith('#S'):
-                raise FileSequenceError('Error in scan file: line expected to start with "#S"')
-            if int(l.split()[1]) != index:
+            if not l.startswith('#S {:d}'.format(index)):
                 raise FileSequenceError('Error in scan file: line expected to contain "#S {:d}"'.format(index))
             length = None
             index = None
-            while l:
+            while l:  # scan ends with an empty line.
                 if l.startswith('#S'):
                     result['index'] = int(l.split()[1])
                     result['command'] = l.split(None, 2)[2]
@@ -156,16 +207,23 @@ class FileSequence(Service):
                 else:
                     result['data'][index] = tuple(float(x) for x in l.split())
                     index += 1
+                # strip the '\n' character from the end. This is essential for
+                #  the correct termination of this loop.
                 l = f.readline().strip()
             if 'data' in result:
                 result['data'] = result['data'][:index]
         return result
 
-    def get_scans(self, scanfile: str):
-        return self._scanfile_toc[scanfile]
+    def get_scans(self, scanfile: Optional[str] = None):
+        """Get a list of scans in the scanfile."""
+        if scanfile is None:
+            scanfile = self._scanfile
+        assert isinstance(scanfile, str)
+        return self.scanfile_toc[scanfile]
 
     def get_scanfiles(self):
-        return sorted(self._scanfile_toc.keys())
+        """Get a list of indexed scanfiles"""
+        return sorted(self.scanfile_toc.keys())
 
     def reload(self):
         """Check the well-known directories and their subfolders for sequential files.
@@ -219,43 +277,24 @@ class FileSequence(Service):
                 self._nextfreefsn[prefix] = self._lastfsn[prefix] + 1
                 self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
-        # reload scans
+        # reload scan file table of contents.
         scanpath = self.instrument.config['path']['directories']['scan']
         for subdir in [scanpath] + find_subfolders(scanpath):
             for scanfile in [f for f in os.listdir(subdir)
                              if f.endswith('.spec')]:
                 scanfile = os.path.join(subdir, scanfile)
-                with open(scanfile, 'rt', encoding='utf-8') as f:
-                    self._scanfile_toc[scanfile] = {}
-                    l = f.readline()
-                    idx = None
-                    while l:
-                        l = l.strip()
-                        if l.startswith('#S'):
-                            pos = f.tell() - len(l) - 1
-                            start, idx, cmd = l.split(None, 2)
-                            idx = int(idx)
-                            self._scanfile_toc[scanfile][idx] = {'pos': pos, 'cmd': cmd}
-                        elif l.startswith('#D') and idx is not None:
-                            self._scanfile_toc[scanfile][idx]['date'] = dateutil.parser.parse(l.split(None, 1)[1])
-                        elif l.startswith('#C') and idx is not None:
-                            try:
-                                self._scanfile_toc[scanfile][idx]['comment'] = l.split(None, 1)[1]
-                            except IndexError:
-                                self._scanfile_toc[scanfile][idx]['comment'] = 'no comment'
-                        l = f.readline()
-                        #        for sf in self._scanfile_toc:
-                        #            logger.debug('Max. scan index in file {}: {:d}'.format(sf, max([k for k in self._scanfile_toc[sf]]+[0])))
+                self.load_scanfile_toc(scanfile)
 
-        lastscan = max([max([k for k in self._scanfile_toc[sf]] + [0])
-                        for sf in self._scanfile_toc] + [0])
+        lastscan = max([max([k for k in self.scanfile_toc[sf]] + [0])
+                        for sf in self.scanfile_toc] + [0])
         if self._lastscan != lastscan:
             self._lastscan = lastscan
             self.emit('lastscan-changed', self._lastscan)
 
             #       logger.debug('Max. scan index: {:d}'.format(self._lastscan))
-        self._nextfreescan = self._lastscan + 1
-        self.emit('nextscan-changed', self._nextfreescan)
+        if self._nextfreescan < self._lastscan + 1:
+            self._nextfreescan = self._lastscan + 1
+            self.emit('nextscan-changed', self._nextfreescan)
 
     def get_lastfsn(self, prefix: str):
         return self._lastfsn[prefix]
@@ -295,11 +334,13 @@ class FileSequence(Service):
             self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
     def new_exposure(self, fsn: int, filename: str, prefix: str, startdate: datetime.datetime,
-                     argstuple: Optional[Tuple] = None):
+                     **kwargs):
         """Called by various parts of the instrument if a new exposure file
-        has became available"""
-        if argstuple is None:
-            argstuple = ()
+        has became available
+
+        Keyword arguments can be given: they will be passed on to the submit()
+        method of the exposureanalyzer service.
+        """
         if (prefix not in self._lastfsn) or (fsn > self._lastfsn[prefix]):
             self._lastfsn[prefix] = fsn
             self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
@@ -373,15 +414,16 @@ class FileSequence(Service):
                 pickle.dump(params, f)
 
             write_legacy_paramfile(paramfilename, params)
-            argstuple = argstuple + (params,)
+            kwargs['params'] = params
         self.instrument.services['exposureanalyzer'].submit(
-            fsn, filename, prefix, argstuple)
+            fsn, filename, prefix, **kwargs)
 
     def get_prefixes(self):
         """Return the known prefixes"""
         return list(self._lastfsn.keys())
 
     def is_cbf_ready(self, filename: str):
+        """Check if a CBF file made by the detector is available."""
         imgdir = self.instrument.config['path']['directories']['images']
         os.stat(self.instrument.config['path']['directories']['images'])
         try:
@@ -390,10 +432,20 @@ class FileSequence(Service):
             return False
         return True
 
+    def exposurefileformat(self, prefix: str, fsn: Optional[int] = None):
+        if fsn is None:
+            return '{prefix}_{{:0{fsndigits:d}d}}'.format(
+                prefix=prefix,
+                fsndigits=self.instrument.config['path']['fsndigits'])
+        else:
+            return '{prefix}_{fsn:0{fsndigits:d}d}'.format(
+                prefix=prefix,
+                fsndigits=self.instrument.config['path']['fsndigits'],
+                fsn=fsn)
+
     def load_cbf(self, prefix: str, fsn: int):
-        cbfbasename = '{prefix}_{fsn:0{fsndigits:d}d}.cbf'.format(prefix=prefix,
-                                                                  fsndigits=self.instrument.config['path']['fsndigits'],
-                                                                  fsn=fsn)
+        """Load the CBF file."""
+        cbfbasename = self.exposurefileformat(prefix, fsn) + '.cbf'
         for subpath in [prefix, '']:
             cbfname = os.path.join(
                 self.instrument.config['path']['directories']['images'],
@@ -406,9 +458,7 @@ class FileSequence(Service):
 
     def load_exposure(self, prefix: str, fsn: int):
         param = self.load_param(prefix, fsn)
-        cbfbasename = '{prefix}_{fsn:0{fsndigits:d}d}.cbf'.format(prefix=prefix,
-                                                                  fsndigits=self.instrument.config['path']['fsndigits'],
-                                                                  fsn=fsn)
+        cbfbasename = self.exposurefileformat(prefix, fsn) + '.cbf'
         try:
             cbfname = os.path.join(
                 self.instrument.config['path']['directories']['images'], prefix,
@@ -421,9 +471,7 @@ class FileSequence(Service):
             return SASImage.new_from_file(cbfname, param)
 
     def load_param(self, prefix: str, fsn: int):
-        picklebasename = '{prefix}_{fsn:0{fsndigits:d}d}.pickle'.format(prefix=prefix,
-                                                                        fsndigits=self.instrument.config['path'][
-                                                                            'fsndigits'], fsn=fsn)
+        picklebasename = self.exposurefileformat(prefix, fsn) + '.pickle'
         for path in [
             self.instrument.config['path']['directories']['param_override'],
             self.instrument.config['path']['directories']['param']]:

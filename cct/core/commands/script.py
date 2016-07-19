@@ -4,11 +4,12 @@ import traceback
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-from gi.repository import GObject, GLib
+from gi.repository import GLib
+
 
 from .command import Command, CommandError, cleanup_commandline
 from .jump import JumpException, GotoException, GosubException, ReturnException, PassException
-
+from ..utils.callback import SignalFlags
 
 class ScriptEndException(JumpException):
     pass
@@ -36,10 +37,10 @@ class Script(Command):
     e.g. to disconnect signal handlers.
     """
 
-    __gsignals__ = {
+    __signals__ = {
         # emitted at the start of a command
-        'cmd-start': (GObject.SignalFlags.RUN_FIRST, None, (int, object,)),
-        'paused': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'cmd-start': (SignalFlags.RUN_FIRST, None, (int, object,)),
+        'paused': (SignalFlags.RUN_FIRST, None, ()),
     }
 
     script = ''  # a default value for the script

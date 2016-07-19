@@ -17,8 +17,8 @@ class TelemetryManager(Service):
     state = {'memlog_file_basename': 'memoryusage',
              'memlog_interval': 30.0,}
 
-    def __init__(self, instrument, statedict):
-        super().__init__(instrument, statedict=statedict)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.telemetries = {}
         self.timestamps = {}
 

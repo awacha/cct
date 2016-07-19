@@ -4,17 +4,18 @@ import os
 import queue
 import time
 
-from gi.repository import GLib, GObject
+from gi.repository import GLib
 
 from .backend import DeviceBackend
 from .exceptions import DeviceError
 from .message import Message
+from ...utils.callback import Callbacks, SignalFlags
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Device(GObject.GObject):
+class Device(Callbacks):
     """The abstract base class of a device, i.e. a component of the SAXS
     instrument, such as an X-ray source, a motor controller or a detector.
 
@@ -102,28 +103,28 @@ class Device(GObject.GObject):
         - emit signals
         - call functions which do one or more of the above.
     """
-    __gsignals__ = {
+    __signals__ = {
         # emitted if the value of a variable changes. The first argument is the
         # name of the variable, the second is its new value
-        'variable-change': (GObject.SignalFlags.RUN_FIRST, None, (str, object)),
+        'variable-change': (SignalFlags.RUN_FIRST, None, (str, object)),
 
         # emitted if an error happens. The first argument is the the name of the
         # affected variable or '' if no variable corresponds to this error.
         # The second argument is an exception object. The third one is the
         # formatted traceback.
-        'error': (GObject.SignalFlags.RUN_LAST, None, (str, object, str)),
+        'error': (SignalFlags.RUN_LAST, None, (str, object, str)),
 
         # emitted on (normal or abnormal) disconnect. The boolean argument is True if the
         # disconnection was abnormal
-        'disconnect': (GObject.SignalFlags.RUN_LAST, None, (bool,)),
+        'disconnect': (SignalFlags.RUN_LAST, None, (bool,)),
 
         # emitted when the starup is done, i.e. all variables have been read at
         # least once
-        'startupdone': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'startupdone': (SignalFlags.RUN_FIRST, None, ()),
 
         # emitted when a response for a telemetry request has been received.
         # The argument is a dict.
-        'telemetry': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
+        'telemetry': (SignalFlags.RUN_FIRST, None, (object,)),
     }
 
     # The class we use to instantiate background threads
@@ -174,8 +175,10 @@ class Device(GObject.GObject):
     # Maximum number the "busy" semaphore can be acquired
     max_busy_level = 1
 
+    loglevel = logging.DEBUG
+
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
-        GObject.GObject.__init__(self)
+        Callbacks.__init__(self)
         self._msgidcounter = 0
         # the folder where config files are stored.
         self.configdir = configdir
@@ -345,7 +348,7 @@ class Device(GObject.GObject):
         return True  # this is an idle function, we want to be called again.
 
     def do_disconnect(self, because_of_failure: bool):
-        """GObject default handler for the 'disconnect' signal"""
+        """default handler for the 'disconnect' signal"""
         logger.warning('Disconnected from device {}. Failure flag: {}'.format(
             self.name, because_of_failure))
         if self._properties['_status'] != 'Disconnected':
@@ -357,12 +360,12 @@ class Device(GObject.GObject):
         return False
 
     def do_startupdone(self) -> bool:
-        """GObject default handler for the 'startupdone' signal"""
+        """default handler for the 'startupdone' signal"""
         logger.info('Device ' + self.name + ' is ready.')
         return False
 
     def do_error(self, propertyname: str, exception: Exception, tb: str) -> bool:
-        """GObject default handler for the 'error' signal"""
+        """default handler for the 'error' signal"""
         logger.error(
             'Device error. Variable name: {}. Exception: {}. Traceback: {}'.format(
                 propertyname, str(exception), tb))
@@ -412,7 +415,7 @@ class Device(GObject.GObject):
                   self._queue_to_frontend, self.watchdog_timeout, self.backend_interval, self.query_timeout,
                   self.telemetry_interval, self.queryall_interval, self.all_variables, self.minimum_query_variables,
                   self.constant_variables, self.urgent_variables, self.urgency_modulo, self.background_startup_count,
-                  self._loglevel, self.logfile, self.log_formatstr, self.max_busy_level, self._busy),
+                  self.loglevel, self.logfile, self.log_formatstr, self.max_busy_level, self._busy),
             kwargs=self._get_kwargs_for_backend(),
         )
         self._background_process.daemon = True

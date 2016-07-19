@@ -1,9 +1,10 @@
 import logging
 
-from gi.repository import GObject, GLib
+from gi.repository import GLib
 
 from .service import Service, ServiceError
 from ..commands.command import Command, cleanup_commandline
+from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -16,33 +17,38 @@ class InterpreterError(ServiceError):
 class Interpreter(Service):
     name = 'interpreter'
 
-    __gsignals__ = {
+    __signals__ = {
         # emitted when the command completes. Must be emitted exactly once.
         # This also must be the last signal emitted by the command.
-        'cmd-return': (GObject.SignalFlags.RUN_FIRST, None, (str, object,)),
+        'cmd-return': (SignalFlags.RUN_FIRST, None, (str, object,)),
         # emitted on a failure. Can be emitted multiple times
-        'cmd-fail': (GObject.SignalFlags.RUN_LAST, None, (str, object, str)),
+        'cmd-fail': (SignalFlags.RUN_LAST, None, (str, object, str)),
         # just channeling the currently running command's 'detail' signal
-        'cmd-detail': (GObject.SignalFlags.RUN_FIRST, None, (str, object)),
+        'cmd-detail': (SignalFlags.RUN_FIRST, None, (str, object)),
         # long running commands where the duration cannot be
         # estimated in advance, should emit this periodically (say
         # in every second)
-        'pulse': (GObject.SignalFlags.RUN_FIRST, None, (str, str,)),
+        'pulse': (SignalFlags.RUN_FIRST, None, (str, str,)),
         # long running commands where the duration can be estimated
         # in advance, this should be emitted periodically (e.g. in
         # every second)
-        'progress': (GObject.SignalFlags.RUN_FIRST, None, (str, str, float)),
+        'progress': (SignalFlags.RUN_FIRST, None, (str, str, float)),
         # send occasional messages to the command interpreter (to
         # be written to a terminal or logged at the INFO level.
-        'cmd-message': (GObject.SignalFlags.RUN_FIRST, None, (str, str,)),
+        'cmd-message': (SignalFlags.RUN_FIRST, None, (str, str,)),
         # emitted when work started (False) or work finished (True).
-        'idle-changed': (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
+        'idle-changed': (SignalFlags.RUN_FIRST, None, (bool,)),
         # emitted when a flag changes. Arguments: the name and the new state of the flag.
-        'flag': (GObject.SignalFlags.RUN_FIRST, None, (str, bool,)),
+        'flag': (SignalFlags.RUN_FIRST, None, (str, bool,)),
     }
 
-    def __init__(self, instrument, namespace=None, **kwargs):
-        Service.__init__(self, instrument, **kwargs)
+    def __init__(self, *args, **kwargs):
+        try:
+            namespace = kwargs['namespace']
+            del kwargs['namespace']
+        except KeyError:
+            namespace = None
+        Service.__init__(self, *args, **kwargs)
         self._flags = []
         self.commands = {}
         for commandclass in Command.allcommands():
@@ -51,16 +57,17 @@ class Interpreter(Service):
         if namespace is not None:
             self.command_namespace_locals = namespace
         else:
-            self.command_namespace_locals = {'_config': instrument.config, '_': None}
+            self.command_namespace_locals = {'_config': self.instrument.config, '_': None}
         exec('import os', self.command_namespace_globals,
              self.command_namespace_locals)
         exec('import numpy as np', self.command_namespace_globals,
              self.command_namespace_locals)
         self._command_connections = {}
+        self._parent = None
 
     def create_child(self, namespace=None, **kwargs):
         """Create a child interpreter. Children and parents share the same set of flags, which are owned by the parent."""
-        child = Interpreter(self.instrument, namespace, **kwargs)
+        child = Interpreter(self.instrument, self.configdir, self.save_state(), namespace=namespace, **kwargs)
         child._parent = self
         return child
 
@@ -211,18 +218,18 @@ class Interpreter(Service):
             pass
 
     def set_flag(self, flagname):
-        try:
+        if self._parent is not None:
             return self._parent.set_flag(flagname)
-        except AttributeError:
+        else:
             # we have no parent
             if flagname not in self._flags:
                 self._flags.append(flagname)
                 self.emit('flag', flagname, True)
 
     def clear_flag(self, flagname=None):
-        try:
+        if self._parent is not None:
             return self._parent.clear_flag(flagname)
-        except AttributeError:
+        else:
             # we have no parent
             if flagname is None:
                 logger.debug('Clearing all flags')
@@ -236,9 +243,9 @@ class Interpreter(Service):
                     self.emit('flag', flagname, False)
 
     def is_flag(self, flagname):
-        try:
+        if self._parent is not None:
             return self._parent.is_flag(flagname)
-        except AttributeError:
+        else:
             # we have no parent
             return flagname in self._flags
 

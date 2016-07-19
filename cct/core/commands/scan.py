@@ -3,6 +3,8 @@ import os
 import traceback
 
 from .command import Command, CommandError
+from .detector import Expose
+from .motor import Moveto
 from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE
 
 logger = logging.getLogger(__name__)
@@ -83,8 +85,7 @@ class Scan(Command):
         try:
             self._notyetstarted = True
             self._scan_end = False
-            self._myinterpreter.execute_command(
-                'moveto("{}", {:f})'.format(self._motor, self._start))
+            self._myinterpreter.execute_command(Moveto(), (self._motor, self._start))
         except Exception:
             self._cleanup()
             raise
@@ -130,8 +131,10 @@ class Scan(Command):
                                 self._motor, self._instrument.motors[self._motor].where(), self._whereto))
             except CommandError as ce:
                 self._die(ce, traceback.format_exc())
-            self._myinterpreter.execute_command(
-                'expose({:f}, "{}", {:f})'.format(self._exptime, self._exposure_prefix, self._whereto))
+            self._myinterpreter.execute_command(Expose(),
+                                                (self._exptime,
+                                                 self._exposure_prefix,
+                                                 {'data': self._whereto}))
             self._exposureanalyzer_idle = False
 
         elif commandname == 'expose':
@@ -140,8 +143,7 @@ class Scan(Command):
             if self._idx < self._N:
                 self._whereto = self._start + self._idx * \
                                               (self._end - self._start) / (self._N - 1)
-                self._myinterpreter.execute_command(
-                    'moveto("{}", {:f})'.format(self._motor, self._whereto))
+                self._myinterpreter.execute_command(Moveto(), (self._motor, self._whereto))
             else:
                 self._scan_end = True
                 if self._scan_end and self._exposureanalyzer_idle:

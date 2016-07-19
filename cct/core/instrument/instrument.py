@@ -8,14 +8,15 @@ import traceback
 from typing import List
 
 from .motor import Motor
-from ..devices.device import DeviceError, Device_ModbusTCP, Device_TCP, Device
+from ..devices.device import DeviceError, Device, DeviceBackend_ModbusTCP, DeviceBackend_TCP
 from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter, Service
+from ..utils.callback import Callbacks, SignalFlags
 from ..utils.telemetry import acquire_telemetry_info
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-from gi.repository import GObject, GLib
+from gi.repository import GLib
 
 
 class DummyTm(object):
@@ -34,26 +35,26 @@ class InstrumentError(Exception):
     pass
 
 
-class Instrument(object):
+class Instrument(Callbacks):
     configdir = 'config'
     telemetry_timeout = 0.9
     statusfile_timeout = 30
     memlog_timeout = 60  # write memory usage log
     memlog_file = 'memory.log'
 
-    __gsignals__ = {
+    __signals__ = {
         # emitted when all devices have been initialized.
-        'devices-ready': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'devices-ready': (SignalFlags.RUN_FIRST, None, ()),
         # emitted when telemetry data is obtained from a component. The first
         # argument is the name of the component, the second is the type of the
         # component (service or device), and the third one is the telemetry
         # dictionary.
-        'telemetry': (GObject.SignalFlags.RUN_FIRST, None, (object, str, object)),
+        'telemetry': (SignalFlags.RUN_FIRST, None, (object, str, object)),
     }
 
     def __init__(self, online):
         self._starttime = datetime.datetime.now()
-        GObject.GObject.__init__(self)
+        Callbacks.__init__(self)
         self._online = online
         self.devices = {}
         self.services = {}
@@ -282,7 +283,7 @@ class Instrument(object):
                                                 device.connect('disconnect', self.on_disconnect),
                                                 device.connect('telemetry', self.on_telemetry, device.name)]
 
-    def _disconnect_signals(self, device: Device):
+    def disconnect_signals(self, device: Device):
         """Disconnect signal handlers from a device."""
         try:
             for c in self._signalconnections[device.name]:
@@ -317,8 +318,7 @@ class Instrument(object):
 
         def get_subclasses(cls) -> List:
             """Recursively get a flat list of subclasses of `cls`"""
-            scl = []
-            scl.append(cls)
+            scl = [cls]
             for c in cls.__subclasses__():
                 scl.extend(get_subclasses(c))
             return scl
@@ -331,13 +331,18 @@ class Instrument(object):
         # instances are added to the dict `self.devices`, the keys being those given in
         # cfg['name'].
         unsuccessful = []
-        for entryname in self.config['connections']:
+        for entryname in sorted(self.config['connections']):
+            print('Entryname: ', entryname)
             cfg = self.config['connections'][entryname]  # shortcut
+            print('CFG: ', cfg)
+            print('CFG.keys: ', list(cfg.keys()))
             # avoid establishing another connection to the device.
             if cfg['name'] in self.devices:
                 logger.warn('Not connecting {} again.'.format(cfg['name']))
                 continue
             # get the appropriate class
+            print([d.__name__ for d in device_classes])
+            print(cfg['classname'])
             cls = [d for d in device_classes if d.__name__ == cfg['classname']]
             assert (len(cls) == 1)  # a single class must exist.
             cls = cls[0]
@@ -349,15 +354,16 @@ class Instrument(object):
                 # connect signal handlers
                 self._connect_signals(dev)
                 # connect to the hardware
-                if isinstance(cls, Device_ModbusTCP):
+                assert issubclass(cls, Device)
+                if issubclass(cls.backend_class, DeviceBackend_ModbusTCP):
                     dev.connect_device(cfg['host'], cfg['port'], cfg['timeout'])
-                elif isinstance(cls, Device_TCP):
+                elif issubclass(cls.backend_class, DeviceBackend_TCP):
                     dev.connect_device(cfg['host'], cfg['port'], cfg['timeout'], cfg['poll_timeout'])
                 else:
-                    raise TypeError(type(dev))
+                    raise TypeError(cls.backend_class)
                 # load the state
                 try:
-                    dev._load_state(self.config['devices'][cfg['name']])
+                    dev.load_state(self.config['devices'][cfg['name']])
                 except KeyError:
                     # skip if there is no saved state to the device
                     pass
@@ -365,7 +371,7 @@ class Instrument(object):
             except DeviceError:
                 # on failure of connecting to the hardware, disconnect signal handlers, delete the instance and
                 # note the name of this entry for returning to the caller.
-                self._disconnect_signals(dev)
+                self.disconnect_signals(dev)
                 logger.error(
                     'Cannot connect to device {}: {}'.format(cfg['name'], traceback.format_exc()))
                 del self.devices[cfg['name']]

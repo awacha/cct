@@ -136,7 +136,7 @@ Channel {int}: Temperature = (?P<temperature2>{float})C, Rel. Humidity = (?P<hum
         int=RE_INT, float=RE_FLOAT).encode('ascii'), re.MULTILINE)
 
 
-class PilatusBackend(DeviceBackend_TCP):
+class Pilatus_Backend(DeviceBackend_TCP):
     idle_wait = 1.0
     
     def __init__(self, *args, **kwargs):
@@ -481,7 +481,7 @@ class Pilatus(Device):
                           'cameraSN', 'masterPID', 'controllingPID',
                           'pid', 'version']
 
-    backend_class = PilatusBackend
+    backend_class = Pilatus_Backend
 
     def set_threshold(self, thresholdvalue: float, gain: str):
         if gain.upper() not in ['LOWG', 'MIDG', 'HIGHG']:

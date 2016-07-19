@@ -396,3 +396,4 @@ class DeviceBackend_TCP(DeviceBackend):
             # do not query all if there are too many messages waiting to be sent to the device.
             return
         return super().queryall()
+

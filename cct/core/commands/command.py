@@ -1,6 +1,9 @@
 import traceback
+import weakref
 
-from gi.repository import GObject, GLib
+from gi.repository import GLib
+
+from ..utils.callback import Callbacks, SignalFlags
 
 
 class CommandError(Exception):
@@ -11,7 +14,7 @@ class CommandTimeoutError(CommandError):
     pass
 
 
-class Command(GObject.GObject):
+class Command(Callbacks):
     """This is an abstract base class for a command, which can be issued in
     order to do something on the instrument, e.g. move a motor or take an
     exposure.
@@ -51,161 +54,121 @@ class Command(GObject.GObject):
     As a general rule, signals must not be emitted from the execute, simulate
     and kill member functions. Use idle functions or callbacks for this.
     """
-    __gsignals__ = {
+    __signals__ = {
         # emitted when the command completes. Must be emitted exactly once.
         # This also must be the last signal emitted by the command.
-        'return': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
+        'return': (SignalFlags.RUN_FIRST, None, (object,)),
         # emitted on a failure. Can be emitted multiple times
-        'fail': (GObject.SignalFlags.RUN_LAST, None, (object, str)),
+        'fail': (SignalFlags.RUN_LAST, None, (object, str)),
         # long running commands where the duration cannot be
         # estimated in advance, should emit this periodically (say
         # in every second)
-        'pulse': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'pulse': (SignalFlags.RUN_FIRST, None, (str,)),
         # long running commands where the duration can be estimated
         # in advance, this should be emitted periodically (e.g. in
         # every second)
-        'progress': (GObject.SignalFlags.RUN_FIRST, None, (str, float)),
+        'progress': (SignalFlags.RUN_FIRST, None, (str, float)),
         # send occasional messages to the command interpreter (to
         # be written to a terminal or logged at the INFO level.
-        'message': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'message': (SignalFlags.RUN_FIRST, None, (str,)),
         # can be sent to give the front-end command-dependent details.
         # A typical use case is the transmission command, which uses
         # this mechanism to notify the front-end of what it has
         # currently been doing. The single argument of this signal
         # depends on the command.
-        'detail': (GObject.SignalFlags.RUN_FIRST, None, (object,))
+        'detail': (SignalFlags.RUN_FIRST, None, (object,))
     }
 
     name = '__abstract__'
 
-    def __init__(self):
-        GObject.GObject.__init__(self)
+    required_devices = []
+
+    timeout = None  # seconds
+
+    pulse_interval = None  # seconds
+
+    def __init__(self, interpreter, args, kwargs, namespace):
+        super().__init__()
+        try:
+            self.interpreter = weakref.proxy(interpreter)
+        except TypeError:
+            if isinstance(interpreter, weakref.ProxyTypes):
+                self.interpreter = interpreter
+            else:
+                raise
+        self.args = args
+        self.kwargs = kwargs
+        self.namespace = namespace
         self._device_connections = {}
+        self._timeout_handler = None
+        self._pulse_handler = None
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        """Execute the command"""
-        raise NotImplementedError
+    def validate(self):
+        """Check the validity of self.args and self.kwargs.
 
-    def simulate(self, instrument, arglist, namespace):
-        """Simulate the command. Do everything as execute() would do, just do
-        not talk to the devices themselves."""
+        If everything is OK, it should return True. Otherwise
+        an appropriate exception, a subclass of CommandError
+        should be raised."""
+        return True
+
+    def _execute(self):
+        if not self.validate():
+            raise CommandError('Validation of command parameters failed.')
+        self._connect_devices()
+        if self.timeout is not None:
+            self._timeout_handler = GLib.timeout_add(self.timeout * 1000, self.on_timeout)
+        if self.pulse_interval is not None:
+            self._pulse_handler = GLib.timeout_add(self.pulse_interval * 1000, self.on_pulse)
+
+        return self.execute()
+
+    def execute(self):
+        """Start the execution of the command."""
         raise NotImplementedError
 
     def kill(self):
         """Stop running the current command."""
         pass
 
-    def _require_device(self, instrument, devicename):
-        """Connect to signals `variable-change` and `error` of the given device
-        and set up basic signal handlers (on_variable_change() and on_error())."""
-        device = instrument.devices[devicename]
-        if device in self._device_connections:
-            raise CommandError('Device {} already required'.format(devicename))
-        self._device_connections[device] = [device.connect('variable-change', self.on_variable_change),
-                                            device.connect(
-                                                'error', self.on_error),
-                                            device.connect('disconnect', self.on_disconnect)]
-
-    def _unrequire_device(self, devicename=None):
-        """Disconnect basic signal handlers from the device. If argument
-        `devicename` is None, disconnect all signal handlers from all devices."""
-        if devicename is None:
-            devices = [d._instancename for d in self._device_connections]
-        else:
-            devices = [devicename]
-        for dn in devices:
-            try:
-                device = [
-                    d for d in self._device_connections if d._instancename == dn][0]
-            except IndexError:
-                continue
-            for c in self._device_connections[device]:
-                device.disconnect(c)
-            del self._device_connections[device]
-
-    def _install_timeout_handler(self, timeout=None):
-        """Install a timeout handler. After `timeout` seconds the command will
-        be interrupted and a `fail` signal is sent. Override on_timeout() if
-        you want a different behaviour."""
-        if timeout is None:
-            timeout = self.timeout
-        self._timeout = GLib.timeout_add(1000 * timeout, self.on_timeout)
-
-    def _uninstall_timeout_handler(self):
-        """Uninstall the timeout handler"""
-        try:
-            GLib.source_remove(self._timeout)
-            del self._timeout
-        except AttributeError:
-            pass
-
-    def _install_pulse_handler(self, message_or_func, period):
-        """Install a pulse handler, which runs periodically (`period` given in
-        seconds). If `message_or_func` is a string, the 'pulse' signal will be
-        emitted at each run, with `message_or_func` as the argument. Otherwise
-        `message_or_func` can be a callable, returning a string as an argument
-        for the 'pulse' signal.
-        """
-        if hasattr(self, '_pulse_handler'):
-            self._uninstall_pulse_handler()
-        if isinstance(message_or_func, str):
-            self._pulse_handler = GLib.timeout_add(
-                period * 1000, lambda m=message_or_func: self.emit('pulse', m) or True)
-        elif callable(message_or_func):
-            self._pulse_handler = GLib.timeout_add(
-                period * 1000, lambda m=message_or_func: self.emit('pulse', m()) or True)
-
-    def _uninstall_pulse_handler(self):
-        """Uninstall the pulse handler"""
-        try:
+    def cleanup(self, returnvalue: object = None):
+        """Must be called after execution finished."""
+        if self._timeout_handler is not None:
+            GLib.source_remove(self._timeout_handler)
+        if self._pulse_handler is not None:
             GLib.source_remove(self._pulse_handler)
-            del self._pulse_handler
-        except AttributeError:
-            pass
+        self._disconnect_devices()
+        self.emit('return', returnvalue)
 
     def on_timeout(self):
-        """The timeout handler: called if the command times out.
-
-        Its jobs are:
-        1) unrequire all required devices
-        2) emit the 'fail' signal with a CommandTimeoutError exception
-        3) uninstall timeout handler
-        4) uninstall pulse handler
-
-        If you override this, please make sure you do all the jobs above.
-        """
-        self._unrequire_device()
         try:
-            raise CommandTimeoutError('Command {} timed out'.format(self.name))
+            raise CommandTimeoutError('Command {} timed out after {:f} seconds'.format(self.name, self.timeout))
         except CommandTimeoutError as exc:
             self.emit('fail', exc, traceback.format_exc())
-        self.emit('return', None)
-        self._uninstall_timeout_handler()
-        self._uninstall_pulse_handler()
-        return False
+        self.cleanup(None)
+
+    def on_pulse(self):
+        return True
+
+    def _connect_devices(self):
+        for d in self.required_devices:
+            dev = self.interpreter.instrument.devices[d]
+            self._device_connections[d] = [dev.connect('variable-change', self.on_variable_change),
+                                           dev.connect('error', self.on_error),
+                                           dev.connect('disconnect', self.on_disconnect),
+                                           ]
+
+    def _disconnect_devices(self):
+        for d in list(self._device_connections.keys()):
+            dev = self.interpreter.instrument.devices[d]
+            for c in self._device_connections[d]:
+                dev.disconnect(c)
+            del self._device_connections[d]
+        self._device_connections = {}
 
     def on_variable_change(self, device, variablename, newvalue):
-        """A basic handler for the variable change in a device. It has been
-        written with ONLY ONE required device in mind: it may not work if
-        the command requires multiple devices.
-
-        If you want to use this handler, you must make sure that the
-        `_check_for_variable` and `_check_for_value` instance variables are
-        present. When this handler encounters a situation where the variable,
-        the name of which is carried in `_check_for_variable` gets the new
-        value `_check_for_value`, it will uninstall possible timeout handlers
-        and pulse handlers, unrequire all devices and emit the 'return' signal
-        with the new value.
-        """
-        if hasattr(self, '_check_for_variable') and hasattr(self, '_check_for_value'):
-            if (variablename == self._check_for_variable) and (newvalue == self._check_for_value):
-                self._uninstall_timeout_handler()
-                self._uninstall_pulse_handler()
-                self._unrequire_device()
-                self.emit('return', newvalue)
         return False
 
-    def on_error(self, device, propname, exc, tb):
+    def on_error(self, device, variablename, exc, tb):
         """Emit the 'fail' signal"""
         self.emit('fail', exc, tb)
         return False

@@ -9,13 +9,14 @@ from logging.handlers import QueueHandler
 from typing import Union, Dict
 
 import numpy as np
-from gi.repository import GLib, GObject
+from gi.repository import GLib
 from sastool.io.twodim import readcbf
 from sastool.misc.easylsq import nonlinear_odr
 from scipy.io import loadmat
 
 from .service import Service, ServiceError
 from ..devices.device.message import Message
+from ..utils.callback import SignalFlags
 from ..utils.errorvalue import ErrorValue
 from ..utils.geometrycorrections import solidangle, angledependentabsorption, angledependentairtransmission
 from ..utils.io import write_legacy_paramfile
@@ -151,7 +152,7 @@ class ExposureAnalyzer_Backend(object):
                         self._msgid += 1
                         self.outqueue.put_nowait(Message('image', self._msgid, self.name,
                                                          prefix=message['prefix'], fsn=message['fsn'],
-                                                         data=cbfdata, mask=mask, param=message['param'])
+                                                         data=cbfdata, mask=mask, param=message['param']))
                     except Exception as exc:
                         self._msgid += 1
                         self.outqueue.put_nowait(Message('error', self._msgid, self.name,
@@ -173,6 +174,9 @@ class ExposureAnalyzer_Backend(object):
                         self.outqueue.put_nowait(Message('transmdata', self._msgid, self.name,
                                                          prefix=message['prefix'], fsn=message['fsn'],
                                                          data=(cbfdata * transmmask).sum(),
+                                                         what=message['what'],
+                                                         sample=message['sample'],
+                                                         nimages=message['nimages'],
                                                          ))
                 elif message['prefix'] == self.config['path']['prefixes']['scn']:
                     try:
@@ -180,6 +184,7 @@ class ExposureAnalyzer_Backend(object):
                         scanmasktotal = self.get_mask(self.config['scan']['mask_total'])
                     except (IOError, OSError, IndexError) as exc:
                         # could not load a mask file
+                        self._msgid += 1
                         self.outqueue.put_nowait(Message('error', self._msgid, self.name,
                                                          prefix=message['prefix'], fsn=message['fsn'],
                                                          exception=exc, traceback=traceback.format_exc()))
@@ -189,22 +194,27 @@ class ExposureAnalyzer_Backend(object):
                     # scan point, we have to calculate something.
                     stat = get_statistics(cbfdata, scanmasktotal, scanmask)
                     stat['FSN'] = message['fsn']
-                    resultlist = tuple([args] + [stat[k]
-                                                 for k in self.config['scan']['columns']])
-                    self.outqueue.put_nowait(
-                        ((prefix, fsn), 'scanpoint', resultlist))
+                    resultlist = tuple(message['where'] + [stat[k]
+                                                           for k in self.config['scan']['columns']])
+                    self._msgid += 1
+                    self.outqueue.put_nowait(Message('scanpoint', self._msgid, self.name,
+                                                     prefix=message['prefix'], fsn=message['fsn'],
+                                                     data=resultlist))
 
                 else:
                     try:
                         mask = self.get_mask(self.config['geometry']['mask'])
                     except (IOError, OSError, IndexError) as exc:
                         # could not load a mask file
+                        self._msgid += 1
                         self.outqueue.put_nowait(Message('error', self._msgid, self.name,
                                                          prefix=message['prefix'], fsn=message['fsn'],
                                                          exception=exc, traceback=traceback.format_exc()))
                     else:
-                        self.outqueue.put_nowait(
-                            ((prefix, fsn), 'image', (cbfdata, mask) + args))
+                        self._msgid += 1
+                        self.outqueue.put_nowait(Message('image', self._msgid, self.name,
+                                                         prefix=message['prefix'], fsn=message['fsn'],
+                                                         data=cbfdata, mask=mask, param=message['param']))
 
     def get_mask(self, maskname):
         if not hasattr(self, '_masks'):
@@ -416,14 +426,14 @@ class ExposureAnalyzer(Service):
     scn: calculate various statistics on the image and return a tuple of them,
         to be added to the scan dataset
     """
-    __gsignals__ = {
-        'error': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object, str)),
-        'scanpoint': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object)),
-        'datareduction-done': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object)),
-        'transmdata': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object)),
-        'image': (GObject.SignalFlags.RUN_FIRST, None, (str, int, object, object, object)),
-        'idle': (GObject.SignalFlags.RUN_FIRST, None, ()),
-        'telemetry': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
+    __signals__ = {
+        'error': (SignalFlags.RUN_FIRST, None, (str, int, object, str)),
+        'scanpoint': (SignalFlags.RUN_FIRST, None, (str, int, object)),
+        'datareduction-done': (SignalFlags.RUN_FIRST, None, (str, int, object)),
+        'transmdata': (SignalFlags.RUN_FIRST, None, (str, int, object)),
+        'image': (SignalFlags.RUN_FIRST, None, (str, int, object, object, object)),
+        'idle': (SignalFlags.RUN_FIRST, None, ()),
+        'telemetry': (SignalFlags.RUN_FIRST, None, (object,)),
     }
 
     def __init__(self, *args, **kwargs):
@@ -431,11 +441,12 @@ class ExposureAnalyzer(Service):
         self._queue_to_backend = multiprocessing.Queue()
         self._queue_to_frontend = multiprocessing.Queue()
         self._backendprocess = None
+        self._handler = None
+        self._msgid = 0
         # A copy of the config hierarchy will be inherited by the back-end
         # process. Note that updates to instrument.config won't affect us,
         # since we are running in a different process
         self.config = self.instrument.config
-        self._backendprocess.start()
         self._working = {}
 
     def start(self):

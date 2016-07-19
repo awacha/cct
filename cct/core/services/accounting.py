@@ -5,11 +5,10 @@ import pickle
 import time
 from typing import Optional, List, Dict, Union
 
-from gi.repository import GObject
-
 from .service import Service, ServiceError
 from ..instrument.privileges import PRIV_LAYMAN, PRIV_SUPERUSER, PRIV_PROJECTMAN, PRIV_USERMAN, PrivilegeLevel, \
     PrivilegeError
+from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -40,8 +39,8 @@ class Project(object):
 
 
 class Accounting(Service):
-    __gsignals__ = {'privlevel-changed': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
-                    'project-changed': (GObject.SignalFlags.RUN_FIRST, None, ())}
+    __signals__ = {'privlevel-changed': (SignalFlags.RUN_FIRST, None, (object,)),
+                   'project-changed': (SignalFlags.RUN_FIRST, None, ())}
 
     state = {'dbfile': 'userdb',
              'projectid': 'MachineStudies 01',
@@ -191,6 +190,8 @@ class Accounting(Service):
             assert self.project in self.projects
             return self.project
         projects = [p for p in self.projects if p.projectid == projectid]
+        if not projects:
+            raise KeyError(projectid)
         assert (len(projects) == 1)
         return projects[0]
 

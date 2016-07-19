@@ -88,14 +88,14 @@ class StopExposure(Command):
 class Expose(Command):
     """Start an exposure in pilatus
 
-    Invocation: expose(<exptime> [, <prefix> [,<otherarg>]])
+    Invocation: expose(<exptime> [, <prefix> [,<otherargs>]])
 
     Arguments:
         <exptime>: exposure time in seconds
         <prefix>: the prefix of the resulting file name, e.g. 'crd', 'scn', 
             'tra', 'tst', etc. If not given, it is taken from the variable
             `expose_prefix`
-        <otherarg>: undocumented feature, used internally, e.g. by scan.
+        <otherargs>: a dictionary, used internally, e.g. by scan.
 
     Returns:
         the file name returned by camserver
@@ -117,9 +117,9 @@ class Expose(Command):
         except IndexError:
             self._prefix = namespace['expose_prefix']
         try:
-            self._otherarg = arglist[2]
+            self._kwargs = arglist[2]
         except IndexError:
-            self._otherarg = None
+            self._kwargs = {}
         if instrument.detector.get_variable('nimages') != 1:
             instrument.detector.set_variable('nimages', 1)
         self._require_device(instrument, 'pilatus')
@@ -163,8 +163,8 @@ class Expose(Command):
             if not hasattr(self, '_starttime'):
                 self._starttime = self._alt_starttime
 
-            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime, oa=self._otherarg:
-                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st, oa) and False)
+            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime, kwargs=self._kwargs:
+                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st, **kwargs) and False)
             self._file_received = True
         elif variablename == '_status' and newvalue == 'idle':
             self._detector_idle = True
@@ -184,7 +184,7 @@ class Expose(Command):
 class ExposeMulti(Command):
     """Start an exposure of multiple images in pilatus
 
-    Invocation: exposemulti(<exptime>, <nimages> [, <prefix> [, <expdelay> [,<otherarg>]]])
+    Invocation: exposemulti(<exptime>, <nimages> [, <prefix> [, <expdelay> [,<otherargs>]]])
 
     Arguments:
         <exptime>: exposure time in seconds
@@ -194,7 +194,7 @@ class ExposeMulti(Command):
             `expose_prefix`
         <expdelay>: the delay time between exposures. Defaults to 0.003 sec,
             which is the lowest allowed value.
-        <otherarg>: undocumented feature, used internally, e.g. by scan.
+        <otherargs>: a dictionary, used internally, e.g. by scan.
 
     Returns:
         the file name returned by camserver
@@ -221,9 +221,9 @@ class ExposeMulti(Command):
         except IndexError:
             expdelay = 0.003
         try:
-            self._otherarg = arglist[4]
+            self._kwargs = arglist[4]
         except IndexError:
-            self._otherarg = None
+            self._kwargs = None
         if expdelay <= 0.003:
             raise CommandError('The delay time between subsequent exposures must be larger than 0.003 seconds')
         instrument.detector.set_variable('nimages', nimages)
@@ -295,8 +295,8 @@ class ExposeMulti(Command):
                     logger.debug('We have {}'.format(filename))
                     GLib.idle_add(
                         lambda fs=fsn, fn=os.path.join(self._imgpath, filename), prf=self._prefix, st=starttime,
-                               oa=self._otherarg:
-                        self._instrument.filesequence.new_exposure(fs, fn, prf, st, oa) and False)
+                               kwargs=self._kwargs:
+                        self._instrument.filesequence.new_exposure(fs, fn, prf, st, **kwargs) and False)
                     self._filenames_pending.remove(filename)
                     self._fsns.remove(fsn)
                     self._expected_due_times.remove(dt)

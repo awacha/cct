@@ -94,3 +94,4 @@ class DeviceBackend_ModbusTCP(DeviceBackend):
         self.lasttimes['recv'] = time.monotonic()
         self.counters['inmessages'] += 1
         return result
+

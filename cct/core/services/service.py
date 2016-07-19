@@ -2,14 +2,14 @@ import time
 import weakref
 from typing import Optional, Dict
 
-from gi.repository import GObject
+from ..utils.callback import Callbacks
 
 
 class ServiceError(Exception):
     pass
 
 
-class Service(GObject.GObject):
+class Service(Callbacks):
     """Abstract base class for a service: a part of the SAXS instrument which
     takes care for a well-defined job, such as keeping track of file sequence
     numbers or running data reduction on finished exposures.
@@ -29,7 +29,7 @@ class Service(GObject.GObject):
     state = {}
 
     def __init__(self, instrument, configdir: str, statedict: Optional[Dict] = None):
-        GObject.GObject.__init__(self)
+        Callbacks.__init__(self)
         self.state = self.__class__.state.copy()
         if not isinstance(instrument, weakref.ProxyTypes):
             instrument = weakref.proxy(instrument)

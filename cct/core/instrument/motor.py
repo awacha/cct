@@ -1,24 +1,23 @@
 import logging
 
-from gi.repository import GObject
-
+from ..utils.callback import Callbacks, SignalFlags
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Motor(GObject.GObject):
+class Motor(Callbacks):
     """High-level interface for a motor. Nothing more than a wrapper for the
     actual functionality of the lower level motor controllers. This way
     the motors can be decoupled."""
 
-    __gsignals__ = {'variable-change': (GObject.SignalFlags.RUN_FIRST, None, (str, object)),
-                    'error': (GObject.SignalFlags.RUN_LAST, None, (str, object, str)),
-                    'position-change': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
-                    'stop': (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
-                    }
+    __signals__ = {'variable-change': (SignalFlags.RUN_FIRST, None, (str, object)),
+                   'error': (SignalFlags.RUN_LAST, None, (str, object, str)),
+                   'position-change': (SignalFlags.RUN_FIRST, None, (float,)),
+                   'stop': (SignalFlags.RUN_FIRST, None, (bool,)),
+                   }
 
     def __init__(self, controller, index):
-        GObject.GObject.__init__(self)
+        super().__init__()
         self._controller = controller
         self._index = index
         self._connection = [self._controller.connect(
