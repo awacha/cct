@@ -12,17 +12,17 @@ class TPG201(ToolWindow):
         if ToolWindow.on_map(self, window):
             return True
         self._disconnect_vacuumgauge()
-        vac = self._instrument.environmentcontrollers['vacuum']
+        vac = self._instrument.get_device('vacuum')
         self._vacconnect = vac.connect('variable-change', self.on_variable_change)
         self._update_indicators()
 
     def _update_indicators(self):
-        vac = self._instrument.environmentcontrollers['vacuum']
+        vac = self._instrument.get_device('vacuum')
         self.on_variable_change(vac, 'pressure', vac.get_variable('pressure'))
 
     def _disconnect_vacuumgauge(self):
         try:
-            self._instrument.environmentcontrollers['vacuum'].disconnect(self._vacconnect)
+            self._instrument.get_device('vacuum').disconnect(self._vacconnect)
             del self._vacconnect
         except AttributeError:
             pass

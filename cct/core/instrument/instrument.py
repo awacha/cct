@@ -57,9 +57,9 @@ class Instrument(Callbacks):
         Callbacks.__init__(self)
         self._online = online
         self.devices = {}
+        self.pseudo_devices = {}
         self.services = {}
         self.motors = {}
-        self.environmentcontrollers = {}
         self.configfile = os.path.join(self.configdir, 'cct.pickle')
         self._initialize_config()
         self._signalconnections = {}
@@ -379,19 +379,19 @@ class Instrument(Callbacks):
                 unsuccessful.append(cfg['name'])
         # at this point, all devices are initialized. We will create some shortcuts to special devices:
         try:
-            self.xray_source = self.devices[self.config['connections']['xray_source']['name']]
+            self.pseudo_devices['xray_source'] = self.devices[self.config['connections']['xray_source']['name']]
         except KeyError:
             pass
         try:
-            self.detector = self.devices[self.config['connections']['detector']['name']]
+            self.pseudo_devices['detector'] = self.devices[self.config['connections']['detector']['name']]
         except KeyError:
             pass
         try:
-            self.environmentcontrollers['vacuum'] = self.devices[self.config['connections']['vacuum']['name']]
+            self.pseudo_devices['vacuum'] = self.devices[self.config['connections']['vacuum']['name']]
         except KeyError:
             pass
         try:
-            self.environmentcontrollers['temperature'] = self.devices[self.config['connections']['temperature']['name']]
+            self.pseudo_devices['temperature'] = self.devices[self.config['connections']['temperature']['name']]
         except KeyError:
             pass
 
@@ -401,10 +401,17 @@ class Instrument(Callbacks):
             try:
                 self.motors[cfg['name']] = Motor(self.devices[cfg['controller']],
                                                  cfg['index'])
+                self.pseudo_devices['Motor_' + cfg['name']] = self.motors[cfg['name']]
             except KeyError:
                 logger.error('Cannot find controller for motor ' + cfg['name'])
 
         return unsuccessful
+
+    def get_device(self, devicename: str):
+        try:
+            return self.pseudo_devices[devicename]
+        except KeyError:
+            return self.devices[devicename]
 
     def on_telemetry(self, device, telemetry):
         self.services['telemetrymanager'].incoming_telemetry(device.name, telemetry)

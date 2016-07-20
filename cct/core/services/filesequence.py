@@ -390,18 +390,21 @@ class FileSequence(Service):
                     params['devices'][d][v] = self.instrument.devices[d].get_variable(v)
 
             params['environment'] = {}
-            if 'vacuum' in self.instrument.environmentcontrollers:
-                params['environment']['vacuum_pressure'] = self.instrument.environmentcontrollers[
-                    'vacuum'].get_variable('pressure')
-            if 'temperature' in self.instrument.environmentcontrollers:
+            try:
+                params['environment']['vacuum_pressure'] = self.instrument.get_device('vacuum').get_variable('pressure')
+            except KeyError:
+                pass
+            try:
+                tempdev = self.instrument.get_device('temperature')
+            except KeyError:
+                pass
+            else:
                 try:
-                    params['environment']['temperature_setpoint'] = self.instrument.environmentcontrollers[
-                        'temperature'].get_variable('setpoint')
+                    params['environment']['temperature_setpoint'] = tempdev.get_variable('setpoint')
                 except KeyError as ke:
                     logger.warning('Cannot write property: ' + str(ke.args[0]))
                 try:
-                    params['environment']['temperature'] = self.instrument.environmentcontrollers[
-                        'temperature'].get_variable('temperature_internal')
+                    params['environment']['temperature'] = tempdev.get_variable('temperature_internal')
                 except KeyError as ke:
                     logger.warning('Cannot write property: ' + str(ke.args[0]))
             params['accounting'] = {}

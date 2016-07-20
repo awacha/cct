@@ -14,6 +14,7 @@ class Motor(Callbacks):
                    'error': (SignalFlags.RUN_LAST, None, (str, object, str)),
                    'position-change': (SignalFlags.RUN_FIRST, None, (float,)),
                    'stop': (SignalFlags.RUN_FIRST, None, (bool,)),
+                   'disconnect': (SignalFlags.RUN_LAST, None, (bool,))
                    }
 
     def __init__(self, controller, index):
@@ -22,7 +23,9 @@ class Motor(Callbacks):
         self._index = index
         self._connection = [self._controller.connect(
             'variable-change', self.on_variable_change),
-            self._controller.connect('error', self.on_error)]
+            self._controller.connect('error', self.on_error),
+            self._controller.connect('disconnect', self.on_disconnect),
+        ]
         self._moving = False
 
     def on_variable_change(self, controller, variable, newvalue):
@@ -52,6 +55,9 @@ class Motor(Callbacks):
                                                                              tb))
         self.emit('error', variable.rsplit('$')[0], exception, tb)
         return False
+
+    def on_disconnect(self, controller, sudden: bool):
+        self.emit('disconnect', sudden)
 
     def get_variable(self, varname):
         return self._controller.get_variable(varname + '$' + str(self._index))
