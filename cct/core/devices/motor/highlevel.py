@@ -1,8 +1,8 @@
 import logging
 
-from ..utils.callback import Callbacks, SignalFlags
+from ...utils.callback import Callbacks, SignalFlags
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class Motor(Callbacks):
@@ -17,8 +17,9 @@ class Motor(Callbacks):
                    'disconnect': (SignalFlags.RUN_LAST, None, (bool,))
                    }
 
-    def __init__(self, controller, index):
+    def __init__(self, controller, index, name):
         super().__init__()
+        self.name = name
         self._controller = controller
         self._index = index
         self._connection = [self._controller.connect(

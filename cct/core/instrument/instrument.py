@@ -7,8 +7,8 @@ import time
 import traceback
 from typing import List
 
-from .motor import Motor
 from ..devices.device import DeviceError, Device, DeviceBackend_ModbusTCP, DeviceBackend_TCP
+from ..devices.motor import Motor
 from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter, Service
 from ..utils.callback import Callbacks, SignalFlags
 from ..utils.telemetry import acquire_telemetry_info
@@ -400,7 +400,7 @@ class Instrument(Callbacks):
             cfg = self.config['motors'][m]
             try:
                 self.motors[cfg['name']] = Motor(self.devices[cfg['controller']],
-                                                 cfg['index'])
+                                                 cfg['index'], cfg['name'])
                 self.pseudo_devices['Motor_' + cfg['name']] = self.motors[cfg['name']]
             except KeyError:
                 logger.error('Cannot find controller for motor ' + cfg['name'])
