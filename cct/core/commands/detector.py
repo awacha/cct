@@ -4,7 +4,8 @@ import os
 
 from gi.repository import GLib
 
-from .command import Command, CommandError
+from .command import Command, CommandError, CommandArgumentError
+from ..devices.detector import Pilatus
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,35 +27,54 @@ class Trim(Command):
 
     timeout = 20
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        thresholdvalue = round(float(arglist[0]))
-        gain = arglist[1]
-        if gain.upper() == 'HIGHG':
-            if not ((thresholdvalue >= 3814) and (thresholdvalue <= 11614)):
-                raise CommandError('Invalid threshold value for high gain: {:.2f}'.format(thresholdvalue))
-        elif gain.upper() == 'MIDG':
-            if not ((thresholdvalue >= 4425) and (thresholdvalue <= 14328)):
-                raise CommandError('Invalid threshold value for mid gain: {:.2f}'.format(thresholdvalue))
-        elif gain.upper() == 'LOWG':
-            if not ((thresholdvalue >= 6685) and (thresholdvalue <= 20202)):
-                raise CommandError('Invalid threshold value for low gain: {:.2f}'.format(thresholdvalue))
+    pulse_interval = 0.5
+
+    required_devices = ['pilatus']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} needs exactly two positional arguments.'.format(self.name))
+        self.threshold = round(float(self.args[0]))
+        self.gain = self.args[1].upper()
+        if self.gain == 'HIGHG':
+            if not ((self.threshold >= 3814) and (self.threshold <= 11614)):
+                raise CommandArgumentError('Invalid threshold value for high gain: {:.2f}'.format(self.threshold))
+        elif self.gain == 'MIDG':
+            if not ((self.threshold >= 4425) and (self.threshold <= 14328)):
+                raise CommandArgumentError('Invalid threshold value for mid gain: {:.2f}'.format(self.threshold))
+        elif self.gain == 'LOWG':
+            if not ((self.threshold >= 6685) and (self.threshold <= 20202)):
+                raise CommandArgumentError('Invalid threshold value for low gain: {:.2f}'.format(self.threshold))
         else:
-            raise CommandError('Unknown gain: ' + str(gain))
-        self._install_timeout_handler(self.timeout)
-        self._require_device(instrument, 'pilatus')
-        self._check_for_variable = 'threshold'
-        self._check_for_value = thresholdvalue
-        self._install_pulse_handler('Trimming detector', 0.5)
-        instrument.detector.set_threshold(thresholdvalue, gain)
-        instrument.detector.refresh_variable('threshold')
-        self._instrument = instrument
+            raise CommandArgumentError('Invalid gain: ' + self.gain)
+
+    def validate(self):
+        pilatus = self.interpreter.instrument.get_device('pilatus')
+        assert isinstance(pilatus, Pilatus)
+        if pilatus.is_busy():
+            raise CommandError('Cannot start trimming if the detector is busy.')
+
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == 'threshold' and newvalue == self.threshold:
+            self.cleanup(newvalue)
+
+    def on_pulse(self):
+        self.emit('pulse', 'Trimming detector')
+
+    def execute(self):
+        self.interpreter.instrument.get_device('pilatus').set_threshold(self.threshold, self.gain)
 
     def do_return(self, retval):
         self.emit('message', 'New threshold set: {:f}. Gain: {}'.format(
-            self._instrument.detector.get_variable('threshold'),
-            self._instrument.detector.get_variable('gain')))
+            self.interpreter.instrument.get_device('pilatus').get_variable('threshold'),
+            self.interpreter.instrument.get_device('pilatus').get_variable('gain')))
         return False
 
+    def kill(self):
+        raise CommandError('Command {} cannot be killed.'.format(self.name))
 
 class StopExposure(Command):
     """Stop the current exposure in pilatus
@@ -69,24 +89,30 @@ class StopExposure(Command):
     """
     name = "stopexposure"
 
+    required_devices = ['pilatus']
+
     timeout = 10
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self._install_timeout_handler(self.timeout)
-        self._require_device(instrument, 'pilatus')
-        self._check_for_variable = '_status'
-        self._check_for_value = 'idle'
-        try:
-            instrument.detector.execute_command('kill')
-        except:
-            self._uninstall_timeout_handler()
-            self._unrequire_device()
-            raise
-        instrument.detector.refresh_variable('_status')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
 
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == '_status' and newvalue == 'idle':
+            self.cleanup(True)
+
+    def execute(self):
+        self.interpreter.instrument.get_device('pilatus').execute_command('kill')
+        self.interpreter.instrument.get_device('pilatus').refresh_variable('_status')
+
+    def kill(self):
+        raise CommandError('Command {} cannot be killed.'.format(self.name))
 
 class Expose(Command):
-    """Start an exposure in pilatus
+    """Start an exposure of a single image in pilatus
 
     Invocation: expose(<exptime> [, <prefix> [,<otherargs>]])
 
@@ -99,86 +125,100 @@ class Expose(Command):
 
     Returns:
         the file name returned by camserver
-
-    Remarks:
-        this is the most basic exposure command. Note that the number of
-        images, exposure period etc. is not touched. This means that this
-        command may start a multi-image exposure, as well as a single one.
     """
 
     name = 'expose'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        exptime = float(arglist[0])
-        if exptime <= 0:
-            raise CommandError('Exposure time must be positive')
-        try:
-            self._prefix = arglist[1]
-        except IndexError:
-            self._prefix = namespace['expose_prefix']
-        try:
-            self._kwargs = arglist[2]
-        except IndexError:
-            self._kwargs = {}
-        if instrument.detector.get_variable('nimages') != 1:
-            instrument.detector.set_variable('nimages', 1)
-        self._require_device(instrument, 'pilatus')
-        self._fsn = instrument.filesequence.get_nextfreefsn(self._prefix)
-        self._filename = '{prefix}_{fsn:0{ndigits:d}d}.cbf'.format(
-            prefix=self._prefix, ndigits=instrument.config['path']['fsndigits'],
-            fsn=self._fsn)
-        instrument.detector.set_variable('imgpath', instrument.config['path']['directories']['images_detector'][
-            0] + '/' + self._prefix)
-        instrument.detector.set_variable('exptime', exptime)
-        self._exptime = exptime
-        self.timeout = exptime + 30
-        self._progresshandler = GLib.timeout_add(
-            500, lambda d=instrument.detector: self._progress(d))
-        self._check_for_variable = '_status'
-        self._check_for_value = 'idle'
-        self._install_timeout_handler(self.timeout)
-        self._instrument = instrument
-        self._file_received = False
-        self._detector_idle = False
-        self.emit('message', 'Starting exposure of file: {}'.format(self._filename))
+    pulse_interval = 0.5
 
-    def _progress(self, detector):
+    required_devices = ['pilatus']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) < 1 or len(self.args) > 3:
+            raise CommandArgumentError(
+                'Command {} needs at least one but not more than three positional arguments.'.format(self.name))
+        self.exptime = float(self.args[0])
+        if self.exptime < 1e-6 or self.exptime > 1e6:
+            raise CommandArgumentError('Exposure time must be between 1e-6 and 1e6 seconds.')
         try:
-            starttime = detector.get_variable('starttime')
-        except KeyError:
-            return True
-        if starttime is None:
-            return True
-        timeleft = self._exptime - \
-                   (datetime.datetime.now() - starttime).total_seconds()
-        self.emit('progress', 'Exposing. Remaining time: {:4.1f}'.format(timeleft), 1 - timeleft / self._exptime)
+            self.prefix = str(self.args[1])
+        except IndexError:
+            try:
+                self.prefix = self.namespace['expose_prefix']
+            except KeyError:
+                raise CommandArgumentError(
+                    'Exposure prefix must be given either as an argument to command {} or in the \'expose_prefix\' variable'.format(
+                        self.name))
+        try:
+            assert isinstance(self.args[2], dict)
+        except IndexError:
+            self.otherargs = {}
+        else:
+            self.otherargs = self.args[2].copy()
+        self.file_received = False
+        self.detector_idle = False
+        self.killed = False
+        self.starttime = None
+
+    def validate(self):
+        det = self.interpreter.instrument.get_device('pilatus')
+        assert isinstance(det, Pilatus)
+        if det.is_busy():
+            raise CommandError('Cannot start exposing if the detector is busy.')
+        if det.get_variable('nimages') != 1:
+            det.set_variable('nimages', 1)
+
+    def execute(self):
+        self.fsn = self.interpreter.instrument.filesequence.get_nextfreefsn(self.prefix)
+        self.filename = self.interpreter.instrument.filesequence.exposurefileformat(self.prefix, self.fsn) + '.cbf'
+        det = self.interpreter.instrument.get_device('pilatus')
+        self.imgpath = self.interpreter.instrument.config['path']['directories']['images_detector'][
+                           0] + '/' + self.prefix
+        if det.get_variable('imgpath') != self.imgpath:
+            det.set_variable('imgpath', self.imgpath)
+        # Set the exposure time. The exposure will start when the detector replies.
+        det.set_variable('exptime', self.exptime)
+        self.timeout = self.exptime + 30
+        self.emit('message', 'Starting exposure of file: {}'.format(self.filename))
+        self.starttime = None
+
+    def on_pulse(self):
+        if self.starttime is None:
+            self.emit('pulse', 'Initializing...')
+        else:
+            spent_time = (datetime.datetime.now() - self.starttime).total_seconds()
+            timeleft = self.exptime - spent_time
+            self.emit('progress', 'Exposing. Remaining time: {:4.1f}'.format(timeleft), spent_time / self.exptime)
         return True
 
     def on_variable_change(self, device, variablename, newvalue):
+        assert isinstance(device, Pilatus)
         if variablename == 'exptime':
-            if not hasattr(self, '_alt_starttime'):
-                device.expose(self._filename)
-                self._alt_starttime = datetime.datetime.now()
+            if self.starttime is None:
+                device.expose(self.filename)
+                self.starttime = datetime.datetime.now()
+        elif variablename == 'starttime':
+            self.starttime = newvalue
         elif variablename == 'filename':
-            if not hasattr(self, '_starttime'):
-                self._starttime = self._alt_starttime
-
-            GLib.idle_add(lambda fsn=self._fsn, fn=newvalue, prf=self._prefix, st=self._starttime, kwargs=self._kwargs:
-                          self._instrument.filesequence.new_exposure(fsn, fn, prf, st, **kwargs) and False)
-            self._file_received = True
+            GLib.idle_add(lambda fsn=self.fsn, fn=newvalue, prf=self.prefix, st=self.starttime, kwargs=self.otherargs:
+                          self.interpreter.instrument.filesequence.new_exposure(fsn, fn, prf, st, **kwargs) and False)
+            self.file_received = True
         elif variablename == '_status' and newvalue == 'idle':
-            self._detector_idle = True
-        if (self._detector_idle and self._file_received) or hasattr(self, '_kill'):
-            self._uninstall_timeout_handler()
-            self._uninstall_pulse_handler()
-            self._unrequire_device()
-            GLib.source_remove(self._progresshandler)
-            self.emit('return', newvalue)
+            self.detector_idle = True
+        if (self.detector_idle and self.file_received) or self.killed:
+            self.cleanup(newvalue)
         return True
 
+    def on_error(self, device, propname, exc, tb):
+        self.kill()
+        return False
+
     def kill(self):
-        self._kill = True
-        self._instrument.detector.execute_command('kill')
+        self.killed = True
+        self.interpreter.instrument.get_variable('pilatus').execute_command('kill')
 
 
 class ExposeMulti(Command):
@@ -198,156 +238,159 @@ class ExposeMulti(Command):
 
     Returns:
         the file name returned by camserver
-
-    Remarks:
-
     """
 
     name = 'exposemulti'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        exptime = float(arglist[0])
-        if exptime <= 0:
-            raise CommandError('Exposure time must be positive')
-        nimages = int(arglist[1])
-        if nimages <= 0:
-            raise CommandError('The number of images must be a positive integer')
-        try:
-            prefix = arglist[2]
-        except IndexError:
-            prefix = namespace['expose_prefix']
-        try:
-            expdelay = arglist[3]
-        except IndexError:
-            expdelay = 0.003
-        try:
-            self._kwargs = arglist[4]
-        except IndexError:
-            self._kwargs = None
-        if expdelay <= 0.003:
-            raise CommandError('The delay time between subsequent exposures must be larger than 0.003 seconds')
-        instrument.detector.set_variable('nimages', nimages)
-        self._require_device(instrument, 'pilatus')
-        self._fsns = list(instrument.filesequence.get_nextfreefsns(prefix, nimages))
-        self._prefix = prefix
-        self._filenames_pending = ['{prefix}_{fsn:0{ndigits:d}d}.cbf'.format(
-            prefix=prefix, ndigits=instrument.config['path']['fsndigits'], fsn=f)
-                                   for f in self._fsns]
-        self._expected_due_times = [exptime + i * (exptime + expdelay) for i in range(nimages)]
-        self._exptime = exptime
-        self._nimages = nimages
-        self._totaltime = exptime * nimages + expdelay * (nimages - 1)
-        self.timeout = self._totaltime + 30
+    required_devices = ['pilatus']
 
-        instrument.detector.set_variable('exptime', exptime)
-        instrument.detector.set_variable('imgpath', instrument.config['path']['directories']['images_detector'][
-            0] + '/' + self._prefix)
-        instrument.detector.set_variable('expperiod', exptime + expdelay)
-        self._progresshandler = GLib.timeout_add(500,
-                                                 lambda d=instrument.detector: self._progress(d))
-        self._install_timeout_handler(self.timeout)
-        self._file_received = False
-        self._detector_idle = False
-        self._imgpath = instrument.detector.get_variable('imgpath')
-        self.emit('message', 'Starting exposure of {:d} images. First: {}'.format(nimages, self._filenames_pending[0]))
-        self._instrument = instrument
-        self._file_received = False
+    pulse_interval = 0.5
 
-    def _progress(self, detector):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) < 2 or len(self.args) > 5:
+            raise CommandArgumentError(
+                'Command {} needs at least two but not more than five positional arguments.'.format(self.name))
+        self.exptime = float(self.args[0])
+        if self.exptime < 1e-6 or self.exptime > 1e6:
+            raise CommandArgumentError('Exposure time must be between 1e-6 and 1e6 seconds.')
+        self.nimages = int(self.args[1])
+        if self.nimages < 2:
+            raise CommandArgumentError('Number of images must be more than one.')
         try:
-            starttime = detector.get_variable('starttime')
-        except KeyError:
-            return True
-        if starttime is None:
-            return True
-        timeleft = self._totaltime - \
-                   (datetime.datetime.now() - starttime).total_seconds()
-        # timeleft=detector.get_variable('timeleft')
-        self.emit('progress', 'Exposing {:d} images, {:d} remaining. Remaining time: {:4.1f} sec'.format(self._nimages,
-                                                                                                         len(
-                                                                                                             self._expected_due_times),
-                                                                                                         timeleft),
-                  1 - timeleft / self._totaltime)
+            self.prefix = str(self.args[2])
+        except IndexError:
+            try:
+                self.prefix = self.namespace['expose_prefix']
+            except KeyError:
+                raise CommandArgumentError(
+                    'Exposure prefix must be given either as an argument to command {} or in the \'expose_prefix\' variable'.format(
+                        self.name))
+        try:
+            self.expdelay = float(self.args[3])
+            if self.expdelay < 0.003:
+                raise ValueError(self.expdelay)
+        except ValueError:
+            raise CommandArgumentError('Exposure delay must be a float larger than 0.003')
+        except IndexError:
+            self.expdelay = 0.003
+        try:
+            assert isinstance(self.args[4], dict)
+        except IndexError:
+            self.otherargs = {}
+        else:
+            self.otherargs = self.args[4].copy()
+        self.files_received = False
+        self.detector_idle = False
+        self.killed = False
+        self.starttime = None
+        self.filechecker_handle = None
+        self.fsns_done = []
+        self.filenames = [self.interpreter.instrument.filesequence.exposurefileformat(self.prefix, f) + '.cbf'
+                          for f in self.fsns]
+        self.due_times = [self.exptime + i * (self.exptime + self.expdelay) for i in range(self.nimages)]
+        self.totaltime = self.exptime * self.nimages + self.expdelay * (self.nimages - 1)
+        self.timeout = self.totaltime + 30
+
+    def validate(self):
+        det = self.interpreter.instrument.get_device('pilatus')
+        assert isinstance(det, Pilatus)
+        if det.is_busy():
+            raise CommandError('Cannot start exposing if the detector is busy.')
+
+    def execute(self):
+        dev = self.interpreter.instrument.get_device('pilatus')
+        assert isinstance(dev, Pilatus)
+        dev.set_variable('nimages', self.nimages)
+        self.fsns = list(self.interpreter.instrument.filesequence.get_nextfreefsns(self.prefix, self.nimages))
+        dev.set_variable('expperiod', self.exptime + self.expdelay)
+        self.imgpath = self.interpreter.instrument.config['path']['directories']['images_detector'][
+                           0] + '/' + self.prefix
+        dev.set_variable('imgpath', self.imgpath)
+        dev.set_variable('exptime', self.exptime)
+        self.emit('message', 'Starting exposure of {:d} images. First: {}'.format(self.nimages, self.filenames[0]))
+
+    def on_pulse(self):
+        if self.starttime is None:
+            self.emit('pulse', 'Initializing...')
+        else:
+            spent_time = (datetime.datetime.now() - self.starttime).total_seconds()
+            timeleft = self.totaltime - spent_time
+            self.emit('progress',
+                      'Exposing {:d} images, {:d} remaining. Remaining time: {:4.1f} sec'.format(
+                          self.nimages,
+                          len(self.filenames), timeleft), spent_time / self.totaltime)
         return True
 
-    def _filechecker(self):
+    def filechecker(self):
+        """Periodically checks if an exposure file is available or not."""
         logger.debug('Filechecker woke.')
-        if hasattr(self, '_kill'):
-            return False
-        try:
-            starttime = self._instrument.detector.get_variable('starttime')
-        except KeyError:
-            return True
-        if starttime is None:
-            return True
+        if self.killed:
+            return False  # unregister this idle handler
+        det = self.interpreter.instrument.get_device('detector')
+        assert isinstance(det, Pilatus)
+        assert self.starttime is not None
         # the time in seconds elapsed from issuing the "exposure" command.
-        elapsedtime = (datetime.datetime.now() - starttime).total_seconds()
         # check the times when images are due
-        due_times = [dt for dt in self._expected_due_times if dt < elapsedtime]
-        while due_times:
-            # try to confirm the presence of all due images
-            due_files = [fn for fn, dt in zip(self._filenames_pending, self._expected_due_times) if dt < elapsedtime]
-            due_fsns = [fs for fs, dt in zip(self._fsns, self._expected_due_times) if dt < elapsedtime]
-            loaded_count = 0  # collect the number of successfully found images
-            for filename, fsn, dt in zip(due_files, due_fsns, due_times):
-                if self._instrument.filesequence.is_cbf_ready(self._prefix + '/' + filename):
-                    # if the file is present, let it be processed.
-                    logger.debug('We have {}'.format(filename))
-                    GLib.idle_add(
-                        lambda fs=fsn, fn=os.path.join(self._imgpath, filename), prf=self._prefix, st=starttime,
-                               kwargs=self._kwargs:
-                        self._instrument.filesequence.new_exposure(fs, fn, prf, st, **kwargs) and False)
-                    self._filenames_pending.remove(filename)
-                    self._fsns.remove(fsn)
-                    self._expected_due_times.remove(dt)
-                    loaded_count += 1
-            if loaded_count != len(due_times):
-                # if not all files were loaded, re-queue ourselves for immediate running.
-                self._filechecker_handle = GLib.idle_add(self._filechecker)
-                return False
-            # time may have spent in the for-loop above, check if any images might have became available
-            elapsedtime = (datetime.datetime.now() - starttime).total_seconds()
-            due_times = [dt for dt in self._expected_due_times if dt < elapsedtime]
+        for filename, fsn, duetime in sorted(zip(self.filenames, self.fsns, self.due_times),
+                                             key=lambda x: x[2]):
+            # sorted according to duetime: we treat the next due file first.
+            elapsedtime = (datetime.datetime.now() - self.starttime).total_seconds()
+            if filename in self.fsns_done:
+                continue
+            if duetime > elapsedtime:
+                continue
+            if self.interpreter.instrument.filesequence.is_cbf_ready(self.prefix + '/' + filename):
+                # if the file is present, let it be processed.
+                logger.debug('We have {}'.format(filename))
+                GLib.idle_add(
+                    lambda fs=fsn, fn=os.path.join(self.imgpath, filename), prf=self.prefix, st=self.starttime,
+                           kwargs=self.otherargs:
+                    self.interpreter.instrument.filesequence.new_exposure(fs, fn, prf, st, **kwargs) and False)
+                self.fsns_done.append(fsn)
         # no more files are expected just now
-        if self._filenames_pending:
+        if len(self.fsns) != len(self.fsns_done):
             # if we still have some files to wait for, re-queue us to the time when the next will be available.
-            elapsedtime = (datetime.datetime.now() - starttime).total_seconds()
-            self._filechecker_handle = GLib.timeout_add(1000 * (self._expected_due_times[0] - elapsedtime),
-                                                        self._filechecker)
+            elapsedtime = (datetime.datetime.now() - self.starttime).total_seconds()
+            self.filechecker_handle = GLib.timeout_add(1000 * max(0, (min(self.due_times) - elapsedtime)),
+                                                       self.filechecker)
         else:
             # all files received:
-            self._file_received = True
-            self._try_to_end()
+            self.files_received = True
+            if self.detector_idle or self.killed:
+                self.cleanup(None)
         return False
 
     def on_variable_change(self, device, variablename, newvalue):
+        assert isinstance(device, Pilatus)
         if variablename == 'exptime':
-            if not hasattr(self, '_alt_starttime'):
-                device.expose(self._filenames_pending[0])
-                self._alt_starttime = datetime.datetime.now()
+            if self.starttime is None:
+                device.expose(self.filenames[0])
+                self.starttime = datetime.datetime.now()
         elif variablename == 'starttime':
             if newvalue is not None:
-                self._filechecker_handle = GLib.timeout_add(self._exptime * 1000, self._filechecker)
+                self.starttime = newvalue
+                self.filechecker_handle = GLib.timeout_add(self.exptime * 1000, self.filechecker)
         elif variablename == '_status' and newvalue == 'idle':
-            self._detector_idle = True
-        self._try_to_end()
+            self.detector_idle = True
+            if self.files_received or self.killed:
+                self.cleanup(None)
         return False
 
-    def _try_to_end(self):
-        if (self._file_received and self._detector_idle) or hasattr(self, '_kill'):
-            self._uninstall_timeout_handler()
-            self._uninstall_pulse_handler()
-            self._unrequire_device()
-            GLib.source_remove(self._progresshandler)
-            self.emit('return', None)
-            self._detector_idle = False
-            self._file_received = False
 
     def kill(self):
-        GLib.source_remove(self._filechecker_handle)
-        self._kill = True
-        self._instrument.detector.execute_command('kill')
+        if not self.killed:
+            self.killed = True
+            GLib.source_remove(self.filechecker_handle)
+            self.interpreter.instrument.get_device('detector').execute_command('kill')
 
     def on_error(self, device, propname, exc, tb):
         self.kill()
         return False
+
+    def cleanup(self, *args, **kwargs):
+        if self.filechecker_handle is not None:
+            GLib.source_remove(self.filechecker_handle)
+            self.filechecker_handle = None

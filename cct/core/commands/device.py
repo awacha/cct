@@ -1,11 +1,10 @@
 import logging
 import time
-import traceback
 
 from gi.repository import GLib
 
-from .command import Command, CommandError
-from ..instrument.privileges import PRIV_MOTORCONFIG
+from .command import Command, CommandArgumentError
+from ..devices.device import Device
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -25,28 +24,26 @@ class GetVariable(Command):
     """
     name = 'getvar'
 
-    timeout = 60
+    timeout = 10
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        devicename = arglist[0]
-        variablename = arglist[1]
-        self._require_device(instrument, devicename)
-        self._install_timeout_handler(self.timeout)
-        self._check_for_variable = variablename
-        try:
-            instrument.devices[devicename].refresh_variable(variablename)
-        except NotImplementedError:
-            # there are variables which cannot be queried
-            self._uninstall_timeout_handler()
-            self._unrequire_device(None)
-            GLib.idle_add(lambda dev=instrument.devices[devicename], var=variablename, val=instrument.devices[
-                devicename].get_variable(variablename): self.on_variable_change(dev, var, val) and False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} needs exactly two positional arguments.'.format(self.name))
+        self.devicename = str(self.args[0])
+        self.variablename = str(self.args[1])
+        self.required_devices = [self.devicename]
+
+    def execute(self):
+        dev = self.interpreter.instrument.get_device(self.devicename)
+        assert isinstance(dev, Device)
+        dev.refresh_variable(self.variablename)
 
     def on_variable_change(self, device, variable, newvalue):
-        if variable == self._check_for_variable:
-            self._uninstall_timeout_handler()
-            self._unrequire_device()
-            self.emit('return', newvalue)
+        if variable == self.variablename:
+            self.cleanup(newvalue)
         return False
 
 
@@ -71,32 +68,28 @@ class SetVariable(Command):
     """
     name = 'setvar'
 
-    timeout = 60
+    timeout = 10
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        devicename = arglist[0]
-        if devicename.startswith('tmcm') and not instrument.accounting.has_privilege(PRIV_MOTORCONFIG):
-            raise CommandError('Insufficient privileges to configure motors.')
-        variablename = arglist[1]
-        value = arglist[2]
-        self._require_device(instrument, devicename)
-        self._install_timeout_handler(self.timeout)
-        self._check_for_variable = variablename
-        try:
-            instrument.devices[devicename].set_variable(variablename, value)
-        except NotImplementedError as ne:
-            # there are variables which cannot be queried
-            self._uninstall_timeout_handler()
-            self._unrequire_device(None)
-            self.emit('fail', ne, traceback.format_exc())
-            GLib.idle_add(lambda dev=instrument.devices[devicename], var=variablename, val=instrument.devices[
-                devicename].get_variable(variablename): self.on_variable_change(dev, var, val) and False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 3:
+            raise CommandArgumentError('Command {} needs exactly three positional arguments.'.format(self.name))
+        self.devicename = str(self.args[0])
+        self.variablename = str(self.args[1])
+        self.value = self.args[2]
+        self.required_devices = [self.devicename]
+
+    def execute(self):
+        dev = self.interpreter.instrument.get_device(self.devicename)
+        assert isinstance(dev, Device)
+        dev.set_variable(self.variablename, self.value)
+        dev.refresh_variable(self.variablename)
 
     def on_variable_change(self, device, variable, newvalue):
-        if variable == self._check_for_variable:
-            self._uninstall_timeout_handler()
-            self._unrequire_device()
-            self.emit('return', newvalue)
+        if variable == self.variablename:
+            self.cleanup(newvalue)
         return False
 
 
@@ -113,17 +106,29 @@ class DevCommand(Command):
     Remarks:
         This command returns immediately.
     """
+
     name = 'devcommand'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        devicename = arglist[0]
-        commandname = arglist[1]
-        device = instrument.devices[devicename]
-        device.execute_command(commandname, *(arglist[2:]))
-        GLib.idle_add(lambda: self.emit('return', None) and False)
+    timeout = 10
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) < 2:
+            raise CommandArgumentError('Command {} needs at least two positional arguments.'.format(self.name))
+        self.devicename = str(self.args[0])
+        self.cmdname = str(self.args[1])
+        self.cmdargs = self.args[2:]
+        self.required_devices = [self.devicename]
+
+    def execute(self):
+        device = self.interpreter.instrument.get_device(self.devicename)
+        device.execute_command(self.cmdname, *(self.cmdargs))
+        self.idle_return(None)
 
 
-class ListVariable(Command):
+class ListVariables(Command):
     """List the names of all variables of a device
 
     Invocation: listvars(<device>)
@@ -136,33 +141,22 @@ class ListVariable(Command):
     """
     name = 'listvar'
 
-    timeout = 60
+    timeout = 10
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        devicename = arglist[0]
-        self._require_device(instrument, devicename)
-        self._install_timeout_handler(self.timeout)
-        device = instrument.devices[devicename]
-        self._idlehandler = GLib.idle_add(
-            lambda d=device: self._do_the_listing(device))
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} needs exactly one positional argument.'.format(self.name))
+        self.devicename = str(self.args[0])
 
-    def _do_the_listing(self, device):
-        self._uninstall_timeout_handler()
-        self._unrequire_device()
-        lis = sorted(device.list_variables())
+    def execute(self):
+        dev = self.interpreter.instrument.get_device(self.devicename)
+        assert isinstance(dev, Device)
+        lis = dev.list_variables()
         self.emit('message', ', '.join(lis))
-        self.emit('return', lis)
-
-    def on_timeout(self):
-        GLib.source_remove(self._idlehandler)
-        return Command.on_timeout(self)
-
-    def on_variable_change(self, device, variable, newvalue):
-        if variable == self._check_for_variable:
-            self._uninstall_timeout_handler()
-            self._unrequire_device()
-            self.emit('return', newvalue)
-        return False
+        self.idle_return(lis)
 
 
 class Help(Command):
@@ -178,21 +172,25 @@ class Help(Command):
     """
     name = 'help'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) > 1:
+            raise CommandArgumentError('Command {} needs at most one positional argument.'.format(self.name))
         try:
-            cmdname = arglist[0]
+            self.commandname = str(self.args[0])
         except IndexError:
-            GLib.idle_add(lambda m='Please give the name of a command as an argument. Known commands: ' +
-                                   ', '.join([cmd for cmd in sorted(interpreter.commands)]): self._idlefunc(m))
-        else:
-            GLib.idle_add(
-                lambda m='Help on command ' + cmdname + ':\n' + interpreter.commands[cmdname].__doc__: self._idlefunc(
-                    m))
+            self.commandname = None
 
-    def _idlefunc(self, msg):
+    def execute(self):
+        if self.commandname is None:
+            msg = 'Please give the name of a command as an argument. Known commands: ' + \
+                  ', '.join([cmd for cmd in sorted(self.interpreter.commands)])
+        else:
+            msg = 'Help on command ' + self.commandname + ':\n' + self.interpreter.commands[self.commandname].__doc__
         self.emit('message', msg)
-        self.emit('return', '')
-        return False
+        self.idle_return(msg)
 
 
 class What(Command):
@@ -206,13 +204,16 @@ class What(Command):
     """
     name = 'what'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        GLib.idle_add(
-            lambda m=', '.join([str(k) for k in namespace.keys()]): self._idlefunc(m))
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if self.args:
+            raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
 
-    def _idlefunc(self, msg):
-        self.emit('message', msg)
-        self.emit('return', '')
+    def execute(self):
+        self.emit('message', ', '.join(self.namespace.keys()))
+        self.idle_return(list(self.namespace.keys()))
 
 
 class Echo(Command):
@@ -227,16 +228,13 @@ class Echo(Command):
     """
     name = 'echo'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        GLib.idle_add(
-            lambda m=', '.join([repr(a) for a in arglist]): self._idlefunc(m))
-
-    def _idlefunc(self, msg):
+    def execute(self):
+        msg = ', '.join([repr(a) for a in self.args])
         self.emit('message', msg)
-        self.emit('return', '')
+        self.emit('return', self.args)
 
 
-class Print(Echo):
+class Print(Command):
     """A print command similar to that in Python.
 
     Invocation: print(<arg1>, <arg2>, ...)
@@ -249,9 +247,10 @@ class Print(Echo):
     """
     name = 'print'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        text = ' '.join([str(x) for x in arglist])
-        GLib.idle_add(lambda m=text: self._idlefunc(m))
+    def execute(self):
+        text = ' '.join([str(x) for x in self.args])
+        self.emit('message', text)
+        self.emit('return', None)
 
 
 class Set(Command):
@@ -269,12 +268,18 @@ class Set(Command):
     """
     name = 'set'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        varname = arglist[0]
-        varvalue = arglist[1]
-        namespace[varname] = varvalue
-        GLib.idle_add(lambda: self.emit('return', varvalue) and False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
+        self.varname = str(self.args[0])
+        self.value = self.args[1]
 
+    def execute(self):
+        self.namespace[self.varname] = self.value
+        self.idle_return(self.value)
 
 class Sleep(Command):
     """Sleep for a given time
@@ -289,29 +294,33 @@ class Sleep(Command):
     """
     name = 'sleep'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self._starttime = time.time()
-        self._sleeptime = float(arglist[0])
-        self._progress = GLib.timeout_add(500, self._progress)
-        self._end = GLib.timeout_add(1000 * self._sleeptime, self.on_end)
-        self.emit('message', 'Sleeping for {:.2f} seconds.'.format(self._sleeptime))
+    pulse_interval = 0.5
 
-    def _progress(self):
-        t = time.time()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
+        self.sleeptime = float(self.args[0])
+        self._sleeptimeout = None
+
+    def execute(self):
+        self._sleeptimeout = GLib.timeout_add(self.sleeptime * 1000, lambda: self.cleanup(None) and False)
+        self._starttime = time.monotonic()
+        self.emit('message', 'Sleeping for {:.2f} seconds.'.format(self.sleeptime))
+
+    def on_pulse(self):
+        spent_time = time.monotonic() - self._starttime
         self.emit('progress', 'Remaining time from sleep: {:.1f} sec.'.format(
-            (self._sleeptime - (t - self._starttime)), (t - self._starttime) / self._sleeptime))
+            (self.sleeptime - spent_time), spent_time / self.sleeptime))
         return True
 
-    def on_end(self):
-        GLib.source_remove(self._progress)
-        GLib.source_remove(self._end)
-        self.emit('return', time.time() - self._starttime)
-        return False
-
-    def kill(self):
-        self.emit('message', 'We have been rudely awoken from our gentle sleep.')
-        GLib.idle_add(self.on_end)
-
+    def cleanup(self, *args, **kwargs):
+        if self._sleeptimeout is not None:
+            GLib.source_remove(self._sleeptimeout)
+            self._sleeptimeout = None
+        super().cleanup(*args, **kwargs)
 
 class SaveConfig(Command):
     """Write the config file to disk
@@ -326,6 +335,14 @@ class SaveConfig(Command):
     """
     name = 'saveconfig'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        instrument.save_state()
-        GLib.idle_add(lambda: self.emit('return', None) and False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if self.args:
+            raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
+
+    def execute(self):
+        self.interpreter.instrument.save_state()
+        self.emit('message', 'Configuration saved.')
+        self.idle_return(None)

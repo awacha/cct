@@ -1,6 +1,4 @@
-from gi.repository import GLib
-
-from .command import Command
+from .command import Command, CommandArgumentError
 
 
 class JumpException(Exception):
@@ -36,8 +34,16 @@ class Goto(Command):
     """
     name = 'goto'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        raise GotoException(arglist[0])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
+        self.label = str(self.args[0])
+
+    def execute(self):
+        raise GotoException(self.label)
 
 
 class Gosub(Command):
@@ -53,8 +59,16 @@ class Gosub(Command):
     """
     name = 'gosub'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        raise GosubException(arglist[0])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
+        self.label = str(self.args[0])
+
+    def execute(self):
+        raise GosubException(self.label)
 
 
 class GoIf(Command):
@@ -72,9 +86,18 @@ class GoIf(Command):
     """
     name = 'goif'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        if arglist[1]:
-            raise GotoException(arglist[0])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
+        self.label = str(self.args[0])
+        self.condition = bool(self.args[1])
+
+    def execute(self):
+        if self.condition:
+            raise GotoException(self.label)
         else:
             raise PassException()
 
@@ -94,9 +117,18 @@ class GosubIf(Command):
     """
     name = 'gosubif'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        if arglist[1]:
-            raise GosubException(arglist[0])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
+        self.label = str(self.args[0])
+        self.condition = bool(self.args[1])
+
+    def execute(self):
+        if self.condition:
+            raise GosubException(self.label)
         else:
             raise PassException()
 
@@ -114,7 +146,14 @@ class Return(Command):
     """
     name = 'return'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if self.args:
+            raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
+
+    def execute(self):
         raise ReturnException()
 
 
@@ -132,9 +171,18 @@ class GoOnFlag(Command):
     """
     name = 'goonflag'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        if interpreter.is_flag(str(arglist[1])):
-            raise GotoException(arglist[0])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
+        self.label = str(self.args[0])
+        self.flag = str(self.args[1])
+
+    def execute(self):
+        if self.interpreter.is_flag(self.flag):
+            raise GotoException(self.label)
         else:
             raise PassException()
 
@@ -153,9 +201,18 @@ class GosubOnFlag(Command):
     """
     name = 'gosubonflag'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        if interpreter.is_flag(str(arglist[1])):
-            raise GosubException(arglist[0])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
+        self.label = str(self.args[0])
+        self.flag = str(self.args[1])
+
+    def execute(self):
+        if self.interpreter.is_flag(self.flag):
+            raise GosubException(self.label)
         else:
             raise PassException()
 
@@ -173,16 +230,18 @@ class ClearFlag(Command):
     """
     name = 'clearflag'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self._flag = str(arglist[0])
-        self._interpreter = interpreter
-        GLib.idle_add(self._return)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
+        self.flag = str(self.args[0])
 
-    def _return(self):
-        self._interpreter.clear_flag(self._flag)
-        self.emit('message', 'Clearing flag: {}'.format(self._flag))
-        self.emit('return', None)
-        return False
+    def execute(self):
+        self.interpreter.clear_flag(self.flag)
+        self.emit('message', 'Clearing flag: {}'.format(self.flag))
+        self.idle_return(None)
 
 
 class SetFlag(Command):
@@ -198,13 +257,15 @@ class SetFlag(Command):
     """
     name = 'setflag'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self._flag = str(arglist[0])
-        self._interpreter = interpreter
-        GLib.idle_add(self._return)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
+        self.flag = str(self.args[0])
 
-    def _return(self):
-        self._interpreter.set_flag(self._flag)
-        self.emit('message', 'Setting flag: {}'.format(self._flag))
-        self.emit('return', None)
-        return False
+    def execute(self):
+        self.interpreter.set_flag(self.flag)
+        self.emit('message', 'Setting flag: {}'.format(self.flag))
+        self.idle_return(None)

@@ -1,10 +1,8 @@
 import logging
 import time
+import traceback
 
-from gi.repository import GLib
-
-from .command import Command
-from .script import Script
+from .command import Command, CommandArgumentError, CommandError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,36 +17,64 @@ class StartStop(Command):
         <state>: 'start', 'on', True, 1 or 'stop', 'off', False, 0
     """
     name = 'circulator'
+
     timeout = 5
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        if isinstance(arglist[0], str):
-            if arglist[0].upper() in ['START', 'ON']:
-                requestedstate = True
-            elif arglist[0].upper() in ['STOP', 'OFF']:
-                requestedstate = False
+    required_devices = ['temperature']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) > 1:
+            raise CommandArgumentError(
+                'Number of arguments to command {} must be 0 or 1, got {:d}'.format(
+                    self.name, len(self.args)))
+        if self.args:
+            if isinstance(self.args[0], str):
+                if self.args[0].upper() in ['START', 'ON']:
+                    self.requested_state = True
+                elif self.args[0].upper() in ['STOP', 'OFF']:
+                    self.requested_state = False
+                else:
+                    raise CommandArgumentError('Invalid argument for command {}: {}'.format(self.name, self.args[0]))
             else:
-                raise NotImplementedError(arglist[0])
-        elif isinstance(arglist[0], bool):
-            requestedstate = arglist[0]
-        elif isinstance(arglist[0], float) or isinstance(arglist[0], int):
-            requestedstate = bool(arglist[0])
+                try:
+                    self.requested_state = bool(self.args[0])
+                except Exception as exc:
+                    raise CommandArgumentError(
+                        'Invalid argument type for command {}: {}'.format(self.name, type(self.args[0])))
         else:
-            raise NotImplementedError(arglist[0])
-        self._require_device(instrument, 'haakephoenix')
-        self._install_timeout_handler(5)
-        self._check_for_variable = '_status'
-        if requestedstate:
-            self._check_for_value = 'running'
+            self.requested_state = None
+
+    def execute(self):
+        if self.requested_state is None:
+            var = self.interpreter.instrument.get_device('temperature').get_variable('_state')
+            if var == 'running':
+                self.idle_return(True)
+            elif var == 'stopped':
+                self.idle_return(False)
+            else:
+                raise CommandError('Unexpected state: {}'.format(var))
+            return
+        if self.requested_state:
             self.emit('message', 'Starting thermocontrolling circulator.')
-            instrument.devices['haakephoenix'].execute_command('start')
+            self.interpreter.instrument.get_device('temperature').execute_command('start')
         else:
-            self._check_for_value = 'stopped'
             self.emit('message', 'Stopping thermocontrolling circulator.')
-            instrument.devices['haakephoenix'].execute_command('stop')
+            self.interpreter.instrument.get_device('temperature').execute_command('stop')
+
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == '_status' and newvalue == 'start' and self.requested_state:
+            self.cleanup(True)
+        elif variablename == '_status' and newvalue == 'stop' and not self.requested_state:
+            self.cleanup(False)
+        else:
+            pass
+        return False
 
 
-class Temperature(Script):
+class Temperature(Command):
     """Get the temperature (in °C units)
 
     Invocation: temperature()
@@ -61,10 +87,18 @@ class Temperature(Script):
 
     name = 'temperature'
 
-    script = "getvar('haakephoenix','temperature_internal')"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if self.args:
+            raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
+
+    def execute(self):
+        self.idle_return(self.interpreter.instrument.get_device('temperature').get_variable('temperature'))
 
 
-class SetTemperature(Script):
+class SetTemperature(Command):
     """Set the target temperature (in °C units)
 
     Invocation: settemp(<setpoint>)
@@ -77,7 +111,37 @@ class SetTemperature(Script):
 
     name = 'settemp'
 
-    script = "setvar('haakephoenix','setpoint', _scriptargs[0])"
+    timeout = 5
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} needs exactly one positional argument.'.format(self.name))
+        self.target_temperature = float(self.args[0])
+
+    def validate(self):
+        if (self.target_temperature > self.interpreter.instrument.get_device('temperature').get_variable('highlimit') or
+                    self.target_temperature < self.interpreter.instrument.get_device('temperature').get_variable(
+                    'lowlimit')):
+            raise CommandArgumentError('Desired temperature is outside the allowed range.')
+        return True
+
+    def execute(self):
+        self.interpreter.instrument.get_device('temperature').set_variable('setpoint', self.target_temperature)
+
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == 'setpoint':
+            if abs(newvalue - self.target_temperature) > 0.01:
+                try:
+                    raise CommandError(
+                        'Could not set target temperature. Desired: {:f}. Got: {:f}'.format(
+                            self.target_temperature, newvalue))
+                except CommandError as ce:
+                    self.emit('fail', ce, traceback.format_exc())
+            else:
+                self.cleanup(newvalue)
 
 
 class WaitTemperature(Command):
@@ -99,46 +163,46 @@ class WaitTemperature(Command):
     """
     name = "wait_temp"
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self.tolerance = float(arglist[0])
-        self.delay = float(arglist[1])
-        self._require_device(instrument, 'haakephoenix')
-        self._in_tolerance_interval = None
-        self._pulser = GLib.timeout_add(1000, self.pulser)
-        self._instrument = instrument
+    pulse = 1
 
-    def pulser(self):
-        if self._in_tolerance_interval is None:
-            self.emit('pulse', 'Waiting for temperature stability: {:.2f} °C'.format(
-                self._instrument.devices['haakephoenix'].get_variable('temperature')))
+    required_devices = ['temperature']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} needs exactly two positional arguments.'.format(self.name))
+        try:
+            self.tolerance = float(self.args[0])
+            self.delay = float(self.args[0])
+        except ValueError:
+            raise CommandArgumentError('Invalid argument to command {}'.format(self.name))
+        self.in_tolerance_interval = 0
+        self.temperature = None
+
+    def execute(self):
+        self.temperature = self.interpreter.instrument.get_device('temperature').get_variable('temperature')
+
+    def on_pulse(self):
+        if self.in_tolerance_interval == 0:
+            self.emit('pulse', 'Waiting for temperature stability: {:.2f} °C'.format(self.temperature))
         else:
-            remainingtime = (self.delay - (time.monotonic() - self._in_tolerance_interval))
-            fraction = (time.monotonic() - self._in_tolerance_interval) / self.delay
-            self.emit('progress',
-                      'Temperature stability reached ({:.2f} °C), waiting for {:.0f} seconds'.format(
-                          self._instrument.devices['haakephoenix'].get_variable('temperature'),
-                          remainingtime),
-                      fraction)
-        self.on_variable_change(self._instrument.devices['haakephoenix'], 'temperature',
-                                self._instrument.devices['haakephoenix'].get_variable('temperature'))
+            spent_time = (time.monotonic() - self.in_tolerance_interval)
+            remainingtime = (self.delay - spent_time)
+            fraction = spent_time / self.delay
+            if fraction < 1:
+                self.emit('progress',
+                          'Temperature stability reached ({:.2f} °C), waiting for {:.0f} seconds'.format(
+                              self.temperature, remainingtime), fraction)
+            else:
+                self.cleanup(self.temperature)
         return True
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'temperature':
             if abs(newvalue - device.get_variable('setpoint')) > self.tolerance:
-                self._in_tolerance_interval = None
-            elif self._in_tolerance_interval is None:
-                self._in_tolerance_interval = time.monotonic()
-            elif (time.monotonic() - self._in_tolerance_interval) > self.delay:
-                self._uninstall_pulse_handler()
-                self._unrequire_device(device.name)
-                GLib.source_remove(self._pulser)
-                self.emit('return', newvalue)
-        return False
-
-    def kill(self):
-        self._uninstall_pulse_handler()
-        self._unrequire_device()
-        GLib.source_remove(self._pulser)
-        self.emit('return', None)
+                self.in_tolerance_interval = 0
+            elif self.in_tolerance_interval == 0:
+                self.in_tolerance_interval = time.monotonic()
         return False

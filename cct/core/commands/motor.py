@@ -3,14 +3,70 @@ import traceback
 
 from gi.repository import GLib
 
-from .command import Command, CommandError
+from .command import Command, CommandError, CommandArgumentError
+from ..devices.motor import Motor
 from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Moveto(Command):
+class GeneralMove(Command):
+    name = '__abstract_move__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
+        self.motorname = str(self.args[0])
+        if self.motorname not in self.interpreter.instrument.motors:
+            raise CommandArgumentError('Motor {} unknown.'.format(self.motorname))
+        self.targetposition = float(self.args[1])
+        if (self.motorname in ['BeamStop_X', 'BeamStop_Y'] and
+                not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
+            raise CommandError('Insufficient privileges to move the beamstop')
+        if (self.motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X', 'PH3_Y'] and
+                not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_PINHOLE)):
+            raise CommandError('Insufficient privileges to move the pinholes')
+        self.required_devices = ['Motor_' + self.motorname]
+
+    def validate(self):
+        if self.name == 'moveto':
+            targetpos = self.targetposition
+        elif self.name == 'moverel':
+            mot = self.interpreter.instrument.motors[self.motorname]
+            actpos = mot.where()
+            targetpos = actpos + self.targetposition
+        else:
+            raise ValueError(self.name)
+        if not self.interpreter.instrument.motors[self.motorname].checklimits(targetpos):
+            raise CommandArgumentError('Target position for motor {} outside soft limits.'.format(self.motorname))
+        return True
+
+    def execute(self):
+        motor = self.interpreter.instrument.motors[self.motorname]
+        assert isinstance(motor, Motor)
+        if self.name == 'moveto':
+            if motor.where() == self.targetposition:
+                self.idle_return(True)
+            self.emit('message', 'Moving motor {} to {:.3f}.'.format(self.motorname, self.targetposition))
+            motor.moveto(self.targetposition)
+        elif self.name == 'moverel':
+            if self.targetposition == 0:
+                self.idle_return(True)
+            self.emit('message', 'Moving motor {} by {:.3f}.'.format(self.motorname, self.targetposition))
+            motor.moverel(self.targetposition)
+
+    def on_motor_position_change(self, motor, newpos):
+        self.emit('pulse', 'Moving motor {}: {:<8.3f}'.format(self.motorname, newpos))
+
+    def on_stop(self, motor, targetreached):
+        self.cleanup(targetreached)
+
+
+class Moveto(GeneralMove):
     """Move motor
 
     Invocation: moveto(<motorname>, <position>)
@@ -24,46 +80,8 @@ class Moveto(Command):
     """
     name = 'moveto'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        motorname = arglist[0]
-        if motorname in ['BeamStop_X', 'BeamStop_Y'] and not instrument.accounting.has_privilege(
-                PRIV_BEAMSTOP):
-            raise CommandError('Insufficient privileges to move the beamstop')
-        if motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
-                         'PH3_Y'] and not instrument.accounting.has_privilege(PRIV_PINHOLE):
-            raise CommandError('Insufficient privileges to move pinholes')
 
-        position = arglist[1]
-
-        motor = instrument.motors[motorname]
-        self._connections = [motor.connect('stop', self.on_stop, motorname),
-                             motor.connect(
-                                 'position-change', self.on_position_change, motorname),
-                             motor.connect('error', self.on_motorerror, motorname)]
-
-        if instrument.motors[motorname].where() == position:
-            GLib.idle_add(lambda m=instrument.motors[motorname], tr=True, mn=motorname: self.on_stop(m, tr, mn))
-        self.emit('message', 'Moving motor {} to {:.3f}.'.format(motorname, position))
-        instrument.motors[motorname].moveto(position)
-
-    def on_position_change(self, motor, newpos, motorname):
-        self.emit('pulse', 'Moving motor {}: {:<8.3f}'.format(motorname, newpos))
-
-    def on_stop(self, motor, targetreached, motorname):
-        try:
-            for c in self._connections:
-                motor.disconnect(c)
-            del self._connections
-        except AttributeError:
-            pass
-        self.emit('return', targetreached)
-        return False
-
-    def on_motorerror(self, motor, propname, exc, tb, motorname):
-        self.emit('fail', exc, tb)
-
-
-class Moverel(Command):
+class Moverel(GeneralMove):
     """Move motor relatively
 
     Invocation: moverel(<motorname>, <position>)
@@ -76,42 +94,6 @@ class Moverel(Command):
         None
     """
     name = 'moverel'
-
-    def execute(self, interpreter, arglist, instrument, namespace):
-        motorname = arglist[0]
-        if motorname in ['BeamStop_X', 'BeamStop_Y'] and not instrument.accounting.has_privilege(
-                PRIV_BEAMSTOP):
-            raise CommandError('Insufficient privileges to move the beamstop')
-        if motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X',
-                         'PH3_Y'] and not instrument.accounting.has_privilege(PRIV_PINHOLE):
-            raise CommandError('Insufficient privileges to move pinholes')
-        position = arglist[1]
-
-        motor = instrument.motors[motorname]
-        self._connections = [motor.connect('stop', self.on_stop, motorname),
-                             motor.connect(
-                                 'position-change', self.on_position_change, motorname),
-                             motor.connect('error', self.on_motorerror, motorname)]
-        if position == 0:
-            GLib.idle_add(lambda m=instrument.motors[motorname], tr=True, mn=motorname: self.on_stop(m, tr, mn))
-        self.emit('message', 'Moving motor {} by {:.3f}.'.format(motorname, position))
-        instrument.motors[motorname].moverel(position)
-
-    def on_position_change(self, motor, newpos, motorname):
-        self.emit('pulse', 'Moving motor {}: {:<8.3f}'.format(motorname, newpos))
-
-    def on_stop(self, motor, targetreached, motorname):
-        try:
-            for c in self._connections:
-                motor.disconnect(c)
-            del self._connections
-        except AttributeError:
-            pass
-        self.emit('return', targetreached)
-        return False
-
-    def on_motorerror(self, motor, propname, exc, tb, motorname):
-        self.emit('fail', exc, tb)
 
 
 class Where(Command):
