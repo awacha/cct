@@ -4,9 +4,9 @@ from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
 from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
 from matplotlib.figure import Figure
 from sastool.misc.basicfit import findpeak_single
+from sastool.misc.errorvalue import ErrorValue
 
 from ..core.toolwindow import ToolWindow, error_message, info_message
-from ...core.utils.errorvalue import ErrorValue
 
 
 class CapillaryMeasurement(ToolWindow):

@@ -4,7 +4,7 @@ import logging
 from gi.repository import Gtk
 
 from ..core.toolwindow import ToolWindow, question_message
-from ...core.instrument.sample import Sample, ErrorValue
+from ...core.services.samples import Sample, ErrorValue
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

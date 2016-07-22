@@ -502,3 +502,7 @@ class Pilatus(Device):
         self.refresh_variable('version')
         self.set_threshold(4024, 'highg')
         return super().do_startupdone()
+
+    def stop(self):
+        if self.is_busy():
+            self.execute_command('kill')

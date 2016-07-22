@@ -1,8 +1,6 @@
-import weakref
+import traceback
 
-from gi.repository import GLib
-
-from .command import Command, CommandError
+from .command import Command, CommandError, CommandArgumentError, CommandKilledError
 
 
 class Shutter(Command):
@@ -20,25 +18,34 @@ class Shutter(Command):
 
     timeout = 3
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self._check_for_variable = 'shutter'
-        if arglist[0] == 'close':
-            self._check_for_value = False
-        elif arglist[0] == 'open':
-            self._check_for_value = True
-        elif isinstance(arglist[0], int) or isinstance(arglist[0], bool) or isinstance(arglist[0], float):
-            self._check_for_value = (arglist[0] != 0)
+    required_devices = ['xray_source']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
+        if isinstance(self.args[0], str):
+            if self.args[0].upper() in ['OPEN']:
+                self.open_needed = True
+            elif self.args[0].upper() in ['CLOSE']:
+                self.open_needed = False
+            else:
+                raise CommandArgumentError(self.args[0])
         else:
-            raise NotImplementedError(arglist[0], type(arglist[0]))
-        self._require_device(instrument, instrument.xray_source._instancename)
-        self._install_timeout_handler(self.timeout)
-        if self._check_for_value:
+            self.open_needed = bool(self.args[0])
+
+    def execute(self):
+        if self.open_needed:
             self.emit('message', 'Opening shutter.')
         else:
             self.emit('message', 'Closing shutter.')
-        instrument.xray_source.shutter(self._check_for_value)
-        instrument.xray_source.refresh_variable('shutter')
+        self.interpreter.instrument.get_device('xray_source').shutter(self.open_needed)
 
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == 'shutter' and newvalue == self.open_needed:
+            self.idle_return(newvalue)
 
 class Xrays(Command):
     """Enable or disable X-ray generation
@@ -55,22 +62,34 @@ class Xrays(Command):
 
     timeout = 2
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self._check_for_variable = 'xrays'
-        if arglist[0] == 'off':
-            self._check_for_value = False
-        elif arglist[0] == 'on':
-            self._check_for_value = True
-        elif isinstance(arglist[0], int) or isinstance(arglist[0], bool) or isinstance(arglist[0], float):
-            self._check_for_value = bool(arglist)
-        self._require_device(instrument, instrument.xray_source._instancename)
-        self._install_timeout_handler(self.timeout)
-        instrument.xray_source.execute_command('xrays', self._check_for_value)
-        instrument.xray_source.refresh_variable('xrays')
-        if self._check_for_value:
+    required_devices = ['xray_source']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
+        if isinstance(self.args[0], str):
+            if self.args[0].upper() in ['ON']:
+                self.on_needed = True
+            elif self.args[0].upper() in ['OFF']:
+                self.on_needed = False
+            else:
+                raise CommandArgumentError(self.args[0])
+        else:
+            self.on_needed = bool(self.args[0])
+
+    def execute(self):
+        if self.on_needed:
             self.emit('message', 'Turning X-ray generator on.')
         else:
             self.emit('message', 'Turning X-ray generator off.')
+        self.interpreter.instrument.get_device('xray_source').set_xrays(self.on_needed)
+
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == 'xrays' and newvalue == self.on_needed:
+            self.idle_return(newvalue)
 
 
 class XrayFaultsReset(Command):
@@ -88,14 +107,22 @@ class XrayFaultsReset(Command):
 
     timeout = 2
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self._check_for_variable = 'faults'
-        self._check_for_value = False
-        self._require_device(instrument, instrument.xray_source._instancename)
-        self._install_timeout_handler(self.timeout)
-        instrument.xray_source.execute_command(
-            'reset_faults')
+    required_devices = ['xray_source']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if self.args:
+            raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
+
+    def execute(self):
         self.emit('Trying to reset X-ray generator fault flags.')
+        self.interpreter.instrument.get_device('xray_source').reset_faults()
+
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == 'faults' and newvalue == False:
+            self.idle_return(newvalue)
 
 
 class Xray_Power(Command):
@@ -114,36 +141,45 @@ class Xray_Power(Command):
 
     name = 'xray_power'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        xray_source = instrument.xray_source
-        self._check_for_variable = '_status'
-        self._require_device(instrument, xray_source._instancename)
-        if arglist[0] in ['down', 'off', 0, '0', '0W']:
-            self._check_for_value = 'Power off'
-            if xray_source.get_variable('_status') == 'Power off':
-                GLib.idle_add(lambda xrs=xray_source, val=self._check_for_value: self.on_variable_change(xrs, '_status',
-                                                                                                         val) and False)
-            self._install_pulse_handler('Powering off', 1)
-            self.emit('message', 'Powering off X-ray source.')
-            xray_source.execute_command('poweroff')
-        elif arglist[0] in ['standby', 'low', 9, '9', '9W']:
-            self._check_for_value = 'Low power'
-            if xray_source.get_variable('_status') == 'Low power':
-                GLib.idle_add(lambda xrs=xray_source, val=self._check_for_value: self.on_variable_change(xrs, '_status',
-                                                                                                         val) and False)
-            self._install_pulse_handler('Going to low power', 1)
-            self.emit('message', 'Putting X-ray source to standby mode.')
-            xray_source.execute_command('standby')
-        elif arglist[0] in ['full', 'high', 30, '30', '30W']:
-            self._check_for_value = 'Full power'
-            if xray_source.get_variable('_status') == 'Full power':
-                GLib.idle_add(lambda xrs=xray_source, val=self._check_for_value: self.on_variable_change(xrs, '_status',
-                                                                                                         val) and False)
-            self._install_pulse_handler('Going to full power', 1)
-            self.emit('message', 'Putting X-ray source to full-power mode.')
-            xray_source.execute_command('full_power')
-        xray_source.refresh_variable('_status')
+    required_devices = ['xray_source']
 
+    pulse_interval = 0.5
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
+        self.args[0] = str(self.args[0])
+        if self.args[0].upper() in ['DOWN', 'OFF', '0W', '0']:
+            self.command = 'poweroff'
+            self.target = 'Power off'
+        elif self.args[0].upper() in ['STANDBY', 'LOW', '9W', '9']:
+            self.command = 'standby'
+            self.target = 'Low power'
+        elif self.args[0].upper() in ['FULL', 'HIGH', '30W', '30']:
+            self.command = 'full_power'
+            self.target = 'Full power'
+        else:
+            raise CommandArgumentError(self.args[0])
+
+    def validate(self):
+        source = self.interpreter.instrument.get_device('xray_source')
+        if source.is_busy():
+            raise CommandError('Cannot set the X-ray source to {} while busy.'.format(self.target))
+        if not source.get_variable('xrays'):
+            raise CommandError('Cannot set the X-ray source to {} while X-ray generator is off.'.format(self.target))
+
+    def execute(self):
+        self.interpreter.instrument.get_device('xray_source').execute_command(self.command)
+
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == '_status' and newvalue == self.target:
+            self.idle_return(newvalue)
+
+    def on_pulse(self):
+        self.emit('pulse', 'Setting X-ray source to {}...'.format(self.target))
 
 class Warmup(Command):
     """Start the warming-up procedure of the X-ray source
@@ -156,21 +192,36 @@ class Warmup(Command):
     """
     name = 'xray_warmup'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self.xray_source = weakref.proxy(instrument.xray_source)
-        self._check_for_variable = '_status'
-        self._require_device(instrument, self.xray_source._instancename)
-        self._check_for_value = 'Power off'
-        if self.xray_source.get_variable('_status') == 'Warming up':
-            raise CommandError('Warm-up already running')
-        if self.xray_source.get_variable('_status') != 'Power off':
+    required_devices = ['xray_source']
+
+    pulse_interval = 0.5
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if self.args:
+            raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
+
+    def on_variable_change(self, device, variablename, newvalue):
+        if variablename == '_status' and newvalue == 'Power off':
+            self.idle_return(newvalue)
+
+    def validate(self):
+        if self.interpreter.instrument.get_device('xray_source').get_variable('_status') != 'Power off':
             raise CommandError('Warm-up can only be started from power off mode')
-        self._install_pulse_handler('Warming up', 1)
-        self.xray_source.execute_command('start_warmup')
-        self.xray_source.refresh_variable('_status')
+
+    def on_pulse(self):
+        self.emit('pulse', 'Warming up X-ray source...')
+
+    def execute(self):
+        self.interpreter.instrument.get_device('xray_source').execute_command('start_warmup')
         self.emit('message', 'Started warm-up procedure.')
 
     def kill(self):
-        self.xray_source.execute_command('stop_warmup')
-        self.xray_source.execute_command('poweroff')
-        self.emit('message', 'Stopped warm-up procedure-')
+        self.interpreter.instrument.get_device('xray_source').execute_command('stop_warmup')
+        self.interpreter.instrument.get_device('xray_source').execute_command('poweroff')
+        try:
+            raise CommandKilledError('Stopped warm-up procedure.')
+        except CommandKilledError as cke:
+            self.emit('fail', cke, traceback.format_exc())

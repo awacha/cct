@@ -6,10 +6,10 @@ logger.setLevel(logging.INFO)
 
 from gi.repository import GLib
 
-
-from .command import Command, CommandError, cleanup_commandline
+from .command import Command, CommandError, CommandArgumentError
 from .jump import JumpException, GotoException, GosubException, ReturnException, PassException
 from ..utils.callback import SignalFlags
+
 
 class ScriptEndException(JumpException):
     pass
@@ -22,166 +22,196 @@ class ScriptError(CommandError):
 class Script(Command):
     """Implement a script, i.e. a compound of commands.
 
-    Apart from the initialization (where the text of the script has to be given), it behaves the same way as a command
-    must: executed by `execute()`, which uses the same parameters; emits the same signals etc.
-
-    Scripts can have positional arguments in a similar way as commands can. At the start of execution, the special
-    variable _scriptargs is created in the namespace. Commands can reference them as _scriptargs[index] in their
-    argument list.
-
-    Subclasses can define an attribute '_cannot_return_yet': if such an attribute exists, the script does not emit the
-    'return' signal, but waits (in an idle loop) for this attribute to vanish. Abnormal termination (because of an
-    exception or the failure of a subcommand) does not regard this, though.
-
-    Another useful overridable method is cleanup(): this is called before emitting the 'return' signal. It can be used
-    e.g. to disconnect signal handlers.
+    This behaves the same way as a command must: initialized by the __init__()
+    method, executed by `execute()`, emits the same signals etc. The only
+    difference is that the __init__() method accepts a keyword argument:
+    "script", which is the script text. All positional arguments given in
+    'args' are available to the script in the namespace as the list
+    '_scriptargs'.
     """
 
     __signals__ = {
-        # emitted at the start of a command
+        # emitted at the start of a subcommand. The arguments are the line
+        # number and the Command instance.
         'cmd-start': (SignalFlags.RUN_FIRST, None, (int, object,)),
+        # emitted after a pause request was successfully handled.
         'paused': (SignalFlags.RUN_FIRST, None, ()),
     }
 
     script = ''  # a default value for the script
 
-    def __init__(self, script=None):
-        Command.__init__(self)
-        if script is None:
-            script = self.script
-        self._script = script.split('\n')
-
-    def execute(self, interpreter, arglist, instrument, namespace):
-        namespace['_scriptargs'] = arglist
-        try:
-            del self._pause
-        except AttributeError:
-            pass
-        try:
-            del self._kill
-        except AttributeError:
-            pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'script' in kwargs:
+            self.script = kwargs['script']
+            del kwargs['script']
+        self._scriptlist = self.script.split('\n')
+        self._pause = None
+        self._kill = None
         self._cursor = -1
         self._jumpstack = []
-        self._myinterpreter = interpreter.create_child(namespace)
+        self._myinterpreter = None
+        self._myinterpreter_connections = None
+        self.namespace['_scriptargs'] = self.args
+        self.namespace['_scriptkwargs'] = self.kwargs
+
+    def create_subinterpreter(self):
+        self._myinterpreter = self.interpreter.create_child(self.namespace)
         self._myinterpreter_connections = [
             self._myinterpreter.connect('cmd-return', self.on_cmd_return),
             self._myinterpreter.connect('cmd-fail', self.on_cmd_fail),
-            self._myinterpreter.connect('pulse', self.on_pulse),
-            self._myinterpreter.connect('progress', self.on_progress),
-            self._myinterpreter.connect('cmd-message', self.on_message)
+            self._myinterpreter.connect('pulse', self.on_cmd_pulse),
+            self._myinterpreter.connect('progress', self.on_cmd_progress),
+            self._myinterpreter.connect('cmd-message', self.on_cmd_message)
         ]
+
+    def destroy_subinterpreter(self):
+        try:
+            for c in self._myinterpreter_connections:
+                self._myinterpreter.disconnect(c)
+        except AttributeError:
+            pass
+        finally:
+            self._myinterpreter_connections = None
+            self._myinterpreter = None
+
+    def execute(self):
+        self.create_subinterpreter()
+        self._jumpstack = []
+        self._cursor = -1
+        self._pause = None
+        self._kill = False
         GLib.idle_add(self.nextcommand)
 
-    def nextcommand(self):
-        if hasattr(self, '_kill'):
-            try:
-                self.cleanup()
-            finally:
-                self.emit('return', 'Killed')
+    def nextcommand(self, retval=None):
+        # Note that we must ensure returning False, as we are usually
+        # called from either idle functions or command-return callbacks.
+        if self._kill:
+            # the previous command finished and self._kill is set. This means
+            # that the command was interrupted. It should also have sent a
+            # 'fail' signal, so we just clean up and exit.
+            self.cleanup()
+            self.emit('return', None)  # return.
             return False
-        if hasattr(self, '_pause'):
-            if not self._pause:
-                self._pause = True
-                self.emit('paused')
+        if self._failure:
+            # Whenever a subcommand fails, it sets this attribute to True.
+            # Whenever this is True, we break the execution of the script
+            # and return. The 'fail' signal has already been propagated
+            # to a higher level.
+            self.cleanup()
+            self.emit('return', None)  # return.
             return False
+        if self._pause == False:
+            # it could have been None as well, that is a different story
+            self._pause = True
+            self.emit('paused')
+            return False
+        # We have dealt with the special cases above. If execution reaches this
+        # line, our task is to start the next command.
         self._cursor += 1
         logger.debug('Executing line {:d}'.format(self._cursor))
         try:
-            commandline = self._script[self._cursor]
+            commandline = self._scriptlist[self._cursor]
         except IndexError:
-            # last command, return with the result of the last command.
-            GLib.idle_add(lambda rv=self._myinterpreter.command_namespace_locals['_']: self._try_to_return(rv))
+            # the previous was the last command, return the script with its
+            # result.
+            self.idle_return(retval)
             return False
+        # try to execute the next command, and handle jump exceptions if
+        # needed.
         try:
             cmd = self._myinterpreter.execute_command(commandline)
             self.emit('cmd-start', self._cursor, cmd)
         except ReturnException:
-            self._cursor = self._jumpstack.pop()
-            GLib.idle_add(self.nextcommand)
+            # return from a gosub.
+            try:
+                self._cursor = self._jumpstack.pop()
+            except IndexError:
+                # pop from empty list
+                try:
+                    raise ScriptError('Jump stack underflow')
+                except ScriptError as se:
+                    self.emit('fail', se, traceback.format_exc())
+                self.idle_return(None)
+            else:
+                # re-queue us
+                GLib.idle_add(self.nextcommand)
             return False
         except GotoException as ge:
-            self._cursor = self.find_label(ge.args[0])
-            GLib.idle_add(self.nextcommand)
+            # go to a label
+            try:
+                self._cursor = self.find_label(ge.args[0])
+            except ScriptError as se:
+                self.emit('fail', se, traceback.format_exc())
+                self.idle_return(None)
+            else:
+                GLib.idle_add(self.nextcommand)
             return False
         except GosubException as gse:
             self._jumpstack.append(self._cursor)
-            self._cursor = self.find_label(gse.args[0])
-            GLib.idle_add(self.nextcommand)
+            try:
+                self._cursor = self.find_label(gse.args[0])
+            except ScriptError as se:
+                self.emit('fail', se, traceback.format_exc())
+                self.idle_return(None)
+            else:
+                GLib.idle_add(self.nextcommand)
             return False
         except ScriptEndException as se:
-            GLib.idle_add(lambda returnvalue=se.args[0]: self._try_to_return(returnvalue))
+            self.idle_return(se.args[0])
             return False
         except PassException:
             # raised by a conditional goto/gosub command if the condition evaluated to False
             # jump to the next command.
-            GLib.idle_add(lambda: self.nextcommand() and False)
+            GLib.idle_add(self.nextcommand())
             return False
         except JumpException as je:
             raise NotImplementedError(je)
         except Exception as exc:
             try:
-                try:
-                    self.emit('fail', exc, traceback.format_exc())
-                finally:
-                    self.cleanup()
+                self.emit('fail', exc, traceback.format_exc())
             finally:
-                self.emit('return', None)
+                self.idle_return(None)
         return False
 
     def on_cmd_return(self, myinterpreter, cmdname, returnvalue):
-        if hasattr(self, '_failure'):
-            try:
-                self.cleanup()
-            finally:
-                self.emit('return', None)
-            del self._failure
-        else:
-            GLib.idle_add(self.nextcommand)
+        # simply queue a call to self.nextcommand(). It will handle
+        # all cases.
+        GLib.idle_add(lambda rv=returnvalue: self.nextcommand(rv))
+        return False
 
     def on_cmd_fail(self, myinterpreter, cmdname, exc, tb):
+        # set the _failure attribute to True. self.nextcommand() will then
+        # know not to start another command but exit.
         self._failure = True
         self.emit('fail', exc, tb)
+        return False
 
-    def on_pulse(self, myinterpreter, cmdname, pulsemessage):
+    def on_cmd_pulse(self, myinterpreter, cmdname, pulsemessage):
+        # pass through pulse signals
         self.emit('pulse', pulsemessage)
+        return False
 
-    def on_progress(self, myinterpreter, cmdname, progressmessage, fraction):
+    def on_cmd_progress(self, myinterpreter, cmdname, progressmessage, fraction):
+        # pass through progress signals
         self.emit('progress', progressmessage, fraction)
+        return False
 
-    def on_message(self, myinterpreter, cmdname, message):
+    def on_cmd_message(self, myinterpreter, cmdname, message):
+        # pass through 'message' signals
         self.emit('message', message)
+        return False
 
-    def cleanup(self):
-        try:
-            for c in self._myinterpreter_connections:
-                self._myinterpreter.disconnect(c)
-            del self._myinterpreter_connections
-            del self._myinterpreter
-        except AttributeError:
-            pass
+    def cleanup(self, *args, **kwargs):
+        super().cleanup(*args, **kwargs)
+        self.destroy_subinterpreter()
 
     def find_label(self, labelname):
-        for i, line in enumerate(self._script):
-            line = cleanup_commandline(line)
-            if not line:
-                continue
-            if line.split()[0].startswith('@' + labelname):
+        for i, line in enumerate(self._scriptlist):
+            if line.strip() == '@' + labelname:
                 logger.debug('Label "{}" is on line #{:d}\n'.format(labelname, i))
                 return i
         raise ScriptError('Unknown label in script: {}'.format(labelname))
-
-    def _try_to_return(self, returnvalue):
-        if hasattr(self, '_cannot_return_yet'):
-            self.emit('pulse', 'Waiting for finalization')
-            GLib.timeout_add(100, lambda rv=returnvalue: self._try_to_return(rv))
-            return False
-        else:
-            try:
-                self.cleanup()
-            finally:
-                self.emit('return', returnvalue)
-            return False
 
     def kill(self):
         self._kill = True
@@ -191,19 +221,14 @@ class Script(Command):
         self._pause = False
 
     def is_paused(self):
-        try:
-            return self._pause
-        except AttributeError:
-            return False
+        return self._pause == False  # it can be None
 
     def resume(self):
-        if not hasattr(self, '_pause'):
+        if self._pause is None:
             raise ScriptError('Cannot resume a script which has not been paused.')
         if self._pause:
-            del self._pause
-            self.nextcommand()
-        else:
-            del self._pause
+            GLib.idle_add(self.nextcommand)
+        self._pause = None
 
 
 class End(Command):
@@ -219,8 +244,16 @@ class End(Command):
     """
     name = 'end'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        if not arglist:
-            raise ScriptEndException(None)
-        else:
-            raise ScriptEndException(arglist[0])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) > 1:
+            raise CommandArgumentError('Command {} needs at most one positional argument.'.format(self.name))
+        try:
+            self.retval = self.args[0]
+        except IndexError:
+            self.retval = None
+
+    def execute(self):
+        raise ScriptEndException(self.retval)

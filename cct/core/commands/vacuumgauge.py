@@ -1,8 +1,7 @@
-from .command import Command, CommandError
-from .script import Script
+from .command import Command, CommandArgumentError
 
 
-class Vacuum(Script):
+class Vacuum(Command):
     """Get the vacuum pressure (in mbars)
 
     Invocation: vacuum()
@@ -15,8 +14,15 @@ class Vacuum(Script):
 
     name = 'vacuum'
 
-    script = "getvar('tpg201','pressure')"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if self.args:
+            raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
 
+    def execute(self):
+        self.idle_return(self.interpreter.instrument.get_device('vacuum').get_variable('pressure'))
 
 class WaitVacuum(Command):
     """Wait until the vacuum pressure becomes lower than a given limit
@@ -31,38 +37,27 @@ class WaitVacuum(Command):
 
     name = 'wait_vacuum'
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self._limit = float(arglist[0])
-        if self._limit <= 0:
-            raise CommandError('Target vacuum level must be positive')
-        self._device_connections = [instrument.devices['tpg201'].connect('variable-change', self.on_variable_change),
-                                    instrument.devices['tpg201'].connect('error', self.on_error)]
-        self._device = instrument.devices['tpg201']
-        self._install_pulse_handler(self._pulsemessage, 1)
+    pulse_interval = 0.5
+
+    required_devices = ['vacuum']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
+        self.threshold = float(self.args[0])
+        if self.threshold <= 0:
+            raise CommandArgumentError('Pressure threshold must be positive.')
+
+    def execute(self):
         self.emit('message', 'Starting wait for vacuum')
 
-    def _pulsemessage(self):
-        return 'Waiting for vacuum to get below {:.3f} mbar. Currently: {:.3f} mbar'.format(
-            self._limit, self._device.get_variable('pressure'))
-
-    def on_error(self, device, propname, exc, tb):
-        self.emit('fail', exc, tb)
-
-    def _cleanup(self):
-        try:
-            for dc in self._device_connections:
-                self._device.disconnect(dc)
-            del self._device_connections
-            del self._device
-        except AttributeError:
-            pass
-        self._uninstall_pulse_handler()
+    def on_pulse(self):
+        self.emit('pulse', 'Waiting for vacuum to get below {:.3f} mbar. Currently: {:.3f} mbar'.format(
+            self.threshold, self.interpreter.instrument.get_device('vacuum').get_variable('pressure')))
 
     def on_variable_change(self, device, variablename, newvalue):
-        if variablename == 'pressure' and newvalue < self._limit:
-            self._cleanup()
-            self.emit('return', newvalue)
-
-    def kill(self):
-        self._cleanup()
-        self.emit('return', None)
+        if variablename == 'pressure' and newvalue < self.threshold:
+            self.idle_return(newvalue)

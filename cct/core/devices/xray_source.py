@@ -195,3 +195,10 @@ class GeniX(Device):
     def reset_faults(self):
         """Try to reset faults."""
         self.execute_command('reset_faults')
+
+    def set_xrays(self, on: bool):
+        """Turn X-ray generator on or off"""
+        self.execute_command('xrays', on)
+
+    def is_busy(self):
+        return not (self.get_variable('_status') in ['Power off', 'Low power', 'Full power', 'X-rays off'])

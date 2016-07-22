@@ -6,10 +6,10 @@ from gi.repository import Gtk
 from matplotlib.widgets import Cursor
 from sastool.misc.basicfit import findpeak_single
 from sastool.misc.easylsq import nonlinear_odr
+from sastool.misc.errorvalue import ErrorValue
 from sastool.utils2d.centering import findbeam_radialpeak, findbeam_powerlaw
 
 from ..core.exposureloader import ExposureLoader
-from ...core.utils.errorvalue import ErrorValue
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

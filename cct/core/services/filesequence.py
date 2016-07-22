@@ -6,16 +6,16 @@ import os
 import pickle
 import re
 import time
-from typing import Optional, Dict
+from typing import Optional, Dict, Sequence
 
 import dateutil.parser
 import numpy as np
 from sastool.io.twodim import readcbf
+from sastool.misc.errorvalue import ErrorValue
 from scipy.io import loadmat
 
 from .service import Service, ServiceError
 from ..utils.callback import SignalFlags
-from ..utils.errorvalue import ErrorValue
 from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders, find_subfolders
 from ..utils.sasimage import SASImage
@@ -69,6 +69,7 @@ class FileSequence(Service):
         self._nextfreescan = 0
         self._nextfreefsn = {}
         self.scanfile_toc = {}
+        self._running_scan = None
         self._scanfile = os.path.join(
             self.instrument.config['path']['directories']['scan'],
             self.instrument.config['scan']['scanfile'])
@@ -96,6 +97,8 @@ class FileSequence(Service):
         The main task of this method is to write the header of the next scan
         in the scan file. This method also acquires a next scan number, which
         is returned."""
+        if self._running_scan is not None:
+            raise FileSequenceError('Cannot start scan: scan #{:d} already running.'.format(self._running_scan))
         scanidx = self.get_nextfreescan(acquire=True)
         with open(self._scanfile, 'at', encoding='utf-8') as f:
             self.scanfile_toc[self._scanfile][scanidx] = {'pos': f.tell() + 1, 'cmd': cmdline,
@@ -123,13 +126,17 @@ class FileSequence(Service):
                                       self.instrument.config['scan']['columns']) + '\n')
         logger.info('Written entry for scan {:d} into scanfile {}'.format(
             scanidx, self._scanfile))
+        self._running_scan = scanidx
         return scanidx
 
     def scan_done(self, scannumber: int):
         """Called when a scan measurement finishes.
 
         Responsible for emitting the lastscan-changed signal."""
+        if self._running_scan is None:
+            raise FileSequenceError('Cannot end scan: no scan running.')
         self._lastscan = max(self._lastscan, scannumber)
+        self._running_scan = None
         self.emit('lastscan-changed', self._lastscan)
 
     def load_scanfile_toc(self, scanfile: str) -> Dict:
@@ -502,3 +509,12 @@ class FileSequence(Service):
             self._masks[maskname] = m[
                 [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
             return self._masks[maskname]
+
+    def get_scanfile(self):
+        return self._scanfile
+
+    def write_scandataline(self, position: float, counters: Sequence[float]):
+        if self._running_scan is None:
+            raise FileSequenceError('Cannot append to scanfile: no scan running.')
+        with open(self._scanfile, 'at', encoding='utf-8') as f:
+            f.write(str(position) + '  ' + ' '.join([str(c) for c in counters]) + '\n')

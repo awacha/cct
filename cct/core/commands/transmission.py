@@ -1,16 +1,16 @@
 import logging
 
 import numpy as np
+from sastool.misc.errorvalue import ErrorValue
 
-from .script import Script, CommandError
+from .command import Command, CommandError, CommandArgumentError
 from ..instrument.privileges import PRIV_BEAMSTOP
-from ..utils.errorvalue import ErrorValue
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Transmission(Script):
+class Transmission(Command):
     """Measure the transmission of a sample
 
     Invocation: transmission(<samplename> [, <nimages> [, <countingtime [, <emptyname>]]])
@@ -58,15 +58,33 @@ class Transmission(Script):
         end()
         """
 
-    def execute(self, interpreter, arglist, instrument, namespace):
-        self._instrument = instrument
-        if not self._instrument.accounting.has_privilege(PRIV_BEAMSTOP):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 4:
+            raise CommandArgumentError('Command {} requires exactly four positional arguments.'.format(self.name))
+        self.samplenames = self.args[0]
+        if isinstance(self.samplenames, str):
+            self.samplenames = [self.samplenames]
+        self.nimages = int(self.args[1])
+        if self.nimages <= 2:
+            raise CommandArgumentError('Number of images must be larger than two.')
+        self.exptime = float(self.args[2])
+        if self.exptime < 1e-6 or self.exptime > 1e6:
+            raise CommandArgumentError('Exposure time must be between 1e-6 and 1e6 seconds.')
+        self.emptyname = str(self.args[3])
+
+    def validate(self):
+        for s in self.samplenames:
+            if s not in self.interpreter.instrument.services['samplestore']:
+                raise CommandArgumentError('Unknown sample: {}'.format(s))
+        if self.emptyname not in self.interpreter.instrument.services['samplestore']:
+            raise CommandArgumentError('Unknown empty sample: {}'.format(self.emptyname))
+        if not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP):
             raise CommandError('Insufficient privileges to move the beamstop')
 
-        if isinstance(arglist[0], str):
-            samplenames = [arglist[0]]
-        else:
-            samplenames = arglist[0]
+    def execute(self):
         if len(arglist) < 2:
             nimages = self._instrument.config['transmission']['nimages']
         else:

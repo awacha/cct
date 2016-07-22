@@ -1,7 +1,7 @@
 import numpy as np
 from sastool.misc.easylsq import nonlinear_leastsquares, nonlinear_odr
 
-from .errorvalue import ErrorValue
+from sastool.misc.errorvalue import ErrorValue
 
 
 class SASCurve(object):

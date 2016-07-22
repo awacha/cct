@@ -1,6 +1,6 @@
 import numpy as np
 
-from .errorvalue import ErrorValue
+from sastool.misc.errorvalue import ErrorValue
 
 
 def solidangle(twotheta, dtwotheta, sampletodetectordistance, dsampletodetectordistance, pixelsize):

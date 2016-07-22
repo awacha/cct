@@ -2,10 +2,10 @@ import pickle
 
 import numpy as np
 from sastool.io.twodim import readcbf
+from sastool.misc.errorvalue import ErrorValue
 from sastool.utils2d.integrate import radint_fullq_errorprop
 from scipy.io import loadmat
 
-from .errorvalue import ErrorValue
 from .pathutils import find_in_subfolders
 from .sascurve import SASCurve
 

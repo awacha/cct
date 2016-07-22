@@ -12,12 +12,12 @@ import numpy as np
 from gi.repository import GLib
 from sastool.io.twodim import readcbf
 from sastool.misc.easylsq import nonlinear_odr
+from sastool.misc.errorvalue import ErrorValue
 from scipy.io import loadmat
 
 from .service import Service, ServiceError
 from ..devices.device.message import Message
 from ..utils.callback import SignalFlags
-from ..utils.errorvalue import ErrorValue
 from ..utils.geometrycorrections import solidangle, angledependentabsorption, angledependentairtransmission
 from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders
@@ -199,7 +199,7 @@ class ExposureAnalyzer_Backend(object):
                     self._msgid += 1
                     self.outqueue.put_nowait(Message('scanpoint', self._msgid, self.name,
                                                      prefix=message['prefix'], fsn=message['fsn'],
-                                                     data=resultlist))
+                                                     counters=resultlist, position=message['position']))
 
                 else:
                     try:
@@ -341,8 +341,6 @@ class ExposureAnalyzer_Backend(object):
                                                            'Iref': dataset[:, 1], 'dIref': dataset[:, 2],
                                                            'factor.val': scalingfactor.val,
                                                            'factor.err': scalingfactor.err, 'stat': stat}
-            scalingfactor = ErrorValue(scalingfactor.val,
-                                       scalingfactor.err)  # convert from sastool's ErrorValue to ours
             self._logger.debug('Scaling factor: ' + str(scalingfactor))
             self._logger.debug('Chi2: {:f}'.format(stat['Chi2_reduced']))
             self._lastabsintref = im
@@ -427,12 +425,25 @@ class ExposureAnalyzer(Service):
         to be added to the scan dataset
     """
     __signals__ = {
+        # emitted on a failure. Arguments: prefix, fsn, exception, formatted
+        # traceback
         'error': (SignalFlags.RUN_FIRST, None, (str, int, object, str)),
-        'scanpoint': (SignalFlags.RUN_FIRST, None, (str, int, object)),
+        # emitted on a new scan point. Arguments: prefix, fsn, motor position,
+        # list of counter readings (floats)
+        'scanpoint': (SignalFlags.RUN_FIRST, None, (str, int, float, object)),
+        # emitted when data reduction is done on an image. Arguments. prefix,
+        # fsn, corrected SASImage
         'datareduction-done': (SignalFlags.RUN_FIRST, None, (str, int, object)),
-        'transmdata': (SignalFlags.RUN_FIRST, None, (str, int, object)),
+        # emitted when a part of transmission measurement is available. Arguments:
+        # prefix, fsn, samplename, what ('sample', 'empty' or 'dark') and the
+        # counter reading (float).
+        'transmdata': (SignalFlags.RUN_FIRST, None, (str, int, str, str, float)),
+        # Returned when an image is ready. Arguments: prefix, fsn, image
+        # (np.array), params (dict), mask (np.array)
         'image': (SignalFlags.RUN_FIRST, None, (str, int, object, object, object)),
+        # Emitted when idle, no jobs are pending.
         'idle': (SignalFlags.RUN_FIRST, None, ()),
+        # Emitted when telemetry data received from the backend.
         'telemetry': (SignalFlags.RUN_FIRST, None, (object,)),
     }
 
@@ -462,34 +473,35 @@ class ExposureAnalyzer(Service):
 
     def _idle_function(self):
         try:
-            prefix_fsn, what, arguments = self._queue_to_frontend.get_nowait()
-            logger.debug('what=' + str(what))
-            if what in ['image', 'scanpoint', 'error', 'transmdata']:
-                if prefix_fsn[0] in self._working:
-                    self._working[prefix_fsn[0]] -= 1
-                    if self._working[prefix_fsn[0]] < 0:
-                        raise ServiceError(
-                            'Working[{}]=={:d} less than zero!'.format(prefix_fsn[0], self._working[prefix_fsn[0]]))
+            message = self._queue_to_frontend.get_nowait()
+            assert isinstance(message, Message)
+            if message['type'] in ['image', 'scanpoint', 'error', 'transmdata']:
+                assert message['prefix'] in self._working
+                self._working[message['prefix']] -= 1
+                if self._working[message['prefix']] < 0:
+                    raise ServiceError(
+                        'Working[{}]=={:d} less than zero!'.format(
+                            message['prefix'], self._working[message['prefix']]))
             logger.debug('Exposureanalyzer working on {:d} jobs'.format(sum(self._working.values())))
         except queue.Empty:
             return True
-        if what == 'error':
+        if message['type'] == 'error':
             logger.error('Error in exposureanalyzer while treating exposure (prefix {}, fsn {:d}): {} {}'.format(
-                prefix_fsn[0], prefix_fsn[1], arguments[0], arguments[1]))
+                message['prefix'], message['fsn'], message['exception'], message['traceback']))
             self.emit(
-                'error', prefix_fsn[0], prefix_fsn[1], arguments[0], arguments[1])
-        elif what == 'scanpoint':
-            self.emit('scanpoint', prefix_fsn[0], prefix_fsn[1], arguments)
-        elif what == 'datareduction-done':
+                'error', message['prefix'], message['fsn'], message['exception'], message['traceback'])
+        elif message['type'] == 'scanpoint':
+            self.emit('scanpoint', message['prefix'], message['fsn'], message['position'], message['counters'])
+        elif message['type'] == 'datareduction-done':
             logger.debug('Emitting datareduction-done message')
-            self.emit('datareduction-done', prefix_fsn[0], prefix_fsn[1], arguments[0])
-        elif what == 'transmdata':
-            self.emit('transmdata', prefix_fsn[0], prefix_fsn[1], arguments)
-        elif what == 'image':
-            self.emit('image', prefix_fsn[0], prefix_fsn[1], arguments[0], arguments[1], arguments[2])
-        elif what == 'telemetry':
+            self.emit('datareduction-done', message['prefix'], message['fsn'], arguments[0])
+        elif message['type'] == 'transmdata':
+            self.emit('transmdata', message['prefix'], message['fsn'], arguments)
+        elif message['type'] == 'image':
+            self.emit('image', message['prefix'], message['fsn'], arguments[0], arguments[1], arguments[2])
+        elif message['type'] == 'telemetry':
             self.emit('telemetry', arguments)
-        elif what == 'log':
+        elif message['type'] == 'log':
             logger.handle(arguments)
         if all([self._working[k] <= 0 for k in self._working]):
             self.emit('idle')
@@ -519,3 +531,7 @@ class ExposureAnalyzer(Service):
     def send_to_backend(self, msgtype, **kwargs):
         self._msgid += 1
         self._queue_to_backend.put_nowait(Message(msgtype, self._msgid, 'exposureanalyzer_frontend', **kwargs))
+
+    def do_scanpoint(self, prefix, fsn, position, counters):
+        self.instrument.services['filesequence'].write_scandataline(position, counters)
+        return False
