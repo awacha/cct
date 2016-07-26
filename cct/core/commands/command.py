@@ -1,5 +1,6 @@
 import traceback
 import weakref
+from typing import Dict
 
 from gi.repository import GLib
 
@@ -190,6 +191,24 @@ class Command(Callbacks):
         self._timeout_handler = None
         self._pulse_handler = None
 
+    @property
+    def instrument(self):
+        return self.interpreter.instrument
+
+    @property
+    def services(self):
+        return self.interpreter.instrument.services
+
+    @property
+    def config(self) -> Dict:
+        return self.interpreter.instrument.config
+
+    def get_device(self, name: str):
+        return self.interpreter.instrument.get_device(name)
+
+    def get_motor(self, motorname: str) -> Motor:
+        return self.interpreter.instrument.motors[motorname]
+
     def validate(self):
         """Check the validity of self.args and self.kwargs.
 
@@ -252,7 +271,7 @@ class Command(Callbacks):
 
     def _connect_devices(self):
         for d in self.required_devices:
-            dev = self.interpreter.instrument.devices[d]
+            dev = self.get_device(d)
             if isinstance(dev, Motor):
                 self._device_connections[d] = [dev.connect('variable-change', self.on_variable_change),
                                                dev.connect('error', self.on_error),
@@ -265,7 +284,7 @@ class Command(Callbacks):
 
     def _disconnect_devices(self):
         for d in list(self._device_connections.keys()):
-            dev = self.interpreter.instrument.devices[d]
+            dev = self.get_device(d)
             for c in self._device_connections[d]:
                 dev.disconnect(c)
             del self._device_connections[d]

@@ -22,7 +22,7 @@ class Vacuum(Command):
             raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
 
     def execute(self):
-        self.idle_return(self.interpreter.instrument.get_device('vacuum').get_variable('pressure'))
+        self.idle_return(self.get_device('vacuum').get_variable('pressure'))
 
 class WaitVacuum(Command):
     """Wait until the vacuum pressure becomes lower than a given limit
@@ -56,7 +56,7 @@ class WaitVacuum(Command):
 
     def on_pulse(self):
         self.emit('pulse', 'Waiting for vacuum to get below {:.3f} mbar. Currently: {:.3f} mbar'.format(
-            self.threshold, self.interpreter.instrument.get_device('vacuum').get_variable('pressure')))
+            self.threshold, self.get_device('vacuum').get_variable('pressure')))
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'pressure' and newvalue < self.threshold:

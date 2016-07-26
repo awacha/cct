@@ -4,38 +4,11 @@ import weakref
 import pkg_resources
 from gi.repository import Gtk, GObject
 
+from .dialogs import error_message
 from ...core.instrument.privileges import PRIV_LAYMAN
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-def error_message(parentwindow, message, reason=None):
-    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL|Gtk.DialogFlags.DESTROY_WITH_PARENT|Gtk.DialogFlags.USE_HEADER_BAR, type=Gtk.MessageType.INFO,
-                         buttons=Gtk.ButtonsType.OK, message_format=message)
-    if reason is not None:
-        md.format_secondary_text('Reason: '+reason)
-    result=md.run()
-    md.destroy()
-    return result
-
-def question_message(parentwindow, question, detail=None):
-    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL|Gtk.DialogFlags.DESTROY_WITH_PARENT|Gtk.DialogFlags.USE_HEADER_BAR, type=Gtk.MessageType.QUESTION,
-                         buttons=Gtk.ButtonsType.YES_NO, message_format=question)
-    if detail is not None:
-        md.format_secondary_text(detail)
-    result=md.run()
-    md.destroy()
-    return result==Gtk.ResponseType.YES
-
-def info_message(parentwindow, info, detail=None):
-    md=Gtk.MessageDialog(parent=parentwindow, flags=Gtk.DialogFlags.MODAL|Gtk.DialogFlags.DESTROY_WITH_PARENT|Gtk.DialogFlags.USE_HEADER_BAR, type=Gtk.MessageType.INFO,
-                         buttons=Gtk.ButtonsType.OK, message_format=info)
-    if detail is not None:
-        md.format_secondary_text(detail)
-    result=md.run()
-    md.destroy()
-    return result
 
 
 class ToolWindow(GObject.GObject):
@@ -67,10 +40,10 @@ class ToolWindow(GObject.GObject):
             raise
         self._builder.connect_signals(self)
         self._window.foreach(lambda x: x.show_all())
-        self._instrument.accounting.connect('privlevel-changed', self.on_privlevel_changed)
+        self._instrument.services['accounting'].connect('privlevel-changed', self.on_privlevel_changed)
 
     def on_privlevel_changed(self, accounting, newprivlevel):
-        if not self._instrument.accounting.has_privilege(self._privlevel):
+        if not self._instrument.services['accounting'].has_privilege(self._privlevel):
             if self._inhibit_close_reason is not None:
                 # we cannot close, make us insensitive then
                 self._window.set_sensitive(False)
@@ -137,7 +110,7 @@ class ToolWindow(GObject.GObject):
 
     def on_map(self, window):
         """This function should connect all signal handlers to devices, as well as do an update to the GUI."""
-        if not self._instrument.accounting.has_privilege(self._privlevel):
+        if not self._instrument.services['accounting'].has_privilege(self._privlevel):
             error_message(self._window, 'Insufficient privilege level to open this tool')
             self._window.hide()
             return True

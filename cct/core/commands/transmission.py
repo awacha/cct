@@ -1,9 +1,11 @@
+import datetime
 import logging
+import time
 
 import numpy as np
 from sastool.misc.errorvalue import ErrorValue
 
-from .command import Command, CommandError, CommandArgumentError
+from .command import Command, CommandError, CommandArgumentError, CommandTimeoutError
 from ..instrument.privileges import PRIV_BEAMSTOP
 
 logger = logging.getLogger(__name__)
@@ -24,6 +26,11 @@ class Transmission(Command):
 
     """
     name = 'transmission'
+
+    pulse_interval = 0.5
+
+    required_devices = ['xray_source', 'pilatus', 'Motor_BeamStop_X', 'Motor_BeamStop_Y', 'Motor_Sample_X',
+                        'Motor_Sample_Y']
 
     script = """
         #initialization of variables
@@ -74,84 +81,194 @@ class Transmission(Command):
         if self.exptime < 1e-6 or self.exptime > 1e6:
             raise CommandArgumentError('Exposure time must be between 1e-6 and 1e6 seconds.')
         self.emptyname = str(self.args[3])
+        self.intensities = {}
+        self.fsns_currently_exposed = []
+        self.exposurestartdate = None
+        self.current_sample = None
+        self.what_are_we_doing = 'Initializing...'
 
     def validate(self):
         for s in self.samplenames:
-            if s not in self.interpreter.instrument.services['samplestore']:
+            if s not in self.services['samplestore']:
                 raise CommandArgumentError('Unknown sample: {}'.format(s))
-        if self.emptyname not in self.interpreter.instrument.services['samplestore']:
+        if self.emptyname not in self.services['samplestore']:
             raise CommandArgumentError('Unknown empty sample: {}'.format(self.emptyname))
-        if not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP):
+        if not self.services['accounting'].has_privilege(PRIV_BEAMSTOP):
             raise CommandError('Insufficient privileges to move the beamstop')
 
+    def on_pulse(self):
+        if not self.intensities:
+            self.emit('pulse', self.what_are_we_doing)
+
     def execute(self):
-        if len(arglist) < 2:
-            nimages = self._instrument.config['transmission']['nimages']
-        else:
-            nimages = int(arglist[1])
-        if nimages <= 2:
-            raise CommandError('Number of images must be larger than 2 to allow for uncertainty approximation')
+        self._expanalyzerconnection = [self.services['exposureanalyzer'].connect(
+            'transmdata', self.on_transmdata),
+            self.services['exposureanalyzer'].connect(
+                'error', lambda ea, prefix, fsn, exc, tb: self.on_error(
+                    ea, self.services['filesequence'].exposurefileformat(
+                        prefix, fsn), exc, tb))]
+        self.emit('message', 'Starting transmission measurement of {:d} sample(s).'.format(len(self.samplenames)))
+        # initialize the system:
+        # 1) close shutter
+        # 2) X-ray source to low power
+        # 3) beamstop out
+        # 4) initialize detector: nimages, imgpath, exptime, expperiod
+        self.get_device('xray_source').shutter(False)
+        self.get_device('xray_source').set_power('low')
 
-        if len(arglist) < 3:
-            exptime = self._instrument.config['transmission']['exptime']
-        else:
-            exptime = float(arglist[2])
-        if nimages <= 0:
-            raise CommandError('Exposure time must be positive')
+    def on_variable_change(self, device, variablename, newvalue):
+        if device.name == self.get_device('xray_source').name:
+            if variablename == '_status' and newvalue == 'Low power':
+                # move beamstop out
+                self.get_motor('BeamStop_X').moveto(
+                    self.config['beamstop']['out'][0]
+                )
+            elif variablename == 'shutter' and newvalue == True:
+                # start exposure.
+                if self.what_are_we_doing == 'Moving empty sample into the beam.':
+                    self.what_are_we_doing = 'Exposing empty beam for sample {}'.format(self.current_sample)
+                else:
+                    self.what_are_we_doing = 'Exposing sample {}'.format(self.current_sample)
+                self.start_exposure()
+            elif variablename == 'shutter' and newvalue == False:
+                # Shutter has been closed after an exposure. Try to load all exposure files:
+                t = time.monotonic()
+                prefix = self.config['path']['prefixes']['tra']
+                while not all([self.services['filesequence'].is_cbf_ready(
+                        self.services['filesequence'].exposurefileformat(
+                            prefix, f)) for f in self.fsns_currently_exposed]):
+                    if time.monotonic() - t > 5:
+                        raise CommandTimeoutError('Timeout on waiting for exposure files.')
+                what = [w for w in ['dark', 'empty', 'sample'] if w not in self.intensities[self.current_sample]][0]
 
-        if len(arglist) < 4:
-            emptyname = self._instrument.config['transmission']['empty_sample']
-        else:
-            emptyname = arglist[3]
+                for i, f in enumerate(self.fsns_currently_exposed):
+                    self.services['filesequence'].new_exposure(
+                        f, self.services['filesequence'].exposurefileformat(
+                            prefix, f),
+                        prefix, self.exposurestartdate + datetime.timedelta(0, (self.exptime + 0.003) * i),
+                        what=what, sample=self.current_sample)
+                # we expect transmdata signals from the exposureanalyzer service. However, we can
+                # start exposing the next part.
+                if what == 'dark':
+                    # We will measure empty next. Move the sample there.
+                    self.what_are_we_doing = 'Moving empty sample into the beam.'
+                    self.get_motor('Sample_X').moveto(
+                        self.services['samplestore'].get_sample(self.emptyname).positionx.val
+                    )
+                elif what == 'empty':
+                    # We measure the sample next. Move the sample to the beam.
+                    self.what_are_we_doing = 'Moving sample {} into the beam.'.format(self.current_sample)
+                    self.get_motor('Sample_X').moveto(
+                        self.services['samplestore'].get_sample(self.current_sample).positionx.val
+                    )
+                else:
+                    assert what == 'sample'
+                    # we have finished this sample. Go to the next one.
+                    self.next_sample()
+        elif device.name == self.get_device('detector').name:
+            if variablename == 'imgpath':
+                # detector initialization finished. Start first sample measurement.
+                self.next_sample()
+            elif variablename == '_status' and newvalue == 'exposing multi':
+                self.exposurestartdate = datetime.datetime.now()
+            elif variablename == '_status' and newvalue == 'idle':
+                # exposure finished. Close the shutter.
+                self.get_device('xray_source').shutter(False)
 
-        self._instrument_connections = [
-            instrument.exposureanalyzer.connect('transmdata', self.on_transmdata),
-        ]
-        self._intensities = {}
-        self._instrument = instrument
-        self._cannot_return_yet = True
-        self._nsamples = len(samplenames)
-        self.emit('message', 'Starting transmission measurement of {:d} sample(s).'.format(self._nsamples))
-        Script.execute(self, interpreter, (samplenames, nimages, exptime, emptyname), instrument, namespace)
-
-    def on_transmdata(self, exposureanalyzer, prefix, fsn, data):
-        logger.debug('Transmission data received: {}, {:d}, {}'.format(prefix, fsn, data))
-        samplename, what, nimages, I = data
-        if samplename not in self._intensities:
-            self._intensities[samplename] = {'dark': [], 'empty': [], 'sample': []}
-
-        self._intensities[samplename][what].append(I)
-        if len(self._intensities[samplename][what]) == nimages:
-            self._intensities[samplename][what] = ErrorValue(
-                np.mean(self._intensities[samplename][what]),
-                np.std(self._intensities[samplename][what])
-            )
-            self.emit('message', 'I_{} for sample {} is: {}'.format(
-                what, samplename, self._intensities[samplename][what].tostring()))
-            self.emit('detail', (what, samplename, self._intensities[samplename][what]))
-            if what == 'sample':
-                transm = ((self._intensities[samplename]['sample'] -
-                           self._intensities[samplename]['dark']) /
-                          (self._intensities[samplename]['empty'] -
-                           self._intensities[samplename]['dark']))
-                sam = self._instrument.samplestore.get_sample(samplename)
-                sam.transmission = transm
-                self._instrument.samplestore.set_sample(sam.title, sam)
-                self.emit('message',
-                          'Transmission value {} has been saved for sample {}.'.format(transm.tostring(), sam.title))
-                self.emit('detail', ('transmission', samplename, transm))
-                if self._nsamples == len(self._intensities):
-                    del self._cannot_return_yet
-
-    def cleanup(self):
-        logger.debug('Cleaning up transmission command.')
+    def next_sample(self):
         try:
+            self.current_sample = [s for s in self.samplenames if s not in self.intensities][0]
+        except IndexError:
+            # we are ready with all samples: do nothing..
+            return
+        self.intensities[self.current_sample] = {}
+        # Commence dark exposure. The X-ray shutter is closed: this is good for us.
+        self.what_are_we_doing = 'Exposing dark for sample {}'.format(self.current_sample)
+        self.start_exposure()
 
-            for c in self._instrument_connections:
-                self._instrument.exposureanalyzer.disconnect(c)
-                logger.debug('Disconnected a handler from exposureanalyzer')
-            del self._instrument_connections
-        except AttributeError:
-            pass
-        logger.debug('Calling Script.cleanup()')
-        return Script.cleanup(self)
+    def start_exposure(self):
+        self.fsns_currently_exposed = self.services['filesequence'].get_nextfreefsns(
+            self.config['path']['prefixes']['tra'],
+            self.nimages)
+        self.get_device('detector').expose(
+            self.services['filesequence'].exposurefileformat(
+                self.config['path']['prefixes']['tra'],
+                self.fsns_currently_exposed[0]
+            )
+        )
+
+    def on_motor_stop(self, motor, targetreached):
+        if not targetreached:
+            self.emit('fail', 'Positioning error on motor {}'.format(motor.name))
+            self.idle_return(None)
+        if (motor.name == 'BeamStop_X' and abs(
+                    motor.where() - self.config['beamstop']['out'][0]) < 0.001):
+            # Beamstop X is out, move Beamstop Y to out as well.
+            self.get_motor('BeamStop_Y').moveto(
+                self.config['beamstop']['out'][1]
+            )
+        elif (motor.name == 'BeamStop_Y' and abs(
+                    motor.where() - self.config['beamstop']['out'][1]) < 0.001):
+            # Beamstop Y is out, we can initialize the detector.
+            self.get_device('pilatus').set_variable('exptime', self.exptime)
+            self.get_device('pilatus').set_variable('expperiod', self.exptime + 0.003)
+            self.get_device('pilatus').set_variable(
+                'imgpath', self.config['path']['directories']['images_detector'][0] + '/' +
+                           self.config['path']['prefixes']['tra'])
+        elif (motor.name == 'BeamStop_X' and abs(
+                    motor.where() - self.config['beamstop']['in'][0]) < 0.001):
+            # Beamstop X is in, move Beamstop Y in as well.
+            self.get_motor('BeamStop_Y').moveto(
+                self.config['beamstop']['in'][1]
+            )
+        elif (motor.name == 'BeamStop_Y' and abs(
+                    motor.where() - self.config['beamstop']['in'][1]) < 0.001):
+            # Beamstop Y is in, finish the command.
+            self.idle_return(None)
+        elif (motor.name == 'Sample_X'):
+            if self.what_are_we_doing == 'Moving empty sample into the beam.':
+                self.get_motor('Sample_Y').moveto(
+                    self.services['samplestore'].get_sample(self.emptyname).positiony.val)
+            else:
+                # we have been moving the sample into the beam
+                self.get_motor('Sample_Y').moveto(
+                    self.services['samplestore'].get_sample(self.current_sample).positiony.val)
+        elif (motor.name == 'Sample_Y'):
+            # open shutter
+            self.get_device('xray_source').shutter(True)
+
+    def on_transmdata(self, exposureanalyzer, prefix, fsn, samplename, what, counter):
+        if what not in self.intensities[samplename]:
+            self.intensities[samplename][what] = []
+        assert isinstance(self.intensities[samplename][what], list)
+        self.intensities[samplename][what].append(counter)
+        if len(self.intensities[samplename][what]) < self.nimages:
+            return False
+        self.intensities[samplename][what] = ErrorValue(np.mean(self.intensities[samplename][what]),
+                                                        np.std(self.intensities[samplename][what]))
+        self.emit('message', 'I_{} for sample {} is: {}'.format(
+            what, samplename, self.intensities[samplename][what].tostring()))
+        self.emit('detail', (what, samplename, self.intensities[samplename][what]))
+        if what == 'sample':
+            transm = ((self.intensities[samplename]['sample'] -
+                       self.intensities[samplename]['dark']) /
+                      (self.intensities[samplename]['empty'] -
+                       self.intensities[samplename]['dark']))
+            sam = self.services['samplestore'].get_sample(samplename)
+            sam.transmission = transm
+            self.services['samplestore'].set_sample(sam.title, sam)
+            self.emit('message',
+                      'Transmission value {} has been saved for sample {}.'.format(transm.tostring(), sam.title))
+            self.emit('detail', ('transmission', samplename, transm))
+            if len(self.samplenames) == len(self.intensities):
+                # we are finished. Move the beamstop back in the beam.
+                self.get_motor('BeamStop_X').moveto(
+                    self.config['beamstop']['in'][0]
+                )
+        return False
+
+    def cleanup(self, *args, **kwargs):
+        for c in self._expanalyzerconnection:
+            self.services['exposureanalyzer'].disconnect(c)
+        self._expanalyzerconnection = []
+        super().cleanup(*args, **kwargs)

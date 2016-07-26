@@ -182,10 +182,10 @@ class Calibration(ToolWindow):
                 raise NotImplementedError(curvetype)
             self._builder.get_object('uncalval_adjustment').set_value(pos.val)
             self._builder.get_object('uncalerr_adjustment').set_value(pos.err)
-            self._plot1d._axes.plot(x_, y_, 'r-')
-            self._plot1d._axes.text(pos.val, ampl.val + baseline.val, pos.tostring(plusminus=' \u00b1 '), ha='center',
-                                    va='bottom')
-            self._plot1d._canvas.draw()
+            self._plot1d.axes.plot(x_, y_, 'r-')
+            self._plot1d.axes.text(pos.val, ampl.val + baseline.val, pos.tostring(plusminus=' \u00b1 '), ha='center',
+                                   va='bottom')
+            self._plot1d.canvas.draw()
         except Exception as exc:
             error_message(self._window, 'Error while fitting', str(exc) + traceback.format_exc())
 

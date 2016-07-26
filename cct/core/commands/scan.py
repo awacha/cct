@@ -35,13 +35,15 @@ class Scan(Command):
             raise CommandArgumentError('Command {} needs exactly six positional arguments.'.format(self.name))
 
         self.motorname = self.args[0]
-        if self.motorname not in self.interpreter.instrument.motors:
+        try:
+            self.get_motor(self.motorname)
+        except KeyError:
             raise CommandArgumentError('Unknown motor: {}'.format(self.motorname))
         if (self.motorname in ['BeamStop_X', 'BeamStop_Y'] and
-                not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
+                not self.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
             raise CommandError('Insufficient privileges to move the beamstop')
         if (self.motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X', 'PH3_Y'] and
-                not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_PINHOLE)):
+                not self.services['accounting'].has_privilege(PRIV_PINHOLE)):
             raise CommandError('Insufficient privileges to move the pinholes')
         self.start = float(self.args[1])
         self.end = float(self.args[2])
@@ -56,7 +58,7 @@ class Scan(Command):
         self.scanfsn = None
         self.motorpos = None
         self.required_devices = ['pilatus', 'Motor_' + self.motorname]
-        self.prefix = self.interpreter.instrument.config['path']['prefixes']['scn']
+        self.prefix = self.config['path']['prefixes']['scn']
         self.fsn_being_exposed = None
         self.file_being_exposed = None
         self.exposure_startdate = None
@@ -64,7 +66,7 @@ class Scan(Command):
         self.killed = None
 
     def validate(self):
-        motor = self.interpreter.instrument.motors[self.motorname]
+        motor = self.get_motor(self.motorname)
         if not motor.checklimits(self.start):
             raise CommandArgumentError(
                 'Start position is outside the software limits for motor {}'.format(self.motorname))
@@ -78,7 +80,7 @@ class Scan(Command):
             return False
         if device.name == 'pilatus' and variablename == '_status' and newvalue == 'idle':
             # exposure ready. Submit it to exposureanalyzer.
-            self.interpreter.instrument.services['filesequence'].new_exposure(
+            self.services['filesequence'].new_exposure(
                 self.fsn_being_exposed, self.file_being_exposed, self.prefix, self.exposure_startdate,
                 position=self.motorpos, scanfsn=self.scanfsn)
             # don't wait for exposureanalyzer, move to the next point
@@ -87,7 +89,7 @@ class Scan(Command):
             if self.idx < self.npoints:
                 nextpos = self.start + (self.end - self.start) / (self.npoints - 1) * self.idx
                 self.emit('message', 'Moving motor {} to {:.3f}'.format(self.motorname, nextpos))
-                self.interpreter.instrument.motors[self.motorname].moveto(nextpos)
+                self.get_motor(self.motorname).moveto(nextpos)
             else:
                 # Otherwise this was the last point. We wait for exposureanalyzer to finish all its jobs.
                 # We will test that case in self.on_scanpoint()
@@ -97,7 +99,7 @@ class Scan(Command):
     def on_scanpoint(self, exposureanalyzer, prefix, fsn, pos, counters):
         if self.idx >= self.npoints:
             # the last scan point has been received.
-            self.interpreter.instrument.services['filesequence'].scan_done(self.scanfsn)
+            self.services['filesequence'].scan_done(self.scanfsn)
             self.emit('message', 'Scan #{:d} finished.'.format(self.scanfsn))
             self.idle_return(self.scanfsn)
         return False
@@ -116,11 +118,11 @@ class Scan(Command):
             return False
         self.motorpos = motor.where()
         # otherwise start the exposure
-        self.fsn_being_exposed = self.interpreter.instrument.services['filesequence'].get_nextfreefsn(self.prefix)
-        self.file_being_exposed = self.interpreter.instrument.services['filesequence'].exposurefileformat(
+        self.fsn_being_exposed = self.services['filesequence'].get_nextfreefsn(self.prefix)
+        self.file_being_exposed = self.services['filesequence'].exposurefileformat(
             self.prefix, self.fsn_being_exposed)
         self.exposure_startdate = datetime.datetime.now()
-        self.interpreter.instrument.get_device('pilatus').expose(self.file_being_exposed)
+        self.get_device('pilatus').expose(self.file_being_exposed)
 
     def execute(self):
         self.idx = 0
@@ -130,31 +132,31 @@ class Scan(Command):
         except KeyError:
             cmdline = '{}("{}", {:f}, {:f}, {:d}, {:f}, "{}")'.format(
                 self.name, self.motorname, self.start, self.end, self.npoints, self.exptime, self.comment)
-        self.scanfsn = self.interpreter.instrument.filesequence.new_scan(
+        self.scanfsn = self.services['filesequence'].new_scan(
             cmdline, self.comment, self.exptime, self.npoints, self.motorname)
-        self._ea_connection = self.interpreter.instrument.services['exposureanalyzer'].connect('scanpoint',
-                                                                                               self.on_scanpoint)
+        self._ea_connection = self.services['exposureanalyzer'].connect('scanpoint',
+                                                                        self.on_scanpoint)
 
         self.emit('message', 'Moving motor {} to start position ({:.3f})'.format(self.motorname, self.start))
-        self.interpreter.instrument.motors[self.motorname].moveto(self.start)
-        self.interpreter.instrument.get_device('pilatus').set_variable('exptime', self.exptime)
-        self.interpreter.instrument.get_device('pilatus').set_variable('nimages', 1)
-        self.interpreter.instrument.get_device('pilatus').set_variable(
+        self.get_motor(self.motorname).moveto(self.start)
+        self.get_device('pilatus').set_variable('exptime', self.exptime)
+        self.get_device('pilatus').set_variable('nimages', 1)
+        self.get_device('pilatus').set_variable(
             'imgpath',
-            self.interpreter.instrument.config['path']['directories']['images_detector'][0] + '/' +
-            self.interpreter.instrument.config['path']['prefixes']['scn'])
+            self.config['path']['directories']['images_detector'][0] + '/' +
+            self.config['path']['prefixes']['scn'])
         self.emit('message', 'Scan #{:d} started.'.format(self.scanfsn))
 
     def cleanup(self, *args, **kwargs):
         super().cleanup(*args, **kwargs)
         if self._ea_connection is not None:
-            self.interpreter.instrument.services['exposureanalyzer'].disconnect(self._ea_connection)
+            self.services['exposureanalyzer'].disconnect(self._ea_connection)
             self._ea_connection = None
 
     def kill(self):
         self.killed = True
-        self.interpreter.instrument.get_device('pilatus').stop()
-        self.interpreter.instrument.motors[self.motorname].stop()
+        self.get_device('pilatus').stop()
+        self.get_motor(self.motorname).stop()
 
     def die_on_kill(self):
         try:
@@ -189,13 +191,15 @@ class ScanRel(Scan):
             raise CommandArgumentError('Command {} needs exactly five positional arguments.'.format(self.name))
 
         self.motorname = self.args[0]
-        if self.motorname not in self.interpreter.instrument.motors:
+        try:
+            self.get_motor(self.motorname)
+        except KeyError:
             raise CommandArgumentError('Unknown motor: {}'.format(self.motorname))
         if (self.motorname in ['BeamStop_X', 'BeamStop_Y'] and
-                not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
+                not self.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
             raise CommandError('Insufficient privileges to move the beamstop')
         if (self.motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X', 'PH3_Y'] and
-                not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_PINHOLE)):
+                not self.services['accounting'].has_privilege(PRIV_PINHOLE)):
             raise CommandError('Insufficient privileges to move the pinholes')
         self.halfwidth = float(self.args[1])
         self.npoints = float(self.args[2])
@@ -209,7 +213,7 @@ class ScanRel(Scan):
         self.scanfsn = None
         self.motorpos = None
         self.required_devices = ['pilatus', 'Motor_' + self.motorname]
-        self.prefix = self.interpreter.instrument.config['path']['prefixes']['scn']
+        self.prefix = self.config['path']['prefixes']['scn']
         self.fsn_being_exposed = None
         self.file_being_exposed = None
         self.exposure_startdate = None
@@ -217,7 +221,7 @@ class ScanRel(Scan):
         self.killed = None
 
     def validate(self):
-        pos = self.interpreter.instrument.motors[self.motorname].where()
+        pos = self.get_motor(self.motorname).where()
         self.start = pos - self.halfwidth
         self.end = pos + self.halfwidth
         super().validate()

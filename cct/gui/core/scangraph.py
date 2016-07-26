@@ -168,8 +168,9 @@ class ScanGraph(object):
                 del self._in_scalechanged
         if self._builder.get_object('show2d_checkbutton').get_active():
             fsn = int(self._data['FSN'][self._cursorindex])
-            data=self._instrument.filesequence.load_cbf(self._instrument.config['path']['prefixes']['scn'],fsn)
-            mask=self._instrument.filesequence.get_mask(self._instrument.config['scan']['mask_total'])
+            data = self._instrument.services['filesequence'].load_cbf(
+                self._instrument.config['path']['prefixes']['scn'], fsn)
+            mask = self._instrument.services['filesequence'].get_mask(self._instrument.config['scan']['mask_total'])
             piw=PlotImageWindow.get_latest_window()
             piw.set_distance(self._instrument.config['geometry']['dist_sample_det'])
             piw.set_wavelength(self._instrument.config['geometry']['wavelength'])

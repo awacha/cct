@@ -41,7 +41,7 @@ class Shutter(Command):
             self.emit('message', 'Opening shutter.')
         else:
             self.emit('message', 'Closing shutter.')
-        self.interpreter.instrument.get_device('xray_source').shutter(self.open_needed)
+        self.get_device('xray_source').shutter(self.open_needed)
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'shutter' and newvalue == self.open_needed:
@@ -85,7 +85,7 @@ class Xrays(Command):
             self.emit('message', 'Turning X-ray generator on.')
         else:
             self.emit('message', 'Turning X-ray generator off.')
-        self.interpreter.instrument.get_device('xray_source').set_xrays(self.on_needed)
+        self.get_device('xray_source').set_xrays(self.on_needed)
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'xrays' and newvalue == self.on_needed:
@@ -118,7 +118,7 @@ class XrayFaultsReset(Command):
 
     def execute(self):
         self.emit('Trying to reset X-ray generator fault flags.')
-        self.interpreter.instrument.get_device('xray_source').reset_faults()
+        self.get_device('xray_source').reset_faults()
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'faults' and newvalue == False:
@@ -165,14 +165,14 @@ class Xray_Power(Command):
             raise CommandArgumentError(self.args[0])
 
     def validate(self):
-        source = self.interpreter.instrument.get_device('xray_source')
+        source = self.get_device('xray_source')
         if source.is_busy():
             raise CommandError('Cannot set the X-ray source to {} while busy.'.format(self.target))
         if not source.get_variable('xrays'):
             raise CommandError('Cannot set the X-ray source to {} while X-ray generator is off.'.format(self.target))
 
     def execute(self):
-        self.interpreter.instrument.get_device('xray_source').execute_command(self.command)
+        self.get_device('xray_source').execute_command(self.command)
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == '_status' and newvalue == self.target:
@@ -208,19 +208,19 @@ class Warmup(Command):
             self.idle_return(newvalue)
 
     def validate(self):
-        if self.interpreter.instrument.get_device('xray_source').get_variable('_status') != 'Power off':
+        if self.get_device('xray_source').get_variable('_status') != 'Power off':
             raise CommandError('Warm-up can only be started from power off mode')
 
     def on_pulse(self):
         self.emit('pulse', 'Warming up X-ray source...')
 
     def execute(self):
-        self.interpreter.instrument.get_device('xray_source').execute_command('start_warmup')
+        self.get_device('xray_source').execute_command('start_warmup')
         self.emit('message', 'Started warm-up procedure.')
 
     def kill(self):
-        self.interpreter.instrument.get_device('xray_source').execute_command('stop_warmup')
-        self.interpreter.instrument.get_device('xray_source').execute_command('poweroff')
+        self.get_device('xray_source').execute_command('stop_warmup')
+        self.get_device('xray_source').execute_command('poweroff')
         try:
             raise CommandKilledError('Stopped warm-up procedure.')
         except CommandKilledError as cke:

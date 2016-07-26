@@ -202,3 +202,18 @@ class GeniX(Device):
 
     def is_busy(self):
         return not (self.get_variable('_status') in ['Power off', 'Low power', 'Full power', 'X-rays off'])
+
+    def set_power(self, state: str):
+        if not self.get_variable('xrays'):
+            raise ValueError('Cannot set state to {}: X-ray generator is off.'.format(state))
+        state = str(state)
+        if state.upper() in ['OFF', 'DOWN', 'POWER OFF', 'POWEROFF']:
+            self.execute_command('poweroff')
+        elif self.is_busy():
+            raise ValueError('CAnnot set state to {}: X-ray generator is busy.'.format(state))
+        elif state.upper() in ['STANDBY', 'LOW']:
+            self.execute_command('standby')
+        elif state.upper() in ['HIGH', 'UP', 'FULL']:
+            self.execute_command('full_power')
+        else:
+            raise ValueError(state)

@@ -20,7 +20,7 @@ class Motors(ToolWindow):
                                 mot.rightlimitswitch(), '%d'%mot.load(), ', '.join(mot.decode_error_flags())))
             self._motorconnections.append((mot,mot.connect('variable-change', self.on_motor_variable_change, m)))
             self._motorconnections.append((mot, mot.connect('stop', self.on_motor_stop, m)))
-        self.on_samplelist_changed(self._instrument.samplestore)
+        self.on_samplelist_changed(self._instrument.services['samplestore'])
         self._check_beamstop_state()
 
     def on_motor_variable_change(self, motor, var, value, motorname):
@@ -82,7 +82,7 @@ class Motors(ToolWindow):
             self._builder.get_object('beamstopstatuslabel').set_label('Beamstop position inconsistent')
 
     def on_calibratebeamstop_in(self, button):
-        if not self._instrument.accounting.has_privilege(PRIV_MOTORCALIB):
+        if not self._instrument.services['accounting'].has_privilege(PRIV_MOTORCALIB):
             error_message(self._window, 'Cannot calibrate beamstop position', 'Insufficient privileges')
             return
         xpos = self._instrument.motors['BeamStop_X'].where()
@@ -93,7 +93,7 @@ class Motors(ToolWindow):
             self._check_beamstop_state()
 
     def on_calibratebeamstop_out(self, button):
-        if not self._instrument.accounting.has_privilege(PRIV_MOTORCALIB):
+        if not self._instrument.services['accounting'].has_privilege(PRIV_MOTORCALIB):
             error_message(self._window, 'Cannot calibrate beamstop position', 'Insufficient privileges')
             return
         xpos = self._instrument.motors['BeamStop_X'].where()
@@ -116,7 +116,7 @@ class Motors(ToolWindow):
         except AttributeError:
             # this happens when `self` does not have a '_movebeamstop' attribute, i.e. the beamstop is not moving.
             pass
-        if not self._instrument.accounting.has_privilege(PRIV_BEAMSTOP):
+        if not self._instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP):
             error_message(self._window, 'Cannot move beamstop', 'Insufficient privileges')
             return
         try:
@@ -137,12 +137,12 @@ class Motors(ToolWindow):
         if ToolWindow.on_map(self, window):
             return True
         self.on_unmap(window)
-        self._samplestore_connection = self._instrument.samplestore.connect('list-changed',
-                                                                            self.on_samplelist_changed)
+        self._samplestore_connection = self._instrument.services['samplestore'].connect('list-changed',
+                                                                                        self.on_samplelist_changed)
 
     def on_unmap(self, window):
         try:
-            self._instrument.samplestore.disconnect(self._samplestore_connection)
+            self._instrument.services['samplestore'].disconnect(self._samplestore_connection)
             del self._samplestore_connection
         except AttributeError:
             pass
@@ -166,7 +166,7 @@ class Motors(ToolWindow):
         except AttributeError:
             # This happens when `self` does not have a `_movetosample` attribute, i.e. we are not moving.
             pass
-        self._movetosample = self._instrument.samplestore.get_sample(
+        self._movetosample = self._instrument.services['samplestore'].get_sample(
             self._builder.get_object('sampleselector').get_active_text())
         self._make_insensitive('Moving sample', ['highlevel_expander'])
         self._instrument.motors['Sample_X'].moveto(self._movetosample.positionx.val)
@@ -297,12 +297,12 @@ class MotorMover(ToolWindow):
     def on_move(self, button):
         if button.get_label()=='Move':
             if ((self._builder.get_object('motorselector').get_active_text() in ['BeamStop_X', 'BeamStop_Y']) and
-                    not self._instrument.accounting.has_privilege(PRIV_BEAMSTOP)):
+                    not self._instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
                 error_message(self._window, 'Cannot move beamstop', 'Insufficient privileges')
                 return
             if ((self._builder.get_object('motorselector').get_active_text() in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y',
                                                                                  'PH3_X', 'PH3_Y']) and
-                    not self._instrument.accounting.has_privilege(PRIV_PINHOLE)):
+                    not self._instrument.services['accounting'].has_privilege(PRIV_PINHOLE)):
                 error_message(self._window, 'Cannot move pinholes', 'Insufficient privileges')
                 return
             self._builder.get_object('move_button').set_label('Stop')

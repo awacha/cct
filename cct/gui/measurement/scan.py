@@ -71,35 +71,36 @@ class Scan(ToolWindow):
                                       "Scan range is outside software limits for motor " + self._motor)
                         self._cleanup_after_scan()
                         return True
-                self._connections={self._instrument.interpreter:[
-                    self._instrument.interpreter.connect('cmd-return',self.on_command_return),
-                    self._instrument.interpreter.connect('cmd-fail', self.on_command_fail),
-                    self._instrument.interpreter.connect('cmd-message', self.on_command_message),
-                    self._instrument.interpreter.connect('progress', self.on_progress),
-                    self._instrument.interpreter.connect('pulse', self.on_pulse),
-                ], self._instrument.exposureanalyzer:[self._instrument.exposureanalyzer.connect('scanpoint', self.on_scanpoint)]}
+                self._connections = {self._instrument.services['interpreter']: [
+                    self._instrument.services['interpreter'].connect('cmd-return', self.on_command_return),
+                    self._instrument.services['interpreter'].connect('cmd-fail', self.on_command_fail),
+                    self._instrument.services['interpreter'].connect('cmd-message', self.on_command_message),
+                    self._instrument.services['interpreter'].connect('progress', self.on_progress),
+                    self._instrument.services['interpreter'].connect('pulse', self.on_pulse),
+                ], self._instrument.services['exposureanalyzer']: [
+                    self._instrument.services['exposureanalyzer'].connect('scanpoint', self.on_scanpoint)]}
                 if self._builder.get_object('shutter_checkbutton').get_active():
-                    self._instrument.interpreter.execute_command('shutter("open")')
+                    self._instrument.services['interpreter'].execute_command('shutter("open")')
                 else:
-                    self.on_command_return(self._instrument.interpreter, 'shutter', True)
+                    self.on_command_return(self._instrument.services['interpreter'], 'shutter', True)
             except:
                 self._cleanup_after_scan()
                 raise
         elif button.get_label()=='Stop':
-            self._instrument.interpreter.kill()
+            self._instrument.services['interpreter'].kill()
         return True
 
     def on_command_return(self, interpreter, commandname, returnvalue):
         if commandname=='shutter' and returnvalue:
-            scanfsn = self._instrument.filesequence.get_nextfreescan(acquire=False)
-            self._scanfsn=self._instrument.interpreter.execute_command(self._commandline)._scanfsn
+            scanfsn = self._instrument.services['filesequence'].get_nextfreescan(acquire=False)
+            self._scanfsn = self._instrument.services['interpreter'].execute_command(self._commandline)._scanfsn
             self._scangraph = ScanGraph([self._motor] + self._instrument.config['scan']['columns'], self._nsteps,
                                         self._instrument, scanfsn, self._builder.get_object('comment_entry').get_text())
         elif commandname=='scan' or commandname=='scanrel':
             if self._builder.get_object('shutter_checkbutton').get_active():
-                self._instrument.interpreter.execute_command('shutter("close")')
+                self._instrument.services['interpreter'].execute_command('shutter("close")')
             else:
-                self.on_command_return(self._instrument.interpreter, 'shutter', False)
+                self.on_command_return(self._instrument.services['interpreter'], 'shutter', False)
         elif commandname=='shutter' and not returnvalue:
             self._cleanup_after_scan()
             logger.info('Scan finished')

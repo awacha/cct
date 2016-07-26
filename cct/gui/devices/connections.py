@@ -41,7 +41,7 @@ class DeviceConnections(ToolWindow):
             self._instrument.devices[d].connect('variable-change', self.on_device_varchange, d)
             self._instrument.devices[d].connect('startupdone', self.on_device_startupdone, d)
             self._builder.get_object('editbutton_' + d).set_sensitive(
-                self._instrument.accounting.get_privilegelevel() >= PRIV_DEVICECONFIG)
+                self._instrument.services['accounting'].get_privilegelevel() >= PRIV_DEVICECONFIG)
             logger.debug('Added device ' + d)
         logger.debug('Added all devices')
 

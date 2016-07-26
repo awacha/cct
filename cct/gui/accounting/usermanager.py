@@ -25,7 +25,7 @@ class UserManager(ToolWindow):
     def _update_gui(self):
         model = self._builder.get_object('usernamestore')
         model.clear()
-        for u in self._instrument.accounting.get_usernames():
+        for u in self._instrument.services['accounting'].get_usernames():
             model.append((u,))
         self._builder.get_object('user-selection').select_iter(model.get_iter_first())
         self._builder.get_object('apply_button').set_sensitive(False)
@@ -43,17 +43,19 @@ class UserManager(ToolWindow):
             return
         username = model[iterator][0]
         ps = self._builder.get_object('privilege_selector')
-        ps.set_sensitive(username != self._instrument.accounting.get_user().username)
+        ps.set_sensitive(username != self._instrument.services['accounting'].get_user().username)
         self._builder.get_object('deluser_button').set_sensitive(
-            username != self._instrument.accounting.get_user().username)
+            username != self._instrument.services['accounting'].get_user().username)
         ps.set_active(-1)
         for i, priv in enumerate(ps.get_model()):
             logger.debug('Comparing privilege level with %s.' % priv[0])
-            if PrivilegeLevel.get_priv(priv[0]) == self._instrument.accounting.get_user(username).privlevel:
+            if PrivilegeLevel.get_priv(priv[0]) == self._instrument.services['accounting'].get_user(username).privlevel:
                 ps.set_active(i)
         assert (ps.get_active_text() is not None)
-        self._builder.get_object('firstname_entry').set_text(self._instrument.accounting.get_user(username).firstname)
-        self._builder.get_object('lastname_entry').set_text(self._instrument.accounting.get_user(username).lastname)
+        self._builder.get_object('firstname_entry').set_text(
+            self._instrument.services['accounting'].get_user(username).firstname)
+        self._builder.get_object('lastname_entry').set_text(
+            self._instrument.services['accounting'].get_user(username).lastname)
         self._builder.get_object('apply_button').set_sensitive(False)
 
     def on_apply(self, button):
@@ -67,9 +69,9 @@ class UserManager(ToolWindow):
         if iterator is None:
             return
         username = model[iterator][0]
-        self._instrument.accounting.update_user(username, firstname, lastname, privlevel)
+        self._instrument.services['accounting'].update_user(username, firstname, lastname, privlevel)
         logger.info('Updated user %s: %s, %s, %s' % (username, firstname, lastname, privlevel))
-        user = [u for u in self._instrument.accounting._users if u.username == username][0]
+        user = [u for u in self._instrument.services['accounting']._users if u.username == username][0]
         logger.info('Control: %s, %s, %s' % (user.firstname, user.lastname, user.privlevel))
         button.set_sensitive(False)
 
@@ -90,7 +92,7 @@ class UserManager(ToolWindow):
         # dlg.show_all()
         if dlg.run() == Gtk.ResponseType.OK:
             try:
-                self._instrument.accounting.add_user(entry.get_text(), '', '', PRIV_LAYMAN)
+                self._instrument.services['accounting'].add_user(entry.get_text(), '', '', PRIV_LAYMAN)
             except Exception as exc:
                 error_message(dlg, 'Cannot add new user', str(exc))
         dlg.destroy()
@@ -101,5 +103,5 @@ class UserManager(ToolWindow):
         if iterator is None:
             return
         username = model[iterator][0]
-        self._instrument.accounting.delete_user(username)
+        self._instrument.services['accounting'].delete_user(username)
         self._update_gui()

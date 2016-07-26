@@ -52,7 +52,7 @@ class Trim(Command):
             raise CommandArgumentError('Invalid gain: ' + self.gain)
 
     def validate(self):
-        pilatus = self.interpreter.instrument.get_device('pilatus')
+        pilatus = self.get_device('pilatus')
         assert isinstance(pilatus, Pilatus)
         if pilatus.is_busy():
             raise CommandError('Cannot start trimming if the detector is busy.')
@@ -65,12 +65,12 @@ class Trim(Command):
         self.emit('pulse', 'Trimming detector')
 
     def execute(self):
-        self.interpreter.instrument.get_device('pilatus').set_threshold(self.threshold, self.gain)
+        self.get_device('pilatus').set_threshold(self.threshold, self.gain)
 
     def do_return(self, retval):
         self.emit('message', 'New threshold set: {:f}. Gain: {}'.format(
-            self.interpreter.instrument.get_device('pilatus').get_variable('threshold'),
-            self.interpreter.instrument.get_device('pilatus').get_variable('gain')))
+            self.get_device('pilatus').get_variable('threshold'),
+            self.get_device('pilatus').get_variable('gain')))
         return False
 
     def kill(self):
@@ -105,8 +105,8 @@ class StopExposure(Command):
             self.cleanup(True)
 
     def execute(self):
-        self.interpreter.instrument.get_device('pilatus').execute_command('kill')
-        self.interpreter.instrument.get_device('pilatus').refresh_variable('_status')
+        self.get_device('pilatus').execute_command('kill')
+        self.get_device('pilatus').refresh_variable('_status')
 
     def kill(self):
         raise CommandError('Command {} cannot be killed.'.format(self.name))
@@ -164,7 +164,7 @@ class Expose(Command):
         self.starttime = None
 
     def validate(self):
-        det = self.interpreter.instrument.get_device('pilatus')
+        det = self.get_device('pilatus')
         assert isinstance(det, Pilatus)
         if det.is_busy():
             raise CommandError('Cannot start exposing if the detector is busy.')
@@ -172,10 +172,10 @@ class Expose(Command):
             det.set_variable('nimages', 1)
 
     def execute(self):
-        self.fsn = self.interpreter.instrument.filesequence.get_nextfreefsn(self.prefix)
-        self.filename = self.interpreter.instrument.filesequence.exposurefileformat(self.prefix, self.fsn) + '.cbf'
-        det = self.interpreter.instrument.get_device('pilatus')
-        self.imgpath = self.interpreter.instrument.config['path']['directories']['images_detector'][
+        self.fsn = self.services['filesequence'].get_nextfreefsn(self.prefix)
+        self.filename = self.services['filesequence'].exposurefileformat(self.prefix, self.fsn) + '.cbf'
+        det = self.get_device('pilatus')
+        self.imgpath = self.config['path']['directories']['images_detector'][
                            0] + '/' + self.prefix
         if det.get_variable('imgpath') != self.imgpath:
             det.set_variable('imgpath', self.imgpath)
@@ -204,7 +204,7 @@ class Expose(Command):
             self.starttime = newvalue
         elif variablename == 'filename':
             GLib.idle_add(lambda fsn=self.fsn, fn=newvalue, prf=self.prefix, st=self.starttime, kwargs=self.otherargs:
-                          self.interpreter.instrument.filesequence.new_exposure(fsn, fn, prf, st, **kwargs) and False)
+                          self.services['filesequence'].new_exposure(fsn, fn, prf, st, **kwargs) and False)
             self.file_received = True
         elif variablename == '_status' and newvalue == 'idle':
             self.detector_idle = True
@@ -218,7 +218,7 @@ class Expose(Command):
 
     def kill(self):
         self.killed = True
-        self.interpreter.instrument.get_variable('pilatus').execute_command('kill')
+        self.get_device('pilatus').execute_command('kill')
 
 
 class ExposeMulti(Command):
@@ -288,25 +288,25 @@ class ExposeMulti(Command):
         self.starttime = None
         self.filechecker_handle = None
         self.fsns_done = []
-        self.filenames = [self.interpreter.instrument.filesequence.exposurefileformat(self.prefix, f) + '.cbf'
+        self.filenames = [self.services['filesequence'].exposurefileformat(self.prefix, f) + '.cbf'
                           for f in self.fsns]
         self.due_times = [self.exptime + i * (self.exptime + self.expdelay) for i in range(self.nimages)]
         self.totaltime = self.exptime * self.nimages + self.expdelay * (self.nimages - 1)
         self.timeout = self.totaltime + 30
 
     def validate(self):
-        det = self.interpreter.instrument.get_device('pilatus')
+        det = self.get_device('pilatus')
         assert isinstance(det, Pilatus)
         if det.is_busy():
             raise CommandError('Cannot start exposing if the detector is busy.')
 
     def execute(self):
-        dev = self.interpreter.instrument.get_device('pilatus')
+        dev = self.get_device('pilatus')
         assert isinstance(dev, Pilatus)
         dev.set_variable('nimages', self.nimages)
-        self.fsns = list(self.interpreter.instrument.filesequence.get_nextfreefsns(self.prefix, self.nimages))
+        self.fsns = list(self.services['filesequence'].get_nextfreefsns(self.prefix, self.nimages))
         dev.set_variable('expperiod', self.exptime + self.expdelay)
-        self.imgpath = self.interpreter.instrument.config['path']['directories']['images_detector'][
+        self.imgpath = self.config['path']['directories']['images_detector'][
                            0] + '/' + self.prefix
         dev.set_variable('imgpath', self.imgpath)
         dev.set_variable('exptime', self.exptime)
@@ -329,7 +329,7 @@ class ExposeMulti(Command):
         logger.debug('Filechecker woke.')
         if self.killed:
             return False  # unregister this idle handler
-        det = self.interpreter.instrument.get_device('detector')
+        det = self.get_device('detector')
         assert isinstance(det, Pilatus)
         assert self.starttime is not None
         # the time in seconds elapsed from issuing the "exposure" command.
@@ -342,13 +342,13 @@ class ExposeMulti(Command):
                 continue
             if duetime > elapsedtime:
                 continue
-            if self.interpreter.instrument.filesequence.is_cbf_ready(self.prefix + '/' + filename):
+            if self.services['filesequence'].is_cbf_ready(self.prefix + '/' + filename):
                 # if the file is present, let it be processed.
                 logger.debug('We have {}'.format(filename))
                 GLib.idle_add(
                     lambda fs=fsn, fn=os.path.join(self.imgpath, filename), prf=self.prefix, st=self.starttime,
                            kwargs=self.otherargs:
-                    self.interpreter.instrument.filesequence.new_exposure(fs, fn, prf, st, **kwargs) and False)
+                    self.services['filesequence'].new_exposure(fs, fn, prf, st, **kwargs) and False)
                 self.fsns_done.append(fsn)
         # no more files are expected just now
         if len(self.fsns) != len(self.fsns_done):
@@ -384,7 +384,7 @@ class ExposeMulti(Command):
         if not self.killed:
             self.killed = True
             GLib.source_remove(self.filechecker_handle)
-            self.interpreter.instrument.get_device('detector').execute_command('kill')
+            self.get_device('detector').execute_command('kill')
 
     def on_error(self, device, propname, exc, tb):
         self.kill()

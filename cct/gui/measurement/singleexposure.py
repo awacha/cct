@@ -17,7 +17,7 @@ class SingleExposure(ToolWindow):
 
     def _break_connections(self):
         try:
-            self._instrument.samplestore.disconnect(self._sampleconnections)
+            self._instrument.services['samplestore'].disconnect(self._sampleconnections)
         except AttributeError:
             pass
 
@@ -25,11 +25,12 @@ class SingleExposure(ToolWindow):
         if ToolWindow.on_map(self, window):
             return True
         self._break_connections()
-        self._sampleconnections=self._instrument.samplestore.connect('list-changed', self.on_samplelist_changed)
-        self.on_samplelist_changed(self._instrument.samplestore)
+        self._sampleconnections = self._instrument.services['samplestore'].connect('list-changed',
+                                                                                   self.on_samplelist_changed)
+        self.on_samplelist_changed(self._instrument.services['samplestore'])
         prefixselector=self._builder.get_object('prefixselector')
         prefixselector.remove_all()
-        for i,p in enumerate(sorted(self._instrument.filesequence.get_prefixes())):
+        for i, p in enumerate(sorted(self._instrument.services['filesequence'].get_prefixes())):
             prefixselector.append_text(p)
             if p==self._instrument.config['path']['prefixes']['tst']:
                 prefixselector.set_active(i)
@@ -48,17 +49,17 @@ class SingleExposure(ToolWindow):
     def _init_exposure(self):
         self._builder.get_object('start_button').set_label('Stop')
         self._make_insensitive('Exposure is running', ['entrygrid', 'close_button'])
-        self._expanalyzerconnection = self._instrument.exposureanalyzer.connect('image', self.on_image)
+        self._expanalyzerconnection = self._instrument.services['exposureanalyzer'].connect('image', self.on_image)
         self._interpreter_connections = [
-            self._instrument.interpreter.connect('cmd-return', self.on_cmd_return),
-            self._instrument.interpreter.connect('cmd-fail', self.on_cmd_fail),
-            self._instrument.interpreter.connect('pulse', self.on_pulse),
-            self._instrument.interpreter.connect('progress', self.on_progress),
+            self._instrument.services['interpreter'].connect('cmd-return', self.on_cmd_return),
+            self._instrument.services['interpreter'].connect('cmd-fail', self.on_cmd_fail),
+            self._instrument.services['interpreter'].connect('pulse', self.on_pulse),
+            self._instrument.services['interpreter'].connect('progress', self.on_progress),
         ]
 
     def _cleanup_expanalyzer(self):
         try:
-            self._instrument.exposureanalyzer.disconnect(self._expanalyzerconnection)
+            self._instrument.services['exposureanalyzer'].disconnect(self._expanalyzerconnection)
             del self._expanalyzerconnection
         except AttributeError:
             pass
@@ -66,7 +67,7 @@ class SingleExposure(ToolWindow):
     def _cleanup_exposure(self):
         try:
             for c in self._interpreter_connections:
-                self._instrument.interpreter.disconnect(c)
+                self._instrument.services['interpreter'].disconnect(c)
             del self._interpreter_connections
         except AttributeError:
             pass
@@ -83,14 +84,14 @@ class SingleExposure(ToolWindow):
         elif commandname == 'start':
             # not a true command, we just enter here.
             if self._builder.get_object('samplename_check').get_active():
-                self._instrument.interpreter.execute_command(
+                self._instrument.services['interpreter'].execute_command(
                     'sample("%s")' % self._builder.get_object('sampleselector').get_active_text())
             else:
-                self._instrument.samplestore.set_active(None)
+                self._instrument.services['samplestore'].set_active(None)
                 self.on_cmd_return(interpreter, 'sample', None)
         elif commandname == 'sample':
             if self._builder.get_object('shutter_check').get_active():
-                self._instrument.interpreter.execute_command('shutter("open")')
+                self._instrument.services['interpreter'].execute_command('shutter("open")')
             else:
                 self.on_cmd_return(interpreter, 'shutter', True)
         elif commandname == 'shutter' and returnvalue is None:
@@ -109,15 +110,16 @@ class SingleExposure(ToolWindow):
             self._builder.get_object('progressframe').show_all()
             self._builder.get_object('progressframe').set_visible(True)
             if nimages == 1:
-                self._instrument.interpreter.execute_command(Expose(), (exptime, prefix))
+                self._instrument.services['interpreter'].execute_command(Expose(), (exptime, prefix))
             else:
-                self._instrument.interpreter.execute_command(ExposeMulti(), (exptime, nimages, prefix, expdelay))
+                self._instrument.services['interpreter'].execute_command(ExposeMulti(),
+                                                                         (exptime, nimages, prefix, expdelay))
         elif commandname == 'shutter' and returnvalue is False:
             # this is the end.
             self._cleanup_exposure()
         elif commandname in ['expose', 'exposemulti']:
             if self._builder.get_object('shutter_check').get_active():
-                self._instrument.interpreter.execute_command('shutter("close")')
+                self._instrument.services['interpreter'].execute_command('shutter("close")')
             else:
                 self.on_cmd_return(interpreter, 'shutter', False)
         return
@@ -136,10 +138,10 @@ class SingleExposure(ToolWindow):
     def on_start(self, button):
         if button.get_label() == 'Start':
             self._init_exposure()
-            self.on_cmd_return(self._instrument.interpreter, 'start', None)
+            self.on_cmd_return(self._instrument.services['interpreter'], 'start', None)
         else:
             self._kill = True
-            self._instrument.interpreter.kill()
+            self._instrument.services['interpreter'].kill()
 
     def on_image(self, exposureanalyzer, prefix, fsn, matrix, mask, params):
         if 'sample' in params:

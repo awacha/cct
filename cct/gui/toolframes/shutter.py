@@ -27,8 +27,10 @@ class ShutterBeamstop(ToolFrame):
             #                              self._instrument.devices['genix'].get_variable('shutter'))
         except KeyError:
             self._widget.set_sensitive(False)
-        self._privlevelconnection = self._instrument.accounting.connect('privlevel-changed', self.on_privlevel_changed)
-        self.on_privlevel_changed(self._instrument.accounting, self._instrument.accounting.get_privilegelevel())
+        self._privlevelconnection = self._instrument.services['accounting'].connect('privlevel-changed',
+                                                                                    self.on_privlevel_changed)
+        self.on_privlevel_changed(self._instrument.services['accounting'],
+                                  self._instrument.services['accounting'].get_privilegelevel())
 
     def on_privlevel_changed(self, accounting, newprivlevel):
         if not accounting.has_privilege(PRIV_BEAMSTOP):
@@ -47,7 +49,7 @@ class ShutterBeamstop(ToolFrame):
         except AttributeError:
             pass
         try:
-            self._instrument.accounting.disconnect(self._privlevelconnection)
+            self._instrument.services['accounting'].disconnect(self._privlevelconnection)
             del self._privlevelconnection
         except AttributeError:
             pass
@@ -86,7 +88,7 @@ class ShutterBeamstop(ToolFrame):
         return True
 
     def on_beamstop_in(self, button):
-        self._instrument.interpreter.execute_command('beamstop("in")')
+        self._instrument.services['interpreter'].execute_command('beamstop("in")')
 
     def on_beamstop_out(self, button):
-        self._instrument.interpreter.execute_command('beamstop("out")')
+        self._instrument.services['interpreter'].execute_command('beamstop("out")')

@@ -152,7 +152,7 @@ class WebStateFileWriter(Service):
 
     def format_genix_faultvalue(self, name):
         try:
-            value = self.instrument.xray_source.get_variable(name + '_fault')
+            value = self.instrument.get_device('xray_source').get_variable(name + '_fault')
         except KeyError:
             value = np.nan
             bg = 'red'
@@ -170,7 +170,7 @@ class WebStateFileWriter(Service):
         vars = {}
         for var in ['ht', 'current', 'power', 'shutter']:
             try:
-                vars[var] = self.instrument.xray_source.get_variable(var)
+                vars[var] = self.instrument.get_device('xray_source').get_variable(var)
             except (KeyError, AttributeError):
                 vars[var] = np.nan
         if isinstance(vars['shutter'], bool):
@@ -195,7 +195,7 @@ class WebStateFileWriter(Service):
 
     def create_detector_status(self):
         # detector status
-        detstat = self.instrument.detector.get_all_variables()
+        detstat = self.instrument.get_device('detector').get_all_variables()
         if detstat['temperature0'] < 15 or detstat['temperature0'] > 55:
             detstat['temperature0_bg'] = 'red'
         elif detstat['temperature0'] < 20 or detstat['temperature0'] > 37:
@@ -321,7 +321,7 @@ class WebStateFileWriter(Service):
 
     def adjust_svg(self):
         dom = parse(pkg_resources.resource_filename('cct', 'resource/cct_status/scheme_interactive.svg'))
-        shutter = self.instrument.xray_source.get_variable('shutter')
+        shutter = self.instrument.get_device('xray_source').get_variable('shutter')
         beamstop = self.instrument.get_beamstop_state()
         for x in get_svg_object_by_id(dom, 'xray'):
             if shutter:
@@ -344,11 +344,13 @@ class WebStateFileWriter(Service):
             else:
                 x.setAttribute('visibility', 'visible')
         for x in get_svg_object_by_id(dom, 'hv'):
-            x.firstChild.firstChild.data = '{:.2f} kV'.format(self.instrument.xray_source.get_variable('ht'))
+            x.firstChild.firstChild.data = '{:.2f} kV'.format(
+                self.instrument.get_device('xray_source').get_variable('ht'))
         for x in get_svg_object_by_id(dom, 'current'):
-            x.firstChild.firstChild.data = '{:.2f} mA'.format(self.instrument.xray_source.get_variable('current'))
+            x.firstChild.firstChild.data = '{:.2f} mA'.format(
+                self.instrument.get_device('xray_source').get_variable('current'))
         for x in get_svg_object_by_id(dom, 'detector_state'):
-            x.firstChild.firstChild.data = self.instrument.detector.get_variable('_status')
+            x.firstChild.firstChild.data = self.instrument.get_device('detector').get_variable('_status')
         for x in get_svg_object_by_id(dom, 'vacuum'):
             try:
                 x.firstChild.firstChild.data = '{:.3f} mbar'.format(

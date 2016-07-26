@@ -20,14 +20,16 @@ class GeneralMove(Command):
         if len(self.args) != 1:
             raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
         self.motorname = str(self.args[0])
-        if self.motorname not in self.interpreter.instrument.motors:
+        try:
+            self.get_motor(self.motorname)
+        except KeyError:
             raise CommandArgumentError('Motor {} unknown.'.format(self.motorname))
         self.targetposition = float(self.args[1])
         if (self.motorname in ['BeamStop_X', 'BeamStop_Y'] and
-                not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
+                not self.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
             raise CommandError('Insufficient privileges to move the beamstop')
         if (self.motorname in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X', 'PH3_Y'] and
-                not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_PINHOLE)):
+                not self.services['accounting'].has_privilege(PRIV_PINHOLE)):
             raise CommandError('Insufficient privileges to move the pinholes')
         self.required_devices = ['Motor_' + self.motorname]
 
@@ -35,17 +37,17 @@ class GeneralMove(Command):
         if self.name == 'moveto':
             targetpos = self.targetposition
         elif self.name == 'moverel':
-            mot = self.interpreter.instrument.motors[self.motorname]
+            mot = self.get_motor(self.motorname)
             actpos = mot.where()
             targetpos = actpos + self.targetposition
         else:
             raise ValueError(self.name)
-        if not self.interpreter.instrument.motors[self.motorname].checklimits(targetpos):
+        if not self.get_motor(self.motorname).checklimits(targetpos):
             raise CommandArgumentError('Target position for motor {} outside soft limits.'.format(self.motorname))
         return True
 
     def execute(self):
-        motor = self.interpreter.instrument.motors[self.motorname]
+        motor = self.get_motor(self.motorname)
         assert isinstance(motor, Motor)
         if self.name == 'moveto':
             if motor.where() == self.targetposition:
@@ -117,21 +119,23 @@ class Where(Command):
             raise CommandArgumentError('Command {} requires at most one positional argument.'.format(self.name))
         try:
             self.motorname = str(self.args[0])
-            if self.motorname not in self.interpreter.instrument.motors:
+            try:
+                self.get_motor(self.motorname)
+            except KeyError:
                 raise CommandArgumentError('Motor {} unknown.'.format(self.motorname))
         except IndexError:
             self.motorname = None
 
     def execute(self):
         if self.motorname is not None:
-            ret = self.interpreter.instrument.motors[self.motorname].where()
+            ret = self.get_motor(self.motorname).where()
             txt = '{}: {:8.3f}'.format(self.motorname, ret)
         else:
-            ret = dict([(m, self.interpreter.instrument.motors[m].where())
-                        for m in self.interpreter.instrument.motors])
+            ret = dict([(m, self.get_motor(1).where())
+                        for m in self.instrument.motors])
             poslabels = {m: '{:8.3f}'.format(ret[m]) for m in ret}
             longestmotorname = max(
-                max([len(m) for m in self.interpreter.instrument.motors]), len('Motor name'))
+                max([len(m) for m in self.instrument.motors]), len('Motor name'))
             longestposlabel = max(len(poslabels[m]) for m in poslabels)
 
             heading = '| {:<{:d}} | {:<{:d}} |'.format('Motor name', longestmotorname, 'Position', longestposlabel)
@@ -185,19 +189,19 @@ class Beamstop(Command):
                     self.direction = 'in'
                 else:
                     self.direction = 'out'
-            if not self.interpreter.instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP):
+            if not self.services['accounting'].has_privilege(PRIV_BEAMSTOP):
                 raise CommandError('Not enough privileges to move beamstop.')
             self.required_devices = ['Motor_BeamStop_X', 'Motor_BeamStop_Y']
-            self.targetpos = self.interpreter.instrument.config['beamstop'][self.direction]
-            self.where = (self.interpreter.instrument.motors['BeamStop_X'].where(),
-                          self.interpreter.instrument.motors['BeamStop_Y'].where())
+            self.targetpos = self.config['beamstop'][self.direction]
+            self.where = (self.get_motor('BeamStop_X').where(),
+                          self.get_motor('BeamStop_Y').where())
 
     def execute(self):
         if self.direction == 'query':
-            xin, yin = self.interpreter.instrument.config['beamstop']['in']
-            xout, yout = self.interpreter.instrument.config['beamstop']['out']
-            xpos = self.interpreter.instrument.motors['BeamStop_X'].where()
-            ypos = self.interpreter.instrument.motors['BeamStop_Y'].where()
+            xin, yin = self.config['beamstop']['in']
+            xout, yout = self.config['beamstop']['out']
+            xpos = self.get_motor('BeamStop_X').where()
+            ypos = self.get_motor('BeamStop_Y').where()
             if abs(xin - xpos) < 0.01 and abs(yin - ypos) < 0.01:
                 self.idle_return('in')
             elif abs(xout - xpos) < 0.01 and abs(yout - ypos) < 0.01:
@@ -206,7 +210,7 @@ class Beamstop(Command):
                 self.idle_return('none')
             return
         self.emit('message', 'Moving beamstop {}.'.format(self.direction))
-        self.interpreter.instrument.motors['BeamStop_X'].moveto(self.targetpos[0])
+        self.get_motor('BeamStop_X').moveto(self.targetpos[0])
 
     def on_motor_stop(self, motor, targetreached):
         if not targetreached:
@@ -218,7 +222,7 @@ class Beamstop(Command):
                 self.cleanup(None)
                 return
         if motor.name == 'BeamStop_X':
-            self.interpreter.instrument.motors['BeamStop_Y'].moveto(self.targetpos[1])
+            self.get_motor('BeamStop_Y').moveto(self.targetpos[1])
         else:
             self.cleanup(self.direction)
 
@@ -262,7 +266,7 @@ class SetSample(Command):
         if len(self.args) > 1:
             raise CommandArgumentError('Command {} requires at most one positional argument.'.format(self.name))
         try:
-            self.sample = self.interpreter.instrument.services['samplestore'].get_sample(self.args[0])
+            self.sample = self.services['samplestore'].get_sample(self.args[0])
             assert isinstance(self.sample, Sample)
         except IndexError:
             self.sample = None
@@ -271,15 +275,15 @@ class SetSample(Command):
         else:
             self.required_devices = ['Motor_Sample_X', 'Motor_Sample_Y']
             self.targetpos = (self.sample.positionx.val, self.sample.positiony.val)
-            self.where = (self.interpreter.instrument.motors['Sample_X'].where(),
-                          self.interpreter.instrument.motors['Sample_Y'].where())
+            self.where = (self.get_motor('Sample_X').where(),
+                          self.get_motor('Sample_Y').where())
 
     def execute(self):
         if self.sample is None:
-            self.idle_return(self.interpreter.instrument.services['samplestore'].get_active().title)
+            self.idle_return(self.services['samplestore'].get_active().title)
             return
         self.emit('message', 'Moving sample into the beam {}.'.format(self.sample.title))
-        self.interpreter.instrument.motors['Sample_X'].moveto(self.targetpos[0])
+        self.get_motor('Sample_X').moveto(self.targetpos[0])
 
     def on_motor_stop(self, motor, targetreached):
         if not targetreached:
@@ -291,7 +295,7 @@ class SetSample(Command):
                 self.cleanup(None)
                 return
         if motor.name == 'Sample_X':
-            self.interpreter.instrument.motors['Sample_Y'].moveto(self.targetpos[1])
+            self.get_motor('Sample_Y').moveto(self.targetpos[1])
         else:
             self.cleanup(self.sample.title)
 

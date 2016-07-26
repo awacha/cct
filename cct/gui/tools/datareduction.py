@@ -16,12 +16,12 @@ class DataReduction(ToolWindow):
             self._ndone = -1
             self._builder.get_object('progressbar').show()
             self._currentpath=None
-            self._expanalyzerconnection = [self._instrument.exposureanalyzer.connect('datareduction-done',
-                                                                                    self.on_datareduction),
-                                           self._instrument.exposureanalyzer.connect('error',
-                                                                                     self.on_datareduction)
+            self._expanalyzerconnection = [self._instrument.services['exposureanalyzer'].connect('datareduction-done',
+                                                                                                 self.on_datareduction),
+                                           self._instrument.services['exposureanalyzer'].connect('error',
+                                                                                                 self.on_datareduction)
                                            ]
-            self.on_datareduction(self._instrument.exposureanalyzer, None, None, None)
+            self.on_datareduction(self._instrument.services['exposureanalyzer'], None, None, None)
         else:
             self._stop = True
 
@@ -41,7 +41,7 @@ class DataReduction(ToolWindow):
             self._builder.get_object('progressbar').hide()
             try:
                 for c in self._expanalyzerconnection:
-                    self._instrument.exposureanalyzer.disconnect(c)
+                    self._instrument.services['exposureanalyzer'].disconnect(c)
                 del self._expanalyzerconnection
             except AttributeError:
                 pass
@@ -51,8 +51,9 @@ class DataReduction(ToolWindow):
         fsn = model[self._currentpath][0]
         prefix = self._instrument.config['path']['prefixes']['crd']
         ndigits = self._instrument.config['path']['fsndigits']
-        self._instrument.exposureanalyzer.submit(fsn, prefix + '_%%0%dd' % ndigits % fsn + '.cbf', prefix,
-                                                 (self._instrument.filesequence.load_param(prefix, fsn),))
+        self._instrument.services['exposureanalyzer'].submit(fsn, prefix + '_%%0%dd' % ndigits % fsn + '.cbf', prefix,
+                                                             (self._instrument.services['filesequence'].load_param(
+                                                                 prefix, fsn),))
 
     def on_reload(self, button):
         fsnfirst = self._builder.get_object('fsnfirst_adjustment').get_value()
@@ -64,7 +65,8 @@ class DataReduction(ToolWindow):
         model.clear()
         for i in range(int(fsnfirst), int(fsnlast) + 1):
             try:
-                param = self._instrument.filesequence.load_param(self._instrument.config['path']['prefixes']['crd'], i)
+                param = self._instrument.services['filesequence'].load_param(
+                    self._instrument.config['path']['prefixes']['crd'], i)
             except FileNotFoundError:
                 pass
             if 'sample' not in param:

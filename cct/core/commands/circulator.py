@@ -49,7 +49,7 @@ class StartStop(Command):
 
     def execute(self):
         if self.requested_state is None:
-            var = self.interpreter.instrument.get_device('temperature').get_variable('_state')
+            var = self.get_device('temperature').get_variable('_state')
             if var == 'running':
                 self.idle_return(True)
             elif var == 'stopped':
@@ -59,10 +59,10 @@ class StartStop(Command):
             return
         if self.requested_state:
             self.emit('message', 'Starting thermocontrolling circulator.')
-            self.interpreter.instrument.get_device('temperature').execute_command('start')
+            self.get_device('temperature').execute_command('start')
         else:
             self.emit('message', 'Stopping thermocontrolling circulator.')
-            self.interpreter.instrument.get_device('temperature').execute_command('stop')
+            self.get_device('temperature').execute_command('stop')
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == '_status' and newvalue == 'start' and self.requested_state:
@@ -95,7 +95,7 @@ class Temperature(Command):
             raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
 
     def execute(self):
-        self.idle_return(self.interpreter.instrument.get_device('temperature').get_variable('temperature'))
+        self.idle_return(self.get_device('temperature').get_variable('temperature'))
 
 
 class SetTemperature(Command):
@@ -122,14 +122,14 @@ class SetTemperature(Command):
         self.target_temperature = float(self.args[0])
 
     def validate(self):
-        if (self.target_temperature > self.interpreter.instrument.get_device('temperature').get_variable('highlimit') or
-                    self.target_temperature < self.interpreter.instrument.get_device('temperature').get_variable(
+        if (self.target_temperature > self.get_device('temperature').get_variable('highlimit') or
+                    self.target_temperature < self.get_device('temperature').get_variable(
                     'lowlimit')):
             raise CommandArgumentError('Desired temperature is outside the allowed range.')
         return True
 
     def execute(self):
-        self.interpreter.instrument.get_device('temperature').set_variable('setpoint', self.target_temperature)
+        self.get_device('temperature').set_variable('setpoint', self.target_temperature)
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'setpoint':
@@ -182,7 +182,7 @@ class WaitTemperature(Command):
         self.temperature = None
 
     def execute(self):
-        self.temperature = self.interpreter.instrument.get_device('temperature').get_variable('temperature')
+        self.temperature = self.get_device('temperature').get_variable('temperature')
 
     def on_pulse(self):
         if self.in_tolerance_interval == 0:

@@ -10,6 +10,7 @@ from typing import Optional, Dict, Sequence
 
 import dateutil.parser
 import numpy as np
+from sastool.io.credo_cct import Exposure, Header
 from sastool.io.twodim import readcbf
 from sastool.misc.errorvalue import ErrorValue
 from scipy.io import loadmat
@@ -18,7 +19,6 @@ from .service import Service, ServiceError
 from ..utils.callback import SignalFlags
 from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders, find_subfolders
-from ..utils.sasimage import SASImage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -365,12 +365,12 @@ class FileSequence(Service):
                 '{prefix}_{fsn:0{fsndigits:d}d}.param'.format(
                     prefix=prefix, fsndigits=config['path']['fsndigits'], fsn=fsn))
             picklefilename = paramfilename[:-len('.param')] + '.pickle'
-            sample = self.instrument.samplestore.get_active()
+            sample = self.instrument.services['samplestore'].get_active()
             params['fsn'] = fsn
             params['filename'] = os.path.abspath(picklefilename)
             params['exposure'] = {'fsn': fsn,
-                                  'exptime': self.instrument.detector.get_variable('exptime'),
-                                  'monitor': self.instrument.detector.get_variable('exptime'),
+                                  'exptime': self.instrument.get_device('detector').get_variable('exptime'),
+                                  'monitor': self.instrument.get_device('detector').get_variable('exptime'),
                                   'startdate': str(startdate),
                                   'date': str(datetime.datetime.now()),
                                   'enddate': str(datetime.datetime.now())}
@@ -466,21 +466,31 @@ class FileSequence(Service):
                 pass
         raise FileNotFoundError(cbfbasename)
 
-    def load_exposure(self, prefix: str, fsn: int):
-        param = self.load_param(prefix, fsn)
-        cbfbasename = self.exposurefileformat(prefix, fsn) + '.cbf'
-        try:
-            cbfname = os.path.join(
-                self.instrument.config['path']['directories']['images'], prefix,
-                cbfbasename)
-            return SASImage.new_from_file(cbfname, param)
-        except FileNotFoundError:
-            cbfname = os.path.join(
-                self.instrument.config['path']['directories']['images'],
-                cbfbasename)
-            return SASImage.new_from_file(cbfname, param)
+    def load_header(self, prefix: str, fsn: int) -> Header:
+        filebasename = self.exposurefileformat(prefix, fsn) + '.pickle'
+        for path in [
+            self.instrument.config['path']['directories']['param_override'],
+            self.instrument.config['path']['directories']['param']]:
+            try:
+                return Header(os.path.join(path, filebasename))
+            except FileNotFoundError:
+                continue
+        raise FileNotFoundError(filebasename)
 
-    def load_param(self, prefix: str, fsn: int):
+    def load_exposure(self, prefix: str, fsn: int) -> Exposure:
+        header = self.load_header(prefix, fsn)
+        cbfbasename = self.exposurefileformat(prefix, fsn) + '.cbf'
+        imgpath = self.instrument.config['path']['directories']['images']
+        for path in [os.path.join(imgpath, prefix), imgpath]:
+            try:
+                return Exposure.new_from_file(
+                    os.path.join(path, cbfbasename), header,
+                    self.get_mask(header.maskname))
+            except FileNotFoundError:
+                continue
+        raise FileNotFoundError(cbfbasename)
+
+    def load_param(self, prefix: str, fsn: int) -> Dict:
         picklebasename = self.exposurefileformat(prefix, fsn) + '.pickle'
         for path in [
             self.instrument.config['path']['directories']['param_override'],
@@ -494,23 +504,25 @@ class FileSequence(Service):
                 continue
         raise FileNotFoundError(picklebasename)
 
-    def get_mask(self, maskname: str):
+    def get_mask(self, maskname: str) -> np.ndarray:
         if not hasattr(self, '_masks'):
             self._masks = {}
-        try:
-            return self._masks[maskname]
-        except KeyError:
+        if ((maskname not in self._masks) or
+                (os.stat(self._masks[maskname]['path']).st_atime > self._masks[maskname]['atime'])):
+            # if this mask has not yet been loaded or it has changed on the disk, load it.
             if not os.path.isabs(maskname):
+                # find the absolute path.
                 filename = find_in_subfolders(self.instrument.config['path']['directories']['mask'],
                                               maskname)
             else:
                 filename = maskname
             m = loadmat(filename)
-            self._masks[maskname] = m[
-                [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
-            return self._masks[maskname]
+            self._masks[maskname] = {'path': filename,
+                                     'atime': os.stat(filename).st_atime,
+                                     'mask': m[[k for k in m.keys() if not k.startswith('__')][0]].view(bool)}
+        return self._masks[maskname]['mask']
 
-    def get_scanfile(self):
+    def get_scanfile(self) -> str:
         return self._scanfile
 
     def write_scandataline(self, position: float, counters: Sequence[float]):

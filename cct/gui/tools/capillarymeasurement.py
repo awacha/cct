@@ -72,7 +72,7 @@ class CapillaryMeasurement(ToolWindow):
 
     def load_scan(self, scanidx):
         try:
-            self._scandata = self._instrument.filesequence.load_scan(scanidx)
+            self._scandata = self._instrument.services['filesequence'].load_scan(scanidx)
         except KeyError as ke:
             error_message(self._window, 'Scan %d not found' % ke.args[0])
             return
@@ -173,15 +173,15 @@ class CapillaryMeasurement(ToolWindow):
         if sn is None:
             error_message(self._window, 'Cannot save position', 'Please select a sample first.')
             return
-        sam = self._instrument.samplestore.get_sample(sn)
+        sam = self._instrument.services['samplestore'].get_sample(sn)
         if self._scandata['signals'][0].upper().endswith('X'):
             sam.positionx = ErrorValue(self._position.val, self._position.err)
-            self._instrument.samplestore.set_sample(sn, sam)
+            self._instrument.services['samplestore'].set_sample(sn, sam)
             self._instrument.save_state()
             info_message(self._window, 'Updated sample %s' % sn, 'X position set to: %s' % str(sam.positionx))
         elif self._scandata['signals'][0].upper().endswith('Y'):
             sam.positiony = ErrorValue(self._position.val, self._position.err)
-            self._instrument.samplestore.set_sample(sn, sam)
+            self._instrument.services['samplestore'].set_sample(sn, sam)
             self._instrument.save_state()
             info_message(self._window, 'Updated sample %s' % sn, 'Y position set to: %s' % str(sam.positiony))
         else:
@@ -199,9 +199,9 @@ class CapillaryMeasurement(ToolWindow):
         if sn is None:
             error_message(self._window, 'Cannot save position', 'Please select a sample first.')
             return
-        sam = self._instrument.samplestore.get_sample(sn)
+        sam = self._instrument.services['samplestore'].get_sample(sn)
         sam.thickness = ErrorValue(self._thickness.val / 10, self._thickness.err / 10)
-        self._instrument.samplestore.set_sample(sn, sam)
+        self._instrument.services['samplestore'].set_sample(sn, sam)
         self._instrument.save_state()
         info_message(self._window, 'Updated sample %s' % sn, 'Thickness set to: %s' % str(sam.thickness))
         self._builder.get_object('savethickness_button').set_sensitive(False)
@@ -217,17 +217,18 @@ class CapillaryMeasurement(ToolWindow):
         if ToolWindow.on_map(self, window):
             return True
         try:
-            self._instrument.samplestore.disconnect(self._samplestoreconnection)
+            self._instrument.services['samplestore'].disconnect(self._samplestoreconnection)
             del self._samplestoreconnection
         except AttributeError:
             pass
-        self._samplestoreconnection = self._instrument.samplestore.connect('list-changed', self.on_samplelist_changed)
-        self.on_samplelist_changed(self._instrument.samplestore)
+        self._samplestoreconnection = self._instrument.services['samplestore'].connect('list-changed',
+                                                                                       self.on_samplelist_changed)
+        self.on_samplelist_changed(self._instrument.services['samplestore'])
 
     def on_unmap(self, window):
         ToolWindow.on_unmap(self, window)
         try:
-            self._instrument.samplestore.disconnect(self._samplestoreconnection)
+            self._instrument.services['samplestore'].disconnect(self._samplestoreconnection)
             del self._samplestoreconnection
         except AttributeError:
             pass

@@ -18,7 +18,7 @@ class SampleEdit(ToolWindow):
     def _break_connections(self):
         try:
             for c in self._sampleconnections:
-                self._instrument.samplestore.disconnect(c)
+                self._instrument.services['samplestore'].disconnect(c)
             del self._sampleconnections
         except AttributeError:
             pass
@@ -27,7 +27,8 @@ class SampleEdit(ToolWindow):
         if ToolWindow.on_map(self, window):
             return True
         self._break_connections()
-        self._sampleconnections=[self._instrument.samplestore.connect('list-changed', lambda x: self._repopulate_list())]
+        self._sampleconnections = [
+            self._instrument.services['samplestore'].connect('list-changed', lambda x: self._repopulate_list())]
         self._repopulate_list()
 
     def on_unmap(self, window):
@@ -36,20 +37,20 @@ class SampleEdit(ToolWindow):
 
     def on_new(self, button):
         newsample=Sample('Unnamed')
-        if not self._instrument.samplestore.add(newsample):
+        if not self._instrument.services['samplestore'].add(newsample):
             index=1
-            while not self._instrument.samplestore.add(Sample('Unnamed_%d'%index)):
+            while not self._instrument.services['samplestore'].add(Sample('Unnamed_%d' % index)):
                 index+=1
 
     def on_duplicate(self, button):
         model, it=self._builder.get_object('sampletreeview').get_selection().get_selected()
         selectedname=model[it][0]
-        selectedsample=[s for s in self._instrument.samplestore if s.title==selectedname]
+        selectedsample = [s for s in self._instrument.services['samplestore'] if s.title == selectedname]
         assert(len(selectedsample)==1)
         newsample=Sample(selectedsample[0])
         newsample.title=newsample.title+'_copy'
         index=1
-        while not self._instrument.samplestore.add(newsample):
+        while not self._instrument.services['samplestore'].add(newsample):
             newsample.title=selectedsample[0].title+'_copy%d'%index
             index +=1
 
@@ -60,7 +61,7 @@ class SampleEdit(ToolWindow):
 
     def on_remove(self, button):
         model, it=self._builder.get_object('sampletreeview').get_selection().get_selected()
-        self._instrument.samplestore.remove(model[it][0])
+        self._instrument.services['samplestore'].remove(model[it][0])
 
     def _repopulate_list(self):
         model=self._builder.get_object('samplestore')
@@ -69,9 +70,9 @@ class SampleEdit(ToolWindow):
         if it is not None:
             previously_selected=model[it][0]
         else:
-            previously_selected=self._instrument.samplestore.get_active_name()
+            previously_selected = self._instrument.services['samplestore'].get_active_name()
         model.clear()
-        for s in sorted(self._instrument.samplestore, key=lambda x:x.title):
+        for s in sorted(self._instrument.services['samplestore'], key=lambda x: x.title):
             model.append((s.title,))
         it=model.get_iter_first()
         while it:
@@ -90,7 +91,7 @@ class SampleEdit(ToolWindow):
             return
         selectedname=model[it][0]
         try:
-            sample=self._instrument.samplestore.get_sample(selectedname)
+            sample = self._instrument.services['samplestore'].get_sample(selectedname)
         except KeyError:
             self._repopulate_list()
             return
@@ -161,7 +162,7 @@ class SampleEdit(ToolWindow):
                       )
         oldtitle=self._changedselection
         del self._changedselection
-        self._instrument.samplestore.set_sample(oldtitle,sample)
+        self._instrument.services['samplestore'].set_sample(oldtitle, sample)
         self._builder.get_object('apply_button').set_sensitive(False)
         self._instrument.save_state()
 

@@ -8,7 +8,7 @@ class ScanViewer(ToolWindow):
 
     def _disconnect_lastscanconnection(self):
         try:
-            self._instrument.filesequence.disconnect(self._lastscanconnection)
+            self._instrument.services['filesequence'].disconnect(self._lastscanconnection)
             del self._lastscanconnection
         except AttributeError:
             pass
@@ -20,12 +20,13 @@ class ScanViewer(ToolWindow):
 
     def _update_gui(self):
         self._disconnect_lastscanconnection()
-        self._lastscanconnection = self._instrument.filesequence.connect('lastscan-changed', self.on_lastscan_changed)
+        self._lastscanconnection = self._instrument.services['filesequence'].connect('lastscan-changed',
+                                                                                     self.on_lastscan_changed)
         scanfileselector = self._builder.get_object('scanfile_selector')
         scanfileselector.set_active(-1)
         scanfileselector.remove_all()
         self._selected_scanfile = None
-        for i, sf in enumerate(sorted(self._instrument.filesequence.get_scanfiles())):
+        for i, sf in enumerate(sorted(self._instrument.services['filesequence'].get_scanfiles())):
             scanfileselector.append_text(sf)
             if sf == self._selected_scanfile:
                 scanfileselector.set_active(i)
@@ -40,7 +41,7 @@ class ScanViewer(ToolWindow):
         if (scanfile == self._selected_scanfile) or (scanfile is None):
             return
         self._selected_scanfile = scanfile
-        scans = self._instrument.filesequence.get_scans(scanfileselector.get_active_text())
+        scans = self._instrument.services['filesequence'].get_scans(scanfileselector.get_active_text())
         model = self._builder.get_object('scanstore')
         model.clear()
         for idx in sorted(scans):
@@ -53,7 +54,7 @@ class ScanViewer(ToolWindow):
         model, iterators = self._builder.get_object('scanview').get_selection().get_selected_rows()
         for iterator in iterators:
             idx = model[iterator][0]
-            scan = self._instrument.filesequence.load_scan(idx, self._builder.get_object(
+            scan = self._instrument.services['filesequence'].load_scan(idx, self._builder.get_object(
                 'scanfile_selector').get_active_text())
             sg = ScanGraph(scan['signals'], scan['data'], self._instrument, idx, scan['comment'])
             sg._window.show_all()
@@ -61,9 +62,9 @@ class ScanViewer(ToolWindow):
     def on_lastscan_changed(self, filesequence, lastscan):
         scanfileselector = self._builder.get_object('scanfile_selector')
         model = self._builder.get_object('scanstore')
-        scans = self._instrument.filesequence.get_scans(scanfileselector.get_active_text())
+        scans = self._instrument.services['filesequence'].get_scans(scanfileselector.get_active_text())
         model.append((lastscan, scans[lastscan]['cmd'], str(scans[lastscan]['date']), scans[lastscan]['comment']))
 
     def reload_scans(self, button):
-        self._instrument.filesequence.reload()
+        self._instrument.services['filesequence'].reload()
         self._update_gui()

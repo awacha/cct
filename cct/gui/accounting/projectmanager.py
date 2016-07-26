@@ -16,7 +16,7 @@ class ProjectManager(ToolWindow):
     def _update_gui(self):
         model = self._builder.get_object('projectidstore')
         model.clear()
-        for pid in sorted(self._instrument.accounting.get_projectids()):
+        for pid in sorted(self._instrument.services['accounting'].get_projectids()):
             model.append((pid,))
         self._builder.get_object('project-selection').select_iter(model.get_iter_first())
         self._builder.get_object('apply_button').set_sensitive(False)
@@ -34,8 +34,9 @@ class ProjectManager(ToolWindow):
             return
         projectid = model[iterator][0]
         self._builder.get_object('projectname_entry').set_text(
-            self._instrument.accounting.get_project(projectid).projectname)
-        self._builder.get_object('proposer_entry').set_text(self._instrument.accounting.get_project(projectid).proposer)
+            self._instrument.services['accounting'].get_project(projectid).projectname)
+        self._builder.get_object('proposer_entry').set_text(
+            self._instrument.services['accounting'].get_project(projectid).proposer)
         self._builder.get_object('apply_button').set_sensitive(False)
 
     def on_apply(self, button):
@@ -45,7 +46,7 @@ class ProjectManager(ToolWindow):
         if iterator is None:
             return
         projectid = model[iterator][0]
-        self._instrument.accounting.new_project(projectid, projectname, proposer)
+        self._instrument.services['accounting'].new_project(projectid, projectname, proposer)
         button.set_sensitive(False)
 
     def on_addproject(self, button):
@@ -66,7 +67,7 @@ class ProjectManager(ToolWindow):
         # dlg.show_all()
         if dlg.run() == Gtk.ResponseType.OK:
             try:
-                project=self._instrument.accounting.new_project(entry.get_text(), '', '')
+                project = self._instrument.services['accounting'].new_project(entry.get_text(), '', '')
             except Exception as exc:
                 error_message(dlg, 'Cannot add new project', str(exc))
         dlg.destroy()
@@ -78,7 +79,7 @@ class ProjectManager(ToolWindow):
             return
         projectid=model[iterator][0]
         try:
-            self._instrument.accounting.delete_project(projectid)
+            self._instrument.services['accounting'].delete_project(projectid)
         except AssertionError:
             error_message(self._window, 'Cannot delete current project')
         self._update_gui()

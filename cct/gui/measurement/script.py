@@ -137,18 +137,18 @@ class ScriptMeasurement(ToolWindow):
                                                      'open_toolbutton', 'undo_toolbutton', 'redo_toolbutton', 'cut_toolbutton',
                                                      'copy_toolbutton', 'paste_toolbutton', 'help_toolbutton', 'execute_toolbutton'])
         self._interpreter_connections=[
-            self._instrument.interpreter.connect('cmd-return', self.on_script_end),
-            self._instrument.interpreter.connect('cmd-fail', self.on_script_fail),
-            self._instrument.interpreter.connect('pulse', self.on_script_pulse),
-            self._instrument.interpreter.connect('progress',self.on_script_progress),
-            self._instrument.interpreter.connect('cmd-message', self.on_script_message),
-            self._instrument.interpreter.connect('flag', self.on_interpreter_flag),
+            self._instrument.services['interpreter'].connect('cmd-return', self.on_script_end),
+            self._instrument.services['interpreter'].connect('cmd-fail', self.on_script_fail),
+            self._instrument.services['interpreter'].connect('pulse', self.on_script_pulse),
+            self._instrument.services['interpreter'].connect('progress', self.on_script_progress),
+            self._instrument.services['interpreter'].connect('cmd-message', self.on_script_message),
+            self._instrument.services['interpreter'].connect('flag', self.on_interpreter_flag),
                                        ]
-        #self._instrument.interpreter.clear_flag(None)  # clear all flags
+        # self._instrument.services['interpreter'].clear_flag(None)  # clear all flags
         flagsbb = self._builder.get_object('flags_buttonbox')
         for b in flagsbb:
             if b.get_active():
-                self._instrument.interpreter.set_flag(b.get_label())
+                self._instrument.services['interpreter'].set_flag(b.get_label())
 
         self._builder.get_object('sourceview').set_editable(False)
         self._scriptconnections = [self._scriptcommand.connect('cmd-start', self.on_command_start),
@@ -159,7 +159,7 @@ class ScriptMeasurement(ToolWindow):
         self._builder.get_object('messagesview').scroll_to_iter(buf.get_end_iter(), 0, False, 0, 0)
         buf.place_cursor(buf.get_end_iter())
         try:
-            self._instrument.interpreter.execute_command(self._scriptcommand)
+            self._instrument.services['interpreter'].execute_command(self._scriptcommand)
         except Exception:
             self._cleanup()
             raise
@@ -172,7 +172,7 @@ class ScriptMeasurement(ToolWindow):
     def _cleanup(self):
         self._make_sensitive()
         for c in self._interpreter_connections:
-            self._instrument.interpreter.disconnect(c)
+            self._instrument.services['interpreter'].disconnect(c)
         del self._interpreter_connections
         self._builder.get_object('sourceview').set_editable(True)
         self._sourcebuffer.remove_source_marks(
@@ -258,7 +258,7 @@ class ScriptMeasurement(ToolWindow):
             pass
 
     def on_toolbutton_stop(self, toolbutton):
-        self._instrument.interpreter.kill()
+        self._instrument.services['interpreter'].kill()
 
     def on_toolbutton_help(self, toolbutton):
         if not hasattr(self, '_helpdialog'):
@@ -276,9 +276,9 @@ class ScriptMeasurement(ToolWindow):
 
     def on_flag_toggled(self, flagtoggle):
         if flagtoggle.get_active():
-            self._instrument.interpreter.set_flag(flagtoggle.get_label())
+            self._instrument.services['interpreter'].set_flag(flagtoggle.get_label())
         else:
-            self._instrument.interpreter.clear_flag(flagtoggle.get_label())
+            self._instrument.services['interpreter'].clear_flag(flagtoggle.get_label())
 
     def on_interpreter_flag(self, interpreter, flagname, newstate):
         logger.info('Flag state changed: %s, %s'%(flagname, newstate))

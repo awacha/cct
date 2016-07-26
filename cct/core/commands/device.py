@@ -37,7 +37,7 @@ class GetVariable(Command):
         self.required_devices = [self.devicename]
 
     def execute(self):
-        dev = self.interpreter.instrument.get_device(self.devicename)
+        dev = self.get_device(self.devicename)
         assert isinstance(dev, Device)
         dev.refresh_variable(self.variablename)
 
@@ -82,7 +82,7 @@ class SetVariable(Command):
         self.required_devices = [self.devicename]
 
     def execute(self):
-        dev = self.interpreter.instrument.get_device(self.devicename)
+        dev = self.get_device(self.devicename)
         assert isinstance(dev, Device)
         dev.set_variable(self.variablename, self.value)
         dev.refresh_variable(self.variablename)
@@ -123,7 +123,7 @@ class DevCommand(Command):
         self.required_devices = [self.devicename]
 
     def execute(self):
-        device = self.interpreter.instrument.get_device(self.devicename)
+        device = self.get_device(self.devicename)
         device.execute_command(self.cmdname, *(self.cmdargs))
         self.idle_return(None)
 
@@ -152,7 +152,7 @@ class ListVariables(Command):
         self.devicename = str(self.args[0])
 
     def execute(self):
-        dev = self.interpreter.instrument.get_device(self.devicename)
+        dev = self.get_device(self.devicename)
         assert isinstance(dev, Device)
         lis = dev.list_variables()
         self.emit('message', ', '.join(lis))
@@ -343,6 +343,6 @@ class SaveConfig(Command):
             raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
 
     def execute(self):
-        self.interpreter.instrument.save_state()
+        self.instrument.save_state()
         self.emit('message', 'Configuration saved.')
         self.idle_return(None)

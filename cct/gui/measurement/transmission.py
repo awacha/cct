@@ -9,16 +9,17 @@ class Transmission(ToolWindow):
         if ToolWindow.on_map(self, window):
             return True
         try:
-            self._instrument.samplestore.disconnect(self._onlistchangedconnection)
+            self._instrument.services['samplestore'].disconnect(self._onlistchangedconnection)
             del self._onlistchangedconnection
         except AttributeError:
             pass
-        self._onlistchangedconnection=self._instrument.samplestore.connect('list-changed', self.on_samplelistchanged)
-        self.on_samplelistchanged(self._instrument.samplestore)
+        self._onlistchangedconnection = self._instrument.services['samplestore'].connect('list-changed',
+                                                                                         self.on_samplelistchanged)
+        self.on_samplelistchanged(self._instrument.services['samplestore'])
 
     def on_unmap(self, window):
         try:
-            self._instrument.samplestore.disconnect(self._onlistchangedconnection)
+            self._instrument.services['samplestore'].disconnect(self._onlistchangedconnection)
             del self._onlistchangedconnection
         except AttributeError:
             pass
@@ -50,11 +51,12 @@ class Transmission(ToolWindow):
             self._make_insensitive('Transmission measurement running',['entry_expander', 'transmview', 'add_button', 'remove_button', 'close_button'])
             self._builder.get_object('start_button').set_label('Stop')
             samplenames = ', '.join("'%s'" % row[0] for row in reversed(self._builder.get_object('transmstore')))
-            self._interpreterconnections=[self._instrument.interpreter.connect('cmd-return', self.on_cmd_return),
-                                          self._instrument.interpreter.connect('cmd-detail', self.on_cmd_detail),
-                                          self._instrument.interpreter.connect('cmd-fail', self.on_cmd_fail),
-                                          ]
-            self._instrument.interpreter.execute_command('transmission([%s], %d, %f, "%s")'%(
+            self._interpreterconnections = [
+                self._instrument.services['interpreter'].connect('cmd-return', self.on_cmd_return),
+                self._instrument.services['interpreter'].connect('cmd-detail', self.on_cmd_detail),
+                self._instrument.services['interpreter'].connect('cmd-fail', self.on_cmd_fail),
+                ]
+            self._instrument.services['interpreter'].execute_command('transmission([%s], %d, %f, "%s")' % (
                 samplenames, self._builder.get_object('nimages_spin').get_value_as_int(),
                 self._builder.get_object('exptime_spin').get_value(),
                 self._builder.get_object('samplenamestore')[self._builder.get_object('emptyname_combo').get_active()][0]))
@@ -71,14 +73,14 @@ class Transmission(ToolWindow):
             transmstore[0][7]=True
             self._pulser_timeout=GLib.timeout_add(100,self.pulser)
         else:
-            self._instrument.interpreter.kill()
+            self._instrument.services['interpreter'].kill()
 
     def on_cmd_return(self, interpreter, commandname, value):
         self._make_sensitive()
         self._builder.get_object('start_button').set_label('Start')
         try:
             for c in self._interpreterconnections:
-                self._instrument.interpreter.disconnect(c)
+                self._instrument.services['interpreter'].disconnect(c)
             del self._interpreterconnections
         except AttributeError:
             pass
@@ -107,7 +109,7 @@ class Transmission(ToolWindow):
                     transmstore[i][3]=str(value)
                 elif what=='transmission':
                     transmstore[i][4]=str(value)
-                    mu=-value.log()/self._instrument.samplestore.get_sample(samplename).thickness
+                    mu = -value.log() / self._instrument.services['samplestore'].get_sample(samplename).thickness
                     transmstore[i][5]=str(mu)
                     transmstore[i][6]=str(1/mu)
                     transmstore[i][7]=False

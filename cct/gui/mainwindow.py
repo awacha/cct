@@ -162,7 +162,7 @@ class AuthenticatorDialog(object):
                 return False
             elif response == 1:
                 username = self._builder.get_object('operator_entry').get_text()
-                if self._application._instrument.accounting.authenticate(
+                if self._application._instrument.services['accounting'].authenticate(
                         username, self._builder.get_object('password_entry').get_text()):
                     return True
                 self._builder.get_object('password_entry').set_name('redbackground')
@@ -273,12 +273,12 @@ class MainWindow(object):
         self._window.set_title('Credo Control Tool')
 
         self._interpreterconnections = [
-            self._instrument.interpreter.connect('cmd-return', self.on_interpreter_cmd_return),
-            self._instrument.interpreter.connect('cmd-fail', self.on_interpreter_cmd_fail),
-            self._instrument.interpreter.connect('pulse', self.on_interpreter_cmd_pulse),
-            self._instrument.interpreter.connect('progress', self.on_interpreter_cmd_progress),
-            self._instrument.interpreter.connect('cmd-message', self.on_interpreter_cmd_message),
-            self._instrument.interpreter.connect('idle-changed', self.on_interpreter_idle_changed), ]
+            self._instrument.services['interpreter'].connect('cmd-return', self.on_interpreter_cmd_return),
+            self._instrument.services['interpreter'].connect('cmd-fail', self.on_interpreter_cmd_fail),
+            self._instrument.services['interpreter'].connect('pulse', self.on_interpreter_cmd_pulse),
+            self._instrument.services['interpreter'].connect('progress', self.on_interpreter_cmd_progress),
+            self._instrument.services['interpreter'].connect('cmd-message', self.on_interpreter_cmd_message),
+            self._instrument.services['interpreter'].connect('idle-changed', self.on_interpreter_idle_changed), ]
         self._commandhistory = []
         self._historyindex = None
 
@@ -314,7 +314,7 @@ class MainWindow(object):
         if button.get_label() == 'Execute':
             cmd = self._builder.get_object('command_entry').get_text()
             try:
-                self._instrument.interpreter.execute_command(cmd)
+                self._instrument.services['interpreter'].execute_command(cmd)
             except CommandError as ce:
                 error_message(self._window, 'Cannot execute command', str(ce))
             else:
@@ -322,7 +322,7 @@ class MainWindow(object):
                 if (not self._commandhistory) or (self._commandhistory and self._commandhistory[-1] != cmd):
                     self._commandhistory.append(self._builder.get_object('command_entry').get_text())
         elif button.get_label() == 'Stop':
-            self._instrument.interpreter.kill()
+            self._instrument.services['interpreter'].kill()
         else:
             raise NotImplementedError(button.get_label())
 
