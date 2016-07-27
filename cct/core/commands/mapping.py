@@ -5,7 +5,7 @@ import operator
 import traceback
 
 from .command import Command, CommandError, CommandArgumentError, CommandKilledError
-from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE
+from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE, PRIV_MOVEMOTORS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -44,6 +44,8 @@ class Mapping(Command):
         super().__init__(*args, **kwargs)
         if not isinstance(self.args[0], list):
             raise CommandArgumentError('Motors argument must be a list.')
+        if not self.services['accounting'].has_privilege(PRIV_MOVEMOTORS):
+            raise CommandError('Insufficient privileges to move motors.')
         self.motors = self.args[0]
         if len(self.motors) > len(set(self.motors)):
             raise CommandArgumentError('Each motor name must be unique in the list.')

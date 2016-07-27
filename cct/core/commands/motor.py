@@ -3,7 +3,7 @@ import traceback
 
 from .command import Command, CommandError, CommandArgumentError
 from ..devices.motor import Motor
-from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE
+from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE, PRIV_MOVEMOTORS
 from ..services.samples import Sample
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,8 @@ class GeneralMove(Command):
             raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
         if len(self.args) != 1:
             raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
+        if not self.services['accounting'].has_privilege(PRIV_MOVEMOTORS):
+            raise CommandError('Insufficient privileges to move motors.')
         self.motorname = str(self.args[0])
         try:
             self.get_motor(self.motorname)
@@ -265,6 +267,8 @@ class SetSample(Command):
             raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
         if len(self.args) > 1:
             raise CommandArgumentError('Command {} requires at most one positional argument.'.format(self.name))
+        if not self.services['accounting'].has_privilege(PRIV_MOVEMOTORS):
+            raise CommandError('Insufficient privileges to move motors.')
         try:
             self.sample = self.services['samplestore'].get_sample(self.args[0])
             assert isinstance(self.sample, Sample)

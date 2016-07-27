@@ -8,6 +8,7 @@ class BuilderWidget(Callbacks):
         super().__init__()
         self.builder = Gtk.Builder.new_from_file(gladefile)
         assert isinstance(self.builder, Gtk.Builder)
+        self.builder.set_application(Gtk.Application.get_default())
         self.widget = self.builder.get_object(mainwidget)
         assert isinstance(self.widget, Gtk.Widget)
         self.builder.connect_signals(self)
@@ -15,7 +16,7 @@ class BuilderWidget(Callbacks):
                                         self.widget.connect('unmap', self.on_mainwidget_unmap)]
 
     def on_mainwidget_map(self, widget: Gtk.Widget):
-        self.widget.show_all()
+        self.widget.foreach(lambda x: x.show_all())
         return False
 
     def on_mainwidget_unmap(self, widget: Gtk.Widget):
@@ -34,3 +35,7 @@ class BuilderWidget(Callbacks):
 
     def __del__(self):
         self.cleanup()
+
+    def on_close(self, widget, event=None):
+        self.cleanup()
+        self.widget.destroy()

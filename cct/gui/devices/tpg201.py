@@ -3,34 +3,22 @@ from ..core.toolwindow import ToolWindow
 
 
 class TPG201(ToolWindow):
-    def _init_gui(self, *args):
-        self._indicator = Indicator('Pressure', 'N/A', IndicatorState.UNKNOWN)
-        self._builder.get_object('alignment').add(self._indicator)
-        self._update_indicators()
+    required_devices = ['tpg201']
 
-    def on_map(self, window):
-        if ToolWindow.on_map(self, window):
-            return True
-        self._disconnect_vacuumgauge()
-        vac = self._instrument.get_device('vacuum')
-        self._vacconnect = vac.connect('variable-change', self.on_variable_change)
-        self._update_indicators()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.indicator = None
 
-    def _update_indicators(self):
-        vac = self._instrument.get_device('vacuum')
-        self.on_variable_change(vac, 'pressure', vac.get_variable('pressure'))
+    def init_gui(self, *args):
+        self.indicator = Indicator('Pressure', 'N/A', IndicatorState.UNKNOWN)
+        self.builder.get_object('alignment').add(self.indicator)
+        self.update_indicators()
 
-    def _disconnect_vacuumgauge(self):
-        try:
-            self._instrument.get_device('vacuum').disconnect(self._vacconnect)
-            del self._vacconnect
-        except AttributeError:
-            pass
+    def update_indicators(self):
+        vac = self.instrument.get_device('vacuum')
+        self.on_device_variable_change(vac, 'pressure', vac.get_variable('pressure'))
 
-    def on_unmap(self, window):
-        self._disconnect_vacuumgauge()
-
-    def on_variable_change(self, vacgauge, variable, newvalue):
+    def on_device_variable_change(self, vacgauge, variable, newvalue):
         if variable == 'pressure':
             if newvalue > 1:
                 state = IndicatorState.ERROR
@@ -38,5 +26,5 @@ class TPG201(ToolWindow):
                 state = IndicatorState.WARNING
             else:
                 state = IndicatorState.OK
-            self._indicator.set_value('%.3f mbar' % newvalue, state)
+            self.indicator.set_value('%.3f mbar' % newvalue, state)
         return False

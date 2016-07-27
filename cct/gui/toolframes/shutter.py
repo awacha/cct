@@ -12,8 +12,8 @@ class ShutterBeamstop(ToolFrame):
     def _init_gui(self, *args):
         try:
             self._connections = {
-                self._instrument.devices['genix']: [
-                    self._instrument.devices['genix'].connect('variable-change', self.on_genix_variable_change),
+                self._instrument.get_device('genix'): [
+                    self._instrument.get_device('genix').connect('variable-change', self.on_genix_variable_change),
                 ],
                 self._instrument.motors['BeamStop_Y']: [
                     self._instrument.motors['BeamStop_Y'].connect('position-change', self.on_motor_position_change),
@@ -23,8 +23,8 @@ class ShutterBeamstop(ToolFrame):
                 ],
             }
             # self.on_motor_position_change(None, None)
-            # self.on_genix_variable_change(self._instrument.devices['genix'], 'shutter',
-            #                              self._instrument.devices['genix'].get_variable('shutter'))
+            # self.on_genix_variable_change(self._instrument.get_device('genix'), 'shutter',
+            #                              self._instrument.get_device('genix').get_variable('shutter'))
         except KeyError:
             self._widget.set_sensitive(False)
         self._privlevelconnection = self._instrument.services['accounting'].connect('privlevel-changed',
@@ -84,7 +84,7 @@ class ShutterBeamstop(ToolFrame):
         return False
 
     def on_shutter_switch_set_state(self, switch, value):
-        self._instrument.devices['genix'].shutter(value)
+        self._instrument.get_device('genix').shutter(value)
         return True
 
     def on_beamstop_in(self, button):

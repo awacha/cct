@@ -6,7 +6,7 @@ import numpy as np
 from sastool.misc.errorvalue import ErrorValue
 
 from .command import Command, CommandError, CommandArgumentError, CommandTimeoutError
-from ..instrument.privileges import PRIV_BEAMSTOP
+from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_MOVEMOTORS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -71,6 +71,8 @@ class Transmission(Command):
             raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
         if len(self.args) != 4:
             raise CommandArgumentError('Command {} requires exactly four positional arguments.'.format(self.name))
+        if not self.services['accounting'].has_privilege(PRIV_MOVEMOTORS):
+            raise CommandError('Insufficient privileges to move motors.')
         self.samplenames = self.args[0]
         if isinstance(self.samplenames, str):
             self.samplenames = [self.samplenames]

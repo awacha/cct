@@ -192,7 +192,7 @@ class Calibration(ToolWindow):
     def on_manualposition_selected(self, event):
         if (event.button == 1) and (event.inaxes == self._plot2d._axis):
             try:
-                self._plot2d._canvas.mpl_disconnect(self._manualpickingconnection)
+                self._plot2d.canvas.mpl_disconnect(self._manualpickingconnection)
                 del self._manualpickingconnection
             except AttributeError:
                 pass
@@ -213,8 +213,8 @@ class Calibration(ToolWindow):
                 stack = self._builder.get_object('plotstack')
                 stack.child_set_property(stack.get_child_by_name('plot2d'), 'needs-attention', True)
                 self._cursor = Cursor(self._plot2d._axis, useblit=False, color='white', lw=1)
-                self._manualpickingconnection = self._plot2d._canvas.mpl_connect('button_press_event',
-                                                                                 self.on_manualposition_selected)
+                self._manualpickingconnection = self._plot2d.canvas.mpl_connect('button_press_event',
+                                                                                self.on_manualposition_selected)
                 self._make_insensitive('Manual positioning active', widgets=['input_box', 'close_button'])
                 return
             elif method == 'Peak amplitude':

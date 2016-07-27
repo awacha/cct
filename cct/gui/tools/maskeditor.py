@@ -88,10 +88,10 @@ class MaskEditor(ToolWindow):
                                    ['new_button', 'save_button', 'saveas_button', 'open_button', 'undo_button',
                                     'selectrectangle_button', 'selectpolygon_button', 'pixelhunting_button',
                                     'loadexposure_expander', 'close_button'],
-                                   [self._plot2d._toolbar, self._plot2d._settings_expander])
-            while self._plot2d._toolbar.mode != '':
+                                   [self._plot2d.toolbar, self._plot2d._settings_expander])
+            while self._plot2d.toolbar.mode != '':
                 # turn off zoom, pan, etc. modes.
-                self._plot2d._toolbar.zoom()
+                self._plot2d.toolbar.zoom()
             self._selector = EllipseSelector(self._plot2d._axis,
                                              self.on_ellipse_selected,
                                              rectprops={'facecolor': 'white', 'edgecolor': 'none', 'alpha': 0.7,
@@ -135,10 +135,10 @@ class MaskEditor(ToolWindow):
                                    ['new_button', 'save_button', 'saveas_button', 'open_button', 'undo_button',
                                     'selectcircle_button', 'selectpolygon_button', 'pixelhunting_button',
                                     'loadexposure_expander', 'close_button'],
-                                   [self._plot2d._toolbar, self._plot2d._settings_expander])
-            while self._plot2d._toolbar.mode != '':
+                                   [self._plot2d.toolbar, self._plot2d._settings_expander])
+            while self._plot2d.toolbar.mode != '':
                 # turn off zoom, pan, etc. modes.
-                self._plot2d._toolbar.zoom()
+                self._plot2d.toolbar.zoom()
             self._selector = RectangleSelector(self._plot2d._axis,
                                                self.on_rectangle_selected,
                                                rectprops={'facecolor': 'white', 'edgecolor': 'none', 'alpha': 0.7,
@@ -178,10 +178,10 @@ class MaskEditor(ToolWindow):
                                    ['new_button', 'save_button', 'saveas_button', 'open_button', 'undo_button',
                                     'selectrectangle_button', 'selectcircle_button', 'pixelhunting_button',
                                     'loadexposure_expander', 'close_button'],
-                                   [self._plot2d._toolbar, self._plot2d._settings_expander])
-            while self._plot2d._toolbar.mode != '':
+                                   [self._plot2d.toolbar, self._plot2d._settings_expander])
+            while self._plot2d.toolbar.mode != '':
                 # turn off zoom, pan, etc. modes.
-                self._plot2d._toolbar.zoom()
+                self._plot2d.toolbar.zoom()
             self._selector = LassoSelector(self._plot2d._axis,
                                            self.on_polygon_selected,
                                            lineprops={'color': 'white'},
@@ -226,9 +226,9 @@ class MaskEditor(ToolWindow):
         if button.get_active():
             self._cursor = Cursor(self._plot2d._axis, useblit=False, color='white', lw=1)
             self._cursor.connect_event('button_press_event', self.on_cursorclick)
-            while self._plot2d._toolbar.mode != '':
+            while self._plot2d.toolbar.mode != '':
                 # turn off zoom, pan, etc. modes.
-                self._plot2d._toolbar.zoom()
+                self._plot2d.toolbar.zoom()
         else:
             self._cursor.disconnect_events()
             del self._cursor
@@ -236,7 +236,7 @@ class MaskEditor(ToolWindow):
             self._plot2d._replot(keepzoom=True)
 
     def on_cursorclick(self, event):
-        if (event.inaxes == self._plot2d._axis) and (self._plot2d._toolbar.mode == ''):
+        if (event.inaxes == self._plot2d._axis) and (self._plot2d.toolbar.mode == ''):
             self._mask[round(event.ydata), round(event.xdata)] ^= True
             self._cursor.disconnect_events()
             del self._cursor

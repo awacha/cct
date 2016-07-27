@@ -3,7 +3,7 @@ import logging
 import traceback
 
 from .command import Command, CommandError, CommandArgumentError, CommandKilledError
-from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE
+from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE, PRIV_MOVEMOTORS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -39,6 +39,8 @@ class Scan(Command):
             self.get_motor(self.motorname)
         except KeyError:
             raise CommandArgumentError('Unknown motor: {}'.format(self.motorname))
+        if not self.services['accounting'].has_privilege(PRIV_MOVEMOTORS):
+            raise CommandError('Insufficient privileges to move motors.')
         if (self.motorname in ['BeamStop_X', 'BeamStop_Y'] and
                 not self.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
             raise CommandError('Insufficient privileges to move the beamstop')
@@ -195,6 +197,8 @@ class ScanRel(Scan):
             self.get_motor(self.motorname)
         except KeyError:
             raise CommandArgumentError('Unknown motor: {}'.format(self.motorname))
+        if not self.services['accounting'].has_privilege(PRIV_MOVEMOTORS):
+            raise CommandError('Insufficient privileges to move motors.')
         if (self.motorname in ['BeamStop_X', 'BeamStop_Y'] and
                 not self.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
             raise CommandError('Insufficient privileges to move the beamstop')

@@ -107,7 +107,7 @@ class MyLogHandler(logging.Handler):
 class CCTApplication(Gtk.Application):
     def __init__(self, *args, **kwargs):
         kwargs['flags'] = Gio.ApplicationFlags.HANDLES_COMMAND_LINE
-        Gtk.Application.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._starttime = time.time()
 
     def do_activate(self):
@@ -177,7 +177,7 @@ class DeviceStatusBar(Gtk.Box):
         self._status = {}
         self._auxstatus = {}
         for device in sorted(self._instrument.devices):
-            dev = self._instrument.devices[device]
+            dev = self._instrument.get_device(device)
             frame = Gtk.Frame(label=device)
             self._status[dev] = dev.get_variable('_status')
             try:

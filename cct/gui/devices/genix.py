@@ -1,24 +1,31 @@
 import logging
 
+from ..core.dialogs import question_message
 from ..core.indicator import Indicator, IndicatorState
-from ..core.toolwindow import ToolWindow, question_message
+from ..core.toolwindow import ToolWindow
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 class GeniX(ToolWindow):
-    def _init_gui(self, *args):
-        self._indicators = {}
-        statusindicators = self._builder.get_object('statusindicators')
+    widgets_to_make_insensitive = ['operations_buttonbox', 'statusindicators', 'errorindicators']
+    required_devices = ['genix']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.indicators = {}
+
+    def init_gui(self, *args, **kwargs):
+        statusindicators = self.builder.get_object('statusindicators')
         for row, column, vn, label in [(0, 0, '_status', 'Status'), (0, 1, 'ht', 'Tube voltage'),
                                        (0, 2, 'current', 'Tube current'), (0, 3, 'power', 'Power'),
                                        (0, 4, 'tubetime', 'Tube on-time'), (1, 0, 'remote_mode', 'Remote control'),
                                        (1, 1, 'xrays', 'X-ray generator'), (1, 2, 'shutter', 'Shutter'),
                                        (1, 3, 'interlock', 'Interlock'), (1, 4, 'overridden', 'Override mode')]:
-            self._indicators[vn] = Indicator(label, 'N/A', IndicatorState.UNKNOWN)
-            statusindicators.attach(self._indicators[vn], column, row, 1, 1)
-        errorindicators = self._builder.get_object('errorindicators')
+            self.indicators[vn] = Indicator(label, 'N/A', IndicatorState.UNKNOWN)
+            statusindicators.attach(self.indicators[vn], column, row, 1, 1)
+        errorindicators = self.builder.get_object('errorindicators')
         for row, column, vn, label in [(0, 0, 'faults', 'Faults present'),
                                        (0, 1, 'xray_light_fault', 'X-rays on light'),
                                        (0, 2, 'shutter_light_fault', 'Shutter open light'),
@@ -33,215 +40,204 @@ class GeniX(ToolWindow):
                                        (2, 1, 'relay_interlock_fault', 'Interlock relays'),
                                        (2, 2, 'door_fault', 'Interlock system'),
                                        (2, 3, 'tube_warmup_needed', 'Warm-up')]:
-            self._indicators[vn] = Indicator(label, 'N/A', IndicatorState.UNKNOWN)
-            errorindicators.attach(self._indicators[vn], column, row, 1, 1)
-        self._genix = self._instrument.devices['genix']
-        self._update_indicators()
+            self.indicators[vn] = Indicator(label, 'N/A', IndicatorState.UNKNOWN)
+            errorindicators.attach(self.indicators[vn], column, row, 1, 1)
+        self.update_indicators()
 
-    def on_map(self, window):
-        if ToolWindow.on_map(self, window):
+    def on_mainwidget_map(self, window):
+        if super().on_mainwidget_map(window):
             return True
-        self._update_indicators()
-        if not hasattr(self, '_genixconnections'):
-            self._genixconnections = [self._genix.connect('variable-change', self.on_variable_change),
-                                      ]
+        self.update_indicators()
+        return False
 
-    def _update_indicators(self):
-        for vn in self._indicators:
-            self.on_variable_change(self._genix, vn, self._genix.get_variable(vn))
-        genixshutter = self._genix.get_variable('shutter')
-        shuttertoggle = self._builder.get_object('shutter_toggle').get_active()
+    def update_indicators(self):
+        genix = self.instrument.get_device('genix')
+        for vn in self.indicators:
+            self.on_variable_change(genix, vn, genix.get_variable(vn))
+        genixshutter = genix.get_variable('shutter')
+        shuttertoggle = self.builder.get_object('shutter_toggle').get_active()
         if genixshutter != shuttertoggle:
-            self._builder.get_object('shutter_toggle').set_active(self._genix.get_variable('shutter'))
-        genixxrays = self._genix.get_variable('xrays')
-        xraystoggle = self._builder.get_object('xraystate_toggle').get_active()
+            self.builder.get_object('shutter_toggle').set_active(genix.get_variable('shutter'))
+        genixxrays = genix.get_variable('xrays')
+        xraystoggle = self.builder.get_object('xraystate_toggle').get_active()
         if genixxrays != xraystoggle:
-            self._builder.get_object('xraystate_toggle').set_active(self._genix.get_variable('xrays'))
-        self._builder.get_object('warmup_toggle').set_active(self._genix.get_variable('_status') == 'Warming up')
+            self.builder.get_object('xraystate_toggle').set_active(genix.get_variable('xrays'))
+        self.builder.get_object('warmup_toggle').set_active(genix.get_variable('_status') == 'Warming up')
 
-    def on_unmap(self, window):
-        try:
-            for c in self._genixconnections:
-                self._genix.disconnect(c)
-            del self._genixconnections
-        except AttributeError:
-            pass
 
     def on_warmup(self, button):
+        genix = self.instrument.get_device('genix')
         if hasattr(self, '_updating_buttons'):
             return
         if button.get_active():
             try:
-                if self._genix.get_variable('_status') == 'Power off':
-                    self._genix.execute_command('start_warmup')
+                if genix.get_variable('_status') == 'Power off':
+                    genix.execute_command('start_warmup')
                 else:
                     logger.error('Cannot start warm-up procedure unless the X-ray source is in "Power off" state.')
             except:
                 button.set_active(False)
                 raise
         else:
-            if (not self._genix.get_variable('_status') == 'Warming up') or (
+            if (not genix.get_variable('_status') == 'Warming up') or (
                     question_message('Do you really want to break the warm-up sequence?',
                                      'Voltage will be gradually decreased to 0 kV.')):
-                self._genix.execute_command('stop_warmup')
+                genix.execute_command('stop_warmup')
 
     def on_resetfaults(self, button):
-        self._genix.execute_command('reset_faults')
+        self.instrument.get_device('genix').reset_faults()
 
     def on_poweroff(self, button):
-        self._genix.execute_command('poweroff')
+        self.instrument.get_device('genix').set_power('off')
 
     def on_standby(self, button):
-        self._genix.execute_command('standby')
-        pass
+        self.instrument.get_device('genix').set_power('standby')
 
     def on_shutter(self, button):
         if hasattr(self, '_updating_buttons'):
             return
+        genix = self.instrument.get_device('genix')
         logger.debug('Shutter button toggled to: ' + str(button.get_active()))
-        if self._genix.get_variable('shutter') != button.get_active():
-            self._genix.execute_command('shutter', button.get_active())
+        if genix.get_variable('shutter') != button.get_active():
+            genix.execute_command('shutter', button.get_active())
 
     def on_xraystate(self, button):
         if hasattr(self, '_updating_buttons'):
             return
-        self._genix.execute_command('xrays', button.get_active())
+        self.instrument.get_device('genix').set_xrays(button.get_active())
 
     def on_fullpower(self, button):
-        self._genix.execute_command('full_power')
+        self.instrument.get_device('genix').set_power('full')
 
     def on_variable_change(self, genix, variablename, newvalue):
         if variablename == '_status':
-            self._indicators[variablename].set_value(newvalue, IndicatorState.NEUTRAL)
+            self.indicators[variablename].set_value(newvalue, IndicatorState.NEUTRAL)
             try:
                 self._updating_buttons = True
                 if newvalue == 'Power off':
-                    self._builder.get_object('xraystate_toggle').set_sensitive(True)
-                    self._builder.get_object('shutter_toggle').set_sensitive(True)
-                    self._builder.get_object('powerdown_button').set_sensitive(False)
-                    self._builder.get_object('standby_button').set_sensitive(True)
-                    self._builder.get_object('fullpower_button').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_sensitive(True)
-                    self._builder.get_object('warmup_toggle').set_active(False)
+                    self.builder.get_object('xraystate_toggle').set_sensitive(True)
+                    self.builder.get_object('shutter_toggle').set_sensitive(True)
+                    self.builder.get_object('powerdown_button').set_sensitive(False)
+                    self.builder.get_object('standby_button').set_sensitive(True)
+                    self.builder.get_object('fullpower_button').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_sensitive(True)
+                    self.builder.get_object('warmup_toggle').set_active(False)
                 elif newvalue == 'Powering down':
-                    self._builder.get_object('xraystate_toggle').set_sensitive(False)
-                    self._builder.get_object('shutter_toggle').set_sensitive(True)
-                    self._builder.get_object('powerdown_button').set_sensitive(False)
-                    self._builder.get_object('standby_button').set_sensitive(False)
-                    self._builder.get_object('fullpower_button').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_sensitive(False)
+                    self.builder.get_object('xraystate_toggle').set_sensitive(False)
+                    self.builder.get_object('shutter_toggle').set_sensitive(True)
+                    self.builder.get_object('powerdown_button').set_sensitive(False)
+                    self.builder.get_object('standby_button').set_sensitive(False)
+                    self.builder.get_object('fullpower_button').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_sensitive(False)
                     # we don't know the state of the warmup toggle.
                 elif newvalue == 'Ramping up':
-                    self._builder.get_object('xraystate_toggle').set_sensitive(False)
-                    self._builder.get_object('shutter_toggle').set_sensitive(True)
-                    self._builder.get_object('powerdown_button').set_sensitive(True)
-                    self._builder.get_object('standby_button').set_sensitive(False)
-                    self._builder.get_object('fullpower_button').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_active(False)
+                    self.builder.get_object('xraystate_toggle').set_sensitive(False)
+                    self.builder.get_object('shutter_toggle').set_sensitive(True)
+                    self.builder.get_object('powerdown_button').set_sensitive(True)
+                    self.builder.get_object('standby_button').set_sensitive(False)
+                    self.builder.get_object('fullpower_button').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_active(False)
                 elif newvalue == 'Going to stand-by':
-                    self._builder.get_object('xraystate_toggle').set_sensitive(False)
-                    self._builder.get_object('shutter_toggle').set_sensitive(True)
-                    self._builder.get_object('powerdown_button').set_sensitive(False)
-                    self._builder.get_object('standby_button').set_sensitive(False)
-                    self._builder.get_object('fullpower_button').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_active(False)
+                    self.builder.get_object('xraystate_toggle').set_sensitive(False)
+                    self.builder.get_object('shutter_toggle').set_sensitive(True)
+                    self.builder.get_object('powerdown_button').set_sensitive(False)
+                    self.builder.get_object('standby_button').set_sensitive(False)
+                    self.builder.get_object('fullpower_button').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_active(False)
                 elif newvalue == 'Warming up':
-                    self._builder.get_object('xraystate_toggle').set_sensitive(False)
-                    self._builder.get_object('shutter_toggle').set_sensitive(True)
-                    self._builder.get_object('powerdown_button').set_sensitive(False)
-                    self._builder.get_object('standby_button').set_sensitive(False)
-                    self._builder.get_object('fullpower_button').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_sensitive(True)
-                    self._builder.get_object('warmup_toggle').set_active(True)
+                    self.builder.get_object('xraystate_toggle').set_sensitive(False)
+                    self.builder.get_object('shutter_toggle').set_sensitive(True)
+                    self.builder.get_object('powerdown_button').set_sensitive(False)
+                    self.builder.get_object('standby_button').set_sensitive(False)
+                    self.builder.get_object('fullpower_button').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_sensitive(True)
+                    self.builder.get_object('warmup_toggle').set_active(True)
                 elif newvalue == 'Low power':
-                    self._builder.get_object('xraystate_toggle').set_sensitive(False)
-                    self._builder.get_object('shutter_toggle').set_sensitive(True)
-                    self._builder.get_object('powerdown_button').set_sensitive(True)
-                    self._builder.get_object('standby_button').set_sensitive(False)
-                    self._builder.get_object('fullpower_button').set_sensitive(True)
-                    self._builder.get_object('warmup_toggle').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_active(False)
+                    self.builder.get_object('xraystate_toggle').set_sensitive(False)
+                    self.builder.get_object('shutter_toggle').set_sensitive(True)
+                    self.builder.get_object('powerdown_button').set_sensitive(True)
+                    self.builder.get_object('standby_button').set_sensitive(False)
+                    self.builder.get_object('fullpower_button').set_sensitive(True)
+                    self.builder.get_object('warmup_toggle').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_active(False)
                 elif newvalue == 'Full power':
-                    self._builder.get_object('xraystate_toggle').set_sensitive(False)
-                    self._builder.get_object('shutter_toggle').set_sensitive(True)
-                    self._builder.get_object('powerdown_button').set_sensitive(True)
-                    self._builder.get_object('standby_button').set_sensitive(True)
-                    self._builder.get_object('fullpower_button').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_active(False)
+                    self.builder.get_object('xraystate_toggle').set_sensitive(False)
+                    self.builder.get_object('shutter_toggle').set_sensitive(True)
+                    self.builder.get_object('powerdown_button').set_sensitive(True)
+                    self.builder.get_object('standby_button').set_sensitive(True)
+                    self.builder.get_object('fullpower_button').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_active(False)
                 elif newvalue == 'X-rays off':
-                    self._builder.get_object('xraystate_toggle').set_sensitive(True)
-                    self._builder.get_object('shutter_toggle').set_sensitive(False)
-                    self._builder.get_object('powerdown_button').set_sensitive(False)
-                    self._builder.get_object('standby_button').set_sensitive(False)
-                    self._builder.get_object('fullpower_button').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_active(False)
+                    self.builder.get_object('xraystate_toggle').set_sensitive(True)
+                    self.builder.get_object('shutter_toggle').set_sensitive(False)
+                    self.builder.get_object('powerdown_button').set_sensitive(False)
+                    self.builder.get_object('standby_button').set_sensitive(False)
+                    self.builder.get_object('fullpower_button').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_active(False)
                 elif newvalue == 'Initializing':
-                    self._builder.get_object('xraystate_toggle').set_sensitive(False)
-                    self._builder.get_object('shutter_toggle').set_sensitive(False)
-                    self._builder.get_object('powerdown_button').set_sensitive(False)
-                    self._builder.get_object('standby_button').set_sensitive(False)
-                    self._builder.get_object('fullpower_button').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_sensitive(False)
-                    self._builder.get_object('warmup_toggle').set_active(False)
+                    self.builder.get_object('xraystate_toggle').set_sensitive(False)
+                    self.builder.get_object('shutter_toggle').set_sensitive(False)
+                    self.builder.get_object('powerdown_button').set_sensitive(False)
+                    self.builder.get_object('standby_button').set_sensitive(False)
+                    self.builder.get_object('fullpower_button').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_sensitive(False)
+                    self.builder.get_object('warmup_toggle').set_active(False)
                 else:
                     raise ValueError('Invalid status: ' + newvalue)
             finally:
                 del self._updating_buttons
         elif variablename == 'ht':
-            self._indicators[variablename].set_value('%.1f kV' % newvalue, IndicatorState.NEUTRAL)
+            self.indicators[variablename].set_value('%.1f kV' % newvalue, IndicatorState.NEUTRAL)
         elif variablename == 'current':
-            self._indicators[variablename].set_value('%.1f mA' % newvalue, IndicatorState.NEUTRAL)
+            self.indicators[variablename].set_value('%.1f mA' % newvalue, IndicatorState.NEUTRAL)
         elif variablename == 'power':
-            self._indicators[variablename].set_value('%.1f W' % newvalue, IndicatorState.NEUTRAL)
+            self.indicators[variablename].set_value('%.1f W' % newvalue, IndicatorState.NEUTRAL)
         elif variablename == 'tubetime':
-            self._indicators[variablename].set_value('%.2f h / %.2f days' % (newvalue, newvalue / 24),
-                                                     IndicatorState.NEUTRAL)
+            self.indicators[variablename].set_value('%.2f h / %.2f days' % (newvalue, newvalue / 24),
+                                                    IndicatorState.NEUTRAL)
         elif variablename == 'remote_mode':
-            self._indicators[variablename].set_value(['No', 'Yes'][newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][newvalue])
-            if newvalue:
-                self._make_sensitive()
-            else:
-                self._make_insensitive(None, ['operations_buttonbox', 'statusindicators', 'errorindicators'])
+            self.indicators[variablename].set_value(['No', 'Yes'][newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][newvalue])
+            self.set_sensitive(newvalue)
         elif variablename == 'xrays':
-            self._indicators[variablename].set_value(['Off', 'On'][newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][newvalue])
-            xraystate_toggle = self._builder.get_object('xraystate_toggle')
+            self.indicators[variablename].set_value(['Off', 'On'][newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][newvalue])
+            xraystate_toggle = self.builder.get_object('xraystate_toggle')
             if xraystate_toggle.get_active() != newvalue:
                 xraystate_toggle.set_active(newvalue)
             if not newvalue:
                 xraystate_toggle.set_sensitive(True)
         elif variablename == 'shutter':
-            self._indicators[variablename].set_value(['Open', 'Closed'][not newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
-            shutter_toggle = self._builder.get_object('shutter_toggle')
+            self.indicators[variablename].set_value(['Open', 'Closed'][not newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
+            shutter_toggle = self.builder.get_object('shutter_toggle')
             if shutter_toggle.get_active() != newvalue:
                 shutter_toggle.set_active(newvalue)
         elif variablename == 'interlock':
-            self._indicators[variablename].set_value(['Broken', 'Set'][newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][newvalue])
+            self.indicators[variablename].set_value(['Broken', 'Set'][newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][newvalue])
         elif variablename == 'overridden':
-            self._indicators[variablename].set_value(['Active', 'No'][not newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
+            self.indicators[variablename].set_value(['Active', 'No'][not newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
         elif variablename == 'faults':
-            self._builder.get_object('resetfaults_button').set_sensitive(newvalue)
-            self._indicators[variablename].set_value(['Present', 'None'][not newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
+            self.builder.get_object('resetfaults_button').set_sensitive(newvalue)
+            self.indicators[variablename].set_value(['Present', 'None'][not newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
         elif variablename in ['xray_light_fault', 'shutter_light_fault', 'filament_fault', 'safety_shutter_fault',
                               'sensor1_fault', 'sensor2_fault', 'vacuum_fault', 'waterflow_fault',
                               'relay_interlock_fault', 'door_fault']:
-            self._indicators[variablename].set_value(['Broken', 'Working'][not newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
+            self.indicators[variablename].set_value(['Broken', 'Working'][not newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
         elif variablename == 'tube_position_fault':
-            self._indicators[variablename].set_value(['Missing', 'Yes'][not newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
+            self.indicators[variablename].set_value(['Missing', 'Yes'][not newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
         elif variablename == 'temperature_fault':
-            self._indicators[variablename].set_value(['Overheating', 'OK'][not newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
+            self.indicators[variablename].set_value(['Overheating', 'OK'][not newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
         elif variablename == 'tube_warmup_needed':
-            self._indicators[variablename].set_value(['Needed', 'Not needed'][not newvalue],
-                                                     [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
+            self.indicators[variablename].set_value(['Needed', 'Not needed'][not newvalue],
+                                                    [IndicatorState.ERROR, IndicatorState.OK][not newvalue])
