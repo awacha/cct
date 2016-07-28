@@ -80,11 +80,11 @@ class Interpreter(Service):
                 ordered sequence (list or tuple) containing the arguments of the command."""
         if hasattr(self, '_command'):
             raise InterpreterError('Interpreter is busy')
-        if isinstance(commandline, Command):
+        if issubclass(commandline, Command):
             # we got a Command instance, not a string. Arguments are supplied as well
             if arguments is None:
                 arguments = []
-            command = commandline
+            commandclass = commandline
             self.command_namespace_locals['_commandline'] = '<none>'
         elif isinstance(commandline, str):
             # we have to parse the command line. `arguments` is disregarded.
@@ -92,7 +92,7 @@ class Interpreter(Service):
             if not commandline_cleaned:
                 # if the command line was empty or contained only comments, ignore
                 GLib.idle_add(
-                    lambda cmd='empty', rv=self.command_namespace_locals['_']: self.on_command_return(cmd, rv))
+                    lambda cmd=None, rv=self.command_namespace_locals['_']: self.on_command_return(cmd, rv))
                 return None
             if commandline_cleaned.startswith('@'):
                 # this is a definition of a label, ignore this.
@@ -150,29 +150,30 @@ class Interpreter(Service):
             else:
                 arguments = []
             try:
-                command = self.commands[commandname]()
+                commandclass = self.commands[commandname]
             except KeyError:
                 raise InterpreterError('Unknown command: ' + commandname)
             self.command_namespace_locals['_commandline'] = commandline_cleaned
         else:
-            raise NotImplementedError(commandline)
-        self._command_connections[command] = [
-            command.connect('return', self.on_command_return),
-            command.connect('fail', self.on_command_fail),
-            command.connect('message', self.on_command_message),
-            command.connect('pulse', self.on_command_pulse),
-            command.connect('progress', self.on_command_progress),
-            command.connect('detail', self.on_command_detail),
+            raise TypeError(commandline)
+        assert issubclass(commandclass, Command)
+        self._command = commandclass(self, arguments, {}, self.command_namespace_locals)
+        self._command_connections[self._command] = [
+            self._command.connect('return', self.on_command_return),
+            self._command.connect('fail', self.on_command_fail),
+            self._command.connect('message', self.on_command_message),
+            self._command.connect('pulse', self.on_command_pulse),
+            self._command.connect('progress', self.on_command_progress),
+            self._command.connect('detail', self.on_command_detail),
         ]
         try:
-            command.execute(
+            self._command.execute(
                 self, arguments, self.instrument, self.command_namespace_locals)
         except Exception:
-            for c in self._command_connections[command]:
-                command.disconnect(c)
-            del self._command_connections[command]
+            for c in self._command_connections[self._command]:
+                self._command.disconnect(c)
+            del self._command_connections[self._command]
             raise
-        self._command = command
         self.emit('idle-changed', False)
         return self._command
 
