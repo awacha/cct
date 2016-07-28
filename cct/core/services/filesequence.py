@@ -102,7 +102,7 @@ class FileSequence(Service):
         scanidx = self.get_nextfreescan(acquire=True)
         with open(self._scanfile, 'at', encoding='utf-8') as f:
             self.scanfile_toc[self._scanfile][scanidx] = {'pos': f.tell() + 1, 'cmd': cmdline,
-                                                          'date': datetime.datetime.now()}
+                                                          'date': datetime.datetime.now(), 'comment': comment}
             f.write('\n#S {:d}  {}\n'.format(scanidx, cmdline))
             f.write('#D {}\n'.format(time.asctime()))
             f.write('#C {}\n'.format(comment))
