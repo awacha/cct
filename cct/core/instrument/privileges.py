@@ -83,6 +83,15 @@ class PrivilegeLevel(object):
     def get_allowed(self):
         return [i for i in type(self)._instances if self.is_allowed(i)]
 
+    def __int__(self):
+        return self.ordinal
+
+    def __trunc__(self):
+        return self.ordinal
+
+    def __str__(self):
+        return self.normalizedname
+
     @classmethod
     def all_privileges(cls):
         return cls._instances

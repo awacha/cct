@@ -18,7 +18,6 @@ from ...core.instrument.instrument import Instrument
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-
 class ScanGraph(ToolWindow):
     widgets_to_make_insensitive = ['buttonbox', 'scalebox']
 
@@ -151,6 +150,10 @@ class ScanGraph(ToolWindow):
         self.redraw_signals()
         if not self.is_scan_mode():  # self._dataindex reached len(self._data)
             self.start_view_mode()
+
+    def new_image(self, matrix, param, mask):
+        self._lastimage = matrix
+        self.redraw_2dimage()
 
     def on_column_visibility_changed(self, cellrenderer, treepath, model):
         model[treepath][1] = not model[treepath][1]

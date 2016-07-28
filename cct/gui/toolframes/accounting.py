@@ -1,50 +1,49 @@
+from ..core.functions import update_comboboxtext_choices
 from ..core.toolframe import ToolFrame
-from ...core.instrument.privileges import PrivilegeLevel
+from ...core.services.accounting import Accounting
+
 
 class AccountingFrame(ToolFrame):
-    def _init_gui(self, *args):
-        sel = self._builder.get_object('privileges_selector')
-        sel.remove_all()
-        for i, pl in enumerate(self._instrument.services['accounting'].get_accessible_privlevels_str()):
-            sel.append_text(pl)
-            if PrivilegeLevel.get_priv(pl) == self._instrument.services['accounting'].get_privilegelevel():
-                sel.set_active(i)
-        if sel.get_active() is None:
-            sel.set_active(0)
-        self._instrument.services['accounting'].connect('project-changed', self.on_project_changed)
-        self.on_project_changed(self._instrument.services['accounting'])
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._acctconn = None
+
+    def init_gui(self, *args):
+        update_comboboxtext_choices(
+            self.builder.get_object('privileges_selector'),
+            self.instrument.services['accounting'].get_accessible_privlevels_str(),
+            set_to=str(self.instrument.services['accounting'].get_privilegelevel()))
+        self._acctconn = self.instrument.services['accounting'].connect('project-changed', self.on_project_changed)
+        self.on_project_changed(self.instrument.services['accounting'])
+
+    def cleanup(self):
+        if self._acctconn is not None:
+            self.instrument.services['accounting'].disconnect(self._acctconn)
+            self._acctconn = None
+        return super().cleanup()
 
     def on_projectid_changed(self, comboboxtext):
         if hasattr(self, '_projectid_changed_disable'):
             return
         pid = comboboxtext.get_active_text()
-        if self._instrument.services['accounting'].get_project().projectid != pid:
-            self._instrument.services['accounting'].select_project(pid)
+        if self.instrument.services['accounting'].get_project().projectid != pid:
+            self.instrument.services['accounting'].select_project(pid)
 
-    def on_project_changed(self, accounting):
-        self._builder.get_object('operatorname_label').set_text(
-            self._instrument.services['accounting'].get_user().username)
-        pidsel = self._builder.get_object('projectid_selector')
+    def on_project_changed(self, accountingservice: Accounting):
+        self.builder.get_object('operatorname_label').set_text(
+            accountingservice.get_user().username)
+        pidsel = self.builder.get_object('projectid_selector')
         self._projectid_changed_disable = True
-        pidsel.remove_all()
-        for i, project in enumerate(self._instrument.services['accounting'].get_projectids()):
-            pidsel.append_text(project)
-            if project == self._instrument.services['accounting'].get_project().projectid:
-                pidsel.set_active(i)
-        self._builder.get_object('proposer_label').set_text(
-            self._instrument.services['accounting'].get_project().proposer)
-        self._builder.get_object('projectname_label').set_text(
-            self._instrument.services['accounting'].get_project().projectname)
-        del self._projectid_changed_disable
-
-    def on_entry_changed(self, entry):
-        self._builder.get_object('apply_button').set_visible(True)
-
-    def on_apply(self, button):
-        self._instrument.services['accounting'].new_project(self._builder.get_object('projectid_entry').get_text(),
-                                                            self._builder.get_object('projectname_entry').get_text(),
-                                                            self._builder.get_object('proposername_entry').get_text())
-        button.set_visible(False)
+        try:
+            proj = accountingservice.get_project()
+            update_comboboxtext_choices(pidsel, sorted(self.instrument.services['accounting'].get_projectids()),
+                                        set_to=proj.projectid)
+            self.builder.get_object('proposer_label').set_text(
+                proj.proposer)
+            self.builder.get_object('projectname_label').set_text(
+                proj.projectname)
+        finally:
+            del self._projectid_changed_disable
 
     def on_privileges_changed(self, selector):
-        self._instrument.services['accounting'].set_privilegelevel(selector.get_active_text())
+        self.instrument.services['accounting'].set_privilegelevel(selector.get_active_text())

@@ -1,94 +1,68 @@
 import logging
 
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 from ..core.toolframe import ToolFrame
+from ..core.dialogs import error_message
+from ...core.commands.motor import Beamstop
 from ...core.instrument.privileges import PRIV_BEAMSTOP
+from ...core.services.interpreter import InterpreterError
 
 class ShutterBeamstop(ToolFrame):
-    def _init_gui(self, *args):
-        try:
-            self._connections = {
-                self._instrument.get_device('genix'): [
-                    self._instrument.get_device('genix').connect('variable-change', self.on_genix_variable_change),
-                ],
-                self._instrument.motors['BeamStop_Y']: [
-                    self._instrument.motors['BeamStop_Y'].connect('position-change', self.on_motor_position_change),
-                ],
-                self._instrument.motors['BeamStop_X']: [
-                    self._instrument.motors['BeamStop_X'].connect('position-change', self.on_motor_position_change),
-                ],
-            }
-            # self.on_motor_position_change(None, None)
-            # self.on_genix_variable_change(self._instrument.get_device('genix'), 'shutter',
-            #                              self._instrument.get_device('genix').get_variable('shutter'))
-        except KeyError:
-            self._widget.set_sensitive(False)
-        self._privlevelconnection = self._instrument.services['accounting'].connect('privlevel-changed',
-                                                                                    self.on_privlevel_changed)
-        self.on_privlevel_changed(self._instrument.services['accounting'],
-                                  self._instrument.services['accounting'].get_privilegelevel())
+    required_devices = ['xray_source', 'Motor_BeamStop_X', 'Motor_BeamStop_Y']
+
+    def init_gui(self, *args):
+        self.on_privlevel_changed(self.instrument.services['accounting'],
+                                  self.instrument.services['accounting'].get_privilegelevel())
 
     def on_privlevel_changed(self, accounting, newprivlevel):
         if not accounting.has_privilege(PRIV_BEAMSTOP):
-            self._builder.get_object('beamstop_in_button').set_sensitive(False)
-            self._builder.get_object('beamstop_out_button').set_sensitive(False)
+            self.builder.get_object('beamstop_in_button').set_sensitive(False)
+            self.builder.get_object('beamstop_out_button').set_sensitive(False)
         else:
             self.on_motor_position_change(None, None)
 
-    def on_unmap(self, widget):
-        try:
-            for dev in list(self._connections):
-                for c in self._connections[dev]:
-                    dev.disconnect(c)
-                del self._connections[dev]
-            self._connections = {}
-        except AttributeError:
-            pass
-        try:
-            self._instrument.services['accounting'].disconnect(self._privlevelconnection)
-            del self._privlevelconnection
-        except AttributeError:
-            pass
-
-    def on_genix_variable_change(self, genix, varname, value):
-        if varname == 'shutter':
-            self._builder.get_object('shutter_switch').set_state(value)
+    def on_device_variable_change(self, device, varname, value):
+        if device.name == self.instrument.get_device('xray_source').name:
+            if varname == 'shutter':
+                self.builder.get_object('shutter_switch').set_state(value)
 
     def on_motor_position_change(self, motor, pos):
         try:
-            x = self._instrument.motors['BeamStop_X'].where()
-            y = self._instrument.motors['BeamStop_Y'].where()
+            beamstopstate = self.instrument.get_beamstop_state()
         except KeyError:
-            GLib.timeout_add(3000, lambda: self.on_motor_position_change(motor, pos))
+            # can happen at program initialization
             return False
-
-        if ((abs(x - self._instrument.config['beamstop']['in'][0]) < 0.001)
-            and (abs(y - self._instrument.config['beamstop']['in'][1]) < 0.001)):
-            self._builder.get_object('beamstopstate_image').set_from_icon_name('beamstop-in', Gtk.IconSize.BUTTON)
-            self._builder.get_object('beamstop_in_button').set_sensitive(False)
-            self._builder.get_object('beamstop_out_button').set_sensitive(True)
-        elif ((abs(x - self._instrument.config['beamstop']['out'][0]) < 0.001)
-              and (abs(y - self._instrument.config['beamstop']['out'][1]) < 0.001)):
-            self._builder.get_object('beamstopstate_image').set_from_icon_name('beamstop-out', Gtk.IconSize.BUTTON)
-            self._builder.get_object('beamstop_in_button').set_sensitive(True)
-            self._builder.get_object('beamstop_out_button').set_sensitive(False)
+        if beamstopstate == 'in':
+            self.builder.get_object('beamstopstate_image').set_from_icon_name('beamstop-in', Gtk.IconSize.BUTTON)
+            self.builder.get_object('beamstop_in_button').set_sensitive(False)
+            self.builder.get_object('beamstop_out_button').set_sensitive(True)
+        elif beamstopstate == 'out':
+            self.builder.get_object('beamstopstate_image').set_from_icon_name('beamstop-out', Gtk.IconSize.BUTTON)
+            self.builder.get_object('beamstop_in_button').set_sensitive(True)
+            self.builder.get_object('beamstop_out_button').set_sensitive(False)
         else:
-            self._builder.get_object('beamstopstate_image').set_from_icon_name('beamstop-inconsistent',
-                                                                               Gtk.IconSize.BUTTON)
-            self._builder.get_object('beamstop_in_button').set_sensitive(True)
-            self._builder.get_object('beamstop_out_button').set_sensitive(True)
+            self.builder.get_object('beamstopstate_image').set_from_icon_name('beamstop-inconsistent',
+                                                                              Gtk.IconSize.BUTTON)
+            self.builder.get_object('beamstop_in_button').set_sensitive(True)
+            self.builder.get_object('beamstop_out_button').set_sensitive(True)
         return False
 
     def on_shutter_switch_set_state(self, switch, value):
-        self._instrument.get_device('genix').shutter(value)
+        self.instrument.get_device('genix').shutter(value)
         return True
 
     def on_beamstop_in(self, button):
-        self._instrument.services['interpreter'].execute_command('beamstop("in")')
+        try:
+            self.instrument.services['interpreter'].execute_command(Beamstop, 'in')
+        except InterpreterError:
+            error_message(self.widget, 'Cannot move beamstop: interpreter is busy')
 
     def on_beamstop_out(self, button):
-        self._instrument.services['interpreter'].execute_command('beamstop("out")')
+        try:
+            self.instrument.services['interpreter'].execute_command('beamstop("out")')
+        except InterpreterError:
+            error_message(self.widget, 'Cannot move beamstop: interpreter is busy')
