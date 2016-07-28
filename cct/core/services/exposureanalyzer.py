@@ -3,7 +3,6 @@ import multiprocessing
 import os
 import pickle
 import queue
-import resource
 import traceback
 from logging.handlers import QueueHandler
 from typing import Union, Dict
@@ -21,7 +20,7 @@ from ..utils.callback import SignalFlags
 from ..utils.geometrycorrections import solidangle, angledependentabsorption, angledependentairtransmission
 from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders
-from ..utils.telemetry import acquire_telemetry_info
+from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -85,6 +84,8 @@ class ExposureAnalyzer_Backend(object):
     """
     name = 'exposureanalyzer_backend'
 
+    telemetry_interval = 1
+
     def __init__(self, loglevel, config, inqueue, outqueue):
         self._logger = logging.getLogger(__name__ + '::backgroundprocess')
         self.inqueue = inqueue
@@ -99,19 +100,27 @@ class ExposureAnalyzer_Backend(object):
         self.masks = {}
 
     def get_telemetry(self):
-        return acquire_telemetry_info()
+        return TelemetryInfo()
+
+    def send_to_frontend(self, type_: str, **kwargs):
+        self._msgid += 1
+        self.outqueue.put_nowait(Message(type_, self._msgid, self.name, **kwargs))
 
     def worker(self):
         while True:
-            message = self.inqueue.get()
+            assert isinstance(self.inqueue, multiprocessing.Queue)
+            try:
+                message = self.inqueue.get(True, self.telemetry_interval)
+            except queue.Empty:
+                # forge a telemetry request message.
+                message = Message('telemetry', 0, self.name)
             assert isinstance(message, Message)
             if message['type'] == 'exit':
                 break  # the while True loop
             elif message['type'] == 'config':
                 self.config = message['configdict']
             elif message['type'] == 'telemetry':
-                self._msgid += 1
-                self.outqueue.put_nowait(Message('telemetry', self._msgid, self.name, telemetry=self.get_telemetry()))
+                self.send_to_frontend('telemetry', telemetry=self.get_telemetry())
             elif message['type'] == 'analyze':
                 cbfdata = None
                 for fn in [message['filename'], os.path.split(message['filename'])[-1]]:
@@ -124,11 +133,9 @@ class ExposureAnalyzer_Backend(object):
                             cbfdata = (fe, traceback.format_exc())
                 if isinstance(cbfdata, tuple) and (isinstance(cbfdata[0], FileNotFoundError)):
                     # could not load cbf file, send a message to the frontend.
-                    self._msgid += 1
-                    self.outqueue.put_nowait(Message(
-                        'error', self._msgid, self.name, exception=cbfdata[0],
-                        traceback=cbfdata[1], fsn=message['fsn'],
-                        prefix=message['prefix']))
+                    self.send_to_frontend('error', exception=cbfdata[0],
+                                          traceback=cbfdata[1], fsn=message['fsn'],
+                                          prefix=message['prefix'])
                     continue
                 assert isinstance(cbfdata, np.ndarray)
                 if message['prefix'] == self.config['path']['prefixes']['crd']:
@@ -144,19 +151,13 @@ class ExposureAnalyzer_Backend(object):
                         assert isinstance(mask, np.ndarray)
                         im = self.datareduction(cbfdata, mask, message['param'])
                         self.savecorrected(message['prefix'], message['fsn'], im)
-                        self._msgid += 1
-                        self.outqueue.put_nowait(Message('datareduction-done', self._msgid, self.name,
-                                                         prefix=message['prefix'], fsn=message['fsn'],
-                                                         image=im))
-                        self._msgid += 1
-                        self.outqueue.put_nowait(Message('image', self._msgid, self.name,
-                                                         prefix=message['prefix'], fsn=message['fsn'],
-                                                         data=cbfdata, mask=mask, param=message['param']))
+                        self.send_to_frontend('datareduction-done', prefix=message['prefix'], fsn=message['fsn'],
+                                              image=im)
+                        self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'],
+                                              data=cbfdata, mask=mask, param=message['param'])
                     except Exception as exc:
-                        self._msgid += 1
-                        self.outqueue.put_nowait(Message('error', self._msgid, self.name,
-                                                         prefix=message['prefix'], fsn=message['fsn'],
-                                                         exception=exc, traceback=traceback.format_exc()))
+                        self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'],
+                                              exception=exc, traceback=traceback.format_exc())
                         self._logger.error('Error in data reduction: {}, {}'.format(str(exc), traceback.format_exc()))
                 elif message['prefix'] == self.config['path']['prefixes']['tra']:  # transmission measurement
                     try:
@@ -164,28 +165,20 @@ class ExposureAnalyzer_Backend(object):
                         assert isinstance(transmmask, np.ndarray)
                     except (IOError, OSError, IndexError) as exc:
                         # could not load a mask file
-                        self._msgid += 1
-                        self.outqueue.put_nowait(Message('error', self._msgid, self.name,
-                                                         prefix=message['prefix'], fsn=message['fsn'],
-                                                         exception=exc, traceback=traceback.format_exc()))
+                        self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'],
+                                              exception=exc, traceback=traceback.format_exc())
                     else:
-                        self._msgid += 1
-                        self.outqueue.put_nowait(Message('transmdata', self._msgid, self.name,
-                                                         prefix=message['prefix'], fsn=message['fsn'],
-                                                         data=(cbfdata * transmmask).sum(),
-                                                         what=message['what'],
-                                                         sample=message['sample'],
-                                                         ))
+                        self.send_to_frontend('transmdata', prefix=message['prefix'], fsn=message['fsn'],
+                                              data=(cbfdata * transmmask).sum(), what=message['what'],
+                                              sample=message['sample'], )
                 elif message['prefix'] == self.config['path']['prefixes']['scn']:
                     try:
                         scanmask = self.get_mask(self.config['scan']['mask'])
                         scanmasktotal = self.get_mask(self.config['scan']['mask_total'])
                     except (IOError, OSError, IndexError) as exc:
                         # could not load a mask file
-                        self._msgid += 1
-                        self.outqueue.put_nowait(Message('error', self._msgid, self.name,
-                                                         prefix=message['prefix'], fsn=message['fsn'],
-                                                         exception=exc, traceback=traceback.format_exc()))
+                        self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'], exception=exc,
+                                              traceback=traceback.format_exc())
                         continue
                     assert isinstance(scanmask, np.ndarray)
                     assert isinstance(scanmasktotal, np.ndarray)
@@ -194,25 +187,21 @@ class ExposureAnalyzer_Backend(object):
                     stat['FSN'] = message['fsn']
                     resultlist = tuple(message['where'] + [stat[k]
                                                            for k in self.config['scan']['columns']])
-                    self._msgid += 1
-                    self.outqueue.put_nowait(Message('scanpoint', self._msgid, self.name,
-                                                     prefix=message['prefix'], fsn=message['fsn'],
-                                                     counters=resultlist, position=message['position']))
+                    self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'],
+                                          param=message['param'], mask=scanmasktotal)
+                    self.send_to_frontend('scanpoint', prefix=message['prefix'], fsn=message['fsn'],
+                                          counters=resultlist, position=message['position'])
 
                 else:
                     try:
                         mask = self.get_mask(self.config['geometry']['mask'])
                     except (IOError, OSError, IndexError) as exc:
                         # could not load a mask file
-                        self._msgid += 1
-                        self.outqueue.put_nowait(Message('error', self._msgid, self.name,
-                                                         prefix=message['prefix'], fsn=message['fsn'],
-                                                         exception=exc, traceback=traceback.format_exc()))
+                        self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'], exception=exc,
+                                              traceback=traceback.format_exc())
                     else:
-                        self._msgid += 1
-                        self.outqueue.put_nowait(Message('image', self._msgid, self.name,
-                                                         prefix=message['prefix'], fsn=message['fsn'],
-                                                         data=cbfdata, mask=mask, param=message['param']))
+                        self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'], data=cbfdata,
+                                              mask=mask, param=message['param'])
 
     def get_mask(self, maskname: str) -> np.ndarray:
         if not hasattr(self, '_masks'):
@@ -336,9 +325,9 @@ class ExposureAnalyzer_Backend(object):
             self._logger.debug('Common q-range: {:g} to {:g}, {:d} points.'.format(q.min(), q.max(), len(q)))
             scalingfactor, stat = nonlinear_odr(I, dataset[:, 1], dI, dataset[:, 2], lambda x, a: a * x, [1])
             datared['absintscaling'] = {'q': q, 'area': area, 'Imeas': I, 'dImeas': dI,
-                                                           'Iref': dataset[:, 1], 'dIref': dataset[:, 2],
-                                                           'factor.val': scalingfactor.val,
-                                                           'factor.err': scalingfactor.err, 'stat': stat}
+                                        'Iref': dataset[:, 1], 'dIref': dataset[:, 2],
+                                        'factor.val': scalingfactor.val,
+                                        'factor.err': scalingfactor.err, 'stat': stat}
             self._logger.debug('Scaling factor: ' + str(scalingfactor))
             self._logger.debug('Chi2: {:f}'.format(stat['Chi2_reduced']))
             self._lastabsintref = im
@@ -515,12 +504,6 @@ class ExposureAnalyzer(Service):
         if prefix not in self._working:
             self._working[prefix] = 0
         self._working[prefix] += 1
-
-    def _get_telemetry(self):
-        return {'processname': multiprocessing.current_process().name,
-                'self': resource.getrusage(resource.RUSAGE_SELF),
-                'children': resource.getrusage(resource.RUSAGE_CHILDREN),
-                'inqueuelen': self._queue_to_backend.qsize()}
 
     def update_config(self, dictionary):
         self.send_to_backend('config', configdict=dictionary)

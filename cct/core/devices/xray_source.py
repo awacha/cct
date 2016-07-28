@@ -165,7 +165,7 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
 
     def get_telemetry(self):
         tm = super().get_telemetry()
-        tm['last_readstatus'] = time.monotonic() - self.lasttimes['readstatus']
+        tm.last_readstatus = time.monotonic() - self.lasttimes['readstatus']
         return tm
 
 

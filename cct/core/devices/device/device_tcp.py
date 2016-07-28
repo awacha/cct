@@ -301,7 +301,7 @@ class DeviceBackend_TCP(DeviceBackend):
 
     def get_telemetry(self):
         tm = super().get_telemetry()
-        tm['sendqueuelen'] = self.tcp_outqueue.qsize()
+        tm.sendqueuelen = self.tcp_outqueue.qsize()
         return tm
 
     @staticmethod

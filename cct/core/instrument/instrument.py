@@ -1,4 +1,3 @@
-import datetime
 import logging
 import multiprocessing
 import os
@@ -9,9 +8,10 @@ from typing import List
 
 from ..devices.device import DeviceError, Device, DeviceBackend_ModbusTCP, DeviceBackend_TCP
 from ..devices.motor import Motor
-from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter, Service
+from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter, \
+    Service, TelemetryManager
 from ..utils.callback import Callbacks, SignalFlags
-from ..utils.telemetry import acquire_telemetry_info
+from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -53,7 +53,6 @@ class Instrument(Callbacks):
     }
 
     def __init__(self, online):
-        self._starttime = datetime.datetime.now()
         Callbacks.__init__(self)
         self._online = online
         self.devices = {}
@@ -248,19 +247,19 @@ class Instrument(Callbacks):
         logger.info('Saved state to ' + self.configfile)
         for dev in self.devices.values():
             assert isinstance(dev, Device)
-            dev.update_config(self.config)
+            dev.send_config(self.config)
         for serv in self.services.values():
             assert isinstance(serv, Service)
             serv.update_config(self.config)
 
-    def _update_config(self, config_orig, config_loaded):
+    def update_config(self, config_orig, config_loaded):
         """Uppdate the config dictionary in `config_orig` with the loaded
         dictionary in `config_loaded`, recursively."""
         for c in config_loaded:
             if c not in config_orig:
                 config_orig[c] = config_loaded[c]
             elif isinstance(config_orig[c], dict) and isinstance(config_loaded[c], dict):
-                self._update_config(config_orig[c], config_loaded[c])
+                self.update_config(config_orig[c], config_loaded[c])
             else:
                 config_orig[c] = config_loaded[c]
         return
@@ -271,7 +270,7 @@ class Instrument(Callbacks):
         not updated by Device._load_state()."""
         with open(self.configfile, 'rb') as f:
             config_loaded = pickle.load(f)
-        self._update_config(self.config, config_loaded)
+        self.update_config(self.config, config_loaded)
 
     def _connect_signals(self, device: Device):
         """Connect signal handlers of a device.
@@ -324,6 +323,7 @@ class Instrument(Callbacks):
             return scl
 
         # get all the device classes, i.e. descendants of Device.
+        # noinspection PyTypeChecker
         device_classes = get_subclasses(Device)
 
         # initialize all the devices: instantiate classes, connect signal handlers,
@@ -462,6 +462,7 @@ class Instrument(Callbacks):
                               ('exposureanalyzer', ExposureAnalyzer),
                               ('accounting', Accounting),
                               ('webstatefilewriter', WebStateFileWriter),
+                              ('telemetrymanager', TelemetryManager),
                               ]:
             assert issubclass(sclass, Service)
             self.services[sname] = sclass(self, self.configdir, self.config['services'][sname])
@@ -469,7 +470,7 @@ class Instrument(Callbacks):
     def on_telemetry_timeout(self):
         """Timer function which periodically requests telemetry from all the
         components."""
-        self.services['telemetrymanager'].incoming_telemetry('main', acquire_telemetry_info())
+        self.services['telemetrymanager'].incoming_telemetry('main', TelemetryInfo())
         return True
 
 

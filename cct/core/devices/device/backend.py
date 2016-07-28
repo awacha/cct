@@ -1,7 +1,6 @@
 import logging
 import multiprocessing
 import queue
-import resource
 import time
 import traceback
 from logging.handlers import QueueHandler
@@ -9,6 +8,7 @@ from typing import Optional, List, Dict
 
 from .exceptions import WatchdogTimeout, CommunicationError, DeviceError, InvalidMessage
 from .message import Message
+from ...utils.telemetry import TelemetryInfo
 
 
 class QueueLogHandler(QueueHandler):
@@ -415,17 +415,14 @@ class DeviceBackend(object):
 
     def get_telemetry(self):
         """Get telemetry data"""
-        return {'processname': multiprocessing.current_process().name,
-                'self': resource.getrusage(resource.RUSAGE_SELF),
-                'children': resource.getrusage(resource.RUSAGE_CHILDREN),
-                'inqueuelen': self.inqueue.qsize(),
-                'outqueuelen': self.outqueue.qsize(),
-                'last_queryall': time.monotonic() - self.lasttimes['queryall'],
-                'last_recv': time.monotonic() - self.lasttimes['recv'],
-                'last_query': time.monotonic() - self.lasttimes['query'],
-                'last_send': time.monotonic() - self.lasttimes['send'],
-                'watchdog': self.watchdog.elapsed(),
-                'missing_variables': ', '.join([v for v in self.all_variables if v not in self.properties])}
+        tm = TelemetryInfo()
+        tm.last_queryall = time.monotonic() - self.lasttimes['queryall']
+        tm.last_recv = time.monotonic() - self.lasttimes['recv']
+        tm.last_query = time.monotonic() - self.lasttimes['query']
+        tm.last_send = time.monotonic() - self.lasttimes['send']
+        tm.watchdog = self.watchdog.elapsed()
+        tm.missing_variables = ', '.join([v for v in self.all_variables if v not in self.properties])
+        return tm
 
     def update_variable(self, varname: str, value: object, force: bool = False) -> bool:
         """Check if the new value (`value`) of the variable `varname` is different
