@@ -120,6 +120,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
+                <property name="halign">start</property>
                 <property name="hexpand">True</property>
                 <property name="draw_indicator">True</property>
                 <signal name="toggled" handler="on_symmetric_scan_toggled" swapped="no"/>
@@ -251,6 +252,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
+                <property name="halign">start</property>
                 <property name="active">True</property>
                 <property name="draw_indicator">True</property>
               </object>
@@ -293,6 +295,9 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <signal name="clicked" handler="start_scan" swapped="no"/>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">True</property>
