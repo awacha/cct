@@ -3,12 +3,13 @@ import logging
 import os
 
 import pkg_resources
-from gi.repository import GtkSource, Gdk, Gtk, GObject, Notify, GLib
+from gi.repository import GtkSource, Gdk, Gtk, Notify, GLib
 
-from ..core.dialogs import question_message, error_message, info_message
+from ..core.dialogs import question_message, info_message
 from ..core.functions import notify
 from ..core.toolwindow import ToolWindow
 from ...core.commands.script import Script, Command
+from ...core.utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -29,6 +30,7 @@ class ScriptMeasurement(ToolWindow):
         self.filename_folder = None
         self.filechooser_open = None
         self.filechooser_save = None
+        self._cmd = None
 
     def init_gui(self, *args, **kwargs):
         view = self.builder.get_object('sourceview')
@@ -155,80 +157,78 @@ class ScriptMeasurement(ToolWindow):
         class MyScriptClass(Script):
             script = script
 
-        # ToDo: continue here
 
         flagsbb = self.builder.get_object('flags_buttonbox')
         for b in flagsbb:
             if b.get_active():
-                self._instrument.services['interpreter'].set_flag(b.get_label())
+                self.instrument.services['interpreter'].set_flag(b.get_label())
+            else:
+                self.instrument.services['interpreter'].clear_flag(b.get_label())
 
         self.builder.get_object('sourceview').set_editable(False)
-        self._scriptconnections = [self._scriptcommand.connect('cmd-start', self.on_command_start),
-                                   self._scriptcommand.connect('paused', self.on_script_paused)]
+
+        self.write_message('----------------------- %s -----------------------\n' % str(datetime.datetime.now()), False)
+
+        try:
+            self._cmd = self.execute_command(MyScriptClass, (), True,
+                                             additional_widgets=['sourceview', 'new_toolbutton', 'save_toolbutton',
+                                                                 'saveas_toolbutton',
+                                                                 'open_toolbutton', 'undo_toolbutton',
+                                                                 'redo_toolbutton',
+                                                                 'cut_toolbutton', 'copy_toolbutton',
+                                                                 'paste_toolbutton',
+                                                                 'help_toolbutton', 'execute_toolbutton'])
+        except Exception:
+            # this has already been handled by self.execute_command()
+            return
+        self._scriptconnections = [self._cmd.connect('cmd-start', self.on_command_start),
+                                   self._cmd.connect('paused', self.on_script_paused)]
+
+    def write_message(self, message: str, timestamp=True):
         buf = self.builder.get_object('messagesbuffer')
-        buf.insert(buf.get_end_iter(),
-                   '----------------------- %s -----------------------\n' % str(datetime.datetime.now()))
+        if timestamp:
+            message = str(datetime.datetime.now()) + ': ' + message
+        buf.insert(buf.get_end_iter(), message)
         self.builder.get_object('messagesview').scroll_to_iter(buf.get_end_iter(), 0, False, 0, 0)
         buf.place_cursor(buf.get_end_iter())
-
-        self.execute_command(MyScriptClass, (), True,
-                             additional_widgets=['sourceview', 'new_toolbutton', 'save_toolbutton', 'saveas_toolbutton',
-                                                 'open_toolbutton', 'undo_toolbutton', 'redo_toolbutton',
-                                                 'cut_toolbutton', 'copy_toolbutton', 'paste_toolbutton',
-                                                 'help_toolbutton', 'execute_toolbutton'])
         try:
             with open(self.filename[:-len('.cct')] + '.log', 'at', encoding='utf-8') as f:
-                f.write(str(datetime.datetime.now()) + ': ----------------------- Started -----------------------\n')
+                f.write(message)
         except AttributeError:
             pass
 
-    def _cleanup(self):
-        self._make_sensitive()
-        for c in self._interpreter_connections:
-            self._instrument.services['interpreter'].disconnect(c)
-        del self._interpreter_connections
+    def on_command_return(self, interpreter, commandname, returnvalue):
+        info_message(self.widget, 'Script ended', 'Result: %s' % str(returnvalue))
+        notify('Script ended', 'Script execution ended with result: {}'.format(returnvalue))
+        super().on_command_return(interpreter, commandname, returnvalue)
         self.builder.get_object('sourceview').set_editable(True)
         self.sourcebuffer.remove_source_marks(
             self.sourcebuffer.get_start_iter(), self.sourcebuffer.get_end_iter(), 'Executing')
         self.builder.get_object('progressbar').set_text('')
         self.builder.get_object('progressbar').set_fraction(0)
-        for c in self._scriptconnections:
-            self._scriptcommand.disconnect(c)
-        del self._scriptconnections
-        del self._scriptcommand
+        try:
+            for c in self._scriptconnections:
+                self._cmd.disconnect(c)
+        finally:
+            self._scriptconnections = None
+            self._cmd = None
 
-    def on_command_return(self, interpreter, commandname, returnvalue):
-        info_message(self.widget, 'Script ended', 'Result: %s' % str(returnvalue))
-        self._cleanup()
-        notify('Script ended', 'Script execution ended with result: {}'.format(returnvalue))
-
-    def on_script_fail(self, interpreter, commandname, exc, tb):
-        error_message(self.widget, 'Error while executing script', tb)
-
-    def on_script_pulse(self, interpreter, commandname, message):
+    def on_command_pulse(self, interpreter, commandname, message):
         pb = self.builder.get_object('progressbar')
         pb.set_visible(True)
         pb.set_text(message)
         pb.pulse()
 
-    def on_script_progress(self, interpreter, commandname, message, fraction):
+    def on_command_progress(self, interpreter, commandname, message, fraction):
         pb = self.builder.get_object('progressbar')
         pb.set_visible(True)
         pb.set_text(message)
         pb.set_fraction(fraction)
 
-    def on_script_message(self, interpreter, commandname, message):
-        buf = self.builder.get_object('messagesview').get_buffer()
-        buf.insert(buf.get_end_iter(), str(datetime.datetime.now()) + ': ' + message + '\n')
-        self.builder.get_object('messagesview').scroll_to_iter(buf.get_end_iter(), 0, False, 0, 0)
-        buf.place_cursor(buf.get_end_iter())
-        try:
-            with open(self._filename[:-len('.cct')] + '.log', 'at', encoding='utf-8') as f:
-                f.write(str(datetime.datetime.now()) + ': ' + message + '\n')
-        except AttributeError:
-            pass
+    def on_command_message(self, interpreter, commandname, message):
+        self.write_message(message + '\n')
 
-    def on_command_start(self, scriptcmd, lineno, command):
+    def on_command_start(self, script, lineno, command):
         it = self.sourcebuffer.get_iter_at_line(lineno)
         self.sourcebuffer.remove_source_marks(
             self.sourcebuffer.get_start_iter(), self.sourcebuffer.get_end_iter(), 'Executing')
@@ -240,17 +240,17 @@ class ScriptMeasurement(ToolWindow):
 
     def on_toolbutton_pause(self, toolbutton):
         if toolbutton.get_active():
-            self._scriptcommand.pause()
+            self._cmd.pause()
             self._pausingdlg = Gtk.Dialog('Waiting for script to pause', self.widget,
                                           Gtk.DialogFlags.DESTROY_WITH_PARENT | Gtk.DialogFlags.USE_HEADER_BAR | Gtk.DialogFlags.MODAL,
                                           )
             self._pausingprogress = Gtk.ProgressBar()
-            self._pausingprogress.set_text('Pausing...')
+            self._pausingprogress.set_text('Waiting for current command to complete...')
             self._pausingdlg.get_content_area().pack_start(self._pausingprogress, False, True, False)
             self._pausingdlg.show_all()
             self._pausingpulsehandler = GLib.timeout_add(300, self._pausing_pulse)
         else:
-            self._scriptcommand.resume()
+            self._cmd.resume()
 
     def _pausing_pulse(self):
         self._pausingprogress.pulse()
@@ -269,14 +269,14 @@ class ScriptMeasurement(ToolWindow):
             pass
 
     def on_toolbutton_stop(self, toolbutton):
-        self._instrument.services['interpreter'].kill()
+        self.instrument.services['interpreter'].kill()
 
     def on_toolbutton_help(self, toolbutton):
         if not hasattr(self, '_helpdialog'):
             self._helpdialog = CommandHelpDialog('help_commandhelpbrowser.glade', 'commandhelpbrowser',
-                                                 self._instrument, self._application, 'Help on commands')
+                                                 self.instrument, 'Help on commands')
             self._helpdialog.connect('insert', self.on_insert)
-        self._helpdialog._window.show_all()
+        self._helpdialog.widget.show_all()
 
     def on_insert(self, helpdialog, text):
         self.sourcebuffer.insert_at_cursor(text)
@@ -288,9 +288,9 @@ class ScriptMeasurement(ToolWindow):
 
     def on_flag_toggled(self, flagtoggle):
         if flagtoggle.get_active():
-            self._instrument.services['interpreter'].set_flag(flagtoggle.get_label())
+            self.instrument.services['interpreter'].set_flag(flagtoggle.get_label())
         else:
-            self._instrument.services['interpreter'].clear_flag(flagtoggle.get_label())
+            self.instrument.services['interpreter'].clear_flag(flagtoggle.get_label())
 
     def on_interpreter_flag(self, interpreter, flagname, newstate):
         logger.info('Flag state changed: %s, %s' % (flagname, newstate))
@@ -302,9 +302,9 @@ class ScriptMeasurement(ToolWindow):
 
 
 class CommandHelpDialog(ToolWindow):
-    __gsignals__ = {'insert': (GObject.SignalFlags.RUN_FIRST, None, (str,))}
+    __signals__ = {'insert': (SignalFlags.RUN_FIRST, None, (str,))}
 
-    def _init_gui(self, *args):
+    def init_gui(self, *args):
         model = self.builder.get_object('commandnames')
         for command in sorted([c.name for c in Command.allcommands()]):
             model.append((command,))

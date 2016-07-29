@@ -6,117 +6,116 @@ from matplotlib.figure import Figure
 from sastool.misc.basicfit import findpeak_single
 from sastool.misc.errorvalue import ErrorValue
 
-from ..core.toolwindow import ToolWindow, error_message, info_message
+from ..core.dialogs import error_message, info_message
+from ..core.functions import update_comboboxtext_choices
+from ..core.toolwindow import ToolWindow
 
 
 class CapillaryMeasurement(ToolWindow):
-    def _init_gui(self, *args):
-        fb = self._builder.get_object('figbox')
-        self._figure = Figure(tight_layout=True)
-        self._axes = self._figure.add_subplot(1, 1, 1)
-        self._canvas = FigureCanvasGTK3Agg(self._figure)
-        self._canvas.set_size_request(600, -1)
-        fb.pack_start(self._canvas, True, True, 0)
-        self._toolbar = NavigationToolbar2GTK3(self._canvas, self._window)
-        fb.pack_start(self._toolbar, False, True, 0)
-        b = Gtk.ToolButton.new(Gtk.Image.new_from_icon_name('view-refresh', Gtk.IconSize.LARGE_TOOLBAR), 'Redraw')
-        self._toolbar.insert(b, 9)
-        b.connect('clicked', lambda button: self._redraw())
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._scandata = None
+        self._negpeak_text = None
+        self._negpeak_curve = None
+        self._pospeak_text = None
+        self._pospeak_curve = None
+        self._scancurve = None
+        self._negpeak_pos = None
+        self._pospeak_pos = None
+        self._thickness = None
+        self._position = None
+        self._xdata = None
+        self._ydata = None
+        self._samplestoreconnection = None
 
-    def _redraw(self):
-        if not hasattr(self, '_scandata'):
+    def init_gui(self, *args, **kwargs):
+        fb = self.builder.get_object('figbox')
+        self.fig = Figure(tight_layout=True)
+        self.axes = self.fig.add_subplot(1, 1, 1)
+        self.canvas = FigureCanvasGTK3Agg(self.fig)
+        self.canvas.set_size_request(600, -1)
+        fb.pack_start(self.canvas, True, True, 0)
+        self.toolbar = NavigationToolbar2GTK3(self.canvas, self.widget)
+        fb.pack_start(self.toolbar, False, True, 0)
+        b = Gtk.ToolButton.new(Gtk.Image.new_from_icon_name('view-refresh', Gtk.IconSize.LARGE_TOOLBAR), 'Redraw')
+        self.toolbar.insert(b, 9)
+        b.connect('clicked', lambda button: self.redraw())
+
+    def redraw(self):
+        if self._scandata is None:
             return True
-        try:
-            del self._lefttext
-        except AttributeError:
-            pass
-        try:
-            del self._leftcurve
-        except AttributeError:
-            pass
-        try:
-            del self._righttext
-        except AttributeError:
-            pass
-        try:
-            del self._rightcurve
-        except AttributeError:
-            pass
-        self._figure.clear()
-        self._axes = self._figure.add_subplot(1, 1, 1)
+        for attr in ['_negpeak_text', '_negpeak_curve', '_pospeak_text', '_pospeak_curve', '_scancurve']:
+            try:
+                getattr(self, attr).remove()
+            except AttributeError:
+                pass
+            finally:
+                setattr(self, attr, None)
         x = self._scandata['signals'][0]
-        y = self._builder.get_object('signalname_combo').get_active_text()
+        y = self.builder.get_object('signalname_combo').get_active_text()
         if y is None:
             return
         self._xdata = self._scandata['data'][x]
         self._ydata = self._scandata['data'][y]
         ylabel = y
-        if self._builder.get_object('plotderivative_checkbutton').get_active():
+        if self.builder.get_object('plotderivative_checkbutton').get_active():
             self._ydata = (self._ydata[1:] - self._ydata[:-1]) / (self._xdata[1:] - self._xdata[:-1])
             self._xdata = 0.5 * (self._xdata[1:] + self._xdata[:-1])
             ylabel = 'Derivative of ' + y
-        self._axes.plot(self._xdata, self._ydata, 'b.-', label=ylabel)
-        self._axes.xaxis.set_label_text(x)
-        self._axes.yaxis.set_label_text(ylabel)
-        self._axes.grid(True, which='both')
-        self._axes.set_title(self._scandata['comment'])
-        self._canvas.draw()
+        self._scancurve = self.axes.plot(self._xdata, self._ydata, 'b.-', label=ylabel)[0]
+        self.axes.xaxis.set_label_text(x)
+        self.axes.yaxis.set_label_text(ylabel)
+        self.axes.grid(True, which='both')
+        self.axes.set_title(self._scandata['comment'])
+        self.canvas.draw_idle()
         return True
 
     # noinspection PyUnusedLocal
     def on_reload_clicked(self, button):
-        GLib.idle_add(lambda si=self._builder.get_object('scanindex_spin').get_value_as_int(): self.load_scan(si))
+        GLib.idle_add(lambda si=self.builder.get_object('scanindex_spin').get_value_as_int(): self.load_scan(si))
 
     def on_scanindex_change(self, spinbutton):
         GLib.idle_add(lambda si=spinbutton.get_value_as_int(): self.load_scan(si))
 
     def load_scan(self, scanidx):
         try:
-            self._scandata = self._instrument.services['filesequence'].load_scan(scanidx)
-        except KeyError as ke:
-            error_message(self._window, 'Scan %d not found' % ke.args[0])
+            self._scandata = self.instrument.services['filesequence'].load_scan(scanidx)
+        except KeyError:
+            error_message(
+                self.widget, 'Error loading scan',
+                'Scan {:d} not found in file {}'.format(
+                    scanidx,
+                    self.instrument.services['filesequence'].get_scanfile()))
             return
-        signalselector = self._builder.get_object('signalname_combo')
-        prevselected = signalselector.get_active_text()
-        signalselector.remove_all()
-        for i, signal in enumerate(self._scandata['signals'][1:]):
-            signalselector.append_text(signal)
-            if signal == prevselected:
-                signalselector.set_active(i)
-        if prevselected is None:
-            signalselector.set_active(0)
-        if signalselector.get_active_text() is None:
-            signalselector.set_active(0)
-        for i in ['_left', '_right', '_thickness', '_position']:
-            try:
-                delattr(self, i)
-            except AttributeError:
-                pass
-        self._builder.get_object('leftval_adjustment').set_value(0)
-        self._builder.get_object('lefterr_adjustment').set_value(0)
-        self._builder.get_object('rightval_adjustment').set_value(0)
-        self._builder.get_object('righterr_adjustment').set_value(0)
-        self._builder.get_object('thickness_label').set_text('--')
-        self._builder.get_object('position_label').set_text('--')
-        self._builder.get_object('saveposition_button').set_sensitive(False)
-        self._builder.get_object('savethickness_button').set_sensitive(False)
-        self._builder.get_object('saveall_button').set_sensitive(False)
-        self._redraw()
+        update_comboboxtext_choices(self.builder.get_object('signalname_combo'),
+                                    self._scandata['signals'][2:])
+        for attr in ['_left', '_right', '_thickness', '_position']:
+            setattr(self, attr, None)
+        self.builder.get_object('leftval_adjustment').set_value(0)
+        self.builder.get_object('lefterr_adjustment').set_value(0)
+        self.builder.get_object('rightval_adjustment').set_value(0)
+        self.builder.get_object('righterr_adjustment').set_value(0)
+        self.builder.get_object('thickness_label').set_text('--')
+        self.builder.get_object('position_label').set_text('--')
+        self.builder.get_object('saveposition_button').set_sensitive(False)
+        self.builder.get_object('savethickness_button').set_sensitive(False)
+        self.builder.get_object('saveall_button').set_sensitive(False)
+        self.redraw()
         return False
 
     # noinspection PyUnusedLocal
     def on_signalname_changed(self, combo):
-        self._redraw()
+        self.redraw()
 
     # noinspection PyUnusedLocal
     def on_plotderivative_changed(self, combo):
-        self._redraw()
+        self.redraw()
         return True
 
     def do_fit(self, left):
         if not (hasattr(self, '_xdata') and hasattr(self, '_ydata')):
             return
-        xmin, xmax, ymin, ymax = self._axes.axis()
+        xmin, xmax, ymin, ymax = self.axes.axis()
         x = self._xdata
         y = self._ydata
         idx = (x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax)
@@ -128,36 +127,42 @@ class CapillaryMeasurement(ToolWindow):
             signs = (1,)
         pos, hwhm, y0, A = findpeak_single(x, y, signs=signs, curve='Lorentz')
         x = np.linspace(x.min(), x.max(), 100 * len(x))
-        curve = self._axes.plot(x, A * hwhm ** 2 / (hwhm ** 2 + (pos - x) ** 2) + y0, 'r-', label='')[0]
+        curve = self.axes.plot(x, A * hwhm ** 2 / (hwhm ** 2 + (pos - x) ** 2) + y0, 'r-', label='')[0]
         if left:
-            if hasattr(self, '_leftcurve'):
-                self._leftcurve.remove()
-                self._lefttext.remove()
-            self._leftcurve = curve
-            self._lefttext = self._axes.text(pos.val, A.val + y0.val, str(pos), ha='center', va='top')
+            try:
+                self._negpeak_curve.remove()
+                self._negpeak_text.remove()
+            except AttributeError:
+                pass
+            assert self._negpeak_text is None
+            self._negpeak_curve = curve
+            self._negpeak_text = self.axes.text(pos.val, A.val + y0.val, str(pos), ha='center', va='top')
         else:
-            if hasattr(self, '_rightcurve'):
-                self._rightcurve.remove()
-                self._righttext.remove()
-            self._rightcurve = curve
-            self._righttext = self._axes.text(pos.val, A.val + y0.val, str(pos), ha='center', va='bottom')
-        self._canvas.draw()
+            try:
+                self._pospeak_curve.remove()
+                self._pospeak_text.remove()
+            except AttributeError:
+                pass
+            assert self._pospeak_text is None
+            self._pospeak_curve = curve
+            self._pospeak_text = self.axes.text(pos.val, A.val + y0.val, str(pos), ha='center', va='bottom')
+        self.canvas.draw_idle()
         if left:
-            self._builder.get_object('leftval_adjustment').set_value(pos.val)
-            self._builder.get_object('lefterr_adjustment').set_value(pos.err)
-            self._left = pos
+            self.builder.get_object('leftval_adjustment').set_value(pos.val)
+            self.builder.get_object('lefterr_adjustment').set_value(pos.err)
+            self._negpeak_pos = pos
         else:
-            self._builder.get_object('rightval_adjustment').set_value(pos.val)
-            self._builder.get_object('righterr_adjustment').set_value(pos.err)
-            self._right = pos
-        if hasattr(self, '_left') and hasattr(self, '_right'):
-            self._thickness = (self._right - self._left).abs()
-            self._position = (self._right + self._left) * 0.5
-            self._builder.get_object('thickness_label').set_text(str(self._thickness) + ' mm')
-            self._builder.get_object('position_label').set_text(str(self._position))
-            self._builder.get_object('saveposition_button').set_sensitive(True)
-            self._builder.get_object('savethickness_button').set_sensitive(True)
-            self._builder.get_object('saveall_button').set_sensitive(True)
+            self.builder.get_object('rightval_adjustment').set_value(pos.val)
+            self.builder.get_object('righterr_adjustment').set_value(pos.err)
+            self._pospeak_pos = pos
+        if (self._negpeak_pos is not None) and (self._pospeak_pos is not None):
+            self._thickness = (self._pospeak_pos - self._negpeak_pos).abs()
+            self._position = (self._pospeak_pos + self._negpeak_pos) * 0.5
+            self.builder.get_object('thickness_label').set_text(str(self._thickness) + ' mm')
+            self.builder.get_object('position_label').set_text(str(self._position))
+            self.builder.get_object('saveposition_button').set_sensitive(True)
+            self.builder.get_object('savethickness_button').set_sensitive(True)
+            self.builder.get_object('saveall_button').set_sensitive(True)
 
     # noinspection PyUnusedLocal
     def on_fitleft(self, button):
@@ -169,43 +174,42 @@ class CapillaryMeasurement(ToolWindow):
 
     # noinspection PyUnusedLocal
     def on_saveposition(self, button):
-        sn = self._builder.get_object('sampleselector').get_active_text()
+        sn = self.builder.get_object('sampleselector').get_active_text()
         if sn is None:
-            error_message(self._window, 'Cannot save position', 'Please select a sample first.')
+            error_message(self.widget, 'Cannot save position', 'Please select a sample first.')
             return
-        sam = self._instrument.services['samplestore'].get_sample(sn)
+        sam = self.instrument.services['samplestore'].get_sample(sn)
         if self._scandata['signals'][0].upper().endswith('X'):
             sam.positionx = ErrorValue(self._position.val, self._position.err)
-            self._instrument.services['samplestore'].set_sample(sn, sam)
-            self._instrument.save_state()
-            info_message(self._window, 'Updated sample %s' % sn, 'X position set to: %s' % str(sam.positionx))
+            msg = 'X position set to: {}'.format(str(sam.positionx))
         elif self._scandata['signals'][0].upper().endswith('Y'):
             sam.positiony = ErrorValue(self._position.val, self._position.err)
-            self._instrument.services['samplestore'].set_sample(sn, sam)
-            self._instrument.save_state()
-            info_message(self._window, 'Updated sample %s' % sn, 'Y position set to: %s' % str(sam.positiony))
+            msg = 'Y position set to: {}'.format(str(sam.positiony))
         else:
-            error_message(self._window, 'Cannot update position for sample %s' % sn,
+            error_message(self.widget, 'Cannot update position for sample %s' % sn,
                           'Motor name not recognized: %s ends in neither "X" nor "Y".' %
                           self._scandata['signals'][0])
             return
-        self._builder.get_object('saveposition_button').set_sensitive(False)
-        self._builder.get_object('saveall_button').set_sensitive(False)
+        self.instrument.services['samplestore'].set_sample(sn, sam)
+        self.instrument.save_state()
+        info_message(self.widget, 'Updated sample %s' % sn, msg)
+        self.builder.get_object('saveposition_button').set_sensitive(False)
+        self.builder.get_object('saveall_button').set_sensitive(False)
         return
 
     # noinspection PyUnusedLocal
     def on_savethickness(self, button):
-        sn = self._builder.get_object('sampleselector').get_active_text()
+        sn = self.builder.get_object('sampleselector').get_active_text()
         if sn is None:
-            error_message(self._window, 'Cannot save position', 'Please select a sample first.')
+            error_message(self.widget, 'Cannot save position', 'Please select a sample first.')
             return
-        sam = self._instrument.services['samplestore'].get_sample(sn)
+        sam = self.instrument.services['samplestore'].get_sample(sn)
         sam.thickness = ErrorValue(self._thickness.val / 10, self._thickness.err / 10)
-        self._instrument.services['samplestore'].set_sample(sn, sam)
-        self._instrument.save_state()
-        info_message(self._window, 'Updated sample %s' % sn, 'Thickness set to: %s' % str(sam.thickness))
-        self._builder.get_object('savethickness_button').set_sensitive(False)
-        self._builder.get_object('saveall_button').set_sensitive(False)
+        self.instrument.services['samplestore'].set_sample(sn, sam)
+        self.instrument.save_state()
+        info_message(self.widget, 'Updated sample %s' % sn, 'Thickness set to: %s' % str(sam.thickness))
+        self.builder.get_object('savethickness_button').set_sensitive(False)
+        self.builder.get_object('saveall_button').set_sensitive(False)
         return True
 
     def on_saveall(self, button):
@@ -213,35 +217,16 @@ class CapillaryMeasurement(ToolWindow):
         self.on_savethickness(button)
         return True
 
-    def on_map(self, window):
-        if ToolWindow.on_map(self, window):
+    def on_mainwidget_map(self, window):
+        if super().on_mainwidget_map(window):
             return True
-        try:
-            self._instrument.services['samplestore'].disconnect(self._samplestoreconnection)
-            del self._samplestoreconnection
-        except AttributeError:
-            pass
-        self._samplestoreconnection = self._instrument.services['samplestore'].connect('list-changed',
-                                                                                       self.on_samplelist_changed)
-        self.on_samplelist_changed(self._instrument.services['samplestore'])
+        self._samplestoreconnection = self.instrument.services['samplestore'].connect('list-changed',
+                                                                                      self.on_samplelist_changed)
+        self.on_samplelist_changed(self.instrument.services['samplestore'])
 
-    def on_unmap(self, window):
-        ToolWindow.on_unmap(self, window)
-        try:
-            self._instrument.services['samplestore'].disconnect(self._samplestoreconnection)
-            del self._samplestoreconnection
-        except AttributeError:
-            pass
+    def cleanup(self):
+        self.instrument.services['samplestore'].disconnect(self._samplestoreconnection)
+        self._samplestoreconnection = None
 
     def on_samplelist_changed(self, samplestore):
-        ssel = self._builder.get_object('sampleselector')
-        prevsel = ssel.get_active_text()
-        ssel.remove_all()
-        for i, sam in sorted(enumerate(samplestore)):
-            ssel.append_text(sam.title)
-            if sam.title == prevsel:
-                ssel.set_active(i)
-        if prevsel is None:
-            ssel.set_active(0)
-        if ssel.get_active_text() is None:
-            ssel.set_active(0)
+        update_comboboxtext_choices(self.builder.get_object('sampleselector'), sorted(samplestore))

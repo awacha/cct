@@ -1,48 +1,41 @@
+from ..core.functions import update_comboboxtext_choices
 from ..core.scangraph import ScanGraph
 from ..core.toolwindow import ToolWindow
 
 
 class ScanViewer(ToolWindow):
-    def _init_gui(self, *args):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._selected_scanfile = None  # keep a separate account in order to avoid refreshing the whole list
+        self._lastscanconnection = None
 
-    def _disconnect_lastscanconnection(self):
-        try:
-            self._instrument.services['filesequence'].disconnect(self._lastscanconnection)
-            del self._lastscanconnection
-        except AttributeError:
-            pass
+    def init_gui(self, *args, **kwargs):
+        pass
 
-    def on_map(self, window):
-        if ToolWindow.on_map(self, window):
+    def cleanup(self):
+        self.instrument.services['filesequence'].disconnect(self._lastscanconnection)
+        self._lastscanconnection = None
+
+    def on_mainwidget_map(self, window):
+        if super().on_mainwidget_map(window):
             return True
-        self._update_gui()
+        self.update_gui()
+        self._lastscanconnection = self.instrument.services['filesequence'].connect('lastscan-changed',
+                                                                                    self.on_lastscan_changed)
 
-    def _update_gui(self):
-        self._disconnect_lastscanconnection()
-        self._lastscanconnection = self._instrument.services['filesequence'].connect('lastscan-changed',
-                                                                                     self.on_lastscan_changed)
-        scanfileselector = self._builder.get_object('scanfile_selector')
-        scanfileselector.set_active(-1)
-        scanfileselector.remove_all()
-        self._selected_scanfile = None
-        for i, sf in enumerate(sorted(self._instrument.services['filesequence'].get_scanfiles())):
-            scanfileselector.append_text(sf)
-            if sf == self._selected_scanfile:
-                scanfileselector.set_active(i)
-        if scanfileselector.get_active_text() is None:
-            scanfileselector.set_active(0)
-
-    def on_unmap(self, window):
-        self._disconnect_lastscanconnection()
+    def update_gui(self):
+        update_comboboxtext_choices(self.builder.get_object('scanfile_selector'),
+                                    sorted(self.instrument.services['filesequence'].get_scanfiles()),
+                                    default=self.instrument.services['filesequence'].get_scanfile())
 
     def on_scanfile_changed(self, scanfileselector):
         scanfile = scanfileselector.get_active_text()
         if (scanfile == self._selected_scanfile) or (scanfile is None):
+            # do not reload the scanfile if it is already loaded.
             return
         self._selected_scanfile = scanfile
-        scans = self._instrument.services['filesequence'].get_scans(scanfileselector.get_active_text())
-        model = self._builder.get_object('scanstore')
+        scans = self.instrument.services['filesequence'].get_scans(scanfileselector.get_active_text())
+        model = self.builder.get_object('scanstore')
         model.clear()
         for idx in sorted(scans):
             model.append((idx, scans[idx]['cmd'], str(scans[idx]['date']), scans[idx]['comment']))
@@ -51,20 +44,20 @@ class ScanViewer(ToolWindow):
         self.on_open(None)
 
     def on_open(self, button):
-        model, iterators = self._builder.get_object('scanview').get_selection().get_selected_rows()
+        model, iterators = self.builder.get_object('scanview').get_selection().get_selected_rows()
         for iterator in iterators:
             idx = model[iterator][0]
-            scan = self._instrument.services['filesequence'].load_scan(idx, self._builder.get_object(
+            scan = self.instrument.services['filesequence'].load_scan(idx, self.builder.get_object(
                 'scanfile_selector').get_active_text())
-            sg = ScanGraph(scan['signals'], scan['data'], self._instrument, idx, scan['comment'])
-            sg._window.show_all()
+            sg = ScanGraph(scan['signals'], scan['data'], idx, scan['comment'], self.instrument)
+            sg.widget.show_all()
 
     def on_lastscan_changed(self, filesequence, lastscan):
-        scanfileselector = self._builder.get_object('scanfile_selector')
-        model = self._builder.get_object('scanstore')
-        scans = self._instrument.services['filesequence'].get_scans(scanfileselector.get_active_text())
+        scanfileselector = self.builder.get_object('scanfile_selector')
+        model = self.builder.get_object('scanstore')
+        scans = self.instrument.services['filesequence'].get_scans(scanfileselector.get_active_text())
         model.append((lastscan, scans[lastscan]['cmd'], str(scans[lastscan]['date']), scans[lastscan]['comment']))
 
     def reload_scans(self, button):
-        self._instrument.services['filesequence'].reload()
-        self._update_gui()
+        self.instrument.services['filesequence'].load_scanfile_toc()
+        self.update_gui()

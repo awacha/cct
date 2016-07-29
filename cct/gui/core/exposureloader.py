@@ -4,11 +4,13 @@ import weakref
 import pkg_resources
 from gi.repository import GObject, GLib, Gtk
 
+from .functions import update_comboboxtext_choices
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class ExposureLoader():  # Gtk.Box):
+class ExposureLoader(Gtk.Box):
     __gsignals__ = {'open': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
                     'map': 'override',
                     'unmap': 'override'}
@@ -27,45 +29,37 @@ class ExposureLoader():  # Gtk.Box):
         self.on_override_mask_changed(self.builder.get_object('maskoverride_check'))
         self.on_prefix_changed(self.builder.get_object('prefix_selector'))
         self.show_all()
+        self._lastfsnchangedconnection = None
 
     def on_override_mask_changed(self, checkbutton: Gtk.CheckButton):
         self.builder.get_object('mask_chooser').set_sensitive(checkbutton.get_active())
         return True
 
     def on_prefix_changed(self, prefixselector: Gtk.ComboBoxText):
+        prefix = prefixselector.get_active_text()
         try:
-            self.builder.get_object('fsn_adjustment').set_upper(
-                self.instrument.services['filesequence'].get_lastfsn(prefixselector.get_active_text()))
+            self.on_lastfsn_changed(self.instrument.services['filesequence'],
+                                    prefix,
+                                    self.instrument.services['filesequence'].get_lastfsn(prefix))
         except KeyError:
             pass
 
     def do_map(self):
-        Gtk.Box.do_map(self)
-        ps = self.builder.get_object('prefix_selector')
-        previous_active = ps.get_active_text()
-        ps.remove_all()
-        for i, p in enumerate(sorted(self.instrument.services['filesequence'].get_prefixes())):
-            ps.append_text(p)
-            if p == previous_active:
-                ps.set_active(i)
-        if ps.get_active_text() is None:
-            ps.set_active(0)
+        super().do_map(self)
+        update_comboboxtext_choices(self.builder.get_object('prefix_selector'),
+                                    sorted(self.instrument.services['filesequence'].get_prefixes()))
         self.cleanup()
         self._lastfsnchangedconnection = self.instrument.services['filesequence'].connect('lastfsn-changed',
                                                                                           self.on_lastfsn_changed)
         return True
 
     def cleanup(self):
-        try:
-            self.instrument.services['filesequence'].disconnect(self._lastfsnchangedconnection)
-            del self._lastfsnchangedconnection
-        except AttributeError:
-            pass
+        self.instrument.services['filesequence'].disconnect(self._lastfsnchangedconnection)
+        self._lastfsnchangedconnection = None
 
     def do_unmap(self):
-        Gtk.Box.do_unmap(self)
         self.cleanup()
-        return True
+        return Gtk.Box.do_unmap(self)
 
     def on_lastfsn_changed(self, filesequence, prefix, lastfsn):
         if prefix == self.builder.get_object('prefix_selector').get_active_text():

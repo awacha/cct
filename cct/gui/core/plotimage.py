@@ -56,7 +56,7 @@ class PlotImageWidget(BuilderWidget):
                 palette_combo.set_active(i)
         self.widget.pack_start(self.canvas, True, True, 0)
         self.widget.pack_start(self.toolbar, False, True, 0)
-        self._settings_expander = self.builder.get_object('settings_expander')
+        self.settings_expander = self.builder.get_object('settings_expander')
         self.replot()
         self.widget.show_all()
 
@@ -314,11 +314,11 @@ class PlotImageWindow(PlotImageWidget):
     instancelist = []
     def __init__(self, **kwargs):
         PlotImageWidget.__init__(self, **kwargs)
-        self._window = Gtk.Window()
-        self._window.add(self.widget)
-        self._window.connect('destroy', self.on_destroy)
-        self._window.connect('focus-in-event', self.on_focus_in)
-        self._window.show_all()
+        self.window = Gtk.Window()
+        self.window.add(self.widget)
+        self.window.connect('destroy', self.on_destroy)
+        self.window.connect('focus-in-event', self.on_focus_in)
+        self.window.show_all()
         PlotImageWindow.instancelist.append(self)
 
     def on_destroy(self, window):
@@ -335,3 +335,6 @@ class PlotImageWindow(PlotImageWidget):
             return cls()
         else:
             return cls.instancelist[-1]
+
+    def set_title(self, title: str):
+        self.window.set_title(title)

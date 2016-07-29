@@ -21,7 +21,7 @@ from gi.repository import GdkPixbuf
 from gi.repository import Notify
 from ..core.instrument.instrument import Instrument
 from ..core.commands.command import CommandError
-from .measurement.scan import Scan
+from .measurement.scan import ScanMeasurement
 from .devices.motors import Motors
 from .devices.genix import GeniX
 from .devices.tpg201 import TPG201
@@ -30,7 +30,7 @@ from .setup.sampleedit import SampleEdit
 from .setup.definegeometry import DefineGeometry
 from .measurement.singleexposure import SingleExposure
 from .measurement.script import ScriptMeasurement, CommandHelpDialog
-from .measurement.transmission import Transmission
+from .measurement.transmission import TransmissionMeasurement
 from .setup.calibration import Calibration
 from .tools.exposureviewer import ExposureViewer
 from .tools.capillarymeasurement import CapillaryMeasurement
@@ -46,7 +46,8 @@ from .toolframes.shutter import ShutterBeamstop
 from .toolframes.accounting import AccountingFrame
 from .accounting.usermanager import UserManager
 from .accounting.projectmanager import ProjectManager
-from .core.toolwindow import error_message
+from .core.toolwindow import ToolWindow
+from .core.dialogs import error_message
 from .devices.connections import DeviceConnections
 
 Notify.init('cct')
@@ -380,11 +381,11 @@ class MainWindow(object):
         return False
 
     def construct_and_run_dialog(self, windowclass, toplevelname, gladefile, windowtitle):
+        assert issubclass(windowclass, ToolWindow)
         key = str(windowclass) + str(toplevelname)
         if key not in self._dialogs:
             try:
-                self._dialogs[key] = windowclass(gladefile, toplevelname, self._instrument, self._application,
-                                                 windowtitle)
+                self._dialogs[key] = windowclass(gladefile, toplevelname, self._instrument, windowtitle)
             except Exception as exc:
                 # this has already been handled with an error dialog
                 logger.warning('Could not open window {}: {} {}'.format(windowtitle, str(exc), traceback.format_exc()))
@@ -442,7 +443,7 @@ class MainWindow(object):
 
 
     def on_menu_measurement_scan(self, menuitem):
-        self.construct_and_run_dialog(Scan, 'scan', 'measurement_scan.glade', 'Scan measurements')
+        self.construct_and_run_dialog(ScanMeasurement, 'scan', 'measurement_scan.glade', 'Scan measurements')
         return False
 
     def on_menu_measurement_singleexposure(self, menuitem):
@@ -451,7 +452,7 @@ class MainWindow(object):
         return False
 
     def on_menu_measurement_transmission(self, menuitem):
-        self.construct_and_run_dialog(Transmission, 'measuretransmission', 'measurement_transmission.glade',
+        self.construct_and_run_dialog(TransmissionMeasurement, 'measuretransmission', 'measurement_transmission.glade',
                                       'Transmission measurement')
         return False
 

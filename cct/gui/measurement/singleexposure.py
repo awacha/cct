@@ -1,192 +1,180 @@
 import logging
+from typing import Optional
 
+from sastool.io.credo_cct import Header, Exposure
+
+from ..core.functions import update_comboboxtext_choices
 from ..core.plotcurve import PlotCurveWindow
 from ..core.plotimage import PlotImageWindow
-from ..core.toolwindow import ToolWindow, error_message
+from ..core.toolwindow import ToolWindow
 from ...core.commands.detector import Expose, ExposeMulti
-from ...core.utils.sasimage import SASImage
+from ...core.commands.motor import Sample
+from ...core.commands.xray_source import Shutter
+from ...core.services.interpreter import Interpreter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class SingleExposure(ToolWindow):
-    def _init_gui(self, *args):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._images_done = 0
         self._images_requested = 0
-        pass
+        self._sampleconnection = None
+        self._killed = False
+        self._nimages = 0
+        self._images_done = 0
 
-    def _break_connections(self):
-        try:
-            self._instrument.services['samplestore'].disconnect(self._sampleconnections)
-        except AttributeError:
-            pass
+    def cleanup(self):
+        if self._sampleconnection is not None:
+            self.instrument.services['samplestore'].disconnect(self._sampleconnection)
+            self._sampleconnection = None
 
-    def on_map(self, window):
-        if ToolWindow.on_map(self, window):
+    def on_mainwidget_map(self, window):
+        if super().on_mainwidget_map(window):
             return True
-        self._break_connections()
-        self._sampleconnections = self._instrument.services['samplestore'].connect('list-changed',
-                                                                                   self.on_samplelist_changed)
-        self.on_samplelist_changed(self._instrument.services['samplestore'])
-        prefixselector=self._builder.get_object('prefixselector')
-        prefixselector.remove_all()
-        for i, p in enumerate(sorted(self._instrument.services['filesequence'].get_prefixes())):
-            prefixselector.append_text(p)
-            if p==self._instrument.config['path']['prefixes']['tst']:
-                prefixselector.set_active(i)
-        self.on_maskoverride_toggled(self._builder.get_object('mask_checkbutton'))
-        self.on_samplecheck_toggled(self._builder.get_object('samplename_check'))
-
-    def on_unmap(self, window):
-        self._break_connections()
+        self._sampleconnection = self.instrument.services['samplestore'].connect(
+            'list-changed', self.on_samplelist_changed)
+        self.on_samplelist_changed(self.instrument.services['samplestore'])
+        update_comboboxtext_choices(
+            self.builder.get_object('prefixselector'),
+            sorted(self.instrument.services['filesequence'].get_prefixes()),
+            self.instrument.config['path']['prefixes']['tst']
+        )
+        self.on_samplecheck_toggled(self.builder.get_object('samplename_check'))
 
     def on_samplecheck_toggled(self, togglebutton):
-        self._builder.get_object('sampleselector').set_sensitive(togglebutton.get_active())
+        self.builder.get_object('sampleselector').set_sensitive(togglebutton.get_active())
 
-    def on_maskoverride_toggled(self, togglebutton):
-        self._builder.get_object('maskchooserbutton').set_sensitive(togglebutton.get_active())
+    def on_command_return(self, interpreter: Interpreter, commandname: Optional[str], returnvalue: object):
+        if commandname is not None:
+            super().on_command_return(interpreter, commandname, returnvalue)
 
-    def _init_exposure(self):
-        self._builder.get_object('start_button').set_label('Stop')
-        self._make_insensitive('Exposure is running', ['entrygrid', 'close_button'])
-        self._expanalyzerconnection = self._instrument.services['exposureanalyzer'].connect('image', self.on_image)
-        self._interpreter_connections = [
-            self._instrument.services['interpreter'].connect('cmd-return', self.on_cmd_return),
-            self._instrument.services['interpreter'].connect('cmd-fail', self.on_cmd_fail),
-            self._instrument.services['interpreter'].connect('pulse', self.on_pulse),
-            self._instrument.services['interpreter'].connect('progress', self.on_progress),
-        ]
+        if self._killed:
+            commandname = 'shutter'
+            returnvalue = False
 
-    def _cleanup_expanalyzer(self):
-        try:
-            self._instrument.services['exposureanalyzer'].disconnect(self._expanalyzerconnection)
-            del self._expanalyzerconnection
-        except AttributeError:
-            pass
-
-    def _cleanup_exposure(self):
-        try:
-            for c in self._interpreter_connections:
-                self._instrument.services['interpreter'].disconnect(c)
-            del self._interpreter_connections
-        except AttributeError:
-            pass
-        self._builder.get_object('start_button').set_label('Start')
-        self._builder.get_object('progressframe').set_visible(False)
-        self._make_sensitive()
-        self._window.resize(1, 1)
-
-    def on_cmd_return(self, interpreter, commandname, returnvalue):
-        if hasattr(self, '_kill'):
-            self._cleanup_exposure()
-            self._cleanup_expanalyzer()
-            del self._kill
-        elif commandname == 'start':
-            # not a true command, we just enter here.
-            if self._builder.get_object('samplename_check').get_active():
-                self._instrument.services['interpreter'].execute_command(
-                    'sample("%s")' % self._builder.get_object('sampleselector').get_active_text())
+        if commandname is None:
+            # not a true command, we just enter here because self.start() called us.
+            if self.builder.get_object('samplename_check').get_active():
+                self.instrument.services['interpreter'].execute_command(
+                    Sample, (self.builder.get_object('sampleselector').get_active_text(),))
+                return False
             else:
-                self._instrument.services['samplestore'].set_active(None)
-                self.on_cmd_return(interpreter, 'sample', None)
-        elif commandname == 'sample':
-            if self._builder.get_object('shutter_check').get_active():
-                self._instrument.services['interpreter'].execute_command('shutter("open")')
+                self.instrument.services['samplestore'].set_active(None)
+                commandname = 'sample'
+                returnvalue = None
+                self.on_command_return(interpreter, 'sample', None)
+                # pass through to the next if.
+
+        if commandname == 'sample':
+            if self.builder.get_object('shutter_check').get_active():
+                self.instrument.services['interpreter'].execute_command(
+                    Shutter, (True,))
+                return False
             else:
-                self.on_cmd_return(interpreter, 'shutter', True)
-        elif commandname == 'shutter' and returnvalue is None:
-            # shutter timeout
-            self._cleanup_exposure()
-            self._cleanup_expanalyzer()
-            error_message(self._window, 'Shutter timeout')
-        elif commandname == 'shutter' and returnvalue is True:
+                commandname = 'shutter'
+                returnvalue = True
+                # pass through to the next if.
+
+        if commandname == 'shutter' and returnvalue == True:
             # start exposure
-            prefix=self._builder.get_object('prefixselector').get_active_text()
-            exptime=self._builder.get_object('exptime_spin').get_value()
-            nimages=self._builder.get_object('nimages_spin').get_value_as_int()
-            expdelay=self._builder.get_object('expdelay_spin').get_value()
-            self._images_requested = nimages
+            prefix = self.builder.get_object('prefixselector').get_active_text()
+            exptime = self.builder.get_object('exptime_spin').get_value()
+            self._nimages = self.builder.get_object('nimages_spin').get_value_as_int()
+            expdelay = self.builder.get_object('expdelay_spin').get_value()
 
-            self._builder.get_object('progressframe').show_all()
-            self._builder.get_object('progressframe').set_visible(True)
-            if nimages == 1:
-                self._instrument.services['interpreter'].execute_command(Expose(), (exptime, prefix))
+            self.builder.get_object('progressframe').show_all()
+            self.builder.get_object('progressframe').set_visible(True)
+            if self._nimages == 1:
+                self.instrument.services['interpreter'].execute_command(
+                    Expose, (exptime, prefix))
             else:
-                self._instrument.services['interpreter'].execute_command(ExposeMulti(),
-                                                                         (exptime, nimages, prefix, expdelay))
-        elif commandname == 'shutter' and returnvalue is False:
+                self.instrument.services['interpreter'].execute_command(
+                    ExposeMulti, (exptime, self._nimages, prefix, expdelay))
+            return False
+
+        if commandname in ['expose', 'exposemulti']:
+            if self.builder.get_object('shutter_check').get_active():
+                self.instrument.services['interpreter'].execute_command(
+                    Shutter, (False,))
+                return False
+            else:
+                commandname = 'shutter'
+                returnvalue = False
+                # pass through to the next if.
+
+        if commandname == 'shutter' and returnvalue == False:
             # this is the end.
-            self._cleanup_exposure()
-        elif commandname in ['expose', 'exposemulti']:
-            if self._builder.get_object('shutter_check').get_active():
-                self._instrument.services['interpreter'].execute_command('shutter("close")')
-            else:
-                self.on_cmd_return(interpreter, 'shutter', False)
-        return
+            self.builder.get_object('start_button').set_label('Start')
+            self.builder.get_object('progressframe').set_visible(False)
+            self.set_sensitive(True)
+            self.widget.resize(1, 1)
+            self._killed = False
+            return False
 
-    def on_cmd_fail(self, interpreter, commandname, exc, tback):
-        error_message(self._window, 'Error in command %s: %s' % (commandname, str(exc)), tback)
+        # we should not reach here.
+        raise ValueError(commandname, returnvalue)
 
-    def on_pulse(self, interpreter, commandname, message):
-        self._builder.get_object('exposure_progress').set_text(message)
-        self._builder.get_object('exposure_progress').pulse()
+    def on_command_pulse(self, interpreter, commandname, message):
+        self.builder.get_object('exposure_progress').set_text(message)
+        self.builder.get_object('exposure_progress').pulse()
 
-    def on_progress(self, interpreter, commandname, message, fraction):
-        self._builder.get_object('exposure_progress').set_text(message)
-        self._builder.get_object('exposure_progress').set_fraction(fraction)
+    def on_command_progress(self, interpreter, commandname, message, fraction):
+        self.builder.get_object('exposure_progress').set_text(message)
+        self.builder.get_object('exposure_progress').set_fraction(fraction)
 
     def on_start(self, button):
         if button.get_label() == 'Start':
-            self._init_exposure()
-            self.on_cmd_return(self._instrument.services['interpreter'], 'start', None)
+            self.builder.get_object('start_button').set_label('Stop')
+            self._images_done = 0
+            self._expanalyzerconnection = self.instrument.services['exposureanalyzer'].connect('image', self.on_image)
+            self.on_command_return(self.instrument.services['interpreter'], None, None)
         else:
-            self._kill = True
-            self._instrument.services['interpreter'].kill()
+            self._killed = True
+            self.instrument.services['interpreter'].kill()
 
     def on_image(self, exposureanalyzer, prefix, fsn, matrix, mask, params):
-        if 'sample' in params:
-            legend = 'FSN #%d, %s at %.2f mm' % (
-                params['exposure']['fsn'], params['sample']['title'], params['geometry']['dist_sample_det'])
-        else:
-            legend = 'FSN #%d, unknown sample at %.2f mm' % (
-            params['exposure']['fsn'], params['geometry']['dist_sample_det'])
-        im = SASImage(matrix, matrix ** 0.5, params, mask)
-        if self._builder.get_object('plotimage_check').get_active():
-            if self._builder.get_object('reuseimage_check').get_active():
+        im = Exposure(matrix, header=Header(params), mask=mask)
+        try:
+            sample = im.header.title
+        except KeyError:
+            sample = 'unknown sample'
+        legend = 'FSN #{:d}, {} at {:.2f} mm'.format(
+            im.header.fsn, sample, float(im.header.distance))
+        if self.builder.get_object('plotimage_check').get_active():
+            if self.builder.get_object('reuseimage_check').get_active():
                 imgwin = PlotImageWindow.get_latest_window()
             else:
                 imgwin = PlotImageWindow()
-            imgwin.set_image(im.val)
-            imgwin.set_mask(im._mask)
-            imgwin.set_distance(im.params['geometry']['dist_sample_det'])
-            imgwin.set_beampos(im.params['geometry']['beamposx'],
-                               im.params['geometry']['beamposy'])
-            imgwin.set_pixelsize(im.params['geometry']['pixelsize'])
-            imgwin.set_wavelength(im.params['geometry']['wavelength'])
-            imgwin._window.set_title(legend)
-        if self._builder.get_object('plotradial_check').get_active():
-            if self._builder.get_object('reuseradial_check').get_active():
+            imgwin.set_image(im.intensity)
+            imgwin.set_mask(im.mask)
+            imgwin.set_distance(im.header.distance)
+            imgwin.set_beampos(im.header.beamcenterx,
+                               im.header.beamcentery)
+            assert im.header.pixelsizex == im.header.pixelsizey
+            imgwin.set_pixelsize(im.header.pixelsizex)
+            imgwin.set_wavelength(im.header.wavelength)
+            imgwin.set_title(legend)
+        if self.builder.get_object('plotradial_check').get_active():
+            if self.builder.get_object('reuseradial_check').get_active():
                 curvewin = PlotCurveWindow.get_latest_window()
             else:
                 curvewin = PlotCurveWindow()
             curve = im.radial_average()
+            assert im.header.pixelsizex == im.header.pixelsizey
             curvewin.addcurve(curve.q, curve.intensity, curve.dq, curve.error, legend, 'q',
-                              im.params['geometry']['pixelsize'],
-                              im.params['geometry']['dist_sample_det'], im.params['geometry']['wavelength'])
+                              im.header.pixelsizex,
+                              im.header.distance, im.header.wavelength)
         self._images_done += 1
-        if self._images_done >= self._images_requested:
-            self._cleanup_expanalyzer()
+        if self._images_done >= self._nimages:
+            self.instrument.services['exposureanalyzer'].disconnect(self._expanalyzerconnection)
+            self._expanalyzerconnection = None
 
     def on_samplelist_changed(self, samplestore):
-        sampleselector=self._builder.get_object('sampleselector')
-        previously_selected=sampleselector.get_active_text()
-        if previously_selected is None:
-            previously_selected = samplestore.get_active_name()
-        sampleselector.remove_all()
-        for i,sample in enumerate(sorted(samplestore, key=lambda x:x.title)):
-            sampleselector.append_text(sample.title)
-            if sample.title==previously_selected:
-                sampleselector.set_active(i)
+        update_comboboxtext_choices(
+            self.builder.get_object('sampleselector'),
+            sorted(samplestore, key=lambda x: x.title))
 
     def on_nimages_changed(self, spinbutton):
-        self._builder.get_object('expdelay_spin').set_sensitive(spinbutton.get_value_as_int()>1)
+        self.builder.get_object('expdelay_spin').set_sensitive(spinbutton.get_value_as_int() > 1)

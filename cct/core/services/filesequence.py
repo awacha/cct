@@ -139,7 +139,9 @@ class FileSequence(Service):
         self._running_scan = None
         self.emit('lastscan-changed', self._lastscan)
 
-    def load_scanfile_toc(self, scanfile: str) -> Dict:
+    def load_scanfile_toc(self, scanfile: Optional[str] = None) -> Dict:
+        if scanfile is None:
+            scanfile = self._scanfile
         with open(scanfile, 'rt', encoding='utf-8') as f:
             self.scanfile_toc[scanfile] = {}
             l = f.readline()
@@ -472,7 +474,7 @@ class FileSequence(Service):
             self.instrument.config['path']['directories']['param_override'],
             self.instrument.config['path']['directories']['param']]:
             try:
-                return Header(os.path.join(path, filebasename))
+                return Header.new_from_file(os.path.join(path, filebasename))
             except FileNotFoundError:
                 continue
         raise FileNotFoundError(filebasename)
@@ -530,3 +532,4 @@ class FileSequence(Service):
             raise FileSequenceError('Cannot append to scanfile: no scan running.')
         with open(self._scanfile, 'at', encoding='utf-8') as f:
             f.write(str(position) + '  ' + ' '.join([str(c) for c in counters]) + '\n')
+

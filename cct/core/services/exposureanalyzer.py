@@ -267,7 +267,7 @@ class ExposureAnalyzer_Backend(object):
         return im, datared
 
     def correctgeometry(self, im: Exposure, datared: Dict):
-        tth = im.twotheta_rad
+        tth = im.twotheta
         datared['tthval_statistics'] = self.get_matrix_statistics(tth.val)
         datared['ttherr_statistics'] = self.get_matrix_statistics(tth.err)
         assert im.header.pixelsizex == im.header.pixelsizey
