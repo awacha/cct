@@ -272,6 +272,7 @@ class TCPCommunicator:
         tcpcomm.run()
 
 
+# noinspection PyAbstractClass
 class DeviceBackend_TCP(DeviceBackend):
     """Device with TCP socket connection.
 

@@ -59,10 +59,10 @@ class ShutterBeamstop(ToolFrame):
         try:
             self.instrument.services['interpreter'].execute_command(Beamstop, 'in')
         except InterpreterError:
-            error_message(self.widget, 'Cannot move beamstop: interpreter is busy')
+            error_message(self.widget, 'Cannot move beamstop', 'Interpreter is busy')
 
     def on_beamstop_out(self, button):
         try:
             self.instrument.services['interpreter'].execute_command('beamstop("out")')
         except InterpreterError:
-            error_message(self.widget, 'Cannot move beamstop: interpreter is busy')
+            error_message(self.widget, 'Cannot move beamstop', 'Interpreter is busy')

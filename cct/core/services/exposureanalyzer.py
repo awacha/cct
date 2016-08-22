@@ -98,6 +98,12 @@ class ExposureAnalyzer_Backend(object):
             self._logger.addHandler(logging.StreamHandler())
             self._logger.setLevel(loglevel)
         self.masks = {}
+        self._lastdarkbackground = None
+        self._lastabsintref = None
+        self._lastbackground = None
+        self._absintscalingfactor = None
+        self._absintqrange = None
+        self._absintstat = None
 
     def get_telemetry(self):
         return TelemetryInfo()
@@ -204,8 +210,6 @@ class ExposureAnalyzer_Backend(object):
                                               mask=mask, param=message['param'])
 
     def get_mask(self, maskname: str) -> np.ndarray:
-        if not hasattr(self, '_masks'):
-            self.masks = {}
         try:
             return self.masks[maskname]
         except KeyError:

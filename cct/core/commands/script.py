@@ -101,6 +101,7 @@ class Script(Command):
             self.cleanup()
             self.emit('return', None)  # return.
             return False
+        # noinspection PySimplifyBooleanCheck
         if self._pause == False:
             # it could have been None as well, that is a different story
             self._pause = True

@@ -64,6 +64,7 @@ class Interpreter(Service):
              self.command_namespace_locals)
         self._command_connections = {}
         self._parent = None
+        self._command = None
 
     def create_child(self, namespace=None, **kwargs):
         """Create a child interpreter. Children and parents share the same set of flags, which are owned by the parent."""
@@ -78,7 +79,7 @@ class Interpreter(Service):
             commandline: either a string (a valid command line) or an instance of cct.core.commands.Command
             arguments: if `commandline` was a string, this argument is disregarded. Otherwise it must be an
                 ordered sequence (list or tuple) containing the arguments of the command."""
-        if hasattr(self, '_command'):
+        if self.is_busy():
             raise InterpreterError('Interpreter is busy')
         if issubclass(commandline, Command):
             # we got a Command instance, not a string. Arguments are supplied as well
@@ -123,7 +124,7 @@ class Interpreter(Service):
                         currentargument = ''
                     else:
                         c = argumentstring[i]
-                        currentargument = currentargument + c
+                        currentargument += c
                         if c == '(':
                             openparens['('] += 1
                         elif c == ')':
@@ -178,7 +179,7 @@ class Interpreter(Service):
         return self._command
 
     def is_busy(self):
-        return hasattr(self, '_command')
+        return self._command is not None
 
     def on_command_return(self, command, retval):
         #        logger.debug("Command {} returned: {}".format(str(command),str(retval)))
@@ -189,10 +190,7 @@ class Interpreter(Service):
             del self._command_connections[command]
         except KeyError:
             pass
-        try:
-            del self._command
-        except AttributeError:
-            pass
+        self._command = None
         self.emit('cmd-return', str(command), retval)
         self.emit('idle-changed', True)
 

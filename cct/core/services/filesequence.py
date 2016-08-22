@@ -70,6 +70,7 @@ class FileSequence(Service):
         self._nextfreefsn = {}
         self.scanfile_toc = {}
         self._running_scan = None
+        self._masks = None
         self._scanfile = os.path.join(
             self.instrument.config['path']['directories']['scan'],
             self.instrument.config['scan']['scanfile'])
@@ -507,8 +508,6 @@ class FileSequence(Service):
         raise FileNotFoundError(picklebasename)
 
     def get_mask(self, maskname: str) -> np.ndarray:
-        if not hasattr(self, '_masks'):
-            self._masks = {}
         if ((maskname not in self._masks) or
                 (os.stat(self._masks[maskname]['path']).st_atime > self._masks[maskname]['atime'])):
             # if this mask has not yet been loaded or it has changed on the disk, load it.

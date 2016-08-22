@@ -142,6 +142,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
     def __init__(self, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
         self._expected_status = 'idle'
+        self._exposureendsat = None
         # a flag which has to be acquired when the detector is busy: trimming or exposing.
 
     def queryall(self):

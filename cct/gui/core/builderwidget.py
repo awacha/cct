@@ -19,6 +19,7 @@ class BuilderWidget(Callbacks):
         self.widget.foreach(lambda x: x.show_all())
         return False
 
+    # noinspection PyMethodMayBeStatic
     def on_mainwidget_unmap(self, widget: Gtk.Widget):
         return False
 

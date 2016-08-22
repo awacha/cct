@@ -4,12 +4,13 @@ from gi.repository import Gtk, GLib
 
 from ..core.dialogs import error_message, question_message
 from ..core.toolwindow import ToolWindow
-from ...core.devices import DeviceError, Motor
+from ...core.devices import DeviceError, Motor, TMCMCard
 from ...core.instrument.privileges import PRIV_MOTORCONFIG, PRIV_MOTORCALIB, PRIV_BEAMSTOP, PRIV_PINHOLE, \
     PRIV_MOVEMOTORS
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class Motors(ToolWindow):
     widgets_to_make_insensitive = ['highlevel_expander']
@@ -17,6 +18,8 @@ class Motors(ToolWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._samplestore_connection = None
+        self._movebeamstop = None
+        self._movetosample = None
         self.required_devices = ['Motor_' + m for m in self.instrument.motors]
 
     def init_gui(self, *args, **kwargs):
@@ -24,7 +27,7 @@ class Motors(ToolWindow):
         for m in sorted(self.instrument.motors):
             mot = self.instrument.motors[m]
             assert isinstance(mot, Motor)
-            lims=mot.get_limits()
+            lims = mot.get_limits()
             model.append((m, '%.3f' % lims[0], '%.3f' % lims[1], '%.3f' % mot.where(), '%.3f' % mot.speed(),
                           mot.leftlimitswitch(),
                           mot.rightlimitswitch(), '%d' % mot.load(), ', '.join(mot.decode_error_flags())))
@@ -35,43 +38,43 @@ class Motors(ToolWindow):
         model = self.builder.get_object('motorlist')
         for row in model:
             if row[0] == motor.name:
-                if var=='softleft':
-                    row[1]='%.3f'%value
-                elif var=='softright':
-                    row[2]='%.3f'%value
-                elif var=='actualposition':
-                    row[3]='%.3f'%value
-                elif var=='actualspeed':
-                    row[4]='%.3f'%value
-                elif var=='leftswitchstatus':
-                    row[5]=value
-                elif var=='rightswitchstatus':
-                    row[6]=value
-                elif var=='load':
-                    row[7]='%d'%value
-                elif var=='drivererror':
-                    row[8]=', '.join(motor.decode_error_flags(value))
+                if var == 'softleft':
+                    row[1] = '%.3f' % value
+                elif var == 'softright':
+                    row[2] = '%.3f' % value
+                elif var == 'actualposition':
+                    row[3] = '%.3f' % value
+                elif var == 'actualspeed':
+                    row[4] = '%.3f' % value
+                elif var == 'leftswitchstatus':
+                    row[5] = value
+                elif var == 'rightswitchstatus':
+                    row[6] = value
+                elif var == 'load':
+                    row[7] = '%d' % value
+                elif var == 'drivererror':
+                    row[8] = ', '.join(motor.decode_error_flags(value))
         if var == 'actualposition' and motor.name in ['BeamStop_X', 'BeamStop_Y']:
             self.check_beamstop_state()
         return False
 
     def on_motor_stop(self, motor: Motor, targetreached: bool):
-        if hasattr(self, '_movebeamstop'):
+        if self._movebeamstop is not None:
             if motor.name == 'BeamStop_X':
                 # moving the BeamStop_X just ended, move BeamStop_Y
                 ypos = self.instrument.config['beamstop'][self._movebeamstop][1]
                 GLib.idle_add(lambda yp=ypos: self.instrument.motors['BeamStop_Y'].moveto(yp) and False)
             elif motor.name == 'BeamStop_Y':
                 # moving motor BeamStopY is ended too, clean up.
-                del self._movebeamstop
+                self._movebeamstop = None
                 self.set_sensitive(True)
-        if hasattr(self, '_movetosample'):
+        if self._movetosample is not None:
             if motor.name == 'Sample_X':
                 # moving Sample_X ended. Move Sample_Y
                 GLib.idle_add(lambda yp=self._movetosample.positiony.val: self.instrument.motors['Sample_Y'].moveto(
                     yp) and False)
             elif motor.name == 'Sample_Y':
-                del self._movetosample
+                self._movetosample = None
                 self.set_sensitive(True)
 
     def check_beamstop_state(self):
@@ -119,12 +122,9 @@ class Motors(ToolWindow):
         self.movebeamstop(True)
 
     def movebeamstop(self, out):
-        try:
+        if self._movebeamstop is not None:
             error_message(self.widget, 'Cannot move beamstop', 'Already moving ' + self._movebeamstop)
             return True
-        except AttributeError:
-            # this happens when `self` does not have a '_movebeamstop' attribute, i.e. the beamstop is not moving.
-            pass
         if not self.instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP):
             error_message(self.widget, 'Cannot move beamstop', 'Insufficient privileges')
             return
@@ -138,7 +138,7 @@ class Motors(ToolWindow):
             self.set_sensitive(False, 'Beamstop is moving')
             self.instrument.motors['BeamStop_X'].moveto(xpos)
         except Exception as exc:
-            self.set_sensitive()
+            self.set_sensitive(True)
             del self._movebeamstop
             error_message(self.widget, 'Cannot start move', str(exc.args[0]))
 
@@ -167,13 +167,10 @@ class Motors(ToolWindow):
                 sampleselector.set_active(i)
 
     def on_moveto_sample(self, button):
-        try:
+        if self._movetosample is not None:
             error_message(self.widget, 'Cannot move sample motors',
                           'Already in motion to sample ' + str(self._movetosample))
             return True
-        except AttributeError:
-            # This happens when `self` does not have a `_movetosample` attribute, i.e. we are not moving.
-            pass
         self._movetosample = self.instrument.services['samplestore'].get_sample(
             self.builder.get_object('sampleselector').get_active_text())
         self.set_sensitive(False, 'Moving sample')
@@ -184,45 +181,51 @@ class Motors(ToolWindow):
 
     def on_move(self, button):
         model, treeiter = self.builder.get_object('motortreeview').get_selection().get_selected()
-        motorname=model[treeiter][0]
+        motorname = model[treeiter][0]
         movewindow = MotorMover('devices_motors_move.glade', 'motormover', self.instrument,
                                 'Move motor', motorname)
         movewindow.show_all()
 
     def on_config(self, button):
         model, treeiter = self.builder.get_object('motortreeview').get_selection().get_selected()
-        motorname=model[treeiter][0]
+        motorname = model[treeiter][0]
         configwindow = MotorConfig('devices_motors_config.glade', 'motorconfig', self.instrument,
                                    'Configure motor', motorname)
         configwindow.show_all()
+
 
 class MotorConfig(ToolWindow):
     privlevel = PRIV_MOTORCONFIG
     destroy_on_close = True
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.motorname = None
+
     def init_gui(self, motorname):
         self.motorname = motorname
         motor = self.instrument.motors[motorname]
+        assert isinstance(motor.controller, TMCMCard)
+        assert isinstance(motor, Motor)
         self.builder.get_object('frametitle').set_label(
-            'Configure motor %s (%s/#%d)' % (motorname, motor._controller._instancename,
-                                                                                        motor._index))
+            'Configure motor %s (%s/#%d)' % (motorname, motor.controller.name, motor.index))
         self.builder.get_object('leftlimit_adjustment').set_value(motor.get_variable('softleft'))
         self.builder.get_object('rightlimit_adjustment').set_value(motor.get_variable('softright'))
         self.builder.get_object('calibration_adjustment').set_value(motor.where())
-        self.builder.get_object('drivingcurrent_adjustment').set_upper(motor._controller._top_RMS_current)
+        self.builder.get_object('drivingcurrent_adjustment').set_upper(motor.controller.top_RMS_current)
         self.builder.get_object('drivingcurrent_adjustment').set_value(motor.get_variable('maxcurrent'))
-        self.builder.get_object('standbycurrent_adjustment').set_upper(motor._controller._top_RMS_current)
+        self.builder.get_object('standbycurrent_adjustment').set_upper(motor.controller.top_RMS_current)
         self.builder.get_object('standbycurrent_adjustment').set_value(motor.get_variable('standbycurrent'))
         self.builder.get_object('freewheelingdelay_adjustment').set_value(motor.get_variable('freewheelingdelay'))
         self.builder.get_object('leftswitchenable_checkbutton').set_active(motor.get_variable('leftswitchenable'))
         self.builder.get_object('rightswitchenable_checkbutton').set_active(motor.get_variable('rightswitchenable'))
         self.builder.get_object('rampdiv_adjustment').set_value(motor.get_variable('rampdivisor'))
         self.builder.get_object('pulsediv_adjustment').set_value(motor.get_variable('pulsedivisor'))
-        self.builder.get_object('microstep_adjustment').set_value(motor._controller._max_microsteps)
+        self.builder.get_object('microstep_adjustment').set_value(motor.controller.max_microsteps)
         self.builder.get_object('microstep_adjustment').set_value(motor.get_variable('microstepresolution'))
 
     def on_apply(self, button):
-        tobechanged={}
+        tobechanged = {}
         motor = self.instrument.motors[self.motorname]
         for widgetname, variablename in [('leftlimit_adjustment', 'softleft'),
                                          ('rightlimit_adjustment', 'softright'),
@@ -237,22 +240,25 @@ class MotorConfig(ToolWindow):
                                          ('calibration_adjustment', 'actualposition')]:
             widget = self.builder.get_object(widgetname)
             if widgetname.endswith('_adjustment'):
-                newvalue=widget.get_value()
+                newvalue = widget.get_value()
             elif widgetname.endswith('_checkbutton'):
-                newvalue=widget.get_active()
+                newvalue = widget.get_active()
             else:
                 raise NotImplementedError(widgetname)
-            oldvalue=motor.get_variable(variablename)
+            oldvalue = motor.get_variable(variablename)
             if oldvalue != newvalue:
-                tobechanged[variablename]=newvalue
+                tobechanged[variablename] = newvalue
         if tobechanged:
             md = Gtk.MessageDialog(parent=self.widget,
                                    flags=Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
                                    type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO,
                                    message_format='Please confirm changes to motor %s' % self.motorname)
-            md.format_secondary_markup('The following parameters will be changed. <b>ARE YOU REALLY SURE?</b>:\n'+'\n'.join('    '+variablename+' to '+str(tobechanged[variablename]) for variablename in sorted(tobechanged)))
-            result=md.run()
-            if result==Gtk.ResponseType.YES:
+            md.format_secondary_markup(
+                'The following parameters will be changed. <b>ARE YOU REALLY SURE?</b>:\n' + '\n'.join(
+                    '    ' + variablename + ' to ' + str(tobechanged[variablename]) for variablename in
+                    sorted(tobechanged)))
+            result = md.run()
+            if result == Gtk.ResponseType.YES:
                 if 'actualposition' in tobechanged:
                     logger.info('Calibrating motor %s to %f.' % (self.motorname, tobechanged['actualposition']))
                     try:
@@ -275,26 +281,30 @@ class MotorMover(ToolWindow):
     privlevel = PRIV_MOVEMOTORS
     widgets_to_make_insensitive = ['close_button', 'motorselector', 'target_spin', 'relative_checkbutton']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.motorname = None
+
     def init_gui(self, motorname):
         self.motorname = motorname
         self.required_devices = ['Motor_' + motorname]
         motorselector = self.builder.get_object('motorselector')
         for i, m in enumerate(sorted(self.instrument.motors)):
             motorselector.append_text(m)
-            if m==motorname:
+            if m == motorname:
                 motorselector.set_active(i)
         motorselector.connect('changed', self.on_motorselector_changed)
-        GLib.idle_add(lambda ms=motorselector:self.on_motorselector_changed(ms))
+        GLib.idle_add(lambda ms=motorselector: self.on_motorselector_changed(ms))
 
     def on_move(self, button):
         motor = self.instrument.motors[self.motorname]
-        if button.get_label()=='Move':
+        if button.get_label() == 'Move':
             if ((self.builder.get_object('motorselector').get_active_text() in ['BeamStop_X', 'BeamStop_Y']) and
                     not self.instrument.services['accounting'].has_privilege(PRIV_BEAMSTOP)):
                 error_message(self.widget, 'Cannot move beamstop', 'Insufficient privileges')
                 return
             if ((self.builder.get_object('motorselector').get_active_text() in ['PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y',
-                                                                                 'PH3_X', 'PH3_Y']) and
+                                                                                'PH3_X', 'PH3_Y']) and
                     not self.instrument.services['accounting'].has_privilege(PRIV_PINHOLE)):
                 error_message(self.widget, 'Cannot move pinholes', 'Insufficient privileges')
                 return
@@ -339,8 +349,8 @@ class MotorMover(ToolWindow):
         lims = motor.get_limits()
         where = motor.where()
         if self.builder.get_object('relative_checkbutton').get_active():
-            lims=[l-where for l in lims]
-            where=0
+            lims = [l - where for l in lims]
+            where = 0
         adj = self.builder.get_object('target_adjustment')
         adj.set_lower(lims[0])
         adj.set_upper(lims[1])
@@ -348,4 +358,3 @@ class MotorMover(ToolWindow):
 
     def on_relative_toggled(self, checkbutton):
         self.adjust_limits()
-

@@ -64,9 +64,15 @@ class Instrument(Callbacks):
         self._signalconnections = {}
         self._waiting_for_ready = []
         self._telemetries = {}
+        self._telemetry_timeout = None
+        self.starttime = None
         self.busy = multiprocessing.Event()
         self.load_state()
         self.create_services()
+
+    @property
+    def online(self) -> bool:
+        return self._online
 
     def start(self):
         """Start operation"""

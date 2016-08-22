@@ -375,6 +375,7 @@ class DeviceBackend(object):
         self.logger.info('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
             self.name, self.counters['outmessages'], self.counters['inmessages']))
         self.send_to_frontend('exited', normaltermination=exit_status)
+        return exit_status
 
     def connect_device(self):
         """Connect to the device. This consists of the following steps:

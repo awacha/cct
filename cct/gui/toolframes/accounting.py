@@ -7,6 +7,7 @@ class AccountingFrame(ToolFrame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._acctconn = None
+        self._projectid_changed_disable = None
 
     def init_gui(self, *args):
         update_comboboxtext_choices(
@@ -23,7 +24,7 @@ class AccountingFrame(ToolFrame):
         return super().cleanup()
 
     def on_projectid_changed(self, comboboxtext):
-        if hasattr(self, '_projectid_changed_disable'):
+        if self._projectid_changed_disable:
             return
         pid = comboboxtext.get_active_text()
         if self.instrument.services['accounting'].get_project().projectid != pid:

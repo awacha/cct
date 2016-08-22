@@ -58,18 +58,10 @@ class TMCMCard_Backend(DeviceBackend_TCP):
     work for other models."""
 
     def __init__(self, *args, **kwargs):
-        self.N_axes = kwargs['N_axes']
-        del kwargs['N_axes']
-        self.top_RMS_current = kwargs['top_RMS_current']
-        del kwargs['top_RMS_current']
-        self.max_microsteps = kwargs['max_microsteps']
-        del kwargs['max_microsteps']
-        self.clock_frequency = kwargs['clock_frequency']
-        del kwargs['clock_frequency']
-        self.full_step_size = kwargs['full_step_size']
-        del kwargs['full_step_size']
-        self.positions_loaded = kwargs['positions_loaded']
-        del kwargs['positions_loaded']
+        for arg in ['N_axes', 'top_RMS_current', 'max_microsteps', 'clock_frequency', 'full_step_size',
+                    'positions_loaded']:
+            setattr(self, arg, kwargs[arg])
+            del kwargs[arg]
         super().__init__(*args, **kwargs)
         # status information dictionary when a motor is moving, None otherwise.
         # dictionary keys:
@@ -817,6 +809,7 @@ class TMCMCard(Device):
         # this via a well-crafted execute_command()
         self.positions_loaded = multiprocessing.Event()
 
+    # noinspection PyProtectedMember
     def _get_kwargs_for_backend(self):
         d = super()._get_kwargs_for_backend()
         d['N_axes'] = self.N_axes

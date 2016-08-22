@@ -162,6 +162,10 @@ class Expose(Command):
         self.detector_idle = False
         self.killed = False
         self.starttime = None
+        self.fsn = None
+        self.filename = None
+        self.imgpath = None
+        self.fsns = None
 
     def validate(self):
         det = self.get_device('pilatus')
@@ -293,6 +297,8 @@ class ExposeMulti(Command):
         self.due_times = [self.exptime + i * (self.exptime + self.expdelay) for i in range(self.nimages)]
         self.totaltime = self.exptime * self.nimages + self.expdelay * (self.nimages - 1)
         self.timeout = self.totaltime + 30
+        self.fsns = None
+        self.imgpath = None
 
     def validate(self):
         det = self.get_device('pilatus')

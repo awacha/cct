@@ -40,6 +40,14 @@ class Calibration(ToolWindow):
         self._exposure = None
         self._curve = None
         self._manualpickingconnection = None
+        self.plot2d = None
+        self.plot1d = None
+        self.figpairs = None
+        self.figpairscanvas = None
+        self.figpairstoolbox = None
+        self.figpairsaxes = None
+        self.exposureloader = None
+        self._dist = None
 
     def init_gui(self, *args, **kwargs):
         self.plot2d = PlotImageWidget()
@@ -185,7 +193,7 @@ class Calibration(ToolWindow):
             elif curvetype == 'Lorentz':
                 y_ = ampl * hwhm ** 2 / (hwhm ** 2 + (pos - x_) ** 2) + baseline
             else:
-                raise NotImplementedError(curvetype)
+                raise ValueError(curvetype)
             self.builder.get_object('uncalval_adjustment').set_value(pos.val)
             self.builder.get_object('uncalerr_adjustment').set_value(pos.err)
             self.plot1d.axes.plot(x_, y_, 'r-')

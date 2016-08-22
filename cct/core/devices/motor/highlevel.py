@@ -1,5 +1,6 @@
 import logging
 
+from .lowlevel import TMCMCard
 from ...utils.callback import Callbacks, SignalFlags
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class Motor(Callbacks):
                    'disconnect': (SignalFlags.RUN_LAST, None, (bool,))
                    }
 
-    def __init__(self, controller, index, name):
+    def __init__(self, controller: TMCMCard, index: int, name: str):
         super().__init__()
         self.name = name
         self._controller = controller
@@ -28,6 +29,14 @@ class Motor(Callbacks):
             self._controller.connect('disconnect', self.on_disconnect),
         ]
         self._moving = False
+
+    @property
+    def controller(self) -> TMCMCard:
+        return self._controller
+
+    @property
+    def index(self):
+        return self._index
 
     def on_variable_change(self, controller, variable, newvalue):
         try:
@@ -51,7 +60,7 @@ class Motor(Callbacks):
         except AttributeError:
             return False
         logger.error(
-            'Motor ({}:#{:d}) error: Variable: {}. Exception: {}\n{}'.format(controller._instancename, self._index,
+            'Motor ({}:#{:d}) error: Variable: {}. Exception: {}\n{}'.format(controller.name, self._index,
                                                                              variable.rsplit('$')[0], str(exception),
                                                                              tb))
         self.emit('error', variable.rsplit('$')[0], exception, tb)

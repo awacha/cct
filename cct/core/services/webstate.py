@@ -187,10 +187,10 @@ class WebStateFileWriter(Service):
                 ['xray_light', 'shutter_light', 'sensor1', 'sensor2', 'tube_position', 'vacuum', 'waterflow',
                  'safety_shutter', 'temperature', 'relay_interlock', 'door', 'filament']):
             if i % 4 == 0:
-                xray = xray + "<tr>\n"
-            xray = xray + '<td style="background-color:{}">{}</td>\n'.format(*self.format_genix_faultvalue(fault))
+                xray += "<tr>\n"
+            xray += '<td style="background-color:{}">{}</td>\n'.format(*self.format_genix_faultvalue(fault))
             if i % 4 == 3:
-                xray = xray + '</tr>\n'
+                xray += '</tr>\n'
         return xray
 
     def create_detector_status(self):
@@ -299,7 +299,7 @@ class WebStateFileWriter(Service):
         self.reload_statusfile_template()
         uptime = time.monotonic() - self.instrument.starttime
         uptime_hour = uptime // 3600
-        uptime = uptime - uptime_hour * 3600
+        uptime -= uptime_hour * 3600
         uptime_min = uptime // 60
         uptime_sec = uptime - uptime_min * 60
         subs = {'timestamp': str(datetime.datetime.now()),

@@ -14,6 +14,7 @@ class GeniX(ToolWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._updating_buttons = False
         self.indicators = {}
 
     def init_gui(self, *args, **kwargs):
@@ -67,7 +68,7 @@ class GeniX(ToolWindow):
 
     def on_warmup(self, button):
         genix = self.instrument.get_device('genix')
-        if hasattr(self, '_updating_buttons'):
+        if self._updating_buttons:
             return
         if button.get_active():
             try:
@@ -80,7 +81,7 @@ class GeniX(ToolWindow):
                 raise
         else:
             if (not genix.get_variable('_status') == 'Warming up') or (
-                    question_message('Do you really want to break the warm-up sequence?',
+                    question_message(self.widget, 'Do you really want to break the warm-up sequence?',
                                      'Voltage will be gradually decreased to 0 kV.')):
                 genix.execute_command('stop_warmup')
 
@@ -94,7 +95,7 @@ class GeniX(ToolWindow):
         self.instrument.get_device('genix').set_power('standby')
 
     def on_shutter(self, button):
-        if hasattr(self, '_updating_buttons'):
+        if self._updating_buttons:
             return
         genix = self.instrument.get_device('genix')
         logger.debug('Shutter button toggled to: ' + str(button.get_active()))
@@ -102,7 +103,7 @@ class GeniX(ToolWindow):
             genix.execute_command('shutter', button.get_active())
 
     def on_xraystate(self, button):
-        if hasattr(self, '_updating_buttons'):
+        if self._updating_buttons:
             return
         self.instrument.get_device('genix').set_xrays(button.get_active())
 
@@ -189,7 +190,7 @@ class GeniX(ToolWindow):
                 else:
                     raise ValueError('Invalid status: ' + newvalue)
             finally:
-                del self._updating_buttons
+                self._updating_buttons = False
         elif variablename == 'ht':
             self.indicators[variablename].set_value('%.1f kV' % newvalue, IndicatorState.NEUTRAL)
         elif variablename == 'current':

@@ -66,7 +66,8 @@ class DefineGeometry(ToolWindow):
     def on_close(self, widget, event=None):
         if self.builder.get_object('apply_button').get_sensitive():
             ret = question_message(self.widget, 'Closing window', 'Do you want to apply your changes?')
-            if ret == True:
+            # ret can be True (= Yes), False (= No) and None (= Cancel)
+            if ret:
                 self.on_apply(self.builder.get_object('apply_button'))
             elif ret is None:
                 return True

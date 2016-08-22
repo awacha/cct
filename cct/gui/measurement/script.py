@@ -65,6 +65,7 @@ class ScriptMeasurement(ToolWindow):
         if self.sourcebuffer.get_modified():
             res = question_message(self.widget, 'Closing window',
                                    'Script has been modified. Do you want to save it first?')
+            # noinspection PySimplifyBooleanCheck
             if res:
                 self.on_toolbutton_save(self.builder.get_object('save_toolbutton'))
                 self.sourcebuffer.set_modified(False)
@@ -126,7 +127,7 @@ class ScriptMeasurement(ToolWindow):
         if self.filechooser_save.run() == Gtk.ResponseType.OK:
             self.filename = self.filechooser_save.get_filename()
             if not self.filename.lower().endswith('.cct'):
-                self.filename = self.filename + '.cct'
+                self.filename += '.cct'
             self.filechooser_save.set_filename(self.filename)
             self.widget.set_title(self.filename)
             self.on_toolbutton_save(toolbutton)

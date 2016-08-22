@@ -304,6 +304,7 @@ class Sleep(Command):
             raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
         self.sleeptime = float(self.args[0])
         self._sleeptimeout = None
+        self._starttime = None
 
     def execute(self):
         self._sleeptimeout = GLib.timeout_add(self.sleeptime * 1000, lambda: self.cleanup(None) and False)

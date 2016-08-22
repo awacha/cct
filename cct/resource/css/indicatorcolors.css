@@ -1,15 +1,19 @@
+/*noinspection CssUnusedSymbol*/
 #indicator_ok {
     background-color: #007c08
 }
 
+/*noinspection CssUnusedSymbol*/
 #indicator_warning {
     background-color: #ffac00
 }
 
+/*noinspection CssUnusedSymbol*/
 #indicator_error {
     background-color: #ff0000
 }
 
+/*noinspection CssUnusedSymbol*/
 #indicator_neutral {
     background-color: #ffffff
 }

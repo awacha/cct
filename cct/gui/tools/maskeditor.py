@@ -110,9 +110,9 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
         tobemasked = (row - row0) ** 2 + (column - col0) ** 2 <= r2
         self._undo_stack.append(self.mask)
         if self.builder.get_object('mask_button').get_active():
-            self.mask = self.mask & (~tobemasked)
+            self.mask &= ~tobemasked
         elif self.builder.get_object('unmask_button').get_active():
-            self.mask = self.mask | (tobemasked)
+            self.mask |= tobemasked
         elif self.builder.get_object('invertmask_button').get_active():
             self.mask[tobemasked] = ~self.mask[tobemasked]
         else:

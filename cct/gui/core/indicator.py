@@ -18,7 +18,7 @@ class IndicatorState(Enum):
 
 class Indicator(Gtk.Box):
     def __init__(self, label: str, value: object, state: IndicatorState, *args, **kwargs):
-        Gtk.Box.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         if 'orientation' not in kwargs:
             self.set_orientation(Gtk.Orientation.VERTICAL)
         self._label=Gtk.Label(label=label)

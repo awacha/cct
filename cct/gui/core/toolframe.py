@@ -74,7 +74,8 @@ class ToolFrame(BuilderWidget):
         """
         super().on_mainwidget_map(window)
         if not self.instrument.services['accounting'].has_privilege(self.privlevel):
-            error_message(self.widget, 'Insufficient privileges to open {}.'.format(self.widget.get_title()))
+            error_message(self.widget, 'Privilege error',
+                          'Insufficient privileges to open {}.'.format(self.widget.get_title()))
             self.widget.destroy()
             return True
         # connect to various signals of devices
@@ -82,7 +83,7 @@ class ToolFrame(BuilderWidget):
             try:
                 self.instrument.get_device(d)
             except:
-                error_message(self.widget, 'Required device {} not present.'.format(d))
+                error_message(self.widget, 'Device error', 'Required device {} not present.'.format(d))
                 self.widget.destroy()
                 return True
         for d in self.required_devices:

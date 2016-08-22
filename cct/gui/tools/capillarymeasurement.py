@@ -27,6 +27,10 @@ class CapillaryMeasurement(ToolWindow):
         self._xdata = None
         self._ydata = None
         self._samplestoreconnection = None
+        self.fig = None
+        self.axes = None
+        self.canvas = None
+        self.toolbar = None
 
     def init_gui(self, *args, **kwargs):
         fb = self.builder.get_object('figbox')

@@ -1,3 +1,4 @@
+/*noinspection CssRedundantUnit*/
 #header {
     background-color: black;
     color: white;
@@ -7,12 +8,14 @@
     padding: 0px;
 }
 
+/*noinspection CssRedundantUnit*/
 #leftpane {
     width: 49%;
     float: left;
     padding-top: 0px;
 }
 
+/*noinspection CssRedundantUnit*/
 #rightpane {
     width: 49%;
     float: right;
@@ -30,6 +33,7 @@
     color: white;
 }
 
+/*noinspection CssUnusedSymbol*/
 .clearfix {
     overflow: auto;
 }

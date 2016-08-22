@@ -130,14 +130,15 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem1">
+                      <object class="GtkImageMenuItem" id="menuitem_quit">
                         <property name="label" translatable="yes">_Quit</property>
+                        <property name="name">menuitem_quit</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="image">image1</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_file_quit" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                   </object>
@@ -155,39 +156,42 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem6">
+                      <object class="GtkImageMenuItem" id="menuitem_sampleeditor">
                         <property name="label" translatable="yes">_Sample editor</property>
+                        <property name="name">menuitem_sampleeditor</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Edit the sample database</property>
                         <property name="use_underline">True</property>
                         <property name="image">image2</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_setup_sampleeditor" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem7">
+                      <object class="GtkImageMenuItem" id="menuitem_definegeometry">
                         <property name="label" translatable="yes">Define _geometry</property>
+                        <property name="name">menuitem_definegeometry</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Define the parameters of the scattering geometry</property>
                         <property name="use_underline">True</property>
                         <property name="image">image3</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_setup_definegeometry" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem8">
+                      <object class="GtkImageMenuItem" id="menuitem_editconfig">
                         <property name="label" translatable="yes">Edit _configuration</property>
+                        <property name="name">menuitem_editconfig</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Edit various configuration parameters</property>
                         <property name="use_underline">True</property>
                         <property name="image">image4</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_setup_editconfiguration" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -197,15 +201,16 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="menuitem5">
+                      <object class="GtkImageMenuItem" id="menuitem_calibration">
                         <property name="label" translatable="yes">Cali_bration</property>
+                        <property name="name">menuitem_calibration</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Do calibration</property>
                         <property name="use_underline">True</property>
                         <property name="image">image7</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_setup_calibration" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -220,23 +225,25 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <child>
-                              <object class="GtkMenuItem" id="menuitem22">
+                              <object class="GtkMenuItem" id="menuitem_users">
+                                <property name="name">menuitem_users</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="tooltip_text" translatable="yes">Manage users</property>
                                 <property name="label" translatable="yes">_Users</property>
                                 <property name="use_underline">True</property>
-                                <signal name="activate" handler="on_menu_setup_management_users" swapped="no"/>
+                                <signal name="activate" handler="on_menu" swapped="no"/>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkMenuItem" id="menuitem23">
+                              <object class="GtkMenuItem" id="menuitem_projects">
+                                <property name="name">menuitem_projects</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="tooltip_text" translatable="yes">Manage projects</property>
                                 <property name="label" translatable="yes">_Projects</property>
                                 <property name="use_underline">True</property>
-                                <signal name="activate" handler="on_menu_setup_management_projects" swapped="no"/>
+                                <signal name="activate" handler="on_menu" swapped="no"/>
                               </object>
                             </child>
                           </object>
@@ -258,63 +265,68 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem2">
+                      <object class="GtkImageMenuItem" id="menuitem_xraysource">
                         <property name="label" translatable="yes">_X-ray source</property>
+                        <property name="name">menuitem_xraysource</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">X-ray source</property>
                         <property name="use_underline">True</property>
                         <property name="image">image8</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_devices_xraysource" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="menuitem8">
+                      <object class="GtkImageMenuItem" id="menuitem_detector">
                         <property name="label" translatable="yes">_Detector</property>
+                        <property name="name">menuitem_detector</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Detector</property>
                         <property name="use_underline">True</property>
                         <property name="image">image9</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_devices_detector" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="menuitem9">
+                      <object class="GtkImageMenuItem" id="menuitem_motors">
                         <property name="label" translatable="yes">_Motors</property>
+                        <property name="name">menuitem_motors</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Motors</property>
                         <property name="use_underline">True</property>
                         <property name="image">image10</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_devices_motors" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="menuitem10">
+                      <object class="GtkImageMenuItem" id="menuitem_vacgauge">
                         <property name="label" translatable="yes">_Vacuum gauge</property>
+                        <property name="name">menuitem_vacgauge</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Vacuum gauge</property>
                         <property name="use_underline">True</property>
                         <property name="image">image11</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_devices_vacuumgauge" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="menuitem11">
+                      <object class="GtkImageMenuItem" id="menuitem_temperaturestage">
                         <property name="label" translatable="yes">_Temperature stage</property>
+                        <property name="name">menuitem_temperaturestage</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Temperature stage</property>
                         <property name="use_underline">True</property>
                         <property name="image">image12</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_devices_temperaturestage" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -324,13 +336,14 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="imagemenuitem11">
+                      <object class="GtkMenuItem" id="menuitem_connections">
+                        <property name="name">menuitem_connections</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Edit connection parameters, connect/disconnect devices</property>
                         <property name="label" translatable="yes">_Connections</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_menu_devices_connections" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                   </object>
@@ -348,47 +361,51 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem10">
+                      <object class="GtkImageMenuItem" id="menuitem_scanmeasurement">
                         <property name="label" translatable="yes">_Scan</property>
+                        <property name="name">menuitem_scanmeasurement</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="image">image13</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_measurement_scan" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem3">
+                      <object class="GtkImageMenuItem" id="menuitem_singleexposure">
                         <property name="label" translatable="yes">Single _exposure</property>
+                        <property name="name">menuitem_singleexposure</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="image">image14</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_measurement_singleexposure" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem5">
+                      <object class="GtkImageMenuItem" id="menuitem_transmission">
                         <property name="label" translatable="yes">_Transmission</property>
+                        <property name="name">menuitem_transmission</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="image">image16</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_measurement_transmission" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem4">
+                      <object class="GtkImageMenuItem" id="menuitem_scriptmeasurement">
                         <property name="label" translatable="yes">Automatic _program</property>
+                        <property name="name">menuitem_scriptmeasurement</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="image">image15</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="on_menu_measurement_automaticprogram" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                   </object>
@@ -407,53 +424,58 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkMenuItem" id="menuitem7">
+                      <object class="GtkMenuItem" id="menuitem_maskeditor">
+                        <property name="name">menuitem_maskeditor</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Tool for creating and editing mask matrices</property>
                         <property name="label" translatable="yes">_Mask editor</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_menu_tools_maskeditor" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="menuitem12">
+                      <object class="GtkMenuItem" id="menuitem_imgviewer">
+                        <property name="name">menuitem_imgviewer</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">View scattering patterns and scattering curves</property>
                         <property name="label" translatable="yes">Image and curve _viewer</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_menu_tools_view" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="menuitem13">
+                      <object class="GtkMenuItem" id="menuitem_viewscans">
+                        <property name="name">menuitem_viewscans</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Display scan curves from the past</property>
                         <property name="label" translatable="yes">View _scans</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_menu_tools_scanview" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="menuitem14">
+                      <object class="GtkMenuItem" id="menuitem_capillarymeasurement">
+                        <property name="name">menuitem_capillarymeasurement</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Determine the thickness and actual position of capillaries</property>
                         <property name="label" translatable="yes">_Capillary measurement</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_menu_tools_capillary" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="menuitem15">
+                      <object class="GtkMenuItem" id="menuitem_datareduction">
+                        <property name="name">menuitem_datareduction</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Run the data reduction sequence on offline data</property>
                         <property name="label" translatable="yes">Data _reduction</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_menu_tools_datareduction" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -473,12 +495,13 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <child>
-                              <object class="GtkMenuItem" id="menuitem19">
+                              <object class="GtkMenuItem" id="menuitem_resourceusage">
+                                <property name="name">menuitem_resourceusage</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Resource _usage</property>
                                 <property name="use_underline">True</property>
-                                <signal name="activate" handler="on_menu_tools_diagnostics_resourceusage" swapped="no"/>
+                                <signal name="activate" handler="on_menu" swapped="no"/>
                               </object>
                             </child>
                           </object>
@@ -502,23 +525,25 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkMenuItem" id="menuitem18">
+                      <object class="GtkMenuItem" id="menuitem_about">
+                        <property name="name">menuitem_about</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">About this program</property>
                         <property name="label" translatable="yes">About</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_menu_help_about" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkMenuItem" id="menuitem20">
+                      <object class="GtkMenuItem" id="menuitem_commandhelp">
+                        <property name="name">menuitem_commandhelp</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Help on the CCT commands</property>
                         <property name="label" translatable="yes">Command help</property>
                         <property name="use_underline">True</property>
-                        <signal name="activate" handler="on_menu_help_commandhelp" swapped="no"/>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                   </object>

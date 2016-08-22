@@ -1,0 +1,7 @@
+- Abolish hasattr() whenever possible. Look for del statements!
+- _builder, _instrument, _init_gui()
+- Abolish NotImplementedErrors
+- Abolish semantically incorrect assert statements
+- Abolish catching AssertionErrors
+- Check warnings and weak warnings in the code (PyCharm code inspections)
+- Extensive testing (manual use)

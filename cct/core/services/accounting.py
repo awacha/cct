@@ -54,6 +54,7 @@ class Accounting(Service):
         self.users = []
         self.project = None
         self.projects = []
+        self.user = None
         super().__init__(*args, **kwargs)
 
     def authenticate(self, username, password):
@@ -102,6 +103,9 @@ class Accounting(Service):
             user = [u for u in self.users if u.username == username]
             assert (len(user) == 1)  # the username is a "key": duplicates are not allowed
             return user[0]
+
+    def get_users(self):
+        return self.users
 
     def get_usernames(self) -> List[str]:
         return sorted([u.username for u in self.users])
