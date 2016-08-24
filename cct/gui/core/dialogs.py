@@ -5,6 +5,7 @@ from gi.repository import Gtk
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 def error_message(parentwindow: Gtk.Window, message: str, reason: str):
     return messagedialog(parentwindow, Gtk.MessageType.ERROR, message, reason)
 

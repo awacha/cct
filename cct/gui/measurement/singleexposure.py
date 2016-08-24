@@ -79,7 +79,7 @@ class SingleExposure(ToolWindow):
                 returnvalue = True
                 # pass through to the next if.
 
-        if commandname == 'shutter' and returnvalue == True:
+        if commandname == 'shutter' and returnvalue is True:
             # start exposure
             prefix = self.builder.get_object('prefixselector').get_active_text()
             exptime = self.builder.get_object('exptime_spin').get_value()
@@ -106,7 +106,7 @@ class SingleExposure(ToolWindow):
                 returnvalue = False
                 # pass through to the next if.
 
-        if commandname == 'shutter' and returnvalue == False:
+        if commandname == 'shutter' and returnvalue is False:
             # this is the end.
             self.builder.get_object('start_button').set_label('Start')
             self.builder.get_object('progressframe').set_visible(False)
@@ -165,7 +165,7 @@ class SingleExposure(ToolWindow):
                 curvewin = PlotCurveWindow()
             curve = im.radial_average()
             assert im.header.pixelsizex == im.header.pixelsizey
-            curvewin.addcurve(curve.q, curve.intensity, curve.dq, curve.error, legend, 'q',
+            curvewin.addcurve(curve.q, curve.Intensity, curve.qError, curve.Error, legend, 'q',
                               im.header.pixelsizex,
                               im.header.distance, im.header.wavelength)
         self._images_done += 1

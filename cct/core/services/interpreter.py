@@ -67,7 +67,8 @@ class Interpreter(Service):
         self._command = None
 
     def create_child(self, namespace=None, **kwargs):
-        """Create a child interpreter. Children and parents share the same set of flags, which are owned by the parent."""
+        """Create a child interpreter. Children and parents share the
+        same set of flags, which are owned by the parent."""
         child = Interpreter(self.instrument, self.configdir, self.save_state(), namespace=namespace, **kwargs)
         child._parent = self
         return child

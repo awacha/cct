@@ -2,14 +2,14 @@ import logging
 
 from gi.repository import Gtk
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-from ..core.toolframe import ToolFrame
 from ..core.dialogs import error_message
+from ..core.toolframe import ToolFrame
 from ...core.commands.motor import Beamstop
 from ...core.instrument.privileges import PRIV_BEAMSTOP
 from ...core.services.interpreter import InterpreterError
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class ShutterBeamstop(ToolFrame):

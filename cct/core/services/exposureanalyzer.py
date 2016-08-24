@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import multiprocessing.queues
 import os
 import pickle
@@ -210,6 +211,7 @@ class ExposureAnalyzer_Backend(object):
                     else:
                         self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'], data=cbfdata,
                                               mask=mask, param=message['param'])
+        self.send_to_frontend('exited', prefix=None, fsn=None)
 
     def get_mask(self, maskname: str) -> np.ndarray:
         try:
@@ -344,7 +346,8 @@ class ExposureAnalyzer_Backend(object):
             self._absintstat = stat
             self._absintqrange = q
             datared['history'].append(
-                'Determined absolute intensity scaling factor: {}. Reduced Chi2: {:f}. DoF: {:d}. This corresponds to beam flux {} photons*eta/sec'.format(
+                'Determined absolute intensity scaling factor: {}. Reduced Chi2: {:f}. DoF: {:d}. '
+                'This corresponds to beam flux {} photons*eta/sec'.format(
                     self._absintscalingfactor, self._absintstat['Chi2_reduced'], self._absintstat['DoF'],
                     1 / self._absintscalingfactor))
             self._logger.debug('History:\n  ' + '\n  '.join(h for h in datared['history']))
@@ -353,7 +356,8 @@ class ExposureAnalyzer_Backend(object):
             im *= self._absintscalingfactor
             datared['statistics']['08_absolutescaling'] = im.get_statistics()
             datared['history'].append(
-                'Using absolute intensity factor {} from measurement FSN #{:d} for absolute intensity calibration.'.format(
+                'Using absolute intensity factor {} from measurement FSN #{:d} '
+                'for absolute intensity calibration.'.format(
                     self._absintscalingfactor, self._lastabsintref.header.fsn))
             datared['absintrefFSN'] = self._lastabsintref.header.fsn
             datared['flux'] = (1.0 / self._absintscalingfactor).val
@@ -366,7 +370,8 @@ class ExposureAnalyzer_Backend(object):
             datared['absintqmax'] = self._absintqrange.max()
         else:
             raise ServiceError(
-                'S-D distance of the last seen absolute intensity reference measurement does not match the exposure under reduction.')
+                'S-D distance of the last seen absolute intensity reference measurement '
+                'does not match the exposure under reduction.')
         self._logger.debug('Done absint FSN ' + str(im.header.fsn))
         return im, datared
 
@@ -461,9 +466,10 @@ class ExposureAnalyzer(Service):
     def start(self):
         self._handler = GLib.idle_add(self._idle_function)
         self._backendprocess = multiprocessing.Process(
-            target=ExposureAnalyzer_Backend.create_and_run, daemon=True,
+            target=ExposureAnalyzer_Backend.create_and_run,
             args=(logger.level, self.config, self._queue_to_backend,
                   self._queue_to_frontend))
+        self._backendprocess.daemon = False
         self._backendprocess.start()
 
     def get_telemetry(self):
@@ -502,6 +508,8 @@ class ExposureAnalyzer(Service):
             self.emit('telemetry', message['telemetry'])
         elif message['type'] == 'log':
             logger.handle(message['logrecord'])
+        elif message['type'] == 'exited':
+            self.emit('shutdown')
         if all([self._working[k] <= 0 for k in self._working]):
             self.emit('idle')
         return True
@@ -528,3 +536,8 @@ class ExposureAnalyzer(Service):
     def do_scanpoint(self, prefix, fsn, position, counters):
         self.instrument.services['filesequence'].write_scandataline(position, counters)
         return False
+
+    def do_shutdown(self):
+        GLib.source_remove(self._handler)
+        self._backendprocess.join()
+        self.starttime = None

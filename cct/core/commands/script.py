@@ -1,14 +1,14 @@
 import logging
 import traceback
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 from gi.repository import GLib
 
 from .command import Command, CommandError, CommandArgumentError
 from .jump import JumpException, GotoException, GosubException, ReturnException, PassException
 from ..utils.callback import SignalFlags
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class ScriptEndException(JumpException):
@@ -103,7 +103,7 @@ class Script(Command):
             self.emit('return', None)  # return.
             return False
         # noinspection PySimplifyBooleanCheck
-        if self._pause == False:
+        if self._pause is False:
             # it could have been None as well, that is a different story
             self._pause = True
             self.emit('paused')
@@ -223,7 +223,7 @@ class Script(Command):
         self._pause = False
 
     def is_paused(self):
-        return self._pause == False  # it can be None
+        return self._pause is False  # it can be None
 
     def resume(self):
         if self._pause is None:

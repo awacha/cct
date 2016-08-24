@@ -1,7 +1,6 @@
 #!/usb/bin/env python
 import os
 
-import numpy as np
 from setuptools import setup, find_packages
 
 
@@ -9,30 +8,31 @@ from setuptools import setup, find_packages
 
 
 def getresourcefiles():
-    print('Generating resource list',flush=True)
-    reslist=[]
+    print('Generating resource list', flush=True)
+    reslist = []
     for directory, subdirs, files in os.walk('cct/resource'):
-        reslist.extend([os.path.join(directory,f).split('/',1)[1] for f in files])
-    print('Generated resource list:\n  '+'\n  '.join(x for x in reslist)+'\n',flush=True)
+        reslist.extend([os.path.join(directory, f).split('/', 1)[1] for f in files])
+    print('Generated resource list:\n  ' + '\n  '.join(x for x in reslist) + '\n', flush=True)
     return reslist
+
 
 def update_languagespec():
     from cct.core.commands import Command
-    allcommands=sorted([c.name for c in Command.allcommands()])
-    with open('cct/resource/language-specs/cct.lang.in','rt', encoding='utf-8') as fin:
+    allcommands = sorted([c.name for c in Command.allcommands()])
+    with open('cct/resource/language-specs/cct.lang.in', 'rt', encoding='utf-8') as fin:
         with open('cct/resource/language-specs/cct.lang', 'wt', encoding='utf-8') as fout:
             for l in fin:
                 if l.startswith('% KEYWORDS %'):
                     for c in allcommands:
-                        fout.write('      <keyword>%s</keyword>\n'%c)
+                        fout.write('      <keyword>%s</keyword>\n' % c)
                 else:
                     fout.write(l)
-    print('Updated language spec. Command list:\n'+', '.join(allcommands))
+    print('Updated language spec. Command list:\n' + ', '.join(allcommands))
 
 
-#extensions = [Extension("cct.core.utils.radint", ["cct/core/utils/radint.pyx"], include_dirs=[np.get_include()])]
+# extensions = [Extension("cct.core.utils.radint", ["cct/core/utils/radint.pyx"], include_dirs=[np.get_include()])]
 
-  
+
 update_languagespec()
 setup(name='cct', version='2.0.0', author='Andras Wacha',
       author_email='awacha@gmail.com', url='http://github.com/awacha/cct',

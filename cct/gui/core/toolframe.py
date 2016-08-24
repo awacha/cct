@@ -87,7 +87,7 @@ class ToolFrame(BuilderWidget):
         for d in self.required_devices:
             try:
                 self.instrument.get_device(d)
-            except Exception:
+            except Exception as exc:
                 error_message(self.widget, 'Device error', 'Required device {} not present.'.format(d))
                 self.widget.destroy()
                 return True

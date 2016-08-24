@@ -102,8 +102,9 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
             self.set_sensitive(True)
 
     def on_ellipse_selected(self, pos1, pos2):
-        # pos1 and pos2 are mouse button press and release events, with xdata and ydata carrying the two opposite corners of the
-        # bounding box of the circle. These are NOT the exact button presses and releases!
+        # pos1 and pos2 are mouse button press and release events, with xdata and ydata carrying
+        # the two opposite corners of the bounding box of the circle. These are NOT the exact
+        # button presses and releases!
         row = np.arange(self.mask.shape[0])[:, np.newaxis]
         column = np.arange(self.mask.shape[1])[np.newaxis, :]
         row0 = 0.5 * (pos1.ydata + pos2.ydata)
@@ -144,8 +145,9 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
             self.set_sensitive(True)
 
     def on_rectangle_selected(self, pos1, pos2):
-        # pos1 and pos2 are mouse button press and release events, with xdata and ydata carrying the two opposite corners of the
-        # bounding box of the circle. These are NOT the exact button presses and releases!
+        # pos1 and pos2 are mouse button press and release events, with xdata and ydata
+        # carrying the two opposite corners of the bounding box of the rectangle. These
+        # are NOT the exact button presses and releases!
         row = np.arange(self.mask.shape[0])[:, np.newaxis]
         column = np.arange(self.mask.shape[1])[np.newaxis, :]
         tobemasked = ((row >= min(pos1.ydata, pos2.ydata)) & (row <= max(pos1.ydata, pos2.ydata)) &

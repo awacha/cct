@@ -152,8 +152,8 @@ class Expose(Command):
                 self.prefix = self.namespace['expose_prefix']
             except KeyError:
                 raise CommandArgumentError(
-                    'Exposure prefix must be given either as an argument to command {} or in the \'expose_prefix\' variable'.format(
-                        self.name))
+                    'Exposure prefix must be given either as an argument to \
+command {} or in the \'expose_prefix\' variable'.format(self.name))
         try:
             assert isinstance(self.args[2], dict)
         except IndexError:
@@ -272,8 +272,8 @@ class ExposeMulti(Command):
                 self.prefix = self.namespace['expose_prefix']
             except KeyError:
                 raise CommandArgumentError(
-                    'Exposure prefix must be given either as an argument to command {} or in the \'expose_prefix\' variable'.format(
-                        self.name))
+                    'Exposure prefix must be given either as an argument to \
+command {} or in the \'expose_prefix\' variable'.format(self.name))
         try:
             self.expdelay = float(self.args[3])
             if self.expdelay < 0.003:
@@ -353,10 +353,9 @@ class ExposeMulti(Command):
             if self.services['filesequence'].is_cbf_ready(self.prefix + '/' + filename):
                 # if the file is present, let it be processed.
                 logger.debug('We have {}'.format(filename))
-                GLib.idle_add(
-                    lambda fs=fsn, fn=os.path.join(self.imgpath, filename), prf=self.prefix,
-                           st=self.starttime, kwargs=self.otherargs:
-                    self.services['filesequence'].new_exposure(fs, fn, prf, st, **kwargs) and False)
+                GLib.idle_add(lambda fs=fsn, fn=os.path.join(self.imgpath, filename), prf=self.prefix,
+                                     st=self.starttime, kwargs=self.otherargs:
+                              self.services['filesequence'].new_exposure(fs, fn, prf, st, **kwargs) and False)
                 self.fsns_done.append(fsn)
         # no more files are expected just now
         if len(self.fsns) != len(self.fsns_done):

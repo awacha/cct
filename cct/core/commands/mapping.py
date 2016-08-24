@@ -118,14 +118,17 @@ class Mapping(Command):
         if self.killed or self.failed:
             self.idle_return(None)
             return False
-        # now move all motors in self.motors before this motor to their starting position, starting from the last
+        # now move all motors in self.motors before this motor
+        # to their starting position, starting from the last
         idx = self.motors.index(self.moving_motor)
         if idx:  # avoid infinite loop from index underflow
             self.moving_motor = self.motors[idx - 1]
             self.moving_target = self.starts[idx - 1]
             self.get_motor(self.moving_motor).moveto(self.moving_target)
             return False
-        # if we are here, idx was 0. This means that the very first motor has been moved to its desired position: we can start the exposure
+        # if we are here, idx was 0. This means that the very
+        # first motor has been moved to its desired position: we can start
+        # the exposure
         self.moving_motor = None
         self.moving_target = None
         self.exposed_fsn = self.services['filesequence'].get_nextfreefsn(self.exposure_prefix)
@@ -147,8 +150,8 @@ class Mapping(Command):
                 self.where_index[i] += 1
                 if self.where_index[i] < self.Ns[i]:
                     self.moving_motor = self.motors[i]
-                    self.moving_target = (self.ends[i] - self.starts[i]) / (self.Ns[i] - 1) * self.where_index[i] + \
-                                         self.starts[i]
+                    self.moving_target = self.starts[i] + (self.ends[i] - self.starts[i]
+                                                           ) / (self.Ns[i] - 1) * self.where_index[i]
                     self.get_motor(self.moving_motor).moveto(self.moving_target)
                     break  # do not advance other motors
                 else:
@@ -163,7 +166,8 @@ class Mapping(Command):
                     #     motors to their start positions.
                     else:
                         # we set the where_index[i] to 0, and go on incrementing the index of the next motor. Note that
-                        # whenever the next motor will move, it will ensure that this motor will move to its starting point.
+                        # whenever the next motor will move, it will ensure that this motor will move to its starting
+                        # point.
                         self.where_index[i] = 0
                         # do not break, go on with the next iteration of this for loop.
         return False

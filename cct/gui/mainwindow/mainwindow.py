@@ -234,7 +234,7 @@ class MainWindow(object):
                 for signal in connections:
                     self._toolwindow_connections[key].append(
                         self._toolwindows[key].connect(signal, connections[signal]))
-            except Exception:
+            except Exception as exc:
                 try:
                     for c in self._toolwindow_connections[key]:
                         self._toolwindows[key].disconnect(c)

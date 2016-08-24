@@ -463,7 +463,8 @@ class Pilatus_Backend(DeviceBackend_TCP):
 
 
 class Pilatus(Device):
-    log_formatstr = '{_status}\t{exptime}\t{humidity0}\t{humidity1}\t{humidity2}\t{temperature0}\t{temperature1}\t{temperature2}'
+    log_formatstr = \
+        '{_status}\t{exptime}\t{humidity0}\t{humidity1}\t{humidity2}\t{temperature0}\t{temperature1}\t{temperature2}'
 
     watchdog_timeout = 20
 

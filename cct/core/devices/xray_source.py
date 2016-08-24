@@ -113,8 +113,7 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
                         # if not going to standby, not ramping up,
                         # not powering down and not warming up, decide the
                         # value of _status by the current output power
-                        if (self.properties['ht'] == 0 and
-                                    self.properties['current'] == 0):
+                        if (self.properties['ht'] == 0 and self.properties['current'] == 0):
                             self.update_variable('_status', 'Power off')
                         elif self.properties['power'] == 9:
                             self.update_variable('_status', 'Low power')

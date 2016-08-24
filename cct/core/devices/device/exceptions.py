@@ -22,7 +22,9 @@ class ReadOnlyVariable(DeviceError):
 
 
 class CommunicationError(DeviceError):
-    """Raised when a fatal communication error occurs. The connection to the device must immediately be shut down and possibly reinitialized"""
+    """Raised when a fatal communication error occurs.
+
+    The connection to the device must immediately be shut down and possibly reinitialized"""
     pass
 
 

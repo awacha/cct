@@ -122,7 +122,7 @@ class XrayFaultsReset(Command):
         self.get_device('xray_source').reset_faults()
 
     def on_variable_change(self, device, variablename, newvalue):
-        if variablename == 'faults' and newvalue == False:
+        if variablename == 'faults' and newvalue is False:
             self.idle_return(newvalue)
 
 

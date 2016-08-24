@@ -2,7 +2,7 @@ import time
 import weakref
 from typing import Optional, Dict
 
-from ..utils.callback import Callbacks
+from ..utils.callback import Callbacks, SignalFlags
 
 
 class ServiceError(Exception):
@@ -23,6 +23,9 @@ class Service(Callbacks):
     """
 
     name = '__abstract__'
+
+    __signals__ = {'shutdown': (SignalFlags.RUN_FIRST, None, ()),
+                   }
 
     starttime = None
 
@@ -55,7 +58,7 @@ class Service(Callbacks):
 
     def stop(self):
         """Stop operation."""
-        self.starttime = None
+        self.emit('shutdown')
 
     def is_running(self):
         return self.starttime is not None

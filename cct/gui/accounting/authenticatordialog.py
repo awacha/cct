@@ -24,8 +24,8 @@ class AuthenticatorDialog(object):
     def run(self, skip_authentication=False):
         if skip_authentication:
             try:
-                self.instrument.services['accounting'].current_user = \
-                [u for u in self.instrument.services['accounting'].users if u.username == 'root'][0]
+                self.instrument.services['accounting'].current_user = [
+                    u for u in self.instrument.services['accounting'].users if u.username == 'root'][0]
                 self.instrument.services['accounting'].set_privilegelevel(
                     self.instrument.services['accounting'].current_user.privlevel)
                 return True

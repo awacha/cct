@@ -7,6 +7,7 @@ import psutil
 
 
 class TelemetryInfo(object):
+    """A telemetry information object"""
     def __init__(self):
         vm = psutil.virtual_memory()
         sm = psutil.swap_memory()
@@ -91,4 +92,6 @@ class TelemetryInfo(object):
             return NotImplemented
 
     def user_attributes(self):
-        return [d for d in self.__dict__ if d not in self.__class__.__dict__]
+        return [d for d in self.__dict__ if
+                d not in ['timestamp', 'processname', 'freephysmem', 'totalphysmem', 'freeswap', 'totalswap',
+                          'rusage_self', 'inqueuelen', 'loadavg'] + list(self.__class__.__dict__.keys())]

@@ -3,6 +3,8 @@ import time
 
 
 class Message(object):
+    """A simple message object which can be passed between processes through queues. For debugging purposes the number
+    of instances is kept."""
     instances = 0
 
     def __new__(cls, *args, **kwargs):

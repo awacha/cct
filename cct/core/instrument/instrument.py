@@ -69,11 +69,11 @@ class Instrument(Callbacks):
         self._waiting_for_ready = []
         self._telemetries = {}
         self._telemetry_timeout = None
+        self._service_connections = {}
         self.starttime = None
         self.busy = multiprocessing.Event()
         self.load_state()
         self.create_services()
-
 
     @property
     def online(self) -> bool:
@@ -283,6 +283,7 @@ class Instrument(Callbacks):
         config_loaded = self.fix_config(config_loaded)
         self.update_config(self.config, config_loaded)
 
+    # noinspection PyMethodMayBeStatic
     def fix_config(self, config):
         """Fix some previous discrepancies in the config dict."""
         logger.debug('Fixing "connections" section in the config.')
@@ -492,6 +493,13 @@ class Instrument(Callbacks):
                               ]:
             assert issubclass(sclass, Service)
             self.services[sname] = sclass(self, self.configdir, self.config['services'][sname])
+            self._service_connections[sname] = [self.services[sname].connect('shutdown', self.on_service_shutdown)]
+
+    def on_service_shutdown(self, service):
+        for c in self._service_connections[service.name]:
+            service.disconnect(c)
+        self._service_connections[service.name] = []
+        self._try_to_send_stopped_signal()
 
     def on_telemetry_timeout(self):
         """Timer function which periodically requests telemetry from all the

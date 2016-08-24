@@ -24,11 +24,12 @@ class DataReduction(ToolWindow):
             self._ndone = -1
             self.builder.get_object('progressbar').show()
             self._currentpath = None
-            self._expanalyzerconnection = [self.instrument.services['exposureanalyzer'].connect('datareduction-done',
-                                                                                                self.on_datareduction),
-                                           self.instrument.services['exposureanalyzer'].connect('error',
-                                                                                                self.on_expanalyzer_error)
-                                           ]
+            self._expanalyzerconnection = [
+                self.instrument.services['exposureanalyzer'].connect(
+                    'datareduction-done', self.on_datareduction),
+                self.instrument.services['exposureanalyzer'].connect(
+                    'error', self.on_expanalyzer_error)
+            ]
             button.set_label('Stop')
             self.set_sensitive(False, 'Data reduction running', ['inputgrid', 'exposuresview', 'button_close'])
             self.on_datareduction(self.instrument.services['exposureanalyzer'], self._prefix, None, None)

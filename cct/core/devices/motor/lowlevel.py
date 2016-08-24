@@ -59,6 +59,18 @@ class TMCMCard_Backend(DeviceBackend_TCP):
     work for other models."""
 
     def __init__(self, *args, **kwargs):
+        self.N_axes = kwargs['N_axes']
+        del kwargs['N_axes']
+        self.top_RMS_current = kwargs['top_RMS_current']
+        del kwargs['top_RMS_current']
+        self.max_microsteps = kwargs['max_microsteps']
+        del kwargs['max_microsteps']
+        self.clock_frequency = kwargs['clock_frequency']
+        del kwargs['clock_frequency']
+        self.full_step_size = kwargs['full_step_size']
+        del kwargs['full_step_size']
+        self.positions_loaded = kwargs['positions_loaded']
+        del kwargs['positions_loaded']
         for arg in ['N_axes', 'top_RMS_current', 'max_microsteps', 'clock_frequency', 'full_step_size',
                     'positions_loaded']:
             setattr(self, arg, kwargs[arg])
@@ -79,9 +91,9 @@ class TMCMCard_Backend(DeviceBackend_TCP):
             motor_idx = None
         if variablename == 'firmwareversion':
             self.send_tmcl_command(136, 1, 0, 0)
-        elif (variablename.startswith('targetposition$') or variablename.startswith('targetpositionraw$')):
+        elif variablename.startswith('targetposition$') or variablename.startswith('targetpositionraw$'):
             self.send_tmcl_command(6, 0, motor_idx, 0)
-        elif (variablename.startswith('actualposition$') or variablename.startswith('actualpositionraw$')):
+        elif variablename.startswith('actualposition$') or variablename.startswith('actualpositionraw$'):
             self.send_tmcl_command(6, 1, motor_idx, 0)
         elif variablename.startswith('targetspeed$'):
             self.send_tmcl_command(6, 2, motor_idx, 0)
@@ -456,8 +468,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
 
         In total, 9 bytes compose the sent message.
         """
-        cmd = bytes([1, cmdnum, typenum, motor_or_bank]) + \
-              struct.pack('>i', int(value))
+        cmd = bytes([1, cmdnum, typenum, motor_or_bank]) + struct.pack('>i', int(value))
         cmd = cmd + bytes([sum(cmd) % 256])
         self.send_message(cmd, expected_replies=1, asynchronous=False)
         return cmd
@@ -740,10 +751,10 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                             idx, self.name))
                     allupdated = False
                     continue
-                elif abs(self.properties['actualposition$' + str(idx)] -
-                                 loaded[idx]['pos']) > 0.0001:
+                elif abs(self.properties['actualposition$' + str(idx)] - loaded[idx]['pos']) > 0.0001:
                     self.logger.warning(
-                        'Current position ({:.5f}) of motor {:d} on controller {} differs from the stored one ({:.5f}): calibrating to the stored value.'.format(
+                        'Current position ({:.5f}) of motor {:d} on controller {} differs from the \
+stored one ({:.5f}): calibrating to the stored value.'.format(
                             self.properties['actualposition$' + str(idx)], idx, self.name,
                             loaded[idx]['pos']))
                     self.calibrate(idx, float(loaded[idx]['pos']))
@@ -799,7 +810,6 @@ class TMCMCard(Device):
         # This dict belongs entirely to the backend process
         # self._moving = None
 
-
         # this flag signifies that the stored position file has been loaded
         # successfully, or did not exist when trying to load it. Until this
         # flag has been set, the position file cannot be overwritten.
@@ -822,21 +832,21 @@ class TMCMCard(Device):
     def moveto(self, motor: int, pos: float):
         """Move motor to the a given absolute (physical) position.
         """
-        if not self._positions_loaded.is_set():
+        if not self.positions_loaded.is_set():
             raise DeviceError('Cannot move motors until positions and soft limits have been loaded')
         if not self.get_variable('_status') == 'idle':
             raise DeviceError('Can only move if the controller is idle.')
-        if not self._busysemaphore.acquire(False):
+        if not self._busy.acquire(False):
             raise DeviceError('Cannot start motor movement: one motor on the controller is moving')
         self.execute_command('moveto', motor, pos)
 
     def moverel(self, motor, pos):
         """Move motor to a given relative (physical) position."""
-        if not self._positions_loaded.is_set():
+        if not self.positions_loaded.is_set():
             raise DeviceError('Cannot move motors until positions and soft limits have been loaded')
         if not self.get_variable('_status') == 'idle':
             raise DeviceError('Can only move if the controller is idle.')
-        if not self._busysemaphore.acquire(False):
+        if not self._busy.acquire(False):
             raise DeviceError('Cannot start motor movement: one motor on the controller is moving')
         self.execute_command('moverel', motor, pos)
 
@@ -846,7 +856,7 @@ class TMCMCard(Device):
 
     def calibrate(self, motor, pos):
         """Calibrate the position of the motor. To be called from the FRONTEND"""
-        if not self._busysemaphore.acquire(False):
+        if not self._busy.acquire(False):
             raise DeviceError('Cannot calibrate: motor controller is busy')
         self.execute_command('calibrate', motor, pos)
 
@@ -855,7 +865,7 @@ class TMCMCard(Device):
 
         This function is callable from both the front-end and the back-end
         process. It checks `self._busysemaphore` to determine if we are moving or not."""
-        return self._busysemaphore.get_value() == 0
+        return self._busy.get_value() == 0
 
     def checklimits(self, motor, position):
         return (position >= self._properties['softleft$' + str(motor)]) and \

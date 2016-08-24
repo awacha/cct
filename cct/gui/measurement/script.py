@@ -75,7 +75,7 @@ class ScriptMeasurement(ToolWindow):
                 self.on_toolbutton_save(self.builder.get_object('save_toolbutton'))
                 self.sourcebuffer.set_modified(False)
                 return True
-            elif res == False:
+            elif res is False:
                 self.sourcebuffer.set_modified(False)
                 return True
             else:
@@ -246,9 +246,9 @@ class ScriptMeasurement(ToolWindow):
     def on_toolbutton_pause(self, toolbutton):
         if toolbutton.get_active():
             self._cmd.pause()
-            self._pausingdlg = Gtk.Dialog('Waiting for script to pause', self.widget,
-                                          Gtk.DialogFlags.DESTROY_WITH_PARENT | Gtk.DialogFlags.USE_HEADER_BAR | Gtk.DialogFlags.MODAL,
-                                          )
+            self._pausingdlg = Gtk.Dialog(
+                'Waiting for script to pause', transient_for=self.widget,
+                destroy_with_parent=True, use_header_bar=True, modal=True)
             self._pausingprogress = Gtk.ProgressBar()
             self._pausingprogress.set_text('Waiting for current command to complete...')
             self._pausingdlg.get_content_area().pack_start(self._pausingprogress, False, True, False)

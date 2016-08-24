@@ -53,11 +53,11 @@ class Callbacks(object):
         if signal not in self.__signals__:
             raise ValueError(signal)
         self.__signalhandles.append({'signal': signal,
-                                        'callback': callback,
-                                        'args': args,
-                                        'kwargs': kwargs,
-                                        'id': self._nextsignalconnectionid,
-                                        'blocked': 0})
+                                     'callback': callback,
+                                     'args': args,
+                                     'kwargs': kwargs,
+                                     'id': self._nextsignalconnectionid,
+                                     'blocked': 0})
         self._nextsignalconnectionid += 1
         return self.__signalhandles[-1]['id']
 

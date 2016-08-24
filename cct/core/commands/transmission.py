@@ -93,14 +93,14 @@ class Transmission(Command):
                 self.get_motor('BeamStop_X').moveto(
                     self.config['beamstop']['out'][0]
                 )
-            elif variablename == 'shutter' and newvalue == True:
+            elif variablename == 'shutter' and newvalue is True:
                 # start exposure.
                 if self.what_are_we_doing == 'Moving empty sample into the beam.':
                     self.what_are_we_doing = 'Exposing empty beam for sample {}'.format(self.current_sample)
                 else:
                     self.what_are_we_doing = 'Exposing sample {}'.format(self.current_sample)
                 self.start_exposure()
-            elif variablename == 'shutter' and newvalue == False:
+            elif variablename == 'shutter' and newvalue is False:
                 # Shutter has been closed after an exposure. Try to load all exposure files:
                 t = time.monotonic()
                 prefix = self.config['path']['prefixes']['tra']

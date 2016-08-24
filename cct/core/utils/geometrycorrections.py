@@ -60,6 +60,7 @@ def _angledependentabsorption_error(twotheta, dtwotheta, transmission, dtransmis
 
 
 try:
+    # noinspection PyUnresolvedReferences
     import sympy
 
     tth, dtth, T, dT = sympy.symbols('tth dtth T dT')

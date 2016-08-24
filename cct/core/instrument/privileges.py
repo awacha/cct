@@ -9,7 +9,7 @@ class PrivilegeLevel(object):
     _instances = []
 
     @classmethod
-    def register(cls, instance: 'PrivilegeLevel'):
+    def register(cls, instance: "PrivilegeLevel"):
         if not [i for i in cls._instances if i.normalizedname == instance.normalizedname]:
             cls._instances.append(instance)
         else:

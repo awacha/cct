@@ -333,6 +333,7 @@ class ScanGraph(ToolWindow):
                           'Probably no points of the selected curve are in the zoomed area.')
             return
         x = np.linspace(abscissa[index].min(), abscissa[index].max(), index.sum() * 5)
+        assert isinstance(x, np.ndarray)
         if curvetype == 'Gaussian':
             y = amplitude * np.exp(-0.5 * (x - position) ** 2 / hwhm ** 2) + baseline
         elif curvetype == 'Lorentzian':

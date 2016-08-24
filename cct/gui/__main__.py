@@ -53,6 +53,7 @@ oldexcepthook = sys.excepthook
 
 
 def my_excepthook(type_, value, traceback_):
+    # noinspection PyBroadException
     try:
         logging.root.critical(
             'Unhandled exception: ' + '\n'.join(traceback.format_exception(type_, value, traceback_)))
@@ -102,6 +103,7 @@ class CCTApplication(Gtk.Application):
         self._skipauthentication = args.root
         self.do_activate()
         return 0
+
 
 def run():
     app = CCTApplication(

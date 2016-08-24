@@ -8,17 +8,15 @@ from gi.repository import Gtk
 from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
 from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
 from matplotlib.figure import Figure
+from matplotlib.scale import ScaleBase, register_scale
+from matplotlib.ticker import AutoLocator, ScalarFormatter, NullFormatter
+from matplotlib.transforms import Transform
+from numpy import ma
+
+from .builderwidget import BuilderWidget
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-from numpy import ma
-
-from matplotlib.scale import ScaleBase, register_scale
-from matplotlib.transforms import Transform
-from matplotlib.ticker import AutoLocator, ScalarFormatter, NullFormatter
-
-from .builderwidget import BuilderWidget
 
 
 class PowerScale(ScaleBase):
