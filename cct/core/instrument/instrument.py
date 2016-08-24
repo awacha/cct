@@ -492,10 +492,12 @@ class Instrument(Callbacks):
                               ('telemetrymanager', TelemetryManager),
                               ]:
             assert issubclass(sclass, Service)
+            print('Initializing service {}.'.format(sname))
             self.services[sname] = sclass(self, self.configdir, self.config['services'][sname])
             self._service_connections[sname] = [self.services[sname].connect('shutdown', self.on_service_shutdown)]
 
     def on_service_shutdown(self, service):
+        logger.debug('Service {} has shut down.'.format(service.name))
         for c in self._service_connections[service.name]:
             service.disconnect(c)
         self._service_connections[service.name] = []
@@ -518,7 +520,13 @@ class Instrument(Callbacks):
     def _try_to_send_stopped_signal(self):
         if not self.shutdown_requested:
             return False
-        if (not [d for d in self.devices if self.devices[d].get_connected()] and
-                not [s for s in self.services if self.services[s].is_running()]):
+        running_devices = [d for d in self.devices if self.devices[d].get_connected()]
+        running_services = [s for s in self.services if self.services[s].is_running()]
+        if not running_devices and not running_services:
             self.shutdown_requested = False
             self.emit('shutdown')
+        else:
+            logger.debug('Not shutting instrument down yet. Outstanding devices: {}. Outstanding services: {}.'.format(
+                ', '.join([self.devices[d].name for d in running_devices]),
+                ', '.join([self.services[s].name for s in running_services])
+            ))

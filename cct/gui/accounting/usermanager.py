@@ -18,7 +18,7 @@ class UserManager(ToolWindow):
             return True
         self.update_gui()
 
-    def init_gui(self, *args):
+    def init_gui(self, *args, **kwargs):
         ps = self.builder.get_object('privilege_selector')
         for pl in PrivilegeLevel.all_privileges():
             ps.append_text(pl.name)

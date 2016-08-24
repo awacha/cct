@@ -15,11 +15,11 @@ class EditConfig(ToolWindow):
     privlevel = PRIV_SUPERUSER
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._changedpaths = []
         self._selectioniter = None
         self._selectionpath = None
         self._updating_edit_field = False
+        super().__init__(*args, **kwargs)
 
     def on_mainwidget_map(self, window):
         if super().on_mainwidget_map(window):

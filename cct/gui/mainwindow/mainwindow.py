@@ -230,7 +230,8 @@ class MainWindow(object):
                 return
             assert key not in self._toolwindow_connections
             try:
-                self._toolwindow_connections[key] = []
+                self._toolwindow_connections[key] = [
+                    self._toolwindows[key].connect('destroy', self.on_toolwindow_destroyed, key)]
                 for signal in connections:
                     self._toolwindow_connections[key].append(
                         self._toolwindows[key].connect(signal, connections[signal]))
@@ -245,6 +246,13 @@ class MainWindow(object):
                     del self._toolwindows[key]
         self._toolwindows[key].widget.present()
         return self._toolwindows[key]
+
+    def on_toolwindow_destroyed(self, toolwindow, key):
+        assert key in self._toolwindow_connections
+        for c in self._toolwindow_connections[key]:
+            toolwindow.disconnect(c)
+        del self._toolwindow_connections[key]
+        del self._toolwindows[key]
 
     def on_quit(self):
         # ToDo: ask for confirmation if instrument is busy
@@ -295,7 +303,7 @@ class MainWindow(object):
                 ('scriptmeasurement', ScriptMeasurement, 'script', 'measurement_script.glade', {}),
                 ('maskeditor', MaskEditor, 'maskeditor', 'tools_maskeditor.glade', {}),
                 ('imgviewer', ExposureViewer, 'calibration', 'setup_calibration.glade', {}),
-                ('scanviewer', ScanViewer, 'scanviewer', 'tools_scanviewer.glade', {}),
+                ('viewscans', ScanViewer, 'scanviewer', 'tools_scanviewer.glade', {}),
                 ('capillarymeasurement', CapillaryMeasurement, 'capillarymeasurement',
                  'tools_capillarymeasurement.glade', {}),
                 ('datareduction', DataReduction, 'datareduction', 'tools_datareduction.glade', {}),
@@ -310,6 +318,7 @@ class MainWindow(object):
                 self.construct_and_run_dialog(cls, toplevelname, gladefile, menuitem.get_label().replace('_', ''),
                                               connections)
                 return False
+            raise ValueError(name)
 
     def on_insert_command(self, commandhelpdialog: CommandHelpDialog, command: str):
         self.builder.get_object('command_entry').set_text(command)

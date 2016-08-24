@@ -9,7 +9,7 @@ class TPG201(ToolWindow):
         self.indicator = None
         super().__init__(*args, **kwargs)
 
-    def init_gui(self, *args):
+    def init_gui(self, *args, **kwargs):
         self.indicator = Indicator('Pressure', 'N/A', IndicatorState.UNKNOWN)
         self.builder.get_object('alignment').add(self.indicator)
         self.update_indicators()

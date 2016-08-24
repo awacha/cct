@@ -450,6 +450,8 @@ class ExposureAnalyzer(Service):
         'telemetry': (SignalFlags.RUN_FIRST, None, (object,)),
     }
 
+    name = 'exposureanalyzer'
+
     def __init__(self, *args, **kwargs):
         Service.__init__(self, *args, **kwargs)
         self._queue_to_backend = multiprocessing.Queue()

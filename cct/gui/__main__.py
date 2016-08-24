@@ -107,7 +107,7 @@ class CCTApplication(Gtk.Application):
 
 def run():
     app = CCTApplication(
-        application_id='hu.mta.ttk.credo.cctgui', flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
+        application_id='hu.mta.ttk.credo.cctgui2', flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
     app.run(sys.argv)
 
 

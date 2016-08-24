@@ -19,19 +19,19 @@ logger.setLevel(logging.INFO)
 
 class MaskEditor(ToolWindow, DoubleFileChooserDialog):
     def __init__(self, *args, **kwargs):
-        super(ToolWindow).__init__(*args, **kwargs)
         self.mask = None
         self._undo_stack = []
         self._im = None
         self._selector = None
         self._cursor = None
-        super(DoubleFileChooserDialog).__init__(
+        self.exposureloader = None
+        self.plot2d = None
+        ToolWindow.__init__(self, *args, **kwargs)
+        DoubleFileChooserDialog.__init__(self,
             self.widget, 'Open mask file...', 'Save mask file...', [('Mask files', '*.mat'), ('All files', '*')],
             self.instrument.config['path']['directories']['mask'],
             os.path.abspath(self.instrument.config['path']['directories']['mask']),
         )
-        self.exposureloader = None
-        self.plot2d = None
 
     def init_gui(self, *args, **kwargs):
         self.exposureloader = ExposureLoader(self.instrument)

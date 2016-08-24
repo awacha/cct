@@ -7,7 +7,7 @@ class NextFSN(ToolFrame):
         super().__init__(*args, **kwargs)
         self._fsconnections = []
 
-    def init_gui(self, *args):
+    def init_gui(self, *args, **kwargs):
         self._fsconnections = [
             self.instrument.services['filesequence'].connect('nextfsn-changed', self.on_nextfsn),
             self.instrument.services['filesequence'].connect('lastfsn-changed', self.on_nextfsn),

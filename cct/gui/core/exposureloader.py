@@ -12,8 +12,7 @@ logger.setLevel(logging.INFO)
 
 class ExposureLoader(Gtk.Box):
     __gsignals__ = {'open': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
-                    'map': 'override',
-                    'unmap': 'override'}
+                    }
 
     def __init__(self, instrument):
         super().__init__()
@@ -23,8 +22,8 @@ class ExposureLoader(Gtk.Box):
         self.builder = Gtk.Builder.new_from_file(
             pkg_resources.resource_filename('cct', 'resource/glade/core_exposureloader.glade'))
         assert isinstance(self.builder, Gtk.Builder)
-        self.widget = self.builder.get_object('box')
-        self.pack_start(self.widget, True, True, 0)
+        self._widget = self.builder.get_object('box')
+        self.pack_start(self._widget, True, True, 0)
         self.builder.connect_signals(self)
         self.on_override_mask_changed(self.builder.get_object('maskoverride_check'))
         self.on_prefix_changed(self.builder.get_object('prefix_selector'))
@@ -45,7 +44,8 @@ class ExposureLoader(Gtk.Box):
             pass
 
     def do_map(self):
-        super().do_map(self)
+        print('ExposureLoader.do_map !!!!!!!!!!!!!!!!!!!!')
+        Gtk.Box.do_map(self)
         update_comboboxtext_choices(self.builder.get_object('prefix_selector'),
                                     sorted(self.instrument.services['filesequence'].get_prefixes()))
         self.cleanup()
@@ -58,6 +58,7 @@ class ExposureLoader(Gtk.Box):
         self._lastfsnchangedconnection = None
 
     def do_unmap(self):
+        print('ExposureLoader.do_unmap !!!!!!!!!!!!!!!!!!!!')
         self.cleanup()
         return Gtk.Box.do_unmap(self)
 

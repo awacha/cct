@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 class ShutterBeamstop(ToolFrame):
     required_devices = ['xray_source', 'Motor_BeamStop_X', 'Motor_BeamStop_Y']
 
-    def init_gui(self, *args):
+    def init_gui(self, *args, **kwargs):
         self.on_privlevel_changed(self.instrument.services['accounting'],
                                   self.instrument.services['accounting'].get_privilegelevel())
 

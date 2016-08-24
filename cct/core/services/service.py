@@ -17,9 +17,6 @@ class Service(Callbacks):
     Some services can also have tasks to be run at regular time intervals. The
     responsibility of installing and removing the needed timeout handlers rests
     on the methods start() and stop(), to be overridden in subclasses.
-
-
-
     """
 
     name = '__abstract__'
@@ -59,6 +56,9 @@ class Service(Callbacks):
     def stop(self):
         """Stop operation."""
         self.emit('shutdown')
+
+    def do_shutdown(self):
+        self.starttime = None
 
     def is_running(self):
         return self.starttime is not None

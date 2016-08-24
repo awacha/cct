@@ -2,7 +2,6 @@ import logging
 from typing import List, Union, Optional
 
 import numpy as np
-import pkg_resources
 from gi.repository import Gtk
 from matplotlib.backends.backend_gtk3 import NavigationToolbar2GTK3
 from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
@@ -34,10 +33,12 @@ class ScanGraph(ToolWindow):
         if instrument is given, motors can be moved.
         """
         self._in_scalechanged = False
+        self.fig = None
+        self.axes = None
+        self.canvas = None
+        self.toolbox = None
         if isinstance(windowtitle, int):
             windowtitle = 'Scan #{:d}'.format(windowtitle)
-        super().__init__(pkg_resources.resource_filename('cct', 'resource/glade/core_scangraph.glade'), 'scangraph',
-                         instrument, windowtitle)
         self.comment = comment
         if isinstance(data, np.ndarray):
             self._data = data
@@ -54,6 +55,10 @@ class ScanGraph(ToolWindow):
         self._cursor = None
         self._lastimage = None
         self._lastpeakposition = None
+        super().__init__('core_scangraph.glade', 'scangraph',
+                         instrument, windowtitle)
+
+    def init_gui(self, *args, **kwargs):
         self.fig = Figure()
         self.axes = self.fig.add_subplot(1, 1, 1)
         self.canvas = FigureCanvasGTK3Agg(self.fig)
@@ -64,8 +69,6 @@ class ScanGraph(ToolWindow):
         b.set_tooltip_text('Redraw the signals')
         b.connect('clicked', lambda b: self.redraw_signals())
         self.toolbox.insert(b, 9)
-
-    def init_gui(self, *args, **kwargs):
         # pack the figure into the appropriate vbox
         figbox = self.builder.get_object('figbox')
         figbox.pack_start(self.canvas, True, True, 0)
@@ -180,7 +183,7 @@ class ScanGraph(ToolWindow):
 
     @property
     def abscissa(self):
-        return self.abscissa
+        return self._data[self.abscissaname]
 
     def __len__(self):
         return self._dataindex

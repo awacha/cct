@@ -14,7 +14,7 @@ class Pilatus(ToolWindow):
         self.indicators = {}
         super().__init__(*args, **kwargs)
 
-    def init_gui(self, *args):
+    def init_gui(self, *args, **kwargs):
         grid = self.builder.get_object('constants_grid')
         for row, column, vn, label in [(0, 0, '_status', 'Camera state'),
                                        (0, 1, 'cameraname', 'Camera name'),

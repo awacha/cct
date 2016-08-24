@@ -8,13 +8,13 @@ logger.setLevel(logging.INFO)
 
 class DataReduction(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._stop = False
         self._expanalyzerconnection = []
         self._currentpath = None
         self._nselected = None
         self._ndone = None
         self._prefix = self.instrument.config['path']['prefixes']['crd']
+        super().__init__(*args, **kwargs)
 
     def on_start(self, button):
         if button.get_label() == 'Start':

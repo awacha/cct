@@ -48,6 +48,8 @@ class Accounting(Service):
              'default_realm': 'MTATTKMFIBNO',
              }
 
+    name = 'accounting'
+
     def __init__(self, *args, **kwargs):
         self.current_user = None
         self.privlevel = None

@@ -198,6 +198,7 @@ class PlotCurveWidget(BuilderWidget):
             elif self.builder.get_object('q_xunit').get_active():
                 if self.builder.get_object('guinier3d_type').get_active():
                     for c in self._curves:
+                        assert isinstance(c, dict)
                         self.axes.errorbar(c['q'], c['y'], c['dy'], c['dq'], label=c['legend'])
                         c['_x'] = c['q']
                         c['_y'] = c['y']
@@ -218,6 +219,7 @@ class PlotCurveWidget(BuilderWidget):
                     return
                 elif self.builder.get_object('guinier2d_type').get_active():
                     for c in self._curves:
+                        assert isinstance(c, dict)
                         y = c['y'] * c['q']
                         if c['dy'] is not None and c['dq'] is not None:
                             dy = (c['dq'] ** 2 * c['y'] ** 2 + c['dy'] ** 2 * c['q'] ** 2) ** 0.5
@@ -247,6 +249,7 @@ class PlotCurveWidget(BuilderWidget):
                     return
                 elif self.builder.get_object('guinier1d_type').get_active():
                     for c in self._curves:
+                        assert isinstance(c, dict)
                         y = c['y'] * c['q'] ** 2
                         if c['dy'] is not None and c['dq'] is not None:
                             dy = (c['dq'] ** 2 * c['y'] ** 2 * 4 * c['q'] ** 2 + c['dy'] ** 2 * c['q'] ** 4) ** 0.5
@@ -276,6 +279,7 @@ class PlotCurveWidget(BuilderWidget):
                     return
                 elif self.builder.get_object('kratky_type').get_active():
                     for c in self._curves:
+                        assert isinstance(c, dict)
                         y = c['y'] * c['q'] ** 2
                         if c['dy'] is not None and c['dq'] is not None:
                             dy = (c['dq'] ** 2 * c['y'] ** 2 * 4 * c['q'] ** 2 + c['dy'] ** 2 * c['q'] ** 4) ** 0.5
@@ -305,6 +309,7 @@ class PlotCurveWidget(BuilderWidget):
                     return
                 elif self.builder.get_object('porod_type').get_active():
                     for c in self._curves:
+                        assert isinstance(c, dict)
                         y = c['y'] * c['q'] ** 4
                         if c['dy'] is not None and c['dq'] is not None:
                             dy = (c['dq'] ** 2 * c['y'] ** 2 * 16 * c['q'] ** 6 + c['dy'] ** 2 * c['q'] ** 8) ** 0.5
@@ -340,6 +345,7 @@ class PlotCurveWidget(BuilderWidget):
                 assert False
 
             for c in self._curves:
+                assert isinstance(c, dict)
                 self.axes.errorbar(c[xkey], c['y'], c['dy'], c[dxkey], label=c['legend'])
                 c['_x'] = c[xkey]
                 c['_y'] = c['y']
@@ -420,6 +426,7 @@ class PlotCurveWidget(BuilderWidget):
         xmin = xminlim
         xmax = xmaxlim
         for c in self._curves:
+            assert isinstance(c, dict)
             idx = (xminlim <= c['_x']) & (xmaxlim >= c['_x']) & (yminlim <= c['_y']) & (ymaxlim >= c['_y'])
             xmin = max(xmin, np.min(c['_x'][idx]))
             xmax = min(xmax, np.max(c['_x'][idx]))

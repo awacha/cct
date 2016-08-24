@@ -13,7 +13,6 @@ from ..core.toolwindow import ToolWindow
 
 class CapillaryMeasurement(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._scandata = None
         self._negpeak_text = None
         self._negpeak_curve = None
@@ -31,6 +30,7 @@ class CapillaryMeasurement(ToolWindow):
         self.axes = None
         self.canvas = None
         self.toolbar = None
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
         fb = self.builder.get_object('figbox')

@@ -26,6 +26,8 @@ def get_svg_object_by_id(dom, idname):
 
 
 class WebStateFileWriter(Service):
+    name = 'webstate'
+
     state = {'interval': 30}
 
     def __init__(self, *args, **kwargs):

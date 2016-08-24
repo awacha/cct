@@ -35,7 +35,6 @@ def qfrompix(pix, pixelsize, beampos, alpha, wavelength, dist):
 
 class Calibration(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._cursor = None
         self._exposure = None
         self._curve = None
@@ -48,6 +47,7 @@ class Calibration(ToolWindow):
         self.figpairsaxes = None
         self.exposureloader = None
         self._dist = None
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
         self.plot2d = PlotImageWidget()
@@ -191,6 +191,7 @@ class Calibration(ToolWindow):
 
             pos, hwhm, baseline, ampl = findpeak_single(x, y, dy)
             x_ = np.linspace(x.min(), x.max(), len(x) * 10)
+            assert isinstance(x_, np.ndarray)
             if curvetype == 'Gauss':
                 y_ = ampl * np.exp(-0.5 * (x_ - pos) ** 2 / hwhm ** 2) + baseline
             elif curvetype == 'Lorentz':

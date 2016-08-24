@@ -11,9 +11,9 @@ logger.setLevel(logging.INFO)
 
 class SampleEdit(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._sampleconnections = []
         self._changedselection = None
+        super().__init__(*args, **kwargs)
 
     def cleanup(self):
         for c in self._sampleconnections:

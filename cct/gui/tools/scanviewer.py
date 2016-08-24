@@ -5,9 +5,9 @@ from ..core.toolwindow import ToolWindow
 
 class ScanViewer(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._selected_scanfile = None  # keep a separate account in order to avoid refreshing the whole list
         self._lastscanconnection = None
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
         pass

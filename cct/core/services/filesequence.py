@@ -70,7 +70,7 @@ class FileSequence(Service):
         self._nextfreefsn = {}
         self.scanfile_toc = {}
         self._running_scan = None
-        self._masks = None
+        self._masks = {}
         self._scanfile = os.path.join(
             self.instrument.config['path']['directories']['scan'],
             self.instrument.config['scan']['scanfile'])

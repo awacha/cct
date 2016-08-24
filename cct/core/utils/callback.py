@@ -37,6 +37,18 @@ class Callbacks(object):
         self.__signalhandles = []
         self._nextsignalconnectionid = 0
 
+    @classmethod
+    def _get_signal_description(cls, name):
+        if name in cls.__signals__:
+            return cls.__signals__[name]
+        else:
+            for bcls in cls.__bases__:
+                try:
+                    return bcls._get_signal_description(name)
+                except AttributeError:
+                    pass
+            raise ValueError(name)
+
     def connect(self, signal: str, callback: Callable, *args, **kwargs) -> int:
         """Connect a callback to a signal.
 
@@ -50,8 +62,7 @@ class Callbacks(object):
         Other positional and keyword arguments are passed on to the
         callback function whenever the signal is emitted.
         """
-        if signal not in self.__signals__:
-            raise ValueError(signal)
+        self._get_signal_description(signal)
         self.__signalhandles.append({'signal': signal,
                                      'callback': callback,
                                      'args': args,
@@ -66,23 +77,29 @@ class Callbacks(object):
         self.__signalhandles = [s for s in self.__signalhandles if s['id'] != connectionid]
 
     def handler_block(self, connectionid: int):
+        for s_ in self.__signalhandles:
+            assert isinstance(s_, dict)
         [s_ for s_ in self.__signalhandles if s_['id'] == connectionid][0]['blocked'] += 1
 
     def handler_unblock(self, connectionid: int):
+        for s_ in self.__signalhandles:
+            assert isinstance(s_, dict)
         sc = [s_ for s_ in self.__signalhandles if s_['id'] == connectionid][0]
+        assert isinstance(sc, dict)
         if sc['blocked'] <= 0:
             sc['blocked'] = 0
             raise ValueError('Cannot unblock signal handler #{:d}: not blocked.'.format(connectionid))
         sc['blocked'] -= 1
 
     def emit(self, signal: str, *args):
-        if len(args) != len(self.__signals__[signal][2]):
+        sigdesc = self._get_signal_description(signal)
+        if len(args) != len(sigdesc[2]):
             raise ValueError('Incorrect number of arguments supplied to signal {}.'.format(signal))
-        for a, t, i in zip(args, self.__signals__[signal][2], itertools.count(0)):
+        for a, t, i in zip(args, sigdesc[2], itertools.count(0)):
             if not isinstance(a, (t, type(None))):
                 raise TypeError('Argument #{:d} of signal {} is of incorrect type {}. Expected: {} or None.'.format(
                     i, signal, type(a), t))
-        if self.__signals__[signal][0] & SignalFlags.RUN_FIRST:
+        if sigdesc[0] & SignalFlags.RUN_FIRST:
             retval = self._call_default_callback(signal, *args)
             if isinstance(retval, tuple):
                 assert len(retval) == 2
@@ -91,10 +108,13 @@ class Callbacks(object):
                 done = bool(retval)
                 ret = None
             if done:
-                assert isinstance(ret, self.__signals__[signal][1])
+                assert isinstance(ret, sigdesc[1])
                 return ret
-        for s in [s_ for s_ in self.__signalhandles if s_['signal'] == signal]:
-            if s['blocked'] > 0:
+        for s_ in self.__signalhandles:
+            assert isinstance(s_, dict)
+        for s in self.__signalhandles:
+            assert isinstance(s, dict)
+            if (s['signal'] != signal) or (s['blocked'] > 0):
                 continue
             retval = s['callback'](self, *(args + s['args']), **s['kwargs'])
             if isinstance(retval, tuple):
@@ -104,10 +124,10 @@ class Callbacks(object):
                 done = bool(retval)
                 ret = None
             if done:
-                if self.__signals__[signal][1] is not None:
-                    assert isinstance(ret, self.__signals__[signal][1])
+                if sigdesc[1] is not None:
+                    assert isinstance(ret, sigdesc[1])
                 return ret
-        if self.__signals__[signal][0] & SignalFlags.RUN_LAST:
+        if sigdesc[0] & SignalFlags.RUN_LAST:
             retval = self._call_default_callback(signal, *args)
             if isinstance(retval, tuple):
                 assert len(retval) == 2
@@ -116,7 +136,7 @@ class Callbacks(object):
                 done = bool(retval)
                 ret = None
             if done:
-                assert isinstance(ret, self.__signals__[signal][1])
+                assert isinstance(ret, sigdesc[1])
                 return ret
         return None
 

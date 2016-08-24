@@ -183,7 +183,7 @@ class ScriptMeasurement(ToolWindow):
                                                                  'cut_toolbutton', 'copy_toolbutton',
                                                                  'paste_toolbutton',
                                                                  'help_toolbutton', 'execute_toolbutton'])
-        except Exception:
+        except Exception as exc:
             # this has already been handled by self.execute_command()
             return
         self._scriptconnections = [self._cmd.connect('cmd-start', self.on_command_start),
@@ -308,7 +308,7 @@ class ScriptMeasurement(ToolWindow):
 class CommandHelpDialog(ToolWindow):
     __signals__ = {'insert': (SignalFlags.RUN_FIRST, None, (str,))}
 
-    def init_gui(self, *args):
+    def init_gui(self, *args, **kwargs):
         model = self.builder.get_object('commandnames')
         for command in sorted([c.name for c in Command.allcommands()]):
             model.append((command,))

@@ -32,6 +32,11 @@ class ToolWindow(ToolFrame):
             self.inhibit_close(reason)
         return super().set_sensitive(state, reason, additional_widgets)
 
+    def on_mainwidget_map(self, window):
+        if super().on_mainwidget_map(window):
+            # something did not succeed.
+            self.widget.destroy()
+
     def on_window_delete(self, window: Gtk.Window, event: Optional[Gdk.Event]):
         if not self.can_close():
             error_message(self.widget, 'Cannot close this window',

@@ -9,7 +9,7 @@ class AccountingFrame(ToolFrame):
         self._acctconn = None
         self._projectid_changed_disable = None
 
-    def init_gui(self, *args):
+    def init_gui(self, *args, **kwargs):
         update_comboboxtext_choices(
             self.builder.get_object('privileges_selector'),
             self.instrument.services['accounting'].get_accessible_privlevels_str(),
