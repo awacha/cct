@@ -3,7 +3,7 @@ import logging
 import os
 
 import pkg_resources
-from gi.repository import GtkSource, Gdk, Gtk, Notify, GLib
+from gi.repository import GtkSource, Gdk, Gtk, GLib
 
 from ..core.dialogs import question_message, info_message
 from ..core.functions import notify
@@ -31,6 +31,11 @@ class ScriptMeasurement(ToolWindow):
         self.filechooser_open = None
         self.filechooser_save = None
         self._cmd = None
+        self._scriptconnections = []
+        self._pausingdlg = None
+        self._pausingprogress = None
+        self._pausingpulsehandler = None
+        self._helpdialog = None
 
     def init_gui(self, *args, **kwargs):
         view = self.builder.get_object('sourceview')
@@ -158,7 +163,6 @@ class ScriptMeasurement(ToolWindow):
         class MyScriptClass(Script):
             script = script
 
-
         flagsbb = self.builder.get_object('flags_buttonbox')
         for b in flagsbb:
             if b.get_active():
@@ -261,11 +265,10 @@ class ScriptMeasurement(ToolWindow):
         try:
             GLib.source_remove(self._pausingpulsehandler)
             self._pausingdlg.destroy()
-            del self._pausingdlg
-            del self._pausingpulsehandler
-            del self._pausingprogress
-            notif = Notify.Notification.new('Script has been paused')
-            notif.show()
+            self._pausingdlg = None
+            self._pausingpulsehandler = None
+            self._pausingprogress = None
+            notify('Script has been paused', '')
         except AttributeError:
             pass
 
@@ -273,7 +276,7 @@ class ScriptMeasurement(ToolWindow):
         self.instrument.services['interpreter'].kill()
 
     def on_toolbutton_help(self, toolbutton):
-        if not hasattr(self, '_helpdialog'):
+        if self._helpdialog is None:
             self._helpdialog = CommandHelpDialog('help_commandhelpbrowser.glade', 'commandhelpbrowser',
                                                  self.instrument, 'Help on commands')
             self._helpdialog.connect('insert', self.on_insert)

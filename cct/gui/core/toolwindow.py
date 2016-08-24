@@ -9,7 +9,7 @@ from .toolframe import ToolFrame
 from ...core.commands import Command
 from ...core.services.interpreter import Interpreter
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
@@ -21,7 +21,7 @@ class ToolWindow(ToolFrame):
         assert isinstance(self.widget, Gtk.Window)
         self._mainwidget_connections.append(self.widget.connect('delete-event', self.on_window_delete))
         self.widget.set_title(windowtitle)
-        self._inhibit_close_reason=None
+        self._inhibit_close_reason = None
         self._interpreter_connections = []
         self.command_failed = False
 
@@ -48,14 +48,14 @@ class ToolWindow(ToolFrame):
             return True
 
     def inhibit_close(self, reason):
-        self._inhibit_close_reason=reason
+        self._inhibit_close_reason = reason
         self.widget.set_deletable(False)
         cb = self.builder.get_object('close_button')
         if cb is not None:
             cb.set_sensitive(False)
 
     def permit_close(self):
-        self._inhibit_close_reason=None
+        self._inhibit_close_reason = None
         self.widget.set_deletable(True)
         cb = self.builder.get_object('close_button')
         if cb is not None:
@@ -65,7 +65,7 @@ class ToolWindow(ToolFrame):
         return self._inhibit_close_reason is None
 
     def on_close(self, widget, event=None):
-        #callback for the close button
+        # callback for the close button
         if self.destroy_on_close:
             super().on_close(widget, event)
         return self.on_window_delete(self.widget, event=None)
@@ -106,6 +106,7 @@ class ToolWindow(ToolFrame):
         self.command_failed = True
         return False
 
+    # noinspection PyMethodMayBeStatic
     def on_command_detail(self, interpreter: Interpreter, commandname: str, detail):
         return False
 

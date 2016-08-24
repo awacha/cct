@@ -152,21 +152,24 @@ class Calibration(ToolWindow):
         logger.debug('Calval: ' + str(calval))
         logger.debug('Calerr: ' + str(calerr))
         if len(uncalval) > 1:
-            fitfunc = lambda pix, dist: qfrompix(pix, pixelsize=self._exposure.params['geometry']['pixelsize'],
-                                                 beampos=0, alpha=np.pi * 0.5,
-                                                 wavelength=self._exposure.params['geometry']['wavelength'],
-                                                 dist=dist)
+            def fitfunc(pix: np.ndarray, dist: float):
+                return qfrompix(pix, pixelsize=self._exposure.params['geometry']['pixelsize'],
+                                beampos=0, alpha=np.pi * 0.5,
+                                wavelength=self._exposure.params['geometry']['wavelength'],
+                                dist=dist)
+
             self._dist, stat = nonlinear_odr(uncalval, calval, uncalerr, calerr, fitfunc, [100])
             x = np.linspace(uncalval.min(), uncalval.max(), len(uncalval) * 100)
             self.figpairsaxes.plot(x, fitfunc(x, self._dist.val), 'r-')
         elif len(uncalval) == 1:
             q = ErrorValue(float(calval[0]), float(calerr[0]))
             pix = ErrorValue(float(uncalval[0]), float(uncalerr[0]))
-            wl = ErrorValue(self._exposure.params['geometry']['wavelength'],
-                            0)  # wavelength error is not considered here: it has already been considered in the pixel value (peak position)
-            #                            self._im.params['geometry']['wavelength.err'])
+            wl = ErrorValue(
+                self._exposure.params['geometry']['wavelength'],
+                0)  # wavelength error is not considered here:
+            # it has already been considered in the pixel value (peak position)
             pixsize = self._exposure.params['geometry']['pixelsize']
-            self._dist = (pix * pixsize) / (2 * (wl * q / 4 / np.pi).arcsin()).tan()
+            self._dist = (pix * pixsize) / (2.0 * (wl * q / 4.0 / np.pi).arcsin()).tan()
         else:
             self._dist = None
             self.builder.get_object('distance_label').set_text('--')
@@ -290,11 +293,12 @@ class Calibration(ToolWindow):
             sampletitle = self._exposure.header.title
         except KeyError:
             sampletitle = 'no sample'
-        self.plot1d.addcurve(self._curve.q, self._curve.Intensity, self._curve.qError, self._curve.Error,
-                              'FSN #{:d}: {}. Beam: ({:.3f}, {:.3f})'.format(
-                                  self._exposure.header.fsn, sampletitle,
-                                  self._exposure.header.beamcenterx,
-                                  self._exposure.header.beamcentery), 'pixel')
+        self.plot1d.addcurve(
+            self._curve.q, self._curve.Intensity, self._curve.qError, self._curve.Error,
+            'FSN #{:d}: {}. Beam: ({:.3f}, {:.3f})'.format(
+                self._exposure.header.fsn, sampletitle,
+                self._exposure.header.beamcenterx,
+                self._exposure.header.beamcentery), 'pixel')
 
     def on_loadexposure(self, exposureloader, im: Exposure):
         self.plot2d.set_image(im.intensity)

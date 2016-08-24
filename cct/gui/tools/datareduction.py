@@ -2,8 +2,9 @@ import logging
 
 from ..core.toolwindow import ToolWindow, error_message
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class DataReduction(ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -22,7 +23,7 @@ class DataReduction(ToolWindow):
             self._nselected = len(selected)
             self._ndone = -1
             self.builder.get_object('progressbar').show()
-            self._currentpath=None
+            self._currentpath = None
             self._expanalyzerconnection = [self.instrument.services['exposureanalyzer'].connect('datareduction-done',
                                                                                                 self.on_datareduction),
                                            self.instrument.services['exposureanalyzer'].connect('error',
@@ -34,6 +35,7 @@ class DataReduction(ToolWindow):
         else:
             self._stop = True
 
+    # noinspection PyMethodMayBeStatic
     def on_expanalyzer_error(self, prefix, fsn, exception, fmt_traceback):
         logger.error('Error while data reduction. Prefix: {}. FSN: {:d}. Error: {} {}'.format(prefix, fsn, exception,
                                                                                               fmt_traceback))

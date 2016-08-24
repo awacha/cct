@@ -20,7 +20,8 @@ from ...core.services.interpreter import Interpreter
 
 # initialize the logger for the main window level.
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
+
 
 class MyLogHandler(logging.Handler):
     def __init__(self, logfunction):
@@ -74,9 +75,12 @@ class MainWindow(object):
         self._toolwindows = {}
         self._toolwindow_connections = {}
         self.instrument = instrument
+        self._shutdownsignalconnection = self.instrument.connect('shutdown', self.on_instrument_shutdown)
         if self.instrument.online:
             self.instrument.connect_devices()
+        logger.debug('Mainwindow: devices connected.')
         self._devicestatus = DeviceStatusBar(self.instrument)
+        logger.debug('DeviceStatusBar initialized')
         self.builder.get_object('devicestatus_box').pack_start(self._devicestatus, True, True, 0)
 
         self._toolframes = {'resourceusage': ResourceUsageFrame('toolframe_telemetry.glade',
@@ -92,14 +96,14 @@ class MainWindow(object):
                                                           'accountingframe',
                                                           self.instrument)
                             }
-
+        logger.debug('Initializing toolframes done.')
         self.builder.get_object('toolbox').pack_end(self._toolframes['resourceusage'].widget, False, True, 0)
         self.builder.get_object('toolbox').pack_end(self._toolframes['nextfsn'].widget, False, True, 0)
         self.builder.get_object('toolbox').pack_end(self._toolframes['shutterbeamstop'].widget, False, True, 0)
         self.builder.get_object('toolbox').pack_end(self._toolframes['accounting'].widget, False, True, 0)
         self.widget.show_all()
         self.widget.set_title('Credo Control Tool')
-
+        logger.debug('Connecting to interpreter')
         interpreter = self.instrument.services['interpreter']
         self._interpreterconnections = [
             interpreter.connect('cmd-return', self.on_interpreter_cmd_return),
@@ -165,7 +169,7 @@ class MainWindow(object):
         self._historyindex = None
         self.builder.get_object('statusbar').pop(1)
 
-    # noinspection PyUnusedLocal
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def on_interpreter_cmd_fail(self, interpreter, commandname, exc, tb):
         logger.error('Command {} failed: {} {}'.format(commandname, str(exc), tb))
 
@@ -194,7 +198,7 @@ class MainWindow(object):
     def on_delete_event(self, window, event):
         return self.on_quit()
 
-    def _writelogline(self, message: str, record: logging.LogRecord):
+    def writelogline(self, message: str, record: logging.LogRecord):
         if record.levelno >= logging.CRITICAL:
             tag = self._logtags.lookup('critical')
         elif record.levelno >= logging.ERROR:
@@ -221,6 +225,8 @@ class MainWindow(object):
             except Exception as exc:
                 # this has already been handled with an error dialog
                 logger.warning('Could not open window {}: {} {}'.format(windowtitle, str(exc), traceback.format_exc()))
+                self._toolwindows[key].destroy()
+                del self._toolwindows[key]
                 return
             assert key not in self._toolwindow_connections
             try:
@@ -228,7 +234,7 @@ class MainWindow(object):
                 for signal in connections:
                     self._toolwindow_connections[key].append(
                         self._toolwindows[key].connect(signal, connections[signal]))
-            except:
+            except Exception:
                 try:
                     for c in self._toolwindow_connections[key]:
                         self._toolwindows[key].disconnect(c)
@@ -242,7 +248,15 @@ class MainWindow(object):
 
     def on_quit(self):
         # ToDo: ask for confirmation if instrument is busy
-        self._instrument.save_state()
+        logger.info('Shutdown requested.')
+        self.instrument.save_state()
+        self.instrument.shutdown()
+        return True
+
+    def on_instrument_shutdown(self, instrument):
+        logger.info('Instrument shutdown finished.')
+        instrument.disconnect(self._shutdownsignalconnection)
+        self._shutdownsignalconnection = None
         self.widget.destroy()
         Gtk.Application.get_default().quit()
 
@@ -272,13 +286,13 @@ class MainWindow(object):
                 ('xraysource', GeniX, 'genix', 'devices_genix.glade', {}),
                 ('detector', Pilatus, 'pilatus', 'devices_pilatus.glade', {}),
                 ('motors', Motors, 'motoroverview', 'devices_motors.glade', {}),
-                ('vacgauge', TPG201, 'vacgauge', 'devices_tpg201.glade', 'Vacuum gauge', {}),
+                ('vacgauge', TPG201, 'vacgauge', 'devices_tpg201.glade', {}),
                 ('temperaturestage', HaakePhoenix, 'haakephoenix', 'devices_haakephoenix.glade', {}),
                 ('connections', DeviceConnections, 'deviceconnections', 'devices_connection.glade', {}),
                 ('scanmeasurement', ScanMeasurement, 'scan', 'measurement_scan.glade', {}),
                 ('singleexposure', SingleExposure, 'singleexposure', 'measurement_singleexposure.glade', {}),
                 ('transmission', TransmissionMeasurement, 'measuretransmission', 'measurement_transmission.glade', {}),
-                ('scriptmeasurement', ScriptMeasurement, 'script', 'measurement_script.glade', 'Scripting', {}),
+                ('scriptmeasurement', ScriptMeasurement, 'script', 'measurement_script.glade', {}),
                 ('maskeditor', MaskEditor, 'maskeditor', 'tools_maskeditor.glade', {}),
                 ('imgviewer', ExposureViewer, 'calibration', 'setup_calibration.glade', {}),
                 ('scanviewer', ScanViewer, 'scanviewer', 'tools_scanviewer.glade', {}),

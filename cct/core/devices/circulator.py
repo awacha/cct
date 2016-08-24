@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+# noinspection PyPep8Naming
 class HaakePhoenix_Backend(DeviceBackend_TCP):
     def execute_command(self, commandname: str, arguments: Tuple):
         if commandname == 'start':
@@ -127,9 +128,9 @@ class HaakePhoenix_Backend(DeviceBackend_TCP):
         elif message.startswith(b'ZB'):
             self.update_variable('beep', bool(int(message[2:3])))
         elif message.startswith(b'XT'):
-            hour, min, sec = [int(x) for x in message[2:].split(b':')]
+            hour, minute, sec = [int(x) for x in message[2:].split(b':')]
             try:
-                self.update_variable('time', datetime.time(hour, min, sec))
+                self.update_variable('time', datetime.time(hour, minute, sec))
             except ValueError:
                 # the real-time clock on some units can sometime glitch
                 self.update_variable('time', datetime.time(0, 0, 0))
@@ -192,6 +193,13 @@ class HaakePhoenix_Backend(DeviceBackend_TCP):
             self.send_message(b'R T1\r', expected_replies=1, asynchronous=False)
         elif variablename == 'temperature_external':
             self.send_message(b'R T3\r', expected_replies=1, asynchronous=False)
+        elif variablename == 'temperature':
+            if 'control_external' not in self.properties:
+                return False
+            elif self.properties['control_external']:
+                self.send_message(b'R T3\r', expected_replies=1, asynchronous=False)
+            else:
+                self.send_message(b'R T1\r', expected_replies=1, asynchronous=False)
         elif variablename == 'setpoint':
             self.send_message(b'R SW\r', expected_replies=1, asynchronous=False)
         elif variablename == 'highlimit':
@@ -278,17 +286,17 @@ class HaakePhoenix(Device):
     log_formatstr = '{setpoint:.2f}\t{temperature_internal:.2f}\t{faultstatus}\t{pump_power}\t{cooling_on}'
 
     all_variables = ['firmwareversion', 'faultstatus', 'fuzzycontrol',
-                      'fuzzystatus', 'temperature_internal',
-                      'temperature_external', 'setpoint', 'highlimit',
-                      'lowlimit', 'diffcontrol_on', 'autostart', 'fuzzyid',
-                      'beep', 'time', 'date', 'watchdog_on',
-                      'watchdog_setpoint', 'cooling_on', 'pump_power',
-                      'external_pt100_error', 'internal_pt100_error',
-                      'liquid_level_low_error', 'cooling_error',
-                      'external_alarm_error', 'pump_overload_error',
-                      'liquid_level_alarm_error', 'overtemperature_error',
-                      'main_relay_missing_error', 'control_external',
-                      'control_on', 'temperature']
+                     'fuzzystatus', 'temperature_internal',
+                     'temperature_external', 'setpoint', 'highlimit',
+                     'lowlimit', 'diffcontrol_on', 'autostart', 'fuzzyid',
+                     'beep', 'time', 'date', 'watchdog_on',
+                     'watchdog_setpoint', 'cooling_on', 'pump_power',
+                     'external_pt100_error', 'internal_pt100_error',
+                     'liquid_level_low_error', 'cooling_error',
+                     'external_alarm_error', 'pump_overload_error',
+                     'liquid_level_alarm_error', 'overtemperature_error',
+                     'main_relay_missing_error', 'control_external',
+                     'control_on', 'temperature']
 
     constant_variables = ['firmwareversion']
 
@@ -298,11 +306,11 @@ class HaakePhoenix(Device):
     urgency_modulo = 10
 
     minimum_query_variables = ['firmwareversion', 'faultstatus', 'time', 'temperature_internal',
-                                'temperature_external', 'pump_power',
-                                'cooling_on', 'setpoint', 'date',
-                                'fuzzycontrol',
-                                'fuzzystatus', 'highlimit', 'lowlimit',
-                                'diffcontrol_on', 'autostart', 'fuzzyid',
-                                'beep', 'watchdog_on', 'watchdog_setpoint']
+                               'temperature_external', 'pump_power',
+                               'cooling_on', 'setpoint', 'date',
+                               'fuzzycontrol',
+                               'fuzzystatus', 'highlimit', 'lowlimit',
+                               'diffcontrol_on', 'autostart', 'fuzzyid',
+                               'beep', 'watchdog_on', 'watchdog_setpoint']
 
     backend_class = HaakePhoenix_Backend

@@ -24,6 +24,7 @@ class Vacuum(Command):
     def execute(self):
         self.idle_return(self.get_device('vacuum').get_variable('pressure'))
 
+
 class WaitVacuum(Command):
     """Wait until the vacuum pressure becomes lower than a given limit
 

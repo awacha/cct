@@ -30,6 +30,8 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
             self.instrument.config['path']['directories']['mask'],
             os.path.abspath(self.instrument.config['path']['directories']['mask']),
         )
+        self.exposureloader = None
+        self.plot2d = None
 
     def init_gui(self, *args, **kwargs):
         self.exposureloader = ExposureLoader(self.instrument)
@@ -80,7 +82,7 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
         if button.get_active():
             self.set_sensitive(False, 'Ellipse selection not ready',
                                ['new_button', 'save_button', 'saveas_button', 'open_button', 'undo_button',
-                                    'selectrectangle_button', 'selectpolygon_button', 'pixelhunting_button',
+                                'selectrectangle_button', 'selectpolygon_button', 'pixelhunting_button',
                                 'loadexposure_expander', 'close_button', self.plot2d.toolbar,
                                 self.plot2d.settings_expander])
             while self.plot2d.toolbar.mode != '':
@@ -124,7 +126,7 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
         if button.get_active():
             self.set_sensitive(False, 'Ellipse selection not ready',
                                ['new_button', 'save_button', 'saveas_button', 'open_button', 'undo_button',
-                                    'selectcircle_button', 'selectpolygon_button', 'pixelhunting_button',
+                                'selectcircle_button', 'selectpolygon_button', 'pixelhunting_button',
                                 'loadexposure_expander', 'close_button', self.plot2d.toolbar,
                                 self.plot2d.settings_expander])
             while self.plot2d.toolbar.mode != '':
@@ -152,7 +154,7 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
         if self.builder.get_object('mask_button').get_active():
             self.mask = self.mask & (~tobemasked)
         elif self.builder.get_object('unmask_button').get_active():
-            self.mask = self.mask | (tobemasked)
+            self.mask = self.mask | tobemasked
         elif self.builder.get_object('invertmask_button').get_active():
             self.mask[tobemasked] = ~self.mask[tobemasked]
         else:
@@ -164,7 +166,7 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
         if button.get_active():
             self.set_sensitive(False, 'Ellipse selection not ready',
                                ['new_button', 'save_button', 'saveas_button', 'open_button', 'undo_button',
-                                    'selectrectangle_button', 'selectcircle_button', 'pixelhunting_button',
+                                'selectrectangle_button', 'selectcircle_button', 'pixelhunting_button',
                                 'loadexposure_expander', 'close_button', self.plot2d.toolbar,
                                 self.plot2d.settings_expander])
             while self.plot2d.toolbar.mode != '':
@@ -190,7 +192,7 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
         if self.builder.get_object('mask_button').get_active():
             self.mask = self.mask & (~tobemasked)
         elif self.builder.get_object('unmask_button').get_active():
-            self.mask = self.mask | (tobemasked)
+            self.mask = self.mask | tobemasked
         elif self.builder.get_object('invertmask_button').get_active():
             self.mask[tobemasked] = ~self.mask[tobemasked]
         else:

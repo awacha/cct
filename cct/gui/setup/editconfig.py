@@ -7,8 +7,9 @@ from ..core.dialogs import info_message
 from ..core.toolwindow import ToolWindow
 from ...core.instrument.privileges import PRIV_SUPERUSER
 
-logger=logging.getLogger()
+logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
 
 class EditConfig(ToolWindow):
     privlevel = PRIV_SUPERUSER
@@ -28,12 +29,12 @@ class EditConfig(ToolWindow):
     def update_gui(self):
         model = self.builder.get_object('configtreestore')
         model.clear()
-        parents=[None]
+        parents = [None]
 
         def _add_children(config, parents):
             for c in sorted(config.keys()):
-                it=model.append(parents[-1], (c,''))
-                if isinstance(config[c],dict):
+                it = model.append(parents[-1], (c, ''))
+                if isinstance(config[c], dict):
                     parents.append(it)
                     _add_children(config[c], parents)
             del parents[-1]
@@ -47,10 +48,10 @@ class EditConfig(ToolWindow):
         for path, value in self._changedpaths:
             dic = self.instrument.config
             for p in path[:-1]:
-                dic=dic[p]
-            dic[path[-1]]=value
-            logger.debug('Updated config element %s. New value: %s.'%('::'.join(['ROOT']+path),str(value)))
-        self._changedpaths=[]
+                dic = dic[p]
+            dic[path[-1]] = value
+            logger.debug('Updated config element %s. New value: %s.' % ('::'.join(['ROOT'] + path), str(value)))
+        self._changedpaths = []
         model = self.builder.get_object('configtreestore')
         # reset the "changed" flag.
         model.foreach(lambda model, path, it: setitem(model[it], 1, ''))
@@ -61,26 +62,26 @@ class EditConfig(ToolWindow):
         if it is None:
             return
         if self._selectioniter is not None:
-            if model[self._selectioniter][1]=='dialog-information':
+            if model[self._selectioniter][1] == 'dialog-information':
                 # save the updated value of the previously selected config item.
                 entry = self.builder.get_object('entry_stack').get_visible_child()
-                if isinstance(entry, Gtk.SpinButton) and entry.get_digits()==0:
-                    newvalue=entry.get_value_as_int()
+                if isinstance(entry, Gtk.SpinButton) and entry.get_digits() == 0:
+                    newvalue = entry.get_value_as_int()
                 elif isinstance(entry, Gtk.SpinButton):
-                    newvalue=entry.get_value()
+                    newvalue = entry.get_value()
                 elif isinstance(entry, Gtk.Entry):
-                    newvalue=entry.get_text()
+                    newvalue = entry.get_text()
                 elif isinstance(entry, Gtk.Switch):
-                    newvalue=entry.get_active()
+                    newvalue = entry.get_active()
                 elif isinstance(entry, Gtk.Label):
-                    newvalue=None
+                    newvalue = None
                 else:
-                    raise NotImplementedError
+                    raise TypeError(entry)
                 if newvalue is not None:
                     self._changedpaths.append((self._selectionpath, newvalue))
 
     def on_select(self, treeviewselection: Gtk.TreeSelection):
-        model, it=treeviewselection.get_selected()
+        model, it = treeviewselection.get_selected()
         if it is None:
             return
         # mark the change.
@@ -89,13 +90,13 @@ class EditConfig(ToolWindow):
         parent = it
         while parent is not None:
             path.append(parent)
-            parent=model.iter_parent(parent)
-        self._selectionpath=[model[i][0] for i in reversed(path)]
-        self._selectioniter=it
+            parent = model.iter_parent(parent)
+        self._selectionpath = [model[i][0] for i in reversed(path)]
+        self._selectioniter = it
         # get the config value for the currently selected node.
         val = self.instrument.config
         for name in self._selectionpath:
-            val=val[name]
+            val = val[name]
         self._updating_edit_field = True
         try:
             self.builder.get_object('path_label').set_text('::'.join(['ROOT'] + self._selectionpath[:-1]))
@@ -126,7 +127,7 @@ class EditConfig(ToolWindow):
             # avoid erroneously flagging the config value as changed when the edit field is updated on selection.
             return False
         model, it = self.builder.get_object('configtreeview').get_selection().get_selected()
-        model[it][1]='dialog-information'
+        model[it][1] = 'dialog-information'
 
     def on_switch_state_set(self, switch, state):
         self.on_edit(switch)

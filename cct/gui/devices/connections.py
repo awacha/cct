@@ -14,8 +14,8 @@ class DeviceConnections(ToolWindow):
     privlevel = PRIV_CONNECTDEVICES
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._device_connections = {}
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
         dg = self.builder.get_object('devices_grid')

@@ -40,10 +40,10 @@ def _angledependentabsorption_value(twotheta, transmission):
     cor = np.ones(twotheta.shape)
     if transmission == 1:
         return cor
-    mud = -np.log(transmission);
+    mud = -np.log(transmission)
 
     cor[twotheta > 0] = transmission * mud * (1 - 1 / np.cos(twotheta[twotheta > 0])) / (
-    np.exp(-mud / np.cos(twotheta[twotheta > 0])) - np.exp(-mud))
+        np.exp(-mud / np.cos(twotheta[twotheta > 0])) - np.exp(-mud))
     return cor
 
 
@@ -65,7 +65,7 @@ try:
     tth, dtth, T, dT = sympy.symbols('tth dtth T dT')
     mud = -sympy.log(T)
     corr = sympy.exp(-mud) * mud * (1 - 1 / sympy.cos(tth)) / (sympy.exp(-mud / sympy.cos(tth)) - sympy.exp(-mud))
-    dcorr = ((sympy.diff(corr, T) ** 2 * dT ** 2 + sympy.diff(corr, tth) ** 2 * dtth ** 2)) ** 0.5
+    dcorr = (sympy.diff(corr, T) ** 2 * dT ** 2 + sympy.diff(corr, tth) ** 2 * dtth ** 2) ** 0.5
     _angledependentabsorption_error = sympy.lambdify((tth, dtth, T, dT), dcorr, "numpy")
     del sympy, tth, dtth, T, dT, mud, corr, dcorr
 except ImportError:

@@ -80,12 +80,11 @@ class ProjectManager(ToolWindow):
                 error_message(dlg, 'Cannot add new project', str(exc))
         dlg.destroy()
 
-
     def on_removeproject(self, button):
         model, iterator = self.builder.get_object('project-selection').get_selected()
         if iterator is None:
             return
-        projectid=model[iterator][0]
+        projectid = model[iterator][0]
         try:
             self.instrument.services['accounting'].delete_project(projectid)
         except ValueError:

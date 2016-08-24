@@ -1,4 +1,3 @@
-__author__ = 'labuser'
 from .builderwidget import BuilderWidget
 from .dialogs import error_message, info_message, messagedialog, question_message
 from .exposureloader import ExposureLoader

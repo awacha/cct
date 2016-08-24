@@ -47,6 +47,7 @@ class Shutter(Command):
         if variablename == 'shutter' and newvalue == self.open_needed:
             self.idle_return(newvalue)
 
+
 class Xrays(Command):
     """Enable or disable X-ray generation
 
@@ -125,7 +126,7 @@ class XrayFaultsReset(Command):
             self.idle_return(newvalue)
 
 
-class Xray_Power(Command):
+class XRayPower(Command):
     """Set the power of the X-ray source
 
     Invocation: xray_power(<state>)
@@ -180,6 +181,7 @@ class Xray_Power(Command):
 
     def on_pulse(self):
         self.emit('pulse', 'Setting X-ray source to {}...'.format(self.target))
+
 
 class Warmup(Command):
     """Start the warming-up procedure of the X-ray source

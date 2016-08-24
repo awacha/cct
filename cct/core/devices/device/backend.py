@@ -4,7 +4,7 @@ import queue
 import time
 import traceback
 from logging.handlers import QueueHandler
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 
 from .exceptions import WatchdogTimeout, CommunicationError, DeviceError, InvalidMessage
 from .message import Message
@@ -18,8 +18,6 @@ class QueueLogHandler(QueueHandler):
 
 class Watchdog(object):
     """A simple timeout-keeper watchdog.
-
-
     """
 
     def __init__(self, timeout: Optional[float]):
@@ -27,7 +25,8 @@ class Watchdog(object):
 
         :param timeout: the timeout in seconds
         """
-        assert (timeout > 0)
+        if timeout <= 0:
+            raise ValueError('Timeout must be positive')
         self.timeout = timeout
         self.active = True
         self.timestamp = time.monotonic()
@@ -127,7 +126,7 @@ class DeviceBackend(object):
 
     # All timestamps are generated with time.monotonic()
 
-    def __init__(self, name: str, configdir: str, config: Dict, deviceconnectionparameters: Dict,
+    def __init__(self, name: str, configdir: str, config: Dict, deviceconnectionparameters: Tuple,
                  inqueue: multiprocessing.Queue, outqueue: multiprocessing.Queue,
                  watchdog_timeout: float, inqueue_timeout: float, query_timeout: float,
                  telemetry_interval: float, queryall_interval: float, all_variables: List[str],
@@ -140,7 +139,7 @@ class DeviceBackend(object):
         :param name: the name of the device. Appears in log/error messages, therefore should be unique
         :param config: the initial configuration dictionary. Can be updated through the queue
         :param configdir: the path where the configuration files are to be stored
-        :param deviceconnectionparameters: a dictionary of the connection parameters (host, port, timeouts etc.). Used
+        :param deviceconnectionparameters: a tuple of the connection parameters (host, port, timeouts etc.). Used
             in subclasses.
         :param inqueue: The input queue for this backend process. See the class-level docstring for valid message types.
         :param outqueue: The output queue of this backend process. See the class-level docstring for details.
@@ -178,6 +177,8 @@ class DeviceBackend(object):
         self.query_timeout = query_timeout
         self.minimum_query_variables = minimum_query_variables
         self.constant_variables = constant_variables
+        if self.constant_variables is None:
+            self.constant_variables = []
         self.urgent_variables = urgent_variables
         self.urgency_modulo = urgency_modulo
         self.properties = {}  # dictionary holding the state variables of the instrument
@@ -235,6 +236,7 @@ class DeviceBackend(object):
         self.counters['outqueued'] += 1
         msg = Message(msgtype, self.counters['outqueued'], self.name + '__backend', **kwargs)
         self.outqueue.put(msg)
+        del msg
 
     def has_all_variables(self) -> bool:
         """Checks if all the variables have been requested and received at least once,
@@ -276,6 +278,7 @@ class DeviceBackend(object):
         exit_status = False  # abnormal termination
         while True:
             try:
+                message = None
                 try:
                     message = self.inqueue.get(
                         block=True, timeout=self.inqueue_timeout)
@@ -309,12 +312,15 @@ class DeviceBackend(object):
                                               exception=message['exception'],
                                               traceback=message['traceback'])
                         raise message['exception']
+                    elif message['type'] == 'timeout':
+                        pass
+                        # do nothing yet, a communication_error message will follow.
                     elif message['type'] == 'incoming':
                         self.lasttimes['recv'] = message['timestamp']
                         self.counters['inmessages'] += 1
                         try:
                             self.process_incoming_message(message=message['message'],
-                                                          original_sent=message['sent'])
+                                                          original_sent=message['sent_message'])
                         except InvalidMessage as exc:
                             self.send_to_frontend('error', variablename=None,
                                                   exception=exc,
@@ -370,6 +376,9 @@ class DeviceBackend(object):
                 self.send_to_frontend('error', variablename=None, exception=ex, traceback=traceback.format_exc())
                 exit_status = False  # abnormal termination
                 break
+            finally:
+                if message is not None:
+                    del message
         self.disconnect_device(because_of_failure=not exit_status)
         self.finalize_after_disconnect()
         self.logger.info('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
@@ -521,13 +530,25 @@ class DeviceBackend(object):
                 # has been obtained for it, or until a very long time
                 # (self.query_timeout) has passed
                 return False
+            else:
+                try:
+                    raise DeviceError('Query timeout on variable {} in device {}'.format(variablename, self.name))
+                except DeviceError as de:
+                    self.send_to_frontend(
+                        'error', variablename=variablename,
+                        exception=de, traceback=traceback.format_exc())
             raise KeyError(variablename)
         except KeyError as ke:
             assert ke.args[0] == variablename
             self.query_requested[variablename] = time.monotonic()
             self.lasttimes['query'] = time.monotonic()
             if not self.query_variable(variablename):
-                del self.query_requested[variablename]
+                try:
+                    del self.query_requested[variablename]
+                except KeyError:
+                    # this can happen if self.query_requested[variablename] has already been deleted, e.g. because
+                    # self.query_variable() calls self.update_variable() directly.
+                    pass
                 return False
             return True
 

@@ -76,6 +76,7 @@ class Trim(Command):
     def kill(self):
         raise CommandError('Command {} cannot be killed.'.format(self.name))
 
+
 class StopExposure(Command):
     """Stop the current exposure in pilatus
 
@@ -110,6 +111,7 @@ class StopExposure(Command):
 
     def kill(self):
         raise CommandError('Command {} cannot be killed.'.format(self.name))
+
 
 class Expose(Command):
     """Start an exposure of a single image in pilatus
@@ -352,8 +354,8 @@ class ExposeMulti(Command):
                 # if the file is present, let it be processed.
                 logger.debug('We have {}'.format(filename))
                 GLib.idle_add(
-                    lambda fs=fsn, fn=os.path.join(self.imgpath, filename), prf=self.prefix, st=self.starttime,
-                           kwargs=self.otherargs:
+                    lambda fs=fsn, fn=os.path.join(self.imgpath, filename), prf=self.prefix,
+                           st=self.starttime, kwargs=self.otherargs:
                     self.services['filesequence'].new_exposure(fs, fn, prf, st, **kwargs) and False)
                 self.fsns_done.append(fsn)
         # no more files are expected just now
@@ -384,7 +386,6 @@ class ExposeMulti(Command):
             if self.files_received or self.killed:
                 self.cleanup(None)
         return False
-
 
     def kill(self):
         if not self.killed:

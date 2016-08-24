@@ -32,39 +32,6 @@ class Transmission(Command):
     required_devices = ['xray_source', 'pilatus', 'Motor_BeamStop_X', 'Motor_BeamStop_Y', 'Motor_Sample_X',
                         'Motor_Sample_Y']
 
-    script = """
-        #initialization of variables
-        set('samplenames',_scriptargs[0])
-        set('nimages',_scriptargs[1])
-        set('exptime',_scriptargs[2])
-        set('emptyname',_scriptargs[3])
-        # initialization of instrument
-        print('Initializing the instrument for transmission measurement')
-        shutter('close')
-        xray_power('low')
-        beamstop('out')
-
-        @startloop
-            set('currentsample', samplenames.pop())
-            print('Measuring transmission for sample',currentsample)
-            print('Exposing dark current')
-            exposemulti(exptime, nimages, _config['path']['prefixes']['tra'], 0.02, {'sample':currentsample, 'what':'dark', 'nimages':nimages})
-            print('Exposing empty beam')
-            sample(emptyname)
-            shutter('open')
-            exposemulti(exptime, nimages, _config['path']['prefixes']['tra'], 0.02, {'sample':currentsample, 'what':'empty', 'nimages':nimages})
-            shutter('close')
-            print('Exposing sample')
-            sample(currentsample)
-            shutter('open')
-            exposemulti(exptime, nimages, _config['path']['prefixes']['tra'], 0.02, {'sample':currentsample, 'what':'sample', 'nimages':nimages})
-            shutter('close')
-            goif('startloop', len(samplenames)>0)
-        print('End of transmission measurements, moving beamstop into the beam')
-        beamstop('in')
-        end()
-        """
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.kwargs:
@@ -88,6 +55,7 @@ class Transmission(Command):
         self.exposurestartdate = None
         self.current_sample = None
         self.what_are_we_doing = 'Initializing...'
+        self._expanalyzerconnection = []
 
     def validate(self):
         for s in self.samplenames:
@@ -227,7 +195,7 @@ class Transmission(Command):
                     motor.where() - self.config['beamstop']['in'][1]) < 0.001):
             # Beamstop Y is in, finish the command.
             self.idle_return(None)
-        elif (motor.name == 'Sample_X'):
+        elif motor.name == 'Sample_X':
             if self.what_are_we_doing == 'Moving empty sample into the beam.':
                 self.get_motor('Sample_Y').moveto(
                     self.services['samplestore'].get_sample(self.emptyname).positiony.val)
@@ -235,7 +203,7 @@ class Transmission(Command):
                 # we have been moving the sample into the beam
                 self.get_motor('Sample_Y').moveto(
                     self.services['samplestore'].get_sample(self.current_sample).positiony.val)
-        elif (motor.name == 'Sample_Y'):
+        elif motor.name == 'Sample_Y':
             # open shutter
             self.get_device('xray_source').shutter(True)
 

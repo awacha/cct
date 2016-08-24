@@ -1,10 +1,10 @@
+import argparse
 import logging.handlers
 import sys
 import time
 import traceback
 from typing import List
 
-import argparse
 import pkg_resources
 from gi import require_version
 
@@ -12,10 +12,14 @@ require_version('Gtk', '3.0')
 require_version('GtkSource', '3.0')
 require_version('Notify', '0.7')
 
+# noinspection PyPep8
 from gi.repository import Notify, Gtk, Gio
 
+# noinspection PyPep8
 from .accounting import AuthenticatorDialog
+# noinspection PyPep8
 from ..core.instrument.instrument import Instrument
+# noinspection PyPep8
 from .mainwindow import MainWindow
 
 # initialize GObject Notification mechanism
@@ -52,7 +56,7 @@ def my_excepthook(type_, value, traceback_):
     try:
         logging.root.critical(
             'Unhandled exception: ' + '\n'.join(traceback.format_exception(type_, value, traceback_)))
-    except:
+    except Exception:
         logging.root.critical(
             'Error in excepthook: ' + traceback.format_exc())
     oldexcepthook(type_, value, traceback_)
@@ -74,14 +78,13 @@ class CCTApplication(Gtk.Application):
     def do_activate(self):
         ad = AuthenticatorDialog(self.instrument)
         try:
-            if (not self._skipauthentication) and (not ad.run()):
+            if not ad.run(self._skipauthentication):
                 return True
-
             self._mw = MainWindow(self.instrument)
             self.add_window(self._mw.widget)
             self._mw.widget.set_show_menubar(True)
             self._mw.widget.show_all()
-            self._instrument.start()
+            self.instrument.start()
         finally:
             ad.widget.destroy()
         return True
@@ -99,7 +102,6 @@ class CCTApplication(Gtk.Application):
         self._skipauthentication = args.root
         self.do_activate()
         return 0
-
 
 def run():
     app = CCTApplication(

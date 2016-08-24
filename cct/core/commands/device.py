@@ -124,7 +124,7 @@ class DevCommand(Command):
 
     def execute(self):
         device = self.get_device(self.devicename)
-        device.execute_command(self.cmdname, *(self.cmdargs))
+        device.execute_command(self.cmdname, *self.cmdargs)
         self.idle_return(None)
 
 
@@ -281,6 +281,7 @@ class Set(Command):
         self.namespace[self.varname] = self.value
         self.idle_return(self.value)
 
+
 class Sleep(Command):
     """Sleep for a given time
 
@@ -322,6 +323,7 @@ class Sleep(Command):
             GLib.source_remove(self._sleeptimeout)
             self._sleeptimeout = None
         super().cleanup(*args, **kwargs)
+
 
 class SaveConfig(Command):
     """Write the config file to disk

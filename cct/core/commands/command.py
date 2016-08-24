@@ -23,6 +23,7 @@ class CommandArgumentError(CommandError):
 class CommandKilledError(CommandError):
     pass
 
+
 class Command(Callbacks):
     """This is an abstract base class for a command, which can be issued in
     order to do something on the instrument, e.g. move a motor or take an

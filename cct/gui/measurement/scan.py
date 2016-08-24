@@ -9,7 +9,7 @@ from ...core.commands.xray_source import Shutter
 from ...core.devices import Motor
 from ...core.services.exposureanalyzer import ExposureAnalyzer
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
@@ -20,12 +20,16 @@ class ScanMeasurement(ToolWindow):
         self.scangraph = None
         self._exposureanalyzer_connections = []
         self.killed = False
+        self._scan_arguments = ()
+        self._scan_commandclass = None
+        self._scan_commandline = ''
 
     def init_gui(self, *args, **kwargs):
         update_comboboxtext_choices(self.builder.get_object('motorselector'),
                                     sorted(self.instrument.motors))
         self.on_symmetric_scan_toggled(self.builder.get_object('symmetric_checkbutton'))
 
+    # noinspection PyMethodMayBeStatic
     def on_motor_selected(self, comboboxtext):
         return False
 
@@ -141,7 +145,7 @@ class ScanMeasurement(ToolWindow):
             pass
 
     def on_command_message(self, interpreter, commandname, message):
-        logger.info('Scan message: '+message)
+        logger.info('Scan message: ' + message)
 
     def on_command_pulse(self, interpreter, commandname, message):
         progress = self.builder.get_object('scan_progress')
@@ -171,4 +175,3 @@ class ScanMeasurement(ToolWindow):
             self.builder.get_object('end_spin').show()
         self.recalculate_stepsize(checkbutton)
         return False
-

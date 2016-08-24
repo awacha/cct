@@ -31,13 +31,14 @@ class WebStateFileWriter(Service):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._timeouthandler = None
+        self._statusfile_template = None
 
     def start(self):
-        self._timeouthandler = GLib.timeout_add(self.webstate_timeout * 1000, self.write_statusfile)
+        self._timeouthandler = GLib.timeout_add(self.state['interval'] * 1000, self.write_statusfile)
 
     def stop(self):
         GLib.source_remove(self._timeouthandler)
-        
+
     def reload_statusfile_template(self):
         # if not hasattr(self,'_statusfile_template'):
         if True:
@@ -76,7 +77,7 @@ class WebStateFileWriter(Service):
         dhtc += '</tr>\n<tr>\n  <th>Last send time</th>\n'
         for d in sorted(self.instrument.devices):
             try:
-                lastsend = self.instrument.services['telemetrymanager'][d]['last_send']
+                lastsend = self.instrument.services['telemetrymanager'][d].last_send
             except KeyError:
                 lastsend = np.nan
                 bg = 'red'
@@ -89,7 +90,7 @@ class WebStateFileWriter(Service):
         dhtc += '</tr>\n<tr>\n  <th>Last recv time</th>\n'
         for d in sorted(self.instrument.devices):
             try:
-                lastrecv = self.instrument.services['telemetrymanager'][d]['last_recv']
+                lastrecv = self.instrument.services['telemetrymanager'][d].last_recv
             except KeyError:
                 lastrecv = np.nan
                 bg = 'red'
@@ -167,14 +168,14 @@ class WebStateFileWriter(Service):
         # make X-ray source status
 
         # noinspection PyStringFormat
-        vars = {}
+        variables = {}
         for var in ['ht', 'current', 'power', 'shutter']:
             try:
-                vars[var] = self.instrument.get_device('xray_source').get_variable(var)
+                variables[var] = self.instrument.get_device('xray_source').get_variable(var)
             except (KeyError, AttributeError):
-                vars[var] = np.nan
-        if isinstance(vars['shutter'], bool):
-            vars['shutter'] = ['Closed', 'Open'][vars['shutter']]
+                variables[var] = np.nan
+        if isinstance(variables['shutter'], bool):
+            variables['shutter'] = ['Closed', 'Open'][variables['shutter']]
         xray = """
         <tr>
             <td>HV: {ht:.2f} V</td>
@@ -182,7 +183,7 @@ class WebStateFileWriter(Service):
             <td>Power: {power:.2f} W</td>
             <td>Shutter: {shutter}</td>
         </tr>
-        """.format(**vars)
+        """.format(**variables)
         for i, fault in enumerate(
                 ['xray_light', 'shutter_light', 'sensor1', 'sensor2', 'tube_position', 'vacuum', 'waterflow',
                  'safety_shutter', 'temperature', 'relay_interlock', 'door', 'filament']):

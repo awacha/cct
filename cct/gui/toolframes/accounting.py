@@ -44,7 +44,7 @@ class AccountingFrame(ToolFrame):
             self.builder.get_object('projectname_label').set_text(
                 proj.projectname)
         finally:
-            del self._projectid_changed_disable
+            self._projectid_changed_disable = False
 
     def on_privileges_changed(self, selector):
         self.instrument.services['accounting'].set_privilegelevel(selector.get_active_text())

@@ -34,7 +34,7 @@ class Callbacks(object):
     __signals__ = {}
 
     def __init__(self):
-        self._signalconnections = []
+        self.__signalhandles = []
         self._nextsignalconnectionid = 0
 
     def connect(self, signal: str, callback: Callable, *args, **kwargs) -> int:
@@ -52,24 +52,24 @@ class Callbacks(object):
         """
         if signal not in self.__signals__:
             raise ValueError(signal)
-        self._signalconnections.append({'signal': signal,
+        self.__signalhandles.append({'signal': signal,
                                         'callback': callback,
                                         'args': args,
                                         'kwargs': kwargs,
                                         'id': self._nextsignalconnectionid,
                                         'blocked': 0})
         self._nextsignalconnectionid += 1
-        return self._signalconnections[-1]['id']
+        return self.__signalhandles[-1]['id']
 
     def disconnect(self, connectionid: int):
         """Disconnect a callback signal."""
-        self._signalconnections = [s for s in self._signalconnections if s['id'] != connectionid]
+        self.__signalhandles = [s for s in self.__signalhandles if s['id'] != connectionid]
 
     def handler_block(self, connectionid: int):
-        [s_ for s_ in self._signalconnections if s_['id'] == connectionid][0]['blocked'] += 1
+        [s_ for s_ in self.__signalhandles if s_['id'] == connectionid][0]['blocked'] += 1
 
     def handler_unblock(self, connectionid: int):
-        sc = [s_ for s_ in self._signalconnections if s_['id'] == connectionid][0]
+        sc = [s_ for s_ in self.__signalhandles if s_['id'] == connectionid][0]
         if sc['blocked'] <= 0:
             sc['blocked'] = 0
             raise ValueError('Cannot unblock signal handler #{:d}: not blocked.'.format(connectionid))
@@ -79,8 +79,8 @@ class Callbacks(object):
         if len(args) != len(self.__signals__[signal][2]):
             raise ValueError('Incorrect number of arguments supplied to signal {}.'.format(signal))
         for a, t, i in zip(args, self.__signals__[signal][2], itertools.count(0)):
-            if not isinstance(a, t):
-                raise TypeError('Argument #{:d} of signal {} is of incorrect type {}. Expected: {}.'.format(
+            if not isinstance(a, (t, type(None))):
+                raise TypeError('Argument #{:d} of signal {} is of incorrect type {}. Expected: {} or None.'.format(
                     i, signal, type(a), t))
         if self.__signals__[signal][0] & SignalFlags.RUN_FIRST:
             retval = self._call_default_callback(signal, *args)
@@ -93,10 +93,10 @@ class Callbacks(object):
             if done:
                 assert isinstance(ret, self.__signals__[signal][1])
                 return ret
-        for s in [s_ for s_ in self._signalconnections if s_['signal'] == signal]:
+        for s in [s_ for s_ in self.__signalhandles if s_['signal'] == signal]:
             if s['blocked'] > 0:
                 continue
-            retval = s['callback'](self, *args, *s['args'], **s['kwargs'])
+            retval = s['callback'](self, *(args + s['args']), **s['kwargs'])
             if isinstance(retval, tuple):
                 assert len(retval) == 2
                 done, ret = retval
@@ -104,7 +104,8 @@ class Callbacks(object):
                 done = bool(retval)
                 ret = None
             if done:
-                assert isinstance(ret, self.__signals__[signal][1])
+                if self.__signals__[signal][1] is not None:
+                    assert isinstance(ret, self.__signals__[signal][1])
                 return ret
         if self.__signals__[signal][0] & SignalFlags.RUN_LAST:
             retval = self._call_default_callback(signal, *args)

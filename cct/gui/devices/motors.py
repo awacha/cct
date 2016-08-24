@@ -16,10 +16,10 @@ class Motors(ToolWindow):
     widgets_to_make_insensitive = ['highlevel_expander']
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._samplestore_connection = None
         self._movebeamstop = None
         self._movetosample = None
+        super().__init__(*args, **kwargs)
         self.required_devices = ['Motor_' + m for m in self.instrument.motors]
 
     def init_gui(self, *args, **kwargs):
@@ -139,7 +139,7 @@ class Motors(ToolWindow):
             self.instrument.motors['BeamStop_X'].moveto(xpos)
         except Exception as exc:
             self.set_sensitive(True)
-            del self._movebeamstop
+            self._movebeamstop = None
             error_message(self.widget, 'Cannot start move', str(exc.args[0]))
 
     def on_mainwidget_map(self, window):
@@ -244,7 +244,7 @@ class MotorConfig(ToolWindow):
             elif widgetname.endswith('_checkbutton'):
                 newvalue = widget.get_active()
             else:
-                raise NotImplementedError(widgetname)
+                raise ValueError(widgetname)
             oldvalue = motor.get_variable(variablename)
             if oldvalue != newvalue:
                 tobechanged[variablename] = newvalue

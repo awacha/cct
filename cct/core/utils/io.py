@@ -103,8 +103,8 @@ def write_legacy_paramfile(paramfilename, params):
                     (k, params['exposure'][k]))
         if 'datareduction' in params:
             for k in params["datareduction"]:
-                f.write('datareduction.%s:\t%s\n'%
-                        (k,params['datareduction'][k]))
+                f.write('datareduction.%s:\t%s\n' %
+                        (k, params['datareduction'][k]))
         if 'cbf' in params:
             for k in params['cbf']:
-                f.write('cbf.%s:\t%s\n'%(k, params['cbf'][k]))
+                f.write('cbf.%s:\t%s\n' % (k, params['cbf'][k]))

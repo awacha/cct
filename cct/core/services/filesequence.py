@@ -91,6 +91,7 @@ class FileSequence(Service):
                                                   key=lambda x: x['name'])) + '\n')
                 f.write('\n')
 
+    # noinspection PyPep8Naming
     def new_scan(self, cmdline: str, comment: str, exptime: float, N: int, motorname: str) -> int:
         """Prepare a new scan measurement. To be called when a start
         measurement is commenced.
@@ -330,6 +331,7 @@ class FileSequence(Service):
                 self._nextfreefsn[prefix] += 1
                 self.emit('nextfsn-changed', prefix, self._nextfreefsn[prefix])
 
+    # noinspection PyPep8Naming
     def get_nextfreefsns(self, prefix: str, N: int, acquire: bool = True):
         if N <= 0:
             raise FileSequenceError("Number of FSNs to allocate must be a positive integer")
@@ -473,7 +475,8 @@ class FileSequence(Service):
         filebasename = self.exposurefileformat(prefix, fsn) + '.pickle'
         for path in [
             self.instrument.config['path']['directories']['param_override'],
-            self.instrument.config['path']['directories']['param']]:
+            self.instrument.config['path']['directories']['param']
+        ]:
             try:
                 return Header.new_from_file(os.path.join(path, filebasename))
             except FileNotFoundError:
@@ -497,7 +500,8 @@ class FileSequence(Service):
         picklebasename = self.exposurefileformat(prefix, fsn) + '.pickle'
         for path in [
             self.instrument.config['path']['directories']['param_override'],
-            self.instrument.config['path']['directories']['param']]:
+            self.instrument.config['path']['directories']['param']
+        ]:
             try:
                 picklename = os.path.join(
                     path, picklebasename)
@@ -531,4 +535,3 @@ class FileSequence(Service):
             raise FileSequenceError('Cannot append to scanfile: no scan running.')
         with open(self._scanfile, 'at', encoding='utf-8') as f:
             f.write(str(position) + '  ' + ' '.join([str(c) for c in counters]) + '\n')
-

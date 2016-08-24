@@ -54,6 +54,7 @@ class Script(Command):
         self._myinterpreter_connections = None
         self.namespace['_scriptargs'] = self.args
         self.namespace['_scriptkwargs'] = self.kwargs
+        self._failure = False
 
     def create_subinterpreter(self):
         self._myinterpreter = self.interpreter.create_child(self.namespace)
@@ -167,7 +168,7 @@ class Script(Command):
             GLib.idle_add(self.nextcommand())
             return False
         except JumpException as je:
-            raise NotImplementedError(je)
+            raise TypeError(je)
         except Exception as exc:
             try:
                 self.emit('fail', exc, traceback.format_exc())

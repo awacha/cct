@@ -122,9 +122,8 @@ class SetTemperature(Command):
         self.target_temperature = float(self.args[0])
 
     def validate(self):
-        if (self.target_temperature > self.get_device('temperature').get_variable('highlimit') or
-                    self.target_temperature < self.get_device('temperature').get_variable(
-                    'lowlimit')):
+        if ((self.target_temperature > self.get_device('temperature').get_variable('highlimit')) or
+                (self.target_temperature < self.get_device('temperature').get_variable('lowlimit'))):
             raise CommandArgumentError('Desired temperature is outside the allowed range.')
         return True
 

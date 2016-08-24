@@ -114,11 +114,9 @@ class Motor(Callbacks):
         return self._controller.checklimits(self._index, position)
 
     def __del__(self):
-        try:
+        if self._connection is not None:
             self._controller.disconnect(self._connection)
-            del self._connection
-        except AttributeError:
-            pass
+            self._connection = None
 
     def get_limits(self):
         return self._controller.get_limits(self._index)

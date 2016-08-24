@@ -15,6 +15,7 @@ from ...core.services.interpreter import Interpreter
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class SingleExposure(ToolWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -24,6 +25,7 @@ class SingleExposure(ToolWindow):
         self._killed = False
         self._nimages = 0
         self._images_done = 0
+        self._expanalyzerconnection = None
 
     def cleanup(self):
         if self._sampleconnection is not None:

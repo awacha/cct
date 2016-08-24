@@ -6,8 +6,8 @@ class TPG201(ToolWindow):
     required_devices = ['tpg201']
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.indicator = None
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args):
         self.indicator = Indicator('Pressure', 'N/A', IndicatorState.UNKNOWN)

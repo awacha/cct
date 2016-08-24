@@ -1,6 +1,9 @@
+import os
 import traceback
 import weakref
 from typing import Optional, List, Union
+
+import pkg_resources
 
 from .builderwidget import BuilderWidget
 from .dialogs import error_message
@@ -15,7 +18,8 @@ class ToolFrame(BuilderWidget):
     required_devices = []
 
     def __init__(self, gladefile: str, mainwidgetname: str, instrument: Instrument, *args, **kwargs):
-        super().__init__(gladefile, mainwidgetname)
+        super().__init__(pkg_resources.resource_filename(
+            'cct', os.path.join('resource/glade', gladefile)), mainwidgetname)
         if not isinstance(instrument, weakref.ProxyTypes):
             instrument = weakref.proxy(instrument)
         self.instrument = instrument
@@ -38,6 +42,7 @@ class ToolFrame(BuilderWidget):
         else:
             if not self.widget.get_sensitive():
                 self.widget.set_sensitive(True)
+                self.on_mainwidget_map(self.widget)
 
     def init_gui(self, *args, **kwargs):
         pass
@@ -76,13 +81,13 @@ class ToolFrame(BuilderWidget):
         if not self.instrument.services['accounting'].has_privilege(self.privlevel):
             error_message(self.widget, 'Privilege error',
                           'Insufficient privileges to open {}.'.format(self.widget.get_title()))
-            self.widget.destroy()
+            self.widget.set_sensitive(False)
             return True
         # connect to various signals of devices
         for d in self.required_devices:
             try:
                 self.instrument.get_device(d)
-            except:
+            except Exception:
                 error_message(self.widget, 'Device error', 'Required device {} not present.'.format(d))
                 self.widget.destroy()
                 return True

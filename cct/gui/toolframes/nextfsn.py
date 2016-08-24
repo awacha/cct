@@ -27,7 +27,7 @@ class NextFSN(ToolFrame):
         if prefix is not None:
             if prefix in [x[0] for x in selector.get_model()]:
                 return
-        update_comboboxtext_choices(selector, sorted(self.instrument.services['filesequence'].get_prefixes))
+        update_comboboxtext_choices(selector, sorted(self.instrument.services['filesequence'].get_prefixes()))
 
     def on_nextfsn(self, filesequence, prefix, nextfsn):
         self.builder.get_object('lastprefix_label').set_text(prefix)

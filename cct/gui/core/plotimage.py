@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 
 from .builderwidget import BuilderWidget
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
@@ -50,9 +50,9 @@ class PlotImageWidget(BuilderWidget):
         self.toolbar.insert(b, 9)
         b.connect('clicked', lambda b: self.replot(False))
         palette_combo = self.builder.get_object('palette_combo')
-        for i,cm in enumerate(sorted(matplotlib.cm.cmap_d)):
+        for i, cm in enumerate(sorted(matplotlib.cm.cmap_d)):
             palette_combo.append_text(cm)
-            if cm=='jet':
+            if cm == 'jet':
                 palette_combo.set_active(i)
         self.widget.pack_start(self.canvas, True, True, 0)
         self.widget.pack_start(self.toolbar, False, True, 0)
@@ -109,7 +109,7 @@ class PlotImageWidget(BuilderWidget):
         if self.builder.get_object('palette_combo').get_active_text() == palette:
             return
         for i, cm in enumerate(self.builder.get_object('palette_combo').get_model()):
-            if cm[0]==palette:
+            if cm[0] == palette:
                 self.builder.get_object('palette_combo').set_active(i)
                 self.replot_image()
                 self.fig.tight_layout()
@@ -140,7 +140,7 @@ class PlotImageWidget(BuilderWidget):
 
     def validate_parameters(self):
         ac = self.builder.get_object('axes_combo')
-        previously_selected=ac.get_active_text()
+        previously_selected = ac.get_active_text()
         self._inhibit_replot = True
         try:
             ac.remove_all()
@@ -193,7 +193,7 @@ class PlotImageWidget(BuilderWidget):
             matrix = self._matrix.copy()
             matrix[matrix <= 0] = np.nan
         else:
-            raise NotImplementedError(scaling)
+            raise ValueError(scaling)
         axesscale = self.builder.get_object('axes_combo').get_active_text()
         if axesscale == 'abs. pixel':
             extent = (0, self._matrix.shape[1] - 1, self._matrix.shape[0] - 1, 0)  # left, right, bottom, top
@@ -202,9 +202,10 @@ class PlotImageWidget(BuilderWidget):
                       self._matrix.shape[0] - 1 - self._beampos[0], 0 - self._beampos[0])
         elif axesscale == 'detector radius':
             extent = (
-            (0 - self._beampos[1]) * self._pixelsize, (self._matrix.shape[1] - 1 - self._beampos[1]) * self._pixelsize,
-            (self._matrix.shape[0] - 1 - self._beampos[0]) * self._pixelsize,
-            (0 - self._beampos[0]) * self._pixelsize)
+                (0 - self._beampos[1]) * self._pixelsize,
+                (self._matrix.shape[1] - 1 - self._beampos[1]) * self._pixelsize,
+                (self._matrix.shape[0] - 1 - self._beampos[0]) * self._pixelsize,
+                (0 - self._beampos[0]) * self._pixelsize)
         elif axesscale == 'twotheta':
             extent = (np.arctan((0 - self._beampos[1]) * self._pixelsize / self._distance) * 180 / np.pi,
                       np.arctan((self._matrix.shape[1] - 1 - self._beampos[
@@ -312,6 +313,7 @@ class PlotImageWidget(BuilderWidget):
 
 class PlotImageWindow(PlotImageWidget):
     instancelist = []
+
     def __init__(self, **kwargs):
         PlotImageWidget.__init__(self, **kwargs)
         self.window = Gtk.Window()

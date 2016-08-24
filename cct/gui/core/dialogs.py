@@ -1,5 +1,9 @@
+import logging
+
 from gi.repository import Gtk
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def error_message(parentwindow: Gtk.Window, message: str, reason: str):
     return messagedialog(parentwindow, Gtk.MessageType.ERROR, message, reason)
@@ -13,8 +17,13 @@ def info_message(parentwindow: Gtk.Window, info: str, detail: str):
     return messagedialog(parentwindow, Gtk.MessageType.INFO, info, detail)
 
 
-def messagedialog(parentwindow: Gtk.Window, messagetype: Gtk.MessageType, title: str, detail: str):
-    md = Gtk.Dialog(parent=parentwindow, title=title, modal=True, destroy_with_parent=True)
+def messagedialog(parentwindow: Gtk.Widget, messagetype: Gtk.MessageType, title: str, detail: str):
+    if not isinstance(parentwindow, Gtk.Window):
+        parentwindow = parentwindow.get_toplevel()
+    if not isinstance(parentwindow, Gtk.Window):
+        parentwindow = None
+        logger.warning('Cannot find toplevel window for dialog parent.')
+    md = Gtk.Dialog(transient_for=parentwindow, title=title, modal=True, destroy_with_parent=True)
     ca = md.get_content_area()
     hb = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
     ca.pack_start(hb, True, True, 0)
@@ -33,7 +42,8 @@ def messagedialog(parentwindow: Gtk.Window, messagetype: Gtk.MessageType, title:
         img.set_from_icon_name('dialog-information', Gtk.IconSize.DIALOG)
         md.add_buttons('OK', Gtk.ResponseType.OK)
     l = Gtk.Label(label=detail)
-    hb.pack_start(l)
+    hb.pack_start(l, True, True, 0)
+    ca.show_all()
     result = md.run()
     md.destroy()
     if result == Gtk.ResponseType.YES or result == Gtk.ResponseType.OK:

@@ -8,8 +8,8 @@ class HaakePhoenix(ToolWindow):
     required_devices = ['haakephoenix']
 
     def __init__(self, *args, **wargs):
-        super().__init__(*args, **wargs)
         self.indicators = {}
+        super().__init__(*args, **wargs)
 
     def init_gui(self, *args, **kwargs):
         statusgrid = self.builder.get_object('statusgrid')
@@ -76,14 +76,14 @@ class HaakePhoenix(ToolWindow):
             self.indicators[variablename].set_value('%.2f°C' % newvalue, IndicatorState.NEUTRAL)
         elif variablename in ['control_on', 'cooling_on', 'diffcontrol_on', 'watchdog_on', 'beep', 'fuzzyid',
                               'fuzzystatus',
-                         'autostart']:
+                              'autostart']:
             self.indicators[variablename].set_value(['OFF', 'ON'][int(bool(newvalue))],
                                                     [IndicatorState.ERROR, IndicatorState.OK][int(bool(newvalue))])
         elif variablename in ['pump_power']:
             self.indicators[variablename].set_value('%.2f %%' % newvalue,
                                                     [IndicatorState.ERROR, IndicatorState.OK][newvalue > 0])
         elif variablename in ['external_pt100_error', 'internal_pt100_error', 'liquid_level_low_error', 'cooling_error',
-                         'main_relay_missing_error']:
+                              'main_relay_missing_error']:
             self.indicators[variablename].set_value(['OK', 'ERROR'][int(bool(newvalue))],
                                                     [IndicatorState.OK, IndicatorState.ERROR][int(bool(newvalue))])
         elif variablename in ['liquid_level_alarm_error', 'external_alarm_error', 'overtemperature_error']:

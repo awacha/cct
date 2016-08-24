@@ -1,5 +1,5 @@
 import logging
-import multiprocessing
+import multiprocessing.queues
 import os
 import pickle
 import queue
@@ -52,8 +52,8 @@ def get_statistics(matrix: np.ndarray, masktotal: Union[np.ndarray, int, None],
         matrix = matrixorig * mask
         x = np.arange(matrix.shape[0])
         y = np.arange(matrix.shape[1])
-        result[prefix + 'sum'] = (matrix).sum()
-        result[prefix + 'max'] = (matrix).max()
+        result[prefix + 'sum'] = matrix.sum()
+        result[prefix + 'max'] = matrix.max()
         result[prefix + 'beamx'] = (matrix * x[:, np.newaxis]).sum() / result[prefix + 'sum']
         result[prefix + 'beamy'] = (matrix * y[np.newaxis, :]).sum() / result[prefix + 'sum']
         result[prefix + 'sigmax'] = (
@@ -66,6 +66,7 @@ def get_statistics(matrix: np.ndarray, masktotal: Union[np.ndarray, int, None],
     return result
 
 
+# noinspection PyPep8Naming
 class ExposureAnalyzer_Backend(object):
     """Background worker process of exposureanalyzer.
     
@@ -105,6 +106,7 @@ class ExposureAnalyzer_Backend(object):
         self._absintqrange = None
         self._absintstat = None
 
+    # noinspection PyMethodMayBeStatic
     def get_telemetry(self):
         return TelemetryInfo()
 
@@ -114,7 +116,7 @@ class ExposureAnalyzer_Backend(object):
 
     def worker(self):
         while True:
-            assert isinstance(self.inqueue, multiprocessing.Queue)
+            assert isinstance(self.inqueue, multiprocessing.queues.Queue)
             try:
                 message = self.inqueue.get(True, self.telemetry_interval)
             except queue.Empty:
@@ -321,9 +323,12 @@ class ExposureAnalyzer_Backend(object):
             dataset = np.loadtxt(self.config['datareduction']['absintrefdata'])
             self._logger.debug('Q-range of absint dataset: {:g} to {:g}, {:d} points.'.format(
                 dataset[:, 0].min(), dataset[:, 0].max(), len(dataset[:, 0])))
+            # noinspection PyPep8Naming,PyPep8Naming
             q, dq, I, dI, area = im.radial_average(qrange=dataset[:, 0], raw_result=True)
             dataset = dataset[area > 0, :]
+            # noinspection PyPep8Naming
             I = I[area > 0]
+            # noinspection PyPep8Naming
             dI = dI[area > 0]
             q = q[area > 0]
             self._logger.debug('Common q-range: {:g} to {:g}, {:d} points.'.format(q.min(), q.max(), len(q)))
@@ -351,8 +356,8 @@ class ExposureAnalyzer_Backend(object):
                 'Using absolute intensity factor {} from measurement FSN #{:d} for absolute intensity calibration.'.format(
                     self._absintscalingfactor, self._lastabsintref.header.fsn))
             datared['absintrefFSN'] = self._lastabsintref.header.fsn
-            datared['flux'] = (1 / self._absintscalingfactor).val
-            datared['flux.err'] = (1 / self._absintscalingfactor).err
+            datared['flux'] = (1.0 / self._absintscalingfactor).val
+            datared['flux.err'] = (1.0 / self._absintscalingfactor).err
             datared['absintchi2'] = self._absintstat['Chi2_reduced']
             datared['absintdof'] = self._absintstat['DoF']
             datared['absintfactor'] = self._absintscalingfactor.val
@@ -394,6 +399,7 @@ class ExposureAnalyzer_Backend(object):
         im.header.param['datareduction'] = datared
         return im
 
+    # noinspection PyMethodMayBeStatic
     def get_matrix_statistics(self, matrix: np.ndarray):
         return {'NaNs': np.isnan(matrix).sum(),
                 'finites': np.isfinite(matrix).sum(),

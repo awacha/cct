@@ -165,7 +165,6 @@ class Sample(object):
         return self.title <= other.title
 
 
-
 class SampleStore(Service):
     __signals__ = {'list-changed': (SignalFlags.RUN_FIRST, None, ()),
                    'active-changed': (SignalFlags.RUN_FIRST, None, ()),

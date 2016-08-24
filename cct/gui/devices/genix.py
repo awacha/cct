@@ -13,9 +13,9 @@ class GeniX(ToolWindow):
     required_devices = ['genix']
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._updating_buttons = False
         self.indicators = {}
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
         statusindicators = self.builder.get_object('statusindicators')
@@ -64,7 +64,6 @@ class GeniX(ToolWindow):
         if genixxrays != xraystoggle:
             self.builder.get_object('xraystate_toggle').set_active(genix.get_variable('xrays'))
         self.builder.get_object('warmup_toggle').set_active(genix.get_variable('_status') == 'Warming up')
-
 
     def on_warmup(self, button):
         genix = self.instrument.get_device('genix')

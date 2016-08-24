@@ -11,6 +11,7 @@ from ...core.commands.motor import Beamstop
 from ...core.instrument.privileges import PRIV_BEAMSTOP
 from ...core.services.interpreter import InterpreterError
 
+
 class ShutterBeamstop(ToolFrame):
     required_devices = ['xray_source', 'Motor_BeamStop_X', 'Motor_BeamStop_Y']
 

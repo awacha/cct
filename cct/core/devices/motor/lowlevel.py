@@ -8,9 +8,9 @@ import struct
 import time
 from typing import List
 
-from .device import DeviceBackend_TCP, DeviceError, UnknownCommand, UnknownVariable, ReadOnlyVariable, InvalidValue, \
+from ..device import DeviceBackend_TCP, DeviceError, UnknownCommand, UnknownVariable, ReadOnlyVariable, InvalidValue, \
     Device
-from .device.message import Message
+from ..device.message import Message
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -53,6 +53,7 @@ class TMCMConversionError(DeviceError):
     pass
 
 
+# noinspection PyPep8Naming
 class TMCMCard_Backend(DeviceBackend_TCP):
     """Motor controller card from Trinamic GmbH, Hamburg, Germany. Developed for TMCM351 and TMCM6110, may or may not
     work for other models."""
@@ -78,11 +79,9 @@ class TMCMCard_Backend(DeviceBackend_TCP):
             motor_idx = None
         if variablename == 'firmwareversion':
             self.send_tmcl_command(136, 1, 0, 0)
-        elif (variablename.startswith('targetposition$') or
-                  variablename.startswith('targetpositionraw$')):
+        elif (variablename.startswith('targetposition$') or variablename.startswith('targetpositionraw$')):
             self.send_tmcl_command(6, 0, motor_idx, 0)
-        elif (variablename.startswith('actualposition$') or
-                  variablename.startswith('actualpositionraw$')):
+        elif (variablename.startswith('actualposition$') or variablename.startswith('actualpositionraw$')):
             self.send_tmcl_command(6, 1, motor_idx, 0)
         elif variablename.startswith('targetspeed$'):
             self.send_tmcl_command(6, 2, motor_idx, 0)
@@ -122,7 +121,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
             self.send_tmcl_command(6, 206, motor_idx, 0)
         elif variablename.startswith('drivererror$'):
             self.send_tmcl_command(6, 208, motor_idx, 0)
-        elif (variablename.startswith('softleft$') or variablename.startswith('softright$')):
+        elif variablename.startswith('softleft$') or variablename.startswith('softright$'):
             # these variables are not known to the hardware, the values are
             # stored here in this class.
             if variablename not in self.properties:
@@ -257,7 +256,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                 elif typenum == 208:
                     self.update_variable('drivererror$' + motor_idx, value)
                 else:
-                    raise NotImplementedError(typenum)
+                    raise ValueError(typenum)
             except TMCMConversionError:
                 # if we reach this, _update_variable() has not been called with
                 # the new value. We must manually remove the variable name from
@@ -290,7 +289,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
             # acknowledgement of STAP
             pass
         else:
-            raise NotImplementedError(cmdnum)
+            raise ValueError(cmdnum)
 
     def on_motor_start(self, motoridx: int, startposition: float):
         """Executed when a motor starts moving."""
@@ -780,16 +779,16 @@ class TMCMCard(Device):
     # step is 1/200 mm.
     full_step_size = 1 / 200.
 
-    backend_interval = 0.1
+    backend_interval = 0.5
 
-    queryall_interval = 0
+    queryall_interval = 0.5
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.all_variables = DEVICE_VARIABLES + ['{}${:d}'.format(vn, motidx)
                                                  for vn, motidx in itertools.product(
-                PER_MOTOR_VARIABLES, range(self._N_axes))]
+                PER_MOTOR_VARIABLES, range(self.N_axes))]
 
         self.minimum_query_variables = self.all_variables[:]
 

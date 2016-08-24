@@ -77,4 +77,4 @@ class ExposureLoader(Gtk.Box):
             im.mask = self.instrument.services['filesequence'].get_mask(
                 self.builder.get_object('mask_chooser').get_filename())
         self.emit('open', im)
-        return False # inhibit calling us once again as an idle function
+        return False  # inhibit calling us once again as an idle function

@@ -1,4 +1,3 @@
-__author__ = 'labuser'
 from .connections import DeviceConnections
 from .genix import GeniX
 from .haakephoenix import HaakePhoenix

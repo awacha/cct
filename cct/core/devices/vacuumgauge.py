@@ -1,8 +1,8 @@
-'''
+"""
 Created on Oct 13, 2015
 
 @author: labuser
-'''
+"""
 import logging
 
 from .device import DeviceBackend_TCP, DeviceError, UnknownVariable, Device, UnknownCommand
@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+# noinspection PyPep8Naming
 class TPG201_Backend(DeviceBackend_TCP):
     def query_variable(self, variablename: str):
         if variablename == 'pressure':

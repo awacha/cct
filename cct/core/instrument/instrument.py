@@ -6,6 +6,8 @@ import time
 import traceback
 from typing import List
 
+from gi.repository import GLib
+
 from ..devices.device import DeviceError, Device, DeviceBackend_ModbusTCP, DeviceBackend_TCP
 from ..devices.motor import Motor
 from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter, \
@@ -14,9 +16,7 @@ from ..utils.callback import Callbacks, SignalFlags
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-from gi.repository import GLib
+logger.setLevel(logging.DEBUG)
 
 
 class DummyTm(object):
@@ -50,11 +50,15 @@ class Instrument(Callbacks):
         # component (service or device), and the third one is the telemetry
         # dictionary.
         'telemetry': (SignalFlags.RUN_FIRST, None, (object, str, object)),
+        # emitted when the instrument is finalized: all devices disconnected,
+        # all services stopped.
+        'shutdown': (SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, online):
         Callbacks.__init__(self)
         self._online = online
+        self.shutdown_requested = False
         self.devices = {}
         self.pseudo_devices = {}
         self.services = {}
@@ -69,6 +73,7 @@ class Instrument(Callbacks):
         self.busy = multiprocessing.Event()
         self.load_state()
         self.create_services()
+
 
     @property
     def online(self) -> bool:
@@ -85,8 +90,7 @@ class Instrument(Callbacks):
 
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from scratch."""
-        self.config = {}
-        self.config['path'] = {}
+        self.config = {'path': {}}
         self.config['path']['directories'] = {'log': 'log',
                                               'images': 'images',
                                               'param': 'param',
@@ -276,7 +280,21 @@ class Instrument(Callbacks):
         not updated by Device._load_state()."""
         with open(self.configfile, 'rb') as f:
             config_loaded = pickle.load(f)
+        config_loaded = self.fix_config(config_loaded)
         self.update_config(self.config, config_loaded)
+
+    def fix_config(self, config):
+        """Fix some previous discrepancies in the config dict."""
+        logger.debug('Fixing "connections" section in the config.')
+        for subsection in ['environmentcontrollers', 'motorcontrollers']:
+            try:
+                for c in list(config['connections'][subsection]):
+                    config['connections'][c] = config['connections'][subsection][c]
+                del config['connections'][subsection]
+            except KeyError as ke:
+                logger.debug('KeyError: {}'.format(ke.args[0]))
+                pass
+        return config
 
     def _connect_signals(self, device: Device):
         """Connect signal handlers of a device.
@@ -286,7 +304,7 @@ class Instrument(Callbacks):
         """
         self._signalconnections[device.name] = [device.connect('startupdone', self.on_ready),
                                                 device.connect('disconnect', self.on_disconnect),
-                                                device.connect('telemetry', self.on_telemetry, device.name)]
+                                                device.connect('telemetry', self.on_telemetry)]
 
     def disconnect_signals(self, device: Device):
         """Disconnect signal handlers from a device."""
@@ -314,7 +332,6 @@ class Instrument(Callbacks):
             return 'out'
         return 'unknown'
 
-    @property
     def connect_devices(self):
         """Try to connect to all devices. Send error logs on failures. Return
         a list of the names of unsuccessfully connected devices."""
@@ -338,10 +355,8 @@ class Instrument(Callbacks):
         # cfg['name'].
         unsuccessful = []
         for entryname in sorted(self.config['connections']):
-            print('Entryname: ', entryname)
+            logger.debug('Connecting device {}'.format(entryname))
             cfg = self.config['connections'][entryname]  # shortcut
-            print('CFG: ', cfg)
-            print('CFG.keys: ', list(cfg.keys()))
             # avoid establishing another connection to the device.
             if cfg['name'] in self.devices:
                 logger.warn('Not connecting {} again.'.format(cfg['name']))
@@ -383,6 +398,7 @@ class Instrument(Callbacks):
                 del self.devices[cfg['name']]
                 del dev
                 unsuccessful.append(cfg['name'])
+        logger.debug('All devices are connected to. Creating shortcuts.')
         # at this point, all devices are initialized. We will create some shortcuts to special devices:
         try:
             self.pseudo_devices['xray_source'] = self.devices[self.config['connections']['xray_source']['name']]
@@ -400,7 +416,7 @@ class Instrument(Callbacks):
             self.pseudo_devices['temperature'] = self.devices[self.config['connections']['temperature']['name']]
         except KeyError:
             pass
-
+        logger.debug('Instantiating motors.')
         # Instantiate motors
         for m in self.config['motors']:
             cfg = self.config['motors'][m]
@@ -410,7 +426,8 @@ class Instrument(Callbacks):
                 self.pseudo_devices['Motor_' + cfg['name']] = self.motors[cfg['name']]
             except KeyError:
                 logger.error('Cannot find controller for motor ' + cfg['name'])
-
+        logger.debug('Motors instantiated.')
+        logger.debug('Not connected devices: {}'.format(str(unsuccessful)))
         return unsuccessful
 
     def get_device(self, devicename: str):
@@ -460,6 +477,9 @@ class Instrument(Callbacks):
             if device.name not in self._waiting_for_ready:
                 logger.error('Cannot reconnect to device ' + device.name + '.')
             return False
+        else:
+            # this was a normal, requested disconnection.
+            self._try_to_send_stopped_signal()
 
     def create_services(self):
         for sname, sclass in [('interpreter', Interpreter),
@@ -479,4 +499,18 @@ class Instrument(Callbacks):
         self.services['telemetrymanager'].incoming_telemetry('main', TelemetryInfo())
         return True
 
+    def shutdown(self):
+        self.shutdown_requested = True
+        for d in self.devices:
+            self.devices[d].disconnect_device()
+        for s in self.services:
+            self.services[s].stop()
+        self._try_to_send_stopped_signal()
 
+    def _try_to_send_stopped_signal(self):
+        if not self.shutdown_requested:
+            return False
+        if (not [d for d in self.devices if self.devices[d].get_connected()] and
+                not [s for s in self.services if self.services[s].is_running()]):
+            self.shutdown_requested = False
+            self.emit('shutdown')

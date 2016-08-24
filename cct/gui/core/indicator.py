@@ -5,34 +5,38 @@ import pkg_resources
 from gi.repository import Gtk
 from gi.repository import Pango
 
-cssprovider=Gtk.CssProvider()
-cssprovider.load_from_path(pkg_resources.resource_filename('cct','resource/css/indicatorcolors.css'))
+cssprovider = Gtk.CssProvider()
+cssprovider.load_from_path(pkg_resources.resource_filename('cct', 'resource/css/indicatorcolors.css'))
 
 
 class IndicatorState(Enum):
-    OK='ok'
-    WARNING='warning'
-    ERROR='error'
-    NEUTRAL='neutral'
-    UNKNOWN='unknown'
+    OK = 'ok'
+    WARNING = 'warning'
+    ERROR = 'error'
+    NEUTRAL = 'neutral'
+    UNKNOWN = 'unknown'
+
+    def __str__(self):
+        return self.value
+
 
 class Indicator(Gtk.Box):
     def __init__(self, label: str, value: object, state: IndicatorState, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'orientation' not in kwargs:
             self.set_orientation(Gtk.Orientation.VERTICAL)
-        self._label=Gtk.Label(label=label)
+        self._label = Gtk.Label(label=label)
         #        self._label.set_hexpand(True)
         #        self._label.set_hexpand_set(True)
         self.pack_start(self._label, True, True, 0)
-        self._eventbox=Gtk.EventBox()
+        self._eventbox = Gtk.EventBox()
         self.pack_start(self._eventbox, True, True, 0)
-        self._valuelabel=Gtk.Label(label=str(value))
+        self._valuelabel = Gtk.Label(label=str(value))
         #      self._valuelabel.set_hexpand(False)
         #      self._valuelabel.set_hexpand_set(False)
         self._valuelabel.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
         self._valuelabel.set_max_width_chars(1)
-        self._value=value
+        self._value = value
         self._eventbox.add(self._valuelabel)
         self._eventbox.set_border_width(5)
         self._eventbox.set_name('indicator_' + str(state))
@@ -49,8 +53,8 @@ class Indicator(Gtk.Box):
         return self._label.get_text()
 
     def set_value(self, value: object, state: Optional[IndicatorState] = None):
-        self._value=value
-        res= self._valuelabel.set_text(str(value))
+        self._value = value
+        res = self._valuelabel.set_text(str(value))
         self._eventbox.set_tooltip_text(self._label.get_text() + ': ' + value)
         self._valuelabel.set_tooltip_text(self._label.get_text() + ': ' + value)
         if state is not None:
@@ -61,8 +65,8 @@ class Indicator(Gtk.Box):
         return self._value
 
     def set_state(self, state):
-        res=self._eventbox.set_name('indicator_'+state)
-        self._valuelabel.set_name('indicator_'+state)
+        res = self._eventbox.set_name('indicator_' + state)
+        self._valuelabel.set_name('indicator_' + state)
         self._eventbox.queue_draw()
         self._valuelabel.queue_draw()
         return res

@@ -18,6 +18,8 @@ def update_comboboxtext_choices(cb: Gtk.ComboBoxText, choices: List[str], defaul
             cb.set_active(i)
         if k == default:
             defaultindex = i
+    if defaultindex is None:
+        defaultindex = 0
     if cb.get_active_text() is None:
         cb.set_active(defaultindex)
 

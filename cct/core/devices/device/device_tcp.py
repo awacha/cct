@@ -1,5 +1,6 @@
 import logging
 import multiprocessing
+import multiprocessing.queues
 import queue
 import select
 import socket
@@ -82,9 +83,9 @@ class TCPCommunicator:
     def __init__(self, instancename, host, port, poll_timeout, sendqueue, incomingqueue,
                  killflag, exitedflag, getcompletemessages):
         self.name = instancename
-        assert isinstance(sendqueue, multiprocessing.Queue)
+        assert isinstance(sendqueue, multiprocessing.queues.Queue)
         self.sendqueue = sendqueue
-        assert isinstance(incomingqueue, multiprocessing.Queue)
+        assert isinstance(incomingqueue, multiprocessing.queues.Queue)
         self.incomingqueue = incomingqueue
         self.poll_timeout = poll_timeout
         self.get_complete_messages = getcompletemessages
@@ -106,9 +107,10 @@ class TCPCommunicator:
             logger.error(
                 'Error initializing socket connection to device {}:{:d}'.format(host, port))
             try:
-                del self.tcpsocket
+                self.tcpsocket.close()
             except AttributeError:
                 pass
+            self.tcpsocket = None
             self.send_to_backend('error', exception=exc, traceback=traceback.format_exc())
             self.send_to_backend('exited', normaltermination=False)
             raise DeviceError('Cannot connect to device.', exc)
@@ -122,6 +124,7 @@ class TCPCommunicator:
         self.msgid_counter += 1
         msg = Message(msgtype, self.msgid_counter, self.name + '__tcpprocess', **kwargs)
         self.incomingqueue.put_nowait(msg)
+        del msg
 
     def send_message_to_device(self):
         """Send a message from the sending queue to the device.
@@ -148,6 +151,7 @@ class TCPCommunicator:
             justsent = self.tcpsocket.send(outmsg[chars_sent:])
             assert justsent > 0
             chars_sent += justsent
+        # print('***SENT; {}'.format(self.name))
         # the message has been sent.
         if msg['expected_replies'] > 0:
             # if we are expecting replies, save `msg` to the last sent stack.
@@ -170,7 +174,7 @@ class TCPCommunicator:
             # read all parts of the message.
             try:
                 # check if an input is waiting on the socket
-                sock, event = polling.poll(self.poll_timeout * 1000)[0]
+                sock_fd, event = polling.poll(self.poll_timeout * 1000)[0]
             except IndexError:
                 # no incoming message
                 break  # the while True loop
@@ -181,7 +185,7 @@ class TCPCommunicator:
                     'Socket is in exceptional state: {:d}'.format(event))
                 # end watching the socket.
             # read the incoming message
-            message = message + sock.recv(4096)
+            message = message + self.tcpsocket.recv(4096)
             if not message:
                 # remote end hung up on us
                 raise CommunicationError(
@@ -211,7 +215,7 @@ class TCPCommunicator:
                                      referred_id=self.lastsent[-1]['id'],
                                      reply_count=self.lastsent[-1]['received_replies'])
                 self.lastsent[-1]['received_replies'] += 1
-                if self.lastsent[-1]['expected_replies'] == self.lastsent[-1]['received_replies']:
+                if self.lastsent[-1]['expected_replies'] <= self.lastsent[-1]['received_replies']:
                     del self.lastsent[-1]
                 if not self.lastsent:
                     # if no messages are waiting for replies:
@@ -240,11 +244,14 @@ class TCPCommunicator:
                 self.send_message_to_device()
                 self.receive_message_from_device(polling)
                 if self.lastsent:
-                    if time.monotonic() - self.lastsent[-1]['sendtime'] > self.lastsent[-1]['timeout']:
+                    elapsed = time.monotonic() - self.lastsent[-1]['sendtime']
+                    if elapsed > self.lastsent[-1]['timeout']:
                         self.send_to_backend('timeout', message=self.lastsent[-1]['message'],
                                              received_replies=self.lastsent[-1]['received_replies'],
                                              referred_id=self.lastsent[-1]['id'])
-                    raise CommunicationError('Reply timeout. Last sent: {}'.format(self.lastsent[-1]['message']))
+                        raise CommunicationError(
+                            'Reply timeout ({} > {}). Last sent: {}'.format(elapsed, self.lastsent[-1]['timeout'],
+                                                                            self.lastsent[-1]['message']))
         except Exception as exc:
             self.send_to_backend('communication_error', exception=exc, traceback=traceback.format_exc())
         finally:
@@ -254,7 +261,7 @@ class TCPCommunicator:
             polling.unregister(self.tcpsocket)
             self.tcpsocket.shutdown(socket.SHUT_RDWR)
             self.tcpsocket.close()
-            del self.tcpsocket
+            self.tcpsocket = None
             while True:
                 try:
                     self.sendqueue.get_nowait()
@@ -272,7 +279,7 @@ class TCPCommunicator:
         tcpcomm.run()
 
 
-# noinspection PyAbstractClass
+# noinspection PyAbstractClass,PyPep8Naming
 class DeviceBackend_TCP(DeviceBackend):
     """Device with TCP socket connection.
 
@@ -391,10 +398,10 @@ class DeviceBackend_TCP(DeviceBackend):
         msg = Message('send', self.counters['outmessages'], self.name + '__backend', message=message,
                       expected_replies=expected_replies, timeout=timeout, asynchronous=asynchronous)
         self.tcp_outqueue.put_nowait(msg)
+        del msg
 
     def queryall(self):
         if self.outqueue.qsize() > self.outqueue_query_limit:
             # do not query all if there are too many messages waiting to be sent to the device.
             return
         return super().queryall()
-

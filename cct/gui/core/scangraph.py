@@ -18,6 +18,7 @@ from ...core.instrument.instrument import Instrument
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class ScanGraph(ToolWindow):
     widgets_to_make_insensitive = ['buttonbox', 'scalebox']
 
@@ -32,6 +33,7 @@ class ScanGraph(ToolWindow):
 
         if instrument is given, motors can be moved.
         """
+        self._in_scalechanged = False
         if isinstance(windowtitle, int):
             windowtitle = 'Scan #{:d}'.format(windowtitle)
         super().__init__(pkg_resources.resource_filename('cct', 'resource/glade/core_scangraph.glade'), 'scangraph',
@@ -201,12 +203,12 @@ class ScanGraph(ToolWindow):
                          ['%s: %f' % (s, self._data[s][self._cursorindex]) for s in self.visible_signals],
                          fontsize='small', loc='best')
         self.canvas.draw()
-        if not hasattr(self, '_in_scalechanged'):
+        if not self._in_scalechanged:
             self._in_scalechanged = True
             try:
                 self.builder.get_object('cursorscale').set_value(cursorpos)
             finally:
-                del self._in_scalechanged
+                self._in_scalechanged = False
         if self.builder.get_object('show2d_checkbutton').get_active():
             self.redraw_2dimage()
 
@@ -274,7 +276,7 @@ class ScanGraph(ToolWindow):
         self.redraw_cursor()
 
     def on_scalechanged(self, scale):
-        if hasattr(self, '_in_scalechanged'):
+        if self._in_scalechanged:
             return
         self._in_scalechanged = True
         try:
@@ -283,7 +285,7 @@ class ScanGraph(ToolWindow):
             scale.set_value(self.abscissa[self._cursorindex])
             self.redraw_cursor()
         finally:
-            del self._in_scalechanged
+            self._in_scalechanged = False
 
     def on_cursortomax(self, button):
         model, it = self.builder.get_object('counterview').get_selection().get_selected()
@@ -352,7 +354,7 @@ class ScanGraph(ToolWindow):
             # the motor was moving because of a Move to cursor or 
             # Move to peak operation
             self.set_sensitive(True)
-            
+
     def on_movetopeak(self, button):
         self.set_sensitive(False, 'Moving motor {} to peak.'.format(self.abscissaname), ['move_to_peak_button'])
         self.instrument.motors[self.abscissaname].moveto(self._lastpeakposition.val)

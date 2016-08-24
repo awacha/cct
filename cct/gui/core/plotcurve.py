@@ -1,5 +1,6 @@
 import logging
 import traceback
+from typing import Optional
 
 import numpy as np
 import pkg_resources
@@ -40,7 +41,7 @@ class PowerScale(ScaleBase):
     def limit_range_for_scale(self, vmin, vmax, minpos):
         logger.debug('vmin: %g. vmax: %g. minpos: %g, eps: %g' % (vmin, vmax, minpos, 7 / 3 - 4 / 3 - 1))
         if vmin > vmax:
-            return (max(minpos, 7 / 3 - 4 / 3 - 1), max(vmax, max(minpos, 7 / 3 - 4 / 3 - 1)))
+            return max(minpos, 7 / 3 - 4 / 3 - 1), max(vmax, max(minpos, 7 / 3 - 4 / 3 - 1))
         else:
             return (max(vmin, max(minpos, 7 / 3 - 4 / 3 - 1)),
                     max(vmax, max(minpos, 7 / 3 - 4 / 3 - 1)))
@@ -177,7 +178,7 @@ class PlotCurveWidget(BuilderWidget):
                     ['arbunits_yunit', 'dsigmadomega_yunit', 'dsigmadomegathickness_yunit']]):
             self.builder.get_object('dsigmadomega_yunit').set_active(True)
 
-    def request_replot(self, widget):
+    def request_replot(self, widget: Optional[Gtk.RadioMenuItem]):
         try:
             if isinstance(widget, Gtk.RadioMenuItem) and not widget.get_active():
                 # avoid plotting twice when another radio item has been selected
@@ -196,8 +197,7 @@ class PlotCurveWidget(BuilderWidget):
                 xkey = 'tth'
                 dxkey = 'dtth'
                 xlabel = 'Scattering angle ($^\circ$)'
-
-            if self.builder.get_object('q_xunit').get_active():
+            elif self.builder.get_object('q_xunit').get_active():
                 if self.builder.get_object('guinier3d_type').get_active():
                     for c in self._curves:
                         self.axes.errorbar(c['q'], c['y'], c['dy'], c['dq'], label=c['legend'])
@@ -212,7 +212,7 @@ class PlotCurveWidget(BuilderWidget):
                     elif self.builder.get_object('dsigmadomegathickness_yunit').get_active():
                         self.axes.yaxis.set_label_text('$d\sigma/d\Omega\\times t$ (sr$^{-1}$)')
                     else:
-                        raise NotImplementedError
+                        assert False
                     if self.builder.get_object('legend_toggle').get_active():
                         self.axes.legend(loc='best', fontsize='small')
                     self.axes.xaxis.set_label_text('q (nm${-1}$)')
@@ -241,7 +241,7 @@ class PlotCurveWidget(BuilderWidget):
                     elif self.builder.get_object('dsigmadomegathickness_yunit').get_active():
                         self.axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q$ (sr$^{-1}$ nm$^{-1}$)')
                     else:
-                        raise NotImplementedError
+                        assert False
                     if self.builder.get_object('legend_toggle').get_active():
                         self.axes.legend(loc='best', fontsize='small')
                     self.axes.xaxis.set_label_text('q (nm${-1}$)')
@@ -270,7 +270,7 @@ class PlotCurveWidget(BuilderWidget):
                     elif self.builder.get_object('dsigmadomegathickness_yunit').get_active():
                         self.axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q^2$ (sr$^{-1}$ nm$^{-2}$)')
                     else:
-                        raise NotImplementedError
+                        assert False
                     if self.builder.get_object('legend_toggle').get_active():
                         self.axes.legend(loc='best', fontsize='small')
                     self.axes.xaxis.set_label_text('q (nm${-1}$)')
@@ -299,7 +299,7 @@ class PlotCurveWidget(BuilderWidget):
                     elif self.builder.get_object('dsigmadomegathickness_yunit').get_active():
                         self.axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q^2$ (sr$^{-1}$ nm$^{-2}$)')
                     else:
-                        raise NotImplementedError
+                        assert False
                     if self.builder.get_object('legend_toggle').get_active():
                         self.axes.legend(loc='best', fontsize='small')
                     self.axes.xaxis.set_label_text('q (nm${-1}$)')
@@ -328,7 +328,7 @@ class PlotCurveWidget(BuilderWidget):
                     elif self.builder.get_object('dsigmadomegathickness_yunit').get_active():
                         self.axes.yaxis.set_label_text('$d\sigma/d\Omega\cdot t\cdot q^4$ (sr$^{-1}$ nm$^{-4}$)')
                     else:
-                        raise NotImplementedError
+                        assert False
                     if self.builder.get_object('legend_toggle').get_active():
                         self.axes.legend(loc='best', fontsize='small')
                     self.axes.xaxis.set_label_text('q (nm${-1}$)')
@@ -338,6 +338,8 @@ class PlotCurveWidget(BuilderWidget):
                     xkey = 'q'
                     dxkey = 'dq'
                     xlabel = 'q (nm$^{-1}$)'
+            else:
+                assert False
 
             for c in self._curves:
                 self.axes.errorbar(c[xkey], c['y'], c['dy'], c[dxkey], label=c['legend'])
@@ -362,7 +364,7 @@ class PlotCurveWidget(BuilderWidget):
             elif self.builder.get_object('dsigmadomegathickness_yunit').get_active():
                 self.axes.yaxis.set_label_text('$d\sigma/d\Omega\\times t$ (sr$^{-1}$)')
             else:
-                raise NotImplementedError
+                assert False
             self.axes.xaxis.set_label_text(xlabel)
             if self.builder.get_object('legend_toggle').get_active():
                 self.axes.legend(loc='best', fontsize='small')

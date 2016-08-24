@@ -12,8 +12,8 @@ class TelemetryInfo(object):
         sm = psutil.swap_memory()
         la = ', '.join([str(f) for f in os.getloadavg()])
         self.timestamp = time.monotonic()
-        self.processname = multiprocessing.current_process().name,
-        self.rusage_self = resource.getrusage(resource.RUSAGE_SELF),
+        self.processname = multiprocessing.current_process().name
+        self.rusage_self = resource.getrusage(resource.RUSAGE_SELF)
         self.inqueuelen = 0
         self.freephysmem = vm.available
         self.totalphysmem = vm.total
@@ -81,6 +81,13 @@ class TelemetryInfo(object):
             if a in ['timestamp', 'freephysmem', 'totalphysmem', 'freeswap', 'totalswap']:
                 setattr(tm, a, getattr(self, a) + getattr(other, a))
         return tm
+
+    def __radd__(self, other):
+        if other == 0:
+            # implement this special case, because the built-in sum([tm1, tm2, tm3]) starts with res=0; res = res + tm1
+            return self
+        else:
+            return NotImplemented
 
     def user_attributes(self):
         return [d for d in self.__dict__ if d not in self.__class__.__dict__]

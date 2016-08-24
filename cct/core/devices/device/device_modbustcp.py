@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+# noinspection PyPep8Naming
 class DeviceBackend_ModbusTCP(DeviceBackend):
     """Device with Modbus over TCP connection.
     """
@@ -94,4 +95,3 @@ class DeviceBackend_ModbusTCP(DeviceBackend):
         self.lasttimes['recv'] = time.monotonic()
         self.counters['inmessages'] += 1
         return result
-

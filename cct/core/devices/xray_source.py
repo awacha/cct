@@ -7,8 +7,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+# noinspection PyPep8Naming
 class GeniX_Backend(DeviceBackend_ModbusTCP):
-
     _interlock_fixing_time = 3  # time to ascertain if the interlock is really OK.
 
     def __init__(self, *args, **kwargs):
@@ -186,10 +186,10 @@ class GeniX(Device):
 
     backend_interval = 0.3
 
-    backend_class = DeviceBackend_ModbusTCP
+    backend_class = GeniX_Backend
 
     def shutter(self, requested_status):
-        "Open or close the shutter"
+        """Open or close the shutter"""
         self.execute_command('shutter', requested_status)
 
     def reset_faults(self):

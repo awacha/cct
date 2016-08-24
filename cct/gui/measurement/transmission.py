@@ -38,21 +38,21 @@ class TransmissionMeasurement(ToolWindow):
             model.remove(it)
 
     def on_start(self, button):
-        if button.get_label()=='Start':
+        if button.get_label() == 'Start':
             transmstore = self.builder.get_object('transmstore')
             for row in transmstore:
-                row[1]='--'
-                row[2]='--'
-                row[3]='--'
-                row[4]='--'
-                row[5]='--'
-                row[6]='--'
-                row[7]=False
-                row[8]=0
-            transmstore[0][7]=True
+                row[1] = '--'
+                row[2] = '--'
+                row[3] = '--'
+                row[4] = '--'
+                row[5] = '--'
+                row[6] = '--'
+                row[7] = False
+                row[8] = 0
+            transmstore[0][7] = True
 
             button.set_label('Stop')
-            self._pulser_timeout=GLib.timeout_add(100,self.pulser)
+            self._pulser_timeout = GLib.timeout_add(100, self.pulser)
             samplenames = [row[0] for row in self.builder.get_object('transmstore')]
             self.execute_command(
                 Transmission, (
@@ -80,36 +80,35 @@ class TransmissionMeasurement(ToolWindow):
 
     def on_cmd_detail(self, interpreter, commandname, msg):
         transmstore = self.builder.get_object('transmstore')
-        what, samplename, value=msg
+        what, samplename, value = msg
         for i in range(len(transmstore)):
-            if transmstore[i][0]==samplename:
-                if what=='dark':
-                    transmstore[i][1]=str(value)
-                elif what=='empty':
-                    transmstore[i][2]=str(value)
-                elif what=='sample':
-                    transmstore[i][3]=str(value)
-                elif what=='transmission':
-                    transmstore[i][4]=str(value)
+            if transmstore[i][0] == samplename:
+                if what == 'dark':
+                    transmstore[i][1] = str(value)
+                elif what == 'empty':
+                    transmstore[i][2] = str(value)
+                elif what == 'sample':
+                    transmstore[i][3] = str(value)
+                elif what == 'transmission':
+                    transmstore[i][4] = str(value)
                     mu = -value.log() / self.instrument.services['samplestore'].get_sample(samplename).thickness
-                    transmstore[i][5]=str(mu)
-                    transmstore[i][6]=str(1/mu)
-                    transmstore[i][7]=False
-                    transmstore[i][8]=0
-                    if i+1<len(transmstore):
-                        transmstore[i+1][7]=True
+                    transmstore[i][5] = str(mu)
+                    transmstore[i][6] = str(1 / mu)
+                    transmstore[i][7] = False
+                    transmstore[i][8] = 0
+                    if i + 1 < len(transmstore):
+                        transmstore[i + 1][7] = True
                 else:
                     raise ValueError(what)
         return
 
     def pulser(self):
         for row in self.builder.get_object('transmstore'):
-            row[8]+=1
+            row[8] += 1
         return True
 
     def on_samplenamerenderercombo_changed(self, samplenamerenderercombo, path, it):
         transmstore = self.builder.get_object('transmstore')
         samplenamestore = self.builder.get_object('samplenamestore')
-        samplename=samplenamestore[it][0]
-        transmstore[path][0]=samplename
-
+        samplename = samplenamestore[it][0]
+        transmstore[path][0] = samplename

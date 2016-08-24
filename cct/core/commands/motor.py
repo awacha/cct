@@ -133,7 +133,7 @@ class Where(Command):
             ret = self.get_motor(self.motorname).where()
             txt = '{}: {:8.3f}'.format(self.motorname, ret)
         else:
-            ret = dict([(m, self.get_motor(1).where())
+            ret = dict([(m, self.get_motor(m).where())
                         for m in self.instrument.motors])
             poslabels = {m: '{:8.3f}'.format(ret[m]) for m in ret}
             longestmotorname = max(

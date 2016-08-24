@@ -11,8 +11,8 @@ class Pilatus(ToolWindow):
     required_devices = ['pilatus']
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.indicators = {}
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args):
         grid = self.builder.get_object('constants_grid')
@@ -133,14 +133,14 @@ class Pilatus(ToolWindow):
         elif variablename == 'starttime':
             self.indicators[variablename].set_value(str(value), IndicatorState.NEUTRAL)
         elif variablename == 'diskfree':
-            value_GB = value / 1024 ** 2
-            if value_GB < 10:
+            value_gigabyte = value / 1024 ** 2
+            if value_gigabyte < 10:
                 state = IndicatorState.WARNING
-            elif value_GB < 2:
+            elif value_gigabyte < 2:
                 state = IndicatorState.ERROR
             else:
                 state = IndicatorState.OK
-            self.indicators[variablename].set_value('%.3f GB' % value_GB, state)
+            self.indicators[variablename].set_value('%.3f GB' % value_gigabyte, state)
         elif variablename in ['wpix', 'hpix']:
             self.indicators['wpix'].set_value('%d×%d' % (self.instrument.get_device('pilatus').get_variable('wpix'),
                                                          self.instrument.get_device('pilatus').get_variable('hpix')),

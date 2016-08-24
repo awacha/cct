@@ -28,12 +28,14 @@ class TelemetryManager(Service):
         super().__init__(*args, **kwargs)
         self.telemetries = {}
         self.timestamps = {}
+        self._memlog_timeout_handle = None
+        self.memlog_file = None
 
     def start(self):
         super().start()
         self.init_memlog_file()
         self._memlog_timeout_handle = GLib.timeout_add(self.state['memlog_interval'] * 1000,
-                                                       self.write_memlog_line())
+                                                       self.write_memlog_line)
 
     def incoming_telemetry(self, label, telemetry: TelemetryInfo):
         self.telemetries[label] = telemetry
@@ -87,7 +89,7 @@ class TelemetryManager(Service):
                     memsizes.append(tm.memusage)
                 except KeyError:
                     memsizes.append(0)
-            data = [time.time(), (datetime.datetime.now() - self.starttime).total_seconds(), sum(memsizes)] + memsizes
+            data = [time.time(), time.monotonic() - self.starttime, sum(memsizes)] + memsizes
             f.write('\t'.join(['{:.3f}'.format(d) for d in data]) + '\n')
         return True
 

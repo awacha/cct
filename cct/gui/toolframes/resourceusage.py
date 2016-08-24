@@ -14,6 +14,10 @@ def split_time(time_seconds) -> Tuple[int, int, int, int]:
 
 
 class ResourceUsageFrame(ToolFrame):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._telemetry_connection = None
+
     def init_gui(self, *args, **kwargs):
         self._telemetry_connection = self.instrument.services['telemetrymanager'].connect('telemetry',
                                                                                           self.on_telemetry)
@@ -41,4 +45,3 @@ class ResourceUsageFrame(ToolFrame):
                                                       tm.freeswap / tm.totalswap * 100))
         self.builder.get_object('loadavg_label').set_text(tm.loadavg)
         return False
-

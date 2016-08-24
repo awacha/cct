@@ -117,7 +117,7 @@ class CapillaryMeasurement(ToolWindow):
         return True
 
     def do_fit(self, left):
-        if not (hasattr(self, '_xdata') and hasattr(self, '_ydata')):
+        if (self._xdata is None) or (self._ydata is None):
             return
         xmin, xmax, ymin, ymax = self.axes.axis()
         x = self._xdata
@@ -129,9 +129,9 @@ class CapillaryMeasurement(ToolWindow):
             signs = (-1,)
         else:
             signs = (1,)
-        pos, hwhm, y0, A = findpeak_single(x, y, signs=signs, curve='Lorentz')
+        pos, hwhm, y0, amplitude = findpeak_single(x, y, signs=signs, curve='Lorentz')
         x = np.linspace(x.min(), x.max(), 100 * len(x))
-        curve = self.axes.plot(x, A * hwhm ** 2 / (hwhm ** 2 + (pos - x) ** 2) + y0, 'r-', label='')[0]
+        curve = self.axes.plot(x, amplitude * hwhm ** 2 / (hwhm ** 2 + (pos - x) ** 2) + y0, 'r-', label='')[0]
         if left:
             try:
                 self._negpeak_curve.remove()
@@ -140,7 +140,7 @@ class CapillaryMeasurement(ToolWindow):
                 pass
             assert self._negpeak_text is None
             self._negpeak_curve = curve
-            self._negpeak_text = self.axes.text(pos.val, A.val + y0.val, str(pos), ha='center', va='top')
+            self._negpeak_text = self.axes.text(pos.val, amplitude.val + y0.val, str(pos), ha='center', va='top')
         else:
             try:
                 self._pospeak_curve.remove()
@@ -149,7 +149,7 @@ class CapillaryMeasurement(ToolWindow):
                 pass
             assert self._pospeak_text is None
             self._pospeak_curve = curve
-            self._pospeak_text = self.axes.text(pos.val, A.val + y0.val, str(pos), ha='center', va='bottom')
+            self._pospeak_text = self.axes.text(pos.val, amplitude.val + y0.val, str(pos), ha='center', va='bottom')
         self.canvas.draw_idle()
         if left:
             self.builder.get_object('leftval_adjustment').set_value(pos.val)

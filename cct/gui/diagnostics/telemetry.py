@@ -4,8 +4,10 @@ from ..core.functions import update_comboboxtext_choices
 from ..core.toolwindow import ToolWindow
 from ...core.services.telemetry import TelemetryManager
 from ...core.utils.telemetry import TelemetryInfo
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class ResourceUsage(ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -19,15 +21,15 @@ class ResourceUsage(ToolWindow):
         self._telemetry_handler = self.instrument.services['telemetrymanager'].connect('telemetry', self.on_telemetry)
 
     def on_process_changed(self, selector):
-        process=selector.get_active_text()
-        if process=='-- overall --':
-            process=None
+        process = selector.get_active_text()
+        if process == '-- overall --':
+            process = None
         self.update_telemetry(process, self.instrument.services['telemetrymanager'][process])
 
     def update_selector(self):
         return update_comboboxtext_choices(
             self.builder.get_object('process_selector'),
-            sorted(list(self.instrument.get_telemetrykeys()) + ['-- overall --'])
+            sorted(list(self.instrument.services['telemetrymanager'].keys()) + ['-- overall --'])
         )
 
     def update_telemetry(self, label, tm):

@@ -223,6 +223,7 @@ class Device(Callbacks):
         self._msgidcounter += 1
         msg = Message(msgtype, self._msgidcounter, self.name + '__frontend', **kwargs)
         self._queue_to_backend.put(msg)
+        del msg
 
     def send_config(self, configdict):
         """Update the config dictionary in the main process and the backend as well."""
@@ -364,6 +365,7 @@ class Device(Callbacks):
         logger.info('Device ' + self.name + ' is ready.')
         return False
 
+    # noinspection PyMethodMayBeStatic
     def do_error(self, propertyname: str, exception: Exception, tb: str) -> bool:
         """default handler for the 'error' signal"""
         logger.error(
@@ -418,12 +420,13 @@ class Device(Callbacks):
                   self.loglevel, self.logfile, self.log_formatstr, self.max_busy_level, self._busy),
             kwargs=self._get_kwargs_for_backend(),
         )
-        self._background_process.daemon = True
+        self._background_process.daemon = False
         self.background_startup_count += 1
         self._background_process.start()
         self._idle_handler = GLib.idle_add(self._idle_worker)
         logger.debug('Background process for {} has been started'.format(self.name))
 
+    # noinspection PyMethodMayBeStatic
     def _get_kwargs_for_backend(self):
         """You can supply custom keyword arguments to the __init__() method of
         the backend process by overriding this method and returning the desired

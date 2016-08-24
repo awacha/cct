@@ -56,3 +56,6 @@ class Service(Callbacks):
     def stop(self):
         """Stop operation."""
         self.starttime = None
+
+    def is_running(self):
+        return self.starttime is not None

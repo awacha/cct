@@ -136,11 +136,12 @@ Channel {int}: Temperature = (?P<temperature2>{float})C, Rel. Humidity = (?P<hum
         int=RE_INT, float=RE_FLOAT).encode('ascii'), re.MULTILINE)
 
 
+# noinspection PyPep8Naming
 class Pilatus_Backend(DeviceBackend_TCP):
     idle_wait = 1.0
-    
+
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._expected_status = 'idle'
         self._exposureendsat = None
         # a flag which has to be acquired when the detector is busy: trimming or exposing.
@@ -152,7 +153,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
             # during these times.
             return
         elif ((self.properties['_status'] == 'idle') and (
-            time.monotonic() - self.timestamps['_status']) < self.idle_wait):
+                    time.monotonic() - self.timestamps['_status']) < self.idle_wait):
             # if the previous exposure has just finished, wait a little,
             # in case we are in a scan and want to start another exposure
             # shortly.
@@ -163,7 +164,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
     def query_variable(self, variablename: str) -> bool:
         if variablename in ['gain', 'threshold', 'vcmp']:
             self.send_message(b'SetThreshold\n', expected_replies=1, asynchronous=False)
-        elif variablename in ['trimfile', 'wpix', 'hpix', 'sel_bank', 'sel_module', 'sel_chip']:
+        elif variablename in ['trimfile', 'wpix', 'hpix', 'sel_bank', 'sel_module', 'sel_chip', 'telemetry_date']:
             self.send_message(b'Telemetry\n', expected_replies=1, asynchronous=False)
         elif variablename.startswith('humidity') or variablename.startswith('temperature'):
             self.send_message(b'THread\n', expected_replies=1, asynchronous=False)
@@ -311,10 +312,11 @@ class Pilatus_Backend(DeviceBackend_TCP):
                 raise DeviceError('Unknown kill message from Pilatus: ' + origmessage.decode('utf-8'))
             self.on_end_exposure(status == b'OK', b'')
         elif idnum == 15:  # several commands respond with idnum==15, check all.
+            matched = None
             for regex in [RE_EXPTIME, RE_EXPPERIOD, RE_TAU_ON, RE_TAU_SETON, RE_TAU_SETOFF, RE_TAU_OFF, RE_NIMAGES,
-                          RE_EXPSTART, RE_SETTHRESHOLD, RE_SETTHRESHOLD_ACK, RE_IMGMODE]:
-                m = regex.match(message)
-                if m is None:
+                          RE_EXPSTART, RE_SETTHRESHOLD, RE_SETTHRESHOLD_ACK, RE_IMGMODE, RE_SETLIMTH]:
+                matched = regex.match(message)
+                if matched is None:
                     continue
                 for var, conversion in [('exptime', float), ('expperiod', float),
                                         ('tau', float), ('cutoff', float),
@@ -323,9 +325,16 @@ class Pilatus_Backend(DeviceBackend_TCP):
                                         ('threshold', float), ('vcmp', float),
                                         ('gain', lambda x: x.decode('utf-8')),
                                         ('trimfile', lambda x: x.decode('utf-8')),
-                                        ('imgmode', lambda x: x.decode('utf-8'))]:
+                                        ('imgmode', lambda x: x.decode('utf-8')),
+                                        ('limtemp_lo0', float), ('limtemp_hi0', float),
+                                        ('limtemp_lo1', float), ('limtemp_hi1', float),
+                                        ('limtemp_lo2', float), ('limtemp_hi2', float),
+                                        ('limhum_lo0', float), ('limhum_hi0', float),
+                                        ('limhum_lo1', float), ('limhum_hi1', float),
+                                        ('limhum_lo2', float), ('limhum_hi2', float),
+                                        ]:
                     try:
-                        self.update_variable(var, conversion(m.group(var)))
+                        self.update_variable(var, conversion(matched.group(var)))
                     except IndexError:
                         continue
                 if regex is RE_EXPSTART:
@@ -338,8 +347,10 @@ class Pilatus_Backend(DeviceBackend_TCP):
             elif not message:
                 # empty message
                 pass
-            else:
+            elif matched is None:
                 raise DeviceError('Unknown message from Pilatus with idnum==15: ' + origmessage.decode('utf-8'))
+            else:
+                pass
         elif idnum == 16:  # return of ShowPID command.
             m = RE_PID.match(message)
             if m is None:
@@ -387,7 +398,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
             self.watchdog.disable()
             self.send_message(
                 'SetThreshold {} {:f}\n'.format(arguments[1].decode('ascii'), arguments[0]).encode('ascii'),
-                expected_replies=1, asynchronous=False)
+                expected_replies=1, asynchronous=False, timeout=30)
             logger.debug('Setting threshold to {0[0]:f} (gain {0[1]})'.format(arguments))
         elif commandname == 'expose':
             #            if self.is_busy():
@@ -449,6 +460,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
 
     def on_startupdone(self):
         self.update_variable('_status', 'idle')
+
 
 class Pilatus(Device):
     log_formatstr = '{_status}\t{exptime}\t{humidity0}\t{humidity1}\t{humidity2}\t{temperature0}\t{temperature1}\t{temperature2}'
