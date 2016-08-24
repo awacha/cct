@@ -401,7 +401,7 @@ class DeviceBackend_TCP(DeviceBackend):
         del msg
 
     def queryall(self):
-        if self.outqueue.qsize() > self.outqueue_query_limit:
+        if self.tcp_outqueue.qsize() > self.outqueue_query_limit:
             # do not query all if there are too many messages waiting to be sent to the device.
             return
         return super().queryall()

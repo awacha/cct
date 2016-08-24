@@ -6,4 +6,4 @@
 - Check warnings and weak warnings in the code (PyCharm code inspections)
 - Extensive testing (manual use)
 #- abolish direct usage of Notify in favor of gui.core.functions.notify()
-- sendqueue fills unboundedly in motors.
+#- sendqueue fills unboundedly in motors.

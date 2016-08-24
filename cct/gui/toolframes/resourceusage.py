@@ -10,7 +10,7 @@ def split_time(time_seconds) -> Tuple[int, int, int, int]:
     hours = (time_seconds - days * (24 * 3600)) // 3600
     mins = (time_seconds - days * 24 * 3600 - hours * 3600) // 60
     secs = (time_seconds - days * 24 * 3600 - hours * 3600 - mins * 60)
-    return days, hours, mins, secs
+    return int(days), int(hours), int(mins), int(secs)
 
 
 class ResourceUsageFrame(ToolFrame):
@@ -36,7 +36,7 @@ class ResourceUsageFrame(ToolFrame):
         self.builder.get_object('livetime_label').set_text('{:d}d.{:d}:{:d}:{:d}'.format(*split_time(
             tm.systemtime + tm.usertime)))
         self.builder.get_object('memory_label').set_text(
-            '{:.2f} MB'.format(tm.memusage))
+            '{:.2f} MB'.format(tm.memusage / 1024 / 1024))
         self.builder.get_object('freemem_label').set_text(
             '{:.2f} from {:.2f} GB ({:.2f} %)'.format(tm.freephysmem / 1073741824, tm.totalphysmem / 1073741824,
                                                       tm.freephysmem / tm.totalphysmem * 100))

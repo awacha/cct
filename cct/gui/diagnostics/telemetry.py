@@ -44,7 +44,7 @@ class ResourceUsage(ToolWindow):
         model.clear()
         model.append(['User time (sec):', '{:.2f}'.format(tm.usertime)])
         model.append(['System time (sec):', '{:.2f}'.format(tm.systemtime)])
-        model.append(['Memory usage (MB):', '{:.2f}'.format(tm.memusage)])
+        model.append(['Memory usage (MB):', '{:.2f}'.format(tm.memusage / 1024 / 1024)])
         model.append(['Page faults without I/O:', '{:d}'.format(tm.pagefaultswithoutio)])
         model.append(['Page faults with I/O:', '{:d}'.format(tm.pagefaultswithio)])
         model.append(['Number of fs input operations:', '{:d}'.format(tm.fsinput)])

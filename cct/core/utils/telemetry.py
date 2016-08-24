@@ -23,6 +23,7 @@ class TelemetryInfo(object):
 
     @property
     def memusage(self):
+        """Return the memory usage in bytes."""
         assert isinstance(self.rusage_self, resource.struct_rusage)
         return self.rusage_self.ru_maxrss * resource.getpagesize()
 

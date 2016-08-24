@@ -16,7 +16,8 @@ class TelemetryManager(Service):
     name = 'telemetrymanager'
 
     state = {'memlog_file_basename': 'memoryusage',
-             'memlog_interval': 30.0,}
+             'memlog_interval': 30.0,
+             'overall_telemetry_interval': 1.0}
 
     __signals__ = {
         # emitted when telemetry information arrives from a unit. ARguments are
@@ -30,6 +31,7 @@ class TelemetryManager(Service):
         self.timestamps = {}
         self._memlog_timeout_handle = None
         self.memlog_file = None
+        self._last_overall_telemetry_emit = 0
 
     def start(self):
         super().start()
@@ -41,6 +43,9 @@ class TelemetryManager(Service):
         self.telemetries[label] = telemetry
         self.timestamps[label] = time.monotonic()
         self.emit('telemetry', label, telemetry)
+        if (time.monotonic() - self._last_overall_telemetry_emit) > self.state['overall_telemetry_interval']:
+            self.emit('telemetry', None, self.get_telemetry(None))
+            self._last_overall_telemetry_emit = time.monotonic()
 
     def get_telemetry(self, label) -> TelemetryInfo:
         if label is None:
