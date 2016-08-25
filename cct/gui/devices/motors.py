@@ -199,8 +199,8 @@ class MotorConfig(ToolWindow):
     destroy_on_close = True
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.motorname = None
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, motorname):
         self.motorname = motorname
@@ -282,8 +282,8 @@ class MotorMover(ToolWindow):
     widgets_to_make_insensitive = ['close_button', 'motorselector', 'target_spin', 'relative_checkbutton']
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.motorname = None
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, motorname):
         self.motorname = motorname

@@ -9,7 +9,7 @@ from .service import Service, ServiceError
 from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class SampleStoreError(ServiceError):
@@ -36,7 +36,8 @@ class Sample(object):
     situation = None  # a string. Can be any element of VALID_SITUATIONS
 
     @classmethod
-    def fromdict(cls, dic):
+    def fromdict(cls, dic: Dict):
+        logger.debug('Sample::fromdict: {}'.format(dic))
         return cls(title=dic['title'],
                    positionx=ErrorValue(
                        dic['positionx.val'], dic['positionx.err']),
@@ -55,7 +56,7 @@ class Sample(object):
                    situation=dic['situation'],
                    )
 
-    def todict(self):
+    def todict(self) -> Dict:
         return {'title': self.title,
                 'positionx.val': self.positionx.val,
                 'positionx.err': self.positionx.err,
@@ -73,14 +74,15 @@ class Sample(object):
                 'category': self.category,
                 'situation': self.situation}
 
-    def toparam(self):
+    def toparam(self) -> str:
         dic = self.todict()
         return '\n'.join(['sample.' + k + ':\t' + str(dic[k]) for k in dic]) + '\n'
 
-    def __init__(self, title, positionx=0.0, positiony=0.0, thickness=1.0,
-                 transmission=1.0, preparedby='Anonymous', preparetime=None,
-                 distminus=0.0, description='', category='sample', situation='vacuum'):
-
+    def __init__(self, title: str, positionx: Union[float, ErrorValue] = 0.0, positiony: Union[float, ErrorValue] = 0.0,
+                 thickness: Union[float, ErrorValue] = 1.0, transmission: Union[float, ErrorValue] = 1.0,
+                 preparedby: str = 'Anonymous', preparetime: Optional[datetime.datetime] = None,
+                 distminus: Union[float, ErrorValue] = 0.0, description: str = '', category: str = 'sample',
+                 situation: str = 'vacuum'):
         if isinstance(title, self.__class__):
             self.title = title.title
             self.positionx = title.positionx
@@ -118,15 +120,15 @@ class Sample(object):
         if not isinstance(self.distminus, ErrorValue):
             self.distminus = ErrorValue(self.distminus, 0)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'Sample({0.title}, ({0.positionx:.3f}, {0.positiony:.3f}), {0.thickness:.4f}, {0.transmission:.4f})'.format(
             self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '{0.title}, ({0.positionx:.3f}, {0.positiony:.3f}), {0.thickness:.4f} cm, transm: {0.transmission:.4f}'.format(
             self)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Union['Sample', str]) -> bool:
         if isinstance(other, self.__class__):
             return self.title == other.title
         elif isinstance(other, str):
@@ -134,10 +136,10 @@ class Sample(object):
         else:
             return NotImplemented
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not (self == other)
 
-    def get_header(self):
+    def get_header(self) -> Dict:
         hed = {'Title': self.title, 'Preparedby':
             self.preparedby, 'Preparetime': self.preparetime,
                'SampleDescription': self.description}
@@ -152,16 +154,16 @@ class Sample(object):
                 hed[key + 'Error'] = self.__getattribute__(attr).err
         return hed
 
-    def __ge__(self, other):
+    def __ge__(self, other) -> bool:
         return self.title >= other.title
 
-    def __gt__(self, other):
+    def __gt__(self, other) -> bool:
         return self.title > other.title
 
-    def __lt__(self, other):
+    def __lt__(self, other) -> bool:
         return self.title < other.title
 
-    def __le__(self, other):
+    def __le__(self, other) -> bool:
         return self.title <= other.title
 
 
@@ -173,17 +175,21 @@ class SampleStore(Service):
     name = 'samplestore'
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._list = []
         self._active = None
+        super().__init__(*args, **kwargs)
 
     def load_state(self, dictionary: Dict):
         super().load_state(dictionary)
         if isinstance(dictionary['list'], list):
+            logger.debug('Loading samples from a list')
             self._list = [Sample.fromdict(sampledict)
                           for sampledict in dictionary['list']]
         else:
+            logger.debug('Loading samples from a dict')
             self._list = [Sample.fromdict(sampledict) for sampledict in dictionary['list'].values()]
+        logger.debug('Loaded {:d} samples'.format(len(self._list)))
+        assert len(self._list) == len(set([s.title for s in self._list]))
         self._list = sorted(self._list, key=lambda s: s.title)
         self._active = dictionary['active']
         self.emit('list-changed')
@@ -192,6 +198,7 @@ class SampleStore(Service):
         dic = super().save_state()
         dic['active'] = self._active
         dic['list'] = {x.title: x.todict() for x in self._list}
+        logger.debug('Saved {:d} samples.'.format(len(dic['list'])))
         return dic
 
     def add(self, sample: Sample):

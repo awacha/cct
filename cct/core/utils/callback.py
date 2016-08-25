@@ -1,5 +1,6 @@
+import gc
 import itertools
-from typing import Callable
+from typing import Callable, Optional
 
 
 class SignalFlags(object):
@@ -32,10 +33,10 @@ class Callbacks(object):
     """
 
     __signals__ = {}
+    _nextsignalconnectionid = 0
 
     def __init__(self):
         self.__signalhandles = []
-        self._nextsignalconnectionid = 0
 
     @classmethod
     def _get_signal_description(cls, name):
@@ -67,13 +68,18 @@ class Callbacks(object):
                                      'callback': callback,
                                      'args': args,
                                      'kwargs': kwargs,
-                                     'id': self._nextsignalconnectionid,
+                                     'id': self.__class__._nextsignalconnectionid,
                                      'blocked': 0})
-        self._nextsignalconnectionid += 1
+        self.__class__._nextsignalconnectionid += 1
         return self.__signalhandles[-1]['id']
 
-    def disconnect(self, connectionid: int):
+    def disconnect(self, connectionid: Optional[int] = None):
         """Disconnect a callback signal."""
+        # if connectionid is None:
+        #    return
+        assert isinstance(connectionid, int)
+        if not [s for s in self.__signalhandles if s['id'] == connectionid]:
+            raise ValueError('No signal hander with ID {:d} has been registered with this object!'.format(connectionid))
         self.__signalhandles = [s for s in self.__signalhandles if s['id'] != connectionid]
 
     def handler_block(self, connectionid: int):
@@ -141,6 +147,11 @@ class Callbacks(object):
         return None
 
     def _call_default_callback(self, signal: str, *args):
-        if hasattr(self, 'do_' + signal) and callable(getattr(self, 'do_' + signal)):
-            return getattr(self, 'do_' + signal)(*args)
+        if hasattr(self, 'do_' + signal.replace('-', '_')) and callable(
+                getattr(self, 'do_' + signal.replace('-', '_'))):
+            return getattr(self, 'do_' + signal.replace('-', '_'))(*args)
         return None
+
+    def cleanup_callback_handlers(self):
+        self.__signalhandles = []
+        gc.collect()

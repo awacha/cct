@@ -50,7 +50,8 @@ class ScanGraph(ToolWindow):
             raise TypeError('Unknown type for data: %s' % type(data))
         if len(signals) < 2:
             raise ValueError('At least one signal has to be given apart from the abscissa')
-        self.required_devices = ['Motor_' + self.abscissaname]
+        if instrument.online:
+            self.required_devices = ['Motor_' + self.abscissaname]
         self._cursorindex = 0
         self._cursor = None
         self._lastimage = None
@@ -115,9 +116,9 @@ class ScanGraph(ToolWindow):
         if not self.is_scan_mode():
             self.start_view_mode()
         # if we have self.instrument, make motor moving buttons visible and sensitive.
-        self.builder.get_object('move_to_cursor_button').set_visible(self.instrument is not None)
-        self.builder.get_object('move_to_peak_button').set_visible(self.instrument is not None)
-        self.builder.get_object('move_to_cursor_button').set_sensitive(self.instrument is not None)
+        self.builder.get_object('move_to_cursor_button').set_visible(self.instrument.online)
+        self.builder.get_object('move_to_peak_button').set_visible(self.instrument.online)
+        self.builder.get_object('move_to_cursor_button').set_sensitive(self.instrument.online)
         self.builder.get_object('move_to_peak_button').set_sensitive(False)
         self.redraw_signals()
 

@@ -15,8 +15,8 @@ def split_time(time_seconds) -> Tuple[int, int, int, int]:
 
 class ResourceUsageFrame(ToolFrame):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._telemetry_connection = None
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
         self._telemetry_connection = self.instrument.services['telemetrymanager'].connect('telemetry',

@@ -233,4 +233,4 @@ class CapillaryMeasurement(ToolWindow):
         self._samplestoreconnection = None
 
     def on_samplelist_changed(self, samplestore):
-        update_comboboxtext_choices(self.builder.get_object('sampleselector'), sorted(samplestore))
+        update_comboboxtext_choices(self.builder.get_object('sampleselector'), sorted([x.title for x in samplestore]))

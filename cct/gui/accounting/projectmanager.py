@@ -8,6 +8,10 @@ from ...core.instrument.privileges import PRIV_PROJECTMAN
 class ProjectManager(ToolWindow):
     privlevel = PRIV_PROJECTMAN
 
+    def init_gui(self, *args, **kwargs):
+        self.builder.get_object('apply_button').set_sensitive(False)
+        self.update_gui()
+
     def on_mainwidget_map(self, window):
         if super().on_mainwidget_map(window):
             return True

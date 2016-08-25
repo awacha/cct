@@ -7,9 +7,9 @@ from ...core.commands.transmission import Transmission
 
 class TransmissionMeasurement(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._samplestoreconnection = None
         self._pulser_timeout = None
+        super().__init__(*args, **kwargs)
 
     def on_mainwidget_map(self, window):
         if super().on_mainwidget_map(window):

@@ -24,7 +24,6 @@ langman.set_search_path(langman.get_search_path() + [language_def_path])
 
 class ScriptMeasurement(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.sourcebuffer = None
         self.filename = None
         self.filename_folder = None
@@ -36,6 +35,7 @@ class ScriptMeasurement(ToolWindow):
         self._pausingprogress = None
         self._pausingpulsehandler = None
         self._helpdialog = None
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
         view = self.builder.get_object('sourceview')

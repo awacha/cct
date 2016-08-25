@@ -35,9 +35,15 @@ class ToolWindow(ToolFrame):
     def on_mainwidget_map(self, window):
         if super().on_mainwidget_map(window):
             # something did not succeed.
+            logger.warning('Error happened while mapping toolwindow ' + self.gladefile)
             self.widget.destroy()
+            #            self.widget.get_toplevel().destroy()
+            return True
+        logger.debug('Successfully mapped ToolWindow ' + self.gladefile)
+        return False
 
     def on_window_delete(self, window: Gtk.Window, event: Optional[Gdk.Event]):
+        logger.debug('Deleting toolwindow ' + self.gladefile)
         if not self.can_close():
             error_message(self.widget, 'Cannot close this window',
                           self._inhibit_close_reason)
@@ -49,6 +55,7 @@ class ToolWindow(ToolFrame):
         else:
             # hide the window and break the callback chain, thus the default
             # handler won't be executed and the window won't be deleted.
+            logger.debug('Hiding toolwindow ' + self.gladefile)
             self.widget.hide()
             return True
 

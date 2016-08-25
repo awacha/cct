@@ -16,7 +16,7 @@ from ..utils.callback import Callbacks, SignalFlags
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DummyTm(object):
@@ -199,7 +199,7 @@ class Instrument(Callbacks):
         self.config['devices'] = {}
         self.config['services'] = {
             'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {},
-            'webstatefilewriter': {}, 'telemetrymanager': {'memlog_file_basename': 'memlog', 'memlog_interval': 60}}
+            'webstate': {}, 'telemetrymanager': {'memlog_file_basename': 'memlog', 'memlog_interval': 60}}
         self.config['services']['accounting'] = {'operator': 'CREDOoperator',
                                                  'projectid': 'Project ID',
                                                  'projectname': 'Project name',
@@ -324,8 +324,11 @@ class Instrument(Callbacks):
             'out' if the beamstop motors are at their calibrated out-of-beam position
             'unknown' otherwise
         """
-        bsy = self.motors['BeamStop_Y'].where()
-        bsx = self.motors['BeamStop_X'].where()
+        try:
+            bsy = self.motors['BeamStop_Y'].where()
+            bsx = self.motors['BeamStop_X'].where()
+        except KeyError:
+            return 'unknown'
         if abs(bsx - self.config['beamstop']['in'][0]) < 0.001 and abs(bsy - self.config['beamstop']['in'][1]) < 0.001:
             return 'in'
         if abs(bsx - self.config['beamstop']['out'][0]) < 0.001 and abs(
@@ -488,11 +491,12 @@ class Instrument(Callbacks):
                               ('samplestore', SampleStore),
                               ('exposureanalyzer', ExposureAnalyzer),
                               ('accounting', Accounting),
-                              ('webstatefilewriter', WebStateFileWriter),
+                              ('webstate', WebStateFileWriter),
                               ('telemetrymanager', TelemetryManager),
                               ]:
             assert issubclass(sclass, Service)
             print('Initializing service {}.'.format(sname))
+            assert sclass.name == sname
             self.services[sname] = sclass(self, self.configdir, self.config['services'][sname])
             self._service_connections[sname] = [self.services[sname].connect('shutdown', self.on_service_shutdown)]
 

@@ -15,7 +15,6 @@ logger.setLevel(logging.INFO)
 
 class ScanMeasurement(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._scanfsn = None
         self.scangraph = None
         self._exposureanalyzer_connections = []
@@ -23,6 +22,7 @@ class ScanMeasurement(ToolWindow):
         self._scan_arguments = ()
         self._scan_commandclass = None
         self._scan_commandline = ''
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
         update_comboboxtext_choices(self.builder.get_object('motorselector'),

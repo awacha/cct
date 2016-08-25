@@ -1,3 +1,4 @@
+import logging
 import os
 import traceback
 import weakref
@@ -10,6 +11,9 @@ from .dialogs import error_message
 from ...core.devices import Device, Motor
 from ...core.instrument.instrument import Instrument
 from ...core.instrument.privileges import PRIV_LAYMAN
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class ToolFrame(BuilderWidget):
@@ -26,14 +30,24 @@ class ToolFrame(BuilderWidget):
         self._sensitive = True
         self._device_connections = {}
         self._widgets_insensitive = {}
+        # check if all required devices are available
+        for d in self.required_devices:
+            try:
+                self.instrument.get_device(d)
+            except KeyError as exc:
+                self.widget.set_sensitive(False)
+                # error_message(self.widget, 'Device error', 'Required device {} not present.'.format(d))
+                logger.error('Required device ' + d + ' not present while mapping toolframe ' + self.gladefile)
+                raise
         try:
             self.init_gui(*args, **kwargs)
         except Exception as exc:
             error_message(self.widget, 'Cannot initialize toolframe ' + mainwidgetname, traceback.format_exc())
             raise
         self.builder.connect_signals(self)
-        self.widget.show_all()
-        self._instrument_connections = [
+        # show all subwidgets but not ourselves.
+        self.widget.foreach(lambda x: x.show_all())
+        self._accounting_connections = [
             self.instrument.services['accounting'].connect('privlevel-changed', self.on_privlevel_changed)]
 
     def on_privlevel_changed(self, accounting, newprivlevel):
@@ -77,20 +91,15 @@ class ToolFrame(BuilderWidget):
         etc.). Please do the same: return True if the window cannot be realized
         and False if everything is OK.
         """
+        logger.debug('Mapping main widget for ToolFrame ' + self.gladefile)
         super().on_mainwidget_map(window)
         if not self.instrument.services['accounting'].has_privilege(self.privlevel):
+            self.widget.set_sensitive(False)
             error_message(self.widget, 'Privilege error',
                           'Insufficient privileges to open {}.'.format(self.widget.get_title()))
-            self.widget.set_sensitive(False)
+            logger.warning('Privilege error while mapping toolframe ' + self.gladefile)
             return True
         # connect to various signals of devices
-        for d in self.required_devices:
-            try:
-                self.instrument.get_device(d)
-            except Exception as exc:
-                error_message(self.widget, 'Device error', 'Required device {} not present.'.format(d))
-                self.widget.destroy()
-                return True
         for d in self.required_devices:
             dev = self.instrument.get_device(d)
             self._device_connections[d] = [
@@ -103,6 +112,7 @@ class ToolFrame(BuilderWidget):
                     dev.connect('position-change', self.on_motor_position_change),
                     dev.connect('stop', self.on_motor_stop),
                 ])
+        logger.debug('Successfully mapped main widget for ToolFrame ' + self.gladefile)
         return False
 
     def on_device_variable_change(self, device: Union[Device, Motor], variablename: str, newvalue: object):
@@ -122,11 +132,15 @@ class ToolFrame(BuilderWidget):
         return False
 
     def cleanup(self):
+        logger.debug('Cleaning up toolframe ' + self.gladefile)
         for d in self._device_connections:
             dev = self.instrument.get_device(d)
             for c in self._device_connections[d]:
                 dev.disconnect(c)
         self._device_connections = {}
+        for c in self._accounting_connections:
+            self.instrument.services['accounting'].disconnect(c)
+        self._accounting_connections = []
         super().cleanup()
 
     def show_all(self):

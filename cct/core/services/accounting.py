@@ -11,7 +11,7 @@ from ..instrument.privileges import PRIV_LAYMAN, PRIV_SUPERUSER, PRIV_PROJECTMAN
 from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class User(object):
@@ -40,7 +40,8 @@ class Project(object):
 
 class Accounting(Service):
     __signals__ = {'privlevel-changed': (SignalFlags.RUN_FIRST, None, (object,)),
-                   'project-changed': (SignalFlags.RUN_FIRST, None, ())}
+                   'project-changed': (SignalFlags.RUN_FIRST, None, ()),
+                   'user-changed': (SignalFlags.RUN_FIRST, None, (object,))}
 
     state = {'dbfile': 'userdb',
              'projectid': 'MachineStudies 01',
@@ -52,11 +53,11 @@ class Accounting(Service):
 
     def __init__(self, *args, **kwargs):
         self.current_user = None
-        self.privlevel = None
+        # start with superuser privileges, these will be dropped when someone authenticates
+        self.privlevel = PRIV_SUPERUSER
         self.users = []
         self.project = None
         self.projects = []
-        self.user = None
         super().__init__(*args, **kwargs)
 
     def authenticate(self, username, password):
@@ -64,17 +65,19 @@ class Accounting(Service):
             username = username + '@' + self.get_default_realm()
         try:
             if kerberos.checkPassword(username, password, '', '', 0):
-                try:
-                    self.current_user = [u for u in self.users if u.username == username.split('@', 1)[0]][0]
-                except IndexError:
+                logger.info('Authenticated user ' + username + '.')
+                if username.split('@', 1)[0] not in [u.username for u in self.users]:
                     self.add_user(username.split('@', 1)[0], 'Firstname', 'Lastname', PRIV_LAYMAN)
-                    self.current_user = self.users[-1]
-                self.set_privilegelevel(self.current_user.privlevel)
-                self.instrument.config['services']['accounting']['operator'] = self.current_user.username
-                logger.info('Authenticated user ' + self.current_user.username + '.')
+                self.select_user(username)
                 return True
         except kerberos.BasicAuthError:
             return False
+
+    def select_user(self, username: str):
+        self.current_user = [u for u in self.users if u.username == username.split('@', 1)[0]][0]
+        self.emit('user-changed', self.current_user)
+        self.set_privilegelevel(self.current_user.privlevel)
+        self.instrument.config['services']['accounting']['operator'] = self.current_user.username
 
     def get_default_realm(self):
         try:
@@ -133,8 +136,13 @@ class Accounting(Service):
 
     def load_state(self, dictionary: Dict):
         super().load_state(dictionary)
+        dbfile_last = os.path.split(self.state['dbfile'])[-1]
+        if self.state['dbfile'] != dbfile_last:
+            logger.warning('Stripping path from userdb file: {} -> {}'.format(self.state['dbfile'], dbfile_last))
+            self.state['dbfile'] = dbfile_last
         logger.debug('Accounting: load state')
         try:
+            logger.debug('Trying to load userdb from ' + os.path.join(self.configdir, self.state['dbfile']))
             with open(os.path.join(self.configdir, self.state['dbfile']), 'rb') as f:
                 userdb = pickle.load(f)
             self.users = userdb['users']
@@ -143,7 +151,7 @@ class Accounting(Service):
             #                    u.privlevel = PrivilegeLevel.get_priv(u.privlevel)
             self.projects = userdb['projects']
         except FileNotFoundError:
-            logger.debug('Could not load dbfile.')
+            logger.warning('Could not load dbfile, creating default user and project.')
             self.users = [User('root', 'System', 'Administrator', PRIV_SUPERUSER)]
             self.projects = [Project('MachineStudies {:2d}/01'.format(time.localtime().tm_year % 100),
                                      'Machine Studies', 'System')]
@@ -153,12 +161,6 @@ class Accounting(Service):
             assert isinstance(self.projects[0], Project)
             self.select_project(self.projects[0].projectid)
             logger.warning('Could not select project, selected the first one.')
-        try:
-            self.user = [u for u in self.users if u.username == self.state['operator']][0]
-        except IndexError:
-            logger.warning('Could not select user, selecting the first one.')
-            self.user = self.users[0]
-            self.privlevel = self.user.privlevel
 
     def save_state(self):
         dic = super().save_state()
@@ -242,3 +244,6 @@ class Accounting(Service):
             raise ValueError('Cannot delete current project')
         self.projects = [p for p in self.projects if p.projectid != projectid]
         self.instrument.save_state()
+
+    def do_privlevel_changed(self, new_privlevel: PrivilegeLevel):
+        logger.info('Privilege level changed to: ' + new_privlevel.name)

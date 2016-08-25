@@ -1,26 +1,35 @@
+import logging
+
 from ..core.functions import update_comboboxtext_choices
 from ..core.toolframe import ToolFrame
-from ...core.services.accounting import Accounting
+from ...core.services.accounting import Accounting, PrivilegeLevel
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class AccountingFrame(ToolFrame):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._acctconn = None
+        self._acctconn = []
         self._projectid_changed_disable = None
+        self._updating_privilegeselector = False
+        super().__init__(*args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
-        update_comboboxtext_choices(
-            self.builder.get_object('privileges_selector'),
-            self.instrument.services['accounting'].get_accessible_privlevels_str(),
-            set_to=str(self.instrument.services['accounting'].get_privilegelevel()))
-        self._acctconn = self.instrument.services['accounting'].connect('project-changed', self.on_project_changed)
+        self.on_user_changed(self.instrument.services['accounting'],
+                             self.instrument.services['accounting'].get_user())
+        self.on_accounting_privlevel_changed(self.instrument.services['accounting'],
+                                             self.instrument.services['accounting'].get_privilegelevel())
+        self._acctconn = [self.instrument.services['accounting'].connect('project-changed', self.on_project_changed),
+                          self.instrument.services['accounting'].connect('privlevel-changed',
+                                                                         self.on_accounting_privlevel_changed),
+                          self.instrument.services['accounting'].connect('user-changed', self.on_user_changed)]
         self.on_project_changed(self.instrument.services['accounting'])
 
     def cleanup(self):
-        if self._acctconn is not None:
-            self.instrument.services['accounting'].disconnect(self._acctconn)
-            self._acctconn = None
+        for c in self._acctconn:
+            self.instrument.services['accounting'].disconnect(c)
+        self._acctconn = []
         return super().cleanup()
 
     def on_projectid_changed(self, comboboxtext):
@@ -31,8 +40,6 @@ class AccountingFrame(ToolFrame):
             self.instrument.services['accounting'].select_project(pid)
 
     def on_project_changed(self, accountingservice: Accounting):
-        self.builder.get_object('operatorname_label').set_text(
-            accountingservice.get_user().username)
         pidsel = self.builder.get_object('projectid_selector')
         self._projectid_changed_disable = True
         try:
@@ -47,4 +54,21 @@ class AccountingFrame(ToolFrame):
             self._projectid_changed_disable = False
 
     def on_privileges_changed(self, selector):
-        self.instrument.services['accounting'].set_privilegelevel(selector.get_active_text())
+        if not self._updating_privilegeselector:
+            self.instrument.services['accounting'].set_privilegelevel(selector.get_active_text())
+        return False
+
+    def on_user_changed(self, accountingservice: Accounting, user):
+        self.builder.get_object('operatorname_label').set_text(
+            user.username)
+
+    def on_accounting_privlevel_changed(self, accountingservice: Accounting, privlevel: PrivilegeLevel):
+        logger.debug('Updating privileges selector. Current privilege level: {}'.format(privlevel))
+        self._updating_privilegeselector = True
+        try:
+            update_comboboxtext_choices(
+                self.builder.get_object('privileges_selector'),
+                accountingservice.get_accessible_privlevels_str(),
+                set_to=privlevel.name)
+        finally:
+            self._updating_privilegeselector = False

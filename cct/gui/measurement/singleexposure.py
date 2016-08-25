@@ -18,7 +18,6 @@ logger.setLevel(logging.INFO)
 
 class SingleExposure(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._images_done = 0
         self._images_requested = 0
         self._sampleconnection = None
@@ -26,6 +25,7 @@ class SingleExposure(ToolWindow):
         self._nimages = 0
         self._images_done = 0
         self._expanalyzerconnection = None
+        super().__init__(*args, **kwargs)
 
     def cleanup(self):
         if self._sampleconnection is not None:

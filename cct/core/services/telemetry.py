@@ -26,12 +26,12 @@ class TelemetryManager(Service):
     }
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.telemetries = {}
         self.timestamps = {}
         self._memlog_timeout_handle = None
         self.memlog_file = None
         self._last_overall_telemetry_emit = 0
+        super().__init__(*args, **kwargs)
 
     def start(self):
         super().start()

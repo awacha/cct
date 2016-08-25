@@ -466,6 +466,7 @@ class ExposureAnalyzer(Service):
         self._working = {}
 
     def start(self):
+        super().start()
         self._handler = GLib.idle_add(self._idle_function)
         self._backendprocess = multiprocessing.Process(
             target=ExposureAnalyzer_Backend.create_and_run,

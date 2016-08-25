@@ -20,7 +20,7 @@ from .accounting import AuthenticatorDialog
 # noinspection PyPep8
 from ..core.instrument.instrument import Instrument
 # noinspection PyPep8
-from .mainwindow import MainWindow
+from .mainwindow import MainWindow, CollectingHandler
 
 # initialize GObject Notification mechanism
 Notify.init('cct')
@@ -35,7 +35,11 @@ formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 handler.setFormatter(formatter)
 logging.root.addHandler(handler)
 logging.root.setLevel(logging.DEBUG)
-logging.root.info('------------------- Program startup -------------------')
+ch = CollectingHandler()
+logging.root.addHandler(ch)
+
+logging.root.info('------------------- Program startup v{} -------------------'.format(
+    pkg_resources.get_distribution('cct').version))
 
 # initialize custom icon theme for Gtk3
 itheme = Gtk.IconTheme.get_default()

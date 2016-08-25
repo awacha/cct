@@ -22,6 +22,7 @@ class UserManager(ToolWindow):
         ps = self.builder.get_object('privilege_selector')
         for pl in PrivilegeLevel.all_privileges():
             ps.append_text(pl.name)
+        self.builder.get_object('apply_button').set_sensitive(False)
         self.update_gui()
 
     def update_gui(self, username_to_select=None):
@@ -30,7 +31,7 @@ class UserManager(ToolWindow):
         iter_to_select = None
         for u in self.instrument.services['accounting'].get_usernames():
             it = model.append((u,))
-            if u.username == username_to_select:
+            if u == username_to_select:
                 iter_to_select = it
         if iter_to_select is None:
             iter_to_select = model.get_iter_first()

@@ -156,6 +156,17 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
+                      <object class="GtkCheckMenuItem" id="menuitem_advancedlogviewer">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="tooltip_text" translatable="yes">Use the advanced logger</property>
+                        <property name="label" translatable="yes">Advanced _logger</property>
+                        <property name="use_underline">True</property>
+                        <property name="active">True</property>
+                        <signal name="toggled" handler="on_change_logviewer" swapped="no"/>
+                      </object>
+                    </child>
+                    <child>
                       <object class="GtkImageMenuItem" id="menuitem_sampleeditor">
                         <property name="label" translatable="yes">_Sample editor</property>
                         <property name="name">menuitem_sampleeditor</property>
@@ -586,22 +597,38 @@
           </packing>
         </child>
         <child>
-          <object class="GtkScrolledWindow" id="scrolledwindow1">
-            <property name="width_request">640</property>
-            <property name="height_request">480</property>
+          <object class="GtkStack" id="logviewer_stack">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="shadow_type">in</property>
+            <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="transition_type">crossfade</property>
             <child>
-              <object class="GtkTextView" id="logtext">
+              <object class="GtkScrolledWindow" id="scrolledwindow1">
+                <property name="width_request">640</property>
+                <property name="height_request">480</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
-                <property name="editable">False</property>
-                <property name="wrap_mode">word</property>
-                <property name="buffer">logbuffer</property>
+                <property name="shadow_type">in</property>
+                <child>
+                  <object class="GtkTextView" id="logtext">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="editable">False</property>
+                    <property name="wrap_mode">word</property>
+                    <property name="buffer">logbuffer</property>
+                  </object>
+                </child>
               </object>
+              <packing>
+                <property name="name">textlogviewer</property>
+                <property name="title" translatable="yes">Log text</property>
+              </packing>
+            </child>
+            <child>
+              <placeholder/>
             </child>
           </object>
           <packing>

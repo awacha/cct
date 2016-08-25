@@ -11,9 +11,9 @@ logger.setLevel(logging.INFO)
 
 class ResourceUsage(ToolWindow):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._telemetry_handler = None
         self._telemetrykeys = []
+        super().__init__(*args, **kwargs)
 
     def on_mainwidget_map(self, window):
         if ToolWindow.on_mainwidget_map(self, window):

@@ -44,7 +44,6 @@ class ExposureLoader(Gtk.Box):
             pass
 
     def do_map(self):
-        print('ExposureLoader.do_map !!!!!!!!!!!!!!!!!!!!')
         Gtk.Box.do_map(self)
         update_comboboxtext_choices(self.builder.get_object('prefix_selector'),
                                     sorted(self.instrument.services['filesequence'].get_prefixes()))
@@ -54,11 +53,11 @@ class ExposureLoader(Gtk.Box):
         return True
 
     def cleanup(self):
-        self.instrument.services['filesequence'].disconnect(self._lastfsnchangedconnection)
-        self._lastfsnchangedconnection = None
+        if self._lastfsnchangedconnection is not None:
+            self.instrument.services['filesequence'].disconnect(self._lastfsnchangedconnection)
+            self._lastfsnchangedconnection = None
 
     def do_unmap(self):
-        print('ExposureLoader.do_unmap !!!!!!!!!!!!!!!!!!!!')
         self.cleanup()
         return Gtk.Box.do_unmap(self)
 

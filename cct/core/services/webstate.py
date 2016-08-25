@@ -31,15 +31,19 @@ class WebStateFileWriter(Service):
     state = {'interval': 30}
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self._timeouthandler = None
         self._statusfile_template = None
+        super().__init__(*args, **kwargs)
 
     def start(self):
-        self._timeouthandler = GLib.timeout_add(self.state['interval'] * 1000, self.write_statusfile)
+        super().start()
+        if self.instrument.online:
+            self._timeouthandler = GLib.timeout_add(self.state['interval'] * 1000, self.write_statusfile)
 
     def stop(self):
-        GLib.source_remove(self._timeouthandler)
+        if self._timeouthandler is not None:
+            GLib.source_remove(self._timeouthandler)
+        super().stop()
 
     def reload_statusfile_template(self):
         # if not hasattr(self,'_statusfile_template'):
@@ -198,7 +202,10 @@ class WebStateFileWriter(Service):
 
     def create_detector_status(self):
         # detector status
-        detstat = self.instrument.get_device('detector').get_all_variables()
+        try:
+            detstat = self.instrument.get_device('detector').get_all_variables()
+        except KeyError:
+            return ""
         if detstat['temperature0'] < 15 or detstat['temperature0'] > 55:
             detstat['temperature0_bg'] = 'red'
         elif detstat['temperature0'] < 20 or detstat['temperature0'] > 37:
@@ -324,7 +331,10 @@ class WebStateFileWriter(Service):
 
     def adjust_svg(self):
         dom = parse(pkg_resources.resource_filename('cct', 'resource/cct_status/scheme_interactive.svg'))
-        shutter = self.instrument.get_device('xray_source').get_variable('shutter')
+        try:
+            shutter = self.instrument.get_device('xray_source').get_variable('shutter')
+        except KeyError:
+            shutter = False
         beamstop = self.instrument.get_beamstop_state()
         for x in get_svg_object_by_id(dom, 'xray'):
             if shutter:
@@ -346,20 +356,29 @@ class WebStateFileWriter(Service):
                 x.setAttribute('visibility', 'hidden')
             else:
                 x.setAttribute('visibility', 'visible')
+        try:
+            ht = '{:.2f} kV'.format(self.instrument.get_device('xray_source').get_variable('ht'))
+        except KeyError:
+            ht = '??? kV'
         for x in get_svg_object_by_id(dom, 'hv'):
-            x.firstChild.firstChild.data = '{:.2f} kV'.format(
-                self.instrument.get_device('xray_source').get_variable('ht'))
+            x.firstChild.firstChild.data = ht
+        try:
+            current = '{:.2f} mA'.format(self.instrument.get_device('xray_source').get_variable('current'))
+        except KeyError:
+            ht = '??? mA'
         for x in get_svg_object_by_id(dom, 'current'):
-            x.firstChild.firstChild.data = '{:.2f} mA'.format(
-                self.instrument.get_device('xray_source').get_variable('current'))
+            x.firstChild.firstChild.data = current
         for x in get_svg_object_by_id(dom, 'detector_state'):
-            x.firstChild.firstChild.data = self.instrument.get_device('detector').get_variable('_status')
+            try:
+                x.firstChild.firstChild.data = self.instrument.get_device('detector').get_variable('_status')
+            except KeyError:
+                x.firstChild.firstChild.data = 'Disconnected'
         for x in get_svg_object_by_id(dom, 'vacuum'):
             try:
                 x.firstChild.firstChild.data = '{:.3f} mbar'.format(
                     self.instrument.devices['tpg201'].get_variable('pressure'))
             except KeyError:
-                x.firstChild.firstChild.data = 'No data'
+                x.firstChild.firstChild.data = 'Vacuum gauge disconnected'
         for x in get_svg_object_by_id(dom, 'samplename'):
             x.firstChild.firstChild.data = str(self.instrument.services['samplestore'].get_active_name())
         for x in get_svg_object_by_id(dom, 'temperature'):
