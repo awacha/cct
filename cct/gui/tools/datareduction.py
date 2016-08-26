@@ -7,14 +7,14 @@ logger.setLevel(logging.INFO)
 
 
 class DataReduction(ToolWindow):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, gladefile, toplevelname, instrument, windowtitle, *args, **kwargs):
         self._stop = False
         self._expanalyzerconnection = []
         self._currentpath = None
         self._nselected = None
         self._ndone = None
-        self._prefix = self.instrument.config['path']['prefixes']['crd']
-        super().__init__(*args, **kwargs)
+        self._prefix = instrument.config['path']['prefixes']['crd']
+        super().__init__(gladefile, toplevelname, instrument, windowtitle, *args, **kwargs)
 
     def on_start(self, button):
         if button.get_label() == 'Start':
@@ -37,7 +37,7 @@ class DataReduction(ToolWindow):
             self._stop = True
 
     # noinspection PyMethodMayBeStatic
-    def on_expanalyzer_error(self, prefix, fsn, exception, fmt_traceback):
+    def on_expanalyzer_error(self, expanalyzer, prefix, fsn, exception, fmt_traceback):
         logger.error('Error while data reduction. Prefix: {}. FSN: {:d}. Error: {} {}'.format(prefix, fsn, exception,
                                                                                               fmt_traceback))
 
@@ -62,7 +62,7 @@ class DataReduction(ToolWindow):
         self.instrument.services['exposureanalyzer'].submit(
             fsn, self.instrument.services['filesequence'].exposurefileformat(
                 prefix, fsn) + '.cbf', prefix,
-            params=(self.instrument.services['filesequence'].load_param(prefix, fsn),)
+            param=self.instrument.services['filesequence'].load_param(prefix, fsn)
         )
 
     def on_reload(self, button):
@@ -78,7 +78,7 @@ class DataReduction(ToolWindow):
                 param = self.instrument.services['filesequence'].load_param(
                     self.instrument.config['path']['prefixes']['crd'], i)
             except FileNotFoundError:
-                pass
+                continue
             if 'sample' not in param:
                 title = '-- no title --'
             else:

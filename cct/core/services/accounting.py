@@ -245,5 +245,6 @@ class Accounting(Service):
         self.projects = [p for p in self.projects if p.projectid != projectid]
         self.instrument.save_state()
 
+    # noinspection PyMethodMayBeStatic
     def do_privlevel_changed(self, new_privlevel: PrivilegeLevel):
         logger.info('Privilege level changed to: ' + new_privlevel.name)

@@ -47,7 +47,7 @@ def _angledependentabsorption_value(twotheta, transmission):
     return cor
 
 
-def _angledependentabsorption_error(twotheta, dtwotheta, transmission, dtransmission):
+def _angledependentabsorption_error_ugly(twotheta, dtwotheta, transmission, dtransmission):
     # calculated using sympy
     return ((transmission * np.cos(twotheta) - np.exp(np.log(transmission) / np.cos(twotheta)) *
              np.log(transmission) * np.cos(twotheta) + np.exp(np.log(transmission) / np.cos(twotheta))
@@ -59,19 +59,23 @@ def _angledependentabsorption_error(twotheta, dtwotheta, transmission, dtransmis
            np.abs(np.cos(twotheta)) ** (-3.0)
 
 
-try:
-    # noinspection PyUnresolvedReferences,PyPackageRequirements
-    import sympy
+def __create_adaerror_function():
+    try:
+        # noinspection PyUnresolvedReferences,PyPackageRequirements
+        import sympy
 
-    tth, dtth, T, dT = sympy.symbols('tth dtth T dT')
-    mud = -sympy.log(T)
-    corr = sympy.exp(-mud) * mud * (1 - 1 / sympy.cos(tth)) / (sympy.exp(-mud / sympy.cos(tth)) - sympy.exp(-mud))
-    dcorr = (sympy.diff(corr, T) ** 2 * dT ** 2 + sympy.diff(corr, tth) ** 2 * dtth ** 2) ** 0.5
-    _angledependentabsorption_error = sympy.lambdify((tth, dtth, T, dT), dcorr, "numpy")
-    del sympy, tth, dtth, T, dT, mud, corr, dcorr
-except ImportError:
-    pass
+        tth, dtth, T, dT = sympy.symbols('tth dtth T dT')
+        mud = -sympy.log(T)
+        corr = sympy.exp(-mud) * mud * (1 - 1 / sympy.cos(tth)) / (sympy.exp(-mud / sympy.cos(tth)) - sympy.exp(-mud))
+        dcorr = (sympy.diff(corr, T) ** 2 * dT ** 2 + sympy.diff(corr, tth) ** 2 * dtth ** 2) ** 0.5
+        func = sympy.lambdify((tth, dtth, T, dT), dcorr, "numpy")
+        del sympy, tth, dtth, T, dT, mud, corr, dcorr
+    except ImportError:
+        func = _angledependentabsorption_error_ugly
+    return func
 
+
+_angledependentabsorption_error = __create_adaerror_function()
 
 def angledependentabsorption(twotheta, dtwotheta, transmission, dtransmission):
     """Correction for angle-dependent absorption of the sample with error propagation

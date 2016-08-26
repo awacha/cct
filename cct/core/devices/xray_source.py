@@ -1,7 +1,7 @@
 import logging
 import time
 
-from .device import DeviceBackend_ModbusTCP, UnknownVariable, UnknownCommand, Device
+from .device import DeviceBackend_ModbusTCP, UnknownVariable, UnknownCommand, Device, ReadOnlyVariable, InvalidMessage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -167,6 +167,12 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
         tm.last_readstatus = time.monotonic() - self.lasttimes['readstatus']
         return tm
 
+    def set_variable(self, variable: str, value: object):
+        raise ReadOnlyVariable(variable)
+
+    def process_incoming_message(self, message: bytes, original_sent: bytes = None):
+        # we communicate synchronously with the ModbusTCP device in query_variable() and execute_command()
+        raise InvalidMessage(message)
 
 class GeniX(Device):
     log_formatstr = '{_status}\t{ht}\t{current}\t{shutter}'

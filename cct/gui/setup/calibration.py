@@ -140,7 +140,6 @@ class Calibration(ToolWindow):
     def on_overridemask_toggled(self, checkbutton: Gtk.CheckButton):
         self.builder.get_object('maskchooser').set_sensitive(checkbutton.get_active())
 
-
     def on_fitlorentz(self, button):
         self.do_fit('Lorentz')
 
@@ -160,8 +159,8 @@ class Calibration(ToolWindow):
         assert isinstance(self._exposure, Exposure)
         assert self._exposure.header.pixelsizex == self._exposure.header.pixelsizey
         if len(uncalval) > 1:
-            def fitfunc(pix: np.ndarray, dist: float):
-                return qfrompix(pix, pixelsize=self._exposure.header.pixelsizex,
+            def fitfunc(pix_: np.ndarray, dist: float):
+                return qfrompix(pix_, pixelsize=self._exposure.header.pixelsizex,
                                 beampos=0, alpha=np.pi * 0.5,
                                 wavelength=self._exposure.header.wavelength,
                                 dist=dist)

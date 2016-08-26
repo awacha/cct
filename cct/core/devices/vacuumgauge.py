@@ -5,7 +5,7 @@ Created on Oct 13, 2015
 """
 import logging
 
-from .device import DeviceBackend_TCP, DeviceError, UnknownVariable, Device, UnknownCommand
+from .device import DeviceBackend_TCP, DeviceError, UnknownVariable, Device, UnknownCommand, ReadOnlyVariable
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -13,6 +13,9 @@ logger.setLevel(logging.INFO)
 
 # noinspection PyPep8Naming
 class TPG201_Backend(DeviceBackend_TCP):
+    def set_variable(self, variable: str, value: object):
+        raise ReadOnlyVariable(variable)
+
     def query_variable(self, variablename: str):
         if variablename == 'pressure':
             self.send_message(b'001M^\r', expected_replies=1, asynchronous=False)

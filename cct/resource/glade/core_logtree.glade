@@ -39,6 +39,7 @@
       <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="spacing">5</property>
         <child>
           <object class="GtkLabel">
             <property name="visible">True</property>
@@ -92,8 +93,10 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="hexpand">False</property>
+            <property name="input_purpose">number</property>
             <property name="adjustment">nentries_adjustment</property>
             <property name="numeric">True</property>
+            <property name="update_policy">if-valid</property>
             <property name="value">10000</property>
             <signal name="value-changed" handler="on_nentries_changed" swapped="no"/>
           </object>
@@ -116,6 +119,32 @@
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">4</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="shown_count_label">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">label</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">5</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Shown:</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">6</property>
           </packing>
         </child>
       </object>

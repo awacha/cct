@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-# noinspection PyPep8Naming
+# noinspection PyPep8Naming,PyAbstractClass
 class DeviceBackend_ModbusTCP(DeviceBackend):
     """Device with Modbus over TCP connection.
     """

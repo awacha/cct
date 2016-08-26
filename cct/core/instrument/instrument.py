@@ -88,6 +88,7 @@ class Instrument(Callbacks):
         self.starttime = time.monotonic()
         logger.info('Started services.')
 
+    # noinspection PyDictCreation
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from scratch."""
         self.config = {'path': {}}
@@ -342,10 +343,10 @@ class Instrument(Callbacks):
         if not self._online:
             logger.info('Not connecting to hardware: we are not on-line.')
 
-        def get_subclasses(cls) -> List:
+        def get_subclasses(cl) -> List:
             """Recursively get a flat list of subclasses of `cls`"""
-            scl = [cls]
-            for c in cls.__subclasses__():
+            scl = [cl]
+            for c in cl.__subclasses__():
                 scl.extend(get_subclasses(c))
             return scl
 

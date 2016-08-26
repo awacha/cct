@@ -2,7 +2,7 @@ from gi.repository import Gtk
 
 from ..core.dialogs import question_message
 from ..core.toolwindow import ToolWindow
-from ...core.instrument.privileges import PRIV_PROJECTMAN
+from ...core.instrument.privileges import PRIV_PROJECTMAN, PrivilegeError
 
 
 class ProjectManager(ToolWindow):
@@ -79,9 +79,11 @@ class ProjectManager(ToolWindow):
         if dlg.run() == Gtk.ResponseType.OK:
             try:
                 project = self.instrument.services['accounting'].new_project(entry.get_text(), '', '')
+            except PrivilegeError as exc:
+                # should not happen, but who knows...
+                self.error_message('Cannot add new project: insufficient privileges')
+            else:
                 self.update_gui(project.projectid)
-            except Exception as exc:
-                self.error_message('Cannot add new project')
         dlg.destroy()
 
     def on_removeproject(self, button):

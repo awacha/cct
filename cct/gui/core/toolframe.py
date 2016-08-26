@@ -46,7 +46,7 @@ class ToolFrame(BuilderWidget):
         self.instrument = instrument
         self._sensitive = True
         self._device_connections = {}
-        self._widgets_insensitive = {}
+        self._widgets_insensitive = []
         # check if all required devices are available
         for d in self.required_devices:
             try:

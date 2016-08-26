@@ -4,6 +4,7 @@ import multiprocessing.queues
 import os
 import pickle
 import queue
+import time
 import traceback
 from logging.handlers import QueueHandler
 from typing import Union, Dict
@@ -24,7 +25,7 @@ from ..utils.pathutils import find_in_subfolders
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DataReductionEnd(Exception):
@@ -107,9 +108,10 @@ class ExposureAnalyzer_Backend(object):
         self._absintscalingfactor = None
         self._absintqrange = None
         self._absintstat = None
+        self._lasttelemetry = 0
 
-    # noinspection PyMethodMayBeStatic
     def get_telemetry(self):
+        self._lasttelemetry = time.monotonic()
         tm = TelemetryInfo()
         return tm
 
@@ -120,11 +122,14 @@ class ExposureAnalyzer_Backend(object):
     def worker(self):
         while True:
             assert isinstance(self.inqueue, multiprocessing.queues.Queue)
-            try:
-                message = self.inqueue.get(True, self.telemetry_interval)
-            except queue.Empty:
+            if (time.monotonic() - self._lasttelemetry) > self.telemetry_interval:
                 # forge a telemetry request message.
                 message = Message('telemetry', 0, self.name)
+            else:
+                try:
+                    message = self.inqueue.get(True, self.telemetry_interval)
+                except queue.Empty:
+                    continue
             assert isinstance(message, Message)
             if message['type'] == 'exit':
                 break  # the while True loop
@@ -245,7 +250,8 @@ class ExposureAnalyzer_Backend(object):
         # otherwise subtract the background.
         im -= self._lastdarkbackground
         datared['history'].append(
-            'Subtracted dark background level: {:g} cps per pixel'.format(self._lastdarkbackground))
+            'Subtracted dark background level: {:g} cps per pixel (overall {:g} cps)'.format(
+                self._lastdarkbackground, self._lastdarkbackground * im.shape[0] * im.shape[1]))
         datared['darkbackgroundlevel'] = self._lastdarkbackground
         datared['statistics']['03_subtractdarkbackground'] = im.get_statistics()
         self._logger.debug('Done darkbgsub FSN {:d}'.format(im.header.fsn))
@@ -264,7 +270,7 @@ class ExposureAnalyzer_Backend(object):
             self._lastbackground = im
             self._logger.debug('Done bgsub FSN {:d}: this is background'.format(im.header.fsn))
             raise DataReductionEnd()
-        if (abs(im.header.distance - self._lastbackground.header.distance) <
+        if ((im.header.distance - self._lastbackground.header.distance).abs() <
                 self.config['datareduction']['distancetolerance']):
             im -= self._lastbackground
             datared['history'].append(
@@ -295,8 +301,13 @@ class ExposureAnalyzer_Backend(object):
         datared['angledependentabsorption_matrixerr_statistics'] = self.get_matrix_statistics(
             corr_ada.err)
         datared['history'].append('Corrected for angle-dependent absorption')
-        if 'vacuum_pressure' in im.header.params['environment']:
-            corr_adat = angledependentairtransmission(tth.val, tth.err, im.header.vacuum,
+        try:
+            vacuum = im.header.vacuum
+        except KeyError:
+            datared['history'].append(
+                'Skipped angle-dependent air absorption correction: no pressure value.')
+        else:
+            corr_adat = angledependentairtransmission(tth.val, tth.err, vacuum,
                                                       im.header.distance.val,
                                                       im.header.distance.err,
                                                       self.config['datareduction']['mu_air'],
@@ -309,15 +320,13 @@ class ExposureAnalyzer_Backend(object):
             datared['history'].append(
                 'Corrected for angle-dependent air absorption. Pressure: {:f} mbar'.format(
                     im.header.vacuum))
-        else:
-            datared['history'].append(
-                'Skipped angle-dependent air absorption correction: no pressure value.')
         datared['statistics']['06_correctgeometry'] = im.get_statistics()
         self._logger.debug('Done correctgeometry FSN {:d}'.format(im.header.fsn))
         return im, datared
 
     def dividebythickness(self, im: Exposure, datared: Dict):
         im /= im.header.thickness
+        datared['history'].append('Divided by thickness {:g} cm'.format(im.header.thickness))
         datared['statistics']['07_dividebythickness'] = im.get_statistics()
         self._logger.debug('Done dividebythickness FSN {:d}'.format(im.header.fsn))
         return im, datared
@@ -352,18 +361,21 @@ class ExposureAnalyzer_Backend(object):
                 'This corresponds to beam flux {} photons*eta/sec'.format(
                     self._absintscalingfactor, self._absintstat['Chi2_reduced'], self._absintstat['DoF'],
                     1 / self._absintscalingfactor))
-            self._logger.debug('History:\n  ' + '\n  '.join(h for h in datared['history']))
-        if abs(im.header.distance.val - self._lastabsintref.header.distance.val) < \
-                self.config['datareduction']['distancetolerance']:
+        if ((im.header.distance - self._lastabsintref.header.distance).abs() <
+                self.config['datareduction']['distancetolerance']):
             im *= self._absintscalingfactor
             datared['statistics']['08_absolutescaling'] = im.get_statistics()
             datared['history'].append(
                 'Using absolute intensity factor {} from measurement FSN #{:d} '
                 'for absolute intensity calibration.'.format(
                     self._absintscalingfactor, self._lastabsintref.header.fsn))
+            datared['history'].append('Absint factor was determined with Chi2 {:f} (DoF {:d})'.format(
+                self._absintstat['Chi2_reduced'], self._absintstat['DoF']))
+            datared['history'].append('Estimated flux: {} photons*eta/sec'.format(
+                self._absintscalingfactor.__reciprocal__()))
             datared['absintrefFSN'] = self._lastabsintref.header.fsn
-            datared['flux'] = (1.0 / self._absintscalingfactor).val
-            datared['flux.err'] = (1.0 / self._absintscalingfactor).err
+            datared['flux'] = self._absintscalingfactor.__reciprocal__().val
+            datared['flux.err'] = self._absintscalingfactor.__reciprocal__().err
             datared['absintchi2'] = self._absintstat['Chi2_reduced']
             datared['absintdof'] = self._absintstat['DoF']
             datared['absintfactor'] = self._absintscalingfactor.val
@@ -403,6 +415,8 @@ class ExposureAnalyzer_Backend(object):
             self.absolutescaling(im, datared)
         except DataReductionEnd:
             pass
+        self._logger.info('Data reduction history for FSN #{:d}:\n  '.format(im.header.fsn) +
+                          '\n  '.join(h for h in datared['history']))
         im.header.param['datareduction'] = datared
         return im
 
@@ -477,7 +491,6 @@ class ExposureAnalyzer(Service):
         self._backendprocess.daemon = False
         self._backendprocess.start()
 
-
     def _idle_function(self):
         try:
             message = self._queue_to_frontend.get_nowait()
@@ -536,7 +549,6 @@ class ExposureAnalyzer(Service):
             self.send_to_backend('exit')
         else:
             self.emit('shutdown')
-
 
     def send_to_backend(self, msgtype, **kwargs):
         self._msgid += 1

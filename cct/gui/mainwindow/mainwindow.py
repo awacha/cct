@@ -112,7 +112,7 @@ class MainWindow(object):
             try:
                 self._toolframes[framename] = cls(gladefile, mainwidget, self.instrument)
                 self.builder.get_object('toolbox').pack_end(self._toolframes[framename].widget, False, True, 0)
-            except:
+            except Exception:
                 logger.error('Cannot open toolframe ' + framename)
             logger.debug('Initializing toolframes done.')
         self.widget.show_all()

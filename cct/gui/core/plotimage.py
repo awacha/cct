@@ -49,7 +49,7 @@ class PlotImageWidget(BuilderWidget):
                            label='Redraw')
         b.set_tooltip_text('Redraw the image')
         self.toolbar.insert(b, 9)
-        b.connect('clicked', lambda b: self.replot(False))
+        b.connect('clicked', lambda b_: self.replot(False))
         palette_combo = self.builder.get_object('palette_combo')
         for i, cm in enumerate(sorted(matplotlib.cm.cmap_d)):
             palette_combo.append_text(cm)
@@ -254,6 +254,8 @@ class PlotImageWidget(BuilderWidget):
             self.axis.yaxis.set_label_text('$q_y$ (nm$^{-1}$)')
 
     def replot_mask(self):
+        if self._image_handle is None:
+            return
         try:
             self._mask_handle.remove()
         except (AttributeError, ValueError):
@@ -270,6 +272,8 @@ class PlotImageWidget(BuilderWidget):
                                              origin='upper', extent=self._image_handle.get_extent())
 
     def replot_crosshair(self):
+        if self._image_handle is None:
+            return
         try:
             self._crosshair_handles[0].remove()
         except (IndexError, TypeError, ValueError):
@@ -296,6 +300,8 @@ class PlotImageWidget(BuilderWidget):
                                                      scalex=False, scaley=False)
 
     def replot_colorbar(self):
+        if self._image_handle is None:
+            return
         if self.builder.get_object('showcolourscale_checkbutton').get_active():
             try:
                 if self.colorbaraxis is None:
@@ -338,6 +344,9 @@ class PlotImageWindow(PlotImageWidget):
 
     def on_destroy(self, window):
         PlotImageWindow.instancelist.remove(self)
+        del self.builder
+        del self.widget
+        del self.window
         return False
 
     def on_focus_in(self, window, event):

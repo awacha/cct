@@ -44,6 +44,7 @@ class PowerScale(ScaleBase):
             return (max(vmin, max(minpos, 7 / 3 - 4 / 3 - 1)),
                     max(vmax, max(minpos, 7 / 3 - 4 / 3 - 1)))
 
+    # noinspection PyAbstractClass
     class PowerTransform(Transform):
         input_dims = 1
         output_dims = 1

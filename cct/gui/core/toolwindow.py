@@ -41,7 +41,7 @@ class ToolWindow(ToolFrame):
         self.infolabel.set_hexpand(True)
         self.infolabel.set_hexpand_set(True)
         self._infobar_connection = self.infobar.connect('response', self.on_infobar_response)
-        self.infobar.foreach(lambda w: w.show_all())
+        self.infobar.foreach(lambda w_: w_.show_all())
 
     def cleanup(self):
         if self._infobar_connection is not None:

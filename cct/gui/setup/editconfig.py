@@ -30,13 +30,13 @@ class EditConfig(ToolWindow):
         model.clear()
         parents = [None]
 
-        def _add_children(config, parents):
-            for c in sorted(config.keys()):
-                it = model.append(parents[-1], (c, ''))
-                if isinstance(config[c], dict):
-                    parents.append(it)
-                    _add_children(config[c], parents)
-            del parents[-1]
+        def _add_children(conf, pars):
+            for c in sorted(conf.keys()):
+                it = model.append(pars[-1], (c, ''))
+                if isinstance(conf[c], dict):
+                    pars.append(it)
+                    _add_children(conf[c], pars)
+            del pars[-1]
 
         _add_children(self.instrument.config, parents)
         self._selectioniter = None  # on_select() will update this promptly
@@ -53,7 +53,7 @@ class EditConfig(ToolWindow):
         self._changedpaths = []
         model = self.builder.get_object('configtreestore')
         # reset the "changed" flag.
-        model.foreach(lambda model, path, it: setitem(model[it], 1, ''))
+        model.foreach(lambda mdl, pth, it: setitem(mdl[it], 1, ''))
         self.on_save(button)
 
     def mark_change(self):

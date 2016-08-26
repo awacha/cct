@@ -430,7 +430,7 @@ class FileSequence(Service):
                 pickle.dump(params, f)
 
             write_legacy_paramfile(paramfilename, params)
-            kwargs['params'] = params
+            kwargs['param'] = params
         self.instrument.services['exposureanalyzer'].submit(
             fsn, filename, prefix, **kwargs)
 

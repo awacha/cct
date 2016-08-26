@@ -12,8 +12,8 @@ class Message(object):
         obj = object.__new__(cls)
         return obj
 
-    def __init__(self, type, id, sender, **kwargs):
-        self._dict = {'type': type, 'id': id, 'sender': sender, 'timestamp': time.monotonic()}
+    def __init__(self, messagetype, messageid, sender, **kwargs):
+        self._dict = {'type': messagetype, 'id': messageid, 'sender': sender, 'timestamp': time.monotonic()}
         self._dict.update(kwargs)
 
     def __getitem__(self, item):

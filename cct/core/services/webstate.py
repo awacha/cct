@@ -365,7 +365,7 @@ class WebStateFileWriter(Service):
         try:
             current = '{:.2f} mA'.format(self.instrument.get_device('xray_source').get_variable('current'))
         except KeyError:
-            ht = '??? mA'
+            current = '??? mA'
         for x in get_svg_object_by_id(dom, 'current'):
             x.firstChild.firstChild.data = current
         for x in get_svg_object_by_id(dom, 'detector_state'):
