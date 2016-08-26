@@ -66,6 +66,7 @@ class Calibration(ToolWindow):
         self.builder.get_object('loadfile_expander').add(self.exposureloader)
         logger.debug('EL packed. Connecting.')
         self.exposureloader.connect('open', self.on_loadexposure)
+        self.exposureloader.connect('error', self.on_loadexposure_error)
         logger.debug('Connected.')
         tv = self.builder.get_object('pairview')
         tc = Gtk.TreeViewColumn('Uncalibrated', Gtk.CellRendererText(), text=0)
@@ -83,6 +84,19 @@ class Calibration(ToolWindow):
         update_comboboxtext_choices(
             self.builder.get_object('peak_selector'),
             sorted(self.instrument.config['calibrants'][csel.get_active_text()]))
+
+    def on_peak_selector_changed(self, psel: Gtk.ComboBoxText):
+        calibrant = self.builder.get_object('calibrant_selector').get_active_text()
+        if calibrant is None:
+            return
+        peak = psel.get_active_text()
+        if peak is None:
+            return
+        self.builder.get_object('calval_adjustment').set_value(
+            self.instrument.config['calibrants'][calibrant][peak]['val'])
+        self.builder.get_object('calerr_adjustment').set_value(
+            self.instrument.config['calibrants'][calibrant][peak]['err'])
+        logger.debug('Set from calibrant.')
 
     def on_addpair(self, button: Gtk.Button):
         model = self.builder.get_object('pairstore')
@@ -126,14 +140,6 @@ class Calibration(ToolWindow):
     def on_overridemask_toggled(self, checkbutton: Gtk.CheckButton):
         self.builder.get_object('maskchooser').set_sensitive(checkbutton.get_active())
 
-    def on_setfromcalibrant(self, button):
-        csel = self.builder.get_object('calibrant_selector').get_active_text()
-        psel = self.builder.get_object('peak_selector').get_active_text()
-        self.builder.get_object('calval_adjustment').set_value(
-            self.instrument.config['calibrants'][csel][psel]['val'])
-        self.builder.get_object('calerr_adjustment').set_value(
-            self.instrument.config['calibrants'][csel][psel]['err'])
-        logger.debug('Set from calibrant.')
 
     def on_fitlorentz(self, button):
         self.do_fit('Lorentz')
@@ -151,11 +157,13 @@ class Calibration(ToolWindow):
         logger.debug('Uncalerr: ' + str(uncalerr))
         logger.debug('Calval: ' + str(calval))
         logger.debug('Calerr: ' + str(calerr))
+        assert isinstance(self._exposure, Exposure)
+        assert self._exposure.header.pixelsizex == self._exposure.header.pixelsizey
         if len(uncalval) > 1:
             def fitfunc(pix: np.ndarray, dist: float):
-                return qfrompix(pix, pixelsize=self._exposure.params['geometry']['pixelsize'],
+                return qfrompix(pix, pixelsize=self._exposure.header.pixelsizex,
                                 beampos=0, alpha=np.pi * 0.5,
-                                wavelength=self._exposure.params['geometry']['wavelength'],
+                                wavelength=self._exposure.header.wavelength,
                                 dist=dist)
 
             self._dist, stat = nonlinear_odr(uncalval, calval, uncalerr, calerr, fitfunc, [100])
@@ -165,10 +173,10 @@ class Calibration(ToolWindow):
             q = ErrorValue(float(calval[0]), float(calerr[0]))
             pix = ErrorValue(float(uncalval[0]), float(uncalerr[0]))
             wl = ErrorValue(
-                self._exposure.params['geometry']['wavelength'],
+                self._exposure.header.wavelength,
                 0)  # wavelength error is not considered here:
             # it has already been considered in the pixel value (peak position)
-            pixsize = self._exposure.params['geometry']['pixelsize']
+            pixsize = self._exposure.header.pixelsizex
             self._dist = (pix * pixsize) / (2.0 * (wl * q / 4.0 / np.pi).arcsin()).tan()
         else:
             self._dist = None
@@ -179,15 +187,16 @@ class Calibration(ToolWindow):
         self.builder.get_object('savedistance_button').set_sensitive(True)
         self.figpairscanvas.draw()
 
-    def do_fit(self, curvetype):
+    def do_fit(self, curvetype: str):
         xmin, xmax = self.plot1d.get_zoom_xrange()
+        assert isinstance(self._curve, Curve)
         try:
             x = self._curve.q
-            y = self._curve.intensity
+            y = self._curve.Intensity
             idx = (x >= xmin) & (x <= xmax)
             x = x[idx]
             y = y[idx]
-            dy = self._curve.error[idx]
+            dy = self._curve.Error[idx]
 
             pos, hwhm, baseline, ampl = findpeak_single(x, y, dy)
             x_ = np.linspace(x.min(), x.max(), len(x) * 10)
@@ -236,7 +245,7 @@ class Calibration(ToolWindow):
             elif method == 'Peak amplitude':
                 assert isinstance(self._exposure, Exposure)
                 xmin, xmax = self.plot1d.get_zoom_xrange()
-                logger.debug('Peak amplitude method: xmin: {:f}. xmax: {:f}. Original beampos: {:f}, {:f}.'.format(
+                logger.debug('Peak amplitude method: xmin: {:f}. xmax: {:f}. Original beampos: {}, {}.'.format(
                     xmin, xmax, self._exposure.header.beamcenterx, self._exposure.header.beamcentery))
                 posx, posy = findbeam_radialpeak(
                     self._exposure.intensity, [self._exposure.header.beamcenterx, self._exposure.header.beamcentery],
@@ -258,7 +267,7 @@ class Calibration(ToolWindow):
         assert isinstance(self._exposure, Exposure)
         self._exposure.header.beamcenterx = posx
         self._exposure.header.beamcentery = posy
-        self.builder.get_object('center_label').set_text('({:.3f}, {:.3f})'.format(posy, posx))
+        self.builder.get_object('center_label').set_text('({}, {})'.format(posy, posx))
         self.plot2d.set_beampos(posx, posy)
         self.radial_average()
         self.builder.get_object('savecenter_button').set_sensitive(True)
@@ -268,7 +277,7 @@ class Calibration(ToolWindow):
         self.instrument.config['geometry']['beamposx'] = self._exposure.header.beamcenterx
         self.instrument.config['geometry']['beamposy'] = self._exposure.header.beamcentery
         self.instrument.save_state()
-        logger.info('Beam center updated to ({:.3f}, {:.3f}) [(x, y) or (col, row)].'.format(
+        logger.info('Beam center updated to ({}, {}) [(x, y) or (col, row)].'.format(
             self.instrument.config['geometry']['beamposy'],
             self.instrument.config['geometry']['beamposx']))
         self.instrument.save_state()
@@ -287,16 +296,16 @@ class Calibration(ToolWindow):
         button.set_sensitive(False)
 
     def radial_average(self):
-        self._curve = self._exposure.radial_average(pixels=True)
-        assert isinstance(self._curve, Curve)
         assert isinstance(self._exposure, Exposure)
+        self._curve = self._exposure.radial_average(pixel=True)
+        assert isinstance(self._curve, Curve)
         try:
             sampletitle = self._exposure.header.title
         except KeyError:
             sampletitle = 'no sample'
         self.plot1d.addcurve(
             self._curve.q, self._curve.Intensity, self._curve.qError, self._curve.Error,
-            'FSN #{:d}: {}. Beam: ({:.3f}, {:.3f})'.format(
+            'FSN #{:d}: {}. Beam: ({}, {})'.format(
                 self._exposure.header.fsn, sampletitle,
                 self._exposure.header.beamcenterx,
                 self._exposure.header.beamcentery), 'pixel')
@@ -309,8 +318,11 @@ class Calibration(ToolWindow):
         self.plot2d.set_mask(im.mask)
         assert im.header.pixelsizex == im.header.pixelsizey
         self.plot2d.set_pixelsize(im.header.pixelsizex)
-        self.builder.get_object('center_label').set_text('({:.3f}, {:.3f})'.format(
+        self.builder.get_object('center_label').set_text('({}, {})'.format(
             im.header.beamcenterx,
             im.header.beamcentery))
         self._exposure = im
         self.radial_average()
+
+    def on_loadexposure_error(self, exposureloader, message):
+        self.error_message(message)

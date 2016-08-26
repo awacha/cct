@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 
 class ExposureLoader(Gtk.Box):
     __gsignals__ = {'open': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
-                    }
+                    'error': (GObject.SignalFlags.RUN_FIRST, None, (str,))}
 
     def __init__(self, instrument):
         super().__init__()
@@ -72,9 +72,17 @@ class ExposureLoader(Gtk.Box):
     def _do_load(self):
         prefix = self.builder.get_object('prefix_selector').get_active_text()
         fsn = self.builder.get_object('fsn_spin').get_value_as_int()
-        im = self.instrument.services['filesequence'].load_exposure(prefix, fsn)
+        try:
+            im = self.instrument.services['filesequence'].load_exposure(prefix, fsn)
+        except FileNotFoundError as fnfe:
+            self.emit('error', 'Cannot find exposure file {}'.format(fnfe.filename))
+            return
         if self.builder.get_object('maskoverride_check').get_active():
-            im.mask = self.instrument.services['filesequence'].get_mask(
-                self.builder.get_object('mask_chooser').get_filename())
+            try:
+                im.mask = self.instrument.services['filesequence'].get_mask(
+                    self.builder.get_object('mask_chooser').get_filename())
+            except FileNotFoundError as fnfe:
+                self.emit('error', 'Cannot find mask file {}'.format(fnfe.filename))
+                return
         self.emit('open', im)
         return False  # inhibit calling us once again as an idle function

@@ -1,5 +1,6 @@
 """Keep track of file sequence numbers and do other filesystem-related jobs"""
 import datetime
+import errno
 import logging
 import math
 import os
@@ -21,7 +22,7 @@ from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders, find_subfolders
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 """Default path settings in working directory:
 
@@ -469,7 +470,7 @@ class FileSequence(Service):
                 return readcbf(cbfname)[0]
             except FileNotFoundError:
                 pass
-        raise FileNotFoundError(cbfbasename)
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), cbfbasename)
 
     def load_header(self, prefix: str, fsn: int) -> Header:
         filebasename = self.exposurefileformat(prefix, fsn) + '.pickle'
@@ -481,7 +482,7 @@ class FileSequence(Service):
                 return Header.new_from_file(os.path.join(path, filebasename))
             except FileNotFoundError:
                 continue
-        raise FileNotFoundError(filebasename)
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filebasename)
 
     def load_exposure(self, prefix: str, fsn: int) -> Exposure:
         header = self.load_header(prefix, fsn)
@@ -494,7 +495,7 @@ class FileSequence(Service):
                     self.get_mask(header.maskname))
             except FileNotFoundError:
                 continue
-        raise FileNotFoundError(cbfbasename)
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), cbfbasename)
 
     def load_param(self, prefix: str, fsn: int) -> Dict:
         picklebasename = self.exposurefileformat(prefix, fsn) + '.pickle'
@@ -509,7 +510,7 @@ class FileSequence(Service):
                     return pickle.load(f)
             except FileNotFoundError:
                 continue
-        raise FileNotFoundError(picklebasename)
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), picklebasename)
 
     def get_mask(self, maskname: str) -> np.ndarray:
         if ((maskname not in self._masks) or

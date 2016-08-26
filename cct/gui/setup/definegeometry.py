@@ -1,4 +1,4 @@
-from ..core.dialogs import question_message, info_message
+from ..core.dialogs import question_message
 from ..core.toolwindow import ToolWindow
 
 
@@ -61,7 +61,7 @@ class DefineGeometry(ToolWindow):
         conf['mask'] = self.builder.get_object('mask_filechooser').get_filename()
         button.set_sensitive(False)
         self.instrument.save_state()
-        info_message(self.widget, 'Configuration saved', 'Saved configuration to file ' + self.instrument.configfile)
+        self.info_message('Configuration saved to file ' + self.instrument.configfile)
 
     def on_close(self, widget, event=None):
         if self.builder.get_object('apply_button').get_sensitive():

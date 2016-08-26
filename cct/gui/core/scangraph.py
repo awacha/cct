@@ -8,7 +8,6 @@ from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
 from matplotlib.figure import Figure
 from sastool.misc.basicfit import findpeak_single
 
-from .dialogs import error_message
 from .plotimage import PlotImageWindow
 from .toolwindow import ToolWindow
 from ...core.devices import Motor
@@ -333,8 +332,7 @@ class ScanGraph(ToolWindow):
             position, hwhm, baseline, amplitude, stat = findpeak_single(abscissa[index], signal[index], None,
                                                                         return_stat=True, curve=curvetype, signs=signs)
         except ValueError:
-            error_message(self.widget, 'Fitting error',
-                          'Probably no points of the selected curve are in the zoomed area.')
+            self.error_message('Fitting error: Probably no points of the selected curve are in the zoomed area.')
             return
         x = np.linspace(abscissa[index].min(), abscissa[index].max(), index.sum() * 5)
         assert isinstance(x, np.ndarray)

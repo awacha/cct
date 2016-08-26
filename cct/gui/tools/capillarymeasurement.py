@@ -6,7 +6,7 @@ from matplotlib.figure import Figure
 from sastool.misc.basicfit import findpeak_single
 from sastool.misc.errorvalue import ErrorValue
 
-from ..core.dialogs import error_message, info_message
+from ..core.dialogs import error_message
 from ..core.functions import update_comboboxtext_choices
 from ..core.toolwindow import ToolWindow
 
@@ -85,11 +85,9 @@ class CapillaryMeasurement(ToolWindow):
         try:
             self._scandata = self.instrument.services['filesequence'].load_scan(scanidx)
         except KeyError:
-            error_message(
-                self.widget, 'Error loading scan',
-                'Scan {:d} not found in file {}'.format(
-                    scanidx,
-                    self.instrument.services['filesequence'].get_scanfile()))
+            self.error_message('Scan {:d} not found in file {}'.format(
+                scanidx,
+                self.instrument.services['filesequence'].get_scanfile()))
             return
         update_comboboxtext_choices(self.builder.get_object('signalname_combo'),
                                     self._scandata['signals'][2:])
@@ -129,13 +127,18 @@ class CapillaryMeasurement(ToolWindow):
             signs = (-1,)
         else:
             signs = (1,)
-        pos, hwhm, y0, amplitude = findpeak_single(x, y, signs=signs, curve='Lorentz')
+        try:
+            pos, hwhm, y0, amplitude = findpeak_single(x, y, signs=signs, curve='Lorentz')
+        except ValueError:
+            self.error_message('Fitting error, not enough points in the selected range.')
+            return
         x = np.linspace(x.min(), x.max(), 100 * len(x))
         curve = self.axes.plot(x, amplitude * hwhm ** 2 / (hwhm ** 2 + (pos - x) ** 2) + y0, 'r-', label='')[0]
         if left:
             try:
                 self._negpeak_curve.remove()
                 self._negpeak_text.remove()
+                self._negpeak_text = None
             except AttributeError:
                 pass
             assert self._negpeak_text is None
@@ -145,6 +148,7 @@ class CapillaryMeasurement(ToolWindow):
             try:
                 self._pospeak_curve.remove()
                 self._pospeak_text.remove()
+                self._pospeak_text = None
             except AttributeError:
                 pass
             assert self._pospeak_text is None
@@ -180,7 +184,7 @@ class CapillaryMeasurement(ToolWindow):
     def on_saveposition(self, button):
         sn = self.builder.get_object('sampleselector').get_active_text()
         if sn is None:
-            error_message(self.widget, 'Cannot save position', 'Please select a sample first.')
+            self.error_message('Cannot save position, please select a sample first.')
             return
         sam = self.instrument.services['samplestore'].get_sample(sn)
         if self._scandata['signals'][0].upper().endswith('X'):
@@ -190,13 +194,12 @@ class CapillaryMeasurement(ToolWindow):
             sam.positiony = ErrorValue(self._position.val, self._position.err)
             msg = 'Y position set to: {}'.format(str(sam.positiony))
         else:
-            error_message(self.widget, 'Cannot update position for sample %s' % sn,
-                          'Motor name not recognized: %s ends in neither "X" nor "Y".' %
-                          self._scandata['signals'][0])
+            self.error_message('Cannot update position for sample {}: motor name {} not recognized'.format(
+                sn, self._scandata['signals']))
             return
         self.instrument.services['samplestore'].set_sample(sn, sam)
         self.instrument.save_state()
-        info_message(self.widget, 'Updated sample %s' % sn, msg)
+        self.info_message('Sample {} {}'.format(sn, msg))
         self.builder.get_object('saveposition_button').set_sensitive(False)
         self.builder.get_object('saveall_button').set_sensitive(False)
         return
@@ -211,7 +214,7 @@ class CapillaryMeasurement(ToolWindow):
         sam.thickness = ErrorValue(self._thickness.val / 10, self._thickness.err / 10)
         self.instrument.services['samplestore'].set_sample(sn, sam)
         self.instrument.save_state()
-        info_message(self.widget, 'Updated sample %s' % sn, 'Thickness set to: %s' % str(sam.thickness))
+        self.info_message('Thickness of sample {} set to: {} cm'.format(sn, sam.thickness))
         self.builder.get_object('savethickness_button').set_sensitive(False)
         self.builder.get_object('saveall_button').set_sensitive(False)
         return True

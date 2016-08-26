@@ -24,7 +24,7 @@ from ..utils.pathutils import find_in_subfolders
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DataReductionEnd(Exception):
@@ -89,7 +89,8 @@ class ExposureAnalyzer_Backend(object):
     telemetry_interval = 1
 
     def __init__(self, loglevel, config, inqueue, outqueue):
-        self._logger = logging.getLogger(__name__ + '::backgroundprocess')
+        self._logger = logging.getLogger(__name__ + '::' + self.name + '__backgroundprocess')
+        self._logger.propagate = False
         self.inqueue = inqueue
         self.outqueue = outqueue
         self.config = config
@@ -109,7 +110,8 @@ class ExposureAnalyzer_Backend(object):
 
     # noinspection PyMethodMayBeStatic
     def get_telemetry(self):
-        return TelemetryInfo()
+        tm = TelemetryInfo()
+        return tm
 
     def send_to_frontend(self, type_: str, **kwargs):
         self._msgid += 1
@@ -475,8 +477,6 @@ class ExposureAnalyzer(Service):
         self._backendprocess.daemon = False
         self._backendprocess.start()
 
-    def get_telemetry(self):
-        self._queue_to_backend.put_nowait(('_telemetry', None, None, None))
 
     def _idle_function(self):
         try:
@@ -489,7 +489,9 @@ class ExposureAnalyzer(Service):
                     raise ServiceError(
                         'Working[{}]=={:d} less than zero!'.format(
                             message['prefix'], self._working[message['prefix']]))
-            logger.debug('Exposureanalyzer working on {:d} jobs'.format(sum(self._working.values())))
+            njobs = sum(self._working.values())
+            if njobs:
+                logger.debug('Exposureanalyzer working on {:d} jobs'.format(njobs))
         except queue.Empty:
             return True
         if message['type'] == 'error':
@@ -530,7 +532,11 @@ class ExposureAnalyzer(Service):
         self.send_to_backend('config', configdict=dictionary)
 
     def stop(self):
-        self.send_to_backend('exit')
+        if self._backendprocess.is_alive():
+            self.send_to_backend('exit')
+        else:
+            self.emit('shutdown')
+
 
     def send_to_backend(self, msgtype, **kwargs):
         self._msgid += 1

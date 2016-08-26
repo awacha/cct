@@ -104,7 +104,7 @@ class TCPCommunicator:
             self.tcpsocket = socket.create_connection((host, port))
             self.tcpsocket.setblocking(False)
         except (socket.error, socket.gaierror, socket.herror, ConnectionRefusedError) as exc:
-            logger.error(
+            self.logger.error(
                 'Error initializing socket connection to device {}:{:d}'.format(host, port))
             try:
                 self.tcpsocket.close()

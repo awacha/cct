@@ -3,7 +3,6 @@ from operator import setitem
 
 from gi.repository import Gtk
 
-from ..core.dialogs import info_message
 from ..core.toolwindow import ToolWindow
 from ...core.instrument.privileges import PRIV_SUPERUSER
 
@@ -136,4 +135,4 @@ class EditConfig(ToolWindow):
     def on_save(self, button):
         self.instrument.save_state()
         self.update_gui()
-        info_message(self.widget, 'Config saved', 'Config saved to ' + self.instrument.configfile)
+        self.info_message('Configuration saved to ' + self.instrument.configfile)

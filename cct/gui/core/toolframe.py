@@ -16,10 +16,27 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+class ToolFrameException(Exception):
+    pass
+
+
+class ToolFrameDeviceRequirementException(ToolFrameException):
+    pass
+
+
 class ToolFrame(BuilderWidget):
     widgets_to_make_insensitive = []
     privlevel = PRIV_LAYMAN
     required_devices = []
+
+    class TFException(Exception):
+        pass
+
+    class DeviceException(TFException):
+        pass
+
+    class PrivilegeException(TFException):
+        pass
 
     def __init__(self, gladefile: str, mainwidgetname: str, instrument: Instrument, *args, **kwargs):
         super().__init__(pkg_resources.resource_filename(
@@ -38,7 +55,7 @@ class ToolFrame(BuilderWidget):
                 self.widget.set_sensitive(False)
                 # error_message(self.widget, 'Device error', 'Required device {} not present.'.format(d))
                 logger.error('Required device ' + d + ' not present while mapping toolframe ' + self.gladefile)
-                raise
+                raise self.DeviceException(d)
         try:
             self.init_gui(*args, **kwargs)
         except Exception as exc:

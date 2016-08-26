@@ -2,6 +2,7 @@ import logging
 import traceback
 from typing import Optional, Tuple
 
+import matplotlib.axes
 import matplotlib.cm
 import matplotlib.colors
 import numpy as np
@@ -14,7 +15,7 @@ from matplotlib.figure import Figure
 from .builderwidget import BuilderWidget
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class PlotImageWidget(BuilderWidget):
@@ -52,7 +53,7 @@ class PlotImageWidget(BuilderWidget):
         palette_combo = self.builder.get_object('palette_combo')
         for i, cm in enumerate(sorted(matplotlib.cm.cmap_d)):
             palette_combo.append_text(cm)
-            if cm == 'jet':
+            if cm == 'viridis':
                 palette_combo.set_active(i)
         self.widget.pack_start(self.canvas, True, True, 0)
         self.widget.pack_start(self.toolbar, False, True, 0)
@@ -63,18 +64,25 @@ class PlotImageWidget(BuilderWidget):
     def on_settingschanged(self, widget):
         self.replot()
 
-    def set_image(self, image):
-        if (self._matrix is image) or (self._matrix == image):
-            self._matrix = image
-            self.replot_image()
-            self.fig.tight_layout()
-            self.canvas.draw_idle()
+    def set_image(self, image: np.ndarray):
+        assert isinstance(image, np.ndarray)
+        if ((self._matrix is image) or
+                (isinstance(image, np.ndarray) and
+                     isinstance(self._matrix, np.ndarray) and
+                     (self._matrix == image).all())):
+            # do nothing if the matrix has not changed.
+            return
+        self._matrix = image
+        self.replot_image()
+        self.fig.tight_layout()
+        self.canvas.draw_idle()
 
-    def get_image(self):
+    def get_image(self) -> np.ndarray:
         return self._matrix
 
     def set_mask(self, mask: Optional[np.ndarray] = None):
-        if (mask is self._mask) or (mask == self._mask):
+        if (mask is self._mask) or (isinstance(mask, type(self._mask)) and (mask == self._mask).all()):
+            # do nothing if the mask has not changed
             return
         self._mask = mask
         self.validate_parameters()
@@ -145,7 +153,7 @@ class PlotImageWidget(BuilderWidget):
         try:
             ac.remove_all()
             ac.append_text('abs. pixel')
-            for attr, scale in [('_beampos', 'rel.pixel'),
+            for attr, scale in [('_beampos', 'rel. pixel'),
                                 ('_pixelsize', 'detector radius'),
                                 ('_distance', 'twotheta'),
                                 ('_wavelength', 'q')]:
@@ -171,7 +179,7 @@ class PlotImageWidget(BuilderWidget):
     def replot_image(self):
         try:
             self._image_handle.remove()
-        except AttributeError:
+        except (AttributeError, ValueError):
             pass
         scaling = self.builder.get_object('colourscale_combo').get_active_text()
         if self._matrix.max() <= 0:
@@ -198,33 +206,34 @@ class PlotImageWidget(BuilderWidget):
         if axesscale == 'abs. pixel':
             extent = (0, self._matrix.shape[1] - 1, self._matrix.shape[0] - 1, 0)  # left, right, bottom, top
         elif axesscale == 'rel. pixel':
-            extent = (0 - self._beampos[1], self._matrix.shape[1] - 1 - self._beampos[1],
-                      self._matrix.shape[0] - 1 - self._beampos[0], 0 - self._beampos[0])
+            extent = (0 - self._beampos[0], self._matrix.shape[1] - 1 - self._beampos[0],
+                      self._matrix.shape[0] - 1 - self._beampos[1], 0 - self._beampos[1])
         elif axesscale == 'detector radius':
             extent = (
-                (0 - self._beampos[1]) * self._pixelsize,
-                (self._matrix.shape[1] - 1 - self._beampos[1]) * self._pixelsize,
-                (self._matrix.shape[0] - 1 - self._beampos[0]) * self._pixelsize,
-                (0 - self._beampos[0]) * self._pixelsize)
+                (0 - self._beampos[0]) * self._pixelsize,
+                (self._matrix.shape[1] - 1 - self._beampos[0]) * self._pixelsize,
+                (self._matrix.shape[0] - 1 - self._beampos[1]) * self._pixelsize,
+                (0 - self._beampos[1]) * self._pixelsize)
         elif axesscale == 'twotheta':
-            extent = (np.arctan((0 - self._beampos[1]) * self._pixelsize / self._distance) * 180 / np.pi,
+            extent = (np.arctan((0 - self._beampos[0]) * self._pixelsize / self._distance) * 180 / np.pi,
                       np.arctan((self._matrix.shape[1] - 1 - self._beampos[
-                          1]) * self._pixelsize / self._distance) * 180 / np.pi,
-                      np.arctan((self._matrix.shape[0] - 1 - self._beampos[
                           0]) * self._pixelsize / self._distance) * 180 / np.pi,
-                      np.arctan((0 - self._beampos[0]) * self._pixelsize / self._distance) * 180 / np.pi)
+                      np.arctan((self._matrix.shape[0] - 1 - self._beampos[
+                          1]) * self._pixelsize / self._distance) * 180 / np.pi,
+                      np.arctan((0 - self._beampos[1]) * self._pixelsize / self._distance) * 180 / np.pi)
         elif axesscale == 'q':
             extent = (4 * np.pi * np.sin(
-                0.5 * np.arctan((0 - self._beampos[1]) * self._pixelsize / self._distance)) / self._wavelength,
+                0.5 * np.arctan((0 - self._beampos[0]) * self._pixelsize / self._distance)) / self._wavelength,
                       4 * np.pi * np.sin(0.5 * np.arctan((self._matrix.shape[1] - 1 - self._beampos[
-                          1]) * self._pixelsize / self._distance)) / self._wavelength,
-                      4 * np.pi * np.sin(0.5 * np.arctan((self._matrix.shape[0] - 1 - self._beampos[
                           0]) * self._pixelsize / self._distance)) / self._wavelength,
+                      4 * np.pi * np.sin(0.5 * np.arctan((self._matrix.shape[0] - 1 - self._beampos[
+                          1]) * self._pixelsize / self._distance)) / self._wavelength,
                       4 * np.pi * np.sin(
                           0.5 * np.arctan(
-                              (0 - self._beampos[0]) * self._pixelsize / self._distance)) / self._wavelength)
+                              (0 - self._beampos[1]) * self._pixelsize / self._distance)) / self._wavelength)
         else:
             raise ValueError(axesscale)
+        extent = tuple([float(e) for e in extent])
         self._image_handle = self.axis.imshow(matrix, cmap=self.builder.get_object('palette_combo').get_active_text(),
                                               norm=norm, interpolation='nearest', aspect='equal', origin='upper',
                                               extent=extent)
@@ -247,7 +256,7 @@ class PlotImageWidget(BuilderWidget):
     def replot_mask(self):
         try:
             self._mask_handle.remove()
-        except AttributeError:
+        except (AttributeError, ValueError):
             pass
         if not (self.builder.get_object('showmask_checkbutton').get_sensitive() and
                     self.builder.get_object('showmask_checkbutton').get_active()):
@@ -263,8 +272,11 @@ class PlotImageWidget(BuilderWidget):
     def replot_crosshair(self):
         try:
             self._crosshair_handles[0].remove()
+        except (IndexError, TypeError, ValueError):
+            pass
+        try:
             self._crosshair_handles[1].remove()
-        except IndexError:
+        except (IndexError, TypeError, ValueError):
             pass
         if not (self.builder.get_object('showcrosshair_checkbutton').get_sensitive() and
                     self.builder.get_object('showcrosshair_checkbutton').get_active()):
@@ -274,13 +286,14 @@ class PlotImageWidget(BuilderWidget):
         extent = self._image_handle.get_extent()
         if self.builder.get_object('axes_combo').get_active_text() == 'abs. pixel':
             self._crosshair_handles = self.axis.plot([extent[0], extent[1]],
-                                                     [self._beampos[0], self._beampos[0]],
                                                      [self._beampos[1], self._beampos[1]],
+                                                     [self._beampos[0], self._beampos[0]],
                                                      [extent[2], extent[3]],
-                                                     color='w', lw=1)
+                                                     color='w', lw=1, scalex=False, scaley=False)
         else:
             self._crosshair_handles = self.axis.plot([extent[0], extent[1]], [0, 0],
-                                                     [0, 0], [extent[2], extent[3]], color='w', lw=1)
+                                                     [0, 0], [extent[2], extent[3]], color='w', lw=1,
+                                                     scalex=False, scaley=False)
 
     def replot_colorbar(self):
         if self.builder.get_object('showcolourscale_checkbutton').get_active():
@@ -294,7 +307,7 @@ class PlotImageWidget(BuilderWidget):
         else:
             try:
                 self.colorbaraxis.remove()
-            except AttributeError:
+            except (AttributeError, ValueError):
                 pass
 
     def replot(self, keepzoom=True):

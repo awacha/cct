@@ -1,6 +1,6 @@
 from gi.repository import Gtk
 
-from ..core.dialogs import question_message, error_message
+from ..core.dialogs import question_message
 from ..core.toolwindow import ToolWindow
 from ...core.instrument.privileges import PRIV_PROJECTMAN
 
@@ -81,7 +81,7 @@ class ProjectManager(ToolWindow):
                 project = self.instrument.services['accounting'].new_project(entry.get_text(), '', '')
                 self.update_gui(project.projectid)
             except Exception as exc:
-                error_message(dlg, 'Cannot add new project', str(exc))
+                self.error_message('Cannot add new project')
         dlg.destroy()
 
     def on_removeproject(self, button):
@@ -92,5 +92,5 @@ class ProjectManager(ToolWindow):
         try:
             self.instrument.services['accounting'].delete_project(projectid)
         except ValueError:
-            error_message(self.widget, 'Error', 'Cannot delete current project')
+            self.error_message('Cannot delete the current project')
         self.update_gui()

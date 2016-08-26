@@ -58,8 +58,7 @@ class ScanMeasurement(ToolWindow):
         exptime = self.builder.get_object('countingtime_spin').get_value()
         comment = self.builder.get_object('comment_entry').get_text().replace('"', '\\"')
         if not comment.strip():
-            error_message(self.widget, 'Cannot start scan without comment',
-                          'Please give the details of this scan in the "Comment" field.')
+            self.error_message('Please fill in the "Comment" field.')
             return True
         if self.builder.get_object('symmetric_checkbutton').get_active():
             width = self.builder.get_object('start_or_width_spin').get_value()
@@ -76,8 +75,7 @@ class ScanMeasurement(ToolWindow):
             self._scan_commandclass = Scan
             self._scan_commandline = 'scan("{}", {:f}, {:f}, {:d}, {:f}, "{}")'.format(*self._scan_arguments)
         if not (motor.checklimits(start) and motor.checklimits(end)):
-            error_message(self.widget, 'Cannot start scan',
-                          'Start and end positions outside the limits of motor {}.'.format(motor.name))
+            self.error_message('Start and end positions outside the limits of motor {}.'.format(motor.name))
             return True
         ea = self.instrument.services['exposureanalyzer']
         assert isinstance(ea, ExposureAnalyzer)

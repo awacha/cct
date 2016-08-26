@@ -1,6 +1,6 @@
 import logging
 
-from ..core.toolwindow import ToolWindow, error_message
+from ..core.toolwindow import ToolWindow
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -69,7 +69,7 @@ class DataReduction(ToolWindow):
         fsnfirst = self.builder.get_object('fsnfirst_adjustment').get_value()
         fsnlast = self.builder.get_object('fsnlast_adjustment').get_value()
         if fsnlast <= fsnfirst:
-            error_message(self.widget, 'Error', 'The last fsn should be larger than the first.')
+            self.error_message('The last fsn should be larger than the first.')
             return
         model = self.builder.get_object('exposurestore')
         model.clear()

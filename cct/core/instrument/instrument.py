@@ -486,19 +486,22 @@ class Instrument(Callbacks):
             self._try_to_send_stopped_signal()
 
     def create_services(self):
-        for sname, sclass in [('interpreter', Interpreter),
-                              ('filesequence', FileSequence),
-                              ('samplestore', SampleStore),
-                              ('exposureanalyzer', ExposureAnalyzer),
-                              ('accounting', Accounting),
-                              ('webstate', WebStateFileWriter),
-                              ('telemetrymanager', TelemetryManager),
-                              ]:
+        for sname, sclass, signals in [
+            ('interpreter', Interpreter, {}),
+            ('filesequence', FileSequence, {}),
+            ('samplestore', SampleStore, {}),
+            ('exposureanalyzer', ExposureAnalyzer, {'telemetry': self.on_telemetry}),
+            ('accounting', Accounting, {}),
+            ('webstate', WebStateFileWriter, {}),
+            ('telemetrymanager', TelemetryManager, {}),
+        ]:
             assert issubclass(sclass, Service)
             print('Initializing service {}.'.format(sname))
             assert sclass.name == sname
             self.services[sname] = sclass(self, self.configdir, self.config['services'][sname])
             self._service_connections[sname] = [self.services[sname].connect('shutdown', self.on_service_shutdown)]
+            for sig in signals:
+                self._service_connections[sname].append(self.services[sname].connect(sig, signals[sig]))
 
     def on_service_shutdown(self, service):
         logger.debug('Service {} has shut down.'.format(service.name))

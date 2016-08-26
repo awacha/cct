@@ -15,12 +15,12 @@ logger.setLevel(logging.INFO)
 class Motors(ToolWindow):
     widgets_to_make_insensitive = ['highlevel_expander']
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, gladefile, toplevelname, instrument, windowtitle, *args, **kwargs):
         self._samplestore_connection = None
         self._movebeamstop = None
         self._movetosample = None
-        super().__init__(*args, **kwargs)
-        self.required_devices = ['Motor_' + m for m in self.instrument.motors]
+        self.required_devices = ['Motor_' + m for m in instrument.motors]
+        super().__init__(gladefile, toplevelname, instrument, windowtitle, *args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
         model = self.builder.get_object('motorlist')
@@ -78,17 +78,15 @@ class Motors(ToolWindow):
                 self.set_sensitive(True)
 
     def check_beamstop_state(self):
-        xpos = self.instrument.motors['BeamStop_X'].where()
-        ypos = self.instrument.motors['BeamStop_Y'].where()
-        if (abs(xpos - self.instrument.config['beamstop']['in'][0]) < 0.001 and
-                    abs(ypos - self.instrument.config['beamstop']['in'][1]) < 0.001):
+        bss = self.instrument.get_beamstop_state()
+        if bss == 'in':
             self.builder.get_object('beamstopstatusimage').set_from_icon_name('beamstop-in', Gtk.IconSize.BUTTON)
             self.builder.get_object('beamstopstatuslabel').set_label('Beamstop is in the beam')
-        elif (abs(xpos - self.instrument.config['beamstop']['out'][0]) < 0.001 and
-                      abs(ypos - self.instrument.config['beamstop']['out'][1]) < 0.001):
+        elif bss == 'out':
             self.builder.get_object('beamstopstatusimage').set_from_icon_name('beamstop-out', Gtk.IconSize.BUTTON)
             self.builder.get_object('beamstopstatuslabel').set_label('Beamstop is out of the beam')
         else:
+            assert bss == 'unknown'
             self.builder.get_object('beamstopstatusimage').set_from_icon_name('beamstop-inconsistent',
                                                                               Gtk.IconSize.BUTTON)
             self.builder.get_object('beamstopstatuslabel').set_label('Beamstop position inconsistent')
@@ -198,12 +196,12 @@ class MotorConfig(ToolWindow):
     privlevel = PRIV_MOTORCONFIG
     destroy_on_close = True
 
-    def __init__(self, *args, **kwargs):
-        self.motorname = None
-        super().__init__(*args, **kwargs)
+    def __init__(self, gladefile, toplevelname, instrument, windowtitle, motorname, *args, **kwargs):
+        self.motorname = motorname
+        self.required_devices = ['Motor_' + motorname]
+        super().__init__(gladefile, toplevelname, instrument, windowtitle, motorname, *args, **kwargs)
 
     def init_gui(self, motorname):
-        self.motorname = motorname
         motor = self.instrument.motors[motorname]
         assert isinstance(motor.controller, TMCMCard)
         assert isinstance(motor, Motor)
@@ -281,13 +279,12 @@ class MotorMover(ToolWindow):
     privlevel = PRIV_MOVEMOTORS
     widgets_to_make_insensitive = ['close_button', 'motorselector', 'target_spin', 'relative_checkbutton']
 
-    def __init__(self, *args, **kwargs):
-        self.motorname = None
-        super().__init__(*args, **kwargs)
-
-    def init_gui(self, motorname):
+    def __init__(self, gladefile, toplevelname, instrument, windowtitle, motorname, *args, **kwargs):
         self.motorname = motorname
         self.required_devices = ['Motor_' + motorname]
+        super().__init__(gladefile, toplevelname, instrument, windowtitle, motorname, *args, **kwargs)
+
+    def init_gui(self, motorname):
         motorselector = self.builder.get_object('motorselector')
         for i, m in enumerate(sorted(self.instrument.motors)):
             motorselector.append_text(m)

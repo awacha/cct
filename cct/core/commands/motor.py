@@ -153,7 +153,7 @@ class Beamstop(Command):
     """Query or adjust the beamstop
 
     Invocation:
-        beamstop()           -- returns the current state ('in', 'out', 'none')
+        beamstop()           -- returns the current state ('in', 'out', 'unknown')
         beamstop(<value>)    -- moves the beamstop in or out
 
     Arguments:
@@ -200,16 +200,7 @@ class Beamstop(Command):
 
     def execute(self):
         if self.direction == 'query':
-            xin, yin = self.config['beamstop']['in']
-            xout, yout = self.config['beamstop']['out']
-            xpos = self.get_motor('BeamStop_X').where()
-            ypos = self.get_motor('BeamStop_Y').where()
-            if abs(xin - xpos) < 0.01 and abs(yin - ypos) < 0.01:
-                self.idle_return('in')
-            elif abs(xout - xpos) < 0.01 and abs(yout - ypos) < 0.01:
-                self.idle_return('out')
-            else:
-                self.idle_return('none')
+            self.idle_return(self.instrument.get_beamstop_state())
             return
         self.emit('message', 'Moving beamstop {}.'.format(self.direction))
         self.get_motor('BeamStop_X').moveto(self.targetpos[0])

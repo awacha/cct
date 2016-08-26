@@ -24,6 +24,66 @@ class ToolWindow(ToolFrame):
         self._inhibit_close_reason = None
         self._interpreter_connections = []
         self.command_failed = False
+        w = self.widget.get_child()
+        self.widget.remove(w)
+        self.__box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.widget.add(self.__box)
+        self.infobar = Gtk.InfoBar()
+        self.__box.pack_end(w, True, True, 0)
+        self.__box.pack_end(self.infobar, False, False, 0)
+        self.infobar.set_no_show_all(True)
+        self.infobar.set_show_close_button(True)
+        self.infolabel = Gtk.Label()
+        self.infoimage = Gtk.Image()
+        self.infobar.get_content_area().pack_start(self.infoimage, False, True, 0)
+        self.infobar.get_content_area().pack_start(self.infolabel, True, True, 0)
+        self.infolabel.set_halign(Gtk.Align.START)
+        self.infolabel.set_hexpand(True)
+        self.infolabel.set_hexpand_set(True)
+        self._infobar_connection = self.infobar.connect('response', self.on_infobar_response)
+        self.infobar.foreach(lambda w: w.show_all())
+
+    def cleanup(self):
+        if self._infobar_connection is not None:
+            self.infobar.disconnect(self._infobar_connection)
+        self._infobar_connection = None
+        super().cleanup()
+
+    def on_infobar_response(self, infobar: Gtk.InfoBar, response=Gtk.ResponseType):
+        self.infolabel.set_label('')
+        self.infoimage.set_from_icon_name('image-missing', Gtk.IconSize.DIALOG)
+        infobar.hide()
+        return False
+
+    def error_message(self, message: str):
+        return self.infobar_message(Gtk.MessageType.ERROR, message)
+
+    def info_message(self, message: str):
+        return self.infobar_message(Gtk.MessageType.INFO, message)
+
+    def warning_message(self, message: str):
+        return self.infobar_message(Gtk.MessageType.WARNING, message)
+
+    def infobar_message(self, messagetype: Gtk.MessageType, message: str):
+        if self.infobar.get_visible() and self.infobar.get_message_type() == messagetype:
+            # if it is already visible and has the same message type, append the new message to the previous one
+            self.infolabel.set_label(self.infolabel.get_label() + '\n' + message)
+        else:
+            self.infolabel.set_label(message)
+            self.infobar.set_message_type(messagetype)
+            if messagetype == Gtk.MessageType.ERROR:
+                self.infoimage.set_from_icon_name('dialog-error', Gtk.IconSize.DIALOG)
+            elif messagetype == Gtk.MessageType.WARNING:
+                self.infoimage.set_from_icon_name('dialog-warning', Gtk.IconSize.DIALOG)
+            elif messagetype == Gtk.MessageType.INFO:
+                self.infoimage.set_from_icon_name('dialog-information', Gtk.IconSize.DIALOG)
+            else:
+                self.infoimage.set_from_icon_name('image-missing', Gtk.IconSize.DIALOG)
+            # workaround bug https://bugzilla.gnome.org/show_bug.cgi?id=710888
+            self.__box.remove(self.infobar)
+            self.__box.pack_end(self.infobar, False, True, 0)
+
+            self.infobar.show()
 
     def set_sensitive(self, state: bool, reason: Optional[str] = None, additional_widgets: Optional[List] = None):
         if state:
@@ -45,8 +105,7 @@ class ToolWindow(ToolFrame):
     def on_window_delete(self, window: Gtk.Window, event: Optional[Gdk.Event]):
         logger.debug('Deleting toolwindow ' + self.gladefile)
         if not self.can_close():
-            error_message(self.widget, 'Cannot close this window',
-                          self._inhibit_close_reason)
+            self.error_message('Cannot close this window: ' + self._inhibit_close_reason)
             return True
         if self.destroy_on_close:
             # let the callback chain continue with the default handler, which

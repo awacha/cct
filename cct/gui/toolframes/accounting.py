@@ -5,7 +5,7 @@ from ..core.toolframe import ToolFrame
 from ...core.services.accounting import Accounting, PrivilegeLevel
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class AccountingFrame(ToolFrame):

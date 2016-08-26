@@ -8,7 +8,7 @@ from gi.repository import Gtk, GdkPixbuf
 from .devicestatusbar import DeviceStatusBar
 from .logtreeview import LogTreeView
 from ..accounting import UserManager, ProjectManager
-from ..core import ToolWindow, error_message
+from ..core import ToolWindow, error_message, ToolFrame
 from ..devices import Motors, GeniX, TPG201, HaakePhoenix, Pilatus, DeviceConnections
 from ..diagnostics import ResourceUsage
 from ..measurement import ScanMeasurement, SingleExposure, TransmissionMeasurement, ScriptMeasurement, CommandHelpDialog
@@ -258,11 +258,13 @@ class MainWindow(object):
             logger.debug('Constructing needed for dialog ' + gladefile)
             try:
                 self._toolwindows[key] = windowclass(gladefile, toplevelname, self.instrument, windowtitle)
+            except ToolFrame.DeviceException as ex:
+                error_message(self.widget, 'Could not open window {}'.format(windowtitle),
+                              'Missing required device: {}'.format(ex.args[0]))
+                return
             except Exception as exc:
-                # this has already been handled with an error dialog
-                logger.warning('Could not open window {}: {} {}'.format(windowtitle, str(exc), traceback.format_exc()))
-                self._toolwindows[key].destroy()
-                del self._toolwindows[key]
+                error_message(self.widget, 'Could not open window {}'.format(windowtitle),
+                              '{}\n{}'.format(str(exc), traceback.format_exc()))
                 return
             # if self._toolwindows[key].widget.destroyed():
             #    logger.error('Error while constructing dialog ' + gladefile)

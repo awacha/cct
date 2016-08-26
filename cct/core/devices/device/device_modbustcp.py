@@ -38,13 +38,13 @@ class DeviceBackend_ModbusTCP(DeviceBackend):
         self.deviceconnectionparameters
         """
         host, port, modbus_timeout = self.deviceconnectionparameters
-        logger.debug('Connecting to ModbusTCP device: {}:{:d}'.format(host, port))
+        self.logger.debug('Connecting to ModbusTCP device: {}:{:d}'.format(host, port))
         self._modbusclient = ModbusClient(host, port, timeout=modbus_timeout)
         if not self._modbusclient.open():
             self._modbusclient = None
             raise DeviceError(
                 'Error initializing Modbus over TCP connection to device {}:{:d}'.format(host, port))
-        logger.debug('Connected to device {}:{:d}'.format(host, port))
+        self.logger.debug('Connected to device {}:{:d}'.format(host, port))
 
     def breakdown_connection(self):
         """Break down the connection to the device.
@@ -57,7 +57,7 @@ class DeviceBackend_ModbusTCP(DeviceBackend):
         device.
         """
         try:
-            logger.debug('Disconnecting from device {}:{:d}'.format(
+            self.logger.debug('Disconnecting from device {}:{:d}'.format(
                 self._modbusclient.host(), self._modbusclient.port()))
             self._modbusclient.close()
             self._modbusclient = None
