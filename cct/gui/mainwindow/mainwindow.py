@@ -318,7 +318,7 @@ class MainWindow(object):
 
     def on_menu(self, menuitem: Gtk.MenuItem):
         name = menuitem.get_name()
-        if not name.startswith('menuitem'):
+        if not (name.startswith('menuitem') or name.startswith('toolitem')):
             raise ValueError('Invalid menu item name: {}'.format(name))
         name = name.split('_', 1)[1]
         if name == 'quit':
@@ -370,3 +370,6 @@ class MainWindow(object):
 
     def on_insert_command(self, commandhelpdialog: CommandHelpDialog, command: str):
         self.builder.get_object('command_entry').set_text(command)
+
+    def on_toolbar(self, toolbutton):
+        return self.on_menu(toolbutton)
