@@ -1,5 +1,7 @@
 import logging
 
+from gi.repository import Gtk
+
 from ..core.functions import update_comboboxtext_choices, notify
 from ..core.scangraph import ScanGraph
 from ..core.toolwindow import ToolWindow, error_message
@@ -14,6 +16,7 @@ logger.setLevel(logging.INFO)
 
 
 class ScanMeasurement(ToolWindow):
+    required_devices = ['detector', 'xraysource']
     def __init__(self, *args, **kwargs):
         self._scanfsn = None
         self.scangraph = None
@@ -83,6 +86,7 @@ class ScanMeasurement(ToolWindow):
             ea.connect('scanpoint', self.on_scanpoint),
             ea.connect('image', self.on_image)]
         self.builder.get_object('start_button').set_label('Stop')
+        self.builder.get_object('start_button').get_image().set_from_icon_name('gtk-stop', Gtk.IconSize.BUTTON)
         self._scanfsn = self.instrument.services['filesequence'].get_nextfreescan(acquire=False)
         self.execute_command(Moveto, (motor.name, start), additional_widgets=['entry_grid'])
         return True
@@ -135,12 +139,13 @@ class ScanMeasurement(ToolWindow):
     def finalize_scan(self):
         try:
             self.scangraph.truncate_scan()
-            self.scangraph = None
-            self.builder.get_object('start_button').set_label('Start')
-            self.builder.get_object('scan_progress').set_visible(False)
             notify('Scan ended', 'Scan {:d} ended'.format(self._scanfsn))
         except AttributeError:
             pass
+        self.scangraph = None
+        self.builder.get_object('start_button').set_label('Start')
+        self.builder.get_object('start_button').get_image().set_from_icon_name('system-run', Gtk.IconSize.BUTTON)
+        self.builder.get_object('scan_progress').set_visible(False)
 
     def on_command_message(self, interpreter, commandname, message):
         logger.info('Scan message: ' + message)

@@ -14,12 +14,12 @@ logger.setLevel(logging.INFO)
 
 class Motors(ToolWindow):
     widgets_to_make_insensitive = ['highlevel_expander']
+    required_devices = ['tmcm351a', 'tmcm351b', 'tmcm6110']
 
     def __init__(self, gladefile, toplevelname, instrument, windowtitle, *args, **kwargs):
         self._samplestore_connection = None
         self._movebeamstop = None
         self._movetosample = None
-        self.required_devices = ['Motor_' + m for m in instrument.motors]
         super().__init__(gladefile, toplevelname, instrument, windowtitle, *args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
@@ -199,6 +199,7 @@ class MotorConfig(ToolWindow):
     def __init__(self, gladefile, toplevelname, instrument, windowtitle, motorname, *args, **kwargs):
         self.motorname = motorname
         self.required_devices = ['Motor_' + motorname]
+        self._calibration_changed = False
         super().__init__(gladefile, toplevelname, instrument, windowtitle, motorname, *args, **kwargs)
 
     def init_gui(self, motorname):
@@ -222,6 +223,9 @@ class MotorConfig(ToolWindow):
         self.builder.get_object('microstep_adjustment').set_value(motor.controller.max_microsteps)
         self.builder.get_object('microstep_adjustment').set_value(motor.get_variable('microstepresolution'))
 
+    def on_calibration_changed(self, spinbutton):
+        self._calibration_changed = True
+
     def on_apply(self, button):
         tobechanged = {}
         motor = self.instrument.motors[self.motorname]
@@ -243,6 +247,10 @@ class MotorConfig(ToolWindow):
                 newvalue = widget.get_active()
             else:
                 raise ValueError(widgetname)
+            if widgetname == 'calibration_adjustment' and not self._calibration_changed:
+                # it can happen that the motor moves while this dialog is open. With this check we avoid unintended
+                # motor position calibration.
+                continue
             oldvalue = motor.get_variable(variablename)
             if oldvalue != newvalue:
                 tobechanged[variablename] = newvalue
@@ -263,6 +271,8 @@ class MotorConfig(ToolWindow):
                         motor.calibrate(tobechanged['actualposition'])
                     except DeviceError as de:
                         error_message(self.widget, 'Calibration failed', str(de))
+                    else:
+                        self._calibration_changed = False
                     del tobechanged['actualposition']
                 for k in tobechanged:
                     motor.set_variable(k, tobechanged[k])

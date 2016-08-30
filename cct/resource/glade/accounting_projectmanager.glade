@@ -2,6 +2,26 @@
 <!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.16"/>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">list-add</property>
+  </object>
+  <object class="GtkImage" id="image2">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">list-remove</property>
+  </object>
+  <object class="GtkImage" id="image3">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">gtk-apply</property>
+  </object>
+  <object class="GtkImage" id="image4">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">window-close</property>
+  </object>
   <object class="GtkListStore" id="projectidstore">
     <columns>
       <!-- column-name projectid -->
@@ -174,6 +194,7 @@ Examples: Inhouse 15/02, HUNSAS 15/12, MS 15/07 etc.&lt;/span&gt;</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image1</property>
                 <signal name="clicked" handler="on_addproject" swapped="no"/>
               </object>
               <packing>
@@ -188,6 +209,7 @@ Examples: Inhouse 15/02, HUNSAS 15/12, MS 15/07 etc.&lt;/span&gt;</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image2</property>
                 <signal name="clicked" handler="on_removeproject" swapped="no"/>
               </object>
               <packing>
@@ -202,6 +224,7 @@ Examples: Inhouse 15/02, HUNSAS 15/12, MS 15/07 etc.&lt;/span&gt;</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image3</property>
                 <signal name="clicked" handler="on_apply" swapped="no"/>
               </object>
               <packing>
@@ -216,6 +239,7 @@ Examples: Inhouse 15/02, HUNSAS 15/12, MS 15/07 etc.&lt;/span&gt;</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image4</property>
                 <signal name="clicked" handler="on_close" swapped="no"/>
               </object>
               <packing>

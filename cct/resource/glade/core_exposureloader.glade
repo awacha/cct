@@ -117,9 +117,6 @@
         <property name="receives_default">True</property>
         <property name="image">image1</property>
         <signal name="clicked" handler="on_load" swapped="no"/>
-        <style>
-          <class name="suggested-action"/>
-        </style>
       </object>
       <packing>
         <property name="expand">False</property>

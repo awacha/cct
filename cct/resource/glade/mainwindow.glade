@@ -115,6 +115,17 @@
     <property name="can_focus">False</property>
     <property name="icon_name">network-idle</property>
   </object>
+  <object class="GtkImage" id="image28">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">document-save</property>
+  </object>
+  <object class="GtkImage" id="image29">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">image-missing</property>
+    <property name="icon_size">1</property>
+  </object>
   <object class="GtkImage" id="image3">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -126,6 +137,11 @@
     <property name="can_focus">False</property>
     <property name="icon_name">editconfig</property>
     <property name="icon_size">1</property>
+  </object>
+  <object class="GtkImage" id="image5">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">system-run</property>
   </object>
   <object class="GtkImage" id="image7">
     <property name="visible">True</property>
@@ -208,6 +224,19 @@
                   <object class="GtkMenu" id="menu1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkImageMenuItem" id="menuitem_savesettings">
+                        <property name="label" translatable="yes">_Save settings</property>
+                        <property name="name">menuitem_savesettings</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="tooltip_text" translatable="yes">Save configuration</property>
+                        <property name="use_underline">True</property>
+                        <property name="image">image28</property>
+                        <property name="use_stock">False</property>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
+                      </object>
+                    </child>
                     <child>
                       <object class="GtkImageMenuItem" id="menuitem_quit">
                         <property name="label" translatable="yes">_Quit</property>
@@ -310,9 +339,9 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="menuitem_user">
+                      <object class="GtkImageMenuItem" id="menuitem_users">
                         <property name="label" translatable="yes">_User management</property>
-                        <property name="name">menuitem_user</property>
+                        <property name="name">menuitem_users</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Manage users</property>
@@ -323,9 +352,9 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="menuitem_project">
+                      <object class="GtkImageMenuItem" id="menuitem_projects">
                         <property name="label" translatable="yes">_Project management</property>
-                        <property name="name">menuitem_project</property>
+                        <property name="name">menuitem_projects</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="tooltip_text" translatable="yes">Manage projects</property>
@@ -430,6 +459,7 @@
                         <property name="use_underline">True</property>
                         <property name="image">image27</property>
                         <property name="use_stock">False</property>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
                     </child>
                   </object>
@@ -588,6 +618,19 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="image">image24</property>
+                        <property name="use_stock">False</property>
+                        <signal name="activate" handler="on_menu" swapped="no"/>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkImageMenuItem" id="menuitem_optimizegeometry">
+                        <property name="label" translatable="yes">Optimize geometry</property>
+                        <property name="name">menuitem_optimizegeometry</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="tooltip_text" translatable="yes">Calculate optimal geometry settings</property>
+                        <property name="use_underline">True</property>
+                        <property name="image">image29</property>
                         <property name="use_stock">False</property>
                         <signal name="activate" handler="on_menu" swapped="no"/>
                       </object>
@@ -1061,6 +1104,7 @@
               <object class="GtkLabel" id="prompt_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="margin_right">7</property>
                 <property name="label" translatable="yes">CCT&gt;</property>
               </object>
               <packing>
@@ -1094,6 +1138,7 @@
                 <property name="can_default">True</property>
                 <property name="has_default">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image5</property>
                 <signal name="clicked" handler="on_command_execute" swapped="no"/>
               </object>
               <packing>

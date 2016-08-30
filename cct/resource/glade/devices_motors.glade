@@ -7,6 +7,16 @@
     <property name="can_focus">False</property>
     <property name="icon_name">dialog-warning</property>
   </object>
+  <object class="GtkImage" id="image2">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">window-close</property>
+  </object>
+  <object class="GtkImage" id="image3">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">system-run</property>
+  </object>
   <object class="GtkListStore" id="motorlist">
     <columns>
       <!-- column-name name -->
@@ -398,6 +408,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image3</property>
                 <signal name="clicked" handler="on_move" swapped="no"/>
                 <style>
                   <class name="suggested-action"/>
@@ -433,6 +444,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image2</property>
                 <signal name="clicked" handler="on_close" swapped="no"/>
               </object>
               <packing>

@@ -6,6 +6,7 @@ import pkg_resources
 from gi.repository import GtkSource, Gdk, Gtk, GLib
 
 from ..core.dialogs import question_message, info_message
+from ..core.filechooser import DoubleFileChooserDialog
 from ..core.functions import notify
 from ..core.toolwindow import ToolWindow
 from ...core.commands.script import Script, Command
@@ -14,21 +15,15 @@ from ...core.utils.callback import SignalFlags
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# ToDo: closing the script window results in GtkWarnings (not a GTK_WIDGET etc.). Something to do with buffer marks.
-
 language_def_path = pkg_resources.resource_filename(
     'cct', 'resource/language-specs')
 langman = GtkSource.LanguageManager.get_default()
 langman.set_search_path(langman.get_search_path() + [language_def_path])
 
 
-class ScriptMeasurement(ToolWindow):
+class ScriptMeasurement(ToolWindow, DoubleFileChooserDialog):
     def __init__(self, *args, **kwargs):
         self.sourcebuffer = None
-        self.filename = None
-        self.filename_folder = None
-        self.filechooser_open = None
-        self.filechooser_save = None
         self._cmd = None
         self._scriptconnections = []
         self._pausingdlg = None
@@ -36,35 +31,39 @@ class ScriptMeasurement(ToolWindow):
         self._pausingpulsehandler = None
         self._helpdialog = None
         super().__init__(*args, **kwargs)
+        DoubleFileChooserDialog.__init__(self,
+                                         self.widget, 'Open script...', 'Save script...',
+                                         [('CCT script files', '*.cct'), ('All files', '*')],
+                                         self.instrument.config['path']['directories']['scripts'],
+                                         os.path.abspath(self.instrument.config['path']['directories']['scripts']),
+                                         )
 
     def init_gui(self, *args, **kwargs):
         view = self.builder.get_object('sourceview')
         self.sourcebuffer = GtkSource.Buffer()
         view.set_buffer(self.sourcebuffer)
         self.sourcebuffer.set_language(langman.get_language('cct'))
-        ssman = GtkSource.StyleSchemeManager.get_default()
-        self.sourcebuffer.set_style_scheme(
-            ssman.get_scheme(ssman.get_scheme_ids()[0]))
+        self.on_style_scheme_changed(self.builder.get_object('styleschemechooserbutton'),
+                                     self.builder.get_object('styleschemechooserbutton').get_style_scheme())
         self.sourcebuffer.set_highlight_syntax(True)
         self.sourcebuffer.set_highlight_matching_brackets(True)
         self.sourcebuffer.set_modified(False)
         self.sourcebuffer.connect('modified-changed', self.on_modified_changed)
+        self.sourcebuffer.connect('changed', self.on_sourcebuffer_changed)
         self.widget.set_title('Unnamed script')
         ma = GtkSource.MarkAttributes()
         ma.set_icon_name('media-playback-start')
         ma.set_background(Gdk.RGBA(0, 1, 0, 1))
         view.set_mark_attributes('Executing', ma, 0)
 
-        self.filechooser_open = Gtk.FileChooserDialog('Open script file', self.widget, Gtk.FileChooserAction.OPEN,
-                                                      ['OK', Gtk.ResponseType.OK, 'Cancel', Gtk.ResponseType.CANCEL])
-        self.filechooser_open.add_shortcut_folder(os.path.join(os.getcwd(), 'scripts'))
-        self.filechooser_open.set_transient_for(self.widget)
-        self.filechooser_save = Gtk.FileChooserDialog('Save script file as...', self.widget,
-                                                      Gtk.FileChooserAction.SAVE,
-                                                      ['OK', Gtk.ResponseType.OK, 'Cancel', Gtk.ResponseType.CANCEL])
-        self.filechooser_save.add_shortcut_folder(os.path.join(os.getcwd(), 'scripts'))
-        self.filechooser_save.set_do_overwrite_confirmation(True)
-        self.filechooser_save.set_transient_for(self.widget)
+    def on_style_scheme_changed(self, sschooser: GtkSource.StyleSchemeChooserButton, newscheme):
+        self.sourcebuffer.set_style_scheme(sschooser.get_style_scheme())
+
+    def on_sourcebuffer_changed(self, sourcebuffer):
+        self.builder.get_object('undo_toolbutton').set_sensitive(self.sourcebuffer.can_undo())
+
+    def suggest_filename(self):
+        return 'untitled.cct'
 
     def confirm_save(self):
         if self.sourcebuffer.get_modified():
@@ -97,52 +96,51 @@ class ScriptMeasurement(ToolWindow):
             return
         self.sourcebuffer.set_text('')
         self.sourcebuffer.set_modified(False)
-        self.filename = None
+        self.set_last_filename(None)
 
     def on_toolbutton_open(self, toolbutton):
         if not self.confirm_save():
             return
-        if self.filename is not None:
-            self.filechooser_open.set_filename(self.filename)
-            self.filechooser_open.set_current_folder(self.filename)
-        if self.filechooser_open.run() == Gtk.ResponseType.OK:
-            self.filename = self.filechooser_open.get_filename()
-            self.widget.set_title(self.filename)
-            self.filechooser_open.set_filename(self.filename)
-        self.filechooser_open.hide()
-        with open(self.filename, 'rt', encoding='utf-8') as f:
-            self.sourcebuffer.set_text(f.read())
-        self.sourcebuffer.set_modified(False)
+        fn = self.get_open_filename()
+        if fn is None:
+            return
+        try:
+            with open(fn, 'rt', encoding='utf-8') as f:
+                self.sourcebuffer.set_text(f.read())
+            self.widget.set_title(fn)
+            self.sourcebuffer.set_modified(False)
+        except FileNotFoundError:
+            self.error_message('Cannot open file: {}'.format(fn))
 
     def on_toolbutton_save(self, toolbutton):
-        if self.filename is None:
+        if self.get_last_filename() is None:
             self.on_toolbutton_saveas(toolbutton)
-        with open(self.filename, 'wt', encoding='utf-8') as f:
+            return
+        with open(self.get_last_filename(), 'wt', encoding='utf-8') as f:
             f.write(
                 self.sourcebuffer.get_text(self.sourcebuffer.get_start_iter(), self.sourcebuffer.get_end_iter(), True))
         self.sourcebuffer.set_modified(False)
 
     def on_toolbutton_saveas(self, toolbutton):
-        if self.filename is not None:
-            self.filechooser_save.set_filename(self.filename)
-            self.filechooser_save.set_current_folder(self.filename)
-        else:
-            self.filechooser_save.set_current_folder(os.path.join(os.getcwd(), 'scripts'))
-            self.filechooser_save.set_current_name('sequence.cct')
-        if self.filechooser_save.run() == Gtk.ResponseType.OK:
-            self.filename = self.filechooser_save.get_filename()
-            if not self.filename.lower().endswith('.cct'):
-                self.filename += '.cct'
-            self.filechooser_save.set_filename(self.filename)
-            self.widget.set_title(self.filename)
-            self.on_toolbutton_save(toolbutton)
-        self.filechooser_save.hide()
+        fn = self.get_save_filename()
+        if fn is None:
+            return
+        if not fn.lower().endswith('.cct'):
+            fn += '.cct'
+            self.set_last_filename(fn)
+        self.on_toolbutton_save(toolbutton)
+        self.widget.set_title(fn)
 
     def on_toolbutton_undo(self, toolbutton):
         self.sourcebuffer.undo()
+        assert isinstance(self.sourcebuffer, GtkSource.Buffer)
+        toolbutton.set_sensitive(self.sourcebuffer.can_undo())
+        self.builder.get_object('redo_toolbutton').set_sensitive(self.sourcebuffer.can_redo())
 
     def on_toolbutton_redo(self, toolbutton):
         self.sourcebuffer.redo()
+        toolbutton.set_sensitive(self.sourcebuffer.can_redo())
+        self.builder.get_object('undo_toolbutton').set_sensitive(self.sourcebuffer.can_undo())
 
     def on_toolbutton_cut(self, toolbutton):
         self.sourcebuffer.copy_clipboard(Gtk.Clipboard.get_default(Gdk.Display.get_default()))
@@ -156,38 +154,45 @@ class ScriptMeasurement(ToolWindow):
                                           self._inhibit_close_reason is not None)
 
     def on_toolbutton_execute(self, toolbutton):
-        script = self.sourcebuffer.get_text(self.sourcebuffer.get_start_iter(),
-                                            self.sourcebuffer.get_end_iter(),
-                                            True)
+        if toolbutton.get_label() == 'Start':
+            script = self.sourcebuffer.get_text(self.sourcebuffer.get_start_iter(),
+                                                self.sourcebuffer.get_end_iter(),
+                                                True)
 
-        class MyScriptClass(Script):
-            script = script
+            class MyScriptClass(Script):
+                script = script
 
-        flagsbb = self.builder.get_object('flags_buttonbox')
-        for b in flagsbb:
-            if b.get_active():
-                self.instrument.services['interpreter'].set_flag(b.get_label())
-            else:
-                self.instrument.services['interpreter'].clear_flag(b.get_label())
+            flagsbb = self.builder.get_object('flags_buttonbox')
+            for b in flagsbb:
+                if b.get_active():
+                    self.instrument.services['interpreter'].set_flag(b.get_label())
+                else:
+                    self.instrument.services['interpreter'].clear_flag(b.get_label())
 
-        self.builder.get_object('sourceview').set_editable(False)
+            self.builder.get_object('sourceview').set_editable(False)
 
-        self.write_message('----------------------- %s -----------------------\n' % str(datetime.datetime.now()), False)
+            self.write_message('----------------------- %s -----------------------\n' % str(datetime.datetime.now()),
+                               False)
 
-        try:
-            self._cmd = self.execute_command(MyScriptClass, (), True,
-                                             additional_widgets=['sourceview', 'new_toolbutton', 'save_toolbutton',
-                                                                 'saveas_toolbutton',
-                                                                 'open_toolbutton', 'undo_toolbutton',
-                                                                 'redo_toolbutton',
-                                                                 'cut_toolbutton', 'copy_toolbutton',
-                                                                 'paste_toolbutton',
-                                                                 'help_toolbutton', 'execute_toolbutton'])
-        except Exception as exc:
-            # this has already been handled by self.execute_command()
-            return
-        self._scriptconnections = [self._cmd.connect('cmd-start', self.on_command_start),
-                                   self._cmd.connect('paused', self.on_script_paused)]
+            try:
+                self._cmd = self.execute_command(MyScriptClass, (), True,
+                                                 additional_widgets=['sourceview', 'new_toolbutton', 'save_toolbutton',
+                                                                     'saveas_toolbutton',
+                                                                     'open_toolbutton', 'undo_toolbutton',
+                                                                     'redo_toolbutton',
+                                                                     'cut_toolbutton', 'copy_toolbutton',
+                                                                     'paste_toolbutton',
+                                                                     'help_toolbutton', 'execute_toolbutton'])
+            except Exception as exc:
+                # this has already been handled by self.execute_command()
+                return
+            self._scriptconnections = [self._cmd.connect('cmd-start', self.on_command_start),
+                                       self._cmd.connect('paused', self.on_script_paused)]
+            toolbutton.set_label('Stop')
+            toolbutton.set_icon_name('media-playback-stop')
+        else:
+            assert toolbutton.get_label() == 'Stop'
+            self.instrument.services['interpreter'].kill()
 
     def write_message(self, message: str, timestamp=True):
         buf = self.builder.get_object('messagesbuffer')
@@ -197,7 +202,7 @@ class ScriptMeasurement(ToolWindow):
         self.builder.get_object('messagesview').scroll_to_iter(buf.get_end_iter(), 0, False, 0, 0)
         buf.place_cursor(buf.get_end_iter())
         try:
-            with open(self.filename[:-len('.cct')] + '.log', 'at', encoding='utf-8') as f:
+            with open(self.get_last_filename()[:-len('.cct')] + '.log', 'at', encoding='utf-8') as f:
                 f.write(message)
         except AttributeError:
             pass
@@ -206,6 +211,8 @@ class ScriptMeasurement(ToolWindow):
         info_message(self.widget, 'Script ended', 'Result: %s' % str(returnvalue))
         notify('Script ended', 'Script execution ended with result: {}'.format(returnvalue))
         super().on_command_return(interpreter, commandname, returnvalue)
+        self.builder.get_object('execute_toolbutton').set_label('start')
+        self.builder.get_object('execute_toolbutton').set_icon_name('media-playback-start')
         self.builder.get_object('sourceview').set_editable(True)
         self.sourcebuffer.remove_source_marks(
             self.sourcebuffer.get_start_iter(), self.sourcebuffer.get_end_iter(), 'Executing')
@@ -272,8 +279,6 @@ class ScriptMeasurement(ToolWindow):
         except AttributeError:
             pass
 
-    def on_toolbutton_stop(self, toolbutton):
-        self.instrument.services['interpreter'].kill()
 
     def on_toolbutton_help(self, toolbutton):
         if self._helpdialog is None:

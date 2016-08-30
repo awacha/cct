@@ -12,6 +12,16 @@
     <property name="can_focus">False</property>
     <property name="icon_name">view-refresh</property>
   </object>
+  <object class="GtkImage" id="image2">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">document-open</property>
+  </object>
+  <object class="GtkImage" id="image3">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">window-close</property>
+  </object>
   <object class="GtkListStore" id="scanstore">
     <columns>
       <!-- column-name scan -->
@@ -168,6 +178,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image2</property>
                 <signal name="clicked" handler="on_open" swapped="no"/>
                 <style>
                   <class name="suggested-action"/>
@@ -185,6 +196,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image3</property>
                 <signal name="clicked" handler="on_close" swapped="no"/>
               </object>
               <packing>

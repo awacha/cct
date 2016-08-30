@@ -19,11 +19,16 @@ class LogTreeView(BuilderWidget):
         flc = self.builder.get_object('filterlevel_combo')
         assert isinstance(flc, Gtk.ComboBoxText)
         flc.remove_all()
+        appended = 0
+        activeindex = 0
         for i in range(0, 100):
             l = logging.getLevelName(i)
             if not l.startswith('Level '):
                 flc.append(str(i), l)
-        flc.set_active(0)
+                if l == 'INFO':
+                    activeindex = appended
+                appended += 1
+        flc.set_active(activeindex)
         self.update_shown_count()
 
     def update_shown_count(self):

@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import os
 import pickle
 import time
@@ -53,6 +52,11 @@ class Instrument(Callbacks):
         # emitted when the instrument is finalized: all devices disconnected,
         # all services stopped.
         'shutdown': (SignalFlags.RUN_FIRST, None, ()),
+        # emitted when a device is connected successfully. The argument is the device.
+        'device-connected': (SignalFlags.RUN_FIRST, None, (object,)),
+        # emitted when a device is disconnected. The first argument is the device,
+        # the second one is a bool: if the disconnection was expected or not.
+        'device-disconnected': (SignalFlags.RUN_FIRST, None, (object, bool)),
     }
 
     def __init__(self, online):
@@ -71,13 +75,15 @@ class Instrument(Callbacks):
         self._telemetry_timeout = None
         self._service_connections = {}
         self.starttime = None
-        self.busy = multiprocessing.Event()
         self.load_state()
         self.create_services()
 
     @property
     def online(self) -> bool:
         return self._online
+
+    def is_busy(self):
+        return any([s.is_busy() for s in self.services.values()])
 
     def start(self):
         """Start operation"""
@@ -91,158 +97,193 @@ class Instrument(Callbacks):
     # noinspection PyDictCreation
     def _initialize_config(self):
         """Create a sane configuration in `self.config` from scratch."""
-        self.config = {'path': {}}
-        self.config['path']['directories'] = {'log': 'log',
-                                              'images': 'images',
-                                              'param': 'param',
-                                              'config': 'config',
-                                              'mask': 'mask',
-                                              'nexus': 'nexus',
-                                              'eval1d': 'eval1d',
-                                              'eval2d': 'eval2d',
-                                              'param_override': 'param_override',
-                                              'scan': 'scan',
-                                              'images_detector': ['/disk2/images', '/home/det/p2_det/images'],
-                                              'status': 'status',
-                                              }
-        self.config['path']['fsndigits'] = 5
-        self.config['path']['prefixes'] = {'crd': 'crd',
-                                           'scn': 'scn',
-                                           'tra': 'tra',
-                                           'tst': 'tst'}
-        self.config['geometry'] = {'dist_sample_det': 1000.,
-                                   'dist_sample_det.err': 0.,
-                                   'dist_source_ph1': 100.,
-                                   'dist_ph1_ph2': 100.,
-                                   'dist_ph2_ph3': 1.,
-                                   'dist_ph3_sample': 2.,
-                                   'dist_det_beamstop': 1.,
-                                   'pinhole_1': 1000.,
-                                   'pinhole_2': 300.,
-                                   'pinhole_3': 750.,
-                                   'description': 'Generic geometry, please correct values',
-                                   'beamstop': 4.,
-                                   'wavelength': 0.15418,
-                                   'wavelength.err': 0.15418 * 0.03,
-                                   'beamposx': 330.,
-                                   'beamposy': 257.,
-                                   'pixelsize': 0.172,
-                                   'mask': 'mask.mat'}
-        self.config['connections'] = {}
-        self.config['connections']['xray_source'] = {'host': 'genix.credo',
-                                                     'port': 502,
-                                                     'timeout': 1,
-                                                     'name': 'genix',
-                                                     'classname': 'GeniX'}
-        self.config['connections']['detector'] = {'host': 'pilatus300k.credo',
-                                                  'port': 41234,
-                                                  'timeout': 0.01,
-                                                  'poll_timeout': 0.01,
-                                                  'name': 'pilatus',
-                                                  'classname': 'Pilatus'}
-        self.config['connections']['vacuum'] = {
-            'host': 'devices.credo',
-            'port': 2006,
-            'timeout': 0.1,
-            'poll_timeout': 0.1,
-            'name': 'tpg201',
-            'classname': 'TPG201'}
-        self.config['connections']['temperature'] = {
-            'host': 'devices.credo',
-            'port': 2001,
-            'timeout': 0.1,
-            'poll_timeout': 0.05,
-            'name': 'haakephoenix',
-            'classname': 'HaakePhoenix'}
-        self.config['connections']['tmcm351a'] = {
-            'host': 'devices.credo',
-            'port': 2003,
-            'timeout': 0.01,
-            'poll_timeout': 0.01,
-            'name': 'tmcm351a',
-            'classname': 'TMCM351'}
-        self.config['connections']['tmcm351b'] = {
-            'host': 'devices.credo',
-            'port': 2004,
-            'timeout': 0.01,
-            'poll_timeout': 0.01,
-            'name': 'tmcm351b',
-            'classname': 'TMCM351'}
-        self.config['connections']['tmcm6110'] = {
-            'host': 'devices.credo',
-            'port': 2005,
-            'timeout': 0.01,
-            'poll_timeout': 0.01,
-            'name': 'tmcm6110',
-            'classname': 'TMCM6110'}
-        self.config['motors'] = {'0': {'name': 'Unknown1', 'controller': 'tmcm351a', 'index': 0},
-                                 '1': {'name': 'Sample_X',
-                                       'controller': 'tmcm351a', 'index': 1},
-                                 '2': {'name': 'Sample_Y',
-                                       'controller': 'tmcm351a', 'index': 2},
-                                 '3': {'name': 'PH1_X',
-                                       'controller': 'tmcm6110', 'index': 0},
-                                 '4': {'name': 'PH1_Y',
-                                       'controller': 'tmcm6110', 'index': 1},
-                                 '5': {'name': 'PH2_X',
-                                       'controller': 'tmcm6110', 'index': 2},
-                                 '6': {'name': 'PH2_Y',
-                                       'controller': 'tmcm6110', 'index': 3},
-                                 '7': {'name': 'PH3_X',
-                                       'controller': 'tmcm6110', 'index': 4},
-                                 '8': {'name': 'PH3_Y',
-                                       'controller': 'tmcm6110', 'index': 5},
-                                 '9': {'name': 'BeamStop_X',
-                                       'controller': 'tmcm351b', 'index': 0},
-                                 '10': {'name': 'BeamStop_Y',
-                                        'controller': 'tmcm351b', 'index': 1},
-                                 '11': {'name': 'Unknown2', 'controller': 'tmcm351b', 'index': 2}}
-        self.config['devices'] = {}
-        self.config['services'] = {
-            'interpreter': {}, 'samplestore': {'list': [], 'active': None}, 'filesequence': {}, 'exposureanalyzer': {},
-            'webstate': {}, 'telemetrymanager': {'memlog_file_basename': 'memlog', 'memlog_interval': 60}}
-        self.config['services']['accounting'] = {'operator': 'CREDOoperator',
-                                                 'projectid': 'Project ID',
-                                                 'projectname': 'Project name',
-                                                 'proposer': 'Main proposer',
-                                                 'default_realm': 'MTATTKMFIBNO',
-                                                 }
-
-        self.config['scan'] = {'mask': 'mask.mat',
-                               'mask_total': 'mask.mat',
-                               'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx',
-                                           'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay',
-                                           'total_sigma', 'sigma'],
-                               'scanfile': 'credoscan2.spec'}
-        self.config['transmission'] = {'empty_sample': 'Empty_Beam', 'nimages': 10, 'exptime': 0.5, 'mask': 'mask.mat'}
-        self.config['beamstop'] = {'in': (3, 3), 'out': (3, 10)}
-        self.config['calibrants'] = {'Silver behenate': {'Peak #1': {'val': 1.0759, 'err': 0.0007},
-                                                         'Peak #2': {'val': 2.1518, 'err': 0.0014},
-                                                         'Peak #3': {'val': 3.2277, 'err': 0.0021},
-                                                         'Peak #4': {'val': 4.3036, 'err': 0.0028},
-                                                         'Peak #5': {'val': 5.3795, 'err': 0.0035},
-                                                         'Peak #6': {'val': 6.4554, 'err': 0.0042},
-                                                         'Peak #7': {'val': 7.5313, 'err': 0.0049},
-                                                         'Peak #8': {'val': 8.6072, 'err': 0.0056},
-                                                         'Peak #9': {'val': 9.6831, 'err': 0.0063},
-                                                         },
-                                     'SBA15': {'(10)': {'val': 0.6839, 'err': 0.0002},
-                                               '(11)': {'val': 1.1846, 'err': 0.0003},
-                                               '(20)': {'val': 1.3672, 'err': 0.0002},
-                                               },
-                                     'LaB6': {'(100)': {'val': 15.11501, 'err': 0.00004},
-                                              '(110)': {'val': 21.37584, 'err': 0.00004},
-                                              '(111)': {'val': 26.18000, 'err': 0.00004}},
-                                     }
-        self.config['datareduction'] = {'backgroundname': 'Empty_Beam',
-                                        'darkbackgroundname': 'Dark',
-                                        'absintrefname': 'Glassy_Carbon',
-                                        'absintrefdata': 'config/GC_data_nm.dat',
-                                        'distancetolerance': 100,  # mm
-                                        'mu_air': 1000,  # ToDo
-                                        'mu_air.err': 0  # ToDo
-                                        }
-        self.config['services']['webstatefilewriter'] = {}
+        self.config = {
+            'path': {
+                'directories': {
+                    'log': 'log',
+                    'images': 'images',
+                    'param': 'param',
+                    'config': 'config',
+                    'mask': 'mask',
+                    'nexus': 'nexus',
+                    'eval1d': 'eval1d',
+                    'eval2d': 'eval2d',
+                    'param_override': 'param_override',
+                    'scan': 'scan',
+                    'images_detector': ['/disk2/images', '/home/det/p2_det/images'],
+                    'status': 'status',
+                    'scripts': 'scripts',
+                },
+                'fsndigits': 5,
+                'prefixes': {
+                    'crd': 'crd',
+                    'scn': 'scn',
+                    'tra': 'tra',
+                    'tst': 'tst'
+                },
+            },
+            'geometry': {
+                'dist_sample_det': 1000.,
+                'dist_sample_det.err': 0.,
+                'dist_source_ph1': 100.,
+                'dist_ph1_ph2': 100.,
+                'dist_ph2_ph3': 1.,
+                'dist_ph3_sample': 2.,
+                'dist_det_beamstop': 1.,
+                'pinhole_1': 1000.,
+                'pinhole_2': 300.,
+                'pinhole_3': 750.,
+                'description': 'Generic geometry, please correct values',
+                'beamstop': 4.,
+                'wavelength': 0.15418,
+                'wavelength.err': 0.15418 * 0.03,
+                'beamposx': 330.,
+                'beamposy': 257.,
+                'pixelsize': 0.172,
+                'mask': 'mask.mat'
+            },
+            'connections': {
+                'xray_source': {
+                    'host': 'genix.credo',
+                    'port': 502,
+                    'timeout': 1,
+                    'name': 'genix',
+                    'classname': 'GeniX'
+                },
+                'detector': {
+                    'host': 'pilatus300k.credo',
+                    'port': 41234,
+                    'timeout': 0.01,
+                    'poll_timeout': 0.01,
+                    'name': 'pilatus',
+                    'classname': 'Pilatus'
+                },
+                'vacuum': {
+                    'host': 'devices.credo',
+                    'port': 2006,
+                    'timeout': 0.1,
+                    'poll_timeout': 0.1,
+                    'name': 'tpg201',
+                    'classname': 'TPG201'
+                },
+                'temperature': {
+                    'host': 'devices.credo',
+                    'port': 2001,
+                    'timeout': 0.1,
+                    'poll_timeout': 0.05,
+                    'name': 'haakephoenix',
+                    'classname': 'HaakePhoenix'
+                },
+                'tmcm351a': {
+                    'host': 'devices.credo',
+                    'port': 2003,
+                    'timeout': 0.01,
+                    'poll_timeout': 0.01,
+                    'name': 'tmcm351a',
+                    'classname': 'TMCM351'
+                },
+                'tmcm351b': {
+                    'host': 'devices.credo',
+                    'port': 2004,
+                    'timeout': 0.01,
+                    'poll_timeout': 0.01,
+                    'name': 'tmcm351b',
+                    'classname': 'TMCM351'
+                },
+                'tmcm6110': {
+                    'host': 'devices.credo',
+                    'port': 2005,
+                    'timeout': 0.01,
+                    'poll_timeout': 0.01,
+                    'name': 'tmcm6110',
+                    'classname': 'TMCM6110'
+                },
+            },
+            'motors': {
+                '0': {'name': 'Unknown1', 'controller': 'tmcm351a', 'index': 0},
+                '1': {'name': 'Sample_X', 'controller': 'tmcm351a', 'index': 1},
+                '2': {'name': 'Sample_Y', 'controller': 'tmcm351a', 'index': 2},
+                '3': {'name': 'PH1_X', 'controller': 'tmcm6110', 'index': 0},
+                '4': {'name': 'PH1_Y', 'controller': 'tmcm6110', 'index': 1},
+                '5': {'name': 'PH2_X', 'controller': 'tmcm6110', 'index': 2},
+                '6': {'name': 'PH2_Y', 'controller': 'tmcm6110', 'index': 3},
+                '7': {'name': 'PH3_X', 'controller': 'tmcm6110', 'index': 4},
+                '8': {'name': 'PH3_Y', 'controller': 'tmcm6110', 'index': 5},
+                '9': {'name': 'BeamStop_X', 'controller': 'tmcm351b', 'index': 0},
+                '10': {'name': 'BeamStop_Y', 'controller': 'tmcm351b', 'index': 1},
+                '11': {'name': 'Unknown2', 'controller': 'tmcm351b', 'index': 2}
+            },
+            'devices': {
+                'genix': {'last_warmup': 0, 'warmup_interval': 24 * 3600, 'last_powered': 0}
+            },
+            'services': {
+                'interpreter': {},
+                'samplestore': {'list': [], 'active': None},
+                'filesequence': {},
+                'exposureanalyzer': {},
+                'webstate': {},
+                'telemetrymanager': {'memlog_file_basename': 'memlog', 'memlog_interval': 60},
+                'accounting': {
+                    'operator': 'CREDOoperator',
+                    'projectid': 'Project ID',
+                    'projectname': 'Project name',
+                    'proposer': 'Main proposer',
+                    'default_realm': 'MTATTKMFIBNO',
+                },
+            },
+            'scan': {
+                'mask': 'mask.mat',
+                'mask_total': 'mask.mat',
+                'columns': ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx',
+                            'total_beamy', 'beamy', 'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay',
+                            'total_sigma', 'sigma'],
+                'scanfile': 'credoscan2.spec'
+            },
+            'transmission': {
+                'empty_sample': 'Empty_Beam',
+                'nimages': 10,
+                'exptime': 0.5,
+                'mask': 'mask.mat'},
+            'beamstop': {'in': (3, 3), 'out': (3, 10)},
+            'calibrants': {
+                'Silver behenate': {
+                    'Peak #1': {'val': 1.0759, 'err': 0.0007},
+                    'Peak #2': {'val': 2.1518, 'err': 0.0014},
+                    'Peak #3': {'val': 3.2277, 'err': 0.0021},
+                    'Peak #4': {'val': 4.3036, 'err': 0.0028},
+                    'Peak #5': {'val': 5.3795, 'err': 0.0035},
+                    'Peak #6': {'val': 6.4554, 'err': 0.0042},
+                    'Peak #7': {'val': 7.5313, 'err': 0.0049},
+                    'Peak #8': {'val': 8.6072, 'err': 0.0056},
+                    'Peak #9': {'val': 9.6831, 'err': 0.0063},
+                },
+                'SBA15': {
+                    '(10)': {'val': 0.6839, 'err': 0.0002},
+                    '(11)': {'val': 1.1846, 'err': 0.0003},
+                    '(20)': {'val': 1.3672, 'err': 0.0002},
+                },
+                'LaB6': {
+                    '(100)': {'val': 15.11501, 'err': 0.00004},
+                    '(110)': {'val': 21.37584, 'err': 0.00004},
+                    '(111)': {'val': 26.18000, 'err': 0.00004}
+                },
+            },
+            'datareduction': {
+                'backgroundname': 'Empty_Beam',
+                'darkbackgroundname': 'Dark',
+                'absintrefname': 'Glassy_Carbon',
+                'absintrefdata': 'config/GC_data_nm.dat',
+                'distancetolerance': 100,  # mm
+                'mu_air': 1000,  # ToDo
+                'mu_air.err': 0,  # ToDo
+            },
+            'gui': {
+                'optimizegeometry': {
+                    'spacers': [65, 65, 100, 100, 100, 100, 100, 200, 200, 500, 800],
+                    'pinholes': [150, 200, 300, 400, 500, 600, 750, 1000, 1250],
+                }
+            }
+        }
 
     def save_state(self):
         """Save the current configuration (including that of all devices) to a
@@ -449,6 +490,7 @@ class Instrument(Callbacks):
             self._waiting_for_ready.remove(device.name)
         except ValueError:
             pass
+        self.emit('device-connected', device)
         if not self._waiting_for_ready:
             self.emit('devices-ready')
             self.services['webstatefilewriter'].write_statusfile()
@@ -459,6 +501,7 @@ class Instrument(Callbacks):
     def on_disconnect(self, device: Device, because_of_failure: bool):
         logger.debug('Device {} disconnected. Because of failure: {}'.format(
             device.name, because_of_failure))
+        self.emit('device-disconnected', device, because_of_failure)
         if device.name in self._waiting_for_ready:
             logger.warning('Not reconnecting to device ' + device.name + ': disconnected while waiting for get ready.')
             self._waiting_for_ready.remove(device.name)

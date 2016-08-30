@@ -491,6 +491,9 @@ class ExposureAnalyzer(Service):
         self._backendprocess.daemon = False
         self._backendprocess.start()
 
+    def is_busy(self):
+        return sum(self._working.values()) > 0
+
     def _idle_function(self):
         try:
             message = self._queue_to_frontend.get_nowait()
@@ -505,6 +508,8 @@ class ExposureAnalyzer(Service):
             njobs = sum(self._working.values())
             if njobs:
                 logger.debug('Exposureanalyzer working on {:d} jobs'.format(njobs))
+            else:
+                self.emit('idle-changed', True)
         except queue.Empty:
             return True
         if message['type'] == 'error':
@@ -537,9 +542,12 @@ class ExposureAnalyzer(Service):
             'Submitting work to exposureanalyzer. Prefix: {}, fsn: {:d}. Filename: {}'.format(prefix, fsn, filename))
 
         self.send_to_backend('analyze', prefix=prefix, fsn=fsn, filename=filename, **kwargs)
+        was_idle = not self.is_busy()
         if prefix not in self._working:
             self._working[prefix] = 0
         self._working[prefix] += 1
+        if was_idle:
+            self.emit('idle-changed', False)
 
     def update_config(self, dictionary):
         self.send_to_backend('config', configdict=dictionary)

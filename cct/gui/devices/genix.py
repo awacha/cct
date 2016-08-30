@@ -44,6 +44,7 @@ class GeniX(ToolWindow):
             self.indicators[vn] = Indicator(label, 'N/A', IndicatorState.UNKNOWN)
             errorindicators.attach(self.indicators[vn], column, row, 1, 1)
         self.update_indicators()
+        self.set_powerbuttons_sensitivity()
 
     def on_mainwidget_map(self, window):
         if super().on_mainwidget_map(window):
@@ -72,7 +73,7 @@ class GeniX(ToolWindow):
         if button.get_active():
             try:
                 if genix.get_variable('_status') == 'Power off':
-                    genix.execute_command('start_warmup')
+                    genix.start_warmup()
                 else:
                     logger.error('Cannot start warm-up procedure unless the X-ray source is in "Power off" state.')
             except:
@@ -82,7 +83,7 @@ class GeniX(ToolWindow):
             if (not genix.get_variable('_status') == 'Warming up') or (
                     question_message(self.widget, 'Do you really want to break the warm-up sequence?',
                                      'Voltage will be gradually decreased to 0 kV.')):
-                genix.execute_command('stop_warmup')
+                genix.stop_warmup()
 
     def on_resetfaults(self, button):
         self.instrument.get_device('genix').reset_faults()
@@ -108,6 +109,16 @@ class GeniX(ToolWindow):
 
     def on_fullpower(self, button):
         self.instrument.get_device('genix').set_power('full')
+
+    def set_powerbuttons_sensitivity(self):
+        if self.instrument.get_device('genix').is_warmup_needed():
+            self.builder.get_object('warmup_toggle').get_style_context.add_class('suggested-action')
+            self.builder.get_object('standby_button').set_sensitive(False)
+            self.builder.get_object('fullpower_button').set_sensitive(False)
+        else:
+            self.builder.get_object('warmup_toggle').get_style_context.remove_class('suggested-action')
+            self.builder.get_object('standby_button').set_sensitive(True)
+            self.builder.get_object('fullpower_button').set_sensitive(True)
 
     def on_variable_change(self, genix, variablename, newvalue):
         if variablename == '_status':

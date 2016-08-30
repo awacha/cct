@@ -36,8 +36,6 @@ class Interpreter(Service):
         # send occasional messages to the command interpreter (to
         # be written to a terminal or logged at the INFO level.
         'cmd-message': (SignalFlags.RUN_FIRST, None, (str, str,)),
-        # emitted when work started (False) or work finished (True).
-        'idle-changed': (SignalFlags.RUN_FIRST, None, (bool,)),
         # emitted when a flag changes. Arguments: the name and the new state of the flag.
         'flag': (SignalFlags.RUN_FIRST, None, (str, bool,)),
     }

@@ -7,6 +7,11 @@
     <property name="can_focus">False</property>
     <property name="icon_name">view-refresh</property>
   </object>
+  <object class="GtkImage" id="image2">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">window-close</property>
+  </object>
   <object class="GtkAdjustment" id="lefterr_adjustment">
     <property name="upper">10000</property>
     <property name="step_increment">1</property>
@@ -585,6 +590,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image2</property>
                 <signal name="clicked" handler="on_close" swapped="no"/>
               </object>
               <packing>

@@ -1,5 +1,7 @@
 import logging
 
+from gi.repository import Gtk
+
 from ..core.toolwindow import ToolWindow
 
 logger = logging.getLogger(__name__)
@@ -31,6 +33,7 @@ class DataReduction(ToolWindow):
                     'error', self.on_expanalyzer_error)
             ]
             button.set_label('Stop')
+            button.get_image().set_from_icon_name('gtk-stop', Gtk.IconSize.BUTTON)
             self.set_sensitive(False, 'Data reduction running', ['inputgrid', 'exposuresview', 'button_close'])
             self.on_datareduction(self.instrument.services['exposureanalyzer'], self._prefix, None, None)
         else:
@@ -51,6 +54,7 @@ class DataReduction(ToolWindow):
         model, selected = self.builder.get_object('exposure_selection').get_selected_rows()
         if (not selected) or self._stop:
             self.builder.get_object('button_execute').set_label('Start')
+            self.builder.get_object('button_execute').get_image().set_from_icon_name('system-run', Gtk.IconSize.BUTTON)
             self.builder.get_object('progressbar').hide()
             self.set_sensitive(True)
             for c in self._expanalyzerconnection:

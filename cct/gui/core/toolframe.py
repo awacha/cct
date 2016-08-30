@@ -163,3 +163,20 @@ class ToolFrame(BuilderWidget):
     def show_all(self):
         self.widget.show_all()
         self.widget.foreach(lambda x: x.show_all())
+
+    @classmethod
+    def requirements_met(cls, instrument: Instrument) -> bool:
+        """Check if all the required devices are working in the instrument.
+
+        Note that this is implemented as a class method, thus the requirements can be
+        checked before the class is instantiated.
+        """
+        for rd in cls.required_devices:
+            try:
+                dev = instrument.get_device(rd)
+            except KeyError:
+                return False
+            assert isinstance(dev, Device)
+            if not dev.get_connected():
+                return False
+        return True

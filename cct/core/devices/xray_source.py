@@ -1,7 +1,8 @@
 import logging
 import time
 
-from .device import DeviceBackend_ModbusTCP, UnknownVariable, UnknownCommand, Device, ReadOnlyVariable, InvalidMessage
+from .device import DeviceBackend_ModbusTCP, UnknownVariable, UnknownCommand, Device, ReadOnlyVariable, InvalidMessage, \
+    DeviceError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -39,20 +40,25 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
                               'temperature_fault', 'sensor1_fault',
                               'relay_interlock_fault', 'door_fault',
                               'filament_fault', 'tube_warmup_needed',
-                              'interlock', 'overridden', '_status']:
+                              'interlock', 'overridden', '_status', 'warmingup', 'goingtostandby', 'rampingup',
+                              'poweringdown']:
             statusbits = self.read_coils(210, 36)
             self.lasttimes['readstatus'] = time.monotonic()
             self.update_variable('remote_mode', statusbits[0])
             self.update_variable('xrays', statusbits[1])
             if not statusbits[1]:
                 self.update_variable('_status', 'X-rays off')
+            self.update_variable('goingtostandby', statusbits[2])
             if statusbits[2]:
                 self.update_variable('_status', 'Going to stand-by')
+            self.update_variable('rampingup', statusbits[3])
             if statusbits[3]:
                 self.update_variable('_status', 'Ramping up')
             self.update_variable('conditions_auto', statusbits[4])
+            self.update_variable('poweringdown', statusbits[5])
             if statusbits[5]:
                 self.update_variable('_status', 'Powering down')
+            self.update_variable('warmingup', statusbits[6])
             if statusbits[6]:
                 self.update_variable('_status', 'Warming up')
             self.update_variable('tube_power', [30, 50][statusbits[7]])
@@ -174,6 +180,7 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
         # we communicate synchronously with the ModbusTCP device in query_variable() and execute_command()
         raise InvalidMessage(message)
 
+
 class GeniX(Device):
     log_formatstr = '{_status}\t{ht}\t{current}\t{shutter}'
 
@@ -185,13 +192,21 @@ class GeniX(Device):
                      'temperature_fault', 'sensor1_fault',
                      'relay_interlock_fault', 'door_fault',
                      'filament_fault', 'tube_warmup_needed',
-                     'interlock', 'overridden']
+                     'interlock', 'overridden', 'warmingup', 'goingtostandby', 'rampingup', 'poweringdown']
 
     minimum_query_variables = ['ht', 'current', 'tubetime', 'shutter', 'power']
 
     backend_interval = 0.3
 
     backend_class = GeniX_Backend
+
+    last_powered = 0
+
+    last_warmup = 0
+
+    warmup_interval = 24 * 3600
+
+    _warmup_stop_forced = False
 
     def shutter(self, requested_status):
         """Open or close the shutter"""
@@ -215,10 +230,54 @@ class GeniX(Device):
         if state.upper() in ['OFF', 'DOWN', 'POWER OFF', 'POWEROFF']:
             self.execute_command('poweroff')
         elif self.is_busy():
-            raise ValueError('CAnnot set state to {}: X-ray generator is busy.'.format(state))
+            raise ValueError('Cannot set state to {}: X-ray generator is busy.'.format(state))
         elif state.upper() in ['STANDBY', 'LOW']:
-            self.execute_command('standby')
+            if not self.is_warmup_needed():
+                self.execute_command('standby')
+            else:
+                raise DeviceError('Warmup needed before powering up X-ray tube')
         elif state.upper() in ['HIGH', 'UP', 'FULL']:
-            self.execute_command('full_power')
+            if not self.is_warmup_needed():
+                self.execute_command('full_power')
+            else:
+                raise DeviceError('Warmup needed before powering up X-ray tube')
         else:
             raise ValueError(state)
+
+    def load_state(self, dictionary):
+        super().load_state(dictionary)
+        self.last_powered = dictionary['last_powered']
+        self.last_warmup = dictionary['last_warmup']
+        self.warmup_interval = dictionary['warmup_interval']
+
+    def save_state(self):
+        dic = super().save_state()
+        dic['last_powered'] = self.last_powered
+        dic['last_warmup'] = self.last_warmup
+        dic['warmup_interval'] = self.warmup_interval
+        return dic
+
+    def do_variable_change(self, varname: str, newvalue: object):
+        if varname == 'power' and newvalue >= 9:
+            self.last_powered = time.time()
+        if varname == 'warmingup' and newvalue == False and self.get_variable('_status') == 'Warming up':
+            # the warm-up process has just ended.
+            if not self._warmup_stop_forced:
+                self.last_warmup = time.time()
+
+    def is_warmup_needed(self):
+        """Warm-up is needed if both of the two criteria are met:
+
+        - the time elapsed after the last warmup is more than self.warmup_interval
+        - the time elapsed after the last powered-up state (i.e. when the power was >= 9W)
+            is larger than self.warmup_interval"""
+        return (((time.time() - self.last_powered) > self.warmup_interval) and
+                ((time.time() - self.last_warmup) > self.warmup_interval))
+
+    def start_warmup(self):
+        self.execute_command('start_warmup')
+        self._warmup_stop_forced = False
+
+    def stop_warmup(self):
+        self._warmup_stop_forced = True
+        self.execute_command('stop_warmup')

@@ -21,8 +21,12 @@ class Service(Callbacks):
 
     name = '__abstract__'
 
-    __signals__ = {'shutdown': (SignalFlags.RUN_FIRST, None, ()),
-                   }
+    __signals__ = {
+        # emitted when the service has successfully shut down.
+        'shutdown': (SignalFlags.RUN_FIRST, None, ()),
+        # emitted when work started (False) or work finished (True).
+        'idle-changed': (SignalFlags.RUN_FIRST, None, (bool,)),
+    }
 
     starttime = None
 
@@ -52,6 +56,10 @@ class Service(Callbacks):
 
     def update_config(self, dictionary):
         pass
+
+    def is_busy(self) -> bool:
+        """Return if the service is busy."""
+        return False
 
     def stop(self):
         """Stop operation."""

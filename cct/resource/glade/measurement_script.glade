@@ -3,6 +3,11 @@
 <interface>
   <requires lib="gtk+" version="3.16"/>
   <requires lib="gtksourceview" version="3.0"/>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">window-close</property>
+  </object>
   <object class="GtkTextBuffer" id="messagesbuffer"/>
   <object class="GtkWindow" id="script">
     <property name="can_focus">False</property>
@@ -30,6 +35,7 @@
                   <object class="GtkToolbar" id="toolbar1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="toolbar_style">both</property>
                     <child>
                       <object class="GtkToolButton" id="new_toolbutton">
                         <property name="visible">True</property>
@@ -215,20 +221,6 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkToolButton" id="stop_toolbutton">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Stop</property>
-                        <property name="use_underline">True</property>
-                        <property name="icon_name">media-playback-stop</property>
-                        <signal name="clicked" handler="on_toolbutton_stop" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="homogeneous">True</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkSeparatorToolItem" id="separator4">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -264,16 +256,44 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkLabel" id="label2">
+                      <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="margin_right">5</property>
-                        <property name="label" translatable="yes">Flags:</property>
+                        <property name="margin_right">6</property>
+                        <property name="label" translatable="yes">Style scheme:</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
                         <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSourceStyleSchemeChooserButton" id="styleschemechooserbutton">
+                        <property name="label" translatable="yes">Classic</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="margin_right">10</property>
+                        <signal name="notify::style-scheme" handler="on_style_scheme_changed" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label2">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="margin_right">6</property>
+                        <property name="label" translatable="yes">Flags:</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
                       </packing>
                     </child>
                     <child>
@@ -439,7 +459,7 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">False</property>
-                        <property name="position">1</property>
+                        <property name="position">3</property>
                       </packing>
                     </child>
                   </object>
@@ -578,6 +598,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image1</property>
                 <signal name="clicked" handler="on_close" swapped="no"/>
               </object>
               <packing>
@@ -596,4 +617,5 @@
       </object>
     </child>
   </object>
+  <object class="GtkTextBuffer" id="textbuffer1"/>
 </interface>

@@ -1,4 +1,4 @@
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 
 from ..core.functions import update_comboboxtext_choices, notify
 from ..core.toolwindow import ToolWindow
@@ -6,6 +6,9 @@ from ...core.commands.transmission import Transmission
 
 
 class TransmissionMeasurement(ToolWindow):
+    required_devices = ['detector', 'xraysource', 'Motor_BeamStop_X', 'Motor_BeamStop_Y', 'Motor_Sample_X',
+                        'Motor_Sample_Y']
+
     def __init__(self, *args, **kwargs):
         self._samplestoreconnection = None
         self._pulser_timeout = None
@@ -52,6 +55,7 @@ class TransmissionMeasurement(ToolWindow):
             transmstore[0][7] = True
 
             button.set_label('Stop')
+            button.get_image().set_from_icon_name('gtk-stop', Gtk.IconSize.BUTTON)
             self._pulser_timeout = GLib.timeout_add(100, self.pulser)
             samplenames = [row[0] for row in self.builder.get_object('transmstore')]
             self.execute_command(
@@ -72,6 +76,7 @@ class TransmissionMeasurement(ToolWindow):
         GLib.source_remove(self._pulser_timeout)
         self._pulser_timeout = None
         self.builder.get_object('start_button').set_label('Start')
+        self.builder.get_object('start_button').get_image().set_from_icon_name('system-run', Gtk.IconSize.BUTTON)
         notify(
             summary='Transmission measurement done',
             body='Measured transmissions for {:d} sample(s)'.format(

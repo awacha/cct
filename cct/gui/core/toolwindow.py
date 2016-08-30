@@ -42,6 +42,7 @@ class ToolWindow(ToolFrame):
         self.infolabel.set_hexpand_set(True)
         self._infobar_connection = self.infobar.connect('response', self.on_infobar_response)
         self.infobar.foreach(lambda w_: w_.show_all())
+        self.widget.set_has_resize_grip(True)
 
     def cleanup(self):
         if self._infobar_connection is not None:

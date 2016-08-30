@@ -18,6 +18,31 @@
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">list-add</property>
+  </object>
+  <object class="GtkImage" id="image2">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">list-remove</property>
+  </object>
+  <object class="GtkImage" id="image3">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">document-save-as</property>
+  </object>
+  <object class="GtkImage" id="image4">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">view-refresh</property>
+  </object>
+  <object class="GtkImage" id="image5">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">window-close</property>
+  </object>
   <object class="GtkListStore" id="pairstore">
     <columns>
       <!-- column-name uncal_rendered -->
@@ -74,6 +99,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="image">image4</property>
                     <signal name="clicked" handler="on_replot" swapped="no"/>
                   </object>
                   <packing>
@@ -437,6 +463,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
+                                    <property name="image">image1</property>
                                     <signal name="clicked" handler="on_addpair" swapped="no"/>
                                   </object>
                                   <packing>
@@ -451,6 +478,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
+                                    <property name="image">image2</property>
                                     <signal name="clicked" handler="on_removepair" swapped="no"/>
                                   </object>
                                   <packing>
@@ -465,6 +493,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
+                                    <property name="image">image3</property>
                                     <signal name="clicked" handler="on_exportpairs" swapped="no"/>
                                   </object>
                                   <packing>
@@ -761,6 +790,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <property name="image">image5</property>
                 <signal name="clicked" handler="on_close" swapped="no"/>
               </object>
               <packing>

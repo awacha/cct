@@ -341,9 +341,11 @@ class Device(Callbacks):
                 self.emit('error', message['variablename'],
                           message['exception'], message['traceback'])
             elif message['type'] == 'update':
-                self._properties[message['name']] = message['value']
-                self._timestamps[message['name']] = message['timestamp']
-                self.emit('variable-change', message['name'], message['value'])
+                try:
+                    self.emit('variable-change', message['name'], message['value'])
+                finally:
+                    self._properties[message['name']] = message['value']
+                    self._timestamps[message['name']] = message['timestamp']
             else:
                 raise ValueError(message['type'])
         return True  # this is an idle function, we want to be called again.

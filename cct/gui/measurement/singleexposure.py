@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 
+from gi.repository import Gtk
 from sastool.io.credo_cct import Header, Exposure
 
 from ..core.functions import update_comboboxtext_choices
@@ -17,6 +18,7 @@ logger.setLevel(logging.INFO)
 
 
 class SingleExposure(ToolWindow):
+    required_devices = ['detector', 'xraysource', 'Motor_Sample_X', 'Motor_Sample_Y']
     def __init__(self, *args, **kwargs):
         self._images_done = 0
         self._images_requested = 0
@@ -109,6 +111,7 @@ class SingleExposure(ToolWindow):
         if commandname == 'shutter' and returnvalue is False:
             # this is the end.
             self.builder.get_object('start_button').set_label('Start')
+            self.builder.get_object('start_button').get_image().set_from_icon_name('system-run', Gtk.IconSize.BUTTON)
             self.builder.get_object('progressframe').set_visible(False)
             self.set_sensitive(True)
             self.widget.resize(1, 1)
@@ -128,7 +131,8 @@ class SingleExposure(ToolWindow):
 
     def on_start(self, button):
         if button.get_label() == 'Start':
-            self.builder.get_object('start_button').set_label('Stop')
+            button.set_label('Stop')
+            button.get_image().set_from_icon_name('gtk-stop', Gtk.IconSize.BUTTON)
             self._images_done = 0
             self._expanalyzerconnection = self.instrument.services['exposureanalyzer'].connect('image', self.on_image)
             self.on_command_return(self.instrument.services['interpreter'], None, None)
