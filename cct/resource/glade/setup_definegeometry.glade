@@ -210,6 +210,8 @@
                         <property name="text" translatable="yes">200.00</property>
                         <property name="adjustment">l0_adjustment</property>
                         <property name="digits">2</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <property name="value">200</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
@@ -227,6 +229,8 @@
                         <property name="text" translatable="yes">200.00</property>
                         <property name="adjustment">l1_adjustment</property>
                         <property name="digits">2</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <property name="value">200</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
@@ -244,6 +248,8 @@
                         <property name="text" translatable="yes">200.00</property>
                         <property name="adjustment">l2_adjustment</property>
                         <property name="digits">2</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <property name="value">200</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
@@ -254,13 +260,15 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkSpinButton" id="l3_spin">
+                      <object class="GtkSpinButton" id="ls_spin">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
                         <property name="text" translatable="yes">200.00</property>
                         <property name="adjustment">ls_adjustment</property>
                         <property name="digits">2</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <property name="value">200</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
@@ -278,6 +286,8 @@
                         <property name="text" translatable="yes">200.00</property>
                         <property name="adjustment">lbs_adjustment</property>
                         <property name="digits">2</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <property name="value">200</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
@@ -295,6 +305,8 @@
                         <property name="text" translatable="yes">200.0000</property>
                         <property name="adjustment">ldval_adjustment</property>
                         <property name="digits">4</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <property name="value">200</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
@@ -311,6 +323,8 @@
                         <property name="text" translatable="yes">0.0000</property>
                         <property name="adjustment">lderr_adjustment</property>
                         <property name="digits">4</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>
@@ -422,6 +436,8 @@
                         <property name="hexpand">True</property>
                         <property name="text" translatable="yes">0</property>
                         <property name="adjustment">pinhole1_adjustment</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>
@@ -437,6 +453,8 @@
                         <property name="hexpand">True</property>
                         <property name="text" translatable="yes">0</property>
                         <property name="adjustment">pinhole2_adjustment</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>
@@ -452,6 +470,8 @@
                         <property name="hexpand">True</property>
                         <property name="text" translatable="yes">0</property>
                         <property name="adjustment">pinhole3_adjustment</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>
@@ -468,6 +488,8 @@
                         <property name="text" translatable="yes">0.000</property>
                         <property name="adjustment">beamstop_adjustment</property>
                         <property name="digits">3</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>
@@ -607,6 +629,8 @@
                         <property name="text" translatable="yes">0.000</property>
                         <property name="adjustment">beamx_adjustment</property>
                         <property name="digits">3</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>
@@ -623,6 +647,8 @@
                         <property name="text" translatable="yes">0.000</property>
                         <property name="adjustment">beamy_adjustment</property>
                         <property name="digits">3</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>
@@ -639,6 +665,8 @@
                         <property name="text" translatable="yes">0.170</property>
                         <property name="adjustment">pixelsize_adjustment</property>
                         <property name="digits">3</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <property name="value">0.17000000000000001</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
@@ -656,6 +684,8 @@
                         <property name="text" translatable="yes">0.00000</property>
                         <property name="adjustment">wavelengthval_adjustment</property>
                         <property name="digits">5</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>
@@ -671,6 +701,8 @@
                         <property name="text" translatable="yes">0.00000</property>
                         <property name="adjustment">wavelengtherr_adjustment</property>
                         <property name="digits">5</property>
+                        <property name="numeric">True</property>
+                        <property name="update_policy">if-valid</property>
                         <signal name="value-changed" handler="on_edit" swapped="no"/>
                       </object>
                       <packing>

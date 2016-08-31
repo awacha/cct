@@ -331,7 +331,6 @@ class MainWindow(object):
         if self.instrument.is_busy():
             if not question_message(self.widget, 'Confirm quit', 'The instrument is busy. Do you still want to quit?'):
                 return True
-        # ToDo: ask for confirmation if instrument is busy
         logger.info('Shutdown requested.')
         self.instrument.save_state()
         self.instrument.shutdown()

@@ -4,7 +4,9 @@ from ..core.toolwindow import ToolWindow
 
 class DefineGeometry(ToolWindow):
     def __init__(self, *args, **kwargs):
+        self._updating = False
         super().__init__(*args, **kwargs)
+        self._original_conf = None
 
     def init_gui(self, *args, **kwargs):
         pass
@@ -15,32 +17,57 @@ class DefineGeometry(ToolWindow):
         self.update_gui()
 
     def update_gui(self):
-        conf = self.instrument.config['geometry']
-        self.builder.get_object('l0_adjustment').set_value(conf['dist_source_ph1'])
-        self.builder.get_object('l1_adjustment').set_value(conf['dist_ph1_ph2'])
-        self.builder.get_object('l2_adjustment').set_value(conf['dist_ph2_ph3'])
-        self.builder.get_object('ls_adjustment').set_value(conf['dist_ph3_sample'])
-        self.builder.get_object('ldval_adjustment').set_value(conf['dist_sample_det'])
-        self.builder.get_object('lderr_adjustment').set_value(conf['dist_sample_det.err'])
-        self.builder.get_object('lbs_adjustment').set_value(conf['dist_det_beamstop'])
-        self.builder.get_object('pinhole1_adjustment').set_value(conf['pinhole_1'])
-        self.builder.get_object('pinhole2_adjustment').set_value(conf['pinhole_2'])
-        self.builder.get_object('pinhole3_adjustment').set_value(conf['pinhole_3'])
-        self.builder.get_object('beamstop_adjustment').set_value(conf['beamstop'])
-        self.builder.get_object('beamx_adjustment').set_value(conf['beamposy'])
-        self.builder.get_object('beamy_adjustment').set_value(conf['beamposx'])
-        self.builder.get_object('pixelsize_adjustment').set_value(conf['pixelsize'])
-        self.builder.get_object('wavelengthval_adjustment').set_value(conf['wavelength'])
-        self.builder.get_object('wavelengtherr_adjustment').set_value(conf['wavelength.err'])
-        self.builder.get_object('description_entry').set_text(conf['description'])
-        self.builder.get_object('mask_filechooser').set_filename(conf['mask'])
-        self.builder.get_object('apply_button').set_sensitive(False)
+        self._updating = True
+        try:
+            conf = self.instrument.config['geometry']
+            self.builder.get_object('l0_spin').set_value(conf['dist_source_ph1'])
+            self.builder.get_object('l0_spin').update()
+            self.builder.get_object('l1_spin').set_value(conf['dist_ph1_ph2'])
+            self.builder.get_object('l1_spin').update()
+            self.builder.get_object('l2_spin').set_value(conf['dist_ph2_ph3'])
+            self.builder.get_object('l2_spin').update()
+            self.builder.get_object('ls_spin').set_value(conf['dist_ph3_sample'])
+            self.builder.get_object('ls_spin').update()
+            self.builder.get_object('ldval_spin').set_value(conf['dist_sample_det'])
+            self.builder.get_object('ldval_spin').update()
+            self.builder.get_object('lderr_spin').set_value(conf['dist_sample_det.err'])
+            self.builder.get_object('lderr_spin').update()
+            self.builder.get_object('lbs_spin').set_value(conf['dist_det_beamstop'])
+            self.builder.get_object('lbs_spin').update()
+            self.builder.get_object('pinhole1_spin').set_value(conf['pinhole_1'])
+            self.builder.get_object('pinhole1_spin').update()
+            self.builder.get_object('pinhole2_spin').set_value(conf['pinhole_2'])
+            self.builder.get_object('pinhole2_spin').update()
+            self.builder.get_object('pinhole3_spin').set_value(conf['pinhole_3'])
+            self.builder.get_object('pinhole3_spin').update()
+            self.builder.get_object('beamstop_spin').set_value(conf['beamstop'])
+            self.builder.get_object('beamstop_spin').update()
+            self.builder.get_object('beamx_spin').set_value(conf['beamposy'])
+            self.builder.get_object('beamx_spin').update()
+            self.builder.get_object('beamy_spin').set_value(conf['beamposx'])
+            self.builder.get_object('beamy_spin').update()
+            self.builder.get_object('pixelsize_spin').set_value(conf['pixelsize'])
+            self.builder.get_object('pixelsize_spin').update()
+            self.builder.get_object('wavelengthval_spin').set_value(conf['wavelength'])
+            self.builder.get_object('wavelengthval_spin').update()
+            self.builder.get_object('wavelengtherr_spin').set_value(conf['wavelength.err'])
+            self.builder.get_object('wavelengtherr_spin').update()
+            self.builder.get_object('description_entry').set_text(conf['description'])
+            self.builder.get_object('mask_filechooser').set_filename(conf['mask'])
+            self.builder.get_object('apply_button').set_sensitive(False)
+        finally:
+            self._updating = False
+        self._original_conf = self.get_current_values()
 
     def on_edit(self, widget):
-        self.builder.get_object('apply_button').set_sensitive(True)
+        if self._updating:
+            return False
+        conf = self.get_current_values()
+        if not all([self._original_conf[k] == conf[k] for k in conf]):
+            self.builder.get_object('apply_button').set_sensitive(True)
 
-    def on_apply(self, button):
-        conf = self.instrument.config['geometry']
+    def get_current_values(self):
+        conf = {}
         conf['dist_source_ph1'] = self.builder.get_object('l0_adjustment').get_value()
         conf['dist_ph1_ph2'] = self.builder.get_object('l1_adjustment').get_value()
         conf['dist_ph2_ph3'] = self.builder.get_object('l2_adjustment').get_value()
@@ -59,6 +86,10 @@ class DefineGeometry(ToolWindow):
         conf['wavelength.err'] = self.builder.get_object('wavelengtherr_adjustment').get_value()
         conf['description'] = self.builder.get_object('description_entry').get_text()
         conf['mask'] = self.builder.get_object('mask_filechooser').get_filename()
+        return conf
+
+    def on_apply(self, button):
+        self.instrument.config['geometry'].update(self.get_current_values())
         button.set_sensitive(False)
         self.instrument.save_state()
         self.info_message('Configuration saved to file ' + self.instrument.configfile)
