@@ -5,7 +5,7 @@ from gi.repository import Gtk
 from ...core.utils.callback import Callbacks, SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class BuilderWidget(Callbacks):
@@ -39,6 +39,7 @@ class BuilderWidget(Callbacks):
     # noinspection PyMethodMayBeStatic
     def on_mainwidget_unmap(self, widget: Gtk.Widget):
         logger.debug('Unmapping mainwidget for BuilderWidget ' + self.gladefile)
+        self.cleanup()
         return False
 
     def cleanup(self):

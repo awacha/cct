@@ -433,6 +433,10 @@ class DeviceBackend(object):
         tm.watchdog = self.watchdog.elapsed()
         tm.message_instances = Message.instances
         tm.missing_variables = ', '.join([v for v in self.all_variables if v not in self.properties])
+        tm.busy_level = self.is_busy()
+        tm.outstanding_queries = ', '.join([k for k in sorted(self.query_requested)])
+        tm.status = self.properties['_status']
+        tm.status_age = time.monotonic() - self.timestamps['_status']
         return tm
 
     def update_variable(self, varname: str, value: object, force: bool = False) -> bool:
@@ -474,7 +478,7 @@ class DeviceBackend(object):
             return True
         finally:
             # set the timestamp
-            self.timestamps[varname] = time.time()
+            self.timestamps[varname] = time.monotonic()
 
     def log(self):
         """Write a line in the log-file, according to `self.log_formatstr`.

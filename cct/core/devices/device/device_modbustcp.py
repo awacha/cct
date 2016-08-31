@@ -7,7 +7,7 @@ from .backend import DeviceBackend
 from .exceptions import DeviceError, CommunicationError
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 # noinspection PyPep8Naming,PyAbstractClass

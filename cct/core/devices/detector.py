@@ -157,6 +157,8 @@ class Pilatus_Backend(DeviceBackend_TCP):
             # if the previous exposure has just finished, wait a little,
             # in case we are in a scan and want to start another exposure
             # shortly.
+            self.logger.debug('Skipping queryall: Idle only since {:f} seconds.'.format(
+                time.monotonic() - self.timestamps['_status']))
             return
         else:
             super().queryall()
@@ -225,6 +227,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
         self.update_variable('starttime', None)
         if status:
             self.update_variable('lastcompletedimage', message.decode('utf-8'))
+        self.watchdog.pat()
         self.watchdog.enable()
 
     def on_end_trimming(self) -> None:
@@ -236,6 +239,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
         self.update_variable('_status', 'idle')
         self.query_variable('threshold')
         self.query_variable('tau')
+        self.watchdog.pat()
         self.watchdog.enable()
 
     def on_start_exposure(self) -> None:

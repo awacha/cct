@@ -112,11 +112,11 @@ class GeniX(ToolWindow):
 
     def set_powerbuttons_sensitivity(self):
         if self.instrument.get_device('genix').is_warmup_needed():
-            self.builder.get_object('warmup_toggle').get_style_context.add_class('suggested-action')
+            self.builder.get_object('warmup_toggle').get_style_context().add_class('suggested-action')
             self.builder.get_object('standby_button').set_sensitive(False)
             self.builder.get_object('fullpower_button').set_sensitive(False)
         else:
-            self.builder.get_object('warmup_toggle').get_style_context.remove_class('suggested-action')
+            self.builder.get_object('warmup_toggle').get_style_context().remove_class('suggested-action')
             self.builder.get_object('standby_button').set_sensitive(True)
             self.builder.get_object('fullpower_button').set_sensitive(True)
 

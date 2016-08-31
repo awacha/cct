@@ -460,8 +460,6 @@ class ExposureAnalyzer(Service):
         # Returned when an image is ready. Arguments: prefix, fsn, image
         # (np.array), params (dict), mask (np.array)
         'image': (SignalFlags.RUN_FIRST, None, (str, int, object, object, object)),
-        # Emitted when idle, no jobs are pending.
-        'idle': (SignalFlags.RUN_FIRST, None, ()),
         # Emitted when telemetry data received from the backend.
         'telemetry': (SignalFlags.RUN_FIRST, None, (object,)),
     }
@@ -496,6 +494,7 @@ class ExposureAnalyzer(Service):
 
     def _idle_function(self):
         try:
+            njobs_before = sum(self._working.values())
             message = self._queue_to_frontend.get_nowait()
             assert isinstance(message, Message)
             if message['type'] in ['image', 'scanpoint', 'error', 'transmdata']:
@@ -508,7 +507,7 @@ class ExposureAnalyzer(Service):
             njobs = sum(self._working.values())
             if njobs:
                 logger.debug('Exposureanalyzer working on {:d} jobs'.format(njobs))
-            else:
+            elif njobs_before:
                 self.emit('idle-changed', True)
         except queue.Empty:
             return True
@@ -533,8 +532,6 @@ class ExposureAnalyzer(Service):
             logger.handle(message['logrecord'])
         elif message['type'] == 'exited':
             self.emit('shutdown')
-        if all([self._working[k] <= 0 for k in self._working]):
-            self.emit('idle')
         return True
 
     def submit(self, fsn, filename, prefix, **kwargs):

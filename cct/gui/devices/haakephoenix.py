@@ -72,7 +72,7 @@ class HaakePhoenix(ToolWindow):
     def on_device_variable_change(self, device, variablename, newvalue):
         if variablename in ['_status', 'firmwareversion', 'fuzzycontrol', 'date', 'time', 'faultstatus']:
             self.indicators[variablename].set_value(str(newvalue), IndicatorState.NEUTRAL)
-        elif variablename in ['setpoint', 'temperature_internal', 'lowlimit', 'highlimit']:
+        elif variablename in ['setpoint', 'temperature', 'lowlimit', 'highlimit']:
             self.indicators[variablename].set_value('%.2f°C' % newvalue, IndicatorState.NEUTRAL)
         elif variablename in ['control_on', 'cooling_on', 'diffcontrol_on', 'watchdog_on', 'beep', 'fuzzyid',
                               'fuzzystatus',

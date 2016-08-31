@@ -341,6 +341,7 @@ class MainWindow(object):
         for c in self._instrumentconnections:
             instrument.disconnect(c)
         self._instrumentconnections = []
+        logging.root.removeHandler(self._loghandler)
         self.widget.destroy()
         Gtk.Application.get_default().quit()
 

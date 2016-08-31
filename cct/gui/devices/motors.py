@@ -9,7 +9,7 @@ from ...core.instrument.privileges import PRIV_MOTORCONFIG, PRIV_MOTORCALIB, PRI
     PRIV_MOVEMOTORS
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Motors(ToolWindow):
@@ -20,6 +20,7 @@ class Motors(ToolWindow):
         self._samplestore_connection = None
         self._movebeamstop = None
         self._movetosample = None
+        self.required_devices = self.required_devices + ['Motor_' + m for m in instrument.motors]
         super().__init__(gladefile, toplevelname, instrument, windowtitle, *args, **kwargs)
 
     def init_gui(self, *args, **kwargs):

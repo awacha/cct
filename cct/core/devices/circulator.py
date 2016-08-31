@@ -12,6 +12,8 @@ logger.setLevel(logging.INFO)
 
 # noinspection PyPep8Naming
 class HaakePhoenix_Backend(DeviceBackend_TCP):
+    reply_timeout = 10
+
     def execute_command(self, commandname: str, arguments: Tuple):
         if commandname == 'start':
             self.send_message(b'W TS 1\r')

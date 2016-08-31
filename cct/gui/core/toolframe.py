@@ -13,7 +13,7 @@ from ...core.instrument.instrument import Instrument
 from ...core.instrument.privileges import PRIV_LAYMAN
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ToolFrameException(Exception):
@@ -117,6 +117,7 @@ class ToolFrame(BuilderWidget):
             logger.warning('Privilege error while mapping toolframe ' + self.gladefile)
             return True
         # connect to various signals of devices
+        self._disconnect_device_connections()
         for d in self.required_devices:
             dev = self.instrument.get_device(d)
             self._device_connections[d] = [
@@ -131,6 +132,15 @@ class ToolFrame(BuilderWidget):
                 ])
         logger.debug('Successfully mapped main widget for ToolFrame ' + self.gladefile)
         return False
+
+    def _disconnect_device_connections(self):
+        for d in self._device_connections:
+            logger.debug('Cleaning up {:d} connections to device {}'.format(len(self._device_connections[d]), d))
+            dev = self.instrument.get_device(d)
+            for c in self._device_connections[d]:
+                dev.disconnect(c)
+            logger.debug('Cleaned up {:d} connections to device {}'.format(len(self._device_connections[d]), d))
+        self._device_connections = {}
 
     def on_device_variable_change(self, device: Union[Device, Motor], variablename: str, newvalue: object):
         return False
@@ -150,11 +160,7 @@ class ToolFrame(BuilderWidget):
 
     def cleanup(self):
         logger.debug('Cleaning up toolframe ' + self.gladefile)
-        for d in self._device_connections:
-            dev = self.instrument.get_device(d)
-            for c in self._device_connections[d]:
-                dev.disconnect(c)
-        self._device_connections = {}
+        self._disconnect_device_connections()
         for c in self._accounting_connections:
             self.instrument.services['accounting'].disconnect(c)
         self._accounting_connections = []

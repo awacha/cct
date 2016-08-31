@@ -1,7 +1,10 @@
 import gc
 import itertools
+import logging
 from typing import Callable, Optional
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class SignalFlags(object):
     RUN_FIRST = 1
@@ -30,6 +33,16 @@ class Callbacks(object):
         only RUN_FIRST and RUN_LAST are implemented.
     <return value> is the value what the emit() function should return.
     <argument types> is a tuple of argument types.
+
+    The connected callback functions can return three kinds of objects:
+
+    1) a single boolean: True if the emitting must cease (the signal can
+    be considered as successfully handled by the callback function)
+
+    2) a tuple consisting of a boolean (see previous point) and another
+    object. The latter will be returned from the emit() function.
+
+    3) None: this is equivalent to returning False.
     """
 
     __signals__ = {}
@@ -64,23 +77,26 @@ class Callbacks(object):
         callback function whenever the signal is emitted.
         """
         self._get_signal_description(signal)
-        self.__signalhandles.append({'signal': signal,
-                                     'callback': callback,
-                                     'args': args,
-                                     'kwargs': kwargs,
-                                     'id': self.__class__._nextsignalconnectionid,
-                                     'blocked': 0})
-        self.__class__._nextsignalconnectionid += 1
-        return self.__signalhandles[-1]['id']
+        conn = {'signal': signal, 'callback': callback, 'args': args, 'kwargs': kwargs,
+                'id': self.__class__._nextsignalconnectionid, 'blocked': 0}
+        self.__signalhandles.append(conn)
+        self.__class__._nextsignalconnectionid = self.__class__._nextsignalconnectionid + 1
+        logger.debug('Connected signal handler {:d}'.format(conn['id']))
+        return conn['id']
 
     def disconnect(self, connectionid: Optional[int] = None):
         """Disconnect a callback signal."""
         # if connectionid is None:
         #    return
         assert isinstance(connectionid, int)
-        if not [s for s in self.__signalhandles if s['id'] == connectionid]:
+        conn = [s for s in self.__signalhandles if s['id'] == connectionid]
+        if not conn:
             raise ValueError('No signal hander with ID {:d} has been registered with this object!'.format(connectionid))
-        self.__signalhandles = [s for s in self.__signalhandles if s['id'] != connectionid]
+        assert len(conn) == 1
+        lenbefore = len(self.__signalhandles)
+        self.__signalhandles.remove(conn[0])
+        logger.debug('Deregistered signal handler {:d}. Registered connections: {:d} -> {:d}'.format(
+            connectionid, lenbefore, len(self.__signalhandles)))
 
     def handler_block(self, connectionid: int):
         for s_ in self.__signalhandles:
@@ -98,14 +114,18 @@ class Callbacks(object):
         sc['blocked'] -= 1
 
     def emit(self, signal: str, *args):
+        if signal not in ['telemetry', 'variable-change']:
+            logger.debug('Emitting signal: {}'.format(signal))
         sigdesc = self._get_signal_description(signal)
         if len(args) != len(sigdesc[2]):
             raise ValueError('Incorrect number of arguments supplied to signal {}.'.format(signal))
+        # test the types of the supplied arguments
         for a, t, i in zip(args, sigdesc[2], itertools.count(0)):
             if not isinstance(a, (t, type(None))):
                 raise TypeError('Argument #{:d} of signal {} is of incorrect type {}. Expected: {} or None.'.format(
                     i, signal, type(a), t))
         if sigdesc[0] & SignalFlags.RUN_FIRST:
+            # run the default callback before the connected handlers
             retval = self._call_default_callback(signal, *args)
             if isinstance(retval, tuple):
                 assert len(retval) == 2
@@ -115,6 +135,8 @@ class Callbacks(object):
                 ret = None
             if done:
                 assert isinstance(ret, sigdesc[1])
+                if signal not in ['telemetry', 'variable-change']:
+                    logger.debug('Done emitting signal {} after the default callback (RUN_FIRST).'.format(signal))
                 return ret
         for s_ in self.__signalhandles:
             assert isinstance(s_, dict)
@@ -122,6 +144,8 @@ class Callbacks(object):
             assert isinstance(s, dict)
             if (s['signal'] != signal) or (s['blocked'] > 0):
                 continue
+            if signal not in ['telemetry', 'variable-change']:
+                logger.debug('Calling signal hander {:d} for signal {}: {}'.format(s['id'], signal, str(s['callback'])))
             retval = s['callback'](self, *(args + s['args']), **s['kwargs'])
             if isinstance(retval, tuple):
                 assert len(retval) == 2
@@ -132,6 +156,8 @@ class Callbacks(object):
             if done:
                 if sigdesc[1] is not None:
                     assert isinstance(ret, sigdesc[1])
+                if signal not in ['telemetry', 'variable-change']:
+                    logger.debug('Done emitting signal {} after registered callback {:d}.'.format(signal, s['id']))
                 return ret
         if sigdesc[0] & SignalFlags.RUN_LAST:
             retval = self._call_default_callback(signal, *args)
@@ -143,7 +169,11 @@ class Callbacks(object):
                 ret = None
             if done:
                 assert isinstance(ret, sigdesc[1])
+                if signal not in ['telemetry', 'variable-change']:
+                    logger.debug('Done emitting signal {} after the default callback (RUN_LAST).'.format(signal))
                 return ret
+        if signal not in ['telemetry', 'variable-change']:
+            logger.debug('Done emitting signal {}: no callbacks left'.format(signal))
         return None
 
     def _call_default_callback(self, signal: str, *args):

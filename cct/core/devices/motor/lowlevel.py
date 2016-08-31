@@ -13,7 +13,7 @@ from ..device import DeviceBackend_TCP, DeviceError, UnknownCommand, UnknownVari
 from ..device.message import Message
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 RE_FLOAT = r"[+-]?(\d+)*\.?\d+([eE][+-]?\d+)?"
 
@@ -59,28 +59,19 @@ class TMCMCard_Backend(DeviceBackend_TCP):
     work for other models."""
 
     def __init__(self, *args, **kwargs):
-        self.N_axes = kwargs['N_axes']
-        del kwargs['N_axes']
-        self.top_RMS_current = kwargs['top_RMS_current']
-        del kwargs['top_RMS_current']
-        self.max_microsteps = kwargs['max_microsteps']
-        del kwargs['max_microsteps']
-        self.clock_frequency = kwargs['clock_frequency']
-        del kwargs['clock_frequency']
-        self.full_step_size = kwargs['full_step_size']
-        del kwargs['full_step_size']
-        self.positions_loaded = kwargs['positions_loaded']
-        del kwargs['positions_loaded']
-        for arg in ['N_axes', 'top_RMS_current', 'max_microsteps', 'clock_frequency', 'full_step_size',
-                    'positions_loaded']:
-            setattr(self, arg, kwargs[arg])
-            del kwargs[arg]
+        self.N_axes = kwargs.pop('N_axes')
+        self.top_RMS_current = kwargs.pop('top_RMS_current')
+        self.max_microsteps = kwargs.pop('max_microsteps')
+        self.clock_frequency = kwargs.pop('clock_frequency')
+        self.full_step_size = kwargs.pop('full_step_size')
+        self.positions_loaded = kwargs.pop('positions_loaded')
         super().__init__(*args, **kwargs)
         # status information dictionary when a motor is moving, None otherwise.
         # dictionary keys:
         #    index: the axis index of the currently moving motor
         self._moving = None
         self.original_urgency_modulo = self.urgency_modulo
+        self.logger.debug('Initialized motor controller {}'.format(self.name))
 
     def query_variable(self, variablename: str):
         try:
@@ -290,7 +281,8 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                 value // 0x10000, (value % 0x10000) // 0x100, value % 0x100))
         elif cmdnum == 4:
             # acknowledgement of start move
-            self._moving['acktime'] = time.time()
+            if self._moving is not None:
+                self._moving['acktime'] = time.monotonic()
         elif cmdnum == 3:
             # acknowledgement of stop
             pass
@@ -350,7 +342,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
         if self._moving is None:
             # no move has been initiated: we assume that we are not moving
             return False
-        if 'acktime' not in self._moving:
+        if self._moving['acktime'] is None:
             # if we have not yet received the confirmation from the controller
             # to our MVP command, we are not stopped.
             return True
@@ -361,20 +353,20 @@ class TMCMCard_Backend(DeviceBackend_TCP):
         # timestamps will be checked.
 
         # check if the target position is reached
-        if self.timestamps['targetpositionreached$' + motoridx] > self._moving['starttime']:
+        if self.timestamps['targetpositionreached$' + motoridx] > self._moving['acktime']:
             if self.properties['targetpositionreached$' + motoridx]:
                 self.logger.debug('Target reached')
                 return False
 
         # check if the actual speed has been updated after the start of the
         # move, and if it has, see if it is zero. If not, we are moving.
-        if self.timestamps['actualspeed$' + motoridx] > self._moving['starttime']:
+        if self.timestamps['actualspeed$' + motoridx] > self._moving['acktime']:
             if self.properties['actualspeed$' + motoridx] != 0:
                 return True
 
         # check the freshness of various parameters, i.e. if they have been
         # updated since we have received the ACK for the moving command.
-        isfresh = [self.timestamps[prop + '$' + motoridx] > self._moving['starttime']
+        isfresh = [self.timestamps[prop + '$' + motoridx] > self._moving['acktime']
                    for prop in ['actualpositionraw', 'targetpositionraw',
                                 'leftswitchstatus', 'rightswitchstatus']]
         if all(isfresh):  # if all parameters have been refreshed
@@ -790,7 +782,7 @@ class TMCMCard(Device):
     # step is 1/200 mm.
     full_step_size = 1 / 200.
 
-    backend_interval = 0.5
+    backend_interval = 0.1
 
     queryall_interval = 0.5
 

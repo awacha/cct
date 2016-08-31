@@ -65,8 +65,8 @@ class Indicator(Gtk.Box):
         return self._value
 
     def set_state(self, state):
-        res = self._eventbox.set_name('indicator_' + state)
-        self._valuelabel.set_name('indicator_' + state)
+        res = self._eventbox.set_name('indicator_' + str(state))
+        self._valuelabel.set_name('indicator_' + str(state))
         self._eventbox.queue_draw()
         self._valuelabel.queue_draw()
         return res

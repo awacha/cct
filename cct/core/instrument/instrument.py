@@ -15,7 +15,7 @@ from ..utils.callback import Callbacks, SignalFlags
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DummyTm(object):
@@ -493,7 +493,7 @@ class Instrument(Callbacks):
         self.emit('device-connected', device)
         if not self._waiting_for_ready:
             self.emit('devices-ready')
-            self.services['webstatefilewriter'].write_statusfile()
+            self.services['webstate'].write_statusfile()
             logger.debug('All ready.')
         else:
             logger.debug('Waiting for ready: ' + ', '.join(self._waiting_for_ready))

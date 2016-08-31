@@ -43,7 +43,7 @@ class Pilatus(ToolWindow):
         for row, column, vn, label in [(0, 0, 'exptime', 'Exposure time'),
                                        (0, 1, 'expperiod', 'Exposure period'),
                                        (0, 2, 'nimages', 'Number of images'),
-                                       (0, 3, 'starttime', 'Start time'),
+                                       # (0, 3, 'starttime', 'Start time'),
                                        (0, 4, 'timeleft', 'Time left'),
                                        (0, 5, 'targetfile', 'Target file'),
                                        (1, 0, 'threshold', 'Threshold'),
@@ -130,8 +130,8 @@ class Pilatus(ToolWindow):
             self.indicators[variablename].set_value('%d eV' % value, IndicatorState.NEUTRAL)
         elif variablename in ['timeleft', 'expperiod', 'exptime']:
             self.indicators[variablename].set_value('%.1f s' % value, IndicatorState.NEUTRAL)
-        elif variablename == 'starttime':
-            self.indicators[variablename].set_value(str(value), IndicatorState.NEUTRAL)
+        #        elif variablename == 'starttime':
+        #            self.indicators[variablename].set_value(str(value), IndicatorState.NEUTRAL)
         elif variablename == 'diskfree':
             value_gigabyte = value / 1024 ** 2
             if value_gigabyte < 10:

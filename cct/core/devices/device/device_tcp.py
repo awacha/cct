@@ -13,7 +13,7 @@ from .exceptions import DeviceError, CommunicationError
 from .message import Message
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class QueueLogHandler(QueueHandler):
