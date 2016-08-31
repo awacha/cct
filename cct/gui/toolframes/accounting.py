@@ -68,7 +68,7 @@ class AccountingFrame(ToolFrame):
         try:
             update_comboboxtext_choices(
                 self.builder.get_object('privileges_selector'),
-                accountingservice.get_accessible_privlevels_str(),
+                accountingservice.get_accessible_privlevels_str(accountingservice.current_user.privlevel),
                 set_to=privlevel.name)
         finally:
             self._updating_privilegeselector = False

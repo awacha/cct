@@ -131,8 +131,10 @@ class Accounting(Service):
         else:
             raise ServiceError('Insufficient privileges')
 
-    def get_accessible_privlevels_str(self):
-        return [p.name for p in self.privlevel.get_allowed()]
+    def get_accessible_privlevels_str(self, privlevel=None):
+        if privlevel is None:
+            privlevel = self.privlevel
+        return [p.name for p in privlevel.get_allowed()]
 
     def load_state(self, dictionary: Dict):
         super().load_state(dictionary)
