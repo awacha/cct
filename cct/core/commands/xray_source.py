@@ -171,6 +171,7 @@ class XRayPower(Command):
             raise CommandError('Cannot set the X-ray source to {} while busy.'.format(self.target))
         if not source.get_variable('xrays'):
             raise CommandError('Cannot set the X-ray source to {} while X-ray generator is off.'.format(self.target))
+        return True
 
     def execute(self):
         self.get_device('xray_source').execute_command(self.command)
@@ -212,6 +213,7 @@ class Warmup(Command):
     def validate(self):
         if self.get_device('xray_source').get_variable('_status') != 'Power off':
             raise CommandError('Warm-up can only be started from power off mode')
+        return True
 
     def on_pulse(self):
         self.emit('pulse', 'Warming up X-ray source...')

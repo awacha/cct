@@ -1,12 +1,13 @@
 import logging
 
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
 from ..core.dialogs import error_message
 from ..core.toolframe import ToolFrame
 from ...core.commands.motor import Beamstop
 from ...core.instrument.privileges import PRIV_BEAMSTOP
 from ...core.services.interpreter import InterpreterError
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,6 +19,7 @@ class ShutterBeamstop(ToolFrame):
     def init_gui(self, *args, **kwargs):
         self.on_privlevel_changed(self.instrument.services['accounting'],
                                   self.instrument.services['accounting'].get_privilegelevel())
+        self.on_motor_position_change(None, None)
 
     def on_privlevel_changed(self, accounting, newprivlevel):
         if not accounting.has_privilege(PRIV_BEAMSTOP):
@@ -35,7 +37,9 @@ class ShutterBeamstop(ToolFrame):
         try:
             beamstopstate = self.instrument.get_beamstop_state()
         except KeyError:
-            # can happen at program initialization
+            # can happen at program initialization, when the motor position has not yet been read.
+            logger.debug('No beamstop state yet.')
+            GLib.timeout_add(1000, lambda m=motor, p=pos: self.on_motor_position_change(m, p))
             return False
         if beamstopstate == 'in':
             self.builder.get_object('beamstopstate_image').set_from_icon_name('beamstop-in', Gtk.IconSize.BUTTON)
@@ -58,12 +62,12 @@ class ShutterBeamstop(ToolFrame):
 
     def on_beamstop_in(self, button):
         try:
-            self.instrument.services['interpreter'].execute_command(Beamstop, 'in')
+            self.instrument.services['interpreter'].execute_command(Beamstop, ('in',))
         except InterpreterError:
             error_message(self.widget, 'Cannot move beamstop', 'Interpreter is busy')
 
     def on_beamstop_out(self, button):
         try:
-            self.instrument.services['interpreter'].execute_command('beamstop("out")')
+            self.instrument.services['interpreter'].execute_command(Beamstop, ('out',))
         except InterpreterError:
             error_message(self.widget, 'Cannot move beamstop', 'Interpreter is busy')

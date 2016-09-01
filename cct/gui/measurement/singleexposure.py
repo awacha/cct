@@ -9,16 +9,18 @@ from ..core.plotcurve import PlotCurveWindow
 from ..core.plotimage import PlotImageWindow
 from ..core.toolwindow import ToolWindow
 from ...core.commands.detector import Expose, ExposeMulti
-from ...core.commands.motor import Sample
+from ...core.commands.motor import SetSample
 from ...core.commands.xray_source import Shutter
 from ...core.services.interpreter import Interpreter
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class SingleExposure(ToolWindow):
-    required_devices = ['detector', 'xraysource', 'Motor_Sample_X', 'Motor_Sample_Y']
+    required_devices = ['detector', 'xray_source', 'Motor_Sample_X', 'Motor_Sample_Y']
+    widgets_to_make_insensitive = ['inputframe']
+
     def __init__(self, *args, **kwargs):
         self._images_done = 0
         self._images_requested = 0
@@ -61,8 +63,8 @@ class SingleExposure(ToolWindow):
         if commandname is None:
             # not a true command, we just enter here because self.start() called us.
             if self.builder.get_object('samplename_check').get_active():
-                self.instrument.services['interpreter'].execute_command(
-                    Sample, (self.builder.get_object('sampleselector').get_active_text(),))
+                self.execute_command(
+                    SetSample, (self.builder.get_object('sampleselector').get_active_text(),))
                 return False
             else:
                 self.instrument.services['samplestore'].set_active(None)
@@ -72,17 +74,21 @@ class SingleExposure(ToolWindow):
                 # pass through to the next if.
 
         if commandname == 'sample':
+            logger.debug('Sample in place')
             if self.builder.get_object('shutter_check').get_active():
-                self.instrument.services['interpreter'].execute_command(
+                logger.debug('Opening shutter')
+                self.execute_command(
                     Shutter, (True,))
                 return False
             else:
+                logger.debug('Not opening shutter, passing through to next command.')
                 commandname = 'shutter'
                 returnvalue = True
                 # pass through to the next if.
 
         if commandname == 'shutter' and returnvalue is True:
             # start exposure
+            logger.debug('Starting exposure')
             prefix = self.builder.get_object('prefixselector').get_active_text()
             exptime = self.builder.get_object('exptime_spin').get_value()
             self._nimages = self.builder.get_object('nimages_spin').get_value_as_int()
@@ -91,25 +97,31 @@ class SingleExposure(ToolWindow):
             self.builder.get_object('progressframe').show_all()
             self.builder.get_object('progressframe').set_visible(True)
             if self._nimages == 1:
-                self.instrument.services['interpreter'].execute_command(
+                logger.debug('Executing Expose')
+                self.execute_command(
                     Expose, (exptime, prefix))
             else:
-                self.instrument.services['interpreter'].execute_command(
+                logger.debug('Executing ExposeMulti')
+                self.execute_command(
                     ExposeMulti, (exptime, self._nimages, prefix, expdelay))
             return False
 
         if commandname in ['expose', 'exposemulti']:
+            logger.debug('Exposure ended.')
             if self.builder.get_object('shutter_check').get_active():
-                self.instrument.services['interpreter'].execute_command(
+                logger.debug('Closing shutter')
+                self.execute_command(
                     Shutter, (False,))
                 return False
             else:
+                logger.debug('Not closing shutter')
                 commandname = 'shutter'
                 returnvalue = False
                 # pass through to the next if.
 
         if commandname == 'shutter' and returnvalue is False:
             # this is the end.
+            logger.debug('Shutter is closed, ending singleexposure')
             self.builder.get_object('start_button').set_label('Start')
             self.builder.get_object('start_button').get_image().set_from_icon_name('system-run', Gtk.IconSize.BUTTON)
             self.builder.get_object('progressframe').set_visible(False)
@@ -140,7 +152,8 @@ class SingleExposure(ToolWindow):
             self._killed = True
             self.instrument.services['interpreter'].kill()
 
-    def on_image(self, exposureanalyzer, prefix, fsn, matrix, mask, params):
+    def on_image(self, exposureanalyzer, prefix, fsn, matrix, params, mask):
+
         im = Exposure(matrix, header=Header(params), mask=mask)
         try:
             sample = im.header.title
@@ -180,7 +193,10 @@ class SingleExposure(ToolWindow):
     def on_samplelist_changed(self, samplestore):
         update_comboboxtext_choices(
             self.builder.get_object('sampleselector'),
-            sorted(samplestore, key=lambda x: x.title))
+            sorted([x.title for x in samplestore]))
 
     def on_nimages_changed(self, spinbutton):
         self.builder.get_object('expdelay_spin').set_sensitive(spinbutton.get_value_as_int() > 1)
+
+    def on_maskoverride_toggled(self, togglebutton):
+        pass

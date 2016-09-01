@@ -1,24 +1,5 @@
 from .command import Command, CommandArgumentError
-
-
-class JumpException(Exception):
-    pass
-
-
-class GotoException(JumpException):
-    pass
-
-
-class GosubException(JumpException):
-    pass
-
-
-class ReturnException(JumpException):
-    pass
-
-
-class PassException(JumpException):
-    pass
+from .exceptions import GotoException, GosubException, ReturnException, PassException
 
 
 class Goto(Command):

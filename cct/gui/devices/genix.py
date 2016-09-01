@@ -5,7 +5,7 @@ from ..core.indicator import Indicator, IndicatorState
 from ..core.toolwindow import ToolWindow
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class GeniX(ToolWindow):
@@ -55,7 +55,7 @@ class GeniX(ToolWindow):
     def update_indicators(self):
         genix = self.instrument.get_device('genix')
         for vn in self.indicators:
-            self.on_variable_change(genix, vn, genix.get_variable(vn))
+            self.on_device_variable_change(genix, vn, genix.get_variable(vn))
         genixshutter = genix.get_variable('shutter')
         shuttertoggle = self.builder.get_object('shutter_toggle').get_active()
         if genixshutter != shuttertoggle:
@@ -120,7 +120,8 @@ class GeniX(ToolWindow):
             self.builder.get_object('standby_button').set_sensitive(True)
             self.builder.get_object('fullpower_button').set_sensitive(True)
 
-    def on_variable_change(self, genix, variablename, newvalue):
+    def on_device_variable_change(self, genix, variablename, newvalue):
+        logger.debug('GeniX on_variable_change')
         if variablename == '_status':
             self.indicators[variablename].set_value(newvalue, IndicatorState.NEUTRAL)
             try:
@@ -197,6 +198,8 @@ class GeniX(ToolWindow):
                     self.builder.get_object('fullpower_button').set_sensitive(False)
                     self.builder.get_object('warmup_toggle').set_sensitive(False)
                     self.builder.get_object('warmup_toggle').set_active(False)
+                elif newvalue == 'Disconnected':
+                    self.on_close(self.builder.get_object('close_button'), None)
                 else:
                     raise ValueError('Invalid status: ' + newvalue)
             finally:

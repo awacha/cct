@@ -98,6 +98,7 @@ class Mapping(Command):
         for m, s, e in zip(self.motors, self.starts, self.ends):
             if not (self.get_motor(m).checklimits(s) and self.get_motor(m).checklimits(e)):
                 raise CommandArgumentError('Range outside limits for motor {}.'.format(m))
+        return True
 
     def execute(self):
         # move the last motor to its starting position. When the move is finished,
@@ -132,7 +133,8 @@ class Mapping(Command):
         self.moving_motor = None
         self.moving_target = None
         self.exposed_fsn = self.services['filesequence'].get_nextfreefsn(self.exposure_prefix)
-        self.exposed_filename = self.services['filesequence'].exposurefileformat(self.exposure_prefix, self.exposed_fsn)
+        self.exposed_filename = self.services['filesequence'].exposurefileformat(self.exposure_prefix,
+                                                                                 self.exposed_fsn) + '.cbf'
         self.get_device('pilatus').expose(self.exposed_filename)
         self.exposure_starttime = datetime.datetime.now()
 

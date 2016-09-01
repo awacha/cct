@@ -143,6 +143,7 @@ class ToolWindow(ToolFrame):
         return self.on_window_delete(self.widget, event=None)
 
     def execute_command(self, commandclass, arguments, set_insensitive=True, additional_widgets=None):
+        logger.debug('Executing command: {}'.format(str(commandclass)))
         assert issubclass(commandclass, Command)
         interpreter = self.instrument.services['interpreter']
         if interpreter.is_busy():
@@ -156,15 +157,18 @@ class ToolWindow(ToolFrame):
                                          interpreter.connect('flag', self.on_interpreter_flag),
                                          ]
         try:
-            interpreter.execute_command(commandclass, arguments)
+            cmd = interpreter.execute_command(commandclass, arguments)
         except Exception as exc:
+            self.error_message('Command {} failed: {}'.format(str(commandclass), traceback.format_exc()))
             self.on_command_fail(interpreter, commandclass.name, exc, traceback.format_exc())
             self.on_command_return(interpreter, commandclass.name, None)
+            return None
         else:
             if set_insensitive:
                 self.set_sensitive(False, 'Command running', additional_widgets)
             else:
                 self.inhibit_close('Command running')
+            return cmd
 
     def on_command_return(self, interpreter: Interpreter, commandname: str, returnvalue):
         for c in self._interpreter_connections:

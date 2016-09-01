@@ -25,7 +25,7 @@ from ..utils.pathutils import find_in_subfolders
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DataReductionEnd(Exception):
@@ -120,110 +120,147 @@ class ExposureAnalyzer_Backend(object):
         self.outqueue.put_nowait(Message(type_, self._msgid, self.name, **kwargs))
 
     def worker(self):
-        while True:
-            assert isinstance(self.inqueue, multiprocessing.queues.Queue)
-            if (time.monotonic() - self._lasttelemetry) > self.telemetry_interval:
-                # forge a telemetry request message.
-                message = Message('telemetry', 0, self.name)
-            else:
-                try:
-                    message = self.inqueue.get(True, self.telemetry_interval)
-                except queue.Empty:
-                    continue
-            assert isinstance(message, Message)
-            if message['type'] == 'exit':
-                break  # the while True loop
-            elif message['type'] == 'config':
-                self.config = message['configdict']
-            elif message['type'] == 'telemetry':
-                self.send_to_frontend('telemetry', telemetry=self.get_telemetry())
-            elif message['type'] == 'analyze':
-                cbfdata = None
-                for fn in [message['filename'], os.path.split(message['filename'])[-1]]:
-                    for subpath in [message['prefix'], '']:
-                        try:
-                            cbfdata = readcbf(os.path.join(self.config['path']['directories']['images'],
-                                                           subpath, fn))[0]
-                            break
-                        except FileNotFoundError as fe:
-                            cbfdata = (fe, traceback.format_exc())
-                if isinstance(cbfdata, tuple) and (isinstance(cbfdata[0], FileNotFoundError)):
-                    # could not load cbf file, send a message to the frontend.
-                    self.send_to_frontend('error', exception=cbfdata[0],
-                                          traceback=cbfdata[1], fsn=message['fsn'],
-                                          prefix=message['prefix'])
-                    continue
-                assert isinstance(cbfdata, np.ndarray)
-                if message['prefix'] == self.config['path']['prefixes']['crd']:
-                    # data reduction needed
-                    try:
-                        maskfilename = message['param']['geometry']['mask']
-                        logger.debug('Mask found from parameter dictionary: ' + maskfilename)
-                    except (KeyError, TypeError):
-                        maskfilename = self.config['geometry']['mask']
-                        logger.debug('Using default mask from config dictionary: ' + maskfilename)
-                    try:
-                        mask = self.get_mask(maskfilename)
-                        assert isinstance(mask, np.ndarray)
-                        im = self.datareduction(cbfdata, mask, message['param'])
-                        self.savecorrected(message['prefix'], message['fsn'], im)
-                        self.send_to_frontend('datareduction-done', prefix=message['prefix'], fsn=message['fsn'],
-                                              image=im)
-                        self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'],
-                                              data=cbfdata, mask=mask, param=message['param'])
-                    except Exception as exc:
-                        self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'],
-                                              exception=exc, traceback=traceback.format_exc())
-                        self._logger.error('Error in data reduction: {}, {}'.format(str(exc), traceback.format_exc()))
-                elif message['prefix'] == self.config['path']['prefixes']['tra']:  # transmission measurement
-                    try:
-                        transmmask = self.get_mask(self.config['transmission']['mask'])
-                        assert isinstance(transmmask, np.ndarray)
-                    except (IOError, OSError, IndexError) as exc:
-                        # could not load a mask file
-                        self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'],
-                                              exception=exc, traceback=traceback.format_exc())
-                    else:
-                        self.send_to_frontend('transmdata', prefix=message['prefix'], fsn=message['fsn'],
-                                              data=(cbfdata * transmmask).sum(), what=message['what'],
-                                              sample=message['sample'], )
-                elif message['prefix'] == self.config['path']['prefixes']['scn']:
-                    try:
-                        scanmask = self.get_mask(self.config['scan']['mask'])
-                        scanmasktotal = self.get_mask(self.config['scan']['mask_total'])
-                    except (IOError, OSError, IndexError) as exc:
-                        # could not load a mask file
-                        self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'], exception=exc,
-                                              traceback=traceback.format_exc())
-                        continue
-                    assert isinstance(scanmask, np.ndarray)
-                    assert isinstance(scanmasktotal, np.ndarray)
-                    # scan point, we have to calculate something.
-                    stat = get_statistics(cbfdata, scanmasktotal, scanmask)
-                    stat['FSN'] = message['fsn']
-                    resultlist = tuple(message['where'] + [stat[k]
-                                                           for k in self.config['scan']['columns']])
-                    self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'],
-                                          param=message['param'], mask=scanmasktotal)
-                    self.send_to_frontend('scanpoint', prefix=message['prefix'], fsn=message['fsn'],
-                                          counters=resultlist, position=message['position'])
-
+        try:
+            while True:
+                assert isinstance(self.inqueue, multiprocessing.queues.Queue)
+                if (time.monotonic() - self._lasttelemetry) > self.telemetry_interval:
+                    # forge a telemetry request message.
+                    message = Message('telemetry', 0, self.name)
                 else:
                     try:
-                        mask = self.get_mask(self.config['geometry']['mask'])
-                    except (IOError, OSError, IndexError) as exc:
-                        # could not load a mask file
-                        self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'], exception=exc,
-                                              traceback=traceback.format_exc())
+                        message = self.inqueue.get(True, self.telemetry_interval)
+                    except queue.Empty:
+                        continue
+                assert isinstance(message, Message)
+                if message['type'] == 'exit':
+                    break  # the while True loop
+                elif message['type'] == 'config':
+                    self.config = message['configdict']
+                elif message['type'] == 'telemetry':
+                    self.send_to_frontend('telemetry', telemetry=self.get_telemetry())
+                elif message['type'] == 'analyze':
+                    self._logger.debug(
+                        'Got work: prefix = {}, fsn = {}, filename = {}'.format(message['prefix'], message['fsn'],
+                                                                                message['filename']))
+                    cbfdata = None
+                    for fn in [message['filename'], os.path.split(message['filename'])[-1]]:
+                        self._logger.debug('Trying filename form: {}'.format(fn))
+                        for subpath in [message['prefix'], '']:
+                            try:
+                                self._logger.debug('Trying subpath {}'.format(subpath))
+                                cbfdata = readcbf(os.path.join(self.config['path']['directories']['images'],
+                                                               subpath, fn))[0]
+                                self._logger.debug('File found in subpath {}'.format(subpath))
+                                break
+                            except FileNotFoundError as fe:
+                                cbfdata = (fe, traceback.format_exc())
+                            except Exception as ex:
+                                self.send_to_frontend('error', exception=ex, traceback=traceback.format_exc(),
+                                                      fsn=message['fsn'], prefix=message['prefix'])
+                                raise
+                        if isinstance(cbfdata, np.ndarray):
+                            # the file has been found, do not try to load it in a different form.
+                            break
+                    if isinstance(cbfdata, tuple) and (isinstance(cbfdata[0], FileNotFoundError)):
+                        # could not load cbf file, send a message to the frontend.
+                        self._logger.error('Cannot load file: {}'.format(message['filename']))
+                        self.send_to_frontend('error', exception=cbfdata[0],
+                                              traceback=cbfdata[1], fsn=message['fsn'],
+                                              prefix=message['prefix'])
+                        self.send_to_frontend('done', prefix=message['prefix'], fsn=message['fsn'])
+                        continue
+                    self._logger.debug('File {} loaded successfully.'.format(message['filename']))
+                    assert isinstance(cbfdata, np.ndarray)
+                    self._logger.debug('Survived assertion')
+                    if message['prefix'] == self.config['path']['prefixes']['crd']:
+                        self._logger.debug('Data reduction needed.')
+                        # data reduction needed
+                        try:
+                            maskfilename = message['param']['geometry']['mask']
+                            logger.debug('Mask found from parameter dictionary: ' + maskfilename)
+                        except (KeyError, TypeError):
+                            maskfilename = self.config['geometry']['mask']
+                            logger.debug('Using default mask from config dictionary: ' + maskfilename)
+                        try:
+                            mask = self.get_mask(maskfilename)
+                            assert isinstance(mask, np.ndarray)
+                            im = self.datareduction(cbfdata, mask, message['param'])
+                            self.savecorrected(message['prefix'], message['fsn'], im)
+                            self.send_to_frontend('datareduction-done', prefix=message['prefix'], fsn=message['fsn'],
+                                                  image=im)
+                            self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'],
+                                                  data=cbfdata, mask=mask, param=message['param'])
+                        except Exception as exc:
+                            self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'],
+                                                  exception=exc, traceback=traceback.format_exc())
+                            self._logger.error(
+                                'Error in data reduction: {}, {}'.format(str(exc), traceback.format_exc()))
+                        self.send_to_frontend('done', prefix=message['prefix'], fsn=message['fsn'])
+                    elif message['prefix'] == self.config['path']['prefixes']['tra']:  # transmission measurement
+                        self._logger.debug('This is a transmission measurement.')
+                        try:
+                            transmmask = self.get_mask(self.config['transmission']['mask'])
+                            assert isinstance(transmmask, np.ndarray)
+                        except (IOError, OSError, IndexError) as exc:
+                            # could not load a mask file
+                            self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'],
+                                                  exception=exc, traceback=traceback.format_exc())
+                            self.send_to_frontend('done', prefix=message['prefix'], fsn=message['fsn'])
+                        else:
+                            self.send_to_frontend('transmdata', prefix=message['prefix'], fsn=message['fsn'],
+                                                  data=(cbfdata * transmmask).sum(), what=message['what'],
+                                                  sample=message['sample'], )
+                            self.send_to_frontend('done', prefix=message['prefix'], fsn=message['fsn'])
+                    elif message['prefix'] == self.config['path']['prefixes']['scn']:
+                        self._logger.debug('This is a scan point.')
+                        try:
+                            scanmask = self.get_mask(self.config['scan']['mask'])
+                            scanmasktotal = self.get_mask(self.config['scan']['mask_total'])
+                        except (IOError, OSError, IndexError) as exc:
+                            # could not load a mask file
+                            self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'], exception=exc,
+                                                  traceback=traceback.format_exc())
+                            self.send_to_frontend('done', prefix=message['prefix'], fsn=message['fsn'])
+                            continue
+                        assert isinstance(scanmask, np.ndarray)
+                        assert isinstance(scanmasktotal, np.ndarray)
+                        self._logger.debug('We have the scan masks')
+                        # scan point, we have to calculate something.
+                        stat = get_statistics(cbfdata, scanmasktotal, scanmask)
+                        self._logger.debug('We have the statistics')
+                        stat['FSN'] = message['fsn']
+                        resultlist = tuple([message['position']] + [stat[k]
+                                                                    for k in self.config['scan']['columns']])
+                        self._logger.debug('Sending the image')
+                        self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'],
+                                              param=message['param'], mask=scanmasktotal, data=cbfdata)
+                        self._logger.debug('Sending the scanpoint')
+                        self.send_to_frontend('scanpoint', prefix=message['prefix'], fsn=message['fsn'],
+                                              counters=resultlist, position=message['position'])
+                        self.send_to_frontend('done', prefix=message['prefix'], fsn=message['fsn'])
+
                     else:
-                        self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'], data=cbfdata,
-                                              mask=mask, param=message['param'])
+                        self._logger.debug('Unknown prefix, just sending back image.')
+                        try:
+                            mask = self.get_mask(self.config['geometry']['mask'])
+                        except (IOError, OSError, IndexError) as exc:
+                            # could not load a mask file
+                            self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'], exception=exc,
+                                                  traceback=traceback.format_exc())
+                        else:
+                            self.send_to_frontend('image', prefix=message['prefix'], fsn=message['fsn'], data=cbfdata,
+                                                  mask=mask, param=message['param'])
+                        self.send_to_frontend('done', prefix=message['prefix'], fsn=message['fsn'])
+        except Exception as exc:
+            self.send_to_frontend('error', prefix='', fsn=0, exception=exc, traceback=traceback.format_exc())
         self.send_to_frontend('exited', prefix=None, fsn=None)
 
     def get_mask(self, maskname: str) -> np.ndarray:
+        self._logger.debug('Getting mask: {}'.format(maskname))
         try:
             return self.masks[maskname]
         except KeyError:
+            self._logger.debug('Mask {} not found, trying to load it.'.format(maskname))
             if not os.path.isabs(maskname):
                 filename = find_in_subfolders(self.config['path']['directories']['mask'],
                                               maskname)
@@ -232,6 +269,7 @@ class ExposureAnalyzer_Backend(object):
             m = loadmat(filename)
             self.masks[maskname] = m[
                 [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
+            self._logger.debug('Loaded mask {} from file {}'.format(maskname, filename))
             return self.masks[maskname]
 
     def normalize_flux(self, im: Exposure, datared: Dict):
@@ -497,7 +535,7 @@ class ExposureAnalyzer(Service):
             njobs_before = sum(self._working.values())
             message = self._queue_to_frontend.get_nowait()
             assert isinstance(message, Message)
-            if message['type'] in ['image', 'scanpoint', 'error', 'transmdata']:
+            if message['type'] in ['done']:
                 assert message['prefix'] in self._working
                 self._working[message['prefix']] -= 1
                 if self._working[message['prefix']] < 0:
@@ -517,14 +555,20 @@ class ExposureAnalyzer(Service):
             self.emit(
                 'error', message['prefix'], message['fsn'], message['exception'], message['traceback'])
         elif message['type'] == 'scanpoint':
+            logger.debug('New scan point at motor position {:f}'.format(message['position']))
             self.emit('scanpoint', message['prefix'], message['fsn'], message['position'], message['counters'])
         elif message['type'] == 'datareduction-done':
             logger.debug('Emitting datareduction-done message')
             self.emit('datareduction-done', message['prefix'], message['fsn'], message['image'])
         elif message['type'] == 'transmdata':
+            logger.debug(
+                'transmission data for sample {} ({}): {}'.format(message['sample'], message['what'], message['data']))
             self.emit('transmdata', message['prefix'], message['fsn'], message['sample'], message['what'],
                       message['data'])
         elif message['type'] == 'image':
+            logger.debug('New image received from exposureanalyzer backend: fsn: {}, prefix: {}'.format(message['fsn'],
+                                                                                                        message[
+                                                                                                            'prefix']))
             self.emit('image', message['prefix'], message['fsn'], message['data'], message['param'], message['mask'])
         elif message['type'] == 'telemetry':
             self.emit('telemetry', message['telemetry'])
@@ -543,6 +587,7 @@ class ExposureAnalyzer(Service):
         if prefix not in self._working:
             self._working[prefix] = 0
         self._working[prefix] += 1
+        logger.debug('Exposureanalyzer currently working on {:d} jobs.'.format(sum(self._working.values())))
         if was_idle:
             self.emit('idle-changed', False)
 

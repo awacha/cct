@@ -18,11 +18,10 @@ from scipy.io import loadmat
 
 from .service import Service, ServiceError
 from ..utils.callback import SignalFlags
-from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders, find_subfolders
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 """Default path settings in working directory:
 
@@ -119,7 +118,7 @@ class FileSequence(Service):
             # section of the SPEC file header. Each line should contain at
             # most 8 numbers.
             for i in range(math.ceil(len(self.instrument.motors) / 8)):
-                f.write('P{:d} '.format(i))
+                f.write('#P{:d} '.format(i))
                 f.write(' '.join(['{:f}'.format(
                     self.instrument.motors[m].where())
                                   for m in sorted(self.instrument.motors)]))
@@ -358,41 +357,62 @@ class FileSequence(Service):
             self._lastfsn[prefix] = fsn
             self.emit('lastfsn-changed', prefix, self._lastfsn[prefix])
         logger.debug('New exposure: {} (fsn: {:d}, prefix: {})'.format(filename, fsn, prefix))
-        filename = filename[filename.index('images') + 7:]
+        try:
+            # try to remove the leading part of filenames like '/disk2/images/scn/scn_12034.cbf'
+            filename = filename[filename.index('images') + 7:]
+        except (IndexError, ValueError):
+            pass
         # write header file if needed
         config = self.instrument.config
+
         if prefix in [config['path']['prefixes']['crd'],
                       config['path']['prefixes']['tst']]:
+            simpleparams = False
+        else:
+            simpleparams = True
 
-            # construct the params dictionary
-            params = {}
-            paramfilename = os.path.join(
-                self.instrument.config['path']['directories']['param'],
-                '{prefix}_{fsn:0{fsndigits:d}d}.param'.format(
-                    prefix=prefix, fsndigits=config['path']['fsndigits'], fsn=fsn))
-            picklefilename = paramfilename[:-len('.param')] + '.pickle'
+        params = self.construct_params(prefix, fsn, startdate, simpleparams)
+        picklefilename = params['filename']
+        # save the params dictionary
+        with open(picklefilename, 'wb') as f:
+            logger.debug('Dumping pickle file ' + picklefilename)
+            pickle.dump(params, f)
+        kwargs['param'] = params
+        self.instrument.services['exposureanalyzer'].submit(
+            fsn, filename, prefix, **kwargs)
+
+    def construct_params(self, prefix, fsn, startdate, simple=False):
+        # construct the params dictionary
+        config = self.instrument.config
+        params = {}
+        picklefilename = os.path.join(
+            self.instrument.config['path']['directories']['param'],
+            self.exposurefileformat(prefix, fsn) + '.pickle')
+        params['fsn'] = fsn
+        params['filename'] = os.path.abspath(picklefilename)
+        params['exposure'] = {'fsn': fsn,
+                              'exptime': self.instrument.get_device('detector').get_variable('exptime'),
+                              'monitor': self.instrument.get_device('detector').get_variable('exptime'),
+                              'startdate': str(startdate),
+                              'date': str(datetime.datetime.now()),
+                              'enddate': str(datetime.datetime.now())}
+        params['geometry'] = {}
+        for k in config['geometry']:
+            params['geometry'][k] = config['geometry'][k]
+        dist = ErrorValue(config['geometry']['dist_sample_det'],
+                          config['geometry']['dist_sample_det.err'])
+        if not simple:
             sample = self.instrument.services['samplestore'].get_active()
-            params['fsn'] = fsn
-            params['filename'] = os.path.abspath(picklefilename)
-            params['exposure'] = {'fsn': fsn,
-                                  'exptime': self.instrument.get_device('detector').get_variable('exptime'),
-                                  'monitor': self.instrument.get_device('detector').get_variable('exptime'),
-                                  'startdate': str(startdate),
-                                  'date': str(datetime.datetime.now()),
-                                  'enddate': str(datetime.datetime.now())}
-            params['geometry'] = {}
-            for k in config['geometry']:
-                params['geometry'][k] = config['geometry'][k]
-            dist = ErrorValue(config['geometry']['dist_sample_det'],
-                              config['geometry']['dist_sample_det.err'])
-            if sample is not None:
-                distcalib = dist - sample.distminus
-                params['sample'] = sample.todict()
-            else:
-                distcalib = dist
-            params['geometry']['truedistance'] = distcalib.val
-            params['geometry']['truedistance.err'] = distcalib.err
-
+        else:
+            sample = None
+        if sample is not None:
+            distcalib = dist - sample.distminus
+            params['sample'] = sample.todict()
+        else:
+            distcalib = dist
+        params['geometry']['truedistance'] = distcalib.val
+        params['geometry']['truedistance.err'] = distcalib.err
+        if not simple:
             params['motors'] = {}
             for m in sorted(self.instrument.motors):
                 params['motors'][m] = self.instrument.motors[m].where()
@@ -401,7 +421,6 @@ class FileSequence(Service):
                 params['devices'][d] = {}
                 for v in sorted(self.instrument.devices[d].list_variables()):
                     params['devices'][d][v] = self.instrument.devices[d].get_variable(v)
-
             params['environment'] = {}
             try:
                 params['environment']['vacuum_pressure'] = self.instrument.get_device('vacuum').get_variable('pressure')
@@ -424,15 +443,7 @@ class FileSequence(Service):
             for k in config['services']['accounting']:
                 params['accounting'][k] = config['services']['accounting'][k]
 
-            # save the params dictionary
-            with open(picklefilename, 'wb') as f:
-                logger.debug('Dumping pickle file ' + picklefilename)
-                pickle.dump(params, f)
-
-            write_legacy_paramfile(paramfilename, params)
-            kwargs['param'] = params
-        self.instrument.services['exposureanalyzer'].submit(
-            fsn, filename, prefix, **kwargs)
+        return params
 
     def get_prefixes(self):
         """Return the known prefixes"""

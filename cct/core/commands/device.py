@@ -315,7 +315,7 @@ class Sleep(Command):
     def on_pulse(self):
         spent_time = time.monotonic() - self._starttime
         self.emit('progress', 'Remaining time from sleep: {:.1f} sec.'.format(
-            (self.sleeptime - spent_time), spent_time / self.sleeptime))
+            (self.sleeptime - spent_time)), spent_time / self.sleeptime)
         return True
 
     def cleanup(self, *args, **kwargs):

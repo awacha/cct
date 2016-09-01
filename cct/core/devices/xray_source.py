@@ -27,9 +27,19 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
         elif variablename == 'ht':
             ht = self.read_integer(50) / 100
             self.update_variable('ht', ht)
+            try:
+                self.update_variable('_auxstatus',
+                                     '{:.2f} kV, {:.2f} mA'.format(self.properties['ht'], self.properties['current']))
+            except KeyError:
+                pass
         elif variablename == 'current':
             current = self.read_integer(51) / 100
             self.update_variable('current', current)
+            try:
+                self.update_variable('_auxstatus',
+                                     '{:.2f} kV, {:.2f} mA'.format(self.properties['ht'], self.properties['current']))
+            except KeyError:
+                pass
         elif variablename == 'tubetime':
             self.update_variable('tubetime', (self.read_integer(55) / 60.0 + self.read_integer(56)))
         elif variablename in ['shutter', 'remote_mode', 'xrays', 'conditions_auto',

@@ -7,7 +7,7 @@ from ..commands.command import Command, cleanup_commandline
 from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class InterpreterError(ServiceError):
@@ -80,13 +80,14 @@ class Interpreter(Service):
                 ordered sequence (list or tuple) containing the arguments of the command."""
         if self.is_busy():
             raise InterpreterError('Interpreter is busy')
-        if issubclass(commandline, Command):
+        if not isinstance(commandline, str):
+            assert issubclass(commandline, Command)
             # we got a Command instance, not a string. Arguments are supplied as well
             if arguments is None:
                 arguments = []
             commandclass = commandline
             self.command_namespace_locals['_commandline'] = '<none>'
-        elif isinstance(commandline, str):
+        else:
             # we have to parse the command line. `arguments` is disregarded.
             commandline_cleaned = cleanup_commandline(commandline)
             if not commandline_cleaned:
@@ -154,8 +155,6 @@ class Interpreter(Service):
             except KeyError:
                 raise InterpreterError('Unknown command: ' + commandname)
             self.command_namespace_locals['_commandline'] = commandline_cleaned
-        else:
-            raise TypeError(commandline)
         assert issubclass(commandclass, Command)
         self._command = commandclass(self, arguments, {}, self.command_namespace_locals)
         self._command_connections[self._command] = [
@@ -167,8 +166,7 @@ class Interpreter(Service):
             self._command.connect('detail', self.on_command_detail),
         ]
         try:
-            self._command.execute(
-                self, arguments, self.instrument, self.command_namespace_locals)
+            self._command._execute()
         except Exception:
             for c in self._command_connections[self._command]:
                 self._command.disconnect(c)
@@ -182,6 +180,7 @@ class Interpreter(Service):
 
     def on_command_return(self, command, retval):
         #        logger.debug("Command {} returned: {}".format(str(command),str(retval)))
+        logger.debug('Got return value {} from command {}'.format(retval, command))
         self.command_namespace_locals['_'] = retval
         try:
             for c in self._command_connections[command]:

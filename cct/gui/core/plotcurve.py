@@ -448,6 +448,8 @@ class PlotCurveWindow(PlotCurveWidget):
 
     def on_destroy(self, window):
         PlotCurveWindow.instancelist.remove(self)
+        self.widget.destroy()
+        del self._window
         return False
 
     def on_focus_in(self, window, event):

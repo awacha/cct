@@ -212,18 +212,21 @@ class ScanGraph(ToolWindow):
                 self.builder.get_object('cursorscale').set_value(cursorpos)
             finally:
                 self._in_scalechanged = False
-        if self.builder.get_object('show2d_checkbutton').get_active():
-            self.redraw_2dimage()
+        self.redraw_2dimage()
 
     def redraw_2dimage(self):
+        if not self.builder.get_object('show2d_checkbutton').get_active():
+            return
         if not self.is_scan_mode():
             fsn = int(self._data['FSN'][self._cursorindex])
             data = self.instrument.services['filesequence'].load_cbf(
                 self.instrument.config['path']['prefixes']['scn'], fsn)
+            imgindex = self._cursorindex + 1
         else:
             data = self._lastimage
             if self._lastimage is None:
                 return
+            imgindex = self._dataindex
         mask = self.instrument.services['filesequence'].get_mask(self.instrument.config['scan']['mask_total'])
         piw = PlotImageWindow.get_latest_window()
         piw.set_image(data)

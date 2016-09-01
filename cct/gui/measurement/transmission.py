@@ -6,7 +6,7 @@ from ...core.commands.transmission import Transmission
 
 
 class TransmissionMeasurement(ToolWindow):
-    required_devices = ['detector', 'xraysource', 'Motor_BeamStop_X', 'Motor_BeamStop_Y', 'Motor_Sample_X',
+    required_devices = ['detector', 'xray_source', 'Motor_BeamStop_X', 'Motor_BeamStop_Y', 'Motor_Sample_X',
                         'Motor_Sample_Y']
 
     def __init__(self, *args, **kwargs):

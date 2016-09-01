@@ -4,7 +4,7 @@ import logging
 from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class SignalFlags(object):
     RUN_FIRST = 1
@@ -81,7 +81,7 @@ class Callbacks(object):
                 'id': self.__class__._nextsignalconnectionid, 'blocked': 0}
         self.__signalhandles.append(conn)
         self.__class__._nextsignalconnectionid = self.__class__._nextsignalconnectionid + 1
-        logger.debug('Connected signal handler {:d}'.format(conn['id']))
+        logger.debug('Connected signal handler {:d} for signal {}, callback {}'.format(conn['id'], signal, callback))
         return conn['id']
 
     def disconnect(self, connectionid: Optional[int] = None):

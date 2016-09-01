@@ -17,7 +17,7 @@ class GeneralMove(Command):
         super().__init__(*args, **kwargs)
         if self.kwargs:
             raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
-        if len(self.args) != 1:
+        if len(self.args) != 2:
             raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
         if not self.services['accounting'].has_privilege(PRIV_MOVEMOTORS):
             raise CommandError('Insufficient privileges to move motors.')
@@ -65,7 +65,7 @@ class GeneralMove(Command):
     def on_motor_position_change(self, motor, newpos):
         self.emit('pulse', 'Moving motor {}: {:<8.3f}'.format(self.motorname, newpos))
 
-    def on_stop(self, motor, targetreached):
+    def on_motor_stop(self, motor, targetreached):
         self.cleanup(targetreached)
 
 

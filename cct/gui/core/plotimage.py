@@ -344,8 +344,7 @@ class PlotImageWindow(PlotImageWidget):
 
     def on_destroy(self, window):
         PlotImageWindow.instancelist.remove(self)
-        del self.builder
-        del self.widget
+        self.widget.destroy()
         del self.window
         return False
 

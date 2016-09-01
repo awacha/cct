@@ -182,7 +182,7 @@ class ToolFrame(BuilderWidget):
                 dev = instrument.get_device(rd)
             except KeyError:
                 return False
-            assert isinstance(dev, Device)
+            assert isinstance(dev, (Device, Motor))
             if not dev.get_connected():
                 return False
         return True

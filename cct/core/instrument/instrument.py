@@ -87,11 +87,11 @@ class Instrument(Callbacks):
 
     def start(self):
         """Start operation"""
+        self.starttime = time.monotonic()
         self._telemetry_timeout = GLib.timeout_add(self.telemetry_timeout * 1000,
                                                    self.on_telemetry_timeout)
         for s in self.services:
             self.services[s].start()
-        self.starttime = time.monotonic()
         logger.info('Started services.')
 
     # noinspection PyDictCreation
@@ -370,7 +370,7 @@ class Instrument(Callbacks):
             bsy = self.motors['BeamStop_Y'].where()
             bsx = self.motors['BeamStop_X'].where()
         except KeyError:
-            return 'unknown'
+            raise
         if abs(bsx - self.config['beamstop']['in'][0]) < 0.001 and abs(bsy - self.config['beamstop']['in'][1]) < 0.001:
             return 'in'
         if abs(bsx - self.config['beamstop']['out'][0]) < 0.001 and abs(

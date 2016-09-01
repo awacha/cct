@@ -4,15 +4,11 @@ import traceback
 from gi.repository import GLib
 
 from .command import Command, CommandError, CommandArgumentError
-from .jump import JumpException, GotoException, GosubException, ReturnException, PassException
+from .exceptions import JumpException, GotoException, GosubException, ReturnException, PassException, ScriptEndException
 from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-class ScriptEndException(JumpException):
-    pass
 
 
 class ScriptError(CommandError):
@@ -205,8 +201,8 @@ class Script(Command):
         return False
 
     def cleanup(self, *args, **kwargs):
-        super().cleanup(*args, **kwargs)
         self.destroy_subinterpreter()
+        super().cleanup(*args, **kwargs)
 
     def find_label(self, labelname):
         for i, line in enumerate(self._scriptlist):

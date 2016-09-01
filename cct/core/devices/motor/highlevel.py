@@ -128,3 +128,6 @@ class Motor(Callbacks):
         if flags is None:
             flags = self.errorflags()
         return self._controller.decode_error_flags(flags)
+
+    def get_connected(self):
+        return self._controller.get_connected()

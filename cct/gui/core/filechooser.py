@@ -12,7 +12,7 @@ class DoubleFileChooserDialog:
         fco = Gtk.FileChooserDialog(parent=mainwindow, action=Gtk.FileChooserAction.OPEN, title=loadtitle)
         fco.add_buttons('Open', 1, 'Cancel', 0)
         fcs = Gtk.FileChooserDialog(parent=mainwindow, action=Gtk.FileChooserAction.SAVE, title=savetitle)
-        fcs.add_buttons('Open', 1, 'Cancel', 0)
+        fcs.add_buttons('Save', 1, 'Cancel', 0)
         fs = []
         for name, pattern in filters:
             fs.append(Gtk.FileFilter())

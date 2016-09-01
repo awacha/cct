@@ -1,11 +1,16 @@
+import logging
 import traceback
 import weakref
 from typing import Dict
 
 from gi.repository import GLib
 
+from .exceptions import JumpException
 from ..devices import Motor
 from ..utils.callback import Callbacks, SignalFlags
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class CommandError(Exception):
@@ -219,17 +224,28 @@ class Command(Callbacks):
         return True
 
     def _execute(self):
+        logger.debug('Executing command {}'.format(self.name))
         if not self.validate():
-            raise CommandError('Validation of command parameters failed.')
+            logger.error('Validation of command parameters for command {} failed.')
+            raise CommandError('Validation of command parameters for command {} failed.'.format(self.name))
+        logger.debug('Connecting required devices for command {}'.format(self.name))
         self._connect_devices()
         if self.timeout is not None:
+            logger.debug('Starting timeout of {:f} seconds'.format(self.timeout))
             self._timeout_handler = GLib.timeout_add(self.timeout * 1000, self.on_timeout)
         if self.pulse_interval is not None:
+            logger.debug('Starting pulser of {:f} seconds interval'.format(self.pulse_interval))
             self._pulse_handler = GLib.timeout_add(self.pulse_interval * 1000, self.on_pulse)
         try:
+            logger.debug('Running execute() method of command {}'.format(self.name))
             retval = self.execute()
-        except Exception:
+        except JumpException as je:
+            retval = None
+            pass
+        except Exception as exc:
+            logger.error('Error running command {}: {} {}'.format(self.name, str(exc), traceback.format_exc()))
             self.cleanup(None, noemit=True)
+            retval = None
             raise
         return retval
 
@@ -240,6 +256,7 @@ class Command(Callbacks):
     def kill(self):
         """Stop running the current command. The default version emits a 'fail'
         signal and cleans up."""
+        logger.warning('Killing command {}'.format(self.name))
         try:
             raise CommandKilledError('Command {} killed.'.format(self.name))
         except CommandKilledError as cke:
@@ -248,11 +265,16 @@ class Command(Callbacks):
 
     def cleanup(self, returnvalue: object = None, noemit=False):
         """Must be called after execution finished."""
+        logger.debug('Cleaning up command {}'.format(self.name))
         if self._timeout_handler is not None:
             GLib.source_remove(self._timeout_handler)
+            logger.debug('Timeout handler of command {} removed'.format(self.name))
         if self._pulse_handler is not None:
             GLib.source_remove(self._pulse_handler)
+            logger.debug('Pulse handler of command {} removed'.format(self.name))
+        logger.debug('Disconnecting required devices of command {}'.format(self.name))
         self._disconnect_devices()
+        logger.debug('Disconnected required devices of command {}'.format(self.name))
         if not noemit:
             self.emit('return', returnvalue)
         del self.args
@@ -273,15 +295,17 @@ class Command(Callbacks):
     def _connect_devices(self):
         for d in self.required_devices:
             dev = self.get_device(d)
+            self._device_connections[d] = [
+                dev.connect('variable-change', self.on_variable_change),
+                dev.connect('error', self.on_error),
+                dev.connect('disconnect', self.on_disconnect),
+            ]
             if isinstance(dev, Motor):
-                self._device_connections[d] = [dev.connect('variable-change', self.on_variable_change),
-                                               dev.connect('error', self.on_error),
-                                               dev.connect('position-change', self.on_motor_position_change),
-                                               dev.connect('stop', self.on_motor_stop)]
-            self._device_connections[d] = [dev.connect('variable-change', self.on_variable_change),
-                                           dev.connect('error', self.on_error),
-                                           dev.connect('disconnect', self.on_disconnect),
-                                           ]
+                self._device_connections[d].extend([
+                    dev.connect('position-change', self.on_motor_position_change),
+                    dev.connect('stop', self.on_motor_stop)
+                ])
+            logger.debug('Connected required device {} for command {}'.format(d, self.name))
 
     def _disconnect_devices(self):
         for d in list(self._device_connections.keys()):
@@ -335,6 +359,9 @@ class Command(Callbacks):
     @classmethod
     def __str__(cls):
         return cls.name
+
+    def do_return(self, retval):
+        logger.debug('Returning from command {} with value {}'.format(self.name, retval))
 
 
 def cleanup_commandline(commandline):

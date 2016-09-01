@@ -56,6 +56,7 @@ class Trim(Command):
         assert isinstance(pilatus, Pilatus)
         if pilatus.is_busy():
             raise CommandError('Cannot start trimming if the detector is busy.')
+        return True
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'threshold' and newvalue == self.threshold:
@@ -176,6 +177,7 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
             raise CommandError('Cannot start exposing if the detector is busy.')
         if det.get_variable('nimages') != 1:
             det.set_variable('nimages', 1)
+        return True
 
     def execute(self):
         self.fsn = self.services['filesequence'].get_nextfreefsn(self.prefix)
@@ -209,8 +211,8 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
         elif variablename == 'starttime':
             self.starttime = newvalue
         elif variablename == 'filename':
-            GLib.idle_add(lambda fsn=self.fsn, fn=newvalue, prf=self.prefix, st=self.starttime, kwargs=self.otherargs:
-                          self.services['filesequence'].new_exposure(fsn, fn, prf, st, **kwargs) and False)
+            self.services['filesequence'].new_exposure(self.fsn, newvalue, self.prefix, self.starttime,
+                                                       **self.otherargs)
             self.file_received = True
         elif variablename == '_status' and newvalue == 'idle':
             self.detector_idle = True
@@ -293,13 +295,12 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
         self.killed = False
         self.starttime = None
         self.filechecker_handle = None
+        self.fsns = None
         self.fsns_done = []
-        self.filenames = [self.services['filesequence'].exposurefileformat(self.prefix, f) + '.cbf'
-                          for f in self.fsns]
+        self.filenames = None
         self.due_times = [self.exptime + i * (self.exptime + self.expdelay) for i in range(self.nimages)]
         self.totaltime = self.exptime * self.nimages + self.expdelay * (self.nimages - 1)
         self.timeout = self.totaltime + 30
-        self.fsns = None
         self.imgpath = None
 
     def validate(self):
@@ -307,12 +308,15 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
         assert isinstance(det, Pilatus)
         if det.is_busy():
             raise CommandError('Cannot start exposing if the detector is busy.')
+        return True
 
     def execute(self):
         dev = self.get_device('pilatus')
         assert isinstance(dev, Pilatus)
         dev.set_variable('nimages', self.nimages)
         self.fsns = list(self.services['filesequence'].get_nextfreefsns(self.prefix, self.nimages))
+        self.filenames = [self.services['filesequence'].exposurefileformat(self.prefix, f) + '.cbf'
+                          for f in self.fsns]
         dev.set_variable('expperiod', self.exptime + self.expdelay)
         self.imgpath = self.config['path']['directories']['images_detector'][
                            0] + '/' + self.prefix
@@ -353,9 +357,8 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
             if self.services['filesequence'].is_cbf_ready(self.prefix + '/' + filename):
                 # if the file is present, let it be processed.
                 logger.debug('We have {}'.format(filename))
-                GLib.idle_add(lambda fs=fsn, fn=os.path.join(self.imgpath, filename), prf=self.prefix,
-                                     st=self.starttime, kwargs=self.otherargs:
-                              self.services['filesequence'].new_exposure(fs, fn, prf, st, **kwargs) and False)
+                self.services['filesequence'].new_exposure(fsn, os.path.join(self.imgpath, filename), self.prefix,
+                                                           self.starttime, **self.otherargs)
                 self.fsns_done.append(fsn)
         # no more files are expected just now
         if len(self.fsns) != len(self.fsns_done):
@@ -400,3 +403,4 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
         if self.filechecker_handle is not None:
             GLib.source_remove(self.filechecker_handle)
             self.filechecker_handle = None
+        super().cleanup(*args, **kwargs)

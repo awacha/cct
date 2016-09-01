@@ -12,11 +12,11 @@ from ...core.devices import Motor
 from ...core.services.exposureanalyzer import ExposureAnalyzer
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ScanMeasurement(ToolWindow):
-    required_devices = ['detector', 'xraysource']
+    required_devices = ['detector', 'xray_source']
     def __init__(self, *args, **kwargs):
         self._scanfsn = None
         self.scangraph = None
@@ -57,6 +57,7 @@ class ScanMeasurement(ToolWindow):
         assert self._scanfsn is None
         motor = self.instrument.motors[self.builder.get_object('motorselector').get_active_text()]
         assert isinstance(motor, Motor)
+        self.killed = False
         nsteps = self.builder.get_object('nsteps_spin').get_value_as_int()
         exptime = self.builder.get_object('countingtime_spin').get_value()
         comment = self.builder.get_object('comment_entry').get_text().replace('"', '\\"')
@@ -102,7 +103,9 @@ class ScanMeasurement(ToolWindow):
                     self.instrument.get_device('xray_source').get_variable('shutter')):
                 # close the shutter
                 self.execute_command(Shutter, (False,), True, additional_widgets=['entry_grid'])
-            self.finalize_scan()
+            else:
+                commandname = 'shutter'
+                returnvalue = False
 
         if commandname == 'moveto':
             if not returnvalue:
@@ -123,6 +126,7 @@ class ScanMeasurement(ToolWindow):
             nsteps = self.builder.get_object('nsteps_spin').get_value_as_int()
             self.scangraph = ScanGraph([motor] + self.instrument.config['scan']['columns'], nsteps,
                                        self._scanfsn, self._scan_arguments[-1], self.instrument)
+            self.scangraph.show_all()
 
         if commandname == 'scan' or commandname == 'scanrel':
             # scan finished. Close the shutter if needed.
@@ -133,10 +137,14 @@ class ScanMeasurement(ToolWindow):
                 returnvalue = False
 
         if commandname == 'shutter' and not returnvalue:
-            logger.info('Scan {:d} finished.'.format(self._scanfsn))
-            self.finalize_scan()
+            # wait for the last scanpoint to arrive before calling finalize_scan()
+            self.finalize_scan(killed=self.killed)
 
-    def finalize_scan(self):
+    def finalize_scan(self, killed: bool):
+        if killed:
+            self.info_message('Scan measurement stopped by user.')
+        assert self._scanfsn is not None
+        logger.debug('Finalizing scan')
         try:
             self.scangraph.truncate_scan()
             notify('Scan ended', 'Scan {:d} ended'.format(self._scanfsn))
@@ -146,6 +154,11 @@ class ScanMeasurement(ToolWindow):
         self.builder.get_object('start_button').set_label('Start')
         self.builder.get_object('start_button').get_image().set_from_icon_name('system-run', Gtk.IconSize.BUTTON)
         self.builder.get_object('scan_progress').set_visible(False)
+        for eac in self._exposureanalyzer_connections:
+            self.instrument.services['exposureanalyzer'].disconnect(eac)
+        self._exposureanalyzer_connections = []
+        self._scanfsn = None
+
 
     def on_command_message(self, interpreter, commandname, message):
         logger.info('Scan message: ' + message)
@@ -162,10 +175,8 @@ class ScanMeasurement(ToolWindow):
         progress.set_fraction(fraction)
         progress.set_text(message)
 
-    def on_scanpoint(self, exposureanalyzer, prefix, fsn, scandata):
+    def on_scanpoint(self, exposureanalyzer, prefix, fsn, position, scandata):
         self.scangraph.append_data(scandata)
-        if self.killed or len(self.scangraph) == self.builder.get_object('nsteps_spin').get_value_as_int():
-            self.finalize_scan()
 
     def on_symmetric_scan_toggled(self, checkbutton):
         if checkbutton.get_active():

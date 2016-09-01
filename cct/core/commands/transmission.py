@@ -65,6 +65,7 @@ class Transmission(Command):
             raise CommandArgumentError('Unknown empty sample: {}'.format(self.emptyname))
         if not self.services['accounting'].has_privilege(PRIV_BEAMSTOP):
             raise CommandError('Insufficient privileges to move the beamstop')
+        return True
 
     def on_pulse(self):
         if not self.intensities:
@@ -164,7 +165,7 @@ class Transmission(Command):
             self.services['filesequence'].exposurefileformat(
                 self.config['path']['prefixes']['tra'],
                 self.fsns_currently_exposed[0]
-            )
+            ) + '.cbf'
         )
 
     def on_motor_stop(self, motor, targetreached):

@@ -154,13 +154,15 @@ class ScriptMeasurement(ToolWindow, DoubleFileChooserDialog):
                                           self._inhibit_close_reason is not None)
 
     def on_toolbutton_execute(self, toolbutton):
-        if toolbutton.get_label() == 'Start':
+        if toolbutton.get_label() == 'Execute':
             script = self.sourcebuffer.get_text(self.sourcebuffer.get_start_iter(),
                                                 self.sourcebuffer.get_end_iter(),
                                                 True)
 
             class MyScriptClass(Script):
-                script = script
+                pass
+
+            MyScriptClass.script = script
 
             flagsbb = self.builder.get_object('flags_buttonbox')
             for b in flagsbb:
@@ -182,9 +184,11 @@ class ScriptMeasurement(ToolWindow, DoubleFileChooserDialog):
                                                                      'redo_toolbutton',
                                                                      'cut_toolbutton', 'copy_toolbutton',
                                                                      'paste_toolbutton',
-                                                                     'help_toolbutton', 'execute_toolbutton'])
+                                                                     'help_toolbutton'])
             except Exception as exc:
                 # this has already been handled by self.execute_command()
+                return
+            if self._cmd is None:
                 return
             self._scriptconnections = [self._cmd.connect('cmd-start', self.on_command_start),
                                        self._cmd.connect('paused', self.on_script_paused)]
@@ -195,6 +199,8 @@ class ScriptMeasurement(ToolWindow, DoubleFileChooserDialog):
             self.instrument.services['interpreter'].kill()
 
     def write_message(self, message: str, timestamp=True):
+        if self.get_last_filename() is None:
+            return
         buf = self.builder.get_object('messagesbuffer')
         if timestamp:
             message = str(datetime.datetime.now()) + ': ' + message
@@ -211,7 +217,7 @@ class ScriptMeasurement(ToolWindow, DoubleFileChooserDialog):
         info_message(self.widget, 'Script ended', 'Result: %s' % str(returnvalue))
         notify('Script ended', 'Script execution ended with result: {}'.format(returnvalue))
         super().on_command_return(interpreter, commandname, returnvalue)
-        self.builder.get_object('execute_toolbutton').set_label('start')
+        self.builder.get_object('execute_toolbutton').set_label('Execute')
         self.builder.get_object('execute_toolbutton').set_icon_name('media-playback-start')
         self.builder.get_object('sourceview').set_editable(True)
         self.sourcebuffer.remove_source_marks(
