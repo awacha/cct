@@ -313,7 +313,7 @@ class PlotImageWidget(BuilderWidget):
         else:
             try:
                 self.colorbaraxis.remove()
-            except (AttributeError, ValueError):
+            except (AttributeError, ValueError, KeyError):
                 pass
 
     def replot(self, keepzoom=True):

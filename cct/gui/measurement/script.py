@@ -163,6 +163,9 @@ class ScriptMeasurement(ToolWindow, DoubleFileChooserDialog):
                 pass
 
             MyScriptClass.script = script
+            MyScriptClass.name = self.get_last_filename()
+            if MyScriptClass.name is None:
+                MyScriptClass.name = '_untitled_script'
 
             flagsbb = self.builder.get_object('flags_buttonbox')
             for b in flagsbb:
@@ -308,10 +311,10 @@ class ScriptMeasurement(ToolWindow, DoubleFileChooserDialog):
             self.instrument.services['interpreter'].clear_flag(flagtoggle.get_label())
 
     def on_interpreter_flag(self, interpreter, flagname, newstate):
-        logger.info('Flag state changed: %s, %s' % (flagname, newstate))
+        logger.debug('Flag state changed: %s, %s' % (flagname, newstate))
         tb = self.builder.get_object('flag' + flagname + '_button')
         if tb is None:
-            raise ('No flag button: %s' % flagname)
+            raise ValueError('No flag button: %s' % flagname)
         tb.set_active(newstate)
         return False
 

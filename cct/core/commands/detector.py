@@ -8,7 +8,7 @@ from .command import Command, CommandError, CommandArgumentError
 from ..devices.detector import Pilatus
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Trim(Command):
@@ -50,6 +50,7 @@ class Trim(Command):
                 raise CommandArgumentError('Invalid threshold value for low gain: {:.2f}'.format(self.threshold))
         else:
             raise CommandArgumentError('Invalid gain: ' + self.gain)
+        self._trimming_started = False
 
     def validate(self):
         pilatus = self.get_device('pilatus')
@@ -59,11 +60,14 @@ class Trim(Command):
         return True
 
     def on_variable_change(self, device, variablename, newvalue):
-        if variablename == 'threshold' and newvalue == self.threshold:
-            self.cleanup(newvalue)
+        if variablename == '_status' and newvalue == 'trimming':
+            self._trimming_started = True
+        elif variablename == '_status' and newvalue == 'idle' and self._trimming_started:
+            self.cleanup(None)
 
     def on_pulse(self):
         self.emit('pulse', 'Trimming detector')
+        return True
 
     def execute(self):
         self.get_device('pilatus').set_threshold(self.threshold, self.gain)
@@ -225,6 +229,7 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
         return False
 
     def kill(self):
+        logger.debug('Killing exposure in Pilatus')
         self.killed = True
         self.get_device('pilatus').execute_command('kill')
 

@@ -167,10 +167,13 @@ class Interpreter(Service):
         ]
         try:
             self._command._execute()
-        except Exception:
+        except Exception as exc:
+            logger.debug('Exception while executing command: {}'.format(exc))
             for c in self._command_connections[self._command]:
                 self._command.disconnect(c)
             del self._command_connections[self._command]
+            self._command = None
+            logger.debug('Re-raising exception')
             raise
         self.emit('idle-changed', False)
         return self._command

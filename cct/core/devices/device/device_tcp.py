@@ -384,12 +384,12 @@ class DeviceBackend_TCP(DeviceBackend):
         device.
         """
         self.killflag.set()
-        self.logger.info('Waiting for TCP communication process of {} to exit'.format(self.name))
+        self.logger.debug('Waiting for TCP communication process of {} to exit'.format(self.name))
         self.tcpprocess_exited.wait()
         self.logger.debug('Join-ing TCP communication process of {}'.format(self.name))
         self.tcp_communicator.join()
         self.tcp_communicator = None
-        self.logger.info('TCP communication process of {} exited'.format(self.name))
+        self.logger.debug('TCP communication process of {} exited'.format(self.name))
 
     def send_message(self, message, expected_replies=1, timeout=None, asynchronous=False):
         if timeout is None:

@@ -1,8 +1,13 @@
-from gi.repository import GLib, Gtk
+import logging
 
-from ..core.functions import update_comboboxtext_choices, notify
+from gi.repository import GLib, Gtk, Gdk
+
+from ..core.functions import notify
 from ..core.toolwindow import ToolWindow
 from ...core.commands.transmission import Transmission
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class TransmissionMeasurement(ToolWindow):
@@ -13,6 +18,14 @@ class TransmissionMeasurement(ToolWindow):
         self._samplestoreconnection = None
         self._pulser_timeout = None
         super().__init__(*args, **kwargs)
+
+    def init_gui(self, *args, **kwargs):
+        self.builder.get_object('nimages_spin').set_value(self.instrument.config['transmission']['nimages'])
+        self.builder.get_object('exptime_spin').set_value(self.instrument.config['transmission']['exptime'])
+        maskpath = self.instrument.services['filesequence'].get_mask_filepath(
+            self.instrument.config['transmission']['mask'])
+        self.builder.get_object('maskchooser').set_filename(maskpath)
+        self.tidy_transmmodel(self.builder.get_object('transmview'))
 
     def on_mainwidget_map(self, window):
         if super().on_mainwidget_map(window):
@@ -28,17 +41,56 @@ class TransmissionMeasurement(ToolWindow):
     def on_samplelistchanged(self, samplestore):
         # Note that emptyname_combo and the sample selector combobox
         # cellrenderer in the first treeview column use the same liststore.
-        update_comboboxtext_choices(self.builder.get_object('emptyname_combo'),
-                                    sorted(samplestore, key=lambda x: x.title),
-                                    self.instrument.config['datareduction']['backgroundname'])
+        logger.debug('on_samplelistchanged')
+        emptynamecombo = self.builder.get_object('emptyname_combo')
+        samplenamestore = self.builder.get_object('samplenamestore')
+        assert isinstance(samplenamestore, Gtk.ListStore)
+        assert isinstance(emptynamecombo, Gtk.ComboBox)
+        if (emptynamecombo.get_active() is None) or (not len(samplenamestore)):
+            emptyname = self.instrument.config['datareduction']['backgroundname']
+        else:
+            emptyname = samplenamestore[emptynamecombo.get_active()][0]
+        logger.debug('Emptyname is {}'.format(emptyname))
+        samplenamestore.clear()
+        to_be_selected_iter = None
+        for st in sorted([x.title for x in samplestore]):
+            it = samplenamestore.append([st])
+            if st == emptyname:
+                logger.debug('Found iter to be selected')
+                to_be_selected_iter = it
+        if to_be_selected_iter is not None:
+            logger.debug('Selecting iter.')
+            emptynamecombo.set_active_iter(to_be_selected_iter)
+            logger.debug('ComboBox now points at {}'.format(samplenamestore[emptynamecombo.get_active()][0]))
 
-    def on_add(self, button):
-        self.builder.get_object('transmstore').append(('', '--', '--', '--', '--', '--', '--', False, 0, -1))
+    def tidy_transmmodel(self, treeview: Gtk.TreeView):
+        model, selected_iter = treeview.get_selection().get_selected()
+        assert isinstance(model, Gtk.ListStore)
+        if selected_iter:
+            selected_name = model[selected_iter][0]
+        else:
+            selected_name = None
+        selected_iter = None
+        rows = [list(r) for r in model]
+        model.clear()
+        for r in rows:
+            if not r[0]:
+                continue
+            it = model.append(r)
+            if r[0] == selected_name:
+                selected_iter = it
+        it = model.append(['', '--', '--', '--', '--', '--', '--', False, 0, -1])
+        if selected_iter is None:
+            selected_iter = it
+        treeview.get_selection().select_iter(selected_iter)
 
-    def on_remove(self, button):
-        model, it = self.builder.get_object('transmselection').get_selected()
-        if it is not None:
-            model.remove(it)
+    def on_transmview_keypress(self, treeview: Gtk.TreeView, event: Gdk.EventKey):
+        if event.get_keyval()[1] in [Gdk.KEY_Delete, Gdk.KEY_KP_Delete, Gdk.KEY_BackSpace]:
+            model, selectediter = treeview.get_selection().get_selected()
+            if (selectediter is not None) and (model[selectediter] != ''):
+                model.remove(selectediter)
+                self.tidy_transmmodel(treeview)
+        return False
 
     def on_start(self, button):
         if button.get_label() == 'Start':
@@ -53,11 +105,12 @@ class TransmissionMeasurement(ToolWindow):
                 row[7] = False
                 row[8] = 0
             transmstore[0][7] = True
-
+            self.instrument.config['transmission']['mask'] = self.builder.get_object('maskchooser').get_filename()
+            self.instrument.save_state()
             button.set_label('Stop')
             button.get_image().set_from_icon_name('gtk-stop', Gtk.IconSize.BUTTON)
             self._pulser_timeout = GLib.timeout_add(100, self.pulser)
-            samplenames = [row[0] for row in self.builder.get_object('transmstore')]
+            samplenames = [row[0] for row in self.builder.get_object('transmstore') if row[0]]
             self.execute_command(
                 Transmission, (
                     samplenames,
@@ -66,7 +119,7 @@ class TransmissionMeasurement(ToolWindow):
                     self.builder.get_object('samplenamestore')[
                         self.builder.get_object('emptyname_combo').get_active()][0],
                 ), True, additional_widgets=[
-                    'entry_expander', 'transmview', 'add_button', 'remove_button', 'close_button']
+                    'entry_expander', 'transmview', 'close_button']
             )
         else:
             self.instrument.services['interpreter'].kill()
@@ -77,13 +130,17 @@ class TransmissionMeasurement(ToolWindow):
         self._pulser_timeout = None
         self.builder.get_object('start_button').set_label('Start')
         self.builder.get_object('start_button').get_image().set_from_icon_name('system-run', Gtk.IconSize.BUTTON)
+        for r in self.builder.get_object('transmstore'):
+            r[7] = False
+            r[8] = 0
         notify(
             summary='Transmission measurement done',
             body='Measured transmissions for {:d} sample(s)'.format(
-                len(self.builder.get_object('transmstore')))
+                len(self.builder.get_object('transmstore')) - 1)
         )
+        self.instrument.save_state()
 
-    def on_cmd_detail(self, interpreter, commandname, msg):
+    def on_command_detail(self, interpreter, commandname, msg):
         transmstore = self.builder.get_object('transmstore')
         what, samplename, value = msg
         for i in range(len(transmstore)):
@@ -117,3 +174,4 @@ class TransmissionMeasurement(ToolWindow):
         samplenamestore = self.builder.get_object('samplenamestore')
         samplename = samplenamestore[it][0]
         transmstore[path][0] = samplename
+        self.tidy_transmmodel(self.builder.get_object('transmview'))

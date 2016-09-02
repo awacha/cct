@@ -9,16 +9,6 @@
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
-  <object class="GtkImage" id="image1">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="icon_name">list-add</property>
-  </object>
-  <object class="GtkImage" id="image2">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="icon_name">list-remove</property>
-  </object>
   <object class="GtkImage" id="image3">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -215,8 +205,12 @@
               <object class="GtkTreeView" id="transmview">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="events">GDK_KEY_PRESS_MASK | GDK_STRUCTURE_MASK</property>
                 <property name="model">transmstore</property>
+                <property name="reorderable">True</property>
                 <property name="rules_hint">True</property>
+                <property name="enable_search">False</property>
+                <signal name="key-press-event" handler="on_transmview_keypress" swapped="no"/>
                 <child internal-child="selection">
                   <object class="GtkTreeSelection" id="transmselection"/>
                 </child>
@@ -238,7 +232,7 @@
                     <child>
                       <object class="GtkCellRendererCombo" id="cellrenderercombo1">
                         <property name="editable">True</property>
-                        <property name="placeholder_text">Select sample...</property>
+                        <property name="placeholder_text">&lt; Select sample... &gt;</property>
                         <property name="has_entry">False</property>
                         <property name="model">samplenamestore</property>
                         <property name="text_column">0</property>
@@ -331,36 +325,6 @@
             <property name="can_focus">False</property>
             <property name="halign">end</property>
             <property name="layout_style">start</property>
-            <child>
-              <object class="GtkButton" id="add_button">
-                <property name="label" translatable="yes">Add</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="image">image1</property>
-                <signal name="clicked" handler="on_add" swapped="no"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="remove_button">
-                <property name="label" translatable="yes">Remove</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="image">image2</property>
-                <signal name="clicked" handler="on_remove" swapped="no"/>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
             <child>
               <object class="GtkButton" id="start_button">
                 <property name="label" translatable="yes">Start</property>

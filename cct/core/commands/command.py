@@ -173,6 +173,8 @@ class Command(Callbacks):
         'detail': (SignalFlags.RUN_FIRST, None, (object,))
     }
 
+    instance_count = 0
+
     name = '__abstract__'
 
     required_devices = []
@@ -180,6 +182,12 @@ class Command(Callbacks):
     timeout = None  # seconds
 
     pulse_interval = None  # seconds
+
+    def __new__(cls, *args, **kwargs):
+        cls.instance_count += 1
+        obj = super().__new__(cls)
+        logger.debug('Instantiating a command. Number of instances including this: {:d}'.format(cls.instance_count))
+        return obj
 
     def __init__(self, interpreter, args, kwargs, namespace):
         super().__init__()
@@ -196,6 +204,10 @@ class Command(Callbacks):
         self._device_connections = {}
         self._timeout_handler = None
         self._pulse_handler = None
+
+    def __del__(self):
+        self.__class__.instance_count -= 1
+        logger.debug('Deleting a command. Number of remaining instances: {:d}'.format(self.__class__.instance_count))
 
     @property
     def instrument(self):
@@ -240,12 +252,11 @@ class Command(Callbacks):
             logger.debug('Running execute() method of command {}'.format(self.name))
             retval = self.execute()
         except JumpException as je:
-            retval = None
-            pass
+            self.cleanup(None, noemit=True)
+            raise
         except Exception as exc:
             logger.error('Error running command {}: {} {}'.format(self.name, str(exc), traceback.format_exc()))
             self.cleanup(None, noemit=True)
-            retval = None
             raise
         return retval
 

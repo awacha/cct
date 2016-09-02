@@ -58,6 +58,7 @@ class WaitVacuum(Command):
     def on_pulse(self):
         self.emit('pulse', 'Waiting for vacuum to get below {:.3f} mbar. Currently: {:.3f} mbar'.format(
             self.threshold, self.get_device('vacuum').get_variable('pressure')))
+        return True
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'pressure' and newvalue < self.threshold:

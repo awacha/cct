@@ -186,6 +186,7 @@ class Mapping(Command):
         else:
             self.emit('progress', 'Mapping: {:d}/{:d} done.'.format(self.pointsdone, self.numpoints),
                       self.pointsdone / self.numpoints)
+        return True
 
     def kill(self):
         self.killed = True

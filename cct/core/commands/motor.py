@@ -292,6 +292,7 @@ class SetSample(Command):
         if motor.name == 'Sample_X':
             self.get_motor('Sample_Y').moveto(self.targetpos[1])
         else:
+            self.instrument.services['samplestore'].set_active(self.sample.title)
             self.cleanup(self.sample.title)
 
     def on_motor_position_change(self, motor, newposition):

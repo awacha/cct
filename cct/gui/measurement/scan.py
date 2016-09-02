@@ -161,7 +161,7 @@ class ScanMeasurement(ToolWindow):
 
 
     def on_command_message(self, interpreter, commandname, message):
-        logger.info('Scan message: ' + message)
+        logger.debug('Scan message: ' + message)
 
     def on_command_pulse(self, interpreter, commandname, message):
         progress = self.builder.get_object('scan_progress')

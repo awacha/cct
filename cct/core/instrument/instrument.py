@@ -92,7 +92,7 @@ class Instrument(Callbacks):
                                                    self.on_telemetry_timeout)
         for s in self.services:
             self.services[s].start()
-        logger.info('Started services.')
+        logger.info('Started all services.')
 
     # noinspection PyDictCreation
     def _initialize_config(self):
@@ -240,7 +240,6 @@ class Instrument(Callbacks):
                 'scanfile': 'credoscan2.spec'
             },
             'transmission': {
-                'empty_sample': 'Empty_Beam',
                 'nimages': 10,
                 'exptime': 0.5,
                 'mask': 'mask.mat'},
@@ -382,7 +381,8 @@ class Instrument(Callbacks):
         """Try to connect to all devices. Send error logs on failures. Return
         a list of the names of unsuccessfully connected devices."""
         if not self._online:
-            logger.info('Not connecting to hardware: we are not on-line.')
+            logger.warning('Not connecting to hardware: we are not on-line.')
+            return
 
         def get_subclasses(cl) -> List:
             """Recursively get a flat list of subclasses of `cls`"""
@@ -408,8 +408,6 @@ class Instrument(Callbacks):
                 logger.warn('Not connecting {} again.'.format(cfg['name']))
                 continue
             # get the appropriate class
-            print([d.__name__ for d in device_classes])
-            print(cfg['classname'])
             cls = [d for d in device_classes if d.__name__ == cfg['classname']]
             assert (len(cls) == 1)  # a single class must exist.
             cls = cls[0]
@@ -540,7 +538,7 @@ class Instrument(Callbacks):
             ('telemetrymanager', TelemetryManager, {}),
         ]:
             assert issubclass(sclass, Service)
-            print('Initializing service {}.'.format(sname))
+            logger.debug('Initializing service {}'.format(sname))
             assert sclass.name == sname
             self.services[sname] = sclass(self, self.configdir, self.config['services'][sname])
             self._service_connections[sname] = [self.services[sname].connect('shutdown', self.on_service_shutdown)]

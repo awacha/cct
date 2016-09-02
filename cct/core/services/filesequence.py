@@ -126,7 +126,7 @@ class FileSequence(Service):
             f.write('#N {:d}\n'.format(N))  # the number of scan points
             f.write('#L ' + '  '.join([motorname] +
                                       self.instrument.config['scan']['columns']) + '\n')
-        logger.info('Written entry for scan {:d} into scanfile {}'.format(
+        logger.debug('Written entry for scan {:d} into scanfile {}'.format(
             scanidx, self._scanfile))
         self._running_scan = scanidx
         return scanidx
@@ -451,13 +451,31 @@ class FileSequence(Service):
 
     def is_cbf_ready(self, filename: str):
         """Check if a CBF file made by the detector is available."""
+        logger.debug('Checking if file {} is available'.format(filename))
         imgdir = self.instrument.config['path']['directories']['images']
         os.stat(self.instrument.config['path']['directories']['images'])
         try:
+            logger.debug('Checking in directory {}'.format(imgdir))
             os.stat(os.path.join(imgdir, filename))
+            logger.debug('File found!')
+            return True
         except FileNotFoundError:
-            return False
-        return True
+            pass
+        pattern = '(?P<prefix>\w{{3}})_(?P<fsn>\d{{{}}})\.cbf'.format(self.instrument.config['path']['fsndigits'])
+        logger.debug('Trying to match {} against {}'.format(filename, pattern))
+        m = re.match(pattern, filename)
+        if m is not None:
+            logger.debug(
+                'Not found, but we have a prefix {0}: checking in directory {1}/{0}'.format(m.group('prefix'), imgdir))
+            try:
+                os.stat(os.path.join(imgdir, m.group('prefix'), filename))
+                logger.debug('File found')
+                return True
+            except FileNotFoundError:
+                logger.debug('File not found!')
+                return False
+        logger.debug('File not found')
+        return False
 
     def exposurefileformat(self, prefix: str, fsn: Optional[int] = None):
         if fsn is None:
@@ -538,6 +556,10 @@ class FileSequence(Service):
                                      'atime': os.stat(filename).st_atime,
                                      'mask': m[[k for k in m.keys() if not k.startswith('__')][0]].view(bool)}
         return self._masks[maskname]['mask']
+
+    def get_mask_filepath(self, maskname: str) -> str:
+        mask = self.get_mask(maskname)
+        return self._masks[maskname]['path']
 
     def get_scanfile(self) -> str:
         return self._scanfile

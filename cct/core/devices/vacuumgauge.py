@@ -78,3 +78,7 @@ class TPG201(Device):
     urgency_modulo = 10
 
     urgent_variables = ['pressure']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.loglevel = logger.level

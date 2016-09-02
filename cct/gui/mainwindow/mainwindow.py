@@ -1,4 +1,3 @@
-import datetime
 import logging
 import traceback
 
@@ -235,11 +234,7 @@ class MainWindow(object):
     def on_interpreter_cmd_message(self, interpreter, commandname, message):
         self.builder.get_object('statusbar').pop(1)
         self.builder.get_object('statusbar').push(1, message)
-        enditer = self._logbuffer.get_end_iter()
-        self._logbuffer.insert_with_tags(enditer, str(datetime.datetime.now()) + ': MESSAGE: ' + message + '\n',
-                                         self._logtags.lookup('normal'))
-        self._logview.scroll_to_mark(
-            self._logbuffer.get_mark('log_end'), 0.1, False, 0, 0)
+        logger.info('Command {} :: {}'.format(commandname, message))
 
     # noinspection PyUnusedLocal
     def on_interpreter_cmd_pulse(self, interpreter, commandname, message):

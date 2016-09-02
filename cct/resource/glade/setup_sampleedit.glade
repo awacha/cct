@@ -151,6 +151,8 @@
               <object class="GtkFrame" id="frame1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
                 <property name="label_xalign">0</property>
                 <child>
                   <object class="GtkAlignment" id="alignment1">
@@ -161,6 +163,8 @@
                       <object class="GtkGrid" id="grid1">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
+                        <property name="vexpand">True</property>
                         <property name="row_homogeneous">True</property>
                         <child>
                           <object class="GtkLabel" id="label2">
@@ -251,6 +255,7 @@
                           <object class="GtkEntry" id="title_entry">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="placeholder_text" translatable="yes">Unique name for your sample</property>
                             <signal name="changed" handler="on_edit" swapped="no"/>
                           </object>
@@ -264,6 +269,8 @@
                           <object class="GtkEntry" id="description_entry">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
+                            <property name="vexpand">True</property>
                             <property name="placeholder_text" translatable="yes">Describe your sample here...</property>
                             <signal name="changed" handler="on_edit" swapped="no"/>
                           </object>
@@ -277,6 +284,7 @@
                           <object class="GtkEntry" id="preparedby_entry">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="placeholder_text" translatable="yes">Who prepared this sample</property>
                             <signal name="changed" handler="on_edit" swapped="no"/>
                           </object>
@@ -357,6 +365,7 @@
                           <object class="GtkSpinButton" id="thicknessval_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">thicknessval_adjustment</property>
                             <property name="digits">4</property>
@@ -371,6 +380,7 @@
                           <object class="GtkSpinButton" id="thicknesserr_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">thicknesserr_adjustment</property>
                             <property name="digits">4</property>
@@ -385,6 +395,7 @@
                           <object class="GtkSpinButton" id="positionxval_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">positionxval_adjustment</property>
                             <property name="digits">4</property>
@@ -399,6 +410,7 @@
                           <object class="GtkSpinButton" id="positionxerr_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">positionxerr_adjustment</property>
                             <property name="digits">4</property>
@@ -413,6 +425,7 @@
                           <object class="GtkSpinButton" id="positionyval_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">positionyval_adjustment</property>
                             <property name="digits">4</property>
@@ -427,6 +440,7 @@
                           <object class="GtkSpinButton" id="positionyerr_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">positionyerr_adjustment</property>
                             <property name="digits">4</property>
@@ -441,6 +455,7 @@
                           <object class="GtkSpinButton" id="distminusval_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">distminusval_adjustment</property>
                             <property name="digits">4</property>
@@ -455,6 +470,7 @@
                           <object class="GtkSpinButton" id="distminuserr_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">distminuserr_adjustment</property>
                             <property name="digits">4</property>
@@ -469,6 +485,7 @@
                           <object class="GtkSpinButton" id="transmissionval_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">transmissionval_adjustment</property>
                             <property name="digits">4</property>
@@ -483,6 +500,7 @@
                           <object class="GtkSpinButton" id="transmissionerr_spin">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="text" translatable="yes">0</property>
                             <property name="adjustment">transmissionerr_adjustment</property>
                             <property name="digits">4</property>
@@ -497,6 +515,7 @@
                           <object class="GtkCalendar" id="preparetime_calendar">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="hexpand">True</property>
                             <property name="year">2015</property>
                             <property name="month">9</property>
                             <property name="day">22</property>
@@ -556,6 +575,7 @@
                           <object class="GtkComboBoxText" id="category_combo">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="hexpand">True</property>
                             <property name="active">3</property>
                             <property name="active_id">3</property>
                             <items>
@@ -578,6 +598,7 @@
                           <object class="GtkComboBoxText" id="situation_combo">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="hexpand">True</property>
                             <property name="active">2</property>
                             <property name="active_id">2</property>
                             <items>

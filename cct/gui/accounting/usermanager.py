@@ -78,9 +78,9 @@ class UserManager(ToolWindow):
             return
         username = model[iterator][0]
         self.instrument.services['accounting'].update_user(username, firstname, lastname, privlevel)
-        logger.info('Updated user %s: %s, %s, %s' % (username, firstname, lastname, privlevel))
+        logger.debug('Updated user %s: %s, %s, %s' % (username, firstname, lastname, privlevel))
         user = [u for u in self.instrument.services['accounting'].users if u.username == username][0]
-        logger.info('Control: %s, %s, %s' % (user.firstname, user.lastname, user.privlevel))
+        logger.debug('Control: %s, %s, %s' % (user.firstname, user.lastname, user.privlevel))
         button.set_sensitive(False)
 
     def on_adduser(self, button):

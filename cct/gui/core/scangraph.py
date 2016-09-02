@@ -233,8 +233,8 @@ class ScanGraph(ToolWindow):
         piw.set_distance(self.instrument.config['geometry']['dist_sample_det'])
         piw.set_wavelength(self.instrument.config['geometry']['wavelength'])
         piw.set_pixelsize(self.instrument.config['geometry']['pixelsize'])
-        piw.set_beampos(self.instrument.config['geometry']['beamposx'],
-                        self.instrument.config['geometry']['beamposy'])
+        piw.set_beampos(self.instrument.config['geometry']['beamposy'],
+                        self.instrument.config['geometry']['beamposx'])
         piw.set_mask(mask)
         piw.set_title('{:d}/{:d} point of {}'.format(self._cursorindex + 1, len(self), self.widget.get_title()))
 

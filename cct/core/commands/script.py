@@ -8,7 +8,7 @@ from .exceptions import JumpException, GotoException, GosubException, ReturnExce
 from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ScriptError(CommandError):
@@ -81,16 +81,19 @@ class Script(Command):
         GLib.idle_add(self.nextcommand)
 
     def nextcommand(self, retval=None):
+        logger.debug('Next command. Return value of the previous: {}'.format(retval))
         # Note that we must ensure returning False, as we are usually
         # called from either idle functions or command-return callbacks.
         if self._kill:
             # the previous command finished and self._kill is set. This means
             # that the command was interrupted. It should also have sent a
             # 'fail' signal, so we just clean up and exit.
+            logger.debug('Script killed.')
             self.cleanup()
             self.emit('return', None)  # return.
             return False
         if self._failure:
+            logger.debug('Command failure in script.')
             # Whenever a subcommand fails, it sets this attribute to True.
             # Whenever this is True, we break the execution of the script
             # and return. The 'fail' signal has already been propagated
@@ -100,6 +103,7 @@ class Script(Command):
             return False
         # noinspection PySimplifyBooleanCheck
         if self._pause is False:
+            logger.debug('Script paused.')
             # it could have been None as well, that is a different story
             self._pause = True
             self.emit('paused')
@@ -110,20 +114,25 @@ class Script(Command):
         logger.debug('Executing line {:d}'.format(self._cursor))
         try:
             commandline = self._scriptlist[self._cursor]
+            logger.debug('Command line: {}'.format(commandline))
         except IndexError:
             # the previous was the last command, return the script with its
             # result.
+            logger.debug('Last command of script reached.')
             self.idle_return(retval)
             return False
         # try to execute the next command, and handle jump exceptions if
         # needed.
         try:
+            logger.debug('Executing next command')
             cmd = self._myinterpreter.execute_command(commandline)
             self.emit('cmd-start', self._cursor, cmd)
         except ReturnException:
+            logger.debug('ReturnException')
             # return from a gosub.
             try:
                 self._cursor = self._jumpstack.pop()
+                logger.debug('Going back to line {:d}'.format(self._cursor))
             except IndexError:
                 # pop from empty list
                 try:
@@ -136,9 +145,11 @@ class Script(Command):
                 GLib.idle_add(self.nextcommand)
             return False
         except GotoException as ge:
+            logger.debug('GotoException')
             # go to a label
             try:
                 self._cursor = self.find_label(ge.args[0])
+                logger.debug('Jumping to line {:d}'.format(self._cursor))
             except ScriptError as se:
                 self.emit('fail', se, traceback.format_exc())
                 self.idle_return(None)
@@ -146,9 +157,11 @@ class Script(Command):
                 GLib.idle_add(self.nextcommand)
             return False
         except GosubException as gse:
+            logger.debug('GosubException')
             self._jumpstack.append(self._cursor)
             try:
                 self._cursor = self.find_label(gse.args[0])
+                logger.debug('Jumping to line {:d}'.format(self._cursor))
             except ScriptError as se:
                 self.emit('fail', se, traceback.format_exc())
                 self.idle_return(None)
@@ -156,12 +169,14 @@ class Script(Command):
                 GLib.idle_add(self.nextcommand)
             return False
         except ScriptEndException as se:
+            logger.debug('ScriptEndException')
             self.idle_return(se.args[0])
             return False
         except PassException:
+            logger.debug('PassException')
             # raised by a conditional goto/gosub command if the condition evaluated to False
             # jump to the next command.
-            GLib.idle_add(self.nextcommand())
+            GLib.idle_add(self.nextcommand)
             return False
         except JumpException as je:
             raise TypeError(je)
@@ -170,6 +185,7 @@ class Script(Command):
                 self.emit('fail', exc, traceback.format_exc())
             finally:
                 self.idle_return(None)
+        logger.debug('Returning from script.execute_command()')
         return False
 
     def on_cmd_return(self, myinterpreter, cmdname, returnvalue):

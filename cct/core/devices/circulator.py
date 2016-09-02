@@ -17,12 +17,16 @@ class HaakePhoenix_Backend(DeviceBackend_TCP):
     def execute_command(self, commandname: str, arguments: Tuple):
         if commandname == 'start':
             self.send_message(b'W TS 1\r')
+            self.queryone('_status', force=True)
         elif commandname == 'stop':
             self.send_message(b'W TS 0\r')
+            self.queryone('_status', force=True)
         elif commandname == 'alarm':
             self.send_message(b'W AL\r')
+            self.queryone('faultstatus', force=True)
         elif commandname == 'alarm_confirm':
             self.send_message(b'W EG\r')
+            self.queryone('faultstatus', force=True)
         else:
             raise UnknownCommand(commandname)
 
@@ -282,6 +286,7 @@ class HaakePhoenix_Backend(DeviceBackend_TCP):
             raise ReadOnlyVariable(variable)
         else:
             raise UnknownVariable(variable)
+        self.queryone(variable, force=True)
 
 
 class HaakePhoenix(Device):
@@ -316,3 +321,7 @@ class HaakePhoenix(Device):
                                'beep', 'watchdog_on', 'watchdog_setpoint']
 
     backend_class = HaakePhoenix_Backend
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.loglevel = logger.level

@@ -182,6 +182,7 @@ class XRayPower(Command):
 
     def on_pulse(self):
         self.emit('pulse', 'Setting X-ray source to {}...'.format(self.target))
+        return True
 
 
 class Warmup(Command):
@@ -217,6 +218,7 @@ class Warmup(Command):
 
     def on_pulse(self):
         self.emit('pulse', 'Warming up X-ray source...')
+        return True
 
     def execute(self):
         self.get_device('xray_source').execute_command('start_warmup')

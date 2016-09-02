@@ -107,11 +107,15 @@
       <object class="GtkBox" id="box2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkFrame" id="frame1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <property name="label_xalign">0</property>
             <child>
               <object class="GtkAlignment" id="alignment1">
@@ -365,6 +369,8 @@
           <object class="GtkFrame" id="frame2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <property name="label_xalign">0</property>
             <child>
               <object class="GtkAlignment" id="alignment2">
@@ -520,6 +526,8 @@
           <object class="GtkFrame" id="frame3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
             <property name="label_xalign">0</property>
             <child>
               <object class="GtkAlignment" id="alignment3">

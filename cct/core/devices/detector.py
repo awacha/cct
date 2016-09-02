@@ -411,7 +411,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
             exptime = self.properties['exptime']
             expdelay = self.properties['expperiod'] - exptime
             timeout = nimages * exptime + (nimages - 1) * expdelay
-            self.send_message(b'Exposure ' + arguments[0] + b'\n', expected_replies=2, asynchronous=False,
+            self.send_message(b'Exposure ' + arguments[0] + b'\n', expected_replies=2, asynchronous=True,
                               timeout=timeout + 60)
             self._exposureendsat = time.monotonic() + timeout
             if nimages == 1:
@@ -461,6 +461,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
             raise ReadOnlyVariable(variable)
         else:
             raise UnknownVariable(variable)
+        self.queryone(variable)
 
     def on_startupdone(self):
         self.update_variable('_status', 'idle')
@@ -500,6 +501,10 @@ class Pilatus(Device):
                           'pid', 'version']
 
     backend_class = Pilatus_Backend
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.loglevel = logger.level
 
     def set_threshold(self, thresholdvalue: float, gain: str):
         if gain.upper() not in ['LOWG', 'MIDG', 'HIGHG']:

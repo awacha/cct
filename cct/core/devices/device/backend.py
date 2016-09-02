@@ -211,11 +211,11 @@ class DeviceBackend(object):
         if not self.logger.hasHandlers():
             self.logger.addHandler(QueueLogHandler(self.outqueue))
             self.logger.addHandler(logging.StreamHandler())
-        self.logger.setLevel(loglevel)
+        # self.logger.setLevel(loglevel)
         # empty the properties dictionary
-        self.logger.info(
-            'Background thread started for {}, this is startup #{:d}'.format(
-                self.name, self.startup_number))
+        self.logger.debug(
+            'Background thread started for {}, this is startup #{:d}. Log level: {:d} (effective: {:d})'.format(
+                self.name, self.startup_number, self.logger.level, self.logger.getEffectiveLevel()))
         self.logfile = logfile
         self.log_formatstr = log_formatstr
 
@@ -381,7 +381,7 @@ class DeviceBackend(object):
                     del message
         self.disconnect_device(because_of_failure=not exit_status)
         self.finalize_after_disconnect()
-        self.logger.info('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
+        self.logger.debug('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
             self.name, self.counters['outmessages'], self.counters['inmessages']))
         self.send_to_frontend('exited', normaltermination=exit_status)
         return exit_status
@@ -468,6 +468,8 @@ class DeviceBackend(object):
             if force:
                 raise KeyError(varname)
             if varname in self.refresh_requested and self.refresh_requested[varname] > 0:
+                self.logger.debug(
+                    'Refresh_requested for variable {} was {:d}'.format(varname, self.refresh_requested[varname]))
                 self.refresh_requested[varname] -= 1
                 raise KeyError(varname)
             return False
@@ -519,7 +521,7 @@ class DeviceBackend(object):
             self.queryone(vn)
         return
 
-    def queryone(self, variablename: str) -> bool:
+    def queryone(self, variablename: str, force: bool = False) -> bool:
         """Queries the value of a state variable.
 
         The actual job is done by query_variable, which has to be overridden
@@ -530,7 +532,12 @@ class DeviceBackend(object):
             False otherwise.
         """
         try:
-            if (self.query_requested[variablename] - time.monotonic()) < self.query_timeout:
+            if force:
+                self.logger.debug('Forced queryone for variable {}'.format(variablename))
+                if variablename not in self.refresh_requested:
+                    self.refresh_requested[variablename] = 0
+                self.refresh_requested[variablename] += 1
+            elif ((self.query_requested[variablename] - time.monotonic()) < self.query_timeout):
                 # This mechanism avoids re-querying the variable until a value
                 # has been obtained for it, or until a very long time
                 # (self.query_timeout) has passed
@@ -547,7 +554,9 @@ class DeviceBackend(object):
             assert ke.args[0] == variablename
             self.query_requested[variablename] = time.monotonic()
             self.lasttimes['query'] = time.monotonic()
-            if not self.query_variable(variablename):
+            if variablename in ['_status', '_auxstatus']:
+                self.update_variable(variablename, self.properties[variablename])
+            elif not self.query_variable(variablename):
                 try:
                     del self.query_requested[variablename]
                 except KeyError:

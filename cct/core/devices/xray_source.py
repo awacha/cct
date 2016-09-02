@@ -1,11 +1,12 @@
 import logging
 import time
+from typing import Optional
 
 from .device import DeviceBackend_ModbusTCP, UnknownVariable, UnknownCommand, Device, ReadOnlyVariable, InvalidMessage, \
     DeviceError
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 # noinspection PyPep8Naming
@@ -14,7 +15,6 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.loglevel = logger.level
         self.lasttimes['readstatus'] = 0
         self.lasttimes['interlock_change'] = 0
 
@@ -145,36 +145,43 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
         if commandname == 'shutter':
             self.write_coil(247 + int(not arguments[0]), True)
             self.write_coil(247 + int(not arguments[0]), False)
-            time.sleep(1)
-            self.query_variable('shutter')
+            time.sleep(0.5)
+            self.queryone('shutter', force=True)
         elif commandname == 'poweroff':
             self.write_coil(250, False)  # Not standby
             # Pulse the power-off coil
             self.write_coil(244, True)
             self.write_coil(244, False)
+            self.queryone('_status', force=True)
         elif commandname == 'xrays':
             self.write_coil(251, bool(arguments[0]))
+            self.queryone('xrays', force=True)
         elif commandname == 'reset_faults':
             # Pulse the reset_faults coil
             self.write_coil(249, True)
             self.write_coil(249, False)
+            self.queryone('faults', force=True)
         elif commandname == 'start_warmup':
             self.write_coil(250, False)  # Not standby
             # Pulse the start warmup coil
             self.write_coil(245, True)
             self.write_coil(245, False)
+            self.queryone('_status', force=True)
         elif commandname == 'stop_warmup':
             self.write_coil(250, False)  # Not standby
             # Pulse the stop warmup coil
             self.write_coil(246, True)
             self.write_coil(246, False)
+            self.queryone('_status', force=True)
         elif commandname == 'standby':
             self.write_coil(250, True)  # Standby
+            self.queryone('_status', force=True)
         elif commandname == 'full_power':
             self.write_coil(250, False)  # Not standby
             # Pulse the full-power coil
             self.write_coil(252, True)
             self.write_coil(252, False)
+            self.queryone('_status', force=True)
         else:
             raise UnknownCommand(commandname)
 
@@ -218,9 +225,16 @@ class GeniX(Device):
 
     _warmup_stop_forced = False
 
-    def shutter(self, requested_status):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.loglevel = logger.level
+
+    def shutter(self, requested_status: Optional[bool] = None):
         """Open or close the shutter"""
-        self.execute_command('shutter', requested_status)
+        if requested_status is None:
+            return self.get_variable('shutter')
+        else:
+            self.execute_command('shutter', requested_status)
 
     def reset_faults(self):
         """Try to reset faults."""
@@ -253,6 +267,16 @@ class GeniX(Device):
                 raise DeviceError('Warmup needed before powering up X-ray tube')
         else:
             raise ValueError(state)
+
+    def get_power(self) -> str:
+        if self.get_variable('_status') in ['Power off', 'X-rays off']:
+            return 'off'
+        elif self.get_variable('_status') in ['Low power']:
+            return 'low'
+        elif self.get_variable('_status') in ['Full power']:
+            return 'full'
+        else:
+            return 'inconsistent'
 
     def load_state(self, dictionary):
         super().load_state(dictionary)

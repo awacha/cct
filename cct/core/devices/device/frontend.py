@@ -175,8 +175,6 @@ class Device(Callbacks):
     # Maximum number the "busy" semaphore can be acquired
     max_busy_level = 1
 
-    loglevel = logging.DEBUG
-
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
         Callbacks.__init__(self)
         self._msgidcounter = 0
@@ -206,7 +204,11 @@ class Device(Callbacks):
         self._ready = False
         # the backend process must be started only after the connection to the device
         # has been established.
-        self.loglevel = logger.level
+        if not hasattr(self, 'loglevel'):
+            logger.debug('Setting log level for device {} to {}'.format(self.name, logger.level))
+            self.loglevel = logger.level
+        else:
+            logger.debug('Not overriding log level in frontend for device {}'.format(self.name))
         self._background_process = None
         self._idle_handler = None
         self._busy = multiprocessing.BoundedSemaphore(self.max_busy_level)
@@ -334,9 +336,7 @@ class Device(Callbacks):
             elif message['type'] == 'telemetry':
                 self.emit('telemetry', message['data'])
             elif message['type'] == 'log':
-                if (message['logrecord'].levelno >=
-                        logging.getLogger(__name__).getEffectiveLevel()):
-                    logger.handle(message['logrecord'])
+                logger.handle(message['logrecord'])
             elif message['type'] == 'error':
                 self.emit('error', message['variablename'],
                           message['exception'], message['traceback'])

@@ -670,6 +670,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
             if not self.has_all_variables():
                 # This can happen at the very beginning, re-queue the set command.
                 self.inqueue.put_nowait(Message('set', 0, self.name + '__backend', name=variable, value=value))
+        self.queryone(variable, force=True)
 
     def save_positions(self):
         """Save the motor positions and the values of soft limits to a file.
@@ -752,12 +753,12 @@ stored one ({:.5f}): calibrating to the stored value.'.format(
                     self.calibrate(idx, float(loaded[idx]['pos']))
                     self.busysemaphore.acquire()
             if allupdated:
-                self.logger.info('Positions loaded for controller {} in process {}'.format(
+                self.logger.debug('Positions loaded for controller {} in process {}'.format(
                     self.name, multiprocessing.current_process().name))
                 self.positions_loaded.set()
 
         except FileNotFoundError:
-            self.logger.info('No motor position cache file found for controller' + self.name)
+            self.logger.warning('No motor position cache file found for controller' + self.name)
             self.positions_loaded.set()
         finally:
             self.busysemaphore.release()
@@ -809,6 +810,7 @@ class TMCMCard(Device):
         # is only permitted from the backend. The frontend can only initiate
         # this via a well-crafted execute_command()
         self.positions_loaded = multiprocessing.Event()
+        self.loglevel = logger.level
 
     # noinspection PyProtectedMember
     def _get_kwargs_for_backend(self):

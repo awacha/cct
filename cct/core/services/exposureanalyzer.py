@@ -284,6 +284,9 @@ class ExposureAnalyzer_Backend(object):
             self._lastdarkbackground = im.mean()
             self._logger.debug('Determined background level: {:g} cps per pixel'.format(self._lastdarkbackground))
             self._logger.debug('Done darkbgsub FSN {:d}: this is dark background'.format(im.header.fsn))
+            datared['history'].append(
+                'This is a dark background measurement. Level: {:g} cps per pixel (overall {:g} cps)'.format(
+                    self._lastdarkbackground, self._lastdarkbackground * im.shape[0] * im.shape[1]))
             raise DataReductionEnd()
         # otherwise subtract the background.
         im -= self._lastdarkbackground
@@ -307,6 +310,7 @@ class ExposureAnalyzer_Backend(object):
         if im.header.title == self.config['datareduction']['backgroundname']:
             self._lastbackground = im
             self._logger.debug('Done bgsub FSN {:d}: this is background'.format(im.header.fsn))
+            datared['history'].append('This is an empty beam measurement.')
             raise DataReductionEnd()
         if ((im.header.distance - self._lastbackground.header.distance).abs() <
                 self.config['datareduction']['distancetolerance']):
@@ -394,7 +398,7 @@ class ExposureAnalyzer_Backend(object):
             self._absintscalingfactor = scalingfactor
             self._absintstat = stat
             self._absintqrange = q
-            datared['history'].append(
+            datared['history'].append('This is an absolute intensity reference measurement. '
                 'Determined absolute intensity scaling factor: {}. Reduced Chi2: {:f}. DoF: {:d}. '
                 'This corresponds to beam flux {} photons*eta/sec'.format(
                     self._absintscalingfactor, self._absintstat['Chi2_reduced'], self._absintstat['DoF'],
@@ -442,6 +446,7 @@ class ExposureAnalyzer_Backend(object):
 
     def datareduction(self, intensity: np.ndarray, mask: np.ndarray, params: dict):
         im = Exposure(intensity, intensity ** 0.5, Header(params), mask)
+        self._logger.debug('Commencing data reduction of FSN #{:d} (sample {}).'.format(im.header.fsn, im.header.title))
         datared = {'history': [], 'statistics': {'01_initial': im.get_statistics()}}
         try:
             self.normalize_flux(im, datared)

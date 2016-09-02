@@ -902,6 +902,7 @@
             </child>
             <child>
               <object class="GtkToolButton" id="toolitem_maskeditor">
+                <property name="name">toolitem_maskeditor</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="tooltip_text" translatable="yes">Create and edit mask matrices</property>

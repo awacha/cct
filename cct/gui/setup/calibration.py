@@ -229,7 +229,7 @@ class Calibration(ToolWindow):
 
     def on_findcenter(self, button: Union[Tuple[float, float], Gtk.Button]):
         if isinstance(button, tuple):
-            posx, posy = button
+            posy, posx = button
         else:
             assert isinstance(button, Gtk.Button)
             method = self.builder.get_object('centeringmethod_selector').get_active_text()
@@ -246,19 +246,19 @@ class Calibration(ToolWindow):
                 xmin, xmax = self.plot1d.get_zoom_xrange()
                 logger.debug('Peak amplitude method: xmin: {:f}. xmax: {:f}. Original beampos: {}, {}.'.format(
                     xmin, xmax, self._exposure.header.beamcenterx, self._exposure.header.beamcentery))
-                posx, posy = findbeam_radialpeak(
+                posy, posx = findbeam_radialpeak(
                     self._exposure.intensity, [self._exposure.header.beamcenterx, self._exposure.header.beamcentery],
                     self._exposure.mask, xmin, xmax, drive_by='amplitude')
             elif method == 'Peak width':
                 assert isinstance(self._exposure, Exposure)
                 xmin, xmax = self.plot1d.get_zoom_xrange()
-                posx, posy = findbeam_radialpeak(
+                posy, posx = findbeam_radialpeak(
                     self._exposure.intensity, [self._exposure.header.beamcenterx, self._exposure.header.beamcentery],
                     self._exposure.mask, xmin, xmax, drive_by='hwhm')
             elif method == 'Power-law goodness of fit':
                 assert isinstance(self._exposure, Exposure)
                 xmin, xmax = self.plot1d.get_zoom_xrange()
-                posx, posy = findbeam_powerlaw(self._exposure.intensity, [self._exposure.header.beamcenterx,
+                posy, posx = findbeam_powerlaw(self._exposure.intensity, [self._exposure.header.beamcenterx,
                                                                           self._exposure.header.beamcentery],
                                                self._exposure.mask, xmin, xmax)
             else:
@@ -266,15 +266,15 @@ class Calibration(ToolWindow):
         assert isinstance(self._exposure, Exposure)
         self._exposure.header.beamcenterx = posx
         self._exposure.header.beamcentery = posy
-        self.builder.get_object('center_label').set_text('({}, {})'.format(posy, posx))
+        self.builder.get_object('center_label').set_text('({}, {})'.format(posx, posy))
         self.plot2d.set_beampos(posx, posy)
         self.radial_average()
         self.builder.get_object('savecenter_button').set_sensitive(True)
 
     def on_savecenter(self, button):
         assert isinstance(self._exposure, Exposure)
-        self.instrument.config['geometry']['beamposx'] = self._exposure.header.beamcenterx
-        self.instrument.config['geometry']['beamposy'] = self._exposure.header.beamcentery
+        self.instrument.config['geometry']['beamposx'] = self._exposure.header.beamcentery
+        self.instrument.config['geometry']['beamposy'] = self._exposure.header.beamcenterx
         self.instrument.save_state()
         logger.info('Beam center updated to ({}, {}) [(x, y) or (col, row)].'.format(
             self.instrument.config['geometry']['beamposy'],

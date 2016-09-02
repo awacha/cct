@@ -113,6 +113,8 @@ class SetTemperature(Command):
 
     timeout = 5
 
+    required_devices = ['temperature']
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.kwargs:
