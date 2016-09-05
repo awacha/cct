@@ -12,7 +12,7 @@ from ...core.devices import Motor
 from ...core.services.exposureanalyzer import ExposureAnalyzer
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ScanMeasurement(ToolWindow):
@@ -89,7 +89,11 @@ class ScanMeasurement(ToolWindow):
         self.builder.get_object('start_button').set_label('Stop')
         self.builder.get_object('start_button').get_image().set_from_icon_name('gtk-stop', Gtk.IconSize.BUTTON)
         self._scanfsn = self.instrument.services['filesequence'].get_nextfreescan(acquire=False)
-        self.execute_command(Moveto, (motor.name, start), additional_widgets=['entry_grid'])
+        if self._scan_commandclass is ScanRel:
+            # do not move to the start position now.
+            self.on_command_return(self.instrument.services['interpreter'], Moveto.name, True)
+        else:
+            self.execute_command(Moveto, (motor.name, start), additional_widgets=['entry_grid'])
         return True
 
     def on_image(self, exposureanalyzer, prefix, fsn, image, params, mask):

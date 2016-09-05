@@ -13,7 +13,7 @@ from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_MOVEMOTORS
 from ..services.exposureanalyzer import ExposureAnalyzer
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Transmission(Command):
@@ -122,6 +122,9 @@ class Transmission(Command):
                         self.config['beamstop']['out'][0]
                     )
             elif variablename == 'shutter' and newvalue is True:
+                if not self.what_are_we_doing == 'Opening the shutter...':
+                    # this event is not intended for us.
+                    return False
                 # shutter is opened before empty beam and sample measurements, but not before dark measurements.
                 # start exposure.
                 if self.what_are_we_doing == 'Moving empty sample into the beam.':
@@ -129,24 +132,34 @@ class Transmission(Command):
                 else:
                     self.what_are_we_doing = 'Exposing sample {}'.format(self.current_sample)
                 self.start_exposure()
+                return False
             elif variablename == 'shutter' and newvalue is False:
                 if self.what_are_we_doing == 'Initializing...':
                     # we have just closed the shutter before anything. Do nothing yet.
                     return False
-                # Shutter has been closed after an exposure. Try to load all exposure files:
-                self.on_exposure_finished()
+                elif self.what_are_we_doing == 'Closing the shutter...':
+                    # Shutter has been closed after an exposure. Try to load all exposure files:
+                    self.on_exposure_finished()
+                    return False
+                else:
+                    # this message was not intended for us.
+                    return False
         elif device.name == self.get_device('detector').name:
             if variablename == 'imgpath':
                 # detector initialization finished. Start first dark measurement.
-                if self.current_sample is None:
+                if self.what_are_we_doing == 'Initializing the detector...':
                     # sometimes two 'imgpath' messages appear.
                     self.next_sample()
             elif variablename == '_status' and newvalue == 'exposing multi':
                 logger.debug('Got exposure start acknowlegement from the detector')
                 self.exposurestartdate = datetime.datetime.now()
             elif variablename == '_status' and newvalue == 'idle':
+                if not self.what_are_we_doing.startswith('Exposing '):
+                    # not intended for us
+                    return False
                 # exposure finished. Close the shutter.
                 logger.debug('Exposure finished. Closing the shutter.')
+                self.what_are_we_doing = 'Closing the shutter...'
                 if self.get_device('xray_source').shutter():
                     self.get_device('xray_source').shutter(False)
                 else:
@@ -194,7 +207,7 @@ class Transmission(Command):
             self.next_sample()
 
     def next_sample(self):
-        assert self.current_sample == None
+        assert self.current_sample is None
         try:
             self.current_sample = [s for s in self.samplenames if s not in self.intensities][0]
             logger.debug('Measuring transmission for sample {}'.format(self.current_sample))
@@ -263,7 +276,8 @@ class Transmission(Command):
                     self.services['samplestore'].get_sample(self.current_sample).positiony.val)
         elif motor.name == 'Sample_Y':
             # open shutter
-            logger.debug('Opening shutter.')
+            logger.debug('Opening the shutter.')
+            self.what_are_we_doing = 'Opening the shutter...'
             self.get_device('xray_source').shutter(True)
 
     def on_transmdata(self, exposureanalyzer: ExposureAnalyzer, prefix: str, fsn: int, samplename: str, what: str,

@@ -7,7 +7,7 @@ from ..core.toolwindow import ToolWindow
 from ...core.commands.transmission import Transmission
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class TransmissionMeasurement(ToolWindow):
@@ -63,6 +63,7 @@ class TransmissionMeasurement(ToolWindow):
             emptynamecombo.set_active_iter(to_be_selected_iter)
             logger.debug('ComboBox now points at {}'.format(samplenamestore[emptynamecombo.get_active()][0]))
 
+    # noinspection PyMethodMayBeStatic
     def tidy_transmmodel(self, treeview: Gtk.TreeView):
         model, selected_iter = treeview.get_selection().get_selected()
         assert isinstance(model, Gtk.ListStore)

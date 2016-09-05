@@ -27,8 +27,8 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
         self.exposureloader = None
         self.plot2d = None
         ToolWindow.__init__(self, *args, **kwargs)
-        DoubleFileChooserDialog.__init__(self,
-            self.widget, 'Open mask file...', 'Save mask file...', [('Mask files', '*.mat'), ('All files', '*')],
+        DoubleFileChooserDialog.__init__(
+            self, self.widget, 'Open mask file...', 'Save mask file...', [('Mask files', '*.mat'), ('All files', '*')],
             self.instrument.config['path']['directories']['mask'],
             os.path.abspath(self.instrument.config['path']['directories']['mask']),
         )

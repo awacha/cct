@@ -21,7 +21,7 @@ from ..utils.callback import SignalFlags
 from ..utils.pathutils import find_in_subfolders, find_subfolders
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 """Default path settings in working directory:
 
@@ -216,6 +216,8 @@ class FileSequence(Service):
                 elif l.startswith('#'):
                     pass
                 else:
+                    logger.debug('Signals: (' + ', '.join(result['signals']) + ')')
+                    logger.debug('l.split(): ')
                     result['data'][index] = tuple(float(x) for x in l.split())
                     index += 1
                 # strip the '\n' character from the end. This is essential for
@@ -568,4 +570,4 @@ class FileSequence(Service):
         if self._running_scan is None:
             raise FileSequenceError('Cannot append to scanfile: no scan running.')
         with open(self._scanfile, 'at', encoding='utf-8') as f:
-            f.write(str(position) + '  ' + ' '.join([str(c) for c in counters]) + '\n')
+            f.write(' '.join([str(c) for c in counters]) + '\n')

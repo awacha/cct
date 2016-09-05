@@ -1,8 +1,8 @@
 import collections
-import logging
 import itertools
-import time
+import logging
 import math
+import time
 from typing import Union, Sequence, SupportsFloat, Optional
 
 from gi.repository import Gtk, Gdk, GLib
@@ -10,13 +10,15 @@ from gi.repository import Gtk, Gdk, GLib
 from ..core.toolwindow import ToolWindow
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
-def all_combinations(sequence:Sequence):
-    for n in range(len(sequence)+1):
+
+def all_combinations(sequence: Sequence):
+    for n in range(len(sequence) + 1):
         for c in itertools.combinations(sequence, n):
             yield c
     return
+
 
 class PinholeConfiguration(object):
     """This class represents the collimation geometry of a conventional SAS instrument."""
@@ -225,22 +227,24 @@ D3: %.0f um; I: %.2f; qmin: %.5f 1/nm' % (self.l1, self.l2, self.D1, self.D2,
             return 'neither'
 
     @classmethod
-    def enumerate(cls, spacers:Sequence[float], pinholes:Sequence[float],
+    def enumerate(cls, spacers: Sequence[float], pinholes: Sequence[float],
                   ls, lbs, sd, mindist_l1, mindist_l2, sealringwidth, wavelength):
-        l_seen=[]
+        l_seen = []
         for l1_parts in all_combinations(spacers):
-            l1 = mindist_l1+len(l1_parts)*sealringwidth+sum(l1_parts)
+            l1 = mindist_l1 + len(l1_parts) * sealringwidth + sum(l1_parts)
             spacers_remaining = list(spacers[:])
             for s in l1_parts:
                 spacers_remaining.remove(s)
             for l2_parts in all_combinations(spacers_remaining):
-                l2 = mindist_l2 + len(l2_parts)*sealringwidth + sum(l2_parts)
+                l2 = mindist_l2 + len(l2_parts) * sealringwidth + sum(l2_parts)
                 if (l1, l2) in l_seen:
                     continue
                 l_seen.append((l1, l2))
                 for d1 in pinholes:
                     for d2 in pinholes:
-                        yield PinholeConfiguration(l1_parts, l2_parts, d1, d2, ls, lbs, sd, mindist_l1, mindist_l2, sealringwidth, wavelength)
+                        yield PinholeConfiguration(l1_parts, l2_parts, d1, d2, ls, lbs, sd, mindist_l1, mindist_l2,
+                                                   sealringwidth, wavelength)
+
 
 class OptimizeGeometry(ToolWindow):
     def __init__(self, gladefile, toplevelname, instrument, windowtitle, *args, **kwargs):
@@ -252,7 +256,7 @@ class OptimizeGeometry(ToolWindow):
         self.worksize = None
         self.workdone = None
         self._idle_handler = None
-        self.html_being_built=""
+        self.html_being_built = ""
         super().__init__(gladefile, toplevelname, instrument, windowtitle, *args, **kwargs)
 
     def init_gui(self, *args, **kwargs):
@@ -272,10 +276,10 @@ class OptimizeGeometry(ToolWindow):
         # sort by descending intensity
         self.builder.get_object('results_store').set_sort_column_id(16, Gtk.SortType.DESCENDING)
 
-    def row_to_html(self, model:Gtk.ListStore, path:Gtk.TreePath, it:Gtk.TreeIter, treeview:Gtk.TreeView):
+    def row_to_html(self, model: Gtk.ListStore, path: Gtk.TreePath, it: Gtk.TreeIter, treeview: Gtk.TreeView):
         self.html_being_built += "  <tr>\n"
         for c in treeview.get_columns():
-            self.html_being_built += "    <td>"+ self.cell_data_func(c, None, model, it, None)+"</td>\n"
+            self.html_being_built += "    <td>" + self.cell_data_func(c, None, model, it, None) + "</td>\n"
         self.html_being_built += "  </tr>"
 
     def on_copy_as_html(self, button: Gtk.Button):
@@ -288,7 +292,7 @@ class OptimizeGeometry(ToolWindow):
         self.html_being_built += "  </tr>\n"
         treeview.get_selection().selected_foreach(self.row_to_html, treeview)
         self.html_being_built += "</table>"
-        clipboard=Gtk.Clipboard.get_default(Gdk.Display.get_default())
+        clipboard = Gtk.Clipboard.get_default(Gdk.Display.get_default())
         assert isinstance(clipboard, Gtk.Clipboard)
         clipboard.set_text(self.html_being_built, len(self.html_being_built))
         self.html_being_built = ""
@@ -303,6 +307,7 @@ class OptimizeGeometry(ToolWindow):
         model[path][0] = '{:.2f}'.format(value)
         self.sort_and_tidy_model(treeview)
 
+    # noinspection PyMethodMayBeStatic
     def sort_and_tidy_model(self, treeview: Gtk.TreeView):
         model, selectediter = treeview.get_selection().get_selected()
         assert isinstance(model, Gtk.ListStore)
@@ -327,7 +332,7 @@ class OptimizeGeometry(ToolWindow):
             return False
         try:
             pc = next(self.pinholegenerator)
-            self.workdone +=1
+            self.workdone += 1
         except StopIteration:
             self.end_work()
             return False
@@ -338,23 +343,25 @@ class OptimizeGeometry(ToolWindow):
         assert isinstance(pc, PinholeConfiguration)
         assert isinstance(self.worksize, int)
         assert isinstance(self.workdone, int)
-        if ((pc.Dbs>=self.limits_beamstopsize[0]) and (pc.Dbs<=self.limits_beamstopsize[1]) and
-                (pc.Dsample>=self.limits_samplesize[0]) and (pc.Dsample<=self.limits_samplesize[1]) and
-                (pc.l1 >= self.limit_l1min) and (pc.l2 >=self.limit_l2min)):
+        if ((pc.Dbs >= self.limits_beamstopsize[0]) and (pc.Dbs <= self.limits_beamstopsize[1]) and
+                (pc.Dsample >= self.limits_samplesize[0]) and (pc.Dsample <= self.limits_samplesize[1]) and
+                (pc.l1 >= self.limit_l1min) and (pc.l2 >= self.limit_l2min)):
             # the pinhole configuration matches our criteria
             model = self.builder.get_object('results_store')
             model.append([pc, pc.l1, pc.l2,
                           ', '.join(['{:.0f}'.format(e) for e in pc.l1_elements]),
                           ', '.join(['{:.0f}'.format(e) for e in pc.l2_elements]),
-                          pc.sd, pc.D1, pc.D2, pc.alpha*1000, pc.Dsample, pc.Dbs, pc.qmin, pc.dmax, pc.Rgmax,
+                          pc.sd, pc.D1, pc.D2, pc.alpha * 1000, pc.Dsample, pc.Dbs, pc.qmin, pc.dmax, pc.Rgmax,
                           pc.dspheremax, pc.D3, pc.intensity, pc.dominant_constraint])
-        self.builder.get_object('work_progress').set_fraction(self.workdone/self.worksize)
+        self.builder.get_object('work_progress').set_fraction(self.workdone / self.worksize)
         return True
 
-    def on_resultscolumn_clicked(self, treeviewcolumn:Gtk.TreeViewColumn):
+    def on_resultscolumn_clicked(self, treeviewcolumn: Gtk.TreeViewColumn):
         pass
 
-    def cell_data_func(self, treeviewcolumn:Gtk.TreeViewColumn, cellrenderer:Optional[Gtk.CellRendererText], model:Gtk.ListStore, it:Gtk.TreeIter, data):
+    # noinspection PyMethodMayBeStatic
+    def cell_data_func(self, treeviewcolumn: Gtk.TreeViewColumn, cellrenderer: Optional[Gtk.CellRendererText],
+                       model: Gtk.ListStore, it: Gtk.TreeIter, data):
         pc = model[it][0]
         colid = treeviewcolumn.get_sort_column_id()
         if colid == 1:
@@ -372,7 +379,7 @@ class OptimizeGeometry(ToolWindow):
         elif colid == 7:
             text = '{:.0f}'.format(pc.D2)
         elif colid == 8:
-            text = '{:.2f}'.format(pc.alpha*1000)
+            text = '{:.2f}'.format(pc.alpha * 1000)
         elif colid == 9:
             text = '{:.2f}'.format(pc.Dsample)
         elif colid == 10:
@@ -399,18 +406,18 @@ class OptimizeGeometry(ToolWindow):
             return text
 
     def estimate_worksize(self, spacers, pinholes, mindist_l1, mindist_l2, sealringwidth):
-        progressbar=self.builder.get_object('work_progress')
+        progressbar = self.builder.get_object('work_progress')
         progressbar.set_text('Estimating work size...')
         l_seen = []
         count = 0
         lastpulse = 0
         for l1_parts in all_combinations(spacers):
-            l1 = mindist_l1+len(l1_parts)*sealringwidth+sum(l1_parts)
+            l1 = mindist_l1 + len(l1_parts) * sealringwidth + sum(l1_parts)
             spacers_remaining = list(spacers[:])
             for s in l1_parts:
                 spacers_remaining.remove(s)
             for l2_parts in all_combinations(spacers_remaining):
-                if time.monotonic()-lastpulse >0.1:
+                if time.monotonic() - lastpulse > 0.1:
                     progressbar.pulse()
                     lastpulse = time.monotonic()
                     if self.workdone is None:
@@ -420,14 +427,13 @@ class OptimizeGeometry(ToolWindow):
                         if not Gtk.events_pending():
                             break
                         Gtk.main_iteration()
-                l2 = mindist_l2+len(l2_parts)*sealringwidth+sum(l2_parts)
+                l2 = mindist_l2 + len(l2_parts) * sealringwidth + sum(l2_parts)
                 if (l1, l2) in l_seen:
                     continue
                 l_seen.append((l1, l2))
                 count += 1
         progressbar.set_text('Filtering collimation geometries...')
-        return count*len(pinholes)**2
-
+        return count * len(pinholes) ** 2
 
     def on_execute(self, button: Gtk.Button):
         if button.get_label() == 'Execute':
@@ -453,7 +459,7 @@ class OptimizeGeometry(ToolWindow):
             self.limit_l1min = self.builder.get_object('min_l1_adjustment').get_value()
             self.limit_l2min = self.builder.get_object('min_l2_adjustment').get_value()
             self.pinholegenerator = PinholeConfiguration.enumerate(
-                    spacers, pinholesizes, ls, lbs, sd, mindist_l1, mindist_l2, sealringwidth, wavelength)
+                spacers, pinholesizes, ls, lbs, sd, mindist_l1, mindist_l2, sealringwidth, wavelength)
             self.builder.get_object('results_store').clear()
             button.set_label('Stop')
             button.get_image().set_from_icon_name('gtk-stop', Gtk.IconSize.BUTTON)
@@ -477,7 +483,7 @@ class OptimizeGeometry(ToolWindow):
         return False
 
     def end_work(self):
-        button= self.builder.get_object('execute_button')
+        button = self.builder.get_object('execute_button')
         if self._idle_handler is not None:
             GLib.source_remove(self._idle_handler)
         self._idle_handler = None

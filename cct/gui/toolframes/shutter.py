@@ -33,6 +33,9 @@ class ShutterBeamstop(ToolFrame):
             if varname == 'shutter':
                 self.builder.get_object('shutter_switch').set_state(value)
 
+    def on_motor_stop(self, motor, targetreached):
+        return self.on_motor_position_change(motor, motor.where())
+
     def on_motor_position_change(self, motor, pos):
         try:
             beamstopstate = self.instrument.get_beamstop_state()

@@ -8,7 +8,7 @@ from .command import Command, CommandError, CommandArgumentError
 from ..devices.detector import Pilatus
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Trim(Command):

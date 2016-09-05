@@ -12,7 +12,7 @@ from .message import Message
 from ...utils.callback import Callbacks, SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Device(Callbacks):
@@ -175,6 +175,9 @@ class Device(Callbacks):
     # Maximum number the "busy" semaphore can be acquired
     max_busy_level = 1
 
+    # Warn if the length of the frontend queue is larger than this.
+    frontendqueue_warn_length = 10
+
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
         Callbacks.__init__(self)
         self._msgidcounter = 0
@@ -316,6 +319,10 @@ class Device(Callbacks):
             try:
                 message = self._queue_to_frontend.get_nowait()
                 assert isinstance(message, Message)
+                if self._queue_to_frontend.qsize() > self.frontendqueue_warn_length:
+                    logger.warning(
+                        'Too many messages (exactly {}) are waiting in the front-end queue for device {}.'.format(
+                            self._queue_to_frontend.qsize(), self.name))
             except queue.Empty:
                 break
             if message['type'] == 'exited':

@@ -96,7 +96,7 @@ class GeneralScan(Command):
             self.emit('progress', 'Scan running: {:d}/{:d}'.format(self.idx, self.npoints), self.idx / self.npoints)
             if self.idx < self.npoints:
                 nextpos = self.start + (self.end - self.start) / (self.npoints - 1) * self.idx
-                self.emit('message', 'Moving motor {} to {:.3f}'.format(self.motorname, nextpos))
+                # self.emit('message', 'Moving motor {} to {:.3f}'.format(self.motorname, nextpos))
                 self.get_motor(self.motorname).moveto(nextpos)
             else:
                 # Otherwise this was the last point. We wait for exposureanalyzer to finish all its jobs.

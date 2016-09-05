@@ -6,7 +6,7 @@ from .device import DeviceBackend_ModbusTCP, UnknownVariable, UnknownCommand, De
     DeviceError
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 # noinspection PyPep8Naming
@@ -220,6 +220,8 @@ class GeniX(Device):
     last_powered = 0
 
     last_warmup = 0
+
+    queryall_interval = 0.7
 
     warmup_interval = 24 * 3600
 

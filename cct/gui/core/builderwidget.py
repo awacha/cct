@@ -5,7 +5,7 @@ from gi.repository import Gtk
 from ...core.utils.callback import Callbacks, SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class BuilderWidget(Callbacks):

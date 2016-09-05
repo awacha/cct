@@ -77,6 +77,7 @@ def __create_adaerror_function():
 
 _angledependentabsorption_error = __create_adaerror_function()
 
+
 def angledependentabsorption(twotheta, dtwotheta, transmission, dtransmission):
     """Correction for angle-dependent absorption of the sample with error propagation
 

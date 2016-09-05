@@ -16,6 +16,9 @@ class QueueLogHandler(QueueHandler):
         return Message('log', 0, 'logger', logrecord=record)
 
 
+class ExitWorkerLoop(Exception):
+    pass
+
 class Watchdog(object):
     """A simple timeout-keeper watchdog.
     """
@@ -211,7 +214,7 @@ class DeviceBackend(object):
         if not self.logger.hasHandlers():
             self.logger.addHandler(QueueLogHandler(self.outqueue))
             self.logger.addHandler(logging.StreamHandler())
-        # self.logger.setLevel(loglevel)
+        self.logger.setLevel(loglevel)
         # empty the properties dictionary
         self.logger.debug(
             'Background thread started for {}, this is startup #{:d}. Log level: {:d} (effective: {:d})'.format(
@@ -289,51 +292,10 @@ class DeviceBackend(object):
                 else:
                     # if no message was pending, a queue.Empty exception has
                     # already been raised at this point.
-                    if message['type'] == 'config':
-                        self.config = message['configdict']
-                    elif message['type'] == 'exit':
-                        exit_status = True  # normal termination
-                        break  # the while True loop
-                    elif message['type'] == 'query':
-                        if message['signal_needed']:
-                            try:
-                                self.refresh_requested[message['name']] += 1
-                            except KeyError:
-                                self.refresh_requested[message['name']] = 1
-                        self.lasttimes['query'] = time.monotonic()
-                        self.query_variable(message['name'])
-                    elif message['type'] == 'set':
-                        # the following command can raise a ReadOnlyVariable exception
-                        self.set_variable(message['name'], message['value'])
-                    elif message['type'] == 'execute':
-                        self.execute_command(message['name'], message['arguments'])
-                    elif message['type'] == 'communication_error':
-                        self.send_to_frontend('error', variablename=None,
-                                              exception=message['exception'],
-                                              traceback=message['traceback'])
-                        raise message['exception']
-                    elif message['type'] == 'timeout':
-                        pass
-                        # do nothing yet, a communication_error message will follow.
-                    elif message['type'] == 'incoming':
-                        self.lasttimes['recv'] = message['timestamp']
-                        self.counters['inmessages'] += 1
-                        try:
-                            self.process_incoming_message(message=message['message'],
-                                                          original_sent=message['sent_message'])
-                        except InvalidMessage as exc:
-                            self.send_to_frontend('error', variablename=None,
-                                                  exception=exc,
-                                                  traceback=traceback.format_exc())
-                            self.query_requested.clear()
-                    elif message['type'] == 'log':
-                        self.send_to_frontend('log', logrecord=message['logrecord'])
-                    elif message['type'] == 'send_complete':
-                        # sending of a message finished.
-                        self.lasttimes['send'] = message['timestamp']
-                    else:
-                        raise ValueError(
-                            'Unknown command for background worker: {}'.format(message['type']))
+                    try:
+                        exit_status = self.dispatch_inqueue_message(message)
+                    except ExitWorkerLoop:
+                        break
                 # Do some housekeeping
                 # 1) check if we have just became ready, i.e. we have read all variables at least once. If yes,
                 #     notify the frontend thread.
@@ -384,6 +346,55 @@ class DeviceBackend(object):
         self.logger.debug('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
             self.name, self.counters['outmessages'], self.counters['inmessages']))
         self.send_to_frontend('exited', normaltermination=exit_status)
+        return exit_status
+
+    def dispatch_inqueue_message(self, message):
+        exit_status = False
+        if message['type'] == 'config':
+            self.config = message['configdict']
+        elif message['type'] == 'exit':
+            exit_status = True  # normal termination
+            raise ExitWorkerLoop
+        elif message['type'] == 'query':
+            if message['signal_needed']:
+                try:
+                    self.refresh_requested[message['name']] += 1
+                except KeyError:
+                    self.refresh_requested[message['name']] = 1
+            self.lasttimes['query'] = time.monotonic()
+            self.query_variable(message['name'])
+        elif message['type'] == 'set':
+            # the following command can raise a ReadOnlyVariable exception
+            self.set_variable(message['name'], message['value'])
+        elif message['type'] == 'execute':
+            self.execute_command(message['name'], message['arguments'])
+        elif message['type'] == 'communication_error':
+            self.send_to_frontend('error', variablename=None,
+                                  exception=message['exception'],
+                                  traceback=message['traceback'])
+            raise message['exception']
+        elif message['type'] == 'timeout':
+            pass
+            # do nothing yet, a communication_error message will follow.
+        elif message['type'] == 'incoming':
+            self.lasttimes['recv'] = message['timestamp']
+            self.counters['inmessages'] += 1
+            try:
+                self.process_incoming_message(message=message['message'],
+                                              original_sent=message['sent_message'])
+            except InvalidMessage as exc:
+                self.send_to_frontend('error', variablename=None,
+                                      exception=exc,
+                                      traceback=traceback.format_exc())
+                self.query_requested.clear()
+        elif message['type'] == 'log':
+            self.send_to_frontend('log', logrecord=message['logrecord'])
+        elif message['type'] == 'send_complete':
+            # sending of a message finished.
+            self.lasttimes['send'] = message['timestamp']
+        else:
+            raise ValueError(
+                'Unknown command for background worker: {}'.format(message['type']))
         return exit_status
 
     def connect_device(self):

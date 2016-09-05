@@ -247,19 +247,19 @@ class Calibration(ToolWindow):
                 logger.debug('Peak amplitude method: xmin: {:f}. xmax: {:f}. Original beampos: {}, {}.'.format(
                     xmin, xmax, self._exposure.header.beamcenterx, self._exposure.header.beamcentery))
                 posy, posx = findbeam_radialpeak(
-                    self._exposure.intensity, [self._exposure.header.beamcenterx, self._exposure.header.beamcentery],
+                    self._exposure.intensity, [self._exposure.header.beamcentery, self._exposure.header.beamcenterx],
                     self._exposure.mask, xmin, xmax, drive_by='amplitude')
             elif method == 'Peak width':
                 assert isinstance(self._exposure, Exposure)
                 xmin, xmax = self.plot1d.get_zoom_xrange()
                 posy, posx = findbeam_radialpeak(
-                    self._exposure.intensity, [self._exposure.header.beamcenterx, self._exposure.header.beamcentery],
+                    self._exposure.intensity, [self._exposure.header.beamcentery, self._exposure.header.beamcenterx],
                     self._exposure.mask, xmin, xmax, drive_by='hwhm')
             elif method == 'Power-law goodness of fit':
                 assert isinstance(self._exposure, Exposure)
                 xmin, xmax = self.plot1d.get_zoom_xrange()
-                posy, posx = findbeam_powerlaw(self._exposure.intensity, [self._exposure.header.beamcenterx,
-                                                                          self._exposure.header.beamcentery],
+                posy, posx = findbeam_powerlaw(self._exposure.intensity, [self._exposure.header.beamcentery,
+                                                                          self._exposure.header.beamcenterx],
                                                self._exposure.mask, xmin, xmax)
             else:
                 raise ValueError(method)

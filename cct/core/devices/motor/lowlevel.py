@@ -13,7 +13,7 @@ from ..device import DeviceBackend_TCP, DeviceError, UnknownCommand, UnknownVari
 from ..device.message import Message
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 RE_FLOAT = r"[+-]?(\d+)*\.?\d+([eE][+-]?\d+)?"
 

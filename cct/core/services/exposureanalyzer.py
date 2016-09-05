@@ -14,6 +14,7 @@ from gi.repository import GLib
 from sastool.io.credo_cct import Exposure, Header
 from sastool.io.twodim import readcbf
 from sastool.misc.easylsq import nonlinear_odr
+from sastool.misc.errorvalue import ErrorValue
 from scipy.io import loadmat
 
 from .service import Service, ServiceError
@@ -25,7 +26,7 @@ from ..utils.pathutils import find_in_subfolders
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DataReductionEnd(Exception):
@@ -326,6 +327,7 @@ class ExposureAnalyzer_Backend(object):
 
     def correctgeometry(self, im: Exposure, datared: Dict):
         tth = im.twotheta
+        assert isinstance(tth, ErrorValue)
         datared['tthval_statistics'] = self.get_matrix_statistics(tth.val)
         datared['ttherr_statistics'] = self.get_matrix_statistics(tth.err)
         assert im.header.pixelsizex == im.header.pixelsizey
@@ -398,7 +400,8 @@ class ExposureAnalyzer_Backend(object):
             self._absintscalingfactor = scalingfactor
             self._absintstat = stat
             self._absintqrange = q
-            datared['history'].append('This is an absolute intensity reference measurement. '
+            datared['history'].append(
+                'This is an absolute intensity reference measurement. '
                 'Determined absolute intensity scaling factor: {}. Reduced Chi2: {:f}. DoF: {:d}. '
                 'This corresponds to beam flux {} photons*eta/sec'.format(
                     self._absintscalingfactor, self._absintstat['Chi2_reduced'], self._absintstat['DoF'],

@@ -45,9 +45,7 @@ class CapillaryMeasurement(ToolWindow):
         self.toolbar.insert(b, 9)
         b.connect('clicked', lambda button: self.redraw())
 
-    def redraw(self):
-        if self._scandata is None:
-            return True
+    def clearfigure(self, full=False):
         for attr in ['_negpeak_text', '_negpeak_curve', '_pospeak_text', '_pospeak_curve', '_scancurve']:
             try:
                 getattr(self, attr).remove()
@@ -55,6 +53,15 @@ class CapillaryMeasurement(ToolWindow):
                 pass
             finally:
                 setattr(self, attr, None)
+        if full:
+            assert isinstance(self.fig, Figure)
+            self.fig.clear()
+            self.axes = self.fig.add_subplot(1, 1, 1)
+
+    def redraw(self):
+        if self._scandata is None:
+            return True
+        self.clearfigure()
         x = self._scandata['signals'][0]
         y = self.builder.get_object('signalname_combo').get_active_text()
         if y is None:
@@ -102,6 +109,7 @@ class CapillaryMeasurement(ToolWindow):
         self.builder.get_object('saveposition_button').set_sensitive(False)
         self.builder.get_object('savethickness_button').set_sensitive(False)
         self.builder.get_object('saveall_button').set_sensitive(False)
+        self.clearfigure(full=True)
         self.redraw()
         return False
 

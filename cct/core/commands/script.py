@@ -8,7 +8,7 @@ from .exceptions import JumpException, GotoException, GosubException, ReturnExce
 from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ScriptError(CommandError):

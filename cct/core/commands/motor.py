@@ -54,11 +54,13 @@ class GeneralMove(Command):
         if self.name == 'moveto':
             if motor.where() == self.targetposition:
                 self.idle_return(True)
+                return
             self.emit('message', 'Moving motor {} to {:.3f}.'.format(self.motorname, self.targetposition))
             motor.moveto(self.targetposition)
         elif self.name == 'moverel':
             if self.targetposition == 0:
                 self.idle_return(True)
+                return
             self.emit('message', 'Moving motor {} by {:.3f}.'.format(self.motorname, self.targetposition))
             motor.moverel(self.targetposition)
 
@@ -66,7 +68,7 @@ class GeneralMove(Command):
         self.emit('pulse', 'Moving motor {}: {:<8.3f}'.format(self.motorname, newpos))
 
     def on_motor_stop(self, motor, targetreached):
-        self.cleanup(targetreached)
+        self.idle_return(targetreached)
 
 
 class Moveto(GeneralMove):

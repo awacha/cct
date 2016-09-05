@@ -15,7 +15,7 @@ from ..utils.callback import Callbacks, SignalFlags
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DummyTm(object):
@@ -508,7 +508,7 @@ class Instrument(Callbacks):
         if not device.ready:
             logger.warning('Not reconnecting to device ' + device.name + ': it has disconnected before ready.')
             return False
-        if because_of_failure:
+        if because_of_failure and not self.shutdown_requested:
             # attempt to reconnect
             self._waiting_for_ready = [w for w in self._waiting_for_ready if w != device.name]
             for i in range(3):

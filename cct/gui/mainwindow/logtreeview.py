@@ -64,7 +64,7 @@ class LogTreeView(BuilderWidget):
             textcolor = 'black'
             bgcolor = 'white'
         elif record.levelno == logging.WARNING:
-            textcolor = 'yellow'
+            textcolor = 'orange'
             bgcolor = 'white'
         elif record.levelno == logging.ERROR:
             textcolor = 'red'

@@ -67,25 +67,24 @@ class DefineGeometry(ToolWindow):
             self.builder.get_object('apply_button').set_sensitive(True)
 
     def get_current_values(self):
-        conf = {}
-        conf['dist_source_ph1'] = self.builder.get_object('l0_adjustment').get_value()
-        conf['dist_ph1_ph2'] = self.builder.get_object('l1_adjustment').get_value()
-        conf['dist_ph2_ph3'] = self.builder.get_object('l2_adjustment').get_value()
-        conf['dist_ph3_sample'] = self.builder.get_object('ls_adjustment').get_value()
-        conf['dist_sample_det'] = self.builder.get_object('ldval_adjustment').get_value()
-        conf['dist_sample_det.err'] = self.builder.get_object('lderr_adjustment').get_value()
-        conf['dist_det_beamstop'] = self.builder.get_object('lbs_adjustment').get_value()
-        conf['pinhole_1'] = self.builder.get_object('pinhole1_adjustment').get_value()
-        conf['pinhole_2'] = self.builder.get_object('pinhole2_adjustment').get_value()
-        conf['pinhole_3'] = self.builder.get_object('pinhole3_adjustment').get_value()
-        conf['beamstop'] = self.builder.get_object('beamstop_adjustment').get_value()
-        conf['beamposy'] = self.builder.get_object('beamx_adjustment').get_value()
-        conf['beamposx'] = self.builder.get_object('beamy_adjustment').get_value()
-        conf['pixelsize'] = self.builder.get_object('pixelsize_adjustment').get_value()
-        conf['wavelength'] = self.builder.get_object('wavelengthval_adjustment').get_value()
-        conf['wavelength.err'] = self.builder.get_object('wavelengtherr_adjustment').get_value()
-        conf['description'] = self.builder.get_object('description_entry').get_text()
-        conf['mask'] = self.builder.get_object('mask_filechooser').get_filename()
+        conf = {'dist_source_ph1': self.builder.get_object('l0_adjustment').get_value(),
+                'dist_ph1_ph2': self.builder.get_object('l1_adjustment').get_value(),
+                'dist_ph2_ph3': self.builder.get_object('l2_adjustment').get_value(),
+                'dist_ph3_sample': self.builder.get_object('ls_adjustment').get_value(),
+                'dist_sample_det': self.builder.get_object('ldval_adjustment').get_value(),
+                'dist_sample_det.err': self.builder.get_object('lderr_adjustment').get_value(),
+                'dist_det_beamstop': self.builder.get_object('lbs_adjustment').get_value(),
+                'pinhole_1': self.builder.get_object('pinhole1_adjustment').get_value(),
+                'pinhole_2': self.builder.get_object('pinhole2_adjustment').get_value(),
+                'pinhole_3': self.builder.get_object('pinhole3_adjustment').get_value(),
+                'beamstop': self.builder.get_object('beamstop_adjustment').get_value(),
+                'beamposy': self.builder.get_object('beamx_adjustment').get_value(),
+                'beamposx': self.builder.get_object('beamy_adjustment').get_value(),
+                'pixelsize': self.builder.get_object('pixelsize_adjustment').get_value(),
+                'wavelength': self.builder.get_object('wavelengthval_adjustment').get_value(),
+                'wavelength.err': self.builder.get_object('wavelengtherr_adjustment').get_value(),
+                'description': self.builder.get_object('description_entry').get_text(),
+                'mask': self.builder.get_object('mask_filechooser').get_filename()}
         return conf
 
     def on_apply(self, button):

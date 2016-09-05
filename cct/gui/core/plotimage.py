@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 from .builderwidget import BuilderWidget
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class PlotImageWidget(BuilderWidget):

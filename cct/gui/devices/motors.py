@@ -9,7 +9,7 @@ from ...core.instrument.privileges import PRIV_MOTORCONFIG, PRIV_MOTORCALIB, PRI
     PRIV_MOVEMOTORS
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Motors(ToolWindow):

@@ -13,7 +13,7 @@ from .exceptions import DeviceError, CommunicationError
 from .message import Message
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class QueueLogHandler(QueueHandler):
@@ -80,6 +80,8 @@ class TCPCommunicator:
     in this class.
     """
 
+    keep_this_many_lastsendtimes = 10
+
     def __init__(self, instancename, host, port, poll_timeout, sendqueue, incomingqueue,
                  killflag, exitedflag, getcompletemessages):
         self.name = instancename
@@ -117,7 +119,7 @@ class TCPCommunicator:
 
         self.message_part = b''
         self.lastsent = []  # a stack of recently sent messages.
-        self.lastsendtime = 0
+        self.lastsendtimes = []
         self.cleartosend = True
 
     def send_to_backend(self, msgtype, **kwargs):
@@ -165,7 +167,9 @@ class TCPCommunicator:
             # we can send another message before we obtain reply/replies.
             self.cleartosend = True
         self.send_to_backend('send_complete', message=outmsg)
-        self.lastsendtime = time.monotonic()
+        self.lastsendtimes.append(time.monotonic())
+        while len(self.lastsendtimes) > self.keep_this_many_lastsendtimes:
+            self.lastsendtimes.pop(0)
 
     def receive_message_from_device(self, polling):
         """Try to receive a message from the device."""
@@ -211,9 +215,14 @@ class TCPCommunicator:
                 if not self.lastsent:
                     # this is an unsolicited message from the device.
                     raise CommunicationError('Unsolicited message from device {}: {}'.format(self.name, str(message)))
+                if len(self.lastsendtimes) > 1:
+                    sendfreq = (len(self.lastsendtimes) - 1) / (self.lastsendtimes[-1] - self.lastsendtimes[0])
+                else:
+                    sendfreq = 0
                 self.send_to_backend('incoming', message=message, sent_message=self.lastsent[-1]['message'],
                                      referred_id=self.lastsent[-1]['id'],
-                                     reply_count=self.lastsent[-1]['received_replies'])
+                                     reply_count=self.lastsent[-1]['received_replies'],
+                                     send_frequency=sendfreq)
                 self.lastsent[-1]['received_replies'] += 1
                 if self.lastsent[-1]['expected_replies'] <= self.lastsent[-1]['received_replies']:
                     del self.lastsent[-1]
@@ -306,10 +315,12 @@ class DeviceBackend_TCP(DeviceBackend):
         self.killflag = multiprocessing.Event()
         self.tcpprocess_exited = multiprocessing.Event()
         self.tcp_communicator = None
+        self.send_frequency = 0
 
     def get_telemetry(self):
         tm = super().get_telemetry()
         tm.sendqueuelen = self.tcp_outqueue.qsize()
+        tm.sendfrequency = self.send_frequency
         return tm
 
     @staticmethod
@@ -405,3 +416,8 @@ class DeviceBackend_TCP(DeviceBackend):
             # do not query all if there are too many messages waiting to be sent to the device.
             return
         return super().queryall()
+
+    def dispatch_inqueue_message(self, message):
+        if message['type'] == 'incoming':
+            self.send_frequency = message['send_frequency']
+        return super().dispatch_inqueue_message(message)

@@ -7,7 +7,7 @@ from ...core.devices import Device
 from ...core.instrument.privileges import PRIV_DEVICECONFIG, PRIV_CONNECTDEVICES
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DeviceConnections(ToolWindow):

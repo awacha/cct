@@ -13,7 +13,7 @@ from ...core.instrument.instrument import Instrument
 from ...core.instrument.privileges import PRIV_LAYMAN
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ToolFrameException(Exception):
@@ -32,9 +32,11 @@ class ToolFrame(BuilderWidget):
     class TFException(Exception):
         pass
 
+    # noinspection PyClassHasNoInit
     class DeviceException(TFException):
         pass
 
+    # noinspection PyClassHasNoInit
     class PrivilegeException(TFException):
         pass
 

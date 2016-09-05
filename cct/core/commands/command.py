@@ -10,7 +10,7 @@ from ..devices import Motor
 from ..utils.callback import Callbacks, SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class CommandError(Exception):
@@ -204,6 +204,7 @@ class Command(Callbacks):
         self._device_connections = {}
         self._timeout_handler = None
         self._pulse_handler = None
+        self._returning = False
 
     def __del__(self):
         self.__class__.instance_count -= 1
@@ -236,6 +237,7 @@ class Command(Callbacks):
         return True
 
     def _execute(self):
+        self._returning = False
         logger.debug('Executing command {}'.format(self.name))
         if not self.validate():
             logger.error('Validation of command parameters for command {} failed.')
@@ -348,6 +350,9 @@ class Command(Callbacks):
 
     def idle_return(self, value):
         """Convenience function to schedule an idle function to return."""
+        if self._returning:
+            return
+        self._returning = True
         GLib.idle_add(lambda rv=value: (self.cleanup(rv) and False))
 
     @classmethod

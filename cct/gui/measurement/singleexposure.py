@@ -14,7 +14,7 @@ from ...core.commands.xray_source import Shutter
 from ...core.services.interpreter import Interpreter
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SingleExposure(ToolWindow):

@@ -7,7 +7,7 @@ from ..commands.command import Command, cleanup_commandline
 from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class InterpreterError(ServiceError):
@@ -166,6 +166,7 @@ class Interpreter(Service):
             self._command.connect('detail', self.on_command_detail),
         ]
         try:
+            # noinspection PyProtectedMember
             self._command._execute()
         except Exception as exc:
             logger.debug('Exception while executing command: {}'.format(exc))

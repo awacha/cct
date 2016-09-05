@@ -114,8 +114,10 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="activates_default">True</property>
+                <property name="input_purpose">number</property>
                 <property name="adjustment">target_adjustment</property>
                 <property name="digits">3</property>
+                <property name="numeric">True</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>

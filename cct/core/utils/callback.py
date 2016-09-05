@@ -6,6 +6,7 @@ from typing import Callable, Optional
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class SignalFlags(object):
     RUN_FIRST = 1
     RUN_LAST = 2
@@ -58,6 +59,7 @@ class Callbacks(object):
         else:
             for bcls in cls.__bases__:
                 try:
+                    # noinspection PyProtectedMember
                     return bcls._get_signal_description(name)
                 except AttributeError:
                     pass
@@ -80,7 +82,7 @@ class Callbacks(object):
         conn = {'signal': signal, 'callback': callback, 'args': args, 'kwargs': kwargs,
                 'id': self.__class__._nextsignalconnectionid, 'blocked': 0}
         self.__signalhandles.append(conn)
-        self.__class__._nextsignalconnectionid = self.__class__._nextsignalconnectionid + 1
+        self.__class__._nextsignalconnectionid += 1
         logger.debug('Connected signal handler {:d} for signal {}, callback {}'.format(conn['id'], signal, callback))
         return conn['id']
 

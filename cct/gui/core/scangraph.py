@@ -128,6 +128,10 @@ class ScanGraph(ToolWindow):
     def start_view_mode(self):
         if self.is_scan_mode():
             raise ValueError('Cannot start view mode: a scan is running.')
+        if not len(self._data) or not self._dataindex:
+            # empty scan
+            self.error_message('No scan points.')
+            return
         # set button box and cursor box visible.
         self.builder.get_object('buttonbox').set_visible(True)
         self.builder.get_object('scalebox').set_visible(True)
@@ -189,8 +193,8 @@ class ScanGraph(ToolWindow):
         return self._dataindex
 
     def redraw_cursor(self):
-        if self.is_scan_mode():
-            # do not draw cursor in scan mode
+        if self.is_scan_mode() or (not len(self._data)) or (not self._dataindex):
+            # do not draw cursor in scan mode and when no points are available
             return
         try:
             self._cursor.remove()
