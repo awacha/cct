@@ -187,10 +187,10 @@ class Accounting(Service):
 
     def select_project(self, projectid: str):
         self.project = self.get_project(projectid)
-        logger.debug('Selected project: ' + self.project.projectid)
-        self.instrument.config['services']['accounting']['projectid'] = self.project.projectid
-        self.instrument.config['services']['accounting']['projectname'] = self.project.projectname
-        self.instrument.config['services']['accounting']['proposer'] = self.project.proposer
+        logger.info('Selected project: ' + self.project.projectid)
+        self.state['projectid'] = self.project.projectid
+        self.state['projectname'] = self.project.projectname
+        self.state['proposer'] = self.project.proposer
         self.emit('project-changed')
 
     def get_project(self, projectid: Optional[str] = None) -> Project:
