@@ -16,7 +16,7 @@ from sastool.misc.errorvalue import ErrorValue
 from sastool.utils2d.centering import findbeam_radialpeak, findbeam_powerlaw
 
 from ..core.exposureloader import ExposureLoader
-from ..core.functions import update_comboboxtext_choices
+from ..core.functions import update_comboboxtext_choices, savefiguretoclipboard
 from ..core.plotcurve import PlotCurveWidget
 from ..core.plotimage import PlotImageWidget
 from ..core.toolwindow import ToolWindow, error_message
@@ -58,6 +58,11 @@ class Calibration(ToolWindow):
         self.figpairscanvas = FigureCanvasGTK3Agg(self.figpairs)
         self.builder.get_object('figbox_distcalib').pack_start(self.figpairscanvas, True, True, 0)
         self.figpairstoolbox = NavigationToolbar2GTK3(self.figpairscanvas, self.widget)
+        b = Gtk.ToolButton(icon_widget=Gtk.Image.new_from_icon_name('edit-copy', Gtk.IconSize.LARGE_TOOLBAR),
+                           label='Copy')
+        b.set_tooltip_text('Copy the image to the clipboard')
+        b.connect('clicked', lambda b_, f=self.figpairs: savefiguretoclipboard(f))
+        self.figpairstoolbox.insert(b, 9)
         self.builder.get_object('figbox_distcalib').pack_start(self.figpairstoolbox, False, True, 0)
         self.figpairsaxes = self.figpairs.add_subplot(1, 1, 1)
         logger.debug('Initializing EL')

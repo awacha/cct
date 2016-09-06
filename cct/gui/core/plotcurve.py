@@ -14,6 +14,7 @@ from matplotlib.transforms import Transform
 from numpy import ma
 
 from .builderwidget import BuilderWidget
+from .functions import savefiguretoclipboard
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -84,6 +85,11 @@ class PlotCurveWidget(BuilderWidget):
         b.set_tooltip_text('Redraw the curves')
         self._toolbar.insert(b, 9)
         b.connect('clicked', self.request_replot)
+        b = Gtk.ToolButton(icon_widget=Gtk.Image.new_from_icon_name('edit-copy', Gtk.IconSize.LARGE_TOOLBAR),
+                           label='Copy')
+        b.set_tooltip_text('Copy the image to the clipboard')
+        b.connect('clicked', lambda b_, f=self.fig: savefiguretoclipboard(f))
+        self._toolbar.insert(b, 9)
         self.widget.pack_start(self.canvas, True, True, 0)
         self.widget.pack_start(self._toolbar, False, True, 0)
         self.builder.get_object('dsigmadomega_yunit').get_children()[0].set_markup('cm<sup>-1</sup>sr<sup>-1</sup>')

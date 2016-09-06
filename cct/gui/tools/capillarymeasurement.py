@@ -7,7 +7,7 @@ from sastool.misc.basicfit import findpeak_single
 from sastool.misc.errorvalue import ErrorValue
 
 from ..core.dialogs import error_message
-from ..core.functions import update_comboboxtext_choices
+from ..core.functions import update_comboboxtext_choices, savefiguretoclipboard
 from ..core.toolwindow import ToolWindow
 
 
@@ -44,6 +44,11 @@ class CapillaryMeasurement(ToolWindow):
         b = Gtk.ToolButton.new(Gtk.Image.new_from_icon_name('view-refresh', Gtk.IconSize.LARGE_TOOLBAR), 'Redraw')
         self.toolbar.insert(b, 9)
         b.connect('clicked', lambda button: self.redraw())
+        b = Gtk.ToolButton(icon_widget=Gtk.Image.new_from_icon_name('edit-copy', Gtk.IconSize.LARGE_TOOLBAR),
+                           label='Copy')
+        b.set_tooltip_text('Copy the image to the clipboard')
+        b.connect('clicked', lambda b_, f=self.fig: savefiguretoclipboard(f))
+        self.toolbar.insert(b, 9)
 
     def clearfigure(self, full=False):
         for attr in ['_negpeak_text', '_negpeak_curve', '_pospeak_text', '_pospeak_curve', '_scancurve']:

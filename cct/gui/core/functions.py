@@ -2,7 +2,8 @@ import logging
 from typing import List
 
 import pkg_resources
-from gi.repository import Gtk, Notify, GdkPixbuf
+from gi.repository import Gtk, Notify, GdkPixbuf, Gdk
+from matplotlib.figure import Figure
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -45,3 +46,14 @@ def notify(summary: str, body: str):
     n.set_image_from_pixbuf(GdkPixbuf.Pixbuf.new_from_file_at_size(
         pkg_resources.resource_filename('cct', 'resource/icons/scalable/cctlogo.svg'), 256, 256))
     n.show()
+
+
+def savefiguretoclipboard(figure: Figure):
+    r = figure.canvas.get_renderer()
+    width, height = r.get_canvas_width_height()
+    data = r.buffer_rgba()
+    pb = GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB, True, 8,
+                                        width, height, 4 * width, None, None)
+    cb = Gtk.Clipboard.get_default(Gdk.Display.get_default())
+    assert isinstance(cb, Gtk.Clipboard)
+    cb.set_image(pb)

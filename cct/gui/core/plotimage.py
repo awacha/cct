@@ -13,6 +13,7 @@ from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
 from matplotlib.figure import Figure
 
 from .builderwidget import BuilderWidget
+from .functions import savefiguretoclipboard
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -50,6 +51,11 @@ class PlotImageWidget(BuilderWidget):
         b.set_tooltip_text('Redraw the image')
         self.toolbar.insert(b, 9)
         b.connect('clicked', lambda b_: self.replot(False))
+        b = Gtk.ToolButton(icon_widget=Gtk.Image.new_from_icon_name('edit-copy', Gtk.IconSize.LARGE_TOOLBAR),
+                           label='Copy')
+        b.set_tooltip_text('Copy the image to the clipboard')
+        b.connect('clicked', lambda b_, f=self.fig: savefiguretoclipboard(f))
+        self.toolbar.insert(b, 9)
         palette_combo = self.builder.get_object('palette_combo')
         for i, cm in enumerate(sorted(matplotlib.cm.cmap_d)):
             palette_combo.append_text(cm)

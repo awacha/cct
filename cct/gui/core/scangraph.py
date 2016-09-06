@@ -8,6 +8,7 @@ from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg
 from matplotlib.figure import Figure
 from sastool.misc.basicfit import findpeak_single
 
+from .functions import savefiguretoclipboard
 from .plotimage import PlotImageWindow
 from .toolwindow import ToolWindow
 from ...core.devices import Motor
@@ -68,6 +69,11 @@ class ScanGraph(ToolWindow):
                            label='Redraw')
         b.set_tooltip_text('Redraw the signals')
         b.connect('clicked', lambda b_: self.redraw_signals())
+        self.toolbox.insert(b, 9)
+        b = Gtk.ToolButton(icon_widget=Gtk.Image.new_from_icon_name('edit-copy', Gtk.IconSize.LARGE_TOOLBAR),
+                           label='Copy')
+        b.set_tooltip_text('Copy the image to the clipboard')
+        b.connect('clicked', lambda b_, f=self.fig: savefiguretoclipboard(f))
         self.toolbox.insert(b, 9)
         # pack the figure into the appropriate vbox
         figbox = self.builder.get_object('figbox')
