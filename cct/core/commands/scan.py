@@ -108,7 +108,6 @@ class GeneralScan(Command):
         logger.debug('Scan command::on_scanpoint')
         if self.idx >= self.npoints:
             # the last scan point has been received.
-            self.services['filesequence'].scan_done(self.scanfsn)
             self.emit('message', 'Scan #{:d} finished.'.format(self.scanfsn))
             self.idle_return(self.scanfsn)
         return False
@@ -159,6 +158,7 @@ class GeneralScan(Command):
         if self._ea_connection is not None:
             self.services['exposureanalyzer'].disconnect(self._ea_connection)
             self._ea_connection = None
+        self.services['filesequence'].scan_done(self.scanfsn)
         super().cleanup(*args, **kwargs)
 
     def kill(self):
