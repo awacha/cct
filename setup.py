@@ -1,10 +1,10 @@
 #!/usb/bin/env python
 import os
 
+from Cython.Build import cythonize
+from numpy import get_include
 from setuptools import setup, find_packages
-
-
-# from setuptools.extension import Extension
+from setuptools.extension import Extension
 
 
 def getresourcefiles():
@@ -30,19 +30,20 @@ def update_languagespec():
     print('Updated language spec. Command list:\n' + ', '.join(allcommands))
 
 
-# extensions = [Extension("cct.core.utils.radint", ["cct/core/utils/radint.pyx"], include_dirs=[np.get_include()])]
+extensions = [Extension("cct.gui.tools.optimizegeometry.estimateworksize",
+                        ["cct/gui/tools/optimizegeometry/estimateworksize.pyx"], include_dirs=[get_include()])]
 
 
 update_languagespec()
-setup(name='cct', version='2.0.0', author='Andras Wacha',
+setup(name='cct', version='2.0.2', author='Andras Wacha',
       author_email='awacha@gmail.com', url='http://github.com/awacha/cct',
       description='CREDO Control Tool',
       packages=find_packages(),
       #      cmdclass = {'build_ext': build_ext},
-      # ext_modules=cythonize(extensions),
+      ext_modules=cythonize(extensions),
       install_requires=['numpy>=1.11.1', 'scipy>=0.18.0', 'matplotlib>=1.5.2', 'sastool>=0.7.2', 'pymodbustcp>=0.0.13',
                         'pykerberos>=1.1.10', 'psutil>=4.1.0', 'cairocffi>=0.7.2'],
-      entry_points={'gui_scripts': ['cctdev = cct.gui.__main__:run'],
+      entry_points={'gui_scripts': ['cct = cct.gui.__main__:run'],
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",
       license="",
