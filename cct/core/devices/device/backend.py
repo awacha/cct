@@ -294,7 +294,8 @@ class DeviceBackend(object):
                     # already been raised at this point.
                     try:
                         exit_status = self.dispatch_inqueue_message(message)
-                    except ExitWorkerLoop:
+                    except ExitWorkerLoop as ewl:
+                        exit_status = ewl.args[0]
                         break
                 # Do some housekeeping
                 # 1) check if we have just became ready, i.e. we have read all variables at least once. If yes,
@@ -354,7 +355,7 @@ class DeviceBackend(object):
             self.config = message['configdict']
         elif message['type'] == 'exit':
             exit_status = True  # normal termination
-            raise ExitWorkerLoop
+            raise ExitWorkerLoop(True)
         elif message['type'] == 'query':
             if message['signal_needed']:
                 try:

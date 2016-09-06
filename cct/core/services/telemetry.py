@@ -99,7 +99,9 @@ class TelemetryManager(Service):
         return True
 
     def stop(self):
-        GLib.source_remove(self._memlog_timeout_handle)
+        if self._memlog_timeout_handle is not None:
+            GLib.source_remove(self._memlog_timeout_handle)
+            self._memlog_timeout_handle = None
         super().stop()
 
     def __getitem__(self, item):

@@ -617,6 +617,8 @@ class ExposureAnalyzer(Service):
         return False
 
     def do_shutdown(self):
-        GLib.source_remove(self._handler)
+        if self._handler is not None:
+            GLib.source_remove(self._handler)
+            self._handler = None
         self._backendprocess.join()
         self.starttime = None

@@ -43,6 +43,7 @@ class WebStateFileWriter(Service):
     def stop(self):
         if self._timeouthandler is not None:
             GLib.source_remove(self._timeouthandler)
+            self._timeouthandler = None
         super().stop()
 
     def reload_statusfile_template(self):
