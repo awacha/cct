@@ -105,7 +105,10 @@ class Device(Callbacks):
     """
     __signals__ = {
         # emitted if the value of a variable changes. The first argument is the
-        # name of the variable, the second is its new value
+        # name of the variable, the second is its new value. Note that the
+        # emission of this signal occurs BEFORE the new value of the variable
+        # is stored. This way signal handlers can access the previous value by
+        # calling get_variable().
         'variable-change': (SignalFlags.RUN_FIRST, None, (str, object)),
 
         # emitted if an error happens. The first argument is the the name of the

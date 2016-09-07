@@ -357,17 +357,24 @@ class Instrument(Callbacks):
         except (AttributeError, KeyError):
             pass
 
-    def get_beamstop_state(self):
+    def get_beamstop_state(self, **kwargs):
         """Check if beamstop is in the beam or not.
 
         Returns a string:
             'in' if the beamstop motors are at their calibrated in-beam position
             'out' if the beamstop motors are at their calibrated out-of-beam position
             'unknown' otherwise
+
+        You can override motor positions in keyword arguments, as in
+            get_beamstop_state(BeamStop_X=10, BeamStop_Y=3)
         """
+        bsx = kwargs.pop('BeamStop_X', None)
+        bsy = kwargs.pop('BeamStop_Y', None)
         try:
-            bsy = self.motors['BeamStop_Y'].where()
-            bsx = self.motors['BeamStop_X'].where()
+            if bsx is None:
+                bsx = self.motors['BeamStop_X'].where()
+            if bsy is None:
+                bsy = self.motors['BeamStop_Y'].where()
         except KeyError:
             raise
         if abs(bsx - self.config['beamstop']['in'][0]) < 0.001 and abs(bsy - self.config['beamstop']['in'][1]) < 0.001:

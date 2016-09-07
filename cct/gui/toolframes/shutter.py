@@ -1,16 +1,17 @@
 import logging
+from typing import Optional
 
 from gi.repository import Gtk, GLib
 
 from ..core.dialogs import error_message
 from ..core.toolframe import ToolFrame
 from ...core.commands.motor import Beamstop
+from ...core.devices.motor import Motor
 from ...core.instrument.privileges import PRIV_BEAMSTOP
 from ...core.services.interpreter import InterpreterError
 
-
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ShutterBeamstop(ToolFrame):
@@ -33,12 +34,22 @@ class ShutterBeamstop(ToolFrame):
             if varname == 'shutter':
                 self.builder.get_object('shutter_switch').set_state(value)
 
-    def on_motor_stop(self, motor, targetreached):
-        return self.on_motor_position_change(motor, motor.where())
-
-    def on_motor_position_change(self, motor, pos):
+    def on_motor_position_change(self, motor: Optional[Motor], pos: Optional[float]):
+        if motor is None or pos is None:
+            logger.debug('Faked motor position changed signal caught by ShutterFrame.')
+        else:
+            logger.debug(
+                'Motor position changed signal caught by ShutterFrame. Motor: {}. Position: {}'.format(motor.name, pos))
+            try:
+                logger.debug('Stored motor position is {}'.format(motor.where()))
+            except KeyError:
+                logger.debug('Stored motor position not yet available.')
         try:
-            beamstopstate = self.instrument.get_beamstop_state()
+            if motor is not None:
+                beamstopstate = self.instrument.get_beamstop_state(**{motor.name: pos})
+            else:
+                beamstopstate = self.instrument.get_beamstop_state()
+            logger.debug('beamstopstate: {}'.format(beamstopstate))
         except KeyError:
             # can happen at program initialization, when the motor position has not yet been read.
             logger.debug('No beamstop state yet.')
