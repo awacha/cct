@@ -478,13 +478,13 @@ class TMCMCard_Backend(DeviceBackend_TCP):
             if release_busysemaphore:
                 self.busysemaphore.release()
 
-    def on_startupdone(self):
+    def on_ready(self):
         # initialization after all variables have been obtained
         self.load_positions()  # load the positions from the state file.
         self.update_variable('_status', 'idle')  # set our status to idle.
         for i in range(self.N_axes):
             self.update_variable('_status$' + str(i), 'idle')
-        super().on_startupdone()
+        super().on_ready()
         return True
 
     def execute_command(self, commandname, arguments):

@@ -344,7 +344,7 @@ class Instrument(Callbacks):
         device: the device object, an instance of
             cct.core.devices.device.Device
         """
-        self._signalconnections[device.name] = [device.connect('startupdone', self.on_ready),
+        self._signalconnections[device.name] = [device.connect('ready', self.on_ready),
                                                 device.connect('disconnect', self.on_disconnect),
                                                 device.connect('telemetry', self.on_telemetry)]
 
@@ -512,7 +512,7 @@ class Instrument(Callbacks):
             self._waiting_for_ready.remove(device.name)
             self.on_ready(device)  # check if all other devices are ready
             return False
-        if not device.ready:
+        if not device.is_ready():
             logger.warning('Not reconnecting to device ' + device.name + ': it has disconnected before ready.')
             return False
         if because_of_failure and not self.shutdown_requested:

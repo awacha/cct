@@ -302,7 +302,7 @@ class DeviceBackend(object):
                 #     notify the frontend thread.
                 if (not self.ready) and (self.has_all_variables()):
                     # this device has just became ready, i.e. we have obtained values for all the variables.
-                    self.on_startupdone()
+                    self.on_ready()
                     self.ready = True
                     self.send_to_frontend('ready')
                 # 2) check the watchdog, i.e. decide if the device is responsive.
@@ -665,7 +665,7 @@ class DeviceBackend(object):
         """
         raise NotImplementedError
 
-    def on_startupdone(self):
+    def on_ready(self):
         """Called when the startup is done, i.e. all variables
         have been read."""
         return True

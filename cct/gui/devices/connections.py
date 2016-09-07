@@ -53,7 +53,7 @@ class DeviceConnections(ToolWindow):
                 self.builder.get_object('connectbutton_' + d).set_label('Disconnect')
             self._device_connections[d] = [dev.connect('disconnect', self.on_device_disconnect),
                                            dev.connect('variable-change', self.on_device_varchange),
-                                           dev.connect('startupdone', self.on_device_startupdone)]
+                                           dev.connect('ready', self.on_device_ready)]
         return False
 
     def cleanup(self):
@@ -84,7 +84,7 @@ class DeviceConnections(ToolWindow):
         self.builder.get_object('connectbutton_' + device.name).set_sensitive(True)
         return False
 
-    def on_device_startupdone(self, device: Device):
+    def on_device_ready(self, device: Device):
         self.builder.get_object('connectbutton_' + device.name).set_label('Disconnect')
         self.builder.get_object('connectbutton_' + device.name).set_sensitive(True)
         return False

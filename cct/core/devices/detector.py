@@ -463,7 +463,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
             raise UnknownVariable(variable)
         self.queryone(variable)
 
-    def on_startupdone(self):
+    def on_ready(self):
         self.update_variable('_status', 'idle')
 
 
@@ -520,11 +520,11 @@ class Pilatus(Device):
             raise DeviceError('Cannot start exposure when not idle.')
         self.execute_command('expose', filename.encode('utf-8'))
 
-    def do_startupdone(self):
-        logger.debug('Pilatus: do_startupdone')
+    def do_ready(self):
+        logger.debug('Pilatus: do_ready')
         self.refresh_variable('version')
         self.set_threshold(4024, 'highg')
-        return super().do_startupdone()
+        return super().do_ready()
 
     def stop(self):
         if self.is_busy():

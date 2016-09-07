@@ -123,7 +123,7 @@ class Device(Callbacks):
 
         # emitted when the starup is done, i.e. all variables have been read at
         # least once
-        'startupdone': (SignalFlags.RUN_FIRST, None, ()),
+        'ready': (SignalFlags.RUN_FIRST, None, ()),
 
         # emitted when a response for a telemetry request has been received.
         # The argument is a dict.
@@ -342,7 +342,7 @@ class Device(Callbacks):
                 return False  # prevent re-scheduling this idle handler
             elif message['type'] == 'ready':
                 self._ready = True
-                self.emit('startupdone')
+                self.emit('ready')
             elif message['type'] == 'telemetry':
                 self.emit('telemetry', message['data'])
             elif message['type'] == 'log':
@@ -372,8 +372,8 @@ class Device(Callbacks):
             return True
         return False
 
-    def do_startupdone(self) -> bool:
-        """default handler for the 'startupdone' signal"""
+    def do_ready(self) -> bool:
+        """default handler for the 'ready' signal"""
         logger.info('Device ' + self.name + ' is ready.')
         return False
 
@@ -387,6 +387,9 @@ class Device(Callbacks):
 
     @property
     def ready(self) -> bool:
+        return self._ready
+
+    def is_ready(self) -> bool:
         return self._ready
 
     def get_connected(self) -> bool:
