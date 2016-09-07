@@ -97,8 +97,11 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
             self._selector.state.add('square')
             self._selector.state.add('center')
         else:
+            assert isinstance(self._selector, EllipseSelector)
+            self._selector.set_active(False)
+            self._selector.set_visible(False)
             self._selector = None
-            self.plot2d.replot()
+            self.plot2d.replot(keepzoom=False)
             self.set_sensitive(True)
 
     def on_ellipse_selected(self, pos1, pos2):
@@ -140,8 +143,10 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
                                                button=[1, ],
                                                interactive=False, )
         else:
+            self._selector.set_active(False)
+            self._selector.set_visible(False)
             self._selector = None
-            self.plot2d.replot()
+            self.plot2d.replot(keepzoom=False)
             self.set_sensitive(True)
 
     def on_rectangle_selected(self, pos1, pos2):
@@ -180,8 +185,10 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
                                            button=[1, ],
                                            )
         else:
+            self._selector.set_active(False)
+            self._selector.set_visible(False)
             self._selector = None
-            self.plot2d.replot()
+            self.plot2d.replot(keepzoom=False)
             self.set_sensitive(True)
 
     def on_polygon_selected(self, vertices):
@@ -222,7 +229,7 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
             self._cursor.disconnect_events()
             self._cursor = None
             self._undo_stack.append(self.mask)
-            self.plot2d.replot(keepzoom=True)
+            self.plot2d.replot(keepzoom=False)
 
     def on_cursorclick(self, event):
         if (event.inaxes == self.plot2d.axis) and (self.plot2d.toolbar.mode == ''):

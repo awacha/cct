@@ -327,12 +327,18 @@ class PlotImageWidget(BuilderWidget):
             return
         if not keepzoom:
             self.toolbar.update()
+            self.axis.clear()
+            self._image_handle = None
+            if self.colorbaraxis is not None:
+                self.colorbaraxis.remove()
+                self.colorbaraxis = None
+            self._crosshair_handles = None
+            self._mask_handle = None
         self.replot_image()
         self.replot_mask()
         self.replot_crosshair()
         self.replot_colorbar()
         self.fig.tight_layout()
-        self.fig.canvas.draw_idle()
         self.canvas.draw_idle()
 
 
