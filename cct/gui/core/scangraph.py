@@ -246,7 +246,7 @@ class ScanGraph(ToolWindow):
         piw.set_beampos(self.instrument.config['geometry']['beamposy'],
                         self.instrument.config['geometry']['beamposx'])
         piw.set_mask(mask)
-        piw.set_title('{:d}/{:d} point of {}'.format(self._cursorindex + 1, len(self), self.widget.get_title()))
+        piw.set_title('{:d}/{:d} point of {}'.format(imgindex, len(self), self.widget.get_title()))
 
     def redraw_signals(self):
         try:
@@ -399,6 +399,7 @@ class ScanGraph(ToolWindow):
             self.abscissa[1:self._dataindex] + self.abscissa[0:self._dataindex - 1])
         sg = self.__class__(self._data.dtype.names, newdata, 'Derivative of ' + self.widget.get_title(),
                             'Derivative of ' + self.comment, self.instrument)
+        sg.show_all()
 
     def on_integrate(self, button):
         newdata = np.zeros(self._dataindex - 1, dtype=self._data.dtype)
@@ -412,6 +413,7 @@ class ScanGraph(ToolWindow):
             self.abscissa[1:self._dataindex] + self.abscissa[0:self._dataindex - 1])
         sg = self.__class__(self._data.dtype.names, newdata, 'Integral of ' + self.widget.get_title(),
                             'Integral of ' + self.comment, self.instrument)
+        sg.show_all()
 
     def cleanup(self):
         assert isinstance(self.fig, Figure)
