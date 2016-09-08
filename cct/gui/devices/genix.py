@@ -205,11 +205,11 @@ class GeniX(ToolWindow):
             finally:
                 self._updating_buttons = False
         elif variablename == 'ht':
-            self.indicators[variablename].set_value('%.1f kV' % newvalue, IndicatorState.NEUTRAL)
+            self.indicators[variablename].set_value('%.2f kV' % newvalue, IndicatorState.NEUTRAL)
         elif variablename == 'current':
-            self.indicators[variablename].set_value('%.1f mA' % newvalue, IndicatorState.NEUTRAL)
+            self.indicators[variablename].set_value('%.2f mA' % newvalue, IndicatorState.NEUTRAL)
         elif variablename == 'power':
-            self.indicators[variablename].set_value('%.1f W' % newvalue, IndicatorState.NEUTRAL)
+            self.indicators[variablename].set_value('%.2f W' % newvalue, IndicatorState.NEUTRAL)
         elif variablename == 'tubetime':
             self.indicators[variablename].set_value('%.2f h / %.2f days' % (newvalue, newvalue / 24),
                                                     IndicatorState.NEUTRAL)
