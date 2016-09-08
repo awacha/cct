@@ -11,7 +11,7 @@ from ...core.instrument.privileges import PRIV_BEAMSTOP
 from ...core.services.interpreter import InterpreterError
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ShutterBeamstop(ToolFrame):
