@@ -15,7 +15,7 @@ class Mapping(Command):
     """Do a mapping measurement
 
     Invocation: mapping(<motors>, <starts>, <ends>, <Npointss>,
-                        <exptime> [, <exposure_prefix>])
+                        <exptime> [, <expose_prefix>])
 
     Arguments:
         <motors>: list of motor names (starting with the fastest increasing)
@@ -23,7 +23,7 @@ class Mapping(Command):
         <ends>: list of end positions (inclusive) for the motors
         <Npointss>: number of points for the motors
         <exptime>: exposure time at each point
-        <exposure_prefix>: exposure prefix, such as 'crd', 'tst', 'scn' etc.
+        <expose_prefix>: exposure prefix, such as 'crd', 'tst', 'scn' etc.
             If not given, the value of the variable 'expose_prefix' will be
             used.
 
@@ -70,21 +70,23 @@ class Mapping(Command):
         if self.exptime < 1e-6 or self.exptime > 1e6:
             raise CommandArgumentError('Exposure time must be between 1e-6 and 1e6 seconds.')
         try:
-            self.exposure_prefix = str(self.args[5])
+            self.expose_prefix = str(self.args[5])
         except IndexError:
-            self.exposure_prefix = self.namespace['exposure_prefix']
+            self.expose_prefix = self.namespace['expose_prefix']
         self.next_index = None
         self.killed = False
         self.failed = False
         self.where_index = [0] * len(self.motors)
         self.pointsdone = 0
-        self.numpoints = functools.reduce(operator.mul, self.Ns, 1)
+        self.numpoints = int(functools.reduce(operator.mul, self.Ns, 1))
         self.moving_motor = None
         self.moving_target = None
         self.required_devices = ['xray_source', 'pilatus'] + ['Motor_' + m for m in self.motors]
         self.exposed_fsn = None
         self.exposed_filename = None
         self.exposure_starttime = None
+        self.current_activity = "Initializing..."
+        logger.debug('Initialized Mapping command instance.')
 
     def validate(self):
         # check permissions for motors
@@ -98,17 +100,26 @@ class Mapping(Command):
         for m, s, e in zip(self.motors, self.starts, self.ends):
             if not (self.get_motor(m).checklimits(s) and self.get_motor(m).checklimits(e)):
                 raise CommandArgumentError('Range outside limits for motor {}.'.format(m))
+        logger.debug('Mapping command has passed the validation')
         return True
 
     def execute(self):
         # move the last motor to its starting position. When the move is finished,
         # it will induce moving the previous motor to its start position, etc.
-        self.moving_motor = self.motors[-1]
-        self.moving_target = self.starts[-1]
-        self.get_motor(self.moving_motor).moveto(self.moving_target)
-        self.emit('message', 'Mapping started.')
+        self.initialize_detector()
+
+    def initialize_detector(self):
+        self.current_activity = "Initializing detector..."
+        self.get_device('pilatus').set_variable('exptime', self.exptime)
+        self.get_device('pilatus').set_variable('expperiod', self.exptime + 0.1)
+        self.get_device('pilatus').set_variable('nimages', 1)
+        self.get_device('pilatus').set_variable(
+            'imgpath',
+            self.config['path']['directories']['images_detector'][0] + '/' +
+            self.config['path']['prefixes'][self.expose_prefix])
 
     def on_motor_stop(self, motor, targetreached):
+        logger.debug('Mapping.on_motor_stop(motor.name={}, targetreached={})'.format(motor.name, targetreached))
         assert motor.name == self.moving_motor
         if not targetreached:
             try:
@@ -117,6 +128,7 @@ class Mapping(Command):
                 self.emit('fail', ce, traceback.format_exc())
                 self.failed = True
         if self.killed or self.failed:
+            logger.debug('Mapping killed or failed.')
             self.idle_return(None)
             return False
         # now move all motors in self.motors before this motor
@@ -125,53 +137,74 @@ class Mapping(Command):
         if idx:  # avoid infinite loop from index underflow
             self.moving_motor = self.motors[idx - 1]
             self.moving_target = self.starts[idx - 1]
+            self.current_activity = 'Moving motor {} to start position...'.format(self.moving_motor)
+            logger.debug('Moving previous motor in sequence ({}) to the starting position ({})'.format(
+                self.moving_motor, self.moving_target))
             self.get_motor(self.moving_motor).moveto(self.moving_target)
             return False
+        logger.debug('This was the first motor index. Start the exposure')
         # if we are here, idx was 0. This means that the very
         # first motor has been moved to its desired position: we can start
         # the exposure
         self.moving_motor = None
         self.moving_target = None
-        self.exposed_fsn = self.services['filesequence'].get_nextfreefsn(self.exposure_prefix)
-        self.exposed_filename = self.services['filesequence'].exposurefileformat(self.exposure_prefix,
+        self.exposed_fsn = self.services['filesequence'].get_nextfreefsn(self.expose_prefix)
+        self.exposed_filename = self.services['filesequence'].exposurefileformat(self.expose_prefix,
                                                                                  self.exposed_fsn) + '.cbf'
+        self.current_activity = 'Exposing for {:f} seconds to file {}'.format(self.exptime, self.exposed_filename)
         self.get_device('pilatus').expose(self.exposed_filename)
-        self.exposure_starttime = datetime.datetime.now()
+        self.exposure_starttime = None
 
     def on_variable_change(self, device, variablename, newvalue):
-        if device.name == self.get_device('detector').name and variablename == '_status' and newvalue == 'idle':
-            # exposure ended.
-            self.services['filesequence'].new_exposure(
-                self.exposed_fsn, self.exposed_filename, self.exposure_prefix,
-                self.exposure_starttime)
-            self.exposure_starttime = None
-            self.pointsdone += 1
-            self.emit('progress', 'Mapping: {:d}/{:d} done.'.format(self.pointsdone, self.numpoints),
-                      self.pointsdone / self.numpoints)
-            for i in range(len(self.motors)):
-                self.where_index[i] += 1
-                if self.where_index[i] < self.Ns[i]:
-                    self.moving_motor = self.motors[i]
-                    self.moving_target = self.starts[i] + (self.ends[i] - self.starts[i]
-                                                           ) / (self.Ns[i] - 1) * self.where_index[i]
-                    self.get_motor(self.moving_motor).moveto(self.moving_target)
-                    break  # do not advance other motors
-                else:
-                    # if the i-th motor should not be moved further (we are at the end of the mapping range), then two
-                    # cases can happen:
-                    # 1) this is the last motor. When this motor reaches the end of its range, it means that the mapping
-                    #     measurement is over.
-                    if i == len(self.motors) - 1:
-                        self.idle_return(None)
-                        return False
-                    # 2) otherwise the mapping must continue by stepping the next motor and resetting all the previous
-                    #     motors to their start positions.
+        if device.name == self.get_device('detector').name:
+            if (variablename == '_status') and (newvalue == 'exposing'):
+                logger.debug('Exposure acknowledgement received from detector.')
+                self.exposure_starttime = datetime.datetime.now()
+            elif (variablename == 'imgpath') and (self.current_activity == 'Initializing detector...'):
+                self.moving_motor = self.motors[-1]
+                self.moving_target = self.starts[-1]
+                logger.debug('Initial move of motor {} to target {}'.format(self.moving_motor, self.moving_target))
+                self.current_activity = "Moving motor {} to start position...".format(self.moving_motor)
+                self.get_motor(self.moving_motor).moveto(self.moving_target)
+                self.emit('message', 'Mapping started.')
+            elif (variablename == '_status') and (newvalue == 'idle') and self.current_activity.startswith('Exposing'):
+                # exposure ended.
+                assert self.exposure_starttime is not None
+                self.services['filesequence'].new_exposure(
+                    self.exposed_fsn, self.exposed_filename, self.expose_prefix,
+                    self.exposure_starttime)
+                self.exposure_starttime = None
+                self.pointsdone += 1
+                self.emit('progress', 'Mapping: {:d}/{:d} done.'.format(self.pointsdone, self.numpoints),
+                          self.pointsdone / self.numpoints)
+                for i in range(len(self.motors)):
+                    self.where_index[i] += 1
+                    if self.where_index[i] < self.Ns[i]:
+                        self.moving_motor = self.motors[i]
+                        self.moving_target = self.starts[i] + (self.ends[i] - self.starts[i]
+                                                               ) / (self.Ns[i] - 1) * self.where_index[i]
+                        self.current_activity = 'Moving motor {} to {}'.format(self.moving_motor, self.moving_target)
+                        logger.debug(
+                            'Moving motor {} to the next step ({})'.format(self.moving_motor, self.moving_target))
+                        self.get_motor(self.moving_motor).moveto(self.moving_target)
+                        break  # do not advance other motors
                     else:
-                        # we set the where_index[i] to 0, and go on incrementing the index of the next motor. Note that
-                        # whenever the next motor will move, it will ensure that this motor will move to its starting
-                        # point.
-                        self.where_index[i] = 0
-                        # do not break, go on with the next iteration of this for loop.
+                        # if the i-th motor should not be moved further (we are at the end of the mapping range), then two
+                        # cases can happen:
+                        # 1) this is the last motor. When this motor reaches the end of its range, it means that the mapping
+                        #     measurement is over.
+                        if i == len(self.motors) - 1:
+                            logger.debug('Finished mapping')
+                            self.idle_return(None)
+                            return False
+                        # 2) otherwise the mapping must continue by stepping the next motor and resetting all the previous
+                        #     motors to their start positions.
+                        else:
+                            # we set the where_index[i] to 0, and go on incrementing the index of the next motor. Note that
+                            # whenever the next motor will move, it will ensure that this motor will move to its starting
+                            # point.
+                            self.where_index[i] = 0
+                            # do not break, go on with the next iteration of this for loop.
         return False
 
     def on_pulse(self):
@@ -179,10 +212,13 @@ class Mapping(Command):
             self.emit('pulse', 'Mapping: {:d}/{:d} done. Moving motor {} to target'.format(
                 self.pointsdone, self.numpoints, self.moving_motor))
         elif self.exposure_starttime is not None:
-            elapsed_exptime = (datetime.datetime.now() - self.exposure_starttime).total_seconds()
-            self.emit('progress', 'Mapping: {:d}/{:d} done. Exposing for {:.2f} seconds'.format(
-                self.pointsdone, self.numpoints, self.exptime - elapsed_exptime),
-                      (self.pointsdone * self.exptime + elapsed_exptime) / (self.numpoints * self.exptime))
+            if self.exposure_starttime is None:
+                self.emit('pulse', 'Waiting for exposure to start...')
+            else:
+                elapsed_exptime = (datetime.datetime.now() - self.exposure_starttime).total_seconds()
+                self.emit('progress', 'Mapping: {:d}/{:d} done. Exposing for {:.2f} seconds'.format(
+                    self.pointsdone, self.numpoints, self.exptime - elapsed_exptime),
+                          (self.pointsdone * self.exptime + elapsed_exptime) / (self.numpoints * self.exptime))
         else:
             self.emit('progress', 'Mapping: {:d}/{:d} done.'.format(self.pointsdone, self.numpoints),
                       self.pointsdone / self.numpoints)
@@ -192,6 +228,7 @@ class Mapping(Command):
         self.killed = True
         if self.moving_motor:
             self.get_motor(self.moving_motor).stop()
+        else:
             self.get_device('detector').stop()
         try:
             raise CommandKilledError
