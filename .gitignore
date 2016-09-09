@@ -7,3 +7,4 @@ __pycache__
 radint.c
 *.so
 cct.lang
+/cct/gui/tools/optimizegeometry/estimateworksize.c
