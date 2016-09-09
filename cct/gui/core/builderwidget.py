@@ -1,6 +1,6 @@
 import logging
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk, GdkPixbuf
 
 from ...core.utils.callback import Callbacks, SignalFlags
 
@@ -57,3 +57,9 @@ class BuilderWidget(Callbacks):
 
     def on_close(self, widget, event=None):
         self.widget.destroy()
+
+    def get_screenshot(self) -> GdkPixbuf.Pixbuf:
+        assert isinstance(self.widget, Gtk.Widget)
+        gdkwin = self.widget.get_window()
+        assert isinstance(gdkwin, Gdk.Window)
+        return Gdk.pixbuf_get_from_window(gdkwin, 0, 0, gdkwin.get_width(), gdkwin.get_height())

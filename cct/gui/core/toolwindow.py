@@ -42,7 +42,7 @@ class ToolWindow(ToolFrame):
         self.infolabel.set_hexpand_set(True)
         self._infobar_connection = self.infobar.connect('response', self.on_infobar_response)
         self.infobar.foreach(lambda w_: w_.show_all())
-        self.widget.set_has_resize_grip(True)
+        # self.widget.set_has_resize_grip(True)
 
     def cleanup(self):
         if self._infobar_connection is not None:
@@ -196,4 +196,12 @@ class ToolWindow(ToolFrame):
         return False
 
     def on_interpreter_flag(self, interpreter: Interpreter, flag: str, state: bool):
+        return False
+
+    def on_copy_screenshot(self, button: Gtk.Button):
+        pb = self.get_screenshot()
+        cb = Gtk.Clipboard.get_default(Gdk.Display.get_default())
+        assert isinstance(cb, Gtk.Clipboard)
+        cb.set_image(pb)
+        self.info_message('A hardcopy of this window has been put on the clipboard.')
         return False
