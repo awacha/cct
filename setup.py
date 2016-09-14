@@ -35,10 +35,12 @@ extensions = [Extension("cct.gui.tools.optimizegeometry.estimateworksize",
 
 
 update_languagespec()
-setup(name='cct', version='2.0.4', author='Andras Wacha',
+setup(name='cct', author='Andras Wacha',
       author_email='awacha@gmail.com', url='http://github.com/awacha/cct',
       description='CREDO Control Tool',
       packages=find_packages(),
+      use_scm_version=True,
+      setup_requires=['setuptools_scm'],
       #      cmdclass = {'build_ext': build_ext},
       ext_modules=cythonize(extensions),
       install_requires=['numpy>=1.11.1', 'scipy>=0.18.0', 'matplotlib>=1.5.2', 'sastool>=0.7.3', 'pymodbustcp>=0.0.13',
