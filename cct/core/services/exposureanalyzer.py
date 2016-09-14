@@ -26,7 +26,7 @@ from ..utils.pathutils import find_in_subfolders
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DataReductionEnd(Exception):
@@ -377,9 +377,13 @@ class ExposureAnalyzer_Backend(object):
 
     def absolutescaling(self, im: Exposure, datared: Dict):
         if im.header.title == self.config['datareduction']['absintrefname']:
+            self._logger.debug('History: {}'.format('\n'.join([h for h in datared['history']])))
             dataset = np.loadtxt(self.config['datareduction']['absintrefdata'])
             self._logger.debug('Q-range of absint dataset: {:g} to {:g}, {:d} points.'.format(
                 dataset[:, 0].min(), dataset[:, 0].max(), len(dataset[:, 0])))
+            testradavg = im.radial_average()
+            self._logger.debug('Auto-Q-range of the measured dataset: {:g} to {:g}, {:d} points.'.format(
+                testradavg.q.min(), testradavg.q.max(), len(testradavg)))
             # noinspection PyPep8Naming,PyPep8Naming
             q, dq, I, dI, area = im.radial_average(qrange=dataset[:, 0], raw_result=True)
             dataset = dataset[area > 0, :]
@@ -449,6 +453,9 @@ class ExposureAnalyzer_Backend(object):
 
     def datareduction(self, intensity: np.ndarray, mask: np.ndarray, params: dict):
         im = Exposure(intensity, intensity ** 0.5, Header(params), mask)
+        im.mask_negative()
+        im.mask_nonfinite()
+        im.mask_nan()
         self._logger.debug('Commencing data reduction of FSN #{:d} (sample {}).'.format(im.header.fsn, im.header.title))
         datared = {'history': [], 'statistics': {'01_initial': im.get_statistics()}}
         try:
