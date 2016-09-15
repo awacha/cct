@@ -102,7 +102,7 @@
                 <property name="halign">start</property>
                 <property name="active">True</property>
                 <property name="draw_indicator">True</property>
-                <signal name="toggled" handler="on_settingschanged" swapped="no"/>
+                <signal name="toggled" handler="on_showmask_toggled" swapped="no"/>
               </object>
               <packing>
                 <property name="left_attach">2</property>
@@ -118,7 +118,7 @@
                 <property name="halign">start</property>
                 <property name="active">True</property>
                 <property name="draw_indicator">True</property>
-                <signal name="toggled" handler="on_settingschanged" swapped="no"/>
+                <signal name="toggled" handler="on_showcrosshair_toggled" swapped="no"/>
               </object>
               <packing>
                 <property name="left_attach">2</property>
@@ -134,7 +134,7 @@
                 <property name="halign">start</property>
                 <property name="active">True</property>
                 <property name="draw_indicator">True</property>
-                <signal name="toggled" handler="on_settingschanged" swapped="no"/>
+                <signal name="toggled" handler="on_showcolourscale_toggled" swapped="no"/>
               </object>
               <packing>
                 <property name="left_attach">2</property>

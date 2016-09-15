@@ -14,9 +14,11 @@ from matplotlib.figure import Figure
 
 from .builderwidget import BuilderWidget
 from .functions import savefiguretoclipboard
+from ...core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
+
 
 
 class PlotImageWidget(BuilderWidget):
@@ -27,6 +29,8 @@ class PlotImageWidget(BuilderWidget):
                  pixelsize: Optional[float] = None,
                  wavelength: Optional[float] = None):
         super().__init__(pkg_resources.resource_filename('cct', 'resource/glade/core_plotimage.glade'), 'plotimage')
+        self.inhibit_replot = Inhibitor(self.replot)
+        self.replot_needed = False
         self._matrix = image
         self._mask = mask
         self._beampos = beampos
@@ -35,13 +39,13 @@ class PlotImageWidget(BuilderWidget):
         self._wavelength = wavelength
 
         self.validate_parameters()
-        self._inhibit_replot = False
-        self.fig = Figure()
+        self.fig = Figure(tight_layout=True)
         self.axis = self.fig.add_subplot(1, 1, 1)
         self.axis.set_axis_bgcolor('black')
+        self.axis.set_anchor('C')
         self._image_handle = None
         self._mask_handle = None
-        self._crosshair_handles = None
+        self._crosshair_handles = []
         self.colorbaraxis = None
         self.canvas = FigureCanvasGTK3Agg(self.fig)
         self.canvas.set_size_request(530, 350)
@@ -70,6 +74,19 @@ class PlotImageWidget(BuilderWidget):
     def on_settingschanged(self, widget):
         self.replot()
 
+    def on_showmask_toggled(self, widget: Gtk.CheckButton):
+        self.replot_mask()
+        self.canvas.draw_idle()
+
+    def on_showcrosshair_toggled(self, widget: Gtk.CheckButton):
+        self.replot_crosshair()
+        self.canvas.draw_idle()
+
+    def on_showcolourscale_toggled(self, widget: Gtk.CheckButton):
+        logger.debug('showcolourscale toggled.')
+        self.replot_colorbar()
+        self.canvas.draw_idle()
+
     def set_image(self, image: np.ndarray):
         assert isinstance(image, np.ndarray)
         if ((self._matrix is image) or
@@ -78,9 +95,9 @@ class PlotImageWidget(BuilderWidget):
                      (self._matrix == image).all())):
             # do nothing if the matrix has not changed.
             return
+        logger.debug('Set_image')
         self._matrix = image
         self.replot_image()
-        self.fig.tight_layout()
         self.canvas.draw_idle()
 
     def get_image(self) -> np.ndarray:
@@ -90,10 +107,10 @@ class PlotImageWidget(BuilderWidget):
         if (mask is self._mask) or (isinstance(mask, type(self._mask)) and (mask == self._mask).all()):
             # do nothing if the mask has not changed
             return
+        logger.debug('Set_mask')
         self._mask = mask
         self.validate_parameters()
         self.replot_mask()
-        self.fig.tight_layout()
         self.canvas.draw_idle()
 
     def get_mask(self) -> Optional[np.ndarray]:
@@ -101,10 +118,10 @@ class PlotImageWidget(BuilderWidget):
 
     def set_beampos(self, beamx: float, beamy: float):
         if self._beampos != (beamx, beamy):
+            logger.debug('set_beampos')
             self._beampos = (beamx, beamy)
             self.validate_parameters()
             self.replot_crosshair()
-            self.fig.tight_layout()
             self.canvas.draw_idle()
 
     def get_beampos(self):
@@ -112,6 +129,7 @@ class PlotImageWidget(BuilderWidget):
 
     def set_pixelsize(self, pixelsize):
         if self._pixelsize != pixelsize:
+            logger.debug('set_pixelsize')
             self._pixelsize = pixelsize
             self.validate_parameters()
             self.replot()
@@ -122,11 +140,11 @@ class PlotImageWidget(BuilderWidget):
     def set_palette(self, palette: str):
         if self.builder.get_object('palette_combo').get_active_text() == palette:
             return
+        logger.debug('Set_palette')
         for i, cm in enumerate(self.builder.get_object('palette_combo').get_model()):
             if cm[0] == palette:
                 self.builder.get_object('palette_combo').set_active(i)
                 self.replot_image()
-                self.fig.tight_layout()
                 self.canvas.draw_idle()
                 return
         raise ValueError('Unknown palette', palette)
@@ -136,6 +154,7 @@ class PlotImageWidget(BuilderWidget):
 
     def set_distance(self, distance: float):
         if self._distance != distance:
+            logger.debug('set_distance')
             self._distance = distance
             self.validate_parameters()
             self.replot()
@@ -145,6 +164,7 @@ class PlotImageWidget(BuilderWidget):
 
     def set_wavelength(self, wavelength: float):
         if self._wavelength != wavelength:
+            logger.debug('set_wavelength')
             self._wavelength = wavelength
             self.validate_parameters()
             self.replot()
@@ -155,8 +175,7 @@ class PlotImageWidget(BuilderWidget):
     def validate_parameters(self):
         ac = self.builder.get_object('axes_combo')
         previously_selected = ac.get_active_text()
-        self._inhibit_replot = True
-        try:
+        with self.inhibit_replot:
             ac.remove_all()
             ac.append_text('abs. pixel')
             for attr, scale in [('_beampos', 'rel. pixel'),
@@ -179,14 +198,16 @@ class PlotImageWidget(BuilderWidget):
                 ac.set_active(lastidx)
             self.builder.get_object('showmask_checkbutton').set_sensitive(self._mask is not None)
             self.builder.get_object('showcrosshair_checkbutton').set_sensitive(self._beampos is not None)
-        finally:
-            self._inhibit_replot = False
 
     def replot_image(self):
+        if self.inhibit_replot.inhibited:
+            self.replot_needed = True
+            return
         try:
             self._image_handle.remove()
         except (AttributeError, ValueError):
             pass
+        self._image_handle = None
         scaling = self.builder.get_object('colourscale_combo').get_active_text()
         if self._matrix.max() <= 0:
             self.builder.get_object('colourscale_combo').set_active(0)
@@ -242,7 +263,7 @@ class PlotImageWidget(BuilderWidget):
         extent = tuple([float(e) for e in extent])
         self._image_handle = self.axis.imshow(matrix, cmap=self.builder.get_object('palette_combo').get_active_text(),
                                               norm=norm, interpolation='nearest', aspect='equal', origin='upper',
-                                              extent=extent)
+                                              extent=extent, zorder=1)
         if axesscale == 'abs. pixel':
             self.axis.xaxis.set_label_text('Absolute column coordinate (pixel)')
             self.axis.yaxis.set_label_text('Absolute row coordinate (pixel)')
@@ -260,12 +281,16 @@ class PlotImageWidget(BuilderWidget):
             self.axis.yaxis.set_label_text('$q_y$ (nm$^{-1}$)')
 
     def replot_mask(self):
+        if self.inhibit_replot.inhibited:
+            self.replot_needed = True
+            return
         if self._image_handle is None:
             return
         try:
             self._mask_handle.remove()
         except (AttributeError, ValueError):
             pass
+        self._mask_handle = None
         if not (self.builder.get_object('showmask_checkbutton').get_sensitive() and
                     self.builder.get_object('showmask_checkbutton').get_active()):
             return
@@ -275,19 +300,20 @@ class PlotImageWidget(BuilderWidget):
         mf[self._mask != 0] = np.nan  # now mf consists of 1.0 (masked) and NaN (valid) values.
         self._mask_handle = self.axis.imshow(mf, cmap=matplotlib.cm.gray_r, interpolation='nearest', aspect='equal',
                                              alpha=0.7,
-                                             origin='upper', extent=self._image_handle.get_extent())
+                                             origin='upper', extent=self._image_handle.get_extent(), zorder=2)
 
     def replot_crosshair(self):
+        if self.inhibit_replot.inhibited:
+            self.replot_needed = True
+            return
         if self._image_handle is None:
             return
-        try:
-            self._crosshair_handles[0].remove()
-        except (IndexError, TypeError, ValueError):
-            pass
-        try:
-            self._crosshair_handles[1].remove()
-        except (IndexError, TypeError, ValueError):
-            pass
+        for h in self._crosshair_handles:
+            try:
+                h.remove()
+            except (IndexError, TypeError, ValueError):
+                pass
+        self._crosshair_handles = []
         if not (self.builder.get_object('showcrosshair_checkbutton').get_sensitive() and
                     self.builder.get_object('showcrosshair_checkbutton').get_active()):
             return
@@ -299,31 +325,45 @@ class PlotImageWidget(BuilderWidget):
                                                      [self._beampos[1], self._beampos[1]],
                                                      [self._beampos[0], self._beampos[0]],
                                                      [extent[2], extent[3]],
-                                                     color='w', lw=1, scalex=False, scaley=False)
+                                                     color='w', lw=1, scalex=False, scaley=False, zorder=3)
         else:
             self._crosshair_handles = self.axis.plot([extent[0], extent[1]], [0, 0],
                                                      [0, 0], [extent[2], extent[3]], color='w', lw=1,
-                                                     scalex=False, scaley=False)
+                                                     scalex=False, scaley=False, zorder=3)
 
     def replot_colorbar(self):
+        if self.inhibit_replot.inhibited:
+            self.replot_needed = True
+            return
+        logger.debug('Replotting color bar')
         if self._image_handle is None:
+            logger.debug('Image handle is None, skipping replot of colorbar')
             return
         if self.builder.get_object('showcolourscale_checkbutton').get_active():
+            logger.debug('Replotting colorbar axis.')
             try:
                 if self.colorbaraxis is None:
-                    self.colorbaraxis = self.fig.colorbar(self._image_handle, ax=self.axis).ax
+                    logger.debug('Creating new colorbar axis')
+                    self.colorbaraxis = self.fig.colorbar(
+                        self._image_handle, ax=self.axis, use_gridspec=True)
                 else:
-                    self.colorbaraxis = self.fig.colorbar(self._image_handle, cax=self.colorbaraxis).ax
+                    logger.debug('Using previous colorbar axis')
+                    self.colorbaraxis = self.fig.colorbar(
+                        self._image_handle, cax=self.colorbaraxis.ax, use_gridspec=True).ax
             except ValueError as ve:
                 logger.error('Cannot draw colorbar:' + str(ve) + traceback.format_exc())
         else:
+            logger.debug('Removing colorbar axis.')
             try:
                 self.colorbaraxis.remove()
             except (AttributeError, ValueError, KeyError):
                 pass
+            finally:
+                self.colorbaraxis = None
+            self.axis.set_anchor("C")
 
     def replot(self, keepzoom=True):
-        if self._inhibit_replot or (self._matrix is None):
+        if self.inhibit_replot.inhibited or (self._matrix is None):
             return
         if not keepzoom:
             self.toolbar.update()
@@ -332,15 +372,13 @@ class PlotImageWidget(BuilderWidget):
             if self.colorbaraxis is not None:
                 self.colorbaraxis.remove()
                 self.colorbaraxis = None
-            self._crosshair_handles = None
+            self._crosshair_handles = []
             self._mask_handle = None
         self.replot_image()
         self.replot_mask()
         self.replot_crosshair()
         self.replot_colorbar()
-        self.fig.tight_layout()
         self.canvas.draw_idle()
-
 
 class PlotImageWindow(PlotImageWidget):
     instancelist = []

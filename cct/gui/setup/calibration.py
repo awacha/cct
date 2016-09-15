@@ -315,17 +315,18 @@ class Calibration(ToolWindow):
                 self._exposure.header.beamcentery), 'pixel')
 
     def on_loadexposure(self, exposureloader, im: Exposure):
-        self.plot2d.set_image(im.intensity)
-        self.plot2d.set_beampos(im.header.beamcenterx, im.header.beamcentery)
-        self.plot2d.set_wavelength(im.header.wavelength)
-        self.plot2d.set_distance(im.header.distance)
-        self.plot2d.set_mask(im.mask)
-        assert im.header.pixelsizex == im.header.pixelsizey
-        self.plot2d.set_pixelsize(im.header.pixelsizex)
+        self._exposure = im
+        with self.plot2d.inhibit_replot:
+            self.plot2d.set_beampos(im.header.beamcenterx, im.header.beamcentery)
+            self.plot2d.set_wavelength(im.header.wavelength)
+            self.plot2d.set_distance(im.header.distance)
+            assert im.header.pixelsizex == im.header.pixelsizey
+            self.plot2d.set_pixelsize(im.header.pixelsizex)
+            self.plot2d.set_mask(im.mask)
+            self.plot2d.set_image(im.intensity)
         self.builder.get_object('center_label').set_text('({}, {})'.format(
             im.header.beamcenterx,
             im.header.beamcentery))
-        self._exposure = im
         self.radial_average()
 
     def on_loadexposure_error(self, exposureloader, message):
