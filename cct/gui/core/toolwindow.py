@@ -54,6 +54,8 @@ class ToolWindow(ToolFrame):
         self.infolabel.set_label('')
         self.infoimage.set_from_icon_name('image-missing', Gtk.IconSize.DIALOG)
         infobar.hide()
+        assert isinstance(self.widget, Gtk.Window)
+        self.widget.resize(1, 1)  # shrink the window back.
         return False
 
     def error_message(self, message: str):
@@ -92,6 +94,10 @@ class ToolWindow(ToolFrame):
         elif reason is not None:
             self.inhibit_close(reason)
         return super().set_sensitive(state, reason, additional_widgets)
+
+    def on_mainwidget_unmap(self, widget: Gtk.Widget):
+        self.on_infobar_response(self.infobar, Gtk.ResponseType.CLOSE)
+        super().on_mainwidget_unmap(widget)
 
     def on_mainwidget_map(self, window):
         if super().on_mainwidget_map(window):
