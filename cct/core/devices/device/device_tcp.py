@@ -304,7 +304,7 @@ class DeviceBackend_TCP(DeviceBackend):
     back-end.
     """
 
-    reply_timeout = 1
+    reply_timeout = 5
 
     outqueue_query_limit = 10  # skip query all if the outqueue is larger than this limit
 

@@ -427,7 +427,8 @@ class DeviceBackend(object):
         failure or because of the remote end. In this case this function is
         called on a queue message from the backend.
         """
-        assert self.get_connected()
+        if not self.get_connected():
+            return
         self.logger.debug('Disconnecting from device' +
                           ['', ' because of a failure'][because_of_failure])
         self.breakdown_connection()
