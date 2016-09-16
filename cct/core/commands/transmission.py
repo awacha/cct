@@ -165,7 +165,8 @@ class Transmission(Command):
                 else:
                     self.on_variable_change(self.get_device('xray_source'), 'shutter', False)
             else:
-                assert variablename != '_status'
+                # another variable has been updated: this is not interesting for us
+                pass
 
     def on_exposure_finished(self):
         """Whenever the exposure finishes, collect all the images and submit them for analysis."""
