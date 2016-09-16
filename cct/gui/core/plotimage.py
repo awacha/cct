@@ -349,7 +349,7 @@ class PlotImageWidget(BuilderWidget):
                 else:
                     logger.debug('Using previous colorbar axis')
                     self.colorbaraxis = self.fig.colorbar(
-                        self._image_handle, cax=self.colorbaraxis.ax, use_gridspec=True).ax
+                        self._image_handle, cax=self.colorbaraxis.ax, use_gridspec=True)
             except ValueError as ve:
                 logger.error('Cannot draw colorbar:' + str(ve) + traceback.format_exc())
         else:
