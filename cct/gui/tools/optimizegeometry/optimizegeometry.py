@@ -60,9 +60,10 @@ class OptimizeGeometry(ToolWindow):
             self.html_being_built += "    <th>{}</th>\n".format(c.get_title())
         self.html_being_built += "  </tr>\n"
         treeview.get_selection().selected_foreach(self.row_to_html, treeview)
-        self.html_being_built += "</table>"
+        self.html_being_built += "</table>\n"
         clipboard = Gtk.Clipboard.get_default(Gdk.Display.get_default())
         assert isinstance(clipboard, Gtk.Clipboard)
+        self.html_being_built = self.html_being_built.replace('μ', '&mu;')
         clipboard.set_text(self.html_being_built, len(self.html_being_built))
         self.html_being_built = ""
 
