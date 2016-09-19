@@ -355,7 +355,7 @@ class PlotImageWidget(BuilderWidget):
         else:
             logger.debug('Removing colorbar axis.')
             try:
-                self.colorbaraxis.remove()
+                self.colorbaraxis.ax.remove()
             except (AttributeError, ValueError, KeyError):
                 pass
             finally:
@@ -370,7 +370,7 @@ class PlotImageWidget(BuilderWidget):
             self.axis.clear()
             self._image_handle = None
             if self.colorbaraxis is not None:
-                self.colorbaraxis.remove()
+                self.colorbaraxis.ax.remove()
                 self.colorbaraxis = None
             self._crosshair_handles = []
             self._mask_handle = None
