@@ -2,11 +2,11 @@ import logging
 import time
 from typing import Optional
 
-from .device import DeviceBackend_ModbusTCP, UnknownVariable, UnknownCommand, Device, ReadOnlyVariable, InvalidMessage, \
-    DeviceError
+from .device import Device, DeviceBackend_ModbusTCP, DeviceError, InvalidMessage, ReadOnlyVariable, UnknownCommand, \
+    UnknownVariable
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 # noinspection PyPep8Naming

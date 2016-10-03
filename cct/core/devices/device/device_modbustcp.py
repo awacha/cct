@@ -1,14 +1,9 @@
-import logging
 import time
 
 from pyModbusTCP.client import ModbusClient
 
 from .backend import DeviceBackend
-from .exceptions import DeviceError, CommunicationError
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
+from .exceptions import CommunicationError, DeviceError
 
 # noinspection PyPep8Naming,PyAbstractClass
 class DeviceBackend_ModbusTCP(DeviceBackend):

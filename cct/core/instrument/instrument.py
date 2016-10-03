@@ -7,15 +7,15 @@ from typing import List
 
 from gi.repository import GLib
 
-from ..devices.device import DeviceError, Device, DeviceBackend_ModbusTCP, DeviceBackend_TCP
+from ..devices.device import Device, DeviceBackend_ModbusTCP, DeviceBackend_TCP, DeviceError
 from ..devices.motor import Motor
-from ..services import Interpreter, FileSequence, ExposureAnalyzer, SampleStore, Accounting, WebStateFileWriter, \
-    Service, TelemetryManager
+from ..services import Accounting, ExposureAnalyzer, FileSequence, Interpreter, SampleStore, Service, TelemetryManager, \
+    WebStateFileWriter
 from ..utils.callback import Callbacks, SignalFlags
 from ..utils.telemetry import TelemetryInfo
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DummyTm(object):
