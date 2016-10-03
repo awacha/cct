@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 from matplotlib.path import Path
-from matplotlib.widgets import Cursor, EllipseSelector, RectangleSelector, LassoSelector
+from matplotlib.widgets import Cursor, EllipseSelector, LassoSelector, RectangleSelector
 from sastool.io.credo_cct import Exposure
 from scipy.io import loadmat, savemat
 
@@ -91,9 +91,9 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
             self._selector = EllipseSelector(self.plot2d.axis,
                                              self.on_ellipse_selected,
                                              rectprops={'facecolor': 'white', 'edgecolor': 'none', 'alpha': 0.7,
-                                                        'fill': True},
+                                                        'fill': True, 'zorder': 10},
                                              button=[1, ],
-                                             interactive=False, )
+                                             interactive=False, lineprops={'zorder': 10})
             self._selector.state.add('square')
             self._selector.state.add('center')
         else:
@@ -128,7 +128,7 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
 
     def on_selectrectangle_toggled(self, button):
         if button.get_active():
-            self.set_sensitive(False, 'Ellipse selection not ready',
+            self.set_sensitive(False, 'Rectangle selection not ready',
                                ['new_button', 'save_button', 'saveas_button', 'open_button', 'undo_button',
                                 'selectcircle_button', 'selectpolygon_button', 'pixelhunting_button',
                                 'loadexposure_expander', 'close_button', self.plot2d.toolbar,
@@ -139,9 +139,9 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
             self._selector = RectangleSelector(self.plot2d.axis,
                                                self.on_rectangle_selected,
                                                rectprops={'facecolor': 'white', 'edgecolor': 'none', 'alpha': 0.7,
-                                                          'fill': True},
+                                                          'fill': True, 'zorder': 10},
                                                button=[1, ],
-                                               interactive=False, )
+                                               interactive=False, lineprops={'zorder': 10})
         else:
             self._selector.set_active(False)
             self._selector.set_visible(False)
@@ -171,7 +171,7 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
 
     def on_selectpolygon_toggled(self, button):
         if button.get_active():
-            self.set_sensitive(False, 'Ellipse selection not ready',
+            self.set_sensitive(False, 'Polygon selection not ready',
                                ['new_button', 'save_button', 'saveas_button', 'open_button', 'undo_button',
                                 'selectrectangle_button', 'selectcircle_button', 'pixelhunting_button',
                                 'loadexposure_expander', 'close_button', self.plot2d.toolbar,
@@ -181,7 +181,7 @@ class MaskEditor(ToolWindow, DoubleFileChooserDialog):
                 self.plot2d.toolbar.zoom()
             self._selector = LassoSelector(self.plot2d.axis,
                                            self.on_polygon_selected,
-                                           lineprops={'color': 'white'},
+                                           lineprops={'color': 'white', 'zorder': 10},
                                            button=[1, ],
                                            )
         else:
