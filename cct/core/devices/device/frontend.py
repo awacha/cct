@@ -3,6 +3,7 @@ import multiprocessing
 import os
 import queue
 import time
+import traceback
 
 from gi.repository import GLib
 
@@ -318,46 +319,50 @@ class Device(Callbacks):
         results from the back-end and emits the corresponding signals.
 
         Each run of this function handles all the pending messages in the queue"""
-        while True:
-            try:
-                message = self._queue_to_frontend.get_nowait()
-                assert isinstance(message, Message)
-                if self._queue_to_frontend.qsize() > self.frontendqueue_warn_length:
-                    logger.warning(
-                        'Too many messages (exactly {}) are waiting in the front-end queue for device {}.'.format(
-                            self._queue_to_frontend.qsize(), self.name))
-            except queue.Empty:
-                break
-            if message['type'] == 'exited':
-                if not message['normaltermination']:
-                    # backend process died abnormally
-                    logger.error(
-                        'Communication error in device ' + self.name + ', disconnecting.')
-                self._idle_handler = None
-                logger.debug('Joining background process for ' + self.name)
-                self._background_process.join()
-                self._background_process = None
-                logger.debug('Emitting disconnect signal')
-                self.emit('disconnect', not message['normaltermination'])
-                return False  # prevent re-scheduling this idle handler
-            elif message['type'] == 'ready':
-                self._ready = True
-                self.emit('ready')
-            elif message['type'] == 'telemetry':
-                self.emit('telemetry', message['data'])
-            elif message['type'] == 'log':
-                logger.handle(message['logrecord'])
-            elif message['type'] == 'error':
-                self.emit('error', message['variablename'],
-                          message['exception'], message['traceback'])
-            elif message['type'] == 'update':
+        try:
+            while True:
                 try:
-                    self.emit('variable-change', message['name'], message['value'])
-                finally:
-                    self._properties[message['name']] = message['value']
-                    self._timestamps[message['name']] = message['timestamp']
-            else:
-                raise ValueError(message['type'])
+                    message = self._queue_to_frontend.get_nowait()
+                    assert isinstance(message, Message)
+                    if self._queue_to_frontend.qsize() > self.frontendqueue_warn_length:
+                        logger.warning(
+                            'Too many messages (exactly {}) are waiting in the front-end queue for device {}.'.format(
+                                self._queue_to_frontend.qsize(), self.name))
+                except queue.Empty:
+                    break
+                if message['type'] == 'exited':
+                    if not message['normaltermination']:
+                        # backend process died abnormally
+                        logger.error(
+                            'Communication error in device ' + self.name + ', disconnecting.')
+                    self._idle_handler = None
+                    logger.debug('Joining background process for ' + self.name)
+                    self._background_process.join()
+                    self._background_process = None
+                    logger.debug('Emitting disconnect signal')
+                    self.emit('disconnect', not message['normaltermination'])
+                    return False  # prevent re-scheduling this idle handler
+                elif message['type'] == 'ready':
+                    self._ready = True
+                    self.emit('ready')
+                elif message['type'] == 'telemetry':
+                    self.emit('telemetry', message['data'])
+                elif message['type'] == 'log':
+                    logger.handle(message['logrecord'])
+                elif message['type'] == 'error':
+                    self.emit('error', message['variablename'],
+                              message['exception'], message['traceback'])
+                elif message['type'] == 'update':
+                    try:
+                        self.emit('variable-change', message['name'], message['value'])
+                    finally:
+                        self._properties[message['name']] = message['value']
+                        self._timestamps[message['name']] = message['timestamp']
+                else:
+                    raise ValueError(message['type'])
+        except Exception as exc:
+            logger.error('Error in the idle function for device {}: {} {}'.format(
+                self.name, exc, traceback.format_exc()))
         return True  # this is an idle function, we want to be called again.
 
     def do_disconnect(self, because_of_failure: bool):

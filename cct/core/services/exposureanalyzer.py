@@ -547,50 +547,54 @@ class ExposureAnalyzer(Service):
 
     def _idle_function(self):
         try:
-            njobs_before = sum(self._working.values())
-            message = self._queue_to_frontend.get_nowait()
-            assert isinstance(message, Message)
-            if message['type'] in ['done']:
-                assert message['prefix'] in self._working
-                self._working[message['prefix']] -= 1
-                if self._working[message['prefix']] < 0:
-                    raise ServiceError(
-                        'Working[{}]=={:d} less than zero!'.format(
-                            message['prefix'], self._working[message['prefix']]))
-            njobs = sum(self._working.values())
-            if njobs:
-                logger.debug('Exposureanalyzer working on {:d} jobs'.format(njobs))
-            elif njobs_before:
-                self.emit('idle-changed', True)
-        except queue.Empty:
-            return True
-        if message['type'] == 'error':
-            logger.error('Error in exposureanalyzer while treating exposure (prefix {}, fsn {:d}): {} {}'.format(
-                message['prefix'], message['fsn'], message['exception'], message['traceback']))
-            self.emit(
-                'error', message['prefix'], message['fsn'], message['exception'], message['traceback'])
-        elif message['type'] == 'scanpoint':
-            logger.debug('New scan point at motor position {:f}'.format(message['position']))
-            self.emit('scanpoint', message['prefix'], message['fsn'], message['position'], message['counters'])
-        elif message['type'] == 'datareduction-done':
-            logger.debug('Emitting datareduction-done message')
-            self.emit('datareduction-done', message['prefix'], message['fsn'], message['image'])
-        elif message['type'] == 'transmdata':
-            logger.debug(
-                'transmission data for sample {} ({}): {}'.format(message['sample'], message['what'], message['data']))
-            self.emit('transmdata', message['prefix'], message['fsn'], message['sample'], message['what'],
-                      message['data'])
-        elif message['type'] == 'image':
-            logger.debug('New image received from exposureanalyzer backend: fsn: {}, prefix: {}'.format(message['fsn'],
-                                                                                                        message[
-                                                                                                            'prefix']))
-            self.emit('image', message['prefix'], message['fsn'], message['data'], message['param'], message['mask'])
-        elif message['type'] == 'telemetry':
-            self.emit('telemetry', message['telemetry'])
-        elif message['type'] == 'log':
-            logger.handle(message['logrecord'])
-        elif message['type'] == 'exited':
-            self.emit('shutdown')
+            try:
+                njobs_before = sum(self._working.values())
+                message = self._queue_to_frontend.get_nowait()
+                assert isinstance(message, Message)
+                if message['type'] in ['done']:
+                    assert message['prefix'] in self._working
+                    self._working[message['prefix']] -= 1
+                    if self._working[message['prefix']] < 0:
+                        raise ServiceError(
+                            'Working[{}]=={:d} less than zero!'.format(
+                                message['prefix'], self._working[message['prefix']]))
+                njobs = sum(self._working.values())
+                if njobs:
+                    logger.debug('Exposureanalyzer working on {:d} jobs'.format(njobs))
+                elif njobs_before:
+                    self.emit('idle-changed', True)
+            except queue.Empty:
+                return True
+            if message['type'] == 'error':
+                logger.error('Error in exposureanalyzer while treating exposure (prefix {}, fsn {:d}): {} {}'.format(
+                    message['prefix'], message['fsn'], message['exception'], message['traceback']))
+                self.emit(
+                    'error', message['prefix'], message['fsn'], message['exception'], message['traceback'])
+            elif message['type'] == 'scanpoint':
+                logger.debug('New scan point at motor position {:f}'.format(message['position']))
+                self.emit('scanpoint', message['prefix'], message['fsn'], message['position'], message['counters'])
+            elif message['type'] == 'datareduction-done':
+                logger.debug('Emitting datareduction-done message')
+                self.emit('datareduction-done', message['prefix'], message['fsn'], message['image'])
+            elif message['type'] == 'transmdata':
+                logger.debug(
+                    'transmission data for sample {} ({}): {}'.format(message['sample'], message['what'], message['data']))
+                self.emit('transmdata', message['prefix'], message['fsn'], message['sample'], message['what'],
+                          message['data'])
+            elif message['type'] == 'image':
+                logger.debug('New image received from exposureanalyzer backend: fsn: {}, prefix: {}'.format(message['fsn'],
+                                                                                                            message[
+                                                                                                                'prefix']))
+                self.emit('image', message['prefix'], message['fsn'], message['data'], message['param'], message['mask'])
+            elif message['type'] == 'telemetry':
+                self.emit('telemetry', message['telemetry'])
+            elif message['type'] == 'log':
+                logger.handle(message['logrecord'])
+            elif message['type'] == 'exited':
+                self.emit('shutdown')
+        except Exception as exc:
+            logger.error('Error in the idle function for exposureanalyzer: {} {}'.format(
+                exc, traceback.format_exc()))
         return True
 
     def submit(self, fsn, filename, prefix, **kwargs):
