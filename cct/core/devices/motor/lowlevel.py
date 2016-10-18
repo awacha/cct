@@ -295,7 +295,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
         else:
             raise ValueError(cmdnum)
 
-    def on_motor_start(self, motoridx: int, startposition: float):
+    def on_motor_start(self, motoridx: int, startposition: float, targetposition: float, targetpositionraw: float):
         """Executed when a motor starts moving."""
         self.update_variable('_status', 'Moving #' + str(motoridx))
         self.update_variable('_status$' + str(motoridx), 'Moving')
@@ -303,6 +303,8 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                         'starttime': time.monotonic(),
                         'acktime': None,
                         'startposition': startposition,
+                        'targetposition': targetposition,
+                        'targetpositionraw': targetpositionraw,
                         }
         # From now on, until the motor stops, only urgent variables will be
         # queried. The urgent variables are the volatile variables of this
@@ -356,6 +358,8 @@ class TMCMCard_Backend(DeviceBackend_TCP):
         if self.timestamps['targetpositionreached$' + motoridx] > self._moving['acktime']:
             if self.properties['targetpositionreached$' + motoridx]:
                 self.logger.debug('Target reached')
+                self.update_variable('actualposition$' + motoridx, self._moving['targetposition'])
+                self.update_variable('actualpositionraw$' + motoridx, self._moving['targetpositionraw'])
                 return False
 
         # check if the actual speed has been updated after the start of the
@@ -533,7 +537,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                                           '_status$' + str(motor))
                 # If we survived, then we need and can move. Issue the command.
                 posraw = self._convert_pos_to_raw(pos, motor)
-                self.on_motor_start(motor, self.properties['actualpositionraw$' + str(motor)])
+                self.on_motor_start(motor, self.properties['actualpositionraw$' + str(motor)], pos, posraw)
                 self.send_tmcl_command(4, int(commandname == 'moverel'), motor, posraw)
                 self.logger.debug('Issued move command.')
             except Exception as exc:
