@@ -324,7 +324,7 @@ class Device(Callbacks):
                 try:
                     message = self._queue_to_frontend.get_nowait()
                     assert isinstance(message, Message)
-                    if self._queue_to_frontend.qsize() > self.frontendqueue_warn_length:
+                    if (self._queue_to_frontend.qsize() > self.frontendqueue_warn_length) and self.ready:
                         logger.warning(
                             'Too many messages (exactly {}) are waiting in the front-end queue for device {}.'.format(
                                 self._queue_to_frontend.qsize(), self.name))

@@ -18,7 +18,7 @@ class StartStop(Command):
     """
     name = 'circulator'
 
-    timeout = 5
+    timeout = 15
 
     required_devices = ['temperature']
 
@@ -111,7 +111,7 @@ class SetTemperature(Command):
 
     name = 'settemp'
 
-    timeout = 5
+    timeout = 15
 
     required_devices = ['temperature']
 

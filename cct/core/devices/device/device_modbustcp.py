@@ -16,6 +16,9 @@ class ModbusClient(pyModbusTCP.client.ModbusClient):
         else:
             self.logger.error(msg)
 
+    def _pretty_dump(self, label, data):
+        return None
+
     def reset_errors(self):
         self.__last_error = pyModbusTCP.constants.MB_NO_ERR
         self.__last_except = pyModbusTCP.constants.EXP_NONE

@@ -1,10 +1,10 @@
 import datetime
 import logging
 import multiprocessing
-from typing import Tuple, List
+from typing import List, Tuple
 
-from .device import DeviceBackend_TCP, ReadOnlyVariable, InvalidValue, UnknownCommand, UnknownVariable, \
-    CommunicationError, Device, InvalidMessage
+from .device import CommunicationError, Device, DeviceBackend_TCP, InvalidMessage, InvalidValue, ReadOnlyVariable, \
+    UnknownCommand, UnknownVariable
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -308,7 +308,7 @@ class HaakePhoenix(Device):
     constant_variables = ['firmwareversion']
 
     urgent_variables = ['faultstatus', 'time', 'temperature_internal',
-                        'temperature_external', 'pump_power']
+                        'temperature_external', 'pump_power', 'setpoint', 'cooling_on', 'diffcontrol_on']
 
     urgency_modulo = 10
 
