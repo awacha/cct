@@ -2,7 +2,7 @@ import logging
 
 from gi.repository import Gtk
 
-from ..core.functions import update_comboboxtext_choices, notify
+from ..core.functions import notify, update_comboboxtext_choices
 from ..core.scangraph import ScanGraph
 from ..core.toolwindow import ToolWindow, error_message
 from ...core.commands.motor import Moveto
@@ -30,6 +30,10 @@ class ScanMeasurement(ToolWindow):
     def init_gui(self, *args, **kwargs):
         update_comboboxtext_choices(self.builder.get_object('motorselector'),
                                     sorted(self.instrument.motors))
+        self.on_symmetric_scan_toggled(self.builder.get_object('symmetric_checkbutton'))
+
+    def on_mainwidget_map(self, window):
+        super().on_mainwidget_map(window)
         self.on_symmetric_scan_toggled(self.builder.get_object('symmetric_checkbutton'))
 
     # noinspection PyMethodMayBeStatic

@@ -1,5 +1,5 @@
 import logging
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 import numpy as np
 from gi.repository import Gtk
@@ -87,7 +87,7 @@ class ScanGraph(ToolWindow):
         # the model columns are:
         #    signal name, visibility, scaling adjustment, scale value.
         for c in self.signals:
-            countermodel.append((c, True, Gtk.Adjustment(
+            countermodel.append((c, c != 'FSN', Gtk.Adjustment(
                 value=1.0, lower=0.0, upper=1.0e6, step_increment=1.0,
                 page_increment=10.0, page_size=0.0), 1.0))
         # create the needed treeview columns
@@ -111,7 +111,7 @@ class ScanGraph(ToolWindow):
         counterview.append_column(tc)
         # Select the second counter: first is always the FSN of the image.
         it = countermodel.get_iter_first()
-        countermodel.iter_next(it)
+        it = countermodel.iter_next(it)
         counterview.get_selection().select_iter(it)
         del it
         # set visibility of the buttonbox and the cursor movement box.

@@ -2,11 +2,11 @@ import datetime
 import logging
 import traceback
 
-from .command import Command, CommandError, CommandArgumentError, CommandKilledError
-from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_PINHOLE, PRIV_MOVEMOTORS
+from .command import Command, CommandArgumentError, CommandError, CommandKilledError
+from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_MOVEMOTORS, PRIV_PINHOLE
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class GeneralScan(Command):
@@ -84,8 +84,10 @@ class GeneralScan(Command):
         return True
 
     def on_variable_change(self, device, variablename, newvalue):
-        if self.killed:
-            self.die_on_kill()
+        if self.killed is not None:
+            if self.killed:
+                logger.debug('Calling die_on_kill() from on_variable_change()')
+                self.die_on_kill()
             return False
         if device.name == 'pilatus' and variablename == '_status' and newvalue == 'idle' and self._work_status=='Exposing':
             # exposure ready. Submit it to exposureanalyzer.
@@ -126,8 +128,10 @@ class GeneralScan(Command):
             # unexpected stop message, disregard it.
             return False
         assert (motor.name == self.motorname)
-        if self.killed:
-            self.die_on_kill()
+        if self.killed is not None:
+            if self.killed:
+                logger.debug('Calling die_on_kill() from on_motor_stop()')
+                self.die_on_kill()
             return False
         if not targetreached:
             try:
@@ -181,10 +185,13 @@ class GeneralScan(Command):
 
     def die_on_kill(self):
         try:
+            self.killed = False
             raise CommandKilledError(self.name)
         except CommandKilledError as cke:
             self.emit('fail', cke, traceback.format_exc())
+        logger.debug('Calling idle_return(None) from die_on_kill')
         self.idle_return(None)
+        logger.debug('Idle_return returned')
 
 
 class Scan(GeneralScan):
