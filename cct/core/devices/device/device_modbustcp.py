@@ -6,7 +6,8 @@ from .backend import DeviceBackend
 from .exceptions import CommunicationError, DeviceError
 
 class ModbusClient(pyModbusTCP.client.ModbusClient):
-    def __init__(self, logger, host=None, port=None, unit_id = None, timeout=None, debug=None, auto_open=None, auto_close=None):
+    def __init__(self, logger, host=None, port=None, unit_id=None,
+                 timeout=None, debug=None, auto_open=None, auto_close=None):
         super().__init__(host, port, unit_id, timeout, debug, auto_open, auto_close)
         self.logger = logger
 
@@ -82,47 +83,68 @@ class DeviceBackend_ModbusTCP(DeviceBackend):
 
     def read_integer(self, regno):
         result = None
+        reconnect_failed = False
         for i in range(self.modbus_send_retries):
             if i>0:
-                self.logger.warning('Retrying read_integer({:d}) operation in ModbusTCP device {}'.format(regno, self.name))
+                self.logger.warning(
+                    'Retrying read_integer({:d}) operation in ModbusTCP device {}'.format(
+                        regno, self.name))
             self.lasttimes['send'] = time.monotonic()
             self.counters['outmessages'] += 1
             result = self._modbusclient.read_holding_registers(regno, 1)
             if result is not None:
                 break
+            elif (not self._modbusclient.is_open()) and (not self._modbusclient.open()):
+                reconnect_failed = True
         if result is None:
-            raise CommunicationError('Error reading integer from register #{:d}. Error no: {:d}'.format(regno, self._modbusclient.last_error()))
+            raise CommunicationError(
+                'Error reading integer from register #{:d}. Error no: {:d}. Reconnect failed: {}'.format(
+                    regno, self._modbusclient.last_error(), reconnect_failed))
         self.lasttimes['recv'] = time.monotonic()
         self.counters['inmessages'] += 1
         return result[0]
 
     def write_coil(self, coilno, val):
         result = None
+        reconnect_failed = False
         for i in range(self.modbus_send_retries):
             if i>0:
-                self.logger.warning('Retrying write_coil({:d}, {}) operation in ModbusTCP device {}'.format(coilno, val, self.name))
+                self.logger.warning(
+                    'Retrying write_coil({:d}, {}) operation in ModbusTCP device {}'.format(
+                        coilno, val, self.name))
             self.lasttimes['send'] = time.monotonic()
             self.counters['outmessages'] += 1
             result = self._modbusclient.write_single_coil(coilno, val)
             if result is not None:
                 break
+            elif (not self._modbusclient.is_open()) and (not self._modbusclient.open()):
+                reconnect_failed = True
         if result is None:
-            raise CommunicationError('Error writing {} to coil #{:d}. Error no: {:d}'.format(val, coilno, self._modbusclient.last_error()))
+            raise CommunicationError(
+                'Error writing {} to coil #{:d}. Error no: {:d}. Reconnect failed: {}'.format(
+                    val, coilno, self._modbusclient.last_error(), reconnect_failed))
         self.lasttimes['recv'] = time.monotonic()
         self.counters['inmessages'] += 1
 
     def read_coils(self, coilstart, coilnum):
         result = None
+        reconnect_failed = False
         for i in range(self.modbus_send_retries):
             if i>0:
-                self.logger.warning('Retrying read_coils({:d}, {:d}) operation in ModbusTCP device {}'.format(coilstart, coilnum, self.name))
+                self.logger.warning(
+                    'Retrying read_coils({:d}, {:d}) operation in ModbusTCP device {}'.format(
+                        coilstart, coilnum, self.name))
             self.lasttimes['send'] = time.monotonic()
             self.counters['outmessages'] += 1
             result = self._modbusclient.read_coils(coilstart, coilnum)
             if result is not None:
                 break
+            elif (not self._modbusclient.is_open()) and (not self._modbusclient.open()):
+                reconnect_failed = True
         if result is None:
-            raise CommunicationError('Error reading coils #{:d} - #{:d}. Error no: {:d}'.format(coilstart, coilstart + coilnum, self._modbusclient.last_error()))
+            raise CommunicationError(
+                'Error reading coils #{:d} - #{:d}. Error no: {:d}. Reconnect failed: {}'.format(
+                    coilstart, coilstart + coilnum, self._modbusclient.last_error(), reconnect_failed))
         self.lasttimes['recv'] = time.monotonic()
         self.counters['inmessages'] += 1
         return result
