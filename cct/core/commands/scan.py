@@ -89,7 +89,7 @@ class GeneralScan(Command):
                 logger.debug('Calling die_on_kill() from on_variable_change()')
                 self.die_on_kill()
             return False
-        if device.name == 'pilatus' and variablename == '_status' and newvalue == 'idle' and self._work_status=='Exposing':
+        elif device.name == 'pilatus' and variablename == '_status' and newvalue == 'idle' and self._work_status == 'Exposing':
             # exposure ready. Submit it to exposureanalyzer.
             self.motorpos = self.get_motor(self.motorname).where()
             self.services['filesequence'].new_exposure(
@@ -108,7 +108,8 @@ class GeneralScan(Command):
                 # We will test that case in self.on_scanpoint()
                 self._work_status='Finalizing'
                 self.emit('message', 'Finalizing scan #{:d}.'.format(self.scanfsn))
-        if device.name == 'pilatus' and variablename == 'imgpath' and self._work_status == 'Initializing detector':
+        elif (device.name == 'pilatus') and (variablename == 'imgpath') and (
+            self._work_status == 'Initializing detector'):
             self.emit('message', 'Moving motor {} to start position ({:.3f})'.format(self.motorname, self.start))
             self.get_motor(self.motorname).moveto(self.start)
             self._work_status = 'Moving'
@@ -151,7 +152,7 @@ class GeneralScan(Command):
 
     def execute(self):
         self.idx = 0
-        self.killed = False
+        self.killed = None
         try:
             cmdline = self.namespace['commandline']
         except KeyError:
