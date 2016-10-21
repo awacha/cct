@@ -4,9 +4,9 @@ import queue
 import time
 import traceback
 from logging.handlers import QueueHandler
-from typing import Optional, List, Dict, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from .exceptions import WatchdogTimeout, CommunicationError, DeviceError, InvalidMessage
+from .exceptions import CommunicationError, DeviceError, InvalidMessage, WatchdogTimeout
 from .message import Message
 from ...utils.telemetry import TelemetryInfo
 
@@ -170,6 +170,17 @@ class DeviceBackend(object):
             operation is initiated, and released (typically by the backend) when the operation finishes.
         """
         self.name = name  # name of the device
+        self.startup_number = startup_number
+        self.logger = logging.getLogger(
+            __name__ + '::' + self.name + '__backgroundprocess')
+        self.logger.propagate = False
+        if not self.logger.hasHandlers():
+            self.logger.addHandler(QueueLogHandler(outqueue))
+            self.logger.addHandler(logging.StreamHandler())
+        self.logger.setLevel(loglevel)
+        self.logger.debug(
+            'Background thread started for {}, this is startup #{:d}. Log level: {:d} (effective: {:d})'.format(
+                self.name, self.startup_number, self.logger.level, self.logger.getEffectiveLevel()))
         self.deviceconnectionparameters = deviceconnectionparameters
         self.config = config  # a copy of the configuration dictionary
         self.configdir = configdir
@@ -205,22 +216,11 @@ class DeviceBackend(object):
                          'outqueued': 0,
                          'inqueued': 0,
                          }
-        self.startup_number = startup_number
-        self.logger = logging.getLogger(
-            __name__ + '::' + self.name + '__backgroundprocess')
-        self.logger.propagate = False
         self.busysemaphore = busysemaphore
         self.max_busy_level = max_busy_level
-        if not self.logger.hasHandlers():
-            self.logger.addHandler(QueueLogHandler(self.outqueue))
-            self.logger.addHandler(logging.StreamHandler())
-        self.logger.setLevel(loglevel)
-        # empty the properties dictionary
-        self.logger.debug(
-            'Background thread started for {}, this is startup #{:d}. Log level: {:d} (effective: {:d})'.format(
-                self.name, self.startup_number, self.logger.level, self.logger.getEffectiveLevel()))
         self.logfile = logfile
         self.log_formatstr = log_formatstr
+        self.logger.debug('Initialized background thread for {} successfully.'.format(self.name))
 
     def is_busy(self) -> int:
         """Returns how many times the busy semaphore has been acquired. This
@@ -268,6 +268,7 @@ class DeviceBackend(object):
         worker method will then call `self.process_incoming_message` every time a
         new message comes. The latter is responsible to call `self.update_variable`.
         """
+        self.logger.debug('Starting worker method for device {}'.format(self.name))
         try:
             self.connect_device()
             assert (self.get_connected())
@@ -276,6 +277,7 @@ class DeviceBackend(object):
             self.send_to_frontend('error', variablename=None, exception=exc, traceback=traceback.format_exc())
             self.send_to_frontend('exited', normaltermination=False)
             return
+        self.logger.debug('Connected to device successfully.')
         self.update_variable('_status', 'Initializing')
         self.update_variable('_auxstatus', None)
         exit_status = False  # abnormal termination
@@ -342,11 +344,15 @@ class DeviceBackend(object):
             finally:
                 if message is not None:
                     del message
-        self.disconnect_device(because_of_failure=not exit_status)
-        self.finalize_after_disconnect()
-        self.logger.debug('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
-            self.name, self.counters['outmessages'], self.counters['inmessages']))
-        self.send_to_frontend('exited', normaltermination=exit_status)
+        try:
+            self.disconnect_device(because_of_failure=not exit_status)
+            self.finalize_after_disconnect()
+        finally:
+            self.logger.debug('Background process ending for {}. Messages sent: {:d}. Messages received: {:d}.'.format(
+                self.name, self.counters['outmessages'], self.counters['inmessages']))
+            for h in self.logger.handlers[:]:
+                self.logger.removeHandler(h)
+            self.send_to_frontend('exited', normaltermination=exit_status)
         return exit_status
 
     def dispatch_inqueue_message(self, message):

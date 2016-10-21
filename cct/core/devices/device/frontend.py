@@ -335,12 +335,17 @@ class Device(Callbacks):
                         # backend process died abnormally
                         logger.error(
                             'Communication error in device ' + self.name + ', disconnecting.')
-                    self._idle_handler = None
                     logger.debug('Joining background process for ' + self.name)
                     self._background_process.join()
                     self._background_process = None
+                    # this must be here, since a 'disconnect' signal handler can attempt
+                    # to reinitialize the connection, thus after the emission of the signal,
+                    # we can expect that self._background_process and self._idle_handler carry
+                    # the new handlers.
+                    self._idle_handler = None
                     logger.debug('Emitting disconnect signal')
                     self.emit('disconnect', not message['normaltermination'])
+                    logger.debug('Exiting the previous idle handler.')
                     return False  # prevent re-scheduling this idle handler
                 elif message['type'] == 'ready':
                     self._ready = True
@@ -409,26 +414,36 @@ class Device(Callbacks):
         background process, which will take care of the rest."""
 
         assert (self._idle_handler is None) == (self._background_process is None)
-
+        logger.debug('Connecting to device: {} with arguments: {}'.format(self.name, args))
         self.deviceconnectionparameters = args
         if (self._idle_handler is not None) or (self._background_process is not None):
             raise DeviceError('Background process already running')
         # empty the queues.
         while True:
             try:
-                self._queue_to_backend.get_nowait()
+                msg = self._queue_to_backend.get_nowait()
+                logger.debug('Cleared message from queue_to_backend: {}'.format(msg))
             except queue.Empty:
                 break
+        logger.debug('queue_to_backend empty.')
+        # nevertheless, create a fresh queue instance
+        self._queue_to_backend = multiprocessing.Queue()
         while True:
             try:
-                self._queue_to_frontend.get_nowait()
+                msg = self._queue_to_frontend.get_nowait()
+                logger.debug('Cleared message from queue_to_frontend: {}'.format(msg))
             except queue.Empty:
                 break
-
+        logger.debug('queue_to_frontend empty')
+        # nevertheless, create a fresh queue instance
+        self._queue_to_frontend = multiprocessing.Queue()
         self._ready = False
         # note that we do not clear the '_properties' and '_timestamps' in
         # order to ensure smooth operation of the instrument between sudden
         # disconnects and automatic reconnections.
+
+        # Create a new 'busy' semaphore.
+        self._busy = multiprocessing.BoundedSemaphore(self.max_busy_level)
 
         assert issubclass(self.backend_class, DeviceBackend)
         self._background_process = multiprocessing.Process(
@@ -443,8 +458,9 @@ class Device(Callbacks):
         self._background_process.daemon = False
         self.background_startup_count += 1
         self._background_process.start()
+        logger.debug('Started background process for device {}'.format(self.name))
         self._idle_handler = GLib.idle_add(self._idle_worker)
-        logger.debug('Background process for {} has been started'.format(self.name))
+        logger.debug('Started idle handler for device {}'.format(self.name))
 
     # noinspection PyMethodMayBeStatic
     def _get_kwargs_for_backend(self):
