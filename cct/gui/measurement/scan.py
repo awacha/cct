@@ -106,7 +106,9 @@ class ScanMeasurement(ToolWindow):
 
     def on_command_return(self, interpreter, commandname, returnvalue):
         super().on_command_return(interpreter, commandname, returnvalue)
-        if self.killed:
+        if self.killed and not (commandname == 'shutter' and not returnvalue):
+            # if we have been killed, and the last command is not the shutter closing command,
+            # close the shutter
             if (self.builder.get_object('shutter_checkbutton').get_active() and
                     self.instrument.get_device('xray_source').get_variable('shutter')):
                 # close the shutter
