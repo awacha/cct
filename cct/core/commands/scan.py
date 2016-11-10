@@ -3,6 +3,7 @@ import logging
 import traceback
 
 from .command import Command, CommandArgumentError, CommandError, CommandKilledError
+from ..devices.device.frontend import Device
 from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_MOVEMOTORS, PRIV_PINHOLE
 
 logger = logging.getLogger(__name__)
@@ -83,7 +84,10 @@ class GeneralScan(Command):
                 'Start position is outside the software limits for motor {}'.format(self.motorname))
         return True
 
-    def on_variable_change(self, device, variablename, newvalue):
+    def on_variable_change(self, device: Device, variablename: str, newvalue):
+        logger.debug('On_variable_change in scan: device {}, variable: {}, newvalue: {}, oldvalue: {}'.format(
+            device.name, variablename, newvalue, device.get_variable(variablename)
+        ))
         if self.killed is not None:
             if self.killed:
                 logger.debug('Calling die_on_kill() from on_variable_change()')
@@ -125,6 +129,7 @@ class GeneralScan(Command):
         return False
 
     def on_motor_stop(self, motor, targetreached):
+        logger.debug('on_motor_stop in scan: motor {}, targetreached: {}'.format(motor.name, targetreached))
         if self._work_status != 'Moving':
             # unexpected stop message, disregard it.
             return False
