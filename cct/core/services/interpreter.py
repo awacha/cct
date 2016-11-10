@@ -7,7 +7,7 @@ from ..commands.command import Command, cleanup_commandline
 from ..utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class InterpreterError(ServiceError):
