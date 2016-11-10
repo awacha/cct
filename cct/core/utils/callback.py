@@ -170,10 +170,11 @@ class Callbacks(object):
                 done = bool(retval)
                 ret = None
             if done:
-                assert isinstance(ret, sigdesc[1])
-                if signal not in ['telemetry', 'variable-change']:
-                    logger.debug('Done emitting signal {} after the default callback (RUN_LAST).'.format(signal))
-                return ret
+                if sigdesc[1] is not None:
+                    assert isinstance(ret, sigdesc[1])
+                    if signal not in ['telemetry', 'variable-change']:
+                        logger.debug('Done emitting signal {} after the default callback (RUN_LAST).'.format(signal))
+                    return ret
         if signal not in ['telemetry', 'variable-change']:
             logger.debug('Done emitting signal {}: no callbacks left'.format(signal))
         return None

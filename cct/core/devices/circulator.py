@@ -7,7 +7,7 @@ from .device import CommunicationError, Device, DeviceBackend_TCP, InvalidMessag
     UnknownCommand, UnknownVariable
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 # noinspection PyPep8Naming
