@@ -1,6 +1,7 @@
 import gc
 import itertools
 import logging
+import traceback
 from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
@@ -148,7 +149,12 @@ class Callbacks(object):
                 continue
             if signal not in ['telemetry', 'variable-change']:
                 logger.debug('Calling signal hander {:d} for signal {}: {}'.format(s['id'], signal, str(s['callback'])))
-            retval = s['callback'](self, *(args + s['args']), **s['kwargs'])
+            try:
+                retval = s['callback'](self, *(args + s['args']), **s['kwargs'])
+            except Exception as exc:
+                logger.error(
+                    'Error in handler for signal {}: {}, {}'.format(signal, exc, traceback.format_exc()))
+                retval = None
             if isinstance(retval, tuple):
                 assert len(retval) == 2
                 done, ret = retval
@@ -180,9 +186,15 @@ class Callbacks(object):
         return None
 
     def _call_default_callback(self, signal: str, *args):
-        if hasattr(self, 'do_' + signal.replace('-', '_')) and callable(
-                getattr(self, 'do_' + signal.replace('-', '_'))):
-            return getattr(self, 'do_' + signal.replace('-', '_'))(*args)
+        defaulthandlername = 'do_' + signal.replace('-', '_')
+        if hasattr(self, defaulthandlername) and callable(
+                getattr(self, defaulthandlername)):
+            try:
+                return getattr(self, defaulthandlername)(*args)
+            except Exception as exc:
+                logger.error(
+                    'Error in default handler {}: {}, {}'.format(defaulthandlername, exc, traceback.format_exc()))
+                return None
         return None
 
     def cleanup_callback_handlers(self):
