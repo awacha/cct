@@ -7,7 +7,7 @@ from ..devices.device.frontend import Device
 from ..instrument.privileges import PRIV_BEAMSTOP, PRIV_MOVEMOTORS, PRIV_PINHOLE
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class GeneralScan(Command):

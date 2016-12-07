@@ -5,7 +5,7 @@ from .motormover import MotorMover
 from ...core.dialogs import error_message, question_message
 from ...core.toolwindow import ToolWindow
 from ....core.devices import Motor
-from ....core.instrument.privileges import PRIV_MOTORCALIB, PRIV_BEAMSTOP
+from ....core.instrument.privileges import PRIV_BEAMSTOP, PRIV_MOTORCALIB
 
 
 class Motors(ToolWindow):
@@ -169,7 +169,12 @@ class Motors(ToolWindow):
         self._movetosample = self.instrument.services['samplestore'].get_sample(
             self.builder.get_object('sampleselector').get_active_text())
         self.set_sensitive(False, 'Moving sample')
-        self.instrument.motors['Sample_X'].moveto(self._movetosample.positionx.val)
+        try:
+            self.instrument.motors['Sample_X'].moveto(self._movetosample.positionx.val)
+        except Exception as exc:
+            error_message(self.widget, 'Cannot move motor: {}'.format(exc.args[0]))
+            self.set_sensitive(True)
+            self._movetosample = None
 
     def on_motorview_row_activate(self, motorview, path, column):
         self.on_move(None)

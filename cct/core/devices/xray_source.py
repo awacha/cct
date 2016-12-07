@@ -6,7 +6,7 @@ from .device import Device, DeviceBackend_ModbusTCP, DeviceError, InvalidMessage
     UnknownVariable
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 # noinspection PyPep8Naming

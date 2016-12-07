@@ -10,7 +10,7 @@ from ..devices import Motor
 from ..utils.callback import Callbacks, SignalFlags
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class CommandError(Exception):

@@ -364,7 +364,11 @@ class ScanGraph(ToolWindow):
 
     def on_movetocursor(self, button):
         self.set_sensitive(False, 'Moving motor {} to cursor.'.format(self.abscissaname), ['move_to_cursor_button'])
-        self.instrument.motors[self.abscissaname].moveto(self.abscissa[self._cursorindex])
+        try:
+            self.instrument.motors[self.abscissaname].moveto(self.abscissa[self._cursorindex])
+        except Exception as exc:
+            self.error_message('Cannot move motor: {}'.format(exc.args[0]))
+            self.set_sensitive(True)
 
     def on_motor_stop(self, motor: Motor, targetreached: bool):
         if not self.get_sensitive():
@@ -374,7 +378,10 @@ class ScanGraph(ToolWindow):
 
     def on_movetopeak(self, button):
         self.set_sensitive(False, 'Moving motor {} to peak.'.format(self.abscissaname), ['move_to_peak_button'])
-        self.instrument.motors[self.abscissaname].moveto(self._lastpeakposition.val)
+        try:
+            self.instrument.motors[self.abscissaname].moveto(self._lastpeakposition.val)
+        except Exception as exc:
+            self.error_message('Cannot move motor: {}'.format(exc.args[0]))
 
     def on_showallsignals(self, button):
         for row in self.builder.get_object('counterstore'):

@@ -17,7 +17,7 @@ from .functions import savefiguretoclipboard
 from ...core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 
