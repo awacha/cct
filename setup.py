@@ -2,39 +2,62 @@
 import os
 
 from Cython.Build import cythonize
-from numpy import get_include
 from setuptools import setup, find_packages
-from setuptools.extension import Extension
+
+try:
+    from PyQt5.uic import compileUi
+except ImportError:
+    def compileUi(*args):
+        pass
+
+rcc_output = os.path.join('cct', 'resource', 'icons_rc.py')
+rcc_input = os.path.join('cct', 'resource', 'icons', 'icons.qrc')
+os.system('pyrcc5 {} -o {}'.format(rcc_input, rcc_output))
+
+def compile_uis(packageroot):
+    if compileUi is None:
+        return
+    for dirpath, dirnames, filenames in os.walk(packageroot):
+        for fn in [fn_ for fn_ in filenames if fn_.endswith('.ui')]:
+            fname = os.path.join(dirpath, fn)
+            pyfilename = os.path.splitext(fname)[0] + '_ui.py'
+            with open(pyfilename, 'wt', encoding='utf-8') as pyfile:
+                compileUi(fname, pyfile, from_imports=True, import_from='cct.resource')
+            print('Compiled UI file: {} -> {}.'.format(fname, pyfilename))
+
+compile_uis(os.path.join('cct','qtgui'))
+
 
 
 def getresourcefiles():
     print('Generating resource list', flush=True)
     reslist = []
-    for directory, subdirs, files in os.walk('cct/resource'):
+    for directory, subdirs, files in os.walk(os.path.join('cct','resource')):
         reslist.extend([os.path.join(directory, f).split('/', 1)[1] for f in files])
     print('Generated resource list:\n  ' + '\n  '.join(x for x in reslist) + '\n', flush=True)
     return reslist
 
 
-def update_languagespec():
-    from cct.core.commands import Command
-    allcommands = sorted([c.name for c in Command.allcommands()])
-    with open('cct/resource/language-specs/cct.lang.in', 'rt', encoding='utf-8') as fin:
-        with open('cct/resource/language-specs/cct.lang', 'wt', encoding='utf-8') as fout:
-            for l in fin:
-                if l.startswith('% KEYWORDS %'):
-                    for c in allcommands:
-                        fout.write('      <keyword>%s</keyword>\n' % c)
-                else:
-                    fout.write(l)
-    print('Updated language spec. Command list:\n' + ', '.join(allcommands))
+#def update_languagespec():
+#    from cct.core.commands import Command
+#    allcommands = sorted([c.name for c in Command.allcommands()])
+#    with open('cct/resource/language-specs/cct.lang.in', 'rt', encoding='utf-8') as fin:
+#        with open('cct/resource/language-specs/cct.lang', 'wt', encoding='utf-8') as fout:
+#            for l in fin:
+#                if l.startswith('% KEYWORDS %'):
+#                    for c in allcommands:
+#                        fout.write('      <keyword>%s</keyword>\n' % c)
+#                else:
+#                    fout.write(l)
+#    print('Updated language spec. Command list:\n' + ', '.join(allcommands))
 
 
-extensions = [Extension("cct.gui.tools.optimizegeometry.estimateworksize",
-                        ["cct/gui/tools/optimizegeometry/estimateworksize.pyx"], include_dirs=[get_include()])]
+#extensions = [Extension("cct.gui.tools.optimizegeometry.estimateworksize",
+#                        ["cct/gui/tools/optimizegeometry/estimateworksize.pyx"], include_dirs=[get_include()])]
 
+extensions=[]
 
-update_languagespec()
+#update_languagespec()
 setup(name='cct', author='Andras Wacha',
       author_email='awacha@gmail.com', url='http://github.com/awacha/cct',
       description='CREDO Control Tool',
@@ -44,8 +67,8 @@ setup(name='cct', author='Andras Wacha',
       #      cmdclass = {'build_ext': build_ext},
       ext_modules=cythonize(extensions),
       install_requires=['numpy>=1.11.1', 'scipy>=0.18.0', 'matplotlib>=1.5.2', 'sastool>=0.7.3', 'pymodbustcp>=0.0.13',
-                        'pykerberos>=1.1.10', 'psutil>=4.1.0', 'cairocffi>=0.7.2'],
-      entry_points={'gui_scripts': ['cct = cct.gui.__main__:run'],
+                        'pykerberos>=1.1.10', 'psutil>=4.1.0'],
+      entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run'],
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",
       license="",

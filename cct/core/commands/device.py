@@ -1,10 +1,9 @@
 import logging
 import time
 
-from gi.repository import GLib
-
 from .command import Command, CommandArgumentError
 from ..devices.device import Device
+from ..utils.timeout import TimeOut
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -308,7 +307,7 @@ class Sleep(Command):
         self._starttime = None
 
     def execute(self):
-        self._sleeptimeout = GLib.timeout_add(self.sleeptime * 1000, lambda: self.cleanup(None) and False)
+        self._sleeptimeout = TimeOut(self.sleeptime * 1000, lambda: self.cleanup(None) and False)
         self._starttime = time.monotonic()
         self.emit('message', 'Sleeping for {:.2f} seconds.'.format(self.sleeptime))
 
@@ -320,7 +319,7 @@ class Sleep(Command):
 
     def cleanup(self, *args, **kwargs):
         if self._sleeptimeout is not None:
-            GLib.source_remove(self._sleeptimeout)
+            self._sleeptimeout.stop()
             self._sleeptimeout = None
         super().cleanup(*args, **kwargs)
 

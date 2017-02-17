@@ -1,11 +1,10 @@
 import logging
 import traceback
 
-from gi.repository import GLib
-
 from .command import Command, CommandError, CommandArgumentError
 from .exceptions import JumpException, GotoException, GosubException, ReturnException, PassException, ScriptEndException
 from ..utils.callback import SignalFlags
+from ..utils.timeout import SingleIdleFunction
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -78,7 +77,7 @@ class Script(Command):
         self._cursor = -1
         self._pause = None
         self._kill = False
-        GLib.idle_add(self.nextcommand)
+        SingleIdleFunction(self.nextcommand)
 
     def nextcommand(self, retval=None):
         logger.debug('Next command. Return value of the previous: {}'.format(retval))
@@ -142,7 +141,7 @@ class Script(Command):
                 self.idle_return(None)
             else:
                 # re-queue us
-                GLib.idle_add(self.nextcommand)
+                SingleIdleFunction(self.nextcommand)
             return False
         except GotoException as ge:
             logger.debug('GotoException')
@@ -154,7 +153,7 @@ class Script(Command):
                 self.emit('fail', se, traceback.format_exc())
                 self.idle_return(None)
             else:
-                GLib.idle_add(self.nextcommand)
+                SingleIdleFunction(self.nextcommand)
             return False
         except GosubException as gse:
             logger.debug('GosubException')
@@ -166,7 +165,7 @@ class Script(Command):
                 self.emit('fail', se, traceback.format_exc())
                 self.idle_return(None)
             else:
-                GLib.idle_add(self.nextcommand)
+                SingleIdleFunction(self.nextcommand)
             return False
         except ScriptEndException as se:
             logger.debug('ScriptEndException')
@@ -176,7 +175,7 @@ class Script(Command):
             logger.debug('PassException')
             # raised by a conditional goto/gosub command if the condition evaluated to False
             # jump to the next command.
-            GLib.idle_add(self.nextcommand)
+            SingleIdleFunction(self.nextcommand)
             return False
         except JumpException as je:
             raise TypeError(je)
@@ -191,7 +190,7 @@ class Script(Command):
     def on_cmd_return(self, myinterpreter, cmdname, returnvalue):
         # simply queue a call to self.nextcommand(). It will handle
         # all cases.
-        GLib.idle_add(lambda rv=returnvalue: self.nextcommand(rv))
+        SingleIdleFunction(lambda rv=returnvalue: self.nextcommand(rv))
         return False
 
     def on_cmd_fail(self, myinterpreter, cmdname, exc, tb):
@@ -241,7 +240,7 @@ class Script(Command):
         if self._pause is None:
             raise ScriptError('Cannot resume a script which has not been paused.')
         if self._pause:
-            GLib.idle_add(self.nextcommand)
+            SingleIdleFunction(self.nextcommand)
         self._pause = None
 
 

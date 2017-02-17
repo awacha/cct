@@ -5,12 +5,11 @@ import queue
 import time
 import traceback
 
-from gi.repository import GLib
-
 from .backend import DeviceBackend
 from .exceptions import DeviceError
 from .message import Message
 from ...utils.callback import Callbacks, SignalFlags
+from ...utils.timeout import IdleFunction
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -459,7 +458,7 @@ class Device(Callbacks):
         self.background_startup_count += 1
         self._background_process.start()
         logger.debug('Started background process for device {}'.format(self.name))
-        self._idle_handler = GLib.idle_add(self._idle_worker)
+        self._idle_handler = IdleFunction(self._idle_worker)
         logger.debug('Started idle handler for device {}'.format(self.name))
 
     # noinspection PyMethodMayBeStatic

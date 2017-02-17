@@ -8,3 +8,6 @@ radint.c
 *.so
 cct.lang
 /cct/gui/tools/optimizegeometry/estimateworksize.c
+/test
+*_ui.py
+*_rc.py

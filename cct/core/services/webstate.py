@@ -8,9 +8,9 @@ from xml.dom.minidom import parse
 
 import numpy as np
 import pkg_resources
-from gi.repository import GLib
 
 from .service import Service
+from ..utils.timeout import TimeOut
 
 
 def get_svg_object_by_id(dom, idname):
@@ -38,11 +38,11 @@ class WebStateFileWriter(Service):
     def start(self):
         super().start()
         if self.instrument.online:
-            self._timeouthandler = GLib.timeout_add(self.state['interval'] * 1000, self.write_statusfile)
+            self._timeouthandler = TimeOut(self.state['interval'] * 1000, self.write_statusfile)
 
     def stop(self):
         if self._timeouthandler is not None:
-            GLib.source_remove(self._timeouthandler)
+            self._timeouthandler.stop()
             self._timeouthandler = None
         super().stop()
 

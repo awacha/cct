@@ -3,11 +3,10 @@ import traceback
 import weakref
 from typing import Dict
 
-from gi.repository import GLib
-
 from .exceptions import JumpException
 from ..devices import Motor
 from ..utils.callback import Callbacks, SignalFlags
+from ..utils.timeout import TimeOut, IdleFunction
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -246,10 +245,10 @@ class Command(Callbacks):
         self._connect_devices()
         if self.timeout is not None:
             logger.debug('Starting timeout of {:f} seconds'.format(self.timeout))
-            self._timeout_handler = GLib.timeout_add(self.timeout * 1000, self.on_timeout)
+            self._timeout_handler = TimeOut(self.timeout * 1000, self.on_timeout)
         if self.pulse_interval is not None:
             logger.debug('Starting pulser of {:f} seconds interval'.format(self.pulse_interval))
-            self._pulse_handler = GLib.timeout_add(self.pulse_interval * 1000, self.on_pulse)
+            self._pulse_handler = TimeOut(self.pulse_interval * 1000, self.on_pulse)
         try:
             logger.debug('Running execute() method of command {}'.format(self.name))
             retval = self.execute()
@@ -280,10 +279,10 @@ class Command(Callbacks):
         """Must be called after execution finished."""
         logger.debug('Cleaning up command {}'.format(self.name))
         if self._timeout_handler is not None:
-            GLib.source_remove(self._timeout_handler)
+            self._timeout_handler.stop()
             logger.debug('Timeout handler of command {} removed'.format(self.name))
         if self._pulse_handler is not None:
-            GLib.source_remove(self._pulse_handler)
+            self._pulse_handler.stop()
             logger.debug('Pulse handler of command {} removed'.format(self.name))
         logger.debug('Disconnecting required devices of command {}'.format(self.name))
         self._disconnect_devices()
@@ -353,7 +352,7 @@ class Command(Callbacks):
         if self._returning:
             return
         self._returning = True
-        GLib.idle_add(lambda rv=value: (self.cleanup(rv) and False))
+        IdleFunction(lambda rv=value: (self.cleanup(rv) and False))
 
     @classmethod
     def allcommands(cls):

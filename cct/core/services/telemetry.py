@@ -2,11 +2,10 @@ import datetime
 import os
 import time
 
-from gi.repository import GLib
-
 from .service import Service
 from ..utils.callback import SignalFlags
 from ..utils.telemetry import TelemetryInfo
+from ..utils.timeout import TimeOut
 
 
 class TelemetryManager(Service):
@@ -36,7 +35,7 @@ class TelemetryManager(Service):
     def start(self):
         super().start()
         self.init_memlog_file()
-        self._memlog_timeout_handle = GLib.timeout_add(self.state['memlog_interval'] * 1000,
+        self._memlog_timeout_handle = TimeOut(self.state['memlog_interval'] * 1000,
                                                        self.write_memlog_line)
 
     def incoming_telemetry(self, label, telemetry: TelemetryInfo):
@@ -100,7 +99,7 @@ class TelemetryManager(Service):
 
     def stop(self):
         if self._memlog_timeout_handle is not None:
-            GLib.source_remove(self._memlog_timeout_handle)
+            self._memlog_timeout_handle.stop()
             self._memlog_timeout_handle = None
         super().stop()
 

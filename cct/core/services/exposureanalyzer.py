@@ -10,7 +10,6 @@ from logging.handlers import QueueHandler
 from typing import Union, Dict
 
 import numpy as np
-from gi.repository import GLib
 from sastool.io.credo_cct import Exposure, Header
 from sastool.io.twodim import readcbf
 from sastool.misc.easylsq import nonlinear_odr
@@ -24,6 +23,7 @@ from ..utils.geometrycorrections import solidangle, angledependentabsorption, an
 from ..utils.io import write_legacy_paramfile
 from ..utils.pathutils import find_in_subfolders
 from ..utils.telemetry import TelemetryInfo
+from ..utils.timeout import IdleFunction
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -534,7 +534,7 @@ class ExposureAnalyzer(Service):
 
     def start(self):
         super().start()
-        self._handler = GLib.idle_add(self._idle_function)
+        self._handler = IdleFunction(self._idle_function)
         self._backendprocess = multiprocessing.Process(
             target=ExposureAnalyzer_Backend.create_and_run,
             args=(logger.level, self.config, self._queue_to_backend,
@@ -629,7 +629,7 @@ class ExposureAnalyzer(Service):
 
     def do_shutdown(self):
         if self._handler is not None:
-            GLib.source_remove(self._handler)
+            self._handler.stop()
             self._handler = None
         self._backendprocess.join()
         self.starttime = None

@@ -2,10 +2,9 @@ import datetime
 import logging
 import os
 
-from gi.repository import GLib
-
 from .command import Command, CommandError, CommandArgumentError
 from ..devices.detector import Pilatus
+from ..utils.timeout import TimeOut
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -369,7 +368,7 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
         if len(self.fsns) != len(self.fsns_done):
             # if we still have some files to wait for, re-queue us to the time when the next will be available.
             elapsedtime = (datetime.datetime.now() - self.starttime).total_seconds()
-            self.filechecker_handle = GLib.timeout_add(1000 * max(0, (min(self.due_times) - elapsedtime)),
+            self.filechecker_handle = TimeOut(1000 * max(0, (min(self.due_times) - elapsedtime)),
                                                        self.filechecker)
         else:
             # all files received:
@@ -387,7 +386,7 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
         elif variablename == 'starttime':
             if newvalue is not None:
                 self.starttime = newvalue
-                self.filechecker_handle = GLib.timeout_add(self.exptime * 1000, self.filechecker)
+                self.filechecker_handle = TimeOut(self.exptime * 1000, self.filechecker)
         elif variablename == '_status' and newvalue == 'idle':
             self.detector_idle = True
             if self.files_received or self.killed:
@@ -397,7 +396,7 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
     def kill(self):
         if not self.killed:
             self.killed = True
-            GLib.source_remove(self.filechecker_handle)
+            self.filechecker_handle.stop()
             self.get_device('detector').execute_command('kill')
 
     def on_error(self, device, propname, exc, tb):
@@ -406,6 +405,6 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
 
     def cleanup(self, *args, **kwargs):
         if self.filechecker_handle is not None:
-            GLib.source_remove(self.filechecker_handle)
+            self.filechecker_handle.stop()
             self.filechecker_handle = None
         super().cleanup(*args, **kwargs)

@@ -5,14 +5,13 @@ import time
 import traceback
 from typing import List
 
-from gi.repository import GLib
-
 from ..devices.device import Device, DeviceBackend_ModbusTCP, DeviceBackend_TCP, DeviceError
 from ..devices.motor import Motor
 from ..services import Accounting, ExposureAnalyzer, FileSequence, Interpreter, SampleStore, Service, TelemetryManager, \
     WebStateFileWriter
 from ..utils.callback import Callbacks, SignalFlags
 from ..utils.telemetry import TelemetryInfo
+from ..utils.timeout import TimeOut
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -88,7 +87,7 @@ class Instrument(Callbacks):
     def start(self):
         """Start operation"""
         self.starttime = time.monotonic()
-        self._telemetry_timeout = GLib.timeout_add(self.telemetry_timeout * 1000,
+        self._telemetry_timeout = TimeOut(self.telemetry_timeout * 1000,
                                                    self.on_telemetry_timeout)
         for s in self.services:
             self.services[s].start()
@@ -412,7 +411,7 @@ class Instrument(Callbacks):
             cfg = self.config['connections'][entryname]  # shortcut
             # avoid establishing another connection to the device.
             if cfg['name'] in self.devices:
-                logger.warn('Not connecting {} again.'.format(cfg['name']))
+                logger.warning('Not connecting {} again.'.format(cfg['name']))
                 continue
             # get the appropriate class
             cls = [d for d in device_classes if d.__name__ == cfg['classname']]

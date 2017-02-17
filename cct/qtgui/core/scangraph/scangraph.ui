@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>677</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QWidget" name="widget" native="true">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="1" column="0">
+         <widget class="QPushButton" name="showAllButton">
+          <property name="text">
+           <string>Show all</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../resource/icons/icons.qrc">
+            <normaloff>:/icons/show.svg</normaloff>:/icons/show.svg</iconset>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QPushButton" name="hideAllButton">
+          <property name="text">
+           <string>Hide all</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../resource/icons/icons.qrc">
+            <normaloff>:/icons/hide.svg</normaloff>:/icons/hide.svg</iconset>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="QTreeView" name="signalsTreeView">
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+          <property name="uniformRowHeights">
+           <bool>true</bool>
+          </property>
+          <property name="itemsExpandable">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="figureContainer" native="true">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QWidget" name="cursorContainer" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QPushButton" name="cursorHomeButton">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset theme="go-first">
+               <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="cursorLeftButton">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset theme="go-previous">
+               <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="cursorSlider">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TicksBelow</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="cursorRightButton">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset theme="go-next">
+               <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="cursorEndButton">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset theme="go-last">
+               <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>48</width>
+     <height>48</height>
+    </size>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionShow_2D"/>
+   <addaction name="actionAutoScale"/>
+   <addaction name="actionShowLegend"/>
+   <addaction name="separator"/>
+   <addaction name="actionFit_positive_Lorentzian"/>
+   <addaction name="actionFit_negative_Lorentzian"/>
+   <addaction name="actionFit_positive_Gaussian"/>
+   <addaction name="actionFit_negative_Gaussian"/>
+   <addaction name="separator"/>
+   <addaction name="actionCursor_to_Minimum"/>
+   <addaction name="actionCursor_to_Maximum"/>
+   <addaction name="actionReplot"/>
+  </widget>
+  <action name="actionShow_2D">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/exposureviewer.svg</normaloff>:/icons/exposureviewer.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Show 2D</string>
+   </property>
+   <property name="toolTip">
+    <string>Show 2D images</string>
+   </property>
+  </action>
+  <action name="actionFit_positive_Lorentzian">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/fitpeak_positive_Lorentzian.svg</normaloff>:/icons/fitpeak_positive_Lorentzian.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Fit positive Lorentzian</string>
+   </property>
+   <property name="toolTip">
+    <string>Fit a positive Lorentzian peak</string>
+   </property>
+  </action>
+  <action name="actionFit_negative_Lorentzian">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/fitpeak_negative_Lorentzian.svg</normaloff>:/icons/fitpeak_negative_Lorentzian.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Fit negative Lorentzian</string>
+   </property>
+   <property name="toolTip">
+    <string>Fit a negative Lorentzian peak</string>
+   </property>
+  </action>
+  <action name="actionFit_positive_Gaussian">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/fitpeak_positive_Gaussian.svg</normaloff>:/icons/fitpeak_positive_Gaussian.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Fit positive Gaussian</string>
+   </property>
+   <property name="toolTip">
+    <string>Fit a positive Gaussian peak</string>
+   </property>
+  </action>
+  <action name="actionFit_negative_Gaussian">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/fitpeak_negative_Gaussian.svg</normaloff>:/icons/fitpeak_negative_Gaussian.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Fit negative Gaussian</string>
+   </property>
+   <property name="toolTip">
+    <string>Fit a negative Gaussian peak</string>
+   </property>
+  </action>
+  <action name="actionCursor_to_Maximum">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/cursor-to-maximum.svg</normaloff>:/icons/cursor-to-maximum.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Cursor to Maximum</string>
+   </property>
+   <property name="toolTip">
+    <string>Move the cursor to the global maximum of the current signal</string>
+   </property>
+  </action>
+  <action name="actionCursor_to_Minimum">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/cursor-to-minimum.svg</normaloff>:/icons/cursor-to-minimum.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Cursor to Minimum</string>
+   </property>
+   <property name="toolTip">
+    <string>Move the cursor to the global minimum of the current signal</string>
+   </property>
+  </action>
+  <action name="actionReplot">
+   <property name="icon">
+    <iconset theme="view-refresh">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>Replot</string>
+   </property>
+   <property name="toolTip">
+    <string>Force a replot of the whole graph</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="actionAutoScale">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="zoom-fit-best">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>Autoscale graph</string>
+   </property>
+   <property name="toolTip">
+    <string>Autoscale graph axes on replots</string>
+   </property>
+  </action>
+  <action name="actionShowLegend">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/legend.svg</normaloff>:/icons/legend.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Show legend</string>
+   </property>
+   <property name="toolTip">
+    <string>Show or hide the legend</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="../../resource/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>

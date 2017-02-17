@@ -268,6 +268,7 @@ class DeviceBackend(object):
         worker method will then call `self.process_incoming_message` every time a
         new message comes. The latter is responsible to call `self.update_variable`.
         """
+        message = None
         self.logger.debug('Starting worker method for device {}'.format(self.name))
         try:
             self.connect_device()

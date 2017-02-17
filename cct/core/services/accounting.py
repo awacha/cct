@@ -70,7 +70,8 @@ class Accounting(Service):
                     self.add_user(username.split('@', 1)[0], 'Firstname', 'Lastname', PRIV_LAYMAN)
                 self.select_user(username)
                 return True
-        except kerberos.BasicAuthError:
+        except kerberos.BasicAuthError as bae:
+            logger.info('Failed to authenticate user {}: {}'.format(username, str(bae)))
             return False
 
     def select_user(self, username: str):
