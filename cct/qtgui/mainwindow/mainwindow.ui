@@ -16,19 +16,6 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QGroupBox" name="groupBox">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="title">
-       <string>Overview</string>
-      </property>
-     </widget>
-    </item>
-    <item>
      <widget class="QGroupBox" name="groupBox_2">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
@@ -207,7 +194,7 @@
   </widget>
   <action name="actionSample_editor">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/sample.svg</normaloff>:/icons/sample.svg</iconset>
    </property>
    <property name="text">
@@ -219,7 +206,7 @@
   </action>
   <action name="actionGeometry_editor">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/geometry.svg</normaloff>:/icons/geometry.svg</iconset>
    </property>
    <property name="text">
@@ -255,7 +242,7 @@
   </action>
   <action name="actionCalibration">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/calibration.svg</normaloff>:/icons/calibration.svg</iconset>
    </property>
    <property name="text">
@@ -267,7 +254,7 @@
   </action>
   <action name="actionEdit_configuration">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/editconfig.svg</normaloff>:/icons/editconfig.svg</iconset>
    </property>
    <property name="text">
@@ -279,7 +266,8 @@
   </action>
   <action name="actionUser_management">
    <property name="icon">
-    <iconset theme="system-users"/>
+    <iconset theme="system-users">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>User management</string>
@@ -298,7 +286,7 @@
   </action>
   <action name="actionX_ray_source">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/xraysource.svg</normaloff>:/icons/xraysource.svg</iconset>
    </property>
    <property name="text">
@@ -310,7 +298,7 @@
   </action>
   <action name="actionDetector">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/detector.svg</normaloff>:/icons/detector.svg</iconset>
    </property>
    <property name="text">
@@ -322,7 +310,7 @@
   </action>
   <action name="actionMotors">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/motor.svg</normaloff>:/icons/motor.svg</iconset>
    </property>
    <property name="text">
@@ -334,7 +322,7 @@
   </action>
   <action name="actionTemperature_stage">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/circulator.svg</normaloff>:/icons/circulator.svg</iconset>
    </property>
    <property name="text">
@@ -354,7 +342,8 @@
   </action>
   <action name="actionDevice_connections">
    <property name="icon">
-    <iconset theme="network-idle"/>
+    <iconset theme="network-idle">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Device connections</string>
@@ -365,7 +354,7 @@
   </action>
   <action name="actionScan">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/scan.svg</normaloff>:/icons/scan.svg</iconset>
    </property>
    <property name="text">
@@ -377,7 +366,7 @@
   </action>
   <action name="actionSingle_exposure">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/exposure.svg</normaloff>:/icons/exposure.svg</iconset>
    </property>
    <property name="text">
@@ -389,7 +378,7 @@
   </action>
   <action name="actionTransmission">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/transmission.svg</normaloff>:/icons/transmission.svg</iconset>
    </property>
    <property name="text">
@@ -401,7 +390,7 @@
   </action>
   <action name="actionScript">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/script.svg</normaloff>:/icons/script.svg</iconset>
    </property>
    <property name="text">
@@ -413,7 +402,7 @@
   </action>
   <action name="actionMask_editor">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/flipmask.svg</normaloff>:/icons/flipmask.svg</iconset>
    </property>
    <property name="text">
@@ -425,7 +414,7 @@
   </action>
   <action name="actionView_images_and_curves">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/exposureviewer.svg</normaloff>:/icons/exposureviewer.svg</iconset>
    </property>
    <property name="text">
@@ -437,7 +426,7 @@
   </action>
   <action name="actionView_scans">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/scanviewer.svg</normaloff>:/icons/scanviewer.svg</iconset>
    </property>
    <property name="text">
@@ -449,7 +438,7 @@
   </action>
   <action name="actionCapillary_sizing">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/capillarysizer.svg</normaloff>:/icons/capillarysizer.svg</iconset>
    </property>
    <property name="text">
@@ -461,7 +450,7 @@
   </action>
   <action name="actionData_reduction">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/datareduction.svg</normaloff>:/icons/datareduction.svg</iconset>
    </property>
    <property name="text">
@@ -473,7 +462,7 @@
   </action>
   <action name="actionResource_consumption">
    <property name="icon">
-    <iconset resource="../../../../cpt/src/cpt/resource/icons/icons.qrc">
+    <iconset resource="../../resource/icons/icons.qrc">
      <normaloff>:/icons/resourceusage.svg</normaloff>:/icons/resourceusage.svg</iconset>
    </property>
    <property name="text">
@@ -493,7 +482,8 @@
   </action>
   <action name="actionAbout">
    <property name="icon">
-    <iconset theme="help-about"/>
+    <iconset theme="help-about">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>About</string>
@@ -504,7 +494,8 @@
   </action>
   <action name="actionCommands">
    <property name="icon">
-    <iconset theme="help-contents"/>
+    <iconset theme="help-contents">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Commands</string>
@@ -515,7 +506,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../../../../cpt/src/cpt/resource/icons/icons.qrc"/>
+  <include location="../../resource/icons/icons.qrc"/>
  </resources>
  <connections/>
 </ui>
