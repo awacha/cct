@@ -8,12 +8,13 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationTool
 from matplotlib.figure import Figure
 
 from .capillarymeasurement_ui import Ui_Form
+from ...core.mixins import ToolWindow
 
-
-class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form):
+class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
-        self.credo=kwargs.pop('credo')
+        credo=kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        ToolWindow.__init__(self, credo)
         self._peaklines=[None, None]
         self._peakposittions=[None,None]
         self.setupUi(self)

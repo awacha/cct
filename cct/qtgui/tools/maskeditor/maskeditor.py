@@ -1,75 +1,35 @@
 import numpy as np
-import pkg_resources
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtCore
 from matplotlib.path import Path
 from matplotlib.widgets import Cursor, EllipseSelector, RectangleSelector, LassoSelector
 from sastool.classes2.exposure import Exposure
 from scipy.io import savemat, loadmat
 
+from .maskeditor_ui import Ui_MainWindow
+from ...core.mixins import ToolWindow
 from ...core.plotimage import PlotImage
 
 
-#ToDo: define actions in Qt .ui file.
-
-
-class MaskEditor(QtWidgets.QWidget):
+class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
-        self.credo=kwargs.pop('credo')
-        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        credo=kwargs.pop('credo')
+        QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
+        ToolWindow.__init__(self, credo)
         self.setupUi(self)
         self.undoStack = []
         self.undoStackPointer = 0
         self.lastFileName = None
 
-    def setupUi(self, Form=None):
-        layout = QtWidgets.QVBoxLayout(self)
-        self.setLayout(layout)
-        self.toolbar = QtWidgets.QToolBar(self)
-        layout.addWidget(self.toolbar)
-        self.operationsGroup = QtWidgets.QActionGroup(self.toolbar)
+    def setupUi(self, Form):
+        Ui_MainWindow.setupUi(self, Form)
+        self.operationsGroup = QtWidgets.QActionGroup(self.toolBar)
         # self.operationsGroup.triggered.connect(self.setOperation)
-        self.actions = {
-            'new': self.toolbar.addAction(QtGui.QIcon.fromTheme('document-new'), 'New', self.createNewMask),
-            'open': self.toolbar.addAction(QtGui.QIcon.fromTheme('document-open'), 'Open', self.loadMask),
-            'save': self.toolbar.addAction(QtGui.QIcon.fromTheme('document-save'), 'Save', self.saveMask),
-            'saveas': self.toolbar.addAction(QtGui.QIcon.fromTheme('document-save-as'), 'Save as', self.saveAsMask),
-            'separator1': self.toolbar.addSeparator(),
-            'undo': self.toolbar.addAction(QtGui.QIcon.fromTheme('edit-undo'), 'Undo', self.undo),
-            'redo': self.toolbar.addAction(QtGui.QIcon.fromTheme('edit-redo'), 'Redo', self.redo),
-            'separator2': self.toolbar.addSeparator(),
-            'mask': self.toolbar.addAction(QtGui.QIcon(pkg_resources.resource_filename(
-                'cct', 'resource/icons/mask.svg')), 'Mask'),
-            'unmask': self.toolbar.addAction(
-                QtGui.QIcon(pkg_resources.resource_filename('cct', 'resource/icons/unmask.svg')),
-                'Unmask'),
-            'flipmask': self.toolbar.addAction(
-                QtGui.QIcon(pkg_resources.resource_filename('cct', 'resource/icons/flipmask.svg')),
-                'Flip mask'),
-            'separator3': self.toolbar.addSeparator(),
-            'selectrectangle': self.toolbar.addAction(
-                QtGui.QIcon(pkg_resources.resource_filename('cct', 'resource/icons/selectrectangle.svg')),
-                'Select rectangle', self.selectRectangle),
-            'selectcircle': self.toolbar.addAction(
-                QtGui.QIcon(pkg_resources.resource_filename('cct', 'resource/icons/selectcircle.svg')),
-                'Select circle', self.selectCircle),
-            'selectpolygon': self.toolbar.addAction(
-                QtGui.QIcon(pkg_resources.resource_filename('cct', 'resource/icons/selectpolygon.svg')),
-                'Select polygon', self.selectPolygon),
-            'separator4': self.toolbar.addSeparator(),
-            'pixelhunt': self.toolbar.addAction(
-                QtGui.QIcon(pkg_resources.resource_filename('cct', 'resource/icons/pixelhunt.svg')),
-                'Pixel hunt', self.pixelHunt),
-        }
-        for action in ['mask', 'unmask', 'flipmask']:
-            self.actions[action].setCheckable(True)
-            self.operationsGroup.addAction(self.actions[action])
-        for action in ['selectcircle', 'selectrectangle', 'selectpolygon']:
-            self.actions[action].setCheckable(True)
-        for action in ['undo', 'redo', 'save']:
-            self.actions[action].setEnabled(False)
-        self.actions['pixelhunt'].setCheckable(True)
-        self.actions['mask'].setChecked(True)
-        self.plotimage = PlotImage(self)
+        for action in [self.actionMask, self.actionUnmask, self.actionFlip_mask]:
+            self.operationsGroup.addAction(action)
+        for action in [self.actionUndo, self.actionRedo, self.actionSave_mask]:
+            action.setEnabled(False)
+        self.actionMask.setChecked(True)
+        self.plotimage = PlotImage()
         self.plotimage.axesComboBox.setCurrentIndex(self.plotimage.axesComboBox.findText('abs. pixel'))
         while self.plotimage.axesComboBox.count() > 1:
             for i in range(self.plotimage.axesComboBox.count()):
@@ -78,7 +38,9 @@ class MaskEditor(QtWidgets.QWidget):
                     self.plotimage.axesComboBox.removeItem(i)
                     break
         self.plotimage.axesComboBox.setCurrentIndex(0)
-        layout.addWidget(self.plotimage)
+        self.setCentralWidget(self.plotimage.canvas)
+        self.addToolBar(QtCore.Qt.BottomToolBarArea, self.plotimage.figtoolbar)
+        self.centralwidget.setObjectName('plotimageCanvas')
 
     def setExposure(self, exposure: Exposure):
         self.undoStack = [exposure.mask]
@@ -115,36 +77,36 @@ class MaskEditor(QtWidgets.QWidget):
 
     def undo(self):
         self.undoStackPointer = max(0, self.undoStackPointer - 1)
-        self.actions['undo'].setEnabled(self.undoStackPointer > 0)
-        self.actions['redo'].setEnabled(self.undoStackPointer < len(self.undoStack) - 1)
+        self.actionUndo.setEnabled(self.undoStackPointer > 0)
+        self.actionRedo.setEnabled(self.undoStackPointer < len(self.undoStack) - 1)
         self.plotimage.exposure().mask = self.undoStack[self.undoStackPointer]
         self.plotimage.replot_mask()
         self.plotimage.canvas.draw()
 
     def redo(self):
         self.undoStackPointer = min(len(self.undoStack) - 1, self.undoStackPointer + 1)
-        self.actions['undo'].setEnabled(self.undoStackPointer > 0)
-        self.actions['redo'].setEnabled(self.undoStackPointer < len(self.undoStack) - 1)
+        self.actionUndo.setEnabled(self.undoStackPointer > 0)
+        self.actionUndo.setEnabled(self.undoStackPointer < len(self.undoStack) - 1)
         self.plotimage.exposure().mask = self.undoStack[self.undoStackPointer]
         self.plotimage.replot_mask()
         self.plotimage.canvas.draw()
 
     def pixelHunt(self):
-        if self.actions['pixelhunt'].isChecked():
+        if self.actionPixel_hunt.isChecked():
             # start pixel hunt mode.
             self.crossHair = Cursor(self.plotimage.axes, useblit=False, color='white', lw=1)
             self.crossHair.connect_event('button_press_event', self.cursorClicked)
             while self.plotimage.figtoolbar.mode != '':
                 self.plotimage.figtoolbar.zoom()
-            for name in self.actions:
-                self.actions[name].setEnabled(False)
-            self.actions['pixelhunt'].setEnabled(True)
+            for action in self.actions():
+                action.setEnabled(False)
+            self.actionPixel_hunt.setEnabled(True)
         elif hasattr(self, 'crossHair'):
             self.crossHair.disconnect_events()
             del self.crossHair
             self.plotimage.replot()
-            for name in self.actions:
-                self.actions[name].setEnabled(True)
+            for action in self.actions():
+                action.setEnabled(True)
 
     def cursorClicked(self, event):
         if (event.inaxes == self.plotimage.axes) and (self.plotimage.figtoolbar.mode == ''):
@@ -160,8 +122,8 @@ class MaskEditor(QtWidgets.QWidget):
     def operation(self):
         return self.operationsGroup.checkedAction().iconText()
 
-    def initializeSelector(self, actionname, selectorclass, callbackfunction, **kwargs):
-        if self.actions[actionname].isChecked():
+    def initializeSelector(self, action, selectorclass, callbackfunction, **kwargs):
+        if action.isChecked():
             while self.plotimage.figtoolbar.mode != '':
                 # turn off zoom, pan, etc. modes in the matplotlib figure toolbar
                 self.plotimage.figtoolbar.zoom()
@@ -174,9 +136,9 @@ class MaskEditor(QtWidgets.QWidget):
                                           button=[1, ],
                                           lineprops={'zorder': 10, 'color': 'white'},
                                           **kwargs)
-            for action in self.actions:
-                self.actions[action].setEnabled(False)
-            self.actions[actionname].setEnabled(True)
+            for act in self.actions():
+                act.setEnabled(False)
+            action.setEnabled(True)
         else:
             self.finalizeSelector()
 
@@ -186,23 +148,22 @@ class MaskEditor(QtWidgets.QWidget):
             self.selector.set_visible(False)
             del self.selector
             # self.plotimage.replot()
-        for name in [k for k in self.actions if k.startswith('select')]:
-            self.actions[name].setChecked(False)
-        for name in self.actions:
-            self.actions[name].setEnabled(True)
-
+        for action in [self.actionSelect_a_circle, self.actionSelect_rectangle, self.actionLasso_selector]:
+            action.setChecked(False)
+        for action in self.actions():
+            action.setEnabled(True)
 
     def selectCircle(self):
-        self.initializeSelector('selectcircle', EllipseSelector, self.selectedCircle)
+        self.initializeSelector(self.actionSelect_a_circle, EllipseSelector, self.selectedCircle)
         if hasattr(self, 'selector'):
             self.selector.state.add('square')
             self.selector.state.add('center')
 
     def selectRectangle(self):
-        self.initializeSelector('selectrectangle', RectangleSelector, self.selectedRectangle)
+        self.initializeSelector(self.actionSelect_rectangle, RectangleSelector, self.selectedRectangle)
 
     def selectPolygon(self):
-        self.initializeSelector('selectpolygon', LassoSelector, self.selectedPolygon)
+        self.initializeSelector(self.actionLasso_selector, LassoSelector, self.selectedPolygon)
 
     def selectedCircle(self, pos1, pos2):
         # pos1 and pos2 are mouse button press and release events, with xdata and ydata carrying
@@ -271,6 +232,6 @@ class MaskEditor(QtWidgets.QWidget):
         self.exposure().mask = mask
         self.plotimage.replot_mask()
         self.plotimage.canvas.draw()
-        self.actions['redo'].setEnabled(False)
-        self.actions['undo'].setEnabled(True)
-        self.actions['save'].setEnabled(True)
+        self.actionRedo.setEnabled(False)
+        self.actionUndo.setEnabled(True)
+        self.actionSave_mask.setEnabled(True)
