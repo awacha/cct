@@ -274,3 +274,6 @@ class SampleStore(Service):
 
     def __contains__(self, samplename: str):
         return bool([s for s in self._list if s.title == samplename])
+
+    def get_samples(self):
+        return list(self)
