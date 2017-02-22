@@ -98,7 +98,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.axes = self.figure.add_subplot(1, 1, 1)
         assert isinstance(self.axes, Axes)
-        self.axes.set_axis_bgcolor('black')
+        self.axes.set_facecolor('black')
         layout.addWidget(self.canvas)
         self.figtoolbar = NavigationToolbar2QT(self.canvas, self.figureContainer)
         layout.addWidget(self.figtoolbar)
