@@ -7,16 +7,20 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>640</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Credo Control Tool</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../resource/icons/icons.qrc">
+    <normaloff>:/icons/cctlogo.svg</normaloff>:/icons/cctlogo.svg</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QGroupBox" name="groupBox_2">
+     <widget class="QGroupBox" name="deviceStatusGroupBox">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
         <horstretch>0</horstretch>
@@ -29,7 +33,7 @@
      </widget>
     </item>
     <item>
-     <widget class="QGroupBox" name="groupBox_3">
+     <widget class="QGroupBox" name="logViewerGroupBox">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -153,10 +157,21 @@
      <string>&amp;Help</string>
     </property>
     <addaction name="actionAbout"/>
+    <addaction name="actionAbout_Qt"/>
     <addaction name="actionCommands"/>
+   </widget>
+   <widget class="QMenu" name="menu_View">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <addaction name="actionAccounting"/>
+    <addaction name="actionShutter_and_beamstop"/>
+    <addaction name="actionFSN_counters"/>
+    <addaction name="actionResource_usage"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Setup"/>
+   <addaction name="menu_View"/>
    <addaction name="menu_Devices"/>
    <addaction name="menu_Measurement"/>
    <addaction name="menu_Tools"/>
@@ -502,6 +517,73 @@
    </property>
    <property name="toolTip">
     <string>Help on the script commands</string>
+   </property>
+  </action>
+  <action name="actionAccounting">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Accounting</string>
+   </property>
+   <property name="toolTip">
+    <string>Open accounting dockwidget</string>
+   </property>
+  </action>
+  <action name="actionShutter_and_beamstop">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Shutter and beamstop</string>
+   </property>
+   <property name="toolTip">
+    <string>Show the shutter and beamstop control dockwidget</string>
+   </property>
+  </action>
+  <action name="actionFSN_counters">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>FSN counters</string>
+   </property>
+   <property name="toolTip">
+    <string>Show file sequence numbers</string>
+   </property>
+  </action>
+  <action name="actionResource_usage">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Resource usage</string>
+   </property>
+   <property name="toolTip">
+    <string>Show resource usage dockwidget</string>
+   </property>
+  </action>
+  <action name="actionAbout_Qt">
+   <property name="icon">
+    <iconset theme="help-about"/>
+   </property>
+   <property name="text">
+    <string>About Qt</string>
+   </property>
+   <property name="toolTip">
+    <string>About Qt</string>
    </property>
   </action>
  </widget>

@@ -8,6 +8,7 @@ from .accounting.logindialog import LogInDialog
 from .mainwindow import MainWindow
 from .mainwindow.collectinghandler import CollectingHandler
 from ..core.instrument.instrument import Instrument
+from ..core.instrument.privileges import PRIV_SUPERUSER
 
 # initialize the root logger
 handler = logging.StreamHandler()
@@ -34,7 +35,15 @@ if '--root' not in app.arguments()[1:]:
     ld = LogInDialog(credo)
     if ld.exec() == ld.Rejected:
         sys.exit(1)
-
+else:
+    try:
+        credo.services['accounting'].select_user('root')
+    except IndexError:
+        credo.services['accounting'].add_user('root', 'Rootus', 'Systemus', PRIV_SUPERUSER)
+        credo.services['accounting'].select_user('root')
 mw = MainWindow(credo=credo)
+mw.setWindowTitle(mw.windowTitle()+' v{}'.format(pkg_resources.get_distribution('cct').version))
+app.setWindowIcon(mw.windowIcon())
+credo.start()
 mw.show()
 sys.exit(app.exec_())
