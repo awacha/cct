@@ -3,8 +3,7 @@ import logging
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 
-
-from .resource.logviewer_ui import Ui_Form
+from .logviewer_ui import Ui_Form
 
 class LogModel(QtCore.QAbstractItemModel):
     """A model for storing log records.
