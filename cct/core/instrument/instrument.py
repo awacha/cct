@@ -14,7 +14,7 @@ from ..utils.telemetry import TelemetryInfo
 from ..utils.timeout import TimeOut
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DummyTm(object):
@@ -565,6 +565,7 @@ class Instrument(Callbacks):
         return True
 
     def shutdown(self):
+        logger.debug('Shutdown called.')
         self.shutdown_requested = True
         for d in self.devices:
             self.devices[d].disconnect_device()
@@ -578,10 +579,17 @@ class Instrument(Callbacks):
         running_devices = [d for d in self.devices if self.devices[d].get_connected()]
         running_services = [s for s in self.services if self.services[s].is_running()]
         if not running_devices and not running_services:
+            logger.debug('Sending shutdown signal.')
             self.shutdown_requested = False
+            self._telemetry_timeout.stop()
+            self._telemetry_timeout=None
+            self.starttime=None
             self.emit('shutdown')
         else:
             logger.debug('Not shutting instrument down yet. Outstanding devices: {}. Outstanding services: {}.'.format(
                 ', '.join([self.devices[d].name for d in running_devices]),
                 ', '.join([self.services[s].name for s in running_services])
             ))
+
+    def is_running(self):
+        return self.starttime is not None

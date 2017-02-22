@@ -1,8 +1,12 @@
 import datetime
+import logging
 import os
 import time
 
-from .service import Service
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+from .service import Service, ServiceError
 from ..utils.callback import SignalFlags
 from ..utils.telemetry import TelemetryInfo
 from ..utils.timeout import TimeOut
@@ -48,6 +52,8 @@ class TelemetryManager(Service):
 
     def get_telemetry(self, label) -> TelemetryInfo:
         if label is None:
+            if not self.telemetries:
+                raise ServiceError('No telemetries acquired yet.')
             tm = sum(list(self.telemetries.values()))
             tm.processname = '-- overall --'
             return tm
@@ -98,7 +104,9 @@ class TelemetryManager(Service):
         return True
 
     def stop(self):
+        logger.debug('Stopping telemetrymanager')
         if self._memlog_timeout_handle is not None:
+            logger.debug('Stopping memlog timeout handle')
             self._memlog_timeout_handle.stop()
             self._memlog_timeout_handle = None
         super().stop()
