@@ -3,13 +3,15 @@ import os
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 from .scripteditor_ui import Ui_MainWindow
+from ...core.mixins import ToolWindow
 
 
-class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow):
-    def __init__(self, parent=None, credo=None):
-        QtWidgets.QMainWindow.__init__(self, parent)
+class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
+    def __init__(self, *args, **kwargs):
+        credo= kwargs.pop('credo')
+        QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
+        ToolWindow.__init__(self, credo)
         self.lastfilename = None
-        self.credo=credo
         self.setupUi(self)
 
     def setupUi(self, MainWindow):
