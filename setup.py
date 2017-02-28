@@ -2,7 +2,8 @@
 import os
 
 from Cython.Build import cythonize
-from setuptools import setup, find_packages
+from numpy.lib import get_include
+from setuptools import setup, find_packages, Extension
 
 try:
     from PyQt5.uic import compileUi
@@ -52,10 +53,11 @@ def getresourcefiles():
 #    print('Updated language spec. Command list:\n' + ', '.join(allcommands))
 
 
-#extensions = [Extension("cct.gui.tools.optimizegeometry.estimateworksize",
-#                        ["cct/gui/tools/optimizegeometry/estimateworksize.pyx"], include_dirs=[get_include()])]
+extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
+                        ["cct/qtgui/tools/optimizegeometry/estimateworksize.pyx"],
+                        include_dirs=[get_include()])]
 
-extensions=[]
+#extensions=[]
 
 #update_languagespec()
 setup(name='cct', author='Andras Wacha',
