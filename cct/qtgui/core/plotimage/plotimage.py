@@ -277,6 +277,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
 
     def setExposure(self, exposure: Exposure):
         self._exposure = exposure
+        del exposure
         self.replot()
 
     def exposure(self) -> Exposure:
