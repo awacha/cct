@@ -12,6 +12,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class ToolWindow(object):
     def __init__(self, credo, required_devices=[], privilegelevel=PRIV_LAYMAN):
+        self._busy = False
+        assert isinstance(self, QtWidgets.QWidget)
         try:
             self.credo = weakref.proxy(credo)
         except TypeError:
@@ -45,6 +47,7 @@ class ToolWindow(object):
             ])
 
     def onPrivLevelChanged(self, accountingservice, privlevel):
+        assert isinstance(self, QtWidgets.QWidget)
         if privlevel < self.minimumPrivilegeLevel:
             self.cleanup()
             self.close()
@@ -86,8 +89,34 @@ class ToolWindow(object):
             self._privlevelconnection=None
         logger.debug('Cleanup() finished on ToolWindow {}'.format(self.objectName()))
 
+    def event(self, event:QtCore.QEvent):
+        if event.type()==QtCore.QEvent.ActivationChange:
+            self.activationChangeEvent(event)
+        return QtWidgets.QWidget.event(self, event)
+
+    def activationChangeEvent(self, event:QtCore.QEvent):
+        assert isinstance(self, QtWidgets.QWidget)
+        if self.windowState() & QtCore.Qt.WindowActive:
+            logger.debug('ToolWindow {} activation changed: it is now active. State: {}, {}'.format(self.objectName(), self.isActiveWindow(), self.windowState()))
+        else:
+            logger.debug('ToolWindow {} activation changed: it is now not active. State: {}, {}'.format(self.objectName(), self.isActiveWindow(), self.windowState()))
+            logger.debug('{}'.format(dir(self.windowState())))
+
     def closeEvent(self, event:QtGui.QCloseEvent):
+        assert isinstance(self, QtWidgets.QWidget)
         logger.debug('CloseEvent received for ToolWindow {}'.format(self.objectName()))
+        if self._busy:
+            result = QtWidgets.QMessageBox.question(
+                    self, "Really close?",
+                    "The process behind this window is still working. If you close this window now, "
+                    "you can break something. Are you <b>really</b> sure?")
+            logger.debug('Question result: {}'.format(result))
+            if result != QtWidgets.QMessageBox.Yes:
+                event.ignore()
+                logger.debug('Phew!')
+                return
+            else:
+                logger.debug("Closing window {} forced.".format(self.objectName()))
         self.cleanup()
         if isinstance(self, QtWidgets.QDockWidget):
             return QtWidgets.QDockWidget.closeEvent(self, event)
@@ -95,3 +124,11 @@ class ToolWindow(object):
             return QtWidgets.QMainWindow.closeEvent(self, event)
         else: #isinstance(self, QtWidgets.QWidget)
             return QtWidgets.QWidget.closeEvent(self, event)
+
+    def setBusy(self):
+        assert isinstance(self, QtWidgets.QWidget)
+        self._busy = True
+
+    def setIdle(self):
+        self._busy = False
+
