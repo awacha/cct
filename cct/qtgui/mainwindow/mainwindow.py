@@ -14,6 +14,7 @@ from .mainwindow_ui import Ui_MainWindow
 from ..setup.sampleeditor import SampleEditor
 from ..tools.capillarymeasurement import CapillaryMeasurement
 from ..tools.maskeditor import MaskEditor
+from ..tools.optimizegeometry import OptimizeGeometry
 from .logviewer import LogViewer
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
@@ -35,7 +36,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                               (self.actionResource_usage, dockwidgets.ResourceConsumption)]
         self._action_to_windowclass = {self.actionSample_editor:SampleEditor,
                                        self.actionCapillary_sizing:CapillaryMeasurement,
-                                       self.actionMask_editor:MaskEditor}
+                                       self.actionMask_editor:MaskEditor,
+                                       self.actionOptimize_geometry:OptimizeGeometry,
+                                       }
         self._dockwidgets = {}
 
 
@@ -65,6 +68,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.credo.connect('device-connected', self.onCredoDeviceConnected),
             self.credo.connect('device-disconnected', self.onCredoDeviceDisconnected)
         ]
+        #self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+        self.setAttribute(QtCore.Qt.WA_QuitOnClose, True)
 
     def closeEvent(self, event:QtGui.QCloseEvent):
         if self.credo.is_running():
@@ -166,6 +171,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
         try:
             logger.debug('Trying to find window for action {}'.format(action.objectName()))
             self.windowdict[action].show()
+            self.windowdict[action].raise_()
         except (KeyError, RuntimeError):
             logger.debug('Window not found for action {}; creating new one, an instance of {}'.format(action.objectName(), str(windowclass)))
             self.windowdict[action]=windowclass(parent=None, credo=weakref.proxy(self.credo))
@@ -177,3 +183,18 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
         for c in self._credo_connections:
             self.credo.disconnect(c)
         self._credo_connections=[]
+        for action in list(self._dockwidgets.keys()):
+            try:
+                self._dockwidgets[action].close()
+                self._dockwidgets[action].destroy()
+            except RuntimeError:
+                pass
+            del self._dockwidgets[action]
+        for action in list(self.windowdict.keys()):
+            try:
+                self.windowdict[action].close()
+                self.windowdict[action].destroy()
+            except RuntimeError:
+                pass
+            del self.windowdict[action]
+        logging.root.removeHandler(self.logViewer)
