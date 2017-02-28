@@ -6,6 +6,7 @@ from sastool.classes2.exposure import Exposure
 from scipy.io import savemat, loadmat
 
 from .maskeditor_ui import Ui_MainWindow
+from ...core.fsnselector import FSNSelectorHorizontal
 from ...core.mixins import ToolWindow
 from ...core.plotimage import PlotImage
 
@@ -38,9 +39,22 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                     self.plotimage.axesComboBox.removeItem(i)
                     break
         self.plotimage.axesComboBox.setCurrentIndex(0)
-        self.setCentralWidget(self.plotimage.canvas)
+        w=QtWidgets.QWidget(self)
+        self.setCentralWidget(w)
+
         self.addToolBar(QtCore.Qt.BottomToolBarArea, self.plotimage.figtoolbar)
-        self.centralwidget.setObjectName('plotimageCanvas')
+        w.setObjectName('plotimageCanvas')
+        l=QtWidgets.QVBoxLayout(w)
+        w.setLayout(l)
+        l.setContentsMargins(0,0,0,0)
+        self.fsnSelector=FSNSelectorHorizontal(w, credo=self.credo)
+        l.addWidget(self.fsnSelector)
+        l.addWidget(self.plotimage.canvas)
+        self.fsnSelector.FSNSelected.connect(self.onFSNSelected)
+
+    def onFSNSelected(self, prefix, fsn, exposure):
+        self.setExposure(exposure)
+        del exposure
 
     def setExposure(self, exposure: Exposure):
         self.undoStack = [exposure.mask]
