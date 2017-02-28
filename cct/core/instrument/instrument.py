@@ -279,6 +279,17 @@ class Instrument(Callbacks):
                 'optimizegeometry': {
                     'spacers': [65, 65, 100, 100, 100, 100, 100, 200, 200, 500, 800],
                     'pinholes': [150, 200, 300, 400, 500, 600, 750, 1000, 1250],
+                    'sealingringwidth': 4.0,
+                    'L1withoutspacers':104.0,
+                    'L2withoutspacers':104.0,
+                    'detector_beamstop_distance':67.5,
+                    'ph3_sample_distance':123.0,
+                    'minimum_ph1_ph2_distance':203.0,
+                    'minimum_ph2_ph3_distance':203.0,
+                    'minimum_sample_diameter':0.7,
+                    'maximum_sample_diameter':1.0,
+                    'minimum_beamstop_diameter':3.0,
+                    'maximum_beamstop_diameter':4.0,
                 }
             }
         }
