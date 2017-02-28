@@ -140,4 +140,4 @@ class LogViewer(QtWidgets.QWidget, Ui_Form, logging.Handler):
         self.shownMessagesLabel.setText('{:d} from {:d}'.format(self.logModel.rowCount(), len(self.logModel)))
         if self.autoscrollCheckBox.checkState() == Qt.Checked:
             self.logTreeView.scrollToBottom()
-
+        self.logTreeView.resizeColumnToContents(self.logModel.columnCount()-1)
