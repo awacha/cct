@@ -1,5 +1,7 @@
+import gc
 import logging.handlers
 import sys
+import traceback
 
 import pkg_resources
 from PyQt5.QtWidgets import QApplication
@@ -31,6 +33,20 @@ app = QApplication(sys.argv)
 
 credo = Instrument(online='--online' in app.arguments()[1:])
 
+oldexcepthook=sys.excepthook
+
+def my_excepthook(type_, value, traceback_):
+    # noinspection PyBroadException
+    try:
+        logging.root.critical(
+            'Unhandled exception: ' + '\n'.join(traceback.format_exception(type_, value, traceback_)))
+    except Exception:
+        logging.root.critical(
+            'Error in excepthook: ' + traceback.format_exc())
+    oldexcepthook(type_, value, traceback_)
+
+sys.excepthook = my_excepthook
+
 if '--root' not in app.arguments()[1:]:
     ld = LogInDialog(credo)
     if ld.exec() == ld.Rejected:
@@ -46,4 +62,20 @@ mw.setWindowTitle(mw.windowTitle()+' v{}'.format(pkg_resources.get_distribution(
 app.setWindowIcon(mw.windowIcon())
 credo.start()
 mw.show()
-sys.exit(app.exec_())
+result=app.exec_()
+logging.root.debug('QApplication exited.')
+del mw
+logging.root.debug('MW deleted.')
+gc.collect()
+logging.root.debug('Garbage collected.')
+del app
+logging.root.debug('App deleted.')
+gc.collect()
+logging.root.debug('Garbage collected.')
+del credo
+logging.root.debug('Credo deleted.')
+gc.collect()
+logging.root.debug('Garbage collected.')
+
+logging.root.debug('Exiting.')
+sys.exit(result)
