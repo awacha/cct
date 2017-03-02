@@ -56,6 +56,11 @@ class Instrument(Callbacks):
         # emitted when a device is disconnected. The first argument is the device,
         # the second one is a bool: if the disconnection was expected or not.
         'device-disconnected': (SignalFlags.RUN_FIRST, None, (object, bool)),
+        # Emitted whenever the configuration changes. Note that the emission of this
+        # signal is not automatic: it must be ensured by the user by calling
+        # Instrument.emit_config_change_signal(). The signal is emitted automatically
+        # upon loading and saving the state.
+        'config-changed': (SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, online):
@@ -76,6 +81,9 @@ class Instrument(Callbacks):
         self.starttime = None
         self.load_state()
         self.create_services()
+
+    def emit_config_change_signal(self):
+        self.emit('config-changed')
 
     @property
     def online(self) -> bool:
@@ -138,6 +146,8 @@ class Instrument(Callbacks):
                 'wavelength.err': 0.15418 * 0.03,
                 'beamposx': 330.,
                 'beamposy': 257.,
+                'beamposx.err': 0.,
+                'beamposy.err': 0.,
                 'pixelsize': 0.172,
                 'mask': 'mask.mat'
             },
@@ -293,6 +303,7 @@ class Instrument(Callbacks):
                 }
             }
         }
+        self.emit_config_change_signal()
 
     def save_state(self):
         """Save the current configuration (including that of all devices) to a
@@ -312,6 +323,7 @@ class Instrument(Callbacks):
         for serv in self.services.values():
             assert isinstance(serv, Service)
             serv.update_config(self.config)
+        self.emit_config_change_signal()
 
     def update_config(self, config_orig, config_loaded):
         """Uppdate the config dictionary in `config_orig` with the loaded
@@ -323,6 +335,7 @@ class Instrument(Callbacks):
                 self.update_config(config_orig[c], config_loaded[c])
             else:
                 config_orig[c] = config_loaded[c]
+        self.emit_config_change_signal()
         return
 
     def load_state(self):
