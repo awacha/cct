@@ -15,6 +15,8 @@ from ..setup.sampleeditor import SampleEditor
 from ..tools.capillarymeasurement import CapillaryMeasurement
 from ..tools.maskeditor import MaskEditor
 from ..tools.optimizegeometry import OptimizeGeometry
+from ..setup.geometry import GeometrySetup
+from ..setup.calibration import Calibration
 from .logviewer import LogViewer
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
@@ -38,6 +40,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                        self.actionCapillary_sizing:CapillaryMeasurement,
                                        self.actionMask_editor:MaskEditor,
                                        self.actionOptimize_geometry:OptimizeGeometry,
+                                       self.actionGeometry_editor:GeometrySetup,
+                                       self.actionCalibration:Calibration,
                                        }
         self._dockwidgets = {}
 
@@ -70,6 +74,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         ]
         #self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         self.setAttribute(QtCore.Qt.WA_QuitOnClose, True)
+        self.progressBar.hide()
 
     def closeEvent(self, event:QtGui.QCloseEvent):
         if self.credo.is_running():
