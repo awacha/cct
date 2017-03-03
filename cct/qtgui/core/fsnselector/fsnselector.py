@@ -6,8 +6,8 @@ from ..mixins import ToolWindow
 from ....core.instrument.instrument import Instrument
 from ....core.services import FileSequence
 from .fsnselector_ui import Ui_Form
-#from .fsnselector_horizontal_ui import Ui_Form as Ui_FormHorizontal
 from sastool.classes2 import Exposure
+
 
 class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
     FSNSelected = QtCore.pyqtSignal(int ,'QString', Exposure)
@@ -27,7 +27,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         logger.debug('__init__ done.')
 
     def setupUi(self, Form):
-        super().setupUi(Form)
+        Ui_Form.setupUi(self, Form)
         if self.horizontal:
             self.hlayout = QtWidgets.QHBoxLayout()
             self.hlayout.setContentsMargins(0,0,0,0)
@@ -35,6 +35,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.hlayout.addWidget(self.prefixComboBox)
             self.hlayout.addWidget(self.label_2)
             self.hlayout.addWidget(self.FSNSpinBox)
+            self.hlayout.addWidget(self.buttonContainer)
             self.hlayout.addSpacerItem(QtWidgets.QSpacerItem(0,0,QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Minimum))
             del self.formLayout
             QtWidgets.QWidget().setLayout(self.layout()) # an ugly trick to get rid of the original layout.
@@ -48,13 +49,17 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.prefixComboBox.currentIndexChanged.connect(self.onPrefixChanged)
         self._fsconnections=[fs.connect('lastfsn-changed', self.onLastFSNChanged)]
         self.FSNSpinBox.valueChanged.connect(self.onFSNSpinBoxValueChanged)
+        self.onPrefixChanged()
 
     def onFSNSpinBoxValueChanged(self):
         fs = self.credo.services['filesequence']
         assert isinstance(fs, FileSequence)
-        exposure = fs.load_exposure(self.prefixComboBox.currentText(), self.FSNSpinBox.value())
-        self.FSNSelected.emit(self.FSNSpinBox.value(), self.prefixComboBox.currentText(), exposure)
-        del exposure
+        try:
+            exposure = fs.load_exposure(self.prefixComboBox.currentText(), self.FSNSpinBox.value())
+            self.FSNSelected.emit(self.FSNSpinBox.value(), self.prefixComboBox.currentText(), exposure)
+            del exposure
+        except FileNotFoundError:
+            pass
 
     def onLastFSNChanged(self, filesequence, prefix, lastfsn):
         if prefix != self.prefixComboBox.currentText():
