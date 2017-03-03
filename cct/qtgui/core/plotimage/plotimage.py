@@ -1,4 +1,5 @@
 import datetime
+import gc
 
 import matplotlib.cm
 import matplotlib.colors
@@ -117,6 +118,8 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.showMaskPushButton.toggled.connect(self.showMaskChanged)
         self.showBeamPushButton.toggled.connect(self.showBeamChanged)
         self._testimage()
+        self.figtoolbar.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum)
+        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
 
     def toolbarVisibility(self, state):
         self.toolbar.setVisible(state)
@@ -160,6 +163,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             mf[ex.mask != 0] = np.nan
             self._mask = self.axes.imshow(mf, cmap='gray_r', interpolation='nearest', aspect='equal', alpha=0.7,
                                           origin='upper', extent=self._image.get_extent(), zorder=2)
+        gc.collect()
 
     def replot_crosshair(self):
         if hasattr(self, '_crosshair'):
@@ -181,6 +185,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
                 extent=self._image.get_extent()
                 self._crosshair=self.axes.plot(extent[0:2], [0,0], 'w-',
                                                [0,0], extent[2:4], 'w-', scalex=False, scaley=False)
+        gc.collect()
 
     def replot(self):
         ex = self.exposure()
@@ -274,6 +279,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         else:
             assert False
         self.canvas.draw()
+        gc.collect()
 
     def setExposure(self, exposure: Exposure):
         self._exposure = exposure
@@ -283,3 +289,9 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
     def exposure(self) -> Exposure:
         return self._exposure
 
+    def setOnlyAbsPixel(self, status=True):
+        if status:
+            self.axesComboBox.setCurrentIndex(0)
+            self.axesComboBox.setEnabled(False)
+        else:
+            self.axesComboBox.setEnabled(True)
