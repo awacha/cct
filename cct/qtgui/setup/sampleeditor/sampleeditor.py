@@ -217,25 +217,30 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             samplename = self.listWidget.selectedItems()[0].data(QtCore.Qt.DisplayRole)
         except IndexError:
             return
+        def updatespinbox(spinbox, value):
+            if spinbox.value() != value:
+                spinbox.setValue(value)
         try:
             self._updating_entries = True
             sample = self.credo.services['samplestore'].get_sample(samplename)
             assert isinstance(sample, Sample)
             self.sampleNameLineEdit.setText(sample.title)
-            self.descriptionPlainTextEdit.setPlainText(sample.description)
+            if self.descriptionPlainTextEdit.toPlainText() != sample.description:
+                self.descriptionPlainTextEdit.setPlainText(sample.description)
             self.categoryComboBox.setCurrentIndex(self.categoryComboBox.findText(sample.category))
             self.situationComboBox.setCurrentIndex(self.situationComboBox.findText(sample.situation))
-            self.preparedByLineEdit.setText(sample.preparedby)
-            self.thicknessValDoubleSpinBox.setValue(sample.thickness.val)
-            self.thicknessErrDoubleSpinBox.setValue(sample.thickness.err)
-            self.xPositionValDoubleSpinBox.setValue(sample.positionx.val)
-            self.xPositionErrDoubleSpinBox.setValue(sample.positionx.err)
-            self.yPositionValDoubleSpinBox.setValue(sample.positiony.val)
-            self.yPositionErrDoubleSpinBox.setValue(sample.positiony.err)
-            self.distminusValDoubleSpinBox.setValue(sample.distminus.val)
-            self.distminusErrDoubleSpinBox.setValue(sample.distminus.err)
-            self.transmissionValDoubleSpinBox.setValue(sample.transmission.val)
-            self.transmissionErrDoubleSpinBox.setValue(sample.transmission.err)
+            if self.preparedByLineEdit.text() != sample.preparedby:
+                self.preparedByLineEdit.setText(sample.preparedby)
+            updatespinbox(self.thicknessValDoubleSpinBox, sample.thickness.val)
+            updatespinbox(self.thicknessErrDoubleSpinBox, sample.thickness.err)
+            updatespinbox(self.xPositionValDoubleSpinBox, sample.positionx.val)
+            updatespinbox(self.xPositionErrDoubleSpinBox, sample.positionx.err)
+            updatespinbox(self.yPositionValDoubleSpinBox, sample.positiony.val)
+            updatespinbox(self.yPositionErrDoubleSpinBox, sample.positiony.err)
+            updatespinbox(self.distminusValDoubleSpinBox, sample.distminus.val)
+            updatespinbox(self.distminusErrDoubleSpinBox, sample.distminus.err)
+            updatespinbox(self.transmissionValDoubleSpinBox, sample.transmission.val)
+            updatespinbox(self.transmissionErrDoubleSpinBox, sample.transmission.err)
             self.calendarWidget.setSelectedDate(sample.preparetime.date())
         finally:
             self._updating_entries = False
