@@ -24,6 +24,7 @@ class ToolWindow(object):
         for d in required_devices:
             self.requireDevice(d)
         self._privlevelconnection = self.credo.services['accounting'].connect('privlevel-changed', self.onPrivLevelChanged)
+        self._credoconnections = [self.credo.connect('config-changed', self.updateUiFromConfig)]
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 
     def requireDevice(self, devicename: str):
@@ -87,6 +88,9 @@ class ToolWindow(object):
         if self._privlevelconnection is not None:
             self.credo.services['accounting'].disconnect(self._privlevelconnection)
             self._privlevelconnection=None
+        for c in self._credoconnections:
+            self.credo.disconnect(c)
+        self._credoconnections = []
         logger.debug('Cleanup() finished on ToolWindow {}'.format(self.objectName()))
 
     def event(self, event:QtCore.QEvent):
@@ -97,10 +101,9 @@ class ToolWindow(object):
     def activationChangeEvent(self, event:QtCore.QEvent):
         assert isinstance(self, QtWidgets.QWidget)
         if self.windowState() & QtCore.Qt.WindowActive:
-            logger.debug('ToolWindow {} activation changed: it is now active. State: {}, {}'.format(self.objectName(), self.isActiveWindow(), self.windowState()))
+            logger.debug('ToolWindow {} activation changed: it is now active. State: {}, {}'.format(self.objectName(), self.isActiveWindow(), self.windowState()&0xffff))
         else:
-            logger.debug('ToolWindow {} activation changed: it is now not active. State: {}, {}'.format(self.objectName(), self.isActiveWindow(), self.windowState()))
-            logger.debug('{}'.format(dir(self.windowState())))
+            logger.debug('ToolWindow {} activation changed: it is now not active. State: {}, {}'.format(self.objectName(), self.isActiveWindow(), self.windowState()&0xffff))
 
     def closeEvent(self, event:QtGui.QCloseEvent):
         assert isinstance(self, QtWidgets.QWidget)
@@ -132,3 +135,6 @@ class ToolWindow(object):
     def setIdle(self):
         self._busy = False
 
+    def updateUiFromConfig(self, credo):
+        """This is called whenever the configuration changed"""
+        pass
