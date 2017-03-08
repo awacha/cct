@@ -176,6 +176,13 @@ class Accounting(Service):
     def get_projectids(self):
         return sorted([p.projectid for p in self.projects])
 
+    def rename_project(self, oldprojectid: str, newprojectid: str):
+        this_is_the_current_project = self.project.projectid == oldprojectid
+        prj = [p for p in self.projects if p.projectid == oldprojectid][0]
+        prj.projectid = newprojectid
+        if this_is_the_current_project:
+            self.select_project(newprojectid)
+
     def new_project(self, projectid: str, projectname: str, proposer: str):
         if not self.has_privilege(PRIV_PROJECTMAN):
             raise PrivilegeError(PRIV_PROJECTMAN)

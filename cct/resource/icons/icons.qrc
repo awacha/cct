@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>project.svg</file>
     <file>beamshutter.svg</file>
     <file>beamstop-in.svg</file>
     <file>beamstop-inconsistent.svg</file>
