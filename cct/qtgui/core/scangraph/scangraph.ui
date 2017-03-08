@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Scan</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../resource/icons/icons.qrc">
+    <normaloff>:/icons/scan.svg</normaloff>:/icons/scan.svg</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -28,7 +32,7 @@
            <string>Show all</string>
           </property>
           <property name="icon">
-           <iconset resource="../../resource/icons/icons.qrc">
+           <iconset resource="../../../resource/icons/icons.qrc">
             <normaloff>:/icons/show.svg</normaloff>:/icons/show.svg</iconset>
           </property>
          </widget>
@@ -39,7 +43,7 @@
            <string>Hide all</string>
           </property>
           <property name="icon">
-           <iconset resource="../../resource/icons/icons.qrc">
+           <iconset resource="../../../resource/icons/icons.qrc">
             <normaloff>:/icons/hide.svg</normaloff>:/icons/hide.svg</iconset>
           </property>
          </widget>
@@ -137,12 +141,6 @@
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
-   <property name="iconSize">
-    <size>
-     <width>48</width>
-     <height>48</height>
-    </size>
-   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
@@ -167,7 +165,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../../resource/icons/icons.qrc">
+    <iconset resource="../../../resource/icons/icons.qrc">
      <normaloff>:/icons/exposureviewer.svg</normaloff>:/icons/exposureviewer.svg</iconset>
    </property>
    <property name="text">
@@ -179,7 +177,7 @@
   </action>
   <action name="actionFit_positive_Lorentzian">
    <property name="icon">
-    <iconset resource="../../resource/icons/icons.qrc">
+    <iconset resource="../../../resource/icons/icons.qrc">
      <normaloff>:/icons/fitpeak_positive_Lorentzian.svg</normaloff>:/icons/fitpeak_positive_Lorentzian.svg</iconset>
    </property>
    <property name="text">
@@ -191,7 +189,7 @@
   </action>
   <action name="actionFit_negative_Lorentzian">
    <property name="icon">
-    <iconset resource="../../resource/icons/icons.qrc">
+    <iconset resource="../../../resource/icons/icons.qrc">
      <normaloff>:/icons/fitpeak_negative_Lorentzian.svg</normaloff>:/icons/fitpeak_negative_Lorentzian.svg</iconset>
    </property>
    <property name="text">
@@ -203,7 +201,7 @@
   </action>
   <action name="actionFit_positive_Gaussian">
    <property name="icon">
-    <iconset resource="../../resource/icons/icons.qrc">
+    <iconset resource="../../../resource/icons/icons.qrc">
      <normaloff>:/icons/fitpeak_positive_Gaussian.svg</normaloff>:/icons/fitpeak_positive_Gaussian.svg</iconset>
    </property>
    <property name="text">
@@ -215,7 +213,7 @@
   </action>
   <action name="actionFit_negative_Gaussian">
    <property name="icon">
-    <iconset resource="../../resource/icons/icons.qrc">
+    <iconset resource="../../../resource/icons/icons.qrc">
      <normaloff>:/icons/fitpeak_negative_Gaussian.svg</normaloff>:/icons/fitpeak_negative_Gaussian.svg</iconset>
    </property>
    <property name="text">
@@ -227,7 +225,7 @@
   </action>
   <action name="actionCursor_to_Maximum">
    <property name="icon">
-    <iconset resource="../../resource/icons/icons.qrc">
+    <iconset resource="../../../resource/icons/icons.qrc">
      <normaloff>:/icons/cursor-to-maximum.svg</normaloff>:/icons/cursor-to-maximum.svg</iconset>
    </property>
    <property name="text">
@@ -239,7 +237,7 @@
   </action>
   <action name="actionCursor_to_Minimum">
    <property name="icon">
-    <iconset resource="../../resource/icons/icons.qrc">
+    <iconset resource="../../../resource/icons/icons.qrc">
      <normaloff>:/icons/cursor-to-minimum.svg</normaloff>:/icons/cursor-to-minimum.svg</iconset>
    </property>
    <property name="text">
@@ -290,7 +288,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../../resource/icons/icons.qrc">
+    <iconset resource="../../../resource/icons/icons.qrc">
      <normaloff>:/icons/legend.svg</normaloff>:/icons/legend.svg</iconset>
    </property>
    <property name="text">
@@ -302,7 +300,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../../resource/icons/icons.qrc"/>
+  <include location="../../../resource/icons/icons.qrc"/>
  </resources>
  <connections/>
 </ui>
