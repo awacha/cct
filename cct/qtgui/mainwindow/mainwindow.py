@@ -16,7 +16,10 @@ from ..tools.capillarymeasurement import CapillaryMeasurement
 from ..tools.maskeditor import MaskEditor
 from ..tools.optimizegeometry import OptimizeGeometry
 from ..setup.geometry import GeometrySetup
+from ..measurement.scripteditor import ScriptEditor
 from ..setup.calibration import Calibration
+from ..setup.project import ProjectSetup
+from ..view.scanview import ScanViewer
 from .logviewer import LogViewer
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
@@ -35,13 +38,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._dockwidgetinfo=[(self.actionAccounting, dockwidgets.Accounting),
                               (self.actionFSN_counters, dockwidgets.FSNCounter),
                               (self.actionShutter_and_beamstop, dockwidgets.ShutterAndBeamstop),
-                              (self.actionResource_usage, dockwidgets.ResourceConsumption)]
+                              (self.actionResource_usage, dockwidgets.ResourceConsumption),
+                              ]
         self._action_to_windowclass = {self.actionSample_editor:SampleEditor,
                                        self.actionCapillary_sizing:CapillaryMeasurement,
                                        self.actionMask_editor:MaskEditor,
                                        self.actionOptimize_geometry:OptimizeGeometry,
                                        self.actionGeometry_editor:GeometrySetup,
                                        self.actionCalibration:Calibration,
+                                       self.actionScript:ScriptEditor,
+                                       self.actionProject_management:ProjectSetup,
+                                       self.actionView_scans:ScanViewer,
                                        }
         self._dockwidgets = {}
 
