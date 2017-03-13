@@ -20,6 +20,10 @@ from ..measurement.scripteditor import ScriptEditor
 from ..setup.calibration import Calibration
 from ..setup.project import ProjectSetup
 from ..view.scanview import ScanViewer
+from ..view.exposureview import ExposureView
+from ..devices.xray_source import XraySource
+from ..devices.detector import Detector
+from ..devices.motor import MotorOverview
 from .logviewer import LogViewer
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
@@ -35,11 +39,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def setupUi(self, MainWindow):
         Ui_MainWindow.setupUi(self,MainWindow)
 
-        self._dockwidgetinfo=[(self.actionAccounting, dockwidgets.Accounting),
-                              (self.actionFSN_counters, dockwidgets.FSNCounter),
-                              (self.actionShutter_and_beamstop, dockwidgets.ShutterAndBeamstop),
-                              (self.actionResource_usage, dockwidgets.ResourceConsumption),
-                              ]
+        self._dockwidgetinfo={self.actionAccounting:dockwidgets.Accounting,
+                              self.actionFSN_counters:dockwidgets.FSNCounter,
+                              self.actionShutter_and_beamstop:dockwidgets.ShutterAndBeamstop,
+                              self.actionResource_usage:dockwidgets.ResourceConsumption,
+                              }
         self._action_to_windowclass = {self.actionSample_editor:SampleEditor,
                                        self.actionCapillary_sizing:CapillaryMeasurement,
                                        self.actionMask_editor:MaskEditor,
@@ -49,6 +53,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                        self.actionScript:ScriptEditor,
                                        self.actionProject_management:ProjectSetup,
                                        self.actionView_scans:ScanViewer,
+                                       self.actionView_images_and_curves:ExposureView,
+                                       self.actionX_ray_source:XraySource,
+                                       self.actionDetector:Detector,
+                                       self.actionMotors:MotorOverview,
                                        }
         self._dockwidgets = {}
 
@@ -79,9 +87,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.credo.connect('device-connected', self.onCredoDeviceConnected),
             self.credo.connect('device-disconnected', self.onCredoDeviceDisconnected)
         ]
-        #self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         self.setAttribute(QtCore.Qt.WA_QuitOnClose, True)
         self.progressBar.hide()
+        if self.credo.online:
+            self.credo.connect_devices()
 
     def closeEvent(self, event:QtGui.QCloseEvent):
         if self.credo.is_running():
@@ -95,14 +104,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cleanup()
         self.close()
 
+    def updateActionEnabledStates(self):
+        for action in self._action_to_windowclass:
+            reqOk=self._action_to_windowclass[action].testRequirements(self.credo)
+            action.setEnabled(reqOk)
+            if action in self.windowdict:
+                self.windowdict[action].setEnabled(reqOk)
+        for action in self._dockwidgetinfo:
+            reqOk=self._dockwidgetinfo[action].testRequirements(self.credo)
+            action.setEnabled(reqOk)
+            if not reqOk and action.isChecked():
+                action.setChecked(False)
+
     def onCredoDevicesReady(self, credo:Instrument):
-        pass
+        self.updateActionEnabledStates()
 
     def onCredoDeviceConnected(self, credo:Instrument, device:Device):
         pass
 
     def onCredoDeviceDisconnected(self, credo:Instrument, device:Device, expected:bool):
-        pass
+        self.updateActionEnabledStates()
 
     def showHideDockWidget(self, state:bool):
         logger.debug('showHideDockWidget({}). Action: {}'.format(state,self.sender().objectName()))
@@ -127,7 +148,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             logger.debug('Showing dockwidget')
             assert action not in self._dockwidgets
-            cls = [c for a,c in self._dockwidgetinfo if a is action][0]
+            cls = [self._dockwidgetinfo[a] for a in self._dockwidgetinfo if a is action][0]
             self._dockwidgets[action]= cls(self, credo=self.credo)
             logger.debug('Class initialized')
             self._dockwidgets[action].setSizePolicy(
