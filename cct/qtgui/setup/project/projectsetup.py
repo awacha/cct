@@ -72,7 +72,7 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
             selected = self.selectedProject()
             self.listWidget.clear()
             self.listWidget.addItems(sorted(acc.get_projectids()))
-            self.selectedProject(selected)
+            self.selectProject(selected)
         except IndexError:
             return
         finally:
