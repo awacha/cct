@@ -87,3 +87,7 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
             if idx.sum():
                 return x[idx].min(), x[idx].max(), y[idx].min(), y[idx].max()
         return (xmin, xmax, ymin, ymax)
+
+    def clear(self):
+        self.axes.clear()
+        self.canvas.draw()
