@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>455</width>
-    <height>427</height>
+    <width>553</width>
+    <height>240</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,99 +25,168 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QTreeView" name="treeView"/>
+       <widget class="QTreeView" name="treeView">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="sizeAdjustPolicy">
+         <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_2">
-     <property name="title">
-      <string>High-level operations</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="2">
-       <widget class="QPushButton" name="pushButton">
-        <property name="text">
-         <string>Move</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QComboBox" name="comboBox"/>
-      </item>
-      <item row="0" column="3">
-       <widget class="QPushButton" name="pushButton_2">
-        <property name="text">
-         <string>Move X</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Sample:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="4">
-       <widget class="QPushButton" name="pushButton_3">
-        <property name="text">
-         <string>Move Y</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Beamstop:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QComboBox" name="comboBox_2">
-        <item>
-         <property name="text">
-          <string>Move In</string>
-         </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QGroupBox" name="groupBox_2">
+       <property name="title">
+        <string>High-level operations</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="2">
+         <widget class="QPushButton" name="movetoSamplePushButton">
+          <property name="text">
+           <string>Move</string>
+          </property>
+         </widget>
         </item>
-        <item>
-         <property name="text">
-          <string>Move Out</string>
-         </property>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="sampleNameComboBox"/>
         </item>
-       </widget>
-      </item>
-      <item row="1" column="3">
-       <widget class="QPushButton" name="pushButton_4">
-        <property name="text">
-         <string>Calibrate:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="4">
-       <widget class="QComboBox" name="comboBox_3">
-        <item>
-         <property name="text">
-          <string>In</string>
-         </property>
+        <item row="0" column="3">
+         <widget class="QPushButton" name="movetoSampleXPushButton">
+          <property name="text">
+           <string>Move X</string>
+          </property>
+         </widget>
         </item>
-        <item>
-         <property name="text">
-          <string>Out</string>
-         </property>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Sample:</string>
+          </property>
+         </widget>
         </item>
-       </widget>
-      </item>
-     </layout>
-    </widget>
+        <item row="0" column="4">
+         <widget class="QPushButton" name="movetoSampleYPushButton">
+          <property name="text">
+           <string>Move Y</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Beamstop:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QComboBox" name="beamstopControlComboBox">
+          <item>
+           <property name="text">
+            <string>Move In</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Move Out</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <widget class="QPushButton" name="calibrateBeamstopPushButton">
+          <property name="text">
+           <string>Calibrate:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="4">
+         <widget class="QComboBox" name="beamstopCalibrationTargetComboBox">
+          <item>
+           <property name="text">
+            <string>In</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Out</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_3">
+       <property name="title">
+        <string>Move motor</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Target:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Motor name:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="motorNameComboBox"/>
+        </item>
+        <item row="1" column="1">
+         <widget class="QDoubleSpinBox" name="motorTargetDoubleSpinBox"/>
+        </item>
+        <item row="0" column="2">
+         <widget class="QCheckBox" name="relativeMovementCheckBox">
+          <property name="text">
+           <string>Relative</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QPushButton" name="moveMotorPushButton">
+          <property name="text">
+           <string>Move</string>
+          </property>
+          <property name="icon">
+           <iconset theme="system-run"/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

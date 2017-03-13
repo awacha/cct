@@ -1,4 +1,4 @@
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 
 from .....core.devices.motor import Motor
 from .....core.instrument.instrument import Instrument
@@ -54,7 +54,7 @@ class MotorModel(QtCore.QAbstractItemModel):
             elif index.column() == 2:
                 return '{:.4f}'.format(motor.get_variable('softright'))
             elif index.column() == 3:
-                return '<b>{:.4f}</b>'.format(motor.get_variable('actualposition'))
+                return '{:.4f}'.format(motor.get_variable('actualposition'))
             elif index.column() == 4:
                 return '{:.4f}'.format(motor.get_variable('actualspeed'))
             elif index.column() == 5:
@@ -74,8 +74,17 @@ class MotorModel(QtCore.QAbstractItemModel):
                 return [QtCore.Qt.Unchecked, QtCore.Qt.Checked][motor.get_variable('rightswitchstatus')]
             else:
                 return None
+        elif role == QtCore.Qt.FontRole:
+            if index.column() == 3:
+                font = QtGui.QFont()
+                font.setBold(True)
+                return font
+            else:
+                return None
+        else:
+            return None
 
-    def flags(self, index:QtCore.Qt.QModelIndex):
+    def flags(self, index:QtCore.QModelIndex):
         return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
     def headerData(self, column, orientation, role=None):
