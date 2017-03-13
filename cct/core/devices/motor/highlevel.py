@@ -15,7 +15,8 @@ class Motor(Callbacks):
                    'error': (SignalFlags.RUN_LAST, None, (str, object, str)),
                    'position-change': (SignalFlags.RUN_FIRST, None, (float,)),
                    'stop': (SignalFlags.RUN_FIRST, None, (bool,)),
-                   'disconnect': (SignalFlags.RUN_LAST, None, (bool,))
+                   'disconnect': (SignalFlags.RUN_LAST, None, (bool,)),
+                   'ready': (SignalFlags.RUN_LAST, None, ()),
                    }
 
     def __init__(self, controller: TMCMCard, index: int, name: str):
