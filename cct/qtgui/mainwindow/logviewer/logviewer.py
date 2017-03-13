@@ -1,9 +1,11 @@
 import logging
+import time
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 
 from .logviewer_ui import Ui_Form
+
 
 class LogModel(QtCore.QAbstractItemModel):
     """A model for storing log records.
@@ -106,6 +108,7 @@ class LogViewer(QtWidgets.QWidget, Ui_Form, logging.Handler):
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         logging.Handler.__init__(self)
+        self._lastrecordarrived=0
         formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
         self.setFormatter(formatter)
         self.setupUi(self)
@@ -138,6 +141,8 @@ class LogViewer(QtWidgets.QWidget, Ui_Form, logging.Handler):
         self.format(record)
         self.logModel.append(record)
         self.shownMessagesLabel.setText('{:d} from {:d}'.format(self.logModel.rowCount(), len(self.logModel)))
-        if self.autoscrollCheckBox.checkState() == Qt.Checked:
+        if self.autoscrollCheckBox.checkState() == Qt.Checked and record.levelno >= logging.INFO and (time.monotonic()-self._lastrecordarrived)>0.5:
             self.logTreeView.scrollToBottom()
-        self.logTreeView.resizeColumnToContents(self.logModel.columnCount()-1)
+        self._lastrecordarrived = time.monotonic()
+        if record.levelno >= logging.WARNING:
+            self.logTreeView.resizeColumnToContents(self.logModel.columnCount()-1)
