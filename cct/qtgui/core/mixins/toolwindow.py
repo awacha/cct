@@ -11,6 +11,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class ToolWindow(object):
+    required_devices = []
+
     def __init__(self, credo, required_devices=[], privilegelevel=PRIV_LAYMAN):
         self._busy = False
         assert isinstance(self, QtWidgets.QWidget)
@@ -21,11 +23,18 @@ class ToolWindow(object):
         assert isinstance(self.credo, Instrument)  # this works even if self.credo is a weakproxy to Instrument
         self._device_connections = {}
         self.minimumPrivilegeLevel = privilegelevel
-        for d in required_devices:
+        for d in self.required_devices + required_devices:
             self.requireDevice(d)
         self._privlevelconnection = self.credo.services['accounting'].connect('privlevel-changed', self.onPrivLevelChanged)
         self._credoconnections = [self.credo.connect('config-changed', self.updateUiFromConfig)]
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+
+    @classmethod
+    def testRequirements(cls, credo:Instrument):
+        """Return True if the instrument is in a state when this window can be opened. If this
+        class method returns False, the window won't be opened or will be closed or disabled if
+        it is already open."""
+        return True
 
     def requireDevice(self, devicename: str):
         assert isinstance(self.credo, Instrument)
@@ -61,9 +70,15 @@ class ToolWindow(object):
         return False
 
     def onDeviceDisconnect(self, device: Union[Device, Motor], abnormal_disconnection: bool):
+        if self._busy:
+            self.setEnabled(False)
+        else:
+            self.close()
+            self.cleanup()
         return False
 
     def onDeviceReady(self, device: Union[Device, Motor]):
+        self.setEnabled(True)
         return False
 
     def onMotorPositionChange(self, motor: Motor, newposition: float):
