@@ -29,6 +29,10 @@ class ScanViewer(QtWidgets.QWidget, Ui_Form, ToolWindow):
         for c in range(self.scanModel.columnCount()):
             self.treeView.resizeColumnToContents(c)
         self.treeView.doubleClicked.connect(self.onDoubleClicked)
+        self.showPushButton.clicked.connect(self.onShowClicked)
+
+    def onShowClicked(self):
+        return self.onDoubleClicked(self.treeView.selectionModel().selectedRows()[0])
 
     def onScanFileSelected(self):
         self.scanModel.setScanFile(self.scanFileComboBox.currentText())

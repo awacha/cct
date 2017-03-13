@@ -18,6 +18,28 @@
     <normaloff>:/icons/scanviewer.svg</normaloff>:/icons/scanviewer.svg</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="0" colspan="3">
+    <widget class="QTreeView" name="treeView">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="sizeAdjustPolicy">
+      <enum>QAbstractScrollArea::AdjustToContents</enum>
+     </property>
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
    <item row="0" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
@@ -46,25 +68,14 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0" colspan="3">
-    <widget class="QTreeView" name="treeView">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
+   <item row="2" column="2">
+    <widget class="QPushButton" name="showPushButton">
+     <property name="text">
+      <string>Show</string>
      </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>16777215</height>
-      </size>
-     </property>
-     <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustToContents</enum>
-     </property>
-     <property name="alternatingRowColors">
-      <bool>true</bool>
+     <property name="icon">
+      <iconset resource="../../../resource/icons/icons.qrc">
+       <normaloff>:/icons/show.svg</normaloff>:/icons/show.svg</iconset>
      </property>
     </widget>
    </item>
