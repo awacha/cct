@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>553</width>
-    <height>240</height>
+    <width>714</width>
+    <height>241</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,7 +52,7 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QGroupBox" name="groupBox_2">
+      <widget class="QGroupBox" name="highLevelGroupBox">
        <property name="title">
         <string>High-level operations</string>
        </property>
@@ -104,6 +104,9 @@
         </item>
         <item row="1" column="2">
          <widget class="QComboBox" name="beamstopControlComboBox">
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
           <item>
            <property name="text">
             <string>Move In</string>
@@ -141,7 +144,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="groupBox_3">
+      <widget class="QGroupBox" name="moveMotorGroupBox">
        <property name="title">
         <string>Move motor</string>
        </property>
@@ -164,7 +167,11 @@
          <widget class="QComboBox" name="motorNameComboBox"/>
         </item>
         <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="motorTargetDoubleSpinBox"/>
+         <widget class="QDoubleSpinBox" name="motorTargetDoubleSpinBox">
+          <property name="decimals">
+           <number>4</number>
+          </property>
+         </widget>
         </item>
         <item row="0" column="2">
          <widget class="QCheckBox" name="relativeMovementCheckBox">
@@ -179,7 +186,8 @@
            <string>Move</string>
           </property>
           <property name="icon">
-           <iconset theme="system-run"/>
+           <iconset theme="system-run">
+            <normaloff>.</normaloff>.</iconset>
           </property>
          </widget>
         </item>

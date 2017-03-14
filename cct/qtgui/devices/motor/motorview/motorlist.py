@@ -23,10 +23,10 @@ class MotorModel(QtCore.QAbstractItemModel):
         variables = ['softleft', 'softright', 'actualposition', 'actualspeed', 'leftswitchstatus', 'rightswitchstatus', 'load', 'errorflags']
         try:
             column = variables.index(variable)
-        except IndexError:
+        except ValueError:
             return False
         row=sorted(self.credo.motors.keys()).index(motor.name)
-        self.dataChanged.emit(self.index(row,column), self.index(row,column))
+        self.dataChanged.emit(self.index(row,column), self.index(row+1,column+1), [QtCore.Qt.DisplayRole])
         return False
 
     def columnCount(self, parent=None, *args, **kwargs):
