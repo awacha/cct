@@ -54,6 +54,7 @@ class ToolWindow(object):
             self._device_connections[device].extend([
                 device.connect('position-change', self.onMotorPositionChange),
                 device.connect('stop', self.onMotorStop),
+                device.connect('start', self.onMotorStart),
             ])
 
     def onPrivLevelChanged(self, accountingservice, privlevel):
@@ -85,6 +86,9 @@ class ToolWindow(object):
         return False
 
     def onMotorStop(self, motor: Motor, targetpositionreached: bool):
+        return False
+
+    def onMotorStart(self, motor:Motor):
         return False
 
     def unrequireDevice(self, device:Union[str, Device, Motor]):
