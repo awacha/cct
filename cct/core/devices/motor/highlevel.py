@@ -14,6 +14,7 @@ class Motor(Callbacks):
     __signals__ = {'variable-change': (SignalFlags.RUN_FIRST, None, (str, object)),
                    'error': (SignalFlags.RUN_LAST, None, (str, object, str)),
                    'position-change': (SignalFlags.RUN_FIRST, None, (float,)),
+                   'start': (SignalFlags.RUN_FIRST, None, ()),
                    'stop': (SignalFlags.RUN_FIRST, None, (bool,)),
                    'disconnect': (SignalFlags.RUN_LAST, None, (bool,)),
                    'ready': (SignalFlags.RUN_LAST, None, ()),
@@ -95,12 +96,24 @@ class Motor(Callbacks):
         return self._controller.get_variable('rightswitchstatus$' + str(self._index))
 
     def moveto(self, position):
-        self._moving = True
-        return self._controller.moveto(self._index, position)
+        try:
+            self._moving = True
+            retval = self._controller.moveto(self._index, position)
+            self.emit('start')
+            return retval
+        except Exception:
+            self._moving = False
+            raise
 
     def moverel(self, position):
-        self._moving = True
-        return self._controller.moverel(self._index, position)
+        try:
+            self._moving = True
+            retval = self._controller.moverel(self._index, position)
+            self.emit('start')
+            return retval
+        except Exception:
+            self._moving = False
+            raise
 
     def calibrate(self, position):
         return self._controller.calibrate(self._index, position)
