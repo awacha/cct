@@ -24,6 +24,8 @@ from ..view.exposureview import ExposureView
 from ..devices.xray_source import XraySource
 from ..devices.detector import Detector
 from ..devices.motor import MotorOverview
+from ..devices.circulator import TemperatureController
+from ..devices.vacuum import VacuumGauge
 from .logviewer import LogViewer
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
@@ -57,6 +59,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                        self.actionX_ray_source:XraySource,
                                        self.actionDetector:Detector,
                                        self.actionMotors:MotorOverview,
+                                       self.actionVacuum_gauge:VacuumGauge,
+                                       self.actionTemperature_stage:TemperatureController,
                                        }
         self._dockwidgets = {}
 
@@ -91,6 +95,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.progressBar.hide()
         if self.credo.online:
             self.credo.connect_devices()
+        self.updateActionEnabledStates()
 
     def closeEvent(self, event:QtGui.QCloseEvent):
         if self.credo.is_running():
@@ -126,38 +131,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.updateActionEnabledStates()
 
     def showHideDockWidget(self, state:bool):
-        logger.debug('showHideDockWidget({}). Action: {}'.format(state,self.sender().objectName()))
         action= self.sender()
         assert isinstance(action, QtWidgets.QAction)
         if not state:
-            logger.debug('Closing dockWidget')
             # we need to close the dockwidget
             try:
                 self._dockwidgets[action].destroyed.disconnect(action.setChecked)
-                logger.debug('visibilityChanged signal disconnected')
                 self._dockwidgets[action].close()
-                logger.debug('docwidget closed')
                 del self._dockwidgets[action]
-                logger.debug('dockwidget deleted')
             except RuntimeError:
                 del self._dockwidgets[action]
-                logger.debug('dockwidget deleted')
             except KeyError:
-                logger.debug('Dockwidget did not exist.')
                 pass
         else:
-            logger.debug('Showing dockwidget')
             assert action not in self._dockwidgets
             cls = [self._dockwidgetinfo[a] for a in self._dockwidgetinfo if a is action][0]
             self._dockwidgets[action]= cls(self, credo=self.credo)
-            logger.debug('Class initialized')
             self._dockwidgets[action].setSizePolicy(
                 QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,
                                       QtWidgets.QSizePolicy.Minimum))
             self._dockwidgets[action].setAttribute(QtCore.Qt.WA_DeleteOnClose)
             self._dockwidgets[action].destroyed.connect(lambda x=False: action.setChecked(False))
             self.addDockWidget(QtCore.Qt.TopDockWidgetArea, self._dockwidgets[action])
-            logger.debug('Dockwidget added.')
 
     def onQuit(self):
         assert isinstance(self.credo, Instrument)
