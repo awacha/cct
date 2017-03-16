@@ -54,9 +54,9 @@ class TPG201_Backend(DeviceBackend_TCP):
                     self.update_variable('_status', 'Vacuum OK')
                 self.update_variable('_auxstatus', '{:.3f} mbar'.format(pressure))
         elif message[3] == 84:  # T
-            self.update_variable('version', str(message[4:10]))
+            self.update_variable('version', message[4:10].decode('ascii'))
         elif message[3] == 85:  # U
-            self.update_variable('units', str(message[4:10]))
+            self.update_variable('units', message[4:10].decode('ascii'))
         else:
             raise DeviceError(
                 'Unknown message code {} in message {}'.format(chr(message[3]), str(message)))
