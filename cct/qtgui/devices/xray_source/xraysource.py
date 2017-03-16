@@ -62,12 +62,12 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(genix, GeniX)
         if self.warmUpPushButton.isChecked():
             try:
-                self.genix.start_warmup()
+                genix.start_warmup()
             except Exception as exc:
                 QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot start warm-up procedure: '+exc.args[0])
         else:
             try:
-                self.genix.stop_warmup()
+                genix.stop_warmup()
             except Exception as exc:
                 QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot stop warm-up procedure: '+exc.args[0])
 
@@ -130,6 +130,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
             elif variablename == 'shutter':
                 self.setFlagBackground(self.shutterStateFlag, not newvalue)
                 self.shutterStateFlag.setText(['Shutter closed', 'Shutter open'][newvalue])
+                self.shutterPushButton.setChecked(newvalue)
             elif variablename == 'remote_mode':
                 self.setFlagBackground(self.remoteControlFlag, newvalue)
             elif variablename == 'conditions_auto':
@@ -137,6 +138,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
             elif variablename == 'xrays':
                 self.setFlagBackground(self.xraysOnFlag, newvalue)
                 self.xraysOnFlag.setText(['X-rays off', 'X-rays on'][newvalue])
+                self.xraysOnPushButton.setChecked(newvalue)
             elif variablename == 'faults':
                 self.setFlagBackground(self.faultsFlag, not newvalue)
                 self.resetFaultsPushButton.setEnabled(newvalue)
@@ -168,34 +170,41 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 self.setFlagBackground(self.warmupFlag, not newvalue)
             elif variablename == 'interlock':
                 self.setFlagBackground(self.interlockFlag, newvalue)
+                self.shutterPushButton.setEnabled(newvalue)
             elif variablename == 'overridden':
                 self.setFlagBackground(self.overriddenFlag, not newvalue)
+            elif variablename == '_auxstatus':
+                self.statusLabel.setText(device.get_variable('_status')+'\n('+newvalue+')')
             elif variablename == '_status':
-                self.statusLabel.setText(device.get_variable('_status')+'\n('+device.get_variable('_auxstatus')+')')
+                self.statusLabel.setText(newvalue+'\n('+device.get_variable('_auxstatus')+')')
                 if newvalue == 'Power off':
                     self.xraysOnPushButton.setEnabled(True)
                     self.warmUpPushButton.setEnabled(True)
-                    self.shutterPushButton.setEnabled(True)
+                    self.warmUpPushButton.setChecked(False)
+                    self.shutterPushButton.setEnabled(device.get_variable('interlock'))
                     self.powerOffPushButton.setEnabled(False)
                     self.standbyPushButton.setEnabled(True)
                     self.fullPowerPushButton.setEnabled(False)
                 elif newvalue == 'Low power':
                     self.xraysOnPushButton.setEnabled(False)
                     self.warmUpPushButton.setEnabled(False)
-                    self.shutterPushButton.setEnabled(True)
+                    self.warmUpPushButton.setChecked(False)
+                    self.shutterPushButton.setEnabled(device.get_variable('interlock'))
                     self.powerOffPushButton.setEnabled(True)
                     self.standbyPushButton.setEnabled(False)
                     self.fullPowerPushButton.setEnabled(True)
                 elif newvalue == 'Full power':
                     self.xraysOnPushButton.setEnabled(False)
                     self.warmUpPushButton.setEnabled(False)
-                    self.shutterPushButton.setEnabled(True)
+                    self.warmUpPushButton.setChecked(False)
+                    self.shutterPushButton.setEnabled(device.get_variable('interlock'))
                     self.powerOffPushButton.setEnabled(True)
                     self.standbyPushButton.setEnabled(True)
                     self.fullPowerPushButton.setEnabled(False)
                 elif newvalue == 'X-rays off':
                     self.xraysOnPushButton.setEnabled(True)
                     self.warmUpPushButton.setEnabled(False)
+                    self.warmUpPushButton.setChecked(False)
                     self.shutterPushButton.setEnabled(False)
                     self.powerOffPushButton.setEnabled(False)
                     self.standbyPushButton.setEnabled(False)
@@ -203,34 +212,36 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 elif newvalue == 'Going to stand-by':
                     self.xraysOnPushButton.setEnabled(False)
                     self.warmUpPushButton.setEnabled(False)
-                    self.shutterPushButton.setEnabled(True)
+                    self.warmUpPushButton.setChecked(False)
+                    self.shutterPushButton.setEnabled(device.get_variable('interlock'))
                     self.powerOffPushButton.setEnabled(True)
                     self.standbyPushButton.setEnabled(False)
                     self.fullPowerPushButton.setEnabled(False)
                 elif newvalue == 'Ramping up':
                     self.xraysOnPushButton.setEnabled(False)
                     self.warmUpPushButton.setEnabled(False)
-                    self.shutterPushButton.setEnabled(True)
+                    self.warmUpPushButton.setChecked(False)
+                    self.shutterPushButton.setEnabled(device.get_variable('interlock'))
                     self.powerOffPushButton.setEnabled(True)
                     self.standbyPushButton.setEnabled(False)
                     self.fullPowerPushButton.setEnabled(False)
                 elif newvalue == 'Powering down':
                     self.xraysOnPushButton.setEnabled(False)
                     self.warmUpPushButton.setEnabled(False)
-                    self.shutterPushButton.setEnabled(True)
+                    self.warmUpPushButton.setChecked(False)
+                    self.shutterPushButton.setEnabled(device.get_variable('interlock'))
                     self.powerOffPushButton.setEnabled(False)
                     self.standbyPushButton.setEnabled(False)
                     self.fullPowerPushButton.setEnabled(False)
                 elif newvalue == 'Warming up':
                     self.xraysOnPushButton.setEnabled(False)
                     self.warmUpPushButton.setEnabled(True)
-                    self.shutterPushButton.setEnabled(True)
+                    self.warmUpPushButton.setChecked(True)
+                    self.shutterPushButton.setEnabled(device.get_variable('interlock'))
                     self.powerOffPushButton.setEnabled(False)
                     self.standbyPushButton.setEnabled(False)
                     self.fullPowerPushButton.setEnabled(False)
                 else:
                     raise ValueError(newvalue)
-            else:
-                logger.debug('Unknown variable in GeniX: {}. Value: {}'.format(variablename, newvalue))
         finally:
             self._updating_ui = False
