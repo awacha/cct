@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>714</width>
+    <width>722</width>
     <height>241</height>
    </rect>
   </property>
@@ -189,6 +189,9 @@
            <iconset theme="system-run">
             <normaloff>.</normaloff>.</iconset>
           </property>
+          <property name="autoDefault">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
        </layout>
@@ -198,6 +201,20 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>treeView</tabstop>
+  <tabstop>sampleNameComboBox</tabstop>
+  <tabstop>movetoSamplePushButton</tabstop>
+  <tabstop>movetoSampleXPushButton</tabstop>
+  <tabstop>movetoSampleYPushButton</tabstop>
+  <tabstop>beamstopControlComboBox</tabstop>
+  <tabstop>calibrateBeamstopPushButton</tabstop>
+  <tabstop>beamstopCalibrationTargetComboBox</tabstop>
+  <tabstop>motorNameComboBox</tabstop>
+  <tabstop>relativeMovementCheckBox</tabstop>
+  <tabstop>motorTargetDoubleSpinBox</tabstop>
+  <tabstop>moveMotorPushButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../../../../resource/icons/icons.qrc"/>
  </resources>
