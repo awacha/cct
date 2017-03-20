@@ -1,10 +1,25 @@
 import os
+import re
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 from .scripteditor_ui import Ui_MainWindow
 from ...core.mixins import ToolWindow
+from ....core.commands import Command
 
+
+class HighLighter(QtGui.QSyntaxHighlighter):
+    def __init__(self, *args, **kwargs):
+        QtGui.QSyntaxHighlighter.__init__(self, *args, **kwargs)
+        self.keywordformat = QtGui.QTextCharFormat()
+        self.keywordformat.setFontWeight(QtGui.QFont.Bold)
+        self.keywordformat.setForeground(QtCore.Qt.darkMagenta)
+        self.keywords_re = [re.compile('\\b'+c.name+'\\b') for c in Command.allcommands()]
+
+    def highlightBlock(self, text:str):
+        for kw in self.keywords_re:
+            for match in kw.finditer(text):
+                self.setFormat(match.start(), match.end(), self.keywordformat)
 
 class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -51,6 +66,7 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionLoad_script.triggered.connect(self.loadScript)
         self.actionStart.triggered.connect(self.runScript)
         self.actionPause.triggered.connect(self.pauseScript)
+        self.syntaxHighLighter = HighLighter(self.document)
 
     def flagtoggled(self, flagnumber):
         print('Flag #{} is now {}'.format(flagnumber, self.flags[flagnumber].isChecked()))
