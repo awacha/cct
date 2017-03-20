@@ -9,6 +9,7 @@ logger.setLevel(logging.DEBUG)
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 from ...core.instrument.instrument import Instrument
+from ...core.services.interpreter import Interpreter
 from ...core.devices import Device
 from .mainwindow_ui import Ui_MainWindow
 from ..setup.sampleeditor import SampleEditor
@@ -37,6 +38,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.windowdict={}
         self.setupUi(self)
         self._credo_connections=[]
+        self._interpreter_connections=[]
 
     def setupUi(self, MainWindow):
         Ui_MainWindow.setupUi(self,MainWindow)
@@ -91,11 +93,64 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.credo.connect('device-connected', self.onCredoDeviceConnected),
             self.credo.connect('device-disconnected', self.onCredoDeviceDisconnected)
         ]
+        ip = self.credo.services['interpreter']
+        assert isinstance(ip, Interpreter)
+        self._interpreter_connections=[
+            ip.connect('cmd-return', self.onCmdReturn),
+            ip.connect('cmd-fail', self.onCmdFail),
+            ip.connect('pulse', self.onCmdPulse),
+            ip.connect('progress', self.onCmdProgress),
+            ip.connect('cmd-message', self.onCmdMessage),
+            ip.connect('idle-changed', self.onInterpreterIdleChanged)
+        ]
         self.setAttribute(QtCore.Qt.WA_QuitOnClose, True)
         self.progressBar.hide()
         if self.credo.online:
             self.credo.connect_devices()
         self.updateActionEnabledStates()
+        self.executePushButton.clicked.connect(self.onExecuteCommandLine)
+        self.commandLineEdit.returnPressed.connect(self.onExecuteCommandLine)
+
+    def onExecuteCommandLine(self):
+        interpreter = self.credo.services['interpreter']
+        assert isinstance(interpreter, Interpreter)
+        if self.executePushButton.text()=='Execute':
+            interpreter.execute_command(self.commandLineEdit.text())
+        else:
+            assert self.executePushButton.text() == 'Stop'
+            interpreter.kill()
+
+    def onInterpreterIdleChanged(self, interpreter:Interpreter, idle:bool):
+        self.commandLineEdit.setEnabled(idle)
+        if idle:
+            self.executePushButton.setText('Execute')
+            self.executePushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
+        else:
+            self.executePushButton.setText('Stop')
+            self.executePushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
+
+    def onCmdReturn(self, interpreter:Interpreter, commandname:str, retval):
+        self.progressBar.setVisible(False)
+
+    def onCmdFail(self, interpreter:Interpreter, commandname:str, exception, traceback:str):
+        logger.error('Error in command {}: {}\n{}'.format(commandname, str(exception), traceback))
+
+    def onCmdPulse(self, interpreter:Interpreter, commandname:str, description:str):
+        self.progressBar.setVisible(True)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setMaximum(0)
+        self.progressBar.setValue(0)
+        self.progressBar.setFormat(description)
+
+    def onCmdProgress(self, interpreter:Interpreter, commandname:str, description:str, fraction:float):
+        self.progressBar.setVisible(True)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setMaximum(100000)
+        self.progressBar.setValue(100000*fraction)
+        self.progressBar.setFormat(description)
+
+    def onCmdMessage(self, interpreter:Interpreter, commandname:str, message:str):
+        logger.info(message)
 
     def closeEvent(self, event:QtGui.QCloseEvent):
         if self.credo.is_running():
@@ -208,6 +263,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
         return True
 
     def cleanup(self):
+        for c in self._interpreter_connections:
+            self.credo.services['interpreter'].disconnect(c)
+        self._interpreter_connections = []
         for c in self._credo_connections:
             self.credo.disconnect(c)
         self._credo_connections=[]
