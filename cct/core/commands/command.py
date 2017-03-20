@@ -1,3 +1,4 @@
+import gc
 import logging
 import traceback
 import weakref
@@ -6,10 +7,10 @@ from typing import Dict
 from .exceptions import JumpException
 from ..devices import Motor
 from ..utils.callback import Callbacks, SignalFlags
-from ..utils.timeout import TimeOut, IdleFunction
+from ..utils.timeout import TimeOut, SingleIdleFunction
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class CommandError(Exception):
@@ -273,6 +274,7 @@ class Command(Callbacks):
             raise CommandKilledError('Command {} killed.'.format(self.name))
         except CommandKilledError as cke:
             self.emit('fail', cke, traceback.format_exc())
+        logger.debug('Calling idle_return() from Command.kill()')
         self.idle_return(None)
 
     def cleanup(self, returnvalue: object = None, noemit=False):
@@ -281,9 +283,11 @@ class Command(Callbacks):
         if self._timeout_handler is not None:
             self._timeout_handler.stop()
             logger.debug('Timeout handler of command {} removed'.format(self.name))
+            self._timeout_handler = None
         if self._pulse_handler is not None:
             self._pulse_handler.stop()
             logger.debug('Pulse handler of command {} removed'.format(self.name))
+            self._pulse_handler = None
         logger.debug('Disconnecting required devices of command {}'.format(self.name))
         self._disconnect_devices()
         logger.debug('Disconnected required devices of command {}'.format(self.name))
@@ -293,6 +297,7 @@ class Command(Callbacks):
         del self.kwargs
         del self.namespace
         del self.interpreter
+        gc.collect()
 
     def on_timeout(self):
         try:
@@ -352,7 +357,8 @@ class Command(Callbacks):
         if self._returning:
             return
         self._returning = True
-        IdleFunction(lambda rv=value: (self.cleanup(rv) and False))
+        logger.debug('Instantiating an Idle function')
+        SingleIdleFunction(self.cleanup, value)
 
     @classmethod
     def allcommands(cls):

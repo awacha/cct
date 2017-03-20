@@ -1,4 +1,10 @@
+import logging
+
 from  PyQt5.QtCore import QTimer
+
+logger= logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 
 class TimeOut(object):
     def __init__(self, interval:int, function, start:bool=True, singleShot=False):
@@ -19,7 +25,8 @@ class TimeOut(object):
 
     def stop(self):
         self.timer.stop()
-        self.timer.timeout.disconnect()
+        if self.timer.receivers(self.timer.timeout):
+            self.timer.timeout.disconnect()
 
 class IdleFunction(object):
     def __init__(self, function, interval=100, *args, **kwargs):
@@ -32,8 +39,13 @@ class IdleFunction(object):
         self.timer.setInterval(0) # schedule the first timeout to as soon as possible
         self.timer.timeout.connect(self.onTimeout)
         self.timer.start()
+        logger.debug('Timer started in an IdleFunction')
 
     def onTimeout(self):
+        try:
+            logger.debug('onTimeout in an IdleFunction. Name: {}'.format(self.kwargs['name']))
+        except KeyError:
+            pass
         if self.function(*self.args, **self.kwargs):
             self.timer.setInterval(self.interval) # avoid too frequent subsequent calls
         else:
@@ -41,9 +53,28 @@ class IdleFunction(object):
 
     def stop(self):
         self.timer.stop()
-        self.timer.timeout.disconnect()
+        if self.timer.receivers(self.timer.timeout):
+            self.timer.timeout.disconnect()
 
-class SingleIdleFunction(IdleFunction):
+class SingleIdleFunction(object):
+    instances = []
+    def __init__(self, function, *args, **kwargs):
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.timer=QTimer.singleShot(1, self.onTimeout)
+        logger.debug('Initialized a SingleIdleFunction')
+        type(self).instances.append(self)
+
     def onTimeout(self):
-        super().onTimeout()
-        self.stop()
+        logger.debug('Timeout in a SingleIdleFunction')
+        self.function(*self.args, **self.kwargs)
+        del self.timer
+        del self.function
+        del self.kwargs
+        del self.args
+        type(self).instances.remove(self)
+
+    def __del__(self):
+        logger.debug('Deleting a SingleIdleFunction')
+        super().__del__(self)

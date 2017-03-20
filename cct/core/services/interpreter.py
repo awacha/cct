@@ -3,7 +3,7 @@ import logging
 from .service import Service, ServiceError
 from ..commands.command import Command, cleanup_commandline
 from ..utils.callback import SignalFlags
-from ..utils.timeout import IdleFunction
+from ..utils.timeout import SingleIdleFunction
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -91,12 +91,11 @@ class Interpreter(Service):
             commandline_cleaned = cleanup_commandline(commandline)
             if not commandline_cleaned:
                 # if the command line was empty or contained only comments, ignore
-                IdleFunction(
-                    lambda cmd=None, rv=self.command_namespace_locals['_']: self.on_command_return(cmd, rv))
+                SingleIdleFunction(self.on_command_return, None, self.command_namespace_locals['_'])
                 return None
             if commandline_cleaned.startswith('@'):
                 # this is a definition of a label, ignore this.
-                IdleFunction(lambda cmd='label', rv=commandline_cleaned[1:].strip(): self.on_command_return(cmd, rv))
+                SingleIdleFunction(self.on_command_return, 'label', commandline_cleaned[1:].strip())
                 return None
             # the command line must contain only one command, in the form of
             # `command(arg1, arg2, arg3 ...)`

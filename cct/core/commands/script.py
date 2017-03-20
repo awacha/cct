@@ -190,7 +190,7 @@ class Script(Command):
     def on_cmd_return(self, myinterpreter, cmdname, returnvalue):
         # simply queue a call to self.nextcommand(). It will handle
         # all cases.
-        SingleIdleFunction(lambda rv=returnvalue: self.nextcommand(rv))
+        SingleIdleFunction(self.nextcommand, returnvalue)
         return False
 
     def on_cmd_fail(self, myinterpreter, cmdname, exc, tb):
