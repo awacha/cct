@@ -19,6 +19,18 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._samplestore_connections = []
         self.setupUi(self)
 
+    @classmethod
+    def testRequirements(cls, credo:Instrument):
+        if not super().testRequirements(credo):
+            return False
+        for m in credo.motors:
+            if not credo.motors[m].controller.ready:
+                return False
+        for motor in ['Sample_X', 'Sample_Y', 'PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X', 'PH3_Y', 'BeamStop_X', 'BeamStop_Y']:
+            if motor not in credo.motors:
+                return False
+        return True
+
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
         self.motorModel = MotorModel(credo=self.credo)

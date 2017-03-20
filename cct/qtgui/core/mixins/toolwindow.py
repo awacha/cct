@@ -37,6 +37,12 @@ class ToolWindow(object):
         """Return True if the instrument is in a state when this window can be opened. If this
         class method returns False, the window won't be opened or will be closed or disabled if
         it is already open."""
+        for r in cls.required_devices:
+            try:
+                if not credo.get_device(r).ready:
+                    return False
+            except KeyError:
+                return False
         return True
 
     def requireDevice(self, devicename: str):

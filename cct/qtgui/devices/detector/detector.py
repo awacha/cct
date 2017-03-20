@@ -11,12 +11,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):
+    required_devices = ['pilatus']
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         self._updating_ui=False
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo, required_devices=['pilatus'])
+        ToolWindow.__init__(self, credo)
         self.setupUi(self)
 
     def setupUi(self, Form):
