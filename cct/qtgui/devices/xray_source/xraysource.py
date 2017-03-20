@@ -11,8 +11,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
-    _variables_to_flags=[('remote_mode', )]
-
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
