@@ -18,6 +18,7 @@ from ..tools.maskeditor import MaskEditor
 from ..tools.optimizegeometry import OptimizeGeometry
 from ..setup.geometry import GeometrySetup
 from ..measurement.scripteditor import ScriptEditor
+from ..measurement.scan import ScanMeasurement
 from ..setup.calibration import Calibration
 from ..setup.project import ProjectSetup
 from ..view.scanview import ScanViewer
@@ -63,6 +64,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                                        self.actionMotors:MotorOverview,
                                        self.actionVacuum_gauge:VacuumGauge,
                                        self.actionTemperature_stage:TemperatureController,
+                                       self.actionScan:ScanMeasurement,
                                        }
         self._dockwidgets = {}
 
