@@ -121,6 +121,10 @@ class GeneralScan(Command):
 
     def on_scanpoint(self, exposureanalyzer, prefix, fsn, pos, counters):
         logger.debug('Scan command::on_scanpoint')
+        try:
+            self.emit('detail', (fsn, pos, counters))
+        except Exception as exc:
+            logger.error('Error while emitting \'detail\' signal: {} {}'.format(exc, traceback.format_exc()))
         self._outstanding_scanpoints -= 1
         if (self.idx >= self.npoints) and (self._outstanding_scanpoints <= 0):
             # the last scan point has been received.
