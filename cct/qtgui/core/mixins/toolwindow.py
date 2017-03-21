@@ -8,14 +8,15 @@ from ....core.services.interpreter import Interpreter
 from ....core.commands import Command
 from ....core.instrument.privileges import PRIV_LAYMAN
 from ....core.devices import Device, Motor
-from typing import Union
+from typing import Union, List
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class ToolWindow(object):
     required_devices = []
+    required_privilege = PRIV_LAYMAN
 
-    def __init__(self, credo, required_devices=[], privilegelevel=PRIV_LAYMAN):
+    def __init__(self, credo, required_devices=[]):
         self._busy = False
         assert isinstance(self, QtWidgets.QWidget)
         try:
@@ -37,6 +38,8 @@ class ToolWindow(object):
         """Return True if the instrument is in a state when this window can be opened. If this
         class method returns False, the window won't be opened or will be closed or disabled if
         it is already open."""
+        if not credo.services['accounting'].has_privilege(cls.required_privilege):
+            return False
         for r in cls.required_devices:
             try:
                 if not credo.get_device(r).ready:
@@ -53,6 +56,9 @@ class ToolWindow(object):
             # ToDo
             raise
         assert isinstance(device, (Device, Motor))
+        if device in self._device_connections:
+            # do not require the same device twice.
+            return
         self._device_connections[device] = [
             device.connect('variable-change', self.onDeviceVariableChange),
             device.connect('error', self.onDeviceError),
@@ -214,7 +220,7 @@ class ToolWindow(object):
     def onCmdDetail(self, interpreter:Interpreter, cmdname:str, detail):
         pass
 
-    def executeCommand(self, command:Command):
+    def executeCommand(self, command:Command, arguments:List[str]):
         interpreter = self.credo.services['interpreter']
         if self._interpreterconnections:
             raise ValueError('Cannot run another command: either the previous command is still running or it has not been cleaned up yet.')
@@ -226,7 +232,7 @@ class ToolWindow(object):
                                         interpreter.connect('cmd-message', self.onCmdMessage),]
         assert isinstance(interpreter, Interpreter)
         try:
-            interpreter.execute_command(command)
+            interpreter.execute_command(command, arguments)
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Error executing command', 'Cannot execute command {}: {}'.format(command.name, exc.args[0]))
             self.cleanupAfterCommand()
