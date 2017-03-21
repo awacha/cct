@@ -159,6 +159,8 @@
    <addaction name="actionCursor_to_Minimum"/>
    <addaction name="actionCursor_to_Maximum"/>
    <addaction name="actionReplot"/>
+   <addaction name="actionMotor_to_peak"/>
+   <addaction name="actionMotor_to_cursor"/>
   </widget>
   <action name="actionShow_2D">
    <property name="checkable">
@@ -296,6 +298,22 @@
    </property>
    <property name="toolTip">
     <string>Show or hide the legend</string>
+   </property>
+  </action>
+  <action name="actionMotor_to_peak">
+   <property name="text">
+    <string>Motor to peak</string>
+   </property>
+   <property name="toolTip">
+    <string>Move the motor to the most recently found peak</string>
+   </property>
+  </action>
+  <action name="actionMotor_to_cursor">
+   <property name="text">
+    <string>Motor to cursor</string>
+   </property>
+   <property name="toolTip">
+    <string>Move the motor to the cursor position</string>
    </property>
   </action>
  </widget>

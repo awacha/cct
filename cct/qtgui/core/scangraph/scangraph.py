@@ -1,4 +1,5 @@
 import time
+from typing import Union, List, Optional
 
 import numpy as np
 from PyQt5 import QtWidgets, QtCore
@@ -10,11 +11,16 @@ from sastool.misc.basicfit import findpeak_single
 
 from .scangraph_ui import Ui_MainWindow
 from .signalsmodel import SignalModel
+from ...core.mixins import ToolWindow
+from ....core.devices import Motor
+from ....core.instrument.instrument import Instrument
 
 
-class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow):
+class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
+        credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
+        ToolWindow.__init__(self, credo)
         self._data = None
         self._cursorposition = 0
         self.setupUi(self)
@@ -50,6 +56,10 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow):
         self.hideAllButton.clicked.connect(lambda: self.model.setVisible(None, False))
         self.showAllButton.clicked.connect(lambda: self.model.setVisible(None, True))
         self.actionReplot.triggered.connect(self.replot)
+        self.actionMotor_to_peak.setEnabled(False)
+        self.actionMotor_to_cursor.setEnabled(False)
+        self.actionMotor_to_peak.triggered.connect(self.onMotorToPeak)
+        self.actionMotor_to_cursor.triggered.connect(self.onMotorToCursor)
         self.setCursorRange()
 
     def fit(self, functiontype, sign):
@@ -191,14 +201,15 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cursorSlider.setMaximum(self._datalength - 1)
         self.cursorSlider.setValue((self._datalength - 1) // 2)
 
-    def setCurve(self, scandata: np.ndarray, datalength: int = None):
+    def setCurve(self, scandata: Union[np.ndarray, List[str]], datalength: Optional[int] = None):
         """Set the scan data.
 
         Inputs:
-            scandata: np.ndarray
+            scandata: np.ndarray or a list of strings.
                 A one-dimensional, structured numpy array. The field names are
                 the labels of the individual signals. The first field is the
-                abscissa.
+                abscissa. If a list of strings, an empty array will be constructed
+                containing space for `datalength` points.
             datalength: positive integer
                 The expected length of the data. If None, it will be set to the
                 number of elements in scandata.
@@ -209,6 +220,9 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow):
                 zero if the scan has just been started and no point has been
                 recorded yet. `datalength > len(scandata)` is an error.
         """
+        if not isinstance(scandata, np.ndarray):
+            scandata = np.zeros(datalength, dtype=zip(scandata, [np.double]*len(scandata)))
+            datalength = 0
         if datalength is None:
             datalength = len(scandata)
         if datalength > len(scandata):
@@ -257,6 +271,29 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self._data = self._data[:self._datalength]
         self.setCursorRange()
+        if self.credo is not None:
+            assert isinstance(self.credo, Instrument)
+            try:
+                motor = self.credo.motors[self.abscissaName()]
+                assert isinstance(motor, Motor)
+            except KeyError:
+                pass
+            else:
+                self.actionMotor_to_cursor.setEnabled(not motor.ismoving())
+                self.actionMotor_to_cursor.setEnabled((not motor.ismoving()) and (self._lastpeakposition is not None))
+                self.requireDevice('Motor_'+self.abscissaName())
+
+    def onMotorStart(self, motor:Motor):
+        self.actionMotor_to_cursor.setEnabled(False)
+        self.actionMotor_to_peak.setEnabled(False)
+
+    def onMotorStop(self, motor: Motor, targetpositionreached: bool):
+        self.actionMotor_to_cursor.setEnabled(True)
+        self.actionMotor_to_peak.setEnabled(self._lastpeakposition is not None)
+
+    def cleanup(self):
+        del self._data
+        super().cleanup()
 
     def abscissaName(self):
         return self._data.dtype.names[0]
@@ -269,3 +306,19 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def requestRedraw(self):
         self.canvas.draw_idle()
+
+    def onMotorToPeak(self):
+        motor = self.credo.motors[self.abscissaName()]
+        assert isinstance(motor, Motor)
+        try:
+            motor.moveto(self._lastpeakposition.val)
+        except Exception as exc:
+            QtWidgets.QMessageBox.critical(self, 'Cannot move motor','Cannot move motor {}: {}'.format(self.abscissaName(), exc.args[0]))
+
+    def onMotorToCursor(self):
+        motor = self.credo.motors[self.abscissaName()]
+        assert isinstance(motor, Motor)
+        try:
+            motor.moveto(self._data[self.abscissaName()][self._cursorposition])
+        except Exception as exc:
+            QtWidgets.QMessageBox.critical(self, 'Cannot move motor','Cannot move motor {}: {}'.format(self.abscissaName(), exc.args[0]))
