@@ -25,7 +25,6 @@ class ToolWindow(object):
             self.credo = credo
         assert isinstance(self.credo, Instrument)  # this works even if self.credo is a weakproxy to Instrument
         self._device_connections = {}
-        self.minimumPrivilegeLevel = privilegelevel
         for d in self.required_devices + required_devices:
             self.requireDevice(d)
         self._privlevelconnection = self.credo.services['accounting'].connect('privlevel-changed', self.onPrivLevelChanged)
@@ -74,7 +73,7 @@ class ToolWindow(object):
 
     def onPrivLevelChanged(self, accountingservice, privlevel):
         assert isinstance(self, QtWidgets.QWidget)
-        if privlevel < self.minimumPrivilegeLevel:
+        if privlevel < self.required_privilege:
             self.cleanup()
             self.close()
 
