@@ -62,7 +62,7 @@ class SingleIdleFunction(object):
         self.function = function
         self.args = args
         self.kwargs = kwargs
-        self.timer=QTimer.singleShot(1, self.onTimeout)
+        self.timer=QTimer.singleShot(0, self.onTimeout)
         logger.debug('Initialized a SingleIdleFunction')
         type(self).instances.append(self)
 
