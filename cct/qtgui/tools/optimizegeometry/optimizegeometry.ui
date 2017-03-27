@@ -16,6 +16,12 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QGroupBox" name="groupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="title">
       <string>Parameters:</string>
      </property>
@@ -377,6 +383,12 @@
    </item>
    <item>
     <widget class="QTreeView" name="treeView">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>1</verstretch>
+      </sizepolicy>
+     </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
      </property>
@@ -435,7 +447,8 @@
          <string>Find optimum</string>
         </property>
         <property name="icon">
-         <iconset theme="system-run"/>
+         <iconset theme="system-run">
+          <normaloff>.</normaloff>.</iconset>
         </property>
        </widget>
       </item>
@@ -448,7 +461,8 @@
          <string>Copy selected as HTML</string>
         </property>
         <property name="icon">
-         <iconset theme="edit-copy"/>
+         <iconset theme="edit-copy">
+          <normaloff>.</normaloff>.</iconset>
         </property>
        </widget>
       </item>
