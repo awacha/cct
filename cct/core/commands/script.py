@@ -1,3 +1,4 @@
+import gc
 import logging
 import traceback
 
@@ -7,7 +8,7 @@ from ..utils.callback import SignalFlags
 from ..utils.timeout import SingleIdleFunction
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ScriptError(CommandError):
@@ -36,11 +37,16 @@ class Script(Command):
     script = ''  # a default value for the script
 
     def __init__(self, *args, **kwargs):
+        logger.debug('Args: {}'.format(args))
+        logger.debug('Kwargs: {}'.format(kwargs))
         super().__init__(*args, **kwargs)
-        if 'script' in kwargs:
-            self.script = kwargs['script']
-            del kwargs['script']
+        logger.debug('Args: {}'.format(args))
+        logger.debug('Self.args: {}'.format(self.args))
+        logger.debug('Self.kwargs: {}'.format(kwargs))
+        if 'script' in self.kwargs:
+            self.script = self.kwargs['script']
         self._scriptlist = self.script.split('\n')
+        logger.debug('Script is: {}'.format(self.script))
         self._pause = None
         self._kill = None
         self._cursor = -1
@@ -80,6 +86,7 @@ class Script(Command):
         SingleIdleFunction(self.nextcommand)
 
     def nextcommand(self, retval=None):
+        gc.collect()
         logger.debug('Next command. Return value of the previous: {}'.format(retval))
         # Note that we must ensure returning False, as we are usually
         # called from either idle functions or command-return callbacks.
@@ -106,6 +113,7 @@ class Script(Command):
             # it could have been None as well, that is a different story
             self._pause = True
             self.emit('paused')
+            self.emit('detail', ('paused',))
             return False
         # We have dealt with the special cases above. If execution reaches this
         # line, our task is to start the next command.
@@ -126,6 +134,7 @@ class Script(Command):
             logger.debug('Executing next command')
             cmd = self._myinterpreter.execute_command(commandline)
             self.emit('cmd-start', self._cursor, cmd)
+            self.emit('detail', ('cmd-start', self._cursor, cmd))
         except ReturnException:
             logger.debug('ReturnException')
             # return from a gosub.

@@ -6,7 +6,7 @@ from ..utils.callback import SignalFlags
 from ..utils.timeout import SingleIdleFunction
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class InterpreterError(ServiceError):
@@ -70,7 +70,7 @@ class Interpreter(Service):
         child._parent = self
         return child
 
-    def execute_command(self, commandline, arguments=None):
+    def execute_command(self, commandline, arguments=None, kwargs={}):
         """Commences the execution of a command.
 
         Inputs:
@@ -154,7 +154,8 @@ class Interpreter(Service):
                 raise InterpreterError('Unknown command: ' + commandname)
             self.command_namespace_locals['_commandline'] = commandline_cleaned
         assert issubclass(commandclass, Command)
-        self._command = commandclass(self, arguments, {}, self.command_namespace_locals)
+        logger.debug('Executing command: {}. Args: {}. Kwargs: {}. Namespace: {}'.format(commandclass.name, arguments, kwargs, self.command_namespace_locals))
+        self._command = commandclass(self, arguments, kwargs, self.command_namespace_locals)
         self._command_connections[self._command] = [
             self._command.connect('return', self.on_command_return),
             self._command.connect('fail', self.on_command_fail),

@@ -2,6 +2,7 @@ import gc
 import logging
 import traceback
 import weakref
+
 from typing import Dict
 
 from .exceptions import JumpException
@@ -190,6 +191,7 @@ class Command(Callbacks):
         return obj
 
     def __init__(self, interpreter, args, kwargs, namespace):
+        logger.debug('Initializing a command. Args: {}. Kwargs:{}. Namespace: {}.'.format(args, kwargs, namespace))
         super().__init__()
         try:
             self.interpreter = weakref.proxy(interpreter)
