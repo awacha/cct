@@ -8,7 +8,7 @@ from ....core.services.interpreter import Interpreter
 from ....core.commands import Command
 from ....core.instrument.privileges import PRIV_LAYMAN
 from ....core.devices import Device, Motor
-from typing import Union, List
+from typing import Union
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -219,7 +219,8 @@ class ToolWindow(object):
     def onCmdDetail(self, interpreter:Interpreter, cmdname:str, detail):
         pass
 
-    def executeCommand(self, command:Command, arguments:List[str]):
+    def executeCommand(self, command:Command, *args, **kwargs):
+        logger.debug('executeCommand({}, {}, {})'.format(command.name, args, kwargs))
         interpreter = self.credo.services['interpreter']
         if self._interpreterconnections:
             raise ValueError('Cannot run another command: either the previous command is still running or it has not been cleaned up yet.')
@@ -231,7 +232,7 @@ class ToolWindow(object):
                                         interpreter.connect('cmd-message', self.onCmdMessage),]
         assert isinstance(interpreter, Interpreter)
         try:
-            interpreter.execute_command(command, arguments)
+            interpreter.execute_command(command, args, kwargs)
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Error executing command', 'Cannot execute command {}: {}'.format(command.name, exc.args[0]))
             self.cleanupAfterCommand()

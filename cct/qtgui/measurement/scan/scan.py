@@ -11,6 +11,7 @@ from ....core.instrument.instrument import Instrument
 from ....core.instrument.privileges import PRIV_MOVEMOTORS
 from ....core.services.interpreter import Interpreter
 
+
 class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['pilatus', 'genix']
     required_privilege = PRIV_MOVEMOTORS
@@ -41,7 +42,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.unrequireDevice(self._motor)
             self._motor = None
         self._motor = self.motorComboBox.currentText()
-        self.requireDevice('Motor_'+self._motor)
+        self.requireDevice('Motor_' + self._motor)
         self.updateSpinBoxes()
 
     def updateSpinBoxes(self, where=None):
@@ -50,10 +51,10 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if self.relativeScanCheckBox.isChecked():
             if where is None:
                 where = motor.where()
-            self.startDoubleSpinBox.setMinimum(motor.get_variable('softleft')-where)
-            self.startDoubleSpinBox.setMaximum(motor.get_variable('softright')-where)
-            self.endDoubleSpinBox.setMinimum(motor.get_variable('softleft')-where)
-            self.endDoubleSpinBox.setMaximum(motor.get_variable('softright')-where)
+            self.startDoubleSpinBox.setMinimum(motor.get_variable('softleft') - where)
+            self.startDoubleSpinBox.setMaximum(motor.get_variable('softright') - where)
+            self.endDoubleSpinBox.setMinimum(motor.get_variable('softleft') - where)
+            self.endDoubleSpinBox.setMaximum(motor.get_variable('softright') - where)
         else:
             self.startDoubleSpinBox.setMinimum(motor.get_variable('softleft'))
             self.startDoubleSpinBox.setMaximum(motor.get_variable('softright'))
@@ -62,7 +63,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def recalculateStepSize(self):
         self.stepSizeLabel.setText('{:.4f}'.format(
-            self.endDoubleSpinBox.value()-self.startDoubleSpinBox.value()/(self.stepsSpinBox.value()-1)))
+            self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value() / (self.stepsSpinBox.value() - 1)))
 
     def onMotorPositionChange(self, motor: Motor, newposition: float):
         if not self.isBusy() and self.relativeScanCheckBox.isChecked():
@@ -83,21 +84,21 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.startStopPushButton.setIcon(icon)
         self._scangraph = None
 
-    def onCmdFail(self, interpreter:Interpreter, cmdname:str, exception:Exception, traceback:str):
+    def onCmdFail(self, interpreter: Interpreter, cmdname: str, exception: Exception, traceback: str):
         self._failed = True
 
-    def onCmdReturn(self, interpreter:Interpreter, cmdname:str, retval):
+    def onCmdReturn(self, interpreter: Interpreter, cmdname: str, retval):
         super().onCmdReturn(interpreter, cmdname, retval)
         if cmdname == 'moveto':
             if self._failed:
                 self.setIdle()
             elif self.autoShutterCheckBox.isChecked():
-                self.executeCommand(Shutter, [True])
+                self.executeCommand(Shutter, True)
             else:
                 self.onCmdReturn(self.credo.services['interpreter'], 'shutter', True)
         elif cmdname == 'scan':
             if self.autoShutterCheckBox.isChecked():
-                self.executeCommand(Shutter, [False])
+                self.executeCommand(Shutter, False)
             else:
                 self.setIdle()
         elif cmdname == 'shutter' and retval:
@@ -109,28 +110,30 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 assert isinstance(motor, Motor)
                 if self.relativeScanCheckBox.isChecked():
                     start = motor.where()
-                    end = motor.where()+ self.endDoubleSpinBox.value()-self.startDoubleSpinBox.value()
+                    end = motor.where() + self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value()
                 else:
                     start = self.startDoubleSpinBox.value()
                     end = self.endDoubleSpinBox.value()
                 self._scangraph = ScanGraph(credo=self.credo)
-                self._scangraph.setCurve([self._motor]+self.credo.config['scan']['columns'], self.stepsSpinBox.value())
+                self._scangraph.setCurve([self._motor] + self.credo.config['scan']['columns'],
+                                         self.stepsSpinBox.value())
                 self._scangraph.show()
-                self.executeCommand(Scan, [self.motorComboBox.currentText(), start,
-                                           end, self.stepsSpinBox.value(),
-                                           self.countingTimeDoubleSpinBox.value(), self.commentLineEdit.text()])
+                self.executeCommand(Scan, self.motorComboBox.currentText(), start,
+                                    end, self.stepsSpinBox.value(),
+                                    self.countingTimeDoubleSpinBox.value(), self.commentLineEdit.text())
         elif cmdname == 'shutter' and not retval:
             self.setIdle()
 
-    def onCmdDetail(self, interpreter:Interpreter, cmdname:str, detail):
+    def onCmdDetail(self, interpreter: Interpreter, cmdname: str, detail):
         fsn, position, counters = detail
         assert isinstance(self._scangraph, ScanGraph)
-        self._scangraph.appendScanPoint((position,)+tuple(counters))
+        self._scangraph.appendScanPoint((position,) + tuple(counters))
 
     def onStartStop(self):
-        if self.startStopPushButton.text()=='Start':
+        if self.startStopPushButton.text() == 'Start':
             if not self.commentLineEdit.text().strip():
-                QtWidgets.QMessageBox.critical(self, 'Cannot start scan', 'Please describe the scan measurement in the "comment" field!')
+                QtWidgets.QMessageBox.critical(self, 'Cannot start scan',
+                                               'Please describe the scan measurement in the "comment" field!')
                 return
             self.setBusy()
             self._failed = False
@@ -141,7 +144,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                     start = self.startDoubleSpinBox.value() + motor.where()
                 else:
                     start = self.startDoubleSpinBox.value()
-                self.executeCommand(Moveto, [self._motor, start])
+                self.executeCommand(Moveto, self._motor, start)
             except Exception as exc:
                 self.setIdle()
                 QtWidgets.QMessageBox.critical(self, 'Error while start scan', exc.args[0])

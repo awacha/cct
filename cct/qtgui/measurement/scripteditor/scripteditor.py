@@ -1,12 +1,17 @@
+import logging
 import os
 import re
+
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 from .scripteditor_ui import Ui_MainWindow
 from ...core.mixins import ToolWindow
 from ....core.commands import Command
-
+from ....core.services.interpreter import Interpreter
+from ....core.commands.script import Script
 
 class HighLighter(QtGui.QSyntaxHighlighter):
     def __init__(self, *args, **kwargs):
@@ -67,6 +72,7 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionStart.triggered.connect(self.runScript)
         self.actionPause.triggered.connect(self.pauseScript)
         self.syntaxHighLighter = HighLighter(self.document)
+        self._currentline = QtGui.QTextCursor(self.document)
 
     def flagtoggled(self, flagnumber):
         print('Flag #{} is now {}'.format(flagnumber, self.flags[flagnumber].isChecked()))
@@ -127,8 +133,18 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             self.lastfilename = filename
             self.document.setModified(False)
 
+    def setIdle(self):
+        self.scriptEdit.setReadOnly(False)
+        self.scriptEdit.setExtraSelections([])
+        super().setIdle()
+
+    def setBusy(self):
+        self.scriptEdit.setReadOnly(True)
+        super().setBusy()
+
     def runScript(self):
-        pass
+        self.setBusy()
+        self.executeCommand(Script, script=self.scriptEdit.document().toPlainText())
 
     def pauseScript(self):
         pass
@@ -156,4 +172,32 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                 return False
             return True
         return True
-    
+
+    def onCmdDetail(self, interpreter:Interpreter, cmdname:str, detail):
+        assert isinstance(detail, tuple)
+        if detail[0]=='cmd-start':
+            self.onCommandStarted(detail[1])
+        elif detail[0]=='paused':
+            self.onScriptPaused()
+
+    def onCommandStarted(self, linenumber:int):
+        logger.debug('Command started on line {:d}'.format(linenumber))
+        es=QtWidgets.QTextEdit.ExtraSelection()
+        fmt = QtGui.QTextCharFormat()
+        fmt.setBackground(QtGui.QBrush(QtCore.Qt.green))
+        es.format=fmt
+        cursor = QtGui.QTextCursor(self.document)
+        cursor.movePosition(QtGui.QTextCursor.Start)
+        cursor.movePosition(QtGui.QTextCursor.Down, QtGui.QTextCursor.MoveAnchor, linenumber)
+        cursor.movePosition(QtGui.QTextCursor.StartOfLine, QtGui.QTextCursor.MoveAnchor)
+        cursor.movePosition(QtGui.QTextCursor.EndOfLine, QtGui.QTextCursor.KeepAnchor)
+        cursor.select(QtGui.QTextCursor.LineUnderCursor)
+        es.cursor = cursor
+        self.scriptEdit.setExtraSelections([es])
+
+    def onCmdReturn(self, interpreter:Interpreter, cmdname:str, retval):
+        super().onCmdReturn(interpreter, cmdname, retval)
+        self.setIdle()
+
+    def onScriptPaused(self):
+        pass
