@@ -1,6 +1,7 @@
 import logging
 import weakref
 
+
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 from ....core.instrument.instrument import Instrument
@@ -8,7 +9,7 @@ from ....core.services.interpreter import Interpreter
 from ....core.commands import Command
 from ....core.instrument.privileges import PRIV_LAYMAN
 from ....core.devices import Device, Motor
-from typing import Union
+from typing import Union, Type
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -219,7 +220,7 @@ class ToolWindow(object):
     def onCmdDetail(self, interpreter:Interpreter, cmdname:str, detail):
         pass
 
-    def executeCommand(self, command:Command, *args, **kwargs):
+    def executeCommand(self, command:Type[Command], *args, **kwargs):
         logger.debug('executeCommand({}, {}, {})'.format(command.name, args, kwargs))
         interpreter = self.credo.services['interpreter']
         if self._interpreterconnections:

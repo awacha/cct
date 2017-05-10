@@ -22,10 +22,12 @@ def get_colormaps():
 
 
 class PlotImage(QtWidgets.QWidget, Ui_Form):
+    lastinstance = None
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
         self._exposure = None
         self.setupUi(self)
+        type(self).lastinstance = self
 
     def _testimage(self):
         header = sastool.io.credo_cct.Header(
