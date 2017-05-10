@@ -24,6 +24,39 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.removePushButton.clicked.connect(self.onRemoveProject)
         self.renamePushButton.clicked.connect(self.onRenameProject)
         self._acc_connections = [acc.connect('project-changed', self.onProjectChanged)]
+        self.listWidget.itemSelectionChanged.connect(self.onProjectSelected)
+        self.updatePushButton.clicked.connect(self.onUpdateProject)
+        self.projectIDLineEdit.textChanged.connect(self.onProjectIDChanged)
+        self.proposerLineEdit.textChanged.connect(self.onProposerNameChanged)
+        self.projectTitleLineEdit.textChanged.connect(self.onProjectTitleChanged)
+        self.addPushButton.setEnabled(False)
+        self.removePushButton.setEnabled(False)
+        self.updatePushButton.setEnabled(False)
+        self.renamePushButton.setEnabled(False)
+        self.onProjectSelected()
+
+
+    def onProjectIDChanged(self):
+        acc = self.credo.services['accounting']
+        assert isinstance(acc, Accounting)
+        self.addPushButton.setEnabled(self.projectIDLineEdit.text() not in acc.get_projectids())
+        self.renamePushButton.setEnabled(True)
+
+    def onProjectTitleChanged(self):
+        if not self._updating_ui:
+            self.updatePushButton.setEnabled(True)
+
+    def onProposerNameChanged(self):
+        if not self._updating_ui:
+            self.updatePushButton.setEnabled(True)
+
+    def onUpdateProject(self):
+        acc = self.credo.services['accounting']
+        assert isinstance(acc, Accounting)
+        prj=self.selectedProject()
+        prj.proposer=self.proposerLineEdit.text()
+        prj.projectname=self.projectTitleLineEdit.text()
+        self.updatePushButton.setEnabled(False)
 
     def cleanup(self):
         for c in self._acc_connections:
@@ -50,6 +83,7 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         except ValueError as ve:
             QtWidgets.QMessageBox.critical(self, 'Error while removing project', ve.args[0])
         self.onProjectChanged(acc)
+        self.onProjectSelected()
 
     def onRenameProject(self):
         self._updating_ui = True
@@ -62,6 +96,7 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.selectProject(newname)
         finally:
             self._updating_ui = False
+            self.renamePushButton.setEnabled(False)
 
     def selectProject(self, projectid):
         self.listWidget.findItems(projectid, QtCore.Qt.MatchExactly)[0].setSelected(True)
@@ -80,3 +115,23 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def selectedProject(self):
         return self.listWidget.selectedItems()[0].data(QtCore.Qt.DisplayRole)
+
+    def onProjectSelected(self):
+        self._updating_ui = True
+        try:
+            name = self.selectedProject()
+            acc = self.credo.services['accounting']
+            assert isinstance(acc, Accounting)
+            prj=acc.get_project(name)
+            self.projectIDLineEdit.setText(prj.projectid)
+            self.projectTitleLineEdit.setText(prj.projectname)
+            self.proposerLineEdit.setText(prj.proposer)
+            self.removePushButton.setEnabled(True)
+        except IndexError:
+            self.projectIDLineEdit.setText('')
+            self.projectTitleLineEdit.setText('')
+            self.proposerLineEdit.setText('')
+            self.removePushButton.setEnabled(True)
+        finally:
+            self.updatePushButton.setEnabled(False)
+            self._updating_ui = False

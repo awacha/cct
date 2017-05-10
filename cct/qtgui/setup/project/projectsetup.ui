@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Manage Projects</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../../../resource/icons/icons.qrc">
@@ -126,6 +126,16 @@
            <property name="icon">
             <iconset theme="list-remove">
              <normaloff>.</normaloff>.</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="updatePushButton">
+           <property name="text">
+            <string>Update</string>
+           </property>
+           <property name="icon">
+            <iconset theme="view-refresh"/>
            </property>
           </widget>
          </item>
