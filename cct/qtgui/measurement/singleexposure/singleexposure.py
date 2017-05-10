@@ -1,7 +1,10 @@
+import numpy as np
 from PyQt5 import QtWidgets, QtGui
+from sastool.io.credo_cct import Exposure, Header
 
 from .singleexposure_ui import Ui_Form
 from ...core.mixins import ToolWindow
+from ...core.plotimage import PlotImage
 from ....core.commands.detector import Expose, ExposeMulti
 from ....core.commands.motor import SetSample
 from ....core.commands.xray_source import Shutter
@@ -45,8 +48,13 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         fs.connect('nextfsn-changed', self.onNextFSNChanged)
         ea.connect('image', self.onImage)
 
-    def onImage(self):
-        pass
+    def onImage(self, ea: ExposureAnalyzer, prefix: str, fsn:int, image:np.ndarray, params:dict, mask:np.ndarray):
+        pi = PlotImage.lastinstance
+        if pi is None:
+            pi=PlotImage()
+        ex=Exposure(image,None,Header(params),mask)
+        pi.setExposure(ex)
+        return False
 
     def onNextFSNChanged(self, fs: FileSequence, prefix: str, nextfsn: int):
         self.onPrefixChanged()
