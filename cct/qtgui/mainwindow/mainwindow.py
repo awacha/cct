@@ -19,6 +19,8 @@ from ..tools.optimizegeometry import OptimizeGeometry
 from ..setup.geometry import GeometrySetup
 from ..measurement.scripteditor import ScriptEditor
 from ..measurement.scan import ScanMeasurement
+from ..measurement.transmission import TransmissionMeasurement
+from ..measurement.singleexposure import SingleExposure
 from ..setup.calibration import Calibration
 from ..setup.project import ProjectSetup
 from ..view.scanview import ScanViewer
@@ -28,6 +30,7 @@ from ..devices.detector import Detector
 from ..devices.motor import MotorOverview
 from ..devices.circulator import TemperatureController
 from ..devices.vacuum import VacuumGauge
+from ..diagnostics.resourceusage import ResourceUsage
 from .logviewer import LogViewer
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
@@ -44,28 +47,33 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def setupUi(self, MainWindow):
         Ui_MainWindow.setupUi(self,MainWindow)
 
-        self._dockwidgetinfo={self.actionAccounting:dockwidgets.Accounting,
-                              self.actionFSN_counters:dockwidgets.FSNCounter,
-                              self.actionShutter_and_beamstop:dockwidgets.ShutterAndBeamstop,
-                              self.actionResource_usage:dockwidgets.ResourceConsumption,
-                              }
-        self._action_to_windowclass = {self.actionSample_editor:SampleEditor,
-                                       self.actionCapillary_sizing:CapillaryMeasurement,
-                                       self.actionMask_editor:MaskEditor,
-                                       self.actionOptimize_geometry:OptimizeGeometry,
-                                       self.actionGeometry_editor:GeometrySetup,
-                                       self.actionCalibration:Calibration,
-                                       self.actionScript:ScriptEditor,
-                                       self.actionProject_management:ProjectSetup,
-                                       self.actionView_scans:ScanViewer,
-                                       self.actionView_images_and_curves:ExposureView,
-                                       self.actionX_ray_source:XraySource,
-                                       self.actionDetector:Detector,
-                                       self.actionMotors:MotorOverview,
-                                       self.actionVacuum_gauge:VacuumGauge,
-                                       self.actionTemperature_stage:TemperatureController,
-                                       self.actionScan:ScanMeasurement,
-                                       }
+        self._dockwidgetinfo={
+            self.actionAccounting:dockwidgets.Accounting,
+            self.actionFSN_counters:dockwidgets.FSNCounter,
+            self.actionShutter_and_beamstop:dockwidgets.ShutterAndBeamstop,
+            self.actionResource_usage:dockwidgets.ResourceConsumption,
+        }
+        self._action_to_windowclass = {
+            self.actionSample_editor:SampleEditor,
+            self.actionCapillary_sizing:CapillaryMeasurement,
+            self.actionMask_editor:MaskEditor,
+            self.actionOptimize_geometry:OptimizeGeometry,
+            self.actionGeometry_editor:GeometrySetup,
+            self.actionCalibration:Calibration,
+            self.actionScript:ScriptEditor,
+            self.actionProject_management:ProjectSetup,
+            self.actionView_scans:ScanViewer,
+            self.actionView_images_and_curves:ExposureView,
+            self.actionX_ray_source:XraySource,
+            self.actionDetector:Detector,
+            self.actionMotors:MotorOverview,
+            self.actionVacuum_gauge:VacuumGauge,
+            self.actionTemperature_stage:TemperatureController,
+            self.actionScan:ScanMeasurement,
+            self.actionTransmission:TransmissionMeasurement,
+            self.actionResource_consumption:ResourceUsage,
+            self.actionSingle_exposure:SingleExposure,
+        }
         self._dockwidgets = {}
 
 
