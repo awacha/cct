@@ -285,7 +285,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                 self._moving['acktime'] = time.monotonic()
         elif cmdnum == 3:
             # acknowledgement of stop
-            pass
+            self.on_motor_stopped(original_sent[3])
         elif cmdnum == 5:
             # acknowledgement of SAP
             pass
