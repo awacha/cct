@@ -16,6 +16,7 @@ from ..setup.sampleeditor import SampleEditor
 from ..tools.capillarymeasurement import CapillaryMeasurement
 from ..tools.maskeditor import MaskEditor
 from ..tools.optimizegeometry import OptimizeGeometry
+from ..tools.datareduction import DataReduction
 from ..setup.geometry import GeometrySetup
 from ..measurement.scripteditor import ScriptEditor
 from ..measurement.scan import ScanMeasurement
@@ -23,6 +24,7 @@ from ..measurement.transmission import TransmissionMeasurement
 from ..measurement.singleexposure import SingleExposure
 from ..setup.calibration import Calibration
 from ..setup.project import ProjectSetup
+from ..setup.users import UserManager
 from ..view.scanview import ScanViewer
 from ..view.exposureview import ExposureView
 from ..devices.xray_source import XraySource
@@ -73,6 +75,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionTransmission:TransmissionMeasurement,
             self.actionResource_consumption:ResourceUsage,
             self.actionSingle_exposure:SingleExposure,
+            self.actionData_reduction:DataReduction,
+            self.actionUser_management:UserManager,
         }
         self._dockwidgets = {}
 
