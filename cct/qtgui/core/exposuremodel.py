@@ -3,7 +3,7 @@ import datetime
 from PyQt5 import QtCore
 from sastool.misc.errorvalue import ErrorValue
 
-from ....core.services.filesequence import FileSequence
+from ...core.services.filesequence import FileSequence
 
 
 class HeaderModel(QtCore.QAbstractItemModel):
@@ -16,6 +16,12 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.fsnfirst = fsnfirst
         self.fsnlast = fsnlast
         self._headers = []
+
+    def header(self, fsn:int):
+        return [h for h in self._headers if h.fsn == fsn][0]
+
+    def rowForFSN(self, fsn:int):
+        return [h.fsn for h in self._headers].index(fsn)
 
     def reloadHeaders(self):
         fs = self.credo.services['filesequence']

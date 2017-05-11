@@ -3,8 +3,8 @@ import logging
 
 from PyQt5 import QtCore, QtWidgets
 
-from .exposuremodel import HeaderModel
 from .exposureview_ui import Ui_MainWindow
+from ...core.exposuremodel import HeaderModel
 from ...core.mixins import ToolWindow
 from ...core.plotcurve import PlotCurve
 from ...core.plotimage import PlotImage
