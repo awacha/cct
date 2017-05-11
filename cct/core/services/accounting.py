@@ -19,12 +19,14 @@ class User(object):
     firstname = None
     lastname = None
     privlevel = None
+    email = None
 
-    def __init__(self, uname: str, firstname: str, lastname: str, privlevel: PrivilegeLevel = PRIV_LAYMAN):
+    def __init__(self, uname: str, firstname: str, lastname: str, privlevel: PrivilegeLevel = PRIV_LAYMAN, email:str = ''):
         self.username = uname
         self.firstname = firstname
         self.lastname = lastname
         self.privlevel = privlevel
+        self.email = email
 
 
 class Project(object):
@@ -41,7 +43,8 @@ class Project(object):
 class Accounting(Service):
     __signals__ = {'privlevel-changed': (SignalFlags.RUN_FIRST, None, (object,)),
                    'project-changed': (SignalFlags.RUN_FIRST, None, ()),
-                   'user-changed': (SignalFlags.RUN_FIRST, None, (object,))}
+                   'user-changed': (SignalFlags.RUN_FIRST, None, (object,)),
+                   'userlist-changed':(SignalFlags.RUN_FIRST, None, ())}
 
     state = {'dbfile': 'userdb',
              'projectid': 'MachineStudies 01',
@@ -67,7 +70,7 @@ class Accounting(Service):
             if kerberos.checkPassword(username, password, '', '', 0):
                 logger.info('Authenticated user ' + username + '.')
                 if username.split('@', 1)[0] not in [u.username for u in self.users]:
-                    self.add_user(username.split('@', 1)[0], 'Firstname', 'Lastname', PRIV_LAYMAN)
+                    self.add_user(username.split('@', 1)[0], 'Firstname', 'Lastname', PRIV_LAYMAN, 'nobody@example.com')
                 self.select_user(username)
                 return True
         except kerberos.BasicAuthError as bae:
@@ -214,11 +217,11 @@ class Accounting(Service):
         return projects[0]
 
     def update_user(self, username: str, firstname: Optional[str] = None, lastname: Optional[str] = None,
-                    maxpriv: Optional[PrivilegeLevel] = None):
+                    maxpriv: Optional[PrivilegeLevel] = None, email: Optional[str] = None):
         if not self.has_privilege(PRIV_USERMAN):
             raise PrivilegeError(PRIV_USERMAN)
         user = [u for u in self.users if u.username == username][0]
-        assert len(user) == 1
+        assert isinstance(user, User)
         if firstname is not None:
             user.firstname = firstname
         if lastname is not None:
@@ -228,6 +231,8 @@ class Accounting(Service):
                 raise ServiceError('Setting privileges of the current user is not allowed.')
             assert (self.has_privilege(PRIV_USERMAN))
             user.privlevel = PrivilegeLevel.get_priv(maxpriv)
+        if email is not None:
+            user.email = email
         self.instrument.save_state()
         logger.info('Updated user ' + username)
 
@@ -238,14 +243,18 @@ class Accounting(Service):
             raise ServiceError('Cannot delete current user')
         self.users = [u for u in self.users if u.username != username]
         self.instrument.save_state()
+        self.emit('userlist-changed')
 
-    def add_user(self, username: str, firstname: str, lastname: str, privlevel: Optional[PrivilegeLevel] = PRIV_LAYMAN):
+    def add_user(self, username: str, firstname: str, lastname: str,
+                 privlevel: Optional[PrivilegeLevel] = PRIV_LAYMAN,
+                 email: str = 'nobody@example.com'):
         if not self.has_privilege(PRIV_USERMAN):
             raise PrivilegeError(PRIV_USERMAN)
         if [u for u in self.users if u.username == username]:
             raise ValueError('Duplicate username {}'.format(username))
-        self.users.append(User(username, firstname, lastname, privlevel))
+        self.users.append(User(username, firstname, lastname, privlevel, email))
         self.instrument.save_state()
+        self.emit('userlist-changed')
 
     def delete_project(self, projectid: str):
         if not self.has_privilege(PRIV_PROJECTMAN):
