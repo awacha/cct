@@ -89,11 +89,18 @@
          <bool>true</bool>
         </property>
         <property name="selectionMode">
-         <enum>QAbstractItemView::MultiSelection</enum>
+         <enum>QAbstractItemView::ExtendedSelection</enum>
         </property>
        </widget>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QProgressBar" name="progressBar">
+     <property name="value">
+      <number>24</number>
+     </property>
     </widget>
    </item>
    <item>
@@ -117,7 +124,8 @@
         <string>Reduce selected exposures</string>
        </property>
        <property name="icon">
-        <iconset theme="system-run"/>
+        <iconset theme="system-run">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>

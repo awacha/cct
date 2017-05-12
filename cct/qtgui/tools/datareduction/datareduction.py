@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
-from sastool.classes2 import Exposure
+from sastool.io.credo_cct import Exposure, Header
 
 from .datareduction_ui import Ui_Form
 from ...core.exposuremodel import HeaderModel
@@ -26,10 +26,11 @@ class DataReduction(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.reloadHeaders()
         self.reloadPushButton.clicked.connect(self.reloadHeaders)
         self.startStopPushButton.clicked.connect(self.onStartReduction)
-        self.treeView.selectionChanged.connect(self.onSelectionChanged)
+        self.treeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
+        self.progressBar.setVisible(False)
 
     def onSelectionChanged(self):
-        self.startStopPushButton.setEnabled(self.selectedFSNs())
+        self.startStopPushButton.setEnabled(bool(self.selectedFSNs()))
 
     def onStartReduction(self):
         if self.startStopPushButton.text()=='Reduce selected exposures':
@@ -49,11 +50,13 @@ class DataReduction(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.setIdle()
             return
         prefix='crd'
+        header = self.model.header(self._currentfsn)
+        assert isinstance(header, Header)
         ea.submit(
             self._currentfsn,
             self.credo.services['filesequence'].exposurefileformat(prefix,self._currentfsn)+'.cbf',
             prefix,
-            param=self.model.header(self._currentfsn))
+            param=header._data)
         self.treeView.selectionModel().select(
             self.model.index(self.model.rowForFSN(self._currentfsn),0),
             QtCore.QItemSelectionModel.Current | QtCore.QItemSelectionModel.Rows
@@ -68,6 +71,10 @@ class DataReduction(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.inputWidget.setEnabled(False)
         self.startStopPushButton.setText('Stop data reduction')
         self.startStopPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
+        self.progressBar.setVisible(True)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setMaximum(len(self.selectedFSNs()))
+        self.progressBar.setValue(0)
 
     def cleanup(self):
         for c in self._ea_connection:
@@ -83,10 +90,11 @@ class DataReduction(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.inputWidget.setEnabled(True)
         self.startStopPushButton.setText('Reduce selected exposures')
         self.startStopPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
+        self.progressBar.setVisible(False)
 
     def selectedFSNs(self):
-        return sorted([self.model.createIndex(idx.row(), 0).data(QtCore.Qt.DisplayRole)
-                for idx in self.treeView.selectedIndexes()])
+        return sorted(set([self.model.createIndex(idx.row(), 0).data(QtCore.Qt.DisplayRole)
+                for idx in self.treeView.selectedIndexes()]))
 
     def reducingDone(self, ea:ExposureAnalyzer, prefix:str, fsn:int, ex:Exposure):
         if self._currentfsn != fsn:
@@ -99,6 +107,7 @@ class DataReduction(QtWidgets.QWidget, Ui_Form, ToolWindow):
             QtCore.QItemSelectionModel.Deselect | QtCore.QItemSelectionModel.Rows
         )
         self.submitNextFSN()
+        self.progressBar.setValue(self.progressBar.value()+1)
 
     def onFirstFSNChanged(self):
         self.lastFSNSpinBox.setMinimum(self.firstFSNSpinBox.value())
