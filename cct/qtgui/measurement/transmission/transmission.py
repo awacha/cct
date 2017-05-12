@@ -5,12 +5,14 @@ from .transmissionmodel import TransmissionModel
 from ...core.mixins import ToolWindow
 from ....core.commands.transmission import Transmission
 from ....core.instrument.instrument import Instrument
+from ....core.instrument.privileges import PRIV_BEAMSTOP
 from ....core.services.interpreter import Interpreter
 from ....core.services.samples import SampleStore
 
 
 class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['genix', 'pilatus', 'Motor_BeamStop_X','Motor_BeamStop_Y', 'Motor_Sample_X', 'Motor_Sample_Y']
+    required_privilege = PRIV_BEAMSTOP
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')

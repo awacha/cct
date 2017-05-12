@@ -2,10 +2,12 @@ from PyQt5 import QtCore, QtWidgets
 
 from .projectsetup_ui import Ui_Form
 from ...core.mixins import ToolWindow
+from ....core.instrument.privileges import PRIV_PROJECTMAN
 from ....core.services.accounting import Accounting
 
 
 class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
+    required_privilege = PRIV_PROJECTMAN
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
