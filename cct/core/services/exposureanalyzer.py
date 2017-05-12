@@ -267,7 +267,12 @@ class ExposureAnalyzer_Backend(object):
                                               maskname)
             else:
                 filename = maskname
-            m = loadmat(filename)
+            try:
+                m = loadmat(filename)
+            except FileNotFoundError:
+                filename = find_in_subfolders(self.config['path']['directories']['mask'],
+                                              os.path.split(maskname)[-1])
+                m = loadmat(filename)
             self.masks[maskname] = m[
                 [k for k in m.keys() if not k.startswith('__')][0]].view(bool)
             self._logger.debug('Loaded mask {} from file {}'.format(maskname, filename))
