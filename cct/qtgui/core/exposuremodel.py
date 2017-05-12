@@ -7,6 +7,7 @@ from ...core.services.filesequence import FileSequence
 
 
 class HeaderModel(QtCore.QAbstractItemModel):
+    # the columns you want to display. Note that the first MUST be always 'fsn' or the code will break. Sorry!
     _columns = ['fsn', 'title', 'distance', 'date', 'temperature']
 
     def __init__(self, parent, credo, prefix, fsnfirst, fsnlast):
@@ -18,10 +19,11 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self._headers = []
 
     def header(self, fsn:int):
-        return [h for h in self._headers if h.fsn == fsn][0]
+        fs = self.credo.services['filesequence']
+        return fs.load_header(self.prefix, fsn)
 
     def rowForFSN(self, fsn:int):
-        return [h.fsn for h in self._headers].index(fsn)
+        return [h[0] for h in self._headers].index(fsn)
 
     def reloadHeaders(self):
         fs = self.credo.services['filesequence']
