@@ -10,6 +10,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 from ...core.instrument.instrument import Instrument
 from ...core.services.interpreter import Interpreter
+from ...core.services.accounting import Accounting
 from ...core.devices import Device
 from .mainwindow_ui import Ui_MainWindow
 from ..setup.sampleeditor import SampleEditor
@@ -44,6 +45,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.windowdict={}
         self.setupUi(self)
         self._credo_connections=[]
+        self._accounting_connections=[]
         self._interpreter_connections=[]
 
     def setupUi(self, MainWindow):
@@ -117,6 +119,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             ip.connect('cmd-message', self.onCmdMessage),
             ip.connect('idle-changed', self.onInterpreterIdleChanged)
         ]
+        acc = self.credo.services['accounting']
+        assert isinstance(acc, Accounting)
+        self._accounting_connections=[acc.connect('privlevel-changed', lambda *args:self.updateActionEnabledStates()) ]
         self.setAttribute(QtCore.Qt.WA_QuitOnClose, True)
         self.progressBar.hide()
         if self.credo.online:
