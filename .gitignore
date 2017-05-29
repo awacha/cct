@@ -11,3 +11,4 @@ cct.lang
 /test
 *_ui.py
 *_rc.py
+/.eggs
