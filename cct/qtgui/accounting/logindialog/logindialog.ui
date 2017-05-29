@@ -23,36 +23,19 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Log in to CCT</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../resource/icons/icons.qrc">
+    <normaloff>:/icons/cctlogo.svg</normaloff>:/icons/cctlogo.svg</iconset>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>false</bool>
   </property>
   <property name="modal">
    <bool>true</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Operator:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QLineEdit" name="operatorLineEdit"/>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>Password:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLineEdit" name="passwordLineEdit">
-     <property name="echoMode">
-      <enum>QLineEdit::Password</enum>
-     </property>
-    </widget>
-   </item>
    <item row="2" column="1">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
@@ -63,9 +46,52 @@
      </property>
     </widget>
    </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Password:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="passwordLineEdit">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="echoMode">
+      <enum>QLineEdit::Password</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLineEdit" name="operatorLineEdit">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Operator:</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
- <resources/>
+ <tabstops>
+  <tabstop>operatorLineEdit</tabstop>
+  <tabstop>passwordLineEdit</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../../../resource/icons/icons.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>
