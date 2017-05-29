@@ -33,6 +33,10 @@ class Motor(Callbacks):
         self._moving = False
 
     @property
+    def ready(self) -> bool:
+        return self._controller.ready
+
+    @property
     def controller(self) -> TMCMCard:
         return self._controller
 
