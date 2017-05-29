@@ -21,7 +21,7 @@ class DataReduction(QtWidgets.QWidget, Ui_Form, ToolWindow):
         Ui_Form.setupUi(self, Form)
         self.firstFSNSpinBox.valueChanged.connect(self.onFirstFSNChanged)
         self.lastFSNSpinBox.valueChanged.connect(self.onLastFSNChanged)
-        self.model = HeaderModel(None, self.credo, 'crd', self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value())
+        self.model = HeaderModel(None, self.credo, self.credo.config['path']['prefixes']['crd'], self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value())
         self.treeView.setModel(self.model)
         self.reloadHeaders()
         self.reloadPushButton.clicked.connect(self.reloadHeaders)
@@ -49,7 +49,7 @@ class DataReduction(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self._currentfsn = None
             self.setIdle()
             return
-        prefix='crd'
+        prefix=self.credo.config['path']['prefixes']['crd']
         header = self.model.header(self._currentfsn)
         assert isinstance(header, Header)
         ea.submit(
