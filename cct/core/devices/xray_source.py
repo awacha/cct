@@ -317,3 +317,6 @@ class GeniX(Device):
     def stop_warmup(self):
         self._warmup_stop_forced = True
         self.execute_command('stop_warmup')
+
+    def can_open_shutter(self):
+        return self.get_variable('interlock') and self.get_variable('xrays')
