@@ -26,6 +26,7 @@ from ..measurement.singleexposure import SingleExposure
 from ..setup.calibration import Calibration
 from ..setup.project import ProjectSetup
 from ..setup.users import UserManager
+from ..setup.configeditor import ConfigEditor
 from ..view.scanview import ScanViewer
 from ..view.exposureview import ExposureView
 from ..devices.xray_source import XraySource
@@ -79,6 +80,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionSingle_exposure:SingleExposure,
             self.actionData_reduction:DataReduction,
             self.actionUser_management:UserManager,
+            self.actionEdit_configuration:ConfigEditor,
         }
         self._dockwidgets = {}
 
