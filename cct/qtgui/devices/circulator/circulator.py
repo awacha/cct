@@ -88,10 +88,13 @@ class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.temperatureLcdNumber.display(newvalue)
         elif variablename == 'setpoint':
             self.setpointLcdNumber.display(newvalue)
+            self.setPointDoubleSpinBox.setValue(newvalue)
         elif variablename == 'highlimit':
             self.highLimitLcdNumber.display(newvalue)
+            self.highLimitDoubleSpinBox.setValue(newvalue)
         elif variablename == 'lowlimit':
             self.lowLimitLcdNumber.display(newvalue)
+            self.lowLimitDoubleSpinBox.setValue(newvalue)
         elif variablename == 'diffcontrol_on':
             self.setFlagBackground(self.diffControlStatusFlag, newvalue)
         elif variablename == 'autostart':
