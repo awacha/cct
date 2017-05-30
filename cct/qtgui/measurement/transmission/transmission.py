@@ -42,6 +42,8 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def onSampleSelected(self):
         if self._updating:
             return
+        if not self.sampleNameComboBox.currentText():
+            return
         self.model.add_sample(self.sampleNameComboBox.currentText())
         try:
             self._updating=True
