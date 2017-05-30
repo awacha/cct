@@ -11,6 +11,7 @@ from ....core.commands.xray_source import Shutter
 from ....core.services.exposureanalyzer import ExposureAnalyzer
 from ....core.services.filesequence import FileSequence
 from ....core.services.interpreter import Interpreter
+from ....core.services.samples import SampleStore
 
 
 class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -23,6 +24,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._failed = False
         self._fsconnections = []
         self._eaconnections = []
+        self._samconnections = []
         self.setupUi(self)
 
     def cleanup(self):
@@ -32,6 +34,9 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         for c in self._eaconnections:
             self.credo.services['exposureanalyzer'].disconnect(c)
         self._eaconnections = []
+        for c in self._samconnections:
+            self.credo.services['samplestore'].disconnect(c)
+        self._samconnections=[]
         super().cleanup()
 
     def setupUi(self, Form):
@@ -42,11 +47,26 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(fs, FileSequence)
         ea = self.credo.services['exposureanalyzer']
         assert isinstance(ea, ExposureAnalyzer)
+        sams= self.credo.services['samplestore']
+        assert isinstance(sams, SampleStore)
         self.prefixComboBox.addItems(fs.get_prefixes())
         self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText('tst'))
         self.onPrefixChanged()
         fs.connect('nextfsn-changed', self.onNextFSNChanged)
         ea.connect('image', self.onImage)
+        sams.connect('list-changed', self.onSampleListChanged)
+        self.onSampleListChanged(sams)
+        self.adjustSize()
+
+    def onSampleListChanged(self, samplestore:SampleStore):
+        currentsample = self.sampleNameComboBox.currentText()
+        self.sampleNameComboBox.clear()
+        self.sampleNameComboBox.addItems([s.title for s in samplestore.get_samples()])
+        idx = self.sampleNameComboBox.findText(currentsample)
+        if idx<0:
+            idx = self.sampleNameComboBox.findText(samplestore.get_active_name())
+        self.sampleNameComboBox.setCurrentIndex(idx)
+
 
     def onImage(self, ea: ExposureAnalyzer, prefix: str, fsn:int, image:np.ndarray, params:dict, mask:np.ndarray):
         pi = PlotImage.lastinstance
