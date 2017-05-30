@@ -451,6 +451,8 @@ class DeviceBackend(object):
         tm.last_query = time.monotonic() - self.lasttimes['query']
         tm.last_send = time.monotonic() - self.lasttimes['send']
         tm.watchdog = self.watchdog.elapsed()
+        tm.watchdog_active = self.watchdog.active
+        tm.watchdog_timeout = self.watchdog.timeout
         tm.message_instances = Message.instances
         tm.missing_variables = ', '.join([v for v in self.all_variables if v not in self.properties])
         tm.busy_level = self.is_busy()
