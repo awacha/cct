@@ -13,6 +13,7 @@ from ...core.services.interpreter import Interpreter
 from ...core.services.accounting import Accounting
 from ...core.devices import Device
 from .mainwindow_ui import Ui_MainWindow
+from .devicestatusbar import DeviceStatusBar
 from ..setup.sampleeditor import SampleEditor
 from ..tools.capillarymeasurement import CapillaryMeasurement
 from ..tools.maskeditor import MaskEditor
@@ -51,7 +52,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def setupUi(self, MainWindow):
         Ui_MainWindow.setupUi(self,MainWindow)
-
         self._dockwidgetinfo={
             self.actionAccounting:dockwidgets.Accounting,
             self.actionFSN_counters:dockwidgets.FSNCounter,
@@ -131,6 +131,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.updateActionEnabledStates()
         self.executePushButton.clicked.connect(self.onExecuteCommandLine)
         self.commandLineEdit.returnPressed.connect(self.onExecuteCommandLine)
+        self.deviceStatusBar=DeviceStatusBar(self, self.credo)
+        self.deviceStatusBarLayout.addWidget(self.deviceStatusBar)
 
     def onExecuteCommandLine(self):
         interpreter = self.credo.services['interpreter']
