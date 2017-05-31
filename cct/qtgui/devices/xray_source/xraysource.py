@@ -40,7 +40,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
         genix = self.credo.get_device('genix')
         assert isinstance(genix, GeniX)
         try:
-            self.genix.set_power('full')
+            genix.set_power('full')
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot power up X-ray tube: '+exc.args[0])
 
@@ -50,7 +50,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
         genix = self.credo.get_device('genix')
         assert isinstance(genix, GeniX)
         try:
-            self.genix.set_power('low')
+            genix.set_power('low')
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot set X-ray tube to standby mode: '+exc.args[0])
 
@@ -77,7 +77,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
         genix = self.credo.get_device('genix')
         assert isinstance(genix, GeniX)
         try:
-            self.genix.set_power('off')
+            genix.set_power('off')
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot power off X-ray tube: '+exc.args[0])
 
@@ -86,7 +86,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
             return
         genix = self.credo.get_device('genix')
         assert isinstance(genix, GeniX)
-        self.genix.shutter(self.shutterPushButton.isChecked())
+        genix.shutter(self.shutterPushButton.isChecked())
 
     def onXraysOn(self):
         if self._updating_ui:
