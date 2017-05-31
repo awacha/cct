@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from PyQt5 import QtWidgets, QtGui
 from sastool.io.credo_cct import Exposure, Header
@@ -13,6 +15,8 @@ from ....core.services.filesequence import FileSequence
 from ....core.services.interpreter import Interpreter
 from ....core.services.samples import SampleStore
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['genix', 'pilatus']
@@ -56,6 +60,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         ea.connect('image', self.onImage)
         sams.connect('list-changed', self.onSampleListChanged)
         self.onSampleListChanged(sams)
+        self.exposePushButton.clicked.connect(self.onExpose)
         self.adjustSize()
 
     def onSampleListChanged(self, samplestore:SampleStore):
@@ -67,13 +72,14 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
             idx = self.sampleNameComboBox.findText(samplestore.get_active_name())
         self.sampleNameComboBox.setCurrentIndex(idx)
 
-
     def onImage(self, ea: ExposureAnalyzer, prefix: str, fsn:int, image:np.ndarray, params:dict, mask:np.ndarray):
+        logger.debug('Image received.')
         pi = PlotImage.lastinstance
         if pi is None:
             pi=PlotImage()
         ex=Exposure(image,None,Header(params),mask)
         pi.setExposure(ex)
+        pi.show()
         return False
 
     def onNextFSNChanged(self, fs: FileSequence, prefix: str, nextfsn: int):
@@ -96,8 +102,12 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.credo.services['interpreter'].kill()
 
     def onCmdReturn(self, interpreter: Interpreter, cmdname: str, retval):
+        logger.debug('Command {} finished with {}'.format(cmdname, retval))
         super().onCmdReturn(interpreter, cmdname, retval)
+        if cmdname == 'shutter' and retval is None:
+            retval = self.credo.get_device('genix').get_variable('shutter')
         if self._failed:
+            logger.debug('Command {} failed!!!'.format(cmdname))
             if cmdname != 'shutter':
                 if self.autoShutterCheckBox.isChecked():
                     # try to close shutter and return
@@ -112,6 +122,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.setIdle()
         elif cmdname == 'shutter' and retval:
             # start the exposure
+            logger.debug('Starting the exposure')
             if self.nImagesSpinBox.value() > 1:
                 self.executeCommand(ExposeMulti, self.expTimeDoubleSpinBox.value(),
                                     self.nImagesSpinBox.value(),
@@ -122,10 +133,16 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
                                     self.prefixComboBox.currentText())
         elif cmdname == 'sample':
             # open shutter if needed
+            logger.debug('Sample in place.')
             if self.autoShutterCheckBox.isChecked():
                 self.executeCommand(Shutter, True)
             else:
                 self.onCmdReturn(interpreter, 'shutter', True)
+        elif cmdname.startswith('expose'):
+            if self.autoShutterCheckBox.isChecked():
+                self.executeCommand(Shutter, False)
+            else:
+                self.onCmdReturn(interpreter, 'shutter',False)
 
     def onCmdFail(self, interpreter: Interpreter, cmdname: str, exception: Exception, traceback: str):
         self._failed = True
@@ -136,6 +153,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         icon.addPixmap(QtGui.QPixmap(":/icons/exposure.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.exposePushButton.setIcon(icon)
         self.exposePushButton.setText('Expose')
+        self.entryWidget.setEnabled(True)
 
     def setBusy(self):
         super().setBusy()
