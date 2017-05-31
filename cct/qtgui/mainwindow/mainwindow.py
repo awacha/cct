@@ -191,9 +191,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         for action in self._action_to_windowclass:
             reqOk=self._action_to_windowclass[action].testRequirements(self.credo)
             action.setEnabled(reqOk)
-            if action in self.windowdict:
-                self.windowdict[action].setEnabled(reqOk)
-        for action in self._dockwidgetinfo:
+            if action in list(self.windowdict.keys()):
+                try:
+                    self.windowdict[action].setEnabled(reqOk)
+                except RuntimeError:
+                    del self.windowdict[action]
+        for action in list(self._dockwidgetinfo.keys()):
             reqOk=self._dockwidgetinfo[action].testRequirements(self.credo)
             action.setEnabled(reqOk)
             if not reqOk and action.isChecked():
