@@ -2,7 +2,6 @@ import gc
 import logging
 import traceback
 import weakref
-
 from typing import Dict
 
 from .exceptions import JumpException
@@ -295,10 +294,11 @@ class Command(Callbacks):
         logger.debug('Disconnected required devices of command {}'.format(self.name))
         if not noemit:
             self.emit('return', returnvalue)
-        del self.args
-        del self.kwargs
-        del self.namespace
-        del self.interpreter
+        for attr in ['args', 'kwargs', 'namespace', 'interpreter']:
+            try:
+                delattr(self, attr)
+            except AttributeError:
+                continue
         gc.collect()
 
     def on_timeout(self):

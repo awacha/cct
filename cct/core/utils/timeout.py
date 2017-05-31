@@ -77,4 +77,3 @@ class SingleIdleFunction(object):
 
     def __del__(self):
         logger.debug('Deleting a SingleIdleFunction')
-        super().__del__(self)

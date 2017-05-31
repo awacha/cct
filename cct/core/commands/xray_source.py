@@ -1,4 +1,8 @@
+import logging
 import traceback
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 from .command import Command, CommandError, CommandArgumentError, CommandKilledError
 
@@ -44,6 +48,7 @@ class Shutter(Command):
         self.get_device('xray_source').shutter(self.open_needed)
 
     def on_variable_change(self, device, variablename, newvalue):
+        logger.debug('Variable_change, X-ray-source: {} to {}'.format(variablename, newvalue))
         if variablename == 'shutter' and newvalue == self.open_needed:
             self.idle_return(newvalue)
 

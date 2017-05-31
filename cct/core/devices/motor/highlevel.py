@@ -132,9 +132,12 @@ class Motor(Callbacks):
         return self._controller.checklimits(self._index, position)
 
     def __del__(self):
-        if self._connection is not None:
-            self._controller.disconnect(self._connection)
-            self._connection = None
+        for c in self._connection:
+            try:
+                self._controller.disconnect(c)
+            except:
+                logger.error('Error while disconnecting signal handler {} from motor controller {}.'.format(self._connection, self._controller.name))
+        self._connection = []
 
     def get_limits(self):
         return self._controller.get_limits(self._index)

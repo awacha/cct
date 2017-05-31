@@ -411,6 +411,17 @@ class FileSequence(Service):
             distcalib = dist - sample.distminus
             params['sample'] = sample.todict()
         else:
+            sampledict = self.instrument.services['samplestore'].get_samples()[0].todict()
+            for v in sampledict:
+                if isinstance(sampledict[v], str):
+                    sampledict[v]='---'
+                elif isinstance(sampledict[v], (float,int)):
+                    sampledict[v]=0
+                elif isinstance(sampledict[v], ErrorValue):
+                    sampledict[v]=ErrorValue(0,0)
+                else:
+                    sampledict[v]=None
+            params['sample'] = sampledict
             distcalib = dist
         params['geometry']['truedistance'] = distcalib.val
         params['geometry']['truedistance.err'] = distcalib.err
