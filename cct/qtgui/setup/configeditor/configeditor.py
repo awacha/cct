@@ -37,6 +37,7 @@ class ConfigEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self._editorwidget.disconnect()
             self._editorwidget.deleteLater()
             del self._editorwidget
+            self._editorwidget = None
         if isinstance(value, str):
             self._editorwidget=QtWidgets.QLineEdit(value, None)
             assert isinstance(self._editorwidget, QtWidgets.QLineEdit)
