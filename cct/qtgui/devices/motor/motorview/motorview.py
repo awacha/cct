@@ -1,7 +1,9 @@
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 from .motorlist import MotorModel
 from .motorview_ui import Ui_Form
+from ..motorconfig import MotorConfig
+from ..movemotor import MoveMotor
 from ....core.mixins import ToolWindow
 from .....core.devices import DeviceError
 from .....core.devices.motor import Motor
@@ -17,6 +19,8 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._updating_ui = False
         self._current_task = None
         self._samplestore_connections = []
+        self._popupmenu = None
+        self._calibrationwindows = {}
         self.setupUi(self)
 
     @classmethod
@@ -48,6 +52,54 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(ss, SampleStore)
         self._samplestore_connections = [ss.connect('list-changed', self.onSampleListChanged)]
         self.onSampleListChanged()
+        self.treeView.activated.connect(self.onMotorViewLineActivated)
+        self.treeView.customContextMenuRequested.connect(self.onTreeViewContextMenuRequested)
+
+    def onTreeViewContextMenuRequested(self, pos:QtCore.QPoint):
+        if self._popupmenu is not None:
+            try:
+                self._popupmenu.close()
+            except RuntimeError:
+                pass
+            self._popupmenu = None
+            self._motor_for_popupmenu=None
+        index = self.treeView.indexAt(pos)
+        print(index)
+        motor = self.credo.motors[sorted(self.credo.motors.keys())[index.row()]]
+        assert isinstance(motor, Motor)
+        self._popupmenu = QtWidgets.QMenu('Operations with motor {}'.format(motor.name))
+        self._motor_for_popupmenu=motor
+        if MoveMotor.testRequirements(self.credo):
+            icon = QtGui.QIcon()
+            icon.addPixmap(QtGui.QPixmap(":/icons/motor.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+            self._popupmenu.addAction(icon, 'Move {}'.format(motor.name), self.onMoveMotorRequestedFromContextMenu)
+        if MotorConfig.testRequirements(self.credo):
+            icon = QtGui.QIcon()
+            icon.addPixmap(QtGui.QPixmap(":/icons/editconfig.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+            self._popupmenu.addAction(icon, 'Configure {}'.format(motor.name), self.onConfigureMotorRequestedFromContextMenu)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/icons/calibration.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self._popupmenu.addAction(icon, 'Calibrate {}'.format(motor.name), self.onCalibrateMotorRequestedFromContextMenu)
+        self._popupmenu.popup(QtGui.QCursor.pos())
+
+    def onCalibrateMotorRequestedFromContextMenu(self):
+        pass
+
+    def onMoveMotorRequestedFromContextMenu(self):
+        mm = MoveMotor(credo=self.credo, motorname=self._motor_for_popupmenu.name)
+        mm.show()
+
+    def onConfigureMotorRequestedFromContextMenu(self):
+        try:
+            self._calibrationwindows[self._motor_for_popupmenu.name].raise_()
+        except (RuntimeError, KeyError):
+            self._calibrationwindows[self._motor_for_popupmenu.name] = MotorConfig(None, motor=self._motor_for_popupmenu, credo=self.credo)
+            self._calibrationwindows[self._motor_for_popupmenu.name].show()
+            self._calibrationwindows[self._motor_for_popupmenu.name].raise_()
+
+    def onMotorViewLineActivated(self, index:QtCore.QModelIndex):
+        motor = self.credo.motors[sorted(self.credo.motors.keys())[index.row()]]
+        self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.findText(motor.name))
 
     def cleanup(self):
         for c in self._samplestore_connections:
