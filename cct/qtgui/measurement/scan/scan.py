@@ -92,6 +92,8 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if cmdname == 'moveto':
             if self._failed:
                 self.setIdle()
+            if self._origin is None:
+                self.setIdle()
             elif self.autoShutterCheckBox.isChecked():
                 self.executeCommand(Shutter, True)
             else:
@@ -122,7 +124,11 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                                     end, self.stepsSpinBox.value(),
                                     self.countingTimeDoubleSpinBox.value(), self.commentLineEdit.text())
         elif cmdname == 'shutter' and not retval:
-            self.setIdle()
+            if self.goBackAfterEndCheckBox.isChecked():
+                self.executeCommand(Moveto, self._motor, self._origin)
+            else:
+                self.onCmdReturn(interpreter, 'moveto', True)
+            self._origin = None
 
     def onCmdDetail(self, interpreter: Interpreter, cmdname: str, detail):
         fsn, position, counters = detail
@@ -140,6 +146,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             try:
                 motor = self.credo.motors[self._motor]
                 assert isinstance(motor, Motor)
+                self._origin = motor.where()
                 if self.relativeScanCheckBox.isChecked():
                     start = self.startDoubleSpinBox.value() + motor.where()
                 else:

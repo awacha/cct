@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>373</width>
-    <height>314</height>
+    <width>492</width>
+    <height>362</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -91,7 +91,7 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="0">
+      <item row="8" column="0">
        <widget class="QLabel" name="label_7">
         <property name="text">
          <string>Comment:</string>
@@ -139,14 +139,14 @@
         </property>
        </widget>
       </item>
-      <item row="7" column="1">
+      <item row="8" column="1">
        <widget class="QLineEdit" name="commentLineEdit">
         <property name="placeholderText">
          <string>What this scan sequence is about...</string>
         </property>
        </widget>
       </item>
-      <item row="8" column="0" colspan="2">
+      <item row="9" column="0" colspan="2">
        <widget class="QCheckBox" name="autoShutterCheckBox">
         <property name="text">
          <string>Open/close shutter before and after the scan sequence</string>
@@ -156,6 +156,13 @@
         </property>
         <property name="checked">
          <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="0" colspan="2">
+       <widget class="QCheckBox" name="goBackAfterEndCheckBox">
+        <property name="text">
+         <string>Go back to the starting position after the scan</string>
         </property>
        </widget>
       </item>
@@ -178,6 +185,18 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>motorComboBox</tabstop>
+  <tabstop>relativeScanCheckBox</tabstop>
+  <tabstop>startDoubleSpinBox</tabstop>
+  <tabstop>endDoubleSpinBox</tabstop>
+  <tabstop>stepsSpinBox</tabstop>
+  <tabstop>countingTimeDoubleSpinBox</tabstop>
+  <tabstop>commentLineEdit</tabstop>
+  <tabstop>autoShutterCheckBox</tabstop>
+  <tabstop>goBackAfterEndCheckBox</tabstop>
+  <tabstop>startStopPushButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>
  </resources>
