@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Capillary position and thickness</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../resource/icons/icons.qrc">
+    <normaloff>:/icons/capillarysizer.svg</normaloff>:/icons/capillarysizer.svg</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -452,7 +456,7 @@
      <widget class="QWidget" name="figureContainerWidget" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
+        <horstretch>1</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
@@ -477,6 +481,8 @@
   <tabstop>updateThicknessPushButton</tabstop>
   <tabstop>updateBothPushButton</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="../../../resource/icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

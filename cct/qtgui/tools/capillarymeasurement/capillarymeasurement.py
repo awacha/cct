@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 from .capillarymeasurement_ui import Ui_Form
 from ...core.mixins import ToolWindow
 
+
 class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo=kwargs.pop('credo')
@@ -37,6 +38,9 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
         self.derivativeCheckBox.toggled.connect(self.plotSignal)
         self.fitNegativePushButton.clicked.connect(self.fitNegative)
         self.fitPositivePushButton.clicked.connect(self.fitPositive)
+        scanfile=self.credo.services['filesequence'].get_scanfile()
+        self.scanFileNameLineEdit.setText(scanfile)
+        self.loadScanFile()
 
     def filename(self):
         return self.scanFileNameLineEdit.text()
@@ -51,6 +55,8 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
 
     def loadScanFile(self):
         self.scanfile = sastool.classes2.scan.SpecFile(self.filename())
+        self.scanIndexSpinBox.setMinimum(min(self.scanfile.toc.keys()))
+        self.scanIndexSpinBox.setMaximum(max(self.scanfile.toc.keys()))
         self.scanIndexSpinBox.setValue(max(self.scanfile.toc.keys()))
         self.scanIndexSpinBox.setEnabled(True)
         self.reloadPushButton.setEnabled(True)
@@ -80,6 +86,8 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
                 self.signalNameComboBox.setCurrentIndex(0)
         else:
             self.signalNameComboBox.setCurrentIndex(0)
+        while self.signalNameComboBox.currentText()=='FSN':
+            self.signalNameComboBox.setCurrentIndex(self.signalNameComboBox.currentIndex()+1)
         assert isinstance(self.axes, Axes)
         self.axes.set_xlabel(self.scan.motor)
         self.axes.set_title(self.scan.comment)
@@ -109,6 +117,11 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
             signal=signal[idx]
         return x, signal, self.derivativeCheckBox.checkState(), signalname
 
+    def clearGraph(self):
+        self.axes.clear()
+        self.canvas.draw()
+        self._peaklines=[]
+        self._peakposittions=[]
 
     def plotSignal(self):
         try:
