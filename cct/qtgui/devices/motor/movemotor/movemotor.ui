@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../../../../resource/icons/icons.qrc">
+    <normaloff>:/icons/motor.svg</normaloff>:/icons/motor.svg</iconset>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
     <widget class="QLabel" name="label">
@@ -80,7 +84,8 @@
         <string>Move</string>
        </property>
        <property name="icon">
-        <iconset theme="system-run"/>
+        <iconset resource="../../../../resource/icons/icons.qrc">
+         <normaloff>:/icons/motor.svg</normaloff>:/icons/motor.svg</iconset>
        </property>
        <property name="autoDefault">
         <bool>true</bool>
@@ -94,6 +99,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../../../resource/icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>
