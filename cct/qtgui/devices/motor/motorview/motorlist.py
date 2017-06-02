@@ -64,7 +64,7 @@ class MotorModel(QtCore.QAbstractItemModel):
             elif index.column() == 7:
                 return str(motor.get_variable('load'))
             elif index.column() == 8:
-                return motor.decode_error_flags()
+                return ', '.join(motor.decode_error_flags())
             else:
                 return None
         elif role == QtCore.Qt.CheckStateRole:
