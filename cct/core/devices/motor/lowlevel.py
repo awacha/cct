@@ -37,6 +37,11 @@ PER_MOTOR_VARIABLES = ['pulsedivisor', 'rampdivisor', 'microstepresolution',
                        'targetspeed', 'maxspeed', 'maxacceleration',
                        'actualacceleration', 'softleft', 'softright']
 
+PER_MOTOR_VARIABLES_NOQUERY = ['maxcurrentraw', 'standbycurrentraw',
+                               'targetpositionraw', 'actualpositionraw', 'actualspeedraw',
+                               'targetspeedraw', 'maxspeedraw', 'maxaccelerationraw',
+                               'actualaccelerationraw']
+
 DEVICE_VARIABLES = ['firmwareversion']
 
 TMCL_ERROR_MESSAGES = {1: 'wrong checksum',
@@ -80,7 +85,9 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                 raise UnknownVariable(variablename)
         except (IndexError, ValueError):
             motor_idx = None
-        if variablename == 'firmwareversion':
+        if 'raw$' in variablename:
+            self.query_variable(variablename.replace('raw$','$'))
+        elif variablename == 'firmwareversion':
             self.send_tmcl_command(136, 1, 0, 0)
         elif variablename.startswith('targetposition$') or variablename.startswith('targetpositionraw$'):
             self.send_tmcl_command(6, 0, motor_idx, 0)
@@ -200,25 +207,43 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                     self.update_variable('targetspeed$' + motor_idx,
                                          self._convert_speed_to_phys(
                                              value, motoridx))
+                    self.update_variable('targetspeedraw$' + motor_idx,
+                                         value)
                 elif typenum == 3:  # actualspeed
                     self.update_variable('actualspeed$' + motor_idx,
                                          self._convert_speed_to_phys(value, motoridx))
+                    self.update_variable('actualspeedraw$' + motor_idx,
+                                         value)
                 elif typenum == 4:
                     self.update_variable(
                         'maxspeed$' + motor_idx,
                         self._convert_speed_to_phys(value, motoridx))
+                    self.update_variable(
+                        'maxspeedraw$' + motor_idx,
+                        value
+                    )
                 elif typenum == 5:
                     self.update_variable(
                         'maxacceleration$' + motor_idx,
                         self._convert_accel_to_phys(value, motoridx))
+                    self.update_variable(
+                        'maxaccelerationraw$' + motor_idx,
+                        value
+                    )
                 elif typenum == 6:
                     self.update_variable(
                         'maxcurrent$' + motor_idx,
                         self._convert_current_to_phys(value))
+                    self.update_variable(
+                        'maxcurrentraw$' + motor_idx,
+                        value)
                 elif typenum == 7:
                     self.update_variable(
                         'standbycurrent$' + motor_idx,
                         self._convert_current_to_phys(value))
+                    self.update_variable(
+                        'standbycurrentraw$' + motor_idx,
+                        value)
                 elif typenum == 8:
                     self.update_variable('targetpositionreached$' + motor_idx,
                                          bool(value))
@@ -242,6 +267,10 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                     self.update_variable(
                         'actualacceleration$' + motor_idx,
                         self._convert_accel_to_phys(value, motoridx))
+                    self.update_variable(
+                        'actualaccelerationraw$' + motor_idx,
+                        value
+                    )
                 elif typenum == 138:
                     self.update_variable('rampmode$' + motor_idx, value)
                 elif typenum == 140:
@@ -568,48 +597,67 @@ class TMCMCard_Backend(DeviceBackend_TCP):
         try:
             if variable.startswith('targetposition$'):
                 assert isinstance(value, float)
+                self.set_variable('targetpositionraw${:d}'.format(motor_idx),
+                                  self._convert_pos_to_raw(value, motor_idx))
+            elif variable.startswith('targetpositionraw$'):
+                assert isinstance(value, int)
                 self.send_tmcl_command(
-                    5, 0, motor_idx, self._convert_pos_to_raw(
-                        value, motor_idx))
+                    5, 0, motor_idx, value)
             elif variable.startswith('actualposition$'):
                 assert isinstance(value, float)
+                self.set_variable('actualpositionraw${:d}'.format(motor_idx),
+                                  self._convert_pos_to_raw(value, motor_idx))
+            elif variable.startswith('actualpositionraw$'):
+                assert isinstance(value, int)
                 self.send_tmcl_command(
-                    5, 1, motor_idx, self._convert_pos_to_raw(
-                        value, motor_idx))
+                    5, 1, motor_idx, value)
+            #TODO: make all setters use raw setters as the above two.
             elif variable.startswith('targetspeed$'):
                 assert isinstance(value, float)
+                self.set_variable('targetspeedraw${:d}'.format(motor_idx),
+                                  self._convert_speed_to_raw(value, motor_idx))
+            elif variable.startswith('targetspeedraw$'):
                 self.send_tmcl_command(
-                    5, 2, motor_idx, self._convert_speed_to_raw(
-                        value, motor_idx))
+                    5, 2, motor_idx, value)
             elif variable.startswith('actualspeed$'):
                 assert isinstance(value, float)
+                self.set_variable('actualspeedraw${:d}'.format(motor_idx),
+                                  self._convert_speed_to_raw(value, motor_idx))
+            elif variable.startswith('actualspeedraw$'):
                 self.send_tmcl_command(
-                    5, 3, motor_idx, self._convert_speed_to_raw(
-                        value, motor_idx))
+                    5, 3, motor_idx, value)
             elif variable.startswith('maxspeed$'):
                 assert isinstance(value, float)
+                self.set_variable('maxspeedraw${:d}'.format(motor_idx),
+                                  self._convert_speed_to_raw(value, motor_idx))
+            elif variable.startswith('maxspeedraw$'):
                 self.send_tmcl_command(
-                    5, 4, motor_idx, self._convert_speed_to_raw(
-                        value, motor_idx))
+                    5, 4, motor_idx, value)
                 self.send_tmcl_command(
                     7, 4, motor_idx, 0)  # issue a STAP command as well
             elif variable.startswith('maxacceleration$'):
                 assert isinstance(value, float)
+                self.set_variable('maxaccelerationraw${:d}'.format(motor_idx),
+                                  self._convert_accel_to_raw(value, motor_idx))
+            elif variable.startswith('maxaccelerationraw$'):
                 self.send_tmcl_command(
-                    5, 5, motor_idx, self._convert_accel_to_raw(
-                        value, motor_idx))
+                    5, 5, motor_idx, value)
                 self.send_tmcl_command(
                     7, 5, motor_idx, 0)  # issue a STAP command as well
             elif variable.startswith('maxcurrent$'):
                 assert isinstance(value, float)
+                self.set_variable('maxcurrentraw${:d}'.format(motor_idx),
+                                  self._convert_current_to_raw(value))
+            elif variable.startswith('maxcurrentraw$'):
                 self.send_tmcl_command(
-                    5, 6, motor_idx, self._convert_current_to_raw(
-                        value))
+                    5, 6, motor_idx, value)
             elif variable.startswith('standbycurrent$'):
                 assert isinstance(value, float)
+                self.set_variable('standbycurrentraw${:d}'.format(motor_idx),
+                                  self._convert_current_to_raw(value))
+            elif variable.startswith('standbycurrentraw$'):
                 self.send_tmcl_command(
-                    5, 7, motor_idx, self._convert_current_to_raw(
-                        value))
+                    5, 7, motor_idx, value)
             elif variable.startswith('rightswitchenable$'):
                 self.send_tmcl_command(
                     5, 12, motor_idx, not bool(value))
@@ -799,6 +847,9 @@ class TMCMCard(Device):
                 PER_MOTOR_VARIABLES, range(self.N_axes))]
 
         self.minimum_query_variables = self.all_variables[:]
+        self.all_variables.extend(['{}${:d}'.format(vn, motidx)
+                                   for vn, motidx in itertools.product(
+                PER_MOTOR_VARIABLES_NOQUERY, range(self.N_axes))])
 
         # self._moving: not present if no motor is moving. Otherwise a dict with the
         # following items: 'index': the index of the currently moving motor.
