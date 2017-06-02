@@ -29,7 +29,7 @@ class TimeOut(object):
             self.timer.timeout.disconnect()
 
 class IdleFunction(object):
-    def __init__(self, function, interval=100, *args, **kwargs):
+    def __init__(self, function, interval=0, *args, **kwargs):
         self.function = function
         self.interval = interval
         self.args = args
