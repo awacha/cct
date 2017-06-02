@@ -50,7 +50,7 @@ class ScanViewer(QtWidgets.QWidget, Ui_Form, ToolWindow):
         fs=self.credo.services['filesequence']
         assert isinstance(fs, FileSequence)
         scan = fs.load_scan(scanindex, self.scanModel.scanfile)
-        sg = ScanGraph()
+        sg = ScanGraph(credo=self.credo)
         sg.setWindowTitle('Scan #{:d}'.format(scanindex))
         sg.setCurve(scan['data'], len(scan['data']))
         sg.show()
