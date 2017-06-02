@@ -35,6 +35,7 @@ from ..devices.detector import Detector
 from ..devices.motor import MotorOverview
 from ..devices.circulator import TemperatureController
 from ..devices.vacuum import VacuumGauge
+from ..devices.connections import DeviceConnections
 from ..diagnostics.resourceusage import ResourceUsage
 from .logviewer import LogViewer
 from .collectinghandler import CollectingHandler
@@ -81,6 +82,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionData_reduction:DataReduction,
             self.actionUser_management:UserManager,
             self.actionEdit_configuration:ConfigEditor,
+            self.actionDevice_connections:DeviceConnections,
         }
         self._dockwidgets = {}
 
