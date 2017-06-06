@@ -57,20 +57,25 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
             self.update_variable('remote_mode', statusbits[0])
             self.update_variable('xrays', statusbits[1])
             if not statusbits[1]:
-                self.update_variable('_status', 'X-rays off')
+                if self.update_variable('_status', 'X-rays off'):
+                    self.logger.info('X-rays turned off.')
             self.update_variable('goingtostandby', statusbits[2])
             if statusbits[2]:
-                self.update_variable('_status', 'Going to stand-by')
+                if self.update_variable('_status', 'Going to stand-by'):
+                    self.logger.info('Putting X-ray tube into stand-by mode.')
             self.update_variable('rampingup', statusbits[3])
             if statusbits[3]:
-                self.update_variable('_status', 'Ramping up')
+                if self.update_variable('_status', 'Ramping up'):
+                    self.logger.info('Ramping up X-ray tube power.')
             self.update_variable('conditions_auto', statusbits[4])
             self.update_variable('poweringdown', statusbits[5])
             if statusbits[5]:
-                self.update_variable('_status', 'Powering down')
+                if self.update_variable('_status', 'Powering down'):
+                    self.logger.info('Powering down X-ray tube')
             self.update_variable('warmingup', statusbits[6])
             if statusbits[6]:
-                self.update_variable('_status', 'Warming up')
+                if self.update_variable('_status', 'Warming up'):
+                    self.logger.info('X-ray tube warm-up started.')
             self.update_variable('tube_power', [30, 50][statusbits[7]])
             # statusbits[8] is unknown
             self.update_variable('faults', statusbits[9])
@@ -114,9 +119,11 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
                 # if interlock_lowlevel signals Broken, set interlock to broken.
                 self.update_variable('interlock', False)
             if statusbits[26] and not statusbits[27]:
-                self.update_variable('shutter', False)
+                if self.update_variable('shutter', False):
+                    self.logger.info('Beam shutter is closed.')
             elif statusbits[27] and not statusbits[26]:
-                self.update_variable('shutter', True)
+                if self.update_variable('shutter', True):
+                    self.logger.info('Beam shutter is open.')
             else:
                 # do nothing, we are in an intermediate state between open and
                 # closed, i.e. the shutter is just opening or closing.
@@ -130,11 +137,14 @@ class GeniX_Backend(DeviceBackend_ModbusTCP):
                         # not powering down and not warming up, decide the
                         # value of _status by the current output power
                         if self.properties['ht'] == 0 and self.properties['current'] == 0:
-                            self.update_variable('_status', 'Power off')
+                            if self.update_variable('_status', 'Power off'):
+                                self.logger.info('X-ray tube powered off')
                         elif self.properties['power'] == 9:
-                            self.update_variable('_status', 'Low power')
+                            if self.update_variable('_status', 'Low power'):
+                                self.logger.info('X-ray tube is now in stand-by mode.')
                         elif self.properties['power'] == 30:
-                            self.update_variable('_status', 'Full power')
+                            if self.update_variable('_status', 'Full power'):
+                                self.logger.info('X-ray tube is now in full-power mode.')
             except KeyError:
                 pass
         else:
