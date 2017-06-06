@@ -260,8 +260,12 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.replot_colourbar()
         self.replot_crosshair()
         self.replot_mask()
+        try:
+            title = ex.header.title
+        except KeyError:
+            title = 'Untitled'
         self._title = self.axes.set_title('#{:d}: {} ({:.2f} mm)'.format(ex.header.fsn,
-                                                                         ex.header.title,
+                                                                         title,
                                                                          ex.header.distance))
 
         if axesscale == 'abs. pixel':
