@@ -18,7 +18,7 @@ class LogModel(QtCore.QAbstractItemModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._records = []
-        self._level = logging.NOTSET
+        self._level = logging.root.level
 
     def index(self, row: int, column: int, parent=None, *args, **kwargs):
         if column < 0 or column >= len(self.columnConfig):
