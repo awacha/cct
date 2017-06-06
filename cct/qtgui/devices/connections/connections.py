@@ -22,6 +22,7 @@ class DeviceConnections(QtWidgets.QWidget, ToolWindow):
         self._disconnectbuttons = {}
         self.setupUi(self)
 
+    @classmethod
     def testRequirements(cls, credo: Instrument):
         return super().testRequirements(credo) and credo.online
 
