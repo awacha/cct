@@ -240,6 +240,14 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
                     self.powerOffPushButton.setEnabled(False)
                     self.standbyPushButton.setEnabled(False)
                     self.fullPowerPushButton.setEnabled(False)
+                elif newvalue == 'Initializing':
+                    self.xraysOnPushButton.setEnabled(False)
+                    self.powerOffPushButton.setEnabled(True)
+                    self.warmUpPushButton.setEnabled(False)
+                    self.warmUpPushButton.setChecked(False)
+                    self.shutterPushButton.setEnabled(device.get_variable('interlock'))
+                    self.standbyPushButton.setEnabled(False)
+                    self.fullPowerPushButton.setEnabled(False)
                 else:
                     raise ValueError(newvalue)
         finally:
