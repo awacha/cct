@@ -45,7 +45,21 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.prefixComboBox.currentIndexChanged.connect(self.onPrefixChanged)
         self._fsconnections = [fs.connect('lastfsn-changed', self.onLastFSNChanged)]
         self.FSNSpinBox.valueChanged.connect(self.onFSNSpinBoxValueChanged)
+        self.gotoLastPushButton.clicked.connect(self.onGotoLast)
+        self.gotoFirstPushButton.clicked.connect(self.onGotoFirst)
+        self.reloadPushButton.clicked.connect(self.onReload)
         self.onPrefixChanged()
+
+    def onGotoFirst(self):
+        self.FSNSpinBox.setValue(self.FSNSpinBox.minimum())
+        self.onReload()
+
+    def onGotoLast(self):
+        self.FSNSpinBox.setValue(self.FSNSpinBox.maximum())
+        self.onReload()
+
+    def onReload(self):
+        self.onFSNSpinBoxValueChanged()
 
     def onFSNSpinBoxValueChanged(self):
         fs = self.credo.services['filesequence']
