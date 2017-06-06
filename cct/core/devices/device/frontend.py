@@ -371,8 +371,11 @@ class Device(Callbacks):
 
     def do_disconnect(self, because_of_failure: bool):
         """default handler for the 'disconnect' signal"""
-        logger.warning('Disconnected from device {}. Failure flag: {}'.format(
-            self.name, because_of_failure))
+        if because_of_failure:
+            logger.warning('Disconnected from device {} due to a failure.'.format(
+                self.name))
+        else:
+            logger.info('Disconnected from device {}.'.format(self.name))
         if self._properties['_status'] != 'Disconnected':
             self._properties['_status'] = 'Disconnected'
             self._timestamps['_status'] = time.monotonic()
