@@ -40,14 +40,15 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.tab1D.setLayout(QtWidgets.QVBoxLayout())
         self.plotCurve = PlotCurve(self.tab1D)
         self.tab1D.layout().addWidget(self.plotCurve)
-        self.distCalibFigure= Figure()
+        self.distCalibFigure = Figure()
         self.distCalibFigureCanvas = FigureCanvasQTAgg(self.distCalibFigure)
         self.tabDistance.setLayout(QtWidgets.QVBoxLayout())
         self.tabDistance.layout().addWidget(self.distCalibFigureCanvas)
         self.distCalibFigureToolbar = NavigationToolbar2QT(self.distCalibFigureCanvas, self.tabDistance)
         self.tabDistance.layout().addWidget(self.distCalibFigureToolbar)
-        self.distCalibAxes=self.distCalibFigure.add_subplot(1,1,1)
-        self.centeringMethodComboBox.addItems(['Gravity', 'Peak amplitude', 'Peak width', 'Power-law', 'Manual (click)'])
+        self.distCalibAxes = self.distCalibFigure.add_subplot(1, 1, 1)
+        self.centeringMethodComboBox.addItems(
+            ['Gravity', 'Peak amplitude', 'Peak width', 'Power-law', 'Manual (click)'])
         self.centeringMethodComboBox.setCurrentIndex(1)
         self.centeringPushButton.clicked.connect(self.onCenteringRequested)
         self.plotImage.setOnlyAbsPixel()
@@ -70,12 +71,13 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.calibrantComboBox.setCurrentIndex(0)
         self.onCalibrantChanged()
         assert isinstance(self.pairsTreeView, QtWidgets.QTreeView)
-        self.pairsStore= PairStore()
+        self.pairsStore = PairStore()
         self.pairsTreeView.setModel(self.pairsStore)
 
     def onAddPair(self):
-        self.pairsStore.addPair(ErrorValue(self.uncalibratedValDoubleSpinBox.value(), self.uncalibratedErrDoubleSpinBox.value()),
-                                ErrorValue(self.calibratedValDoubleSpinBox.value(), self.calibratedErrDoubleSpinBox.value()))
+        self.pairsStore.addPair(
+            ErrorValue(self.uncalibratedValDoubleSpinBox.value(), self.uncalibratedErrDoubleSpinBox.value()),
+            ErrorValue(self.calibratedValDoubleSpinBox.value(), self.calibratedErrDoubleSpinBox.value()))
         for c in range(self.pairsStore.columnCount()):
             self.pairsTreeView.resizeColumnToContents(c)
         self.recalculateDistance()
@@ -89,16 +91,17 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             return
         if len(pairs) == 1:
             # calculate the distance directly
-            dist = pairs[0][0]*self.credo.config['geometry']['pixelsize']/(((pairs[0][1]*wl/4/np.pi).arcsin()*2.0).tan())
+            dist = pairs[0][0] * self.credo.config['geometry']['pixelsize'] / (
+            ((pairs[0][1] * wl / 4 / np.pi).arcsin() * 2.0).tan())
         else:
-            pix=[p[0] for p in pairs]
-            q=[p[1] for p in pairs]
-            rho = [p*self.credo.config['geometry']['pixelsize'] for p in pix] # pixel * pixelsize
-            qlambda = [q_*wl for q_ in q] # q * lambda
+            pix = [p[0] for p in pairs]
+            q = [p[1] for p in pairs]
+            rho = [p * self.credo.config['geometry']['pixelsize'] for p in pix]  # pixel * pixelsize
+            qlambda = [q_ * wl for q_ in q]  # q * lambda
             dist, stat = nonlinear_odr(
                 [r.val for r in rho], [ql.val for ql in qlambda],
                 [r.err for r in rho], [ql.err for ql in qlambda],
-                lambda rho_,L:4*np.pi*np.sin(0.5*np.arctan(rho_/L)),[100,])
+                lambda rho_, L: 4 * np.pi * np.sin(0.5 * np.arctan(rho_ / L)), [100, ])
         self.sdDistDoubleSpinBox.setValue(dist.val)
         self.sdDistErrDoubleSpinBox.setValue(dist.err)
         self.plotPairs()
@@ -133,7 +136,7 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def plotPairs(self):
         self.distCalibAxes.clear()
         try:
-            pairs=self.pairsStore.pairs()
+            pairs = self.pairsStore.pairs()
             if not pairs:
                 return
             pix = [p[0].val for p in pairs]
@@ -143,7 +146,8 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             self.distCalibAxes.errorbar(pix, q, dq, dpix, 'bo', label='Calibration pairs')
             dist = self.sdDistDoubleSpinBox.value()
             pix = np.linspace(0, max(pix), 1000)
-            q = 4*np.pi*np.sin(0.5*np.arctan(pix*self.credo.config['geometry']['pixelsize']/dist))/self.credo.config['geometry']['wavelength']
+            q = 4 * np.pi * np.sin(0.5 * np.arctan(pix * self.credo.config['geometry']['pixelsize'] / dist)) / \
+                self.credo.config['geometry']['wavelength']
             self.distCalibAxes.plot(pix, q, 'r-', label='Fitted curve')
             assert isinstance(self.distCalibAxes, Axes)
             self.distCalibAxes.set_xlabel('Pixel coordinate')
@@ -152,20 +156,19 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         finally:
             self.distCalibFigureCanvas.draw()
 
-
-
     def onLorentzFit(self):
         return self.fit('Lorentz')
 
     def fit(self, curvetype):
         rad = self.plotImage.exposure().radial_average(pixel=True)
         xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
-        rad=rad.trim(xmin, xmax, ymin, ymax)
-        x=np.linspace(rad.q.min(), rad.q.max())
-        peak, hwhm, baseline, amplitude, y = findpeak_single(rad.q, rad.Intensity, rad.Error, curve=curvetype, return_x=x)
+        rad = rad.trim(xmin, xmax, ymin, ymax)
+        x = np.linspace(rad.q.min(), rad.q.max())
+        peak, hwhm, baseline, amplitude, y = findpeak_single(rad.q, rad.Intensity, rad.Error, curve=curvetype,
+                                                             return_x=x)
         self.uncalibratedValDoubleSpinBox.setValue(peak.val)
         self.uncalibratedErrDoubleSpinBox.setValue(peak.err)
-        self.plotCurve.addFitCurve(x,y, color='r', ls='-')
+        self.plotCurve.addFitCurve(x, y, color='r', ls='-')
 
     def onGaussFit(self):
         return self.fit('Gauss')
@@ -198,13 +201,13 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.sender().setEnabled(False)
         self.credo.emit_config_change_signal()
 
-    def onFSNSelected(self, fsn:int, prefix:str, exposure:Exposure):
+    def onFSNSelected(self, fsn: int, prefix: str, exposure: Exposure):
         self.plotImage.setExposure(exposure)
         self.plotCurve.addCurve(exposure.radial_average(pixel=True), label=exposure.header.title, hold_mode=False,
                                 color='blue', ls='-', marker='.')
         self.plotCurve.setXLabel('Pixel coordinate')
         self.plotCurve.setYLabel('Total counts')
-        self._updating_ui=True
+        self._updating_ui = True
         try:
             self.beamXDoubleSpinBox.setValue(exposure.header.beamcenterx.val)
             self.beamXErrDoubleSpinBox.setValue(exposure.header.beamcenterx.err)
@@ -217,12 +220,12 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def newBeamPosFound(self, posx, posy):
         exposure = self.plotImage.exposure()
-        exposure.header.beamcentery= posy
+        exposure.header.beamcentery = posy
         exposure.header.beamcenterx = posx
         self.beamXDoubleSpinBox.setValue(posx)
-        self.beamXErrDoubleSpinBox.setValue(0.0) # ToDo
+        self.beamXErrDoubleSpinBox.setValue(0.0)  # ToDo
         self.beamYDoubleSpinBox.setValue(posy)
-        self.beamYErrDoubleSpinBox.setValue(0.0) # ToDo
+        self.beamYErrDoubleSpinBox.setValue(0.0)  # ToDo
         self.onFSNSelected(exposure.header.fsn, '', exposure)
 
     def onCenteringRequested(self):
@@ -231,16 +234,22 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             posy, posx = centering.findbeam_gravity(exposure.intensity, exposure.mask)
             self.newBeamPosFound(posx, posy)
         elif self.centeringMethodComboBox.currentText() == 'Peak amplitude':
-            xmin,xmax,ymin,ymax=self.plotCurve.getZoomRange()
-            posy, posx = centering.findbeam_radialpeak(exposure.intensity, [exposure.header.beamcentery, exposure.header.beamcenterx], exposure.mask, xmin, xmax, drive_by='amplitude')
+            xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
+            posy, posx = centering.findbeam_radialpeak(exposure.intensity,
+                                                       [exposure.header.beamcentery, exposure.header.beamcenterx],
+                                                       exposure.mask, xmin, xmax, drive_by='amplitude')
             self.newBeamPosFound(posx, posy)
         elif self.centeringMethodComboBox.currentText() == 'Peak width':
-            xmin,xmax,ymin,ymax=self.plotCurve.getZoomRange()
-            posy, posx = centering.findbeam_radialpeak(exposure.intensity, [exposure.header.beamcentery, exposure.header.beamcenterx], exposure.mask, xmin, xmax, drive_by='hwhm')
+            xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
+            posy, posx = centering.findbeam_radialpeak(exposure.intensity,
+                                                       [exposure.header.beamcentery, exposure.header.beamcenterx],
+                                                       exposure.mask, xmin, xmax, drive_by='hwhm')
             self.newBeamPosFound(posx, posy)
         elif self.centeringMethodComboBox.currentText() == 'Power-law':
-            xmin,xmax,ymin,ymax=self.plotCurve.getZoomRange()
-            posy, posx = centering.findbeam_powerlaw(exposure.intensity, [exposure.header.beamcentery, exposure.header.beamcenterx], exposure.mask, xmin, xmax, drive_by='amplitude')
+            xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
+            posy, posx = centering.findbeam_powerlaw(exposure.intensity,
+                                                     [exposure.header.beamcentery, exposure.header.beamcenterx],
+                                                     exposure.mask, xmin, xmax, drive_by='amplitude')
             self.newBeamPosFound(posx, posy)
         elif self.centeringMethodComboBox.currentText() == 'Manual (click)':
             self.tabWidget.setCurrentWidget(self.tab2D)
@@ -249,14 +258,14 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         else:
             assert False
 
-    def onCursorPressed(self, event:MouseEvent):
+    def onCursorPressed(self, event: MouseEvent):
         if not ((event.inaxes is self.plotImage.axes) and (event.button == 1)):
             return
         print(event.button, event.x, event.y, event.xdata, event.ydata)
         assert isinstance(self.cursor, Cursor)
-        self.cursor.horizOn=False
-        self.cursor.vertOn=False
-        self.cursor.visible=False
+        self.cursor.horizOn = False
+        self.cursor.vertOn = False
+        self.cursor.visible = False
         self.cursor.disconnect_events()
         self.cursor.set_active(False)
         del self.cursor

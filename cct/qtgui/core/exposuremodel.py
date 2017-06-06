@@ -18,35 +18,35 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.fsnlast = fsnlast
         self._headers = []
 
-    def header(self, fsn:int):
+    def header(self, fsn: int):
         fs = self.credo.services['filesequence']
         return fs.load_header(self.prefix, fsn)
 
-    def rowForFSN(self, fsn:int):
+    def rowForFSN(self, fsn: int):
         return [h[0] for h in self._headers].index(fsn)
 
     def reloadHeaders(self):
         fs = self.credo.services['filesequence']
         assert isinstance(fs, FileSequence)
-        self.beginRemoveRows(self.index(0,0), 0, self.rowCount())
+        self.beginRemoveRows(self.index(0, 0), 0, self.rowCount())
         self._headers = []
         self.endRemoveRows()
-        for fsn in range(self.fsnfirst, self.fsnlast+1):
+        for fsn in range(self.fsnfirst, self.fsnlast + 1):
             try:
-                h=fs.load_header(self.prefix, fsn)
+                h = fs.load_header(self.prefix, fsn)
                 self._headers.append([getattr(h, c) for c in self._columns])
-                for i,x in enumerate(self._headers[-1]):
+                for i, x in enumerate(self._headers[-1]):
                     if isinstance(x, ErrorValue):
-                        self._headers[-1][i]=x.val
+                        self._headers[-1][i] = x.val
                     elif x is None:
-                        self._headers[-1][i]= '--'
+                        self._headers[-1][i] = '--'
                     elif isinstance(x, datetime.datetime):
-                        self._headers[-1][i]=str(x)
+                        self._headers[-1][i] = str(x)
                 del h
             except FileNotFoundError:
                 pass
 
-        self.beginInsertRows(self.index(0,0), 0, len(self._headers))
+        self.beginInsertRows(self.index(0, 0), 0, len(self._headers))
         self.endInsertRows()
 
     def rowCount(self, parent=None, *args, **kwargs):
@@ -58,13 +58,13 @@ class HeaderModel(QtCore.QAbstractItemModel):
     def index(self, row, column, parent=None, *args, **kwargs):
         return self.createIndex(row, column, None)
 
-    def parent(self, index:QtCore.QModelIndex=None):
+    def parent(self, index: QtCore.QModelIndex = None):
         return QtCore.QModelIndex()
 
-    def flags(self, index:QtCore.QModelIndex):
+    def flags(self, index: QtCore.QModelIndex):
         return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable
 
-    def data(self, index:QtCore.QModelIndex, role=None):
+    def data(self, index: QtCore.QModelIndex, role=None):
         if role == QtCore.Qt.DisplayRole:
             return self._headers[index.row()][index.column()]
         return None

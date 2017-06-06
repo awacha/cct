@@ -8,20 +8,22 @@ from ....core.services.accounting import Accounting, User
 
 class UserManager(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_USERMAN
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
-        self._accounting_connections=[]
+        self._accounting_connections = []
         self.setupUi(self)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
-        self._accounting_connections=[acc.connect('userlist-changed', self.onUserListChanged)]
+        self._accounting_connections = [acc.connect('userlist-changed', self.onUserListChanged)]
         self.usersListWidget.currentItemChanged.connect(self.onUserSelected)
-        self.privilegeLevelComboBox.addItems([p.name for p in sorted(PrivilegeLevel.all_privileges(), key=lambda p:p.ordinal)])
+        self.privilegeLevelComboBox.addItems(
+            [p.name for p in sorted(PrivilegeLevel.all_privileges(), key=lambda p: p.ordinal)])
         self.addPushButton.clicked.connect(self.onAddUser)
         self.removePushButton.clicked.connect(self.onRemoveUser)
         self.updatePushButton.clicked.connect(self.onUpdateUser)
@@ -39,7 +41,7 @@ class UserManager(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.usernameLabel.setText(username)
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
-        user=acc.get_user(username)
+        user = acc.get_user(username)
         assert isinstance(user, User)
         self.firstNameLineEdit.setText(user.firstname)
         self.lastNameLineEdit.setText(user.lastname)
@@ -55,11 +57,11 @@ class UserManager(QtWidgets.QWidget, Ui_Form, ToolWindow):
         except AttributeError:
             return None
 
-    def onUserListChanged(self, acc:Accounting):
+    def onUserListChanged(self, acc: Accounting):
         selected = self.selectedUser()
         self.usersListWidget.clear()
         self.usersListWidget.addItems(sorted(acc.get_usernames()))
-        self.usersListWidget.setCurrentIndex(self.usersListWidget.model().index(0,0))
+        self.usersListWidget.setCurrentIndex(self.usersListWidget.model().index(0, 0))
         try:
             self.selectUser(selected)
         except IndexError:
@@ -68,7 +70,7 @@ class UserManager(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def cleanup(self):
         for c in self._accounting_connections:
             self.credo.services['accounting'].disconnect(c)
-        self._accounting_connections=[]
+        self._accounting_connections = []
         super().cleanup()
 
     def onAddUser(self):
@@ -76,7 +78,7 @@ class UserManager(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if not ok: return
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
-        acc.add_user(username,'First name', 'Last name')
+        acc.add_user(username, 'First name', 'Last name')
         self.selectUser(username)
 
     def selectUser(self, username):
@@ -86,11 +88,11 @@ class UserManager(QtWidgets.QWidget, Ui_Form, ToolWindow):
         try:
             self.credo.services['accounting'].delete_user(self.selectedUser())
         except Exception as exc:
-            QtWidgets.QMessageBox.critical(self,'Cannot remove user',exc.args[0])
+            QtWidgets.QMessageBox.critical(self, 'Cannot remove user', exc.args[0])
             return
 
     def onUpdateUser(self):
-        acc=self.credo.services['accounting']
+        acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
         user = acc.get_user(self.selectedUser())
         firstname = self.firstNameLineEdit.text()
@@ -104,7 +106,7 @@ class UserManager(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if user.email == email:
             email = None
         if privlevel == user.privlevel:
-            privlevel=None
+            privlevel = None
         acc.update_user(self.selectedUser(), firstname,
                         lastname,
                         privlevel,

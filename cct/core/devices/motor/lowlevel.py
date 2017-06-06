@@ -86,7 +86,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
         except (IndexError, ValueError):
             motor_idx = None
         if 'raw$' in variablename:
-            self.query_variable(variablename.replace('raw$','$'))
+            self.query_variable(variablename.replace('raw$', '$'))
         elif variablename == 'firmwareversion':
             self.send_tmcl_command(136, 1, 0, 0)
         elif variablename.startswith('targetposition$') or variablename.startswith('targetpositionraw$'):
@@ -611,7 +611,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                 assert isinstance(value, int)
                 self.send_tmcl_command(
                     5, 1, motor_idx, value)
-            #TODO: make all setters use raw setters as the above two.
+            # TODO: make all setters use raw setters as the above two.
             elif variable.startswith('targetspeed$'):
                 assert isinstance(value, float)
                 self.set_variable('targetspeedraw${:d}'.format(motor_idx),

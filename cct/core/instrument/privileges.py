@@ -98,7 +98,7 @@ class PrivilegeLevel(object):
 
 
 PRIV_LAYMAN = PrivilegeLevel('Layman', 0)
-PRIV_SHUTTER = PrivilegeLevel('Use beam shutter',3)
+PRIV_SHUTTER = PrivilegeLevel('Use beam shutter', 3)
 PRIV_MOVEMOTORS = PrivilegeLevel('Move Motors', 5)
 PRIV_BEAMSTOP = PrivilegeLevel('Beamstop', 10)
 PRIV_CONNECTDEVICES = PrivilegeLevel('(Dis)connect Devices', 15)

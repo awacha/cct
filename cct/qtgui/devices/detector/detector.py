@@ -10,12 +10,13 @@ from ....core.devices import Pilatus, Device, Motor
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['pilatus']
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
-        self._updating_ui=False
+        self._updating_ui = False
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self.setupUi(self)
@@ -28,11 +29,11 @@ class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.onDeviceVariableChange(pilatus, var, pilatus.get_variable(var))
         self.trimPushButton.clicked.connect(self.onTrim)
         self.gainComboBox.currentTextChanged.connect(self.onGainChanged)
-        self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(pilatus.get_variable('gain')+'G'))
+        self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(pilatus.get_variable('gain') + 'G'))
         self.onGainChanged()
         self.thresholdSpinBox.setValue(int(pilatus.get_variable('threshold')))
 
-    def setFlagBackground(self, flag:QtWidgets.QLabel, state:str):
+    def setFlagBackground(self, flag: QtWidgets.QLabel, state: str):
         palette = flag.palette()
         assert isinstance(palette, QtGui.QPalette)
         if state == 'ok':
@@ -141,13 +142,13 @@ class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):
             elif variablename == 'cutoff':
                 self.cutoffLabel.setText(str(newvalue))
             elif variablename == 'diskfree':
-                self.diskfreeLabel.setText('{:.2f} GB'.format(newvalue/1024/1024))
+                self.diskfreeLabel.setText('{:.2f} GB'.format(newvalue / 1024 / 1024))
             elif variablename == 'version':
                 self.softwareVersionLabel.setText(newvalue)
             elif variablename == 'telemetry_date':
                 pass
             elif variablename == '_status':
-                self.statusLabel.setText(newvalue+'\n('+str(device.get_variable('_auxstatus'))+')')
+                self.statusLabel.setText(newvalue + '\n(' + str(device.get_variable('_auxstatus')) + ')')
                 if newvalue == 'idle':
                     self.thresholdSpinBox.setEnabled(True)
                     self.gainComboBox.setEnabled(True)

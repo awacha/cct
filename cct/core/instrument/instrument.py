@@ -96,7 +96,7 @@ class Instrument(Callbacks):
         """Start operation"""
         self.starttime = time.monotonic()
         self._telemetry_timeout = TimeOut(self.telemetry_timeout * 1000,
-                                                   self.on_telemetry_timeout)
+                                          self.on_telemetry_timeout)
         for s in self.services:
             self.services[s].start()
         logger.info('Started all services.')
@@ -290,16 +290,16 @@ class Instrument(Callbacks):
                     'spacers': [65, 65, 100, 100, 100, 100, 100, 200, 200, 500, 800],
                     'pinholes': [150, 200, 300, 400, 500, 600, 750, 1000, 1250],
                     'sealingringwidth': 4.0,
-                    'L1withoutspacers':104.0,
-                    'L2withoutspacers':104.0,
-                    'detector_beamstop_distance':67.5,
-                    'ph3_sample_distance':123.0,
-                    'minimum_ph1_ph2_distance':203.0,
-                    'minimum_ph2_ph3_distance':203.0,
-                    'minimum_sample_diameter':0.7,
-                    'maximum_sample_diameter':1.0,
-                    'minimum_beamstop_diameter':3.0,
-                    'maximum_beamstop_diameter':4.0,
+                    'L1withoutspacers': 104.0,
+                    'L2withoutspacers': 104.0,
+                    'detector_beamstop_distance': 67.5,
+                    'ph3_sample_distance': 123.0,
+                    'minimum_ph1_ph2_distance': 203.0,
+                    'minimum_ph2_ph3_distance': 203.0,
+                    'minimum_sample_diameter': 0.7,
+                    'maximum_sample_diameter': 1.0,
+                    'minimum_beamstop_diameter': 3.0,
+                    'maximum_beamstop_diameter': 4.0,
                 }
             }
         }
@@ -606,8 +606,8 @@ class Instrument(Callbacks):
             logger.debug('Sending shutdown signal.')
             self.shutdown_requested = False
             self._telemetry_timeout.stop()
-            self._telemetry_timeout=None
-            self.starttime=None
+            self._telemetry_timeout = None
+            self.starttime = None
             self.emit('shutdown')
         else:
             logger.debug('Not shutting instrument down yet. Outstanding devices: {}. Outstanding services: {}.'.format(

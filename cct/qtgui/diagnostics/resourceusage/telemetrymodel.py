@@ -6,20 +6,20 @@ from ....core.services.telemetry import TelemetryInfo
 class TelemetryModel(QtCore.QAbstractItemModel):
     def __init__(self):
         QtCore.QAbstractItemModel.__init__(self, None)
-        self._tminfo=[]
+        self._tminfo = []
 
-    def update_telemetry(self, tm:TelemetryInfo):
+    def update_telemetry(self, tm: TelemetryInfo):
         self.beginResetModel()
-        self._tminfo=[
-            ('Memory usage (GB)','{:.3f}'.format(tm.memusage/1000)),
-            ('User time (sec)',tm.usertime),
-            ('System time (sec)',tm.systemtime),
-            ('Page faults w/o I/O',tm.pagefaultswithoutio),
-            ('Page faults w/ I/O',tm.pagefaultswithio),
-            ('FS input',tm.fsinput),
-            ('FS output',tm.fsoutput),
-            ('Vol. ctx switches',tm.voluntarycontextswitches),
-            ('Invol. ctx switches',tm.involuntarycontextswitches),
+        self._tminfo = [
+            ('Memory usage (GB)', '{:.3f}'.format(tm.memusage / 1000)),
+            ('User time (sec)', tm.usertime),
+            ('System time (sec)', tm.systemtime),
+            ('Page faults w/o I/O', tm.pagefaultswithoutio),
+            ('Page faults w/ I/O', tm.pagefaultswithio),
+            ('FS input', tm.fsinput),
+            ('FS output', tm.fsoutput),
+            ('Vol. ctx switches', tm.voluntarycontextswitches),
+            ('Invol. ctx switches', tm.involuntarycontextswitches),
         ]
         for attr in tm.user_attributes():
             self._tminfo.append((attr, getattr(tm, attr)))
@@ -46,5 +46,5 @@ class TelemetryModel(QtCore.QAbstractItemModel):
         return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemNeverHasChildren
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = QtCore.Qt.DisplayRole):
-        if orientation == QtCore.Qt.Horizontal and role==QtCore.Qt.DisplayRole:
-            return ['Variable','Value'][section]
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+            return ['Variable', 'Value'][section]

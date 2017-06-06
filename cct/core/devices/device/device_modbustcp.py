@@ -5,6 +5,7 @@ import pyModbusTCP.client
 from .backend import DeviceBackend
 from .exceptions import CommunicationError, DeviceError
 
+
 class ModbusClient(pyModbusTCP.client.ModbusClient):
     def __init__(self, logger, host=None, port=None, unit_id=None,
                  timeout=None, debug=None, auto_open=None, auto_close=None):
@@ -85,7 +86,7 @@ class DeviceBackend_ModbusTCP(DeviceBackend):
         result = None
         reconnect_failed = False
         for i in range(self.modbus_send_retries):
-            if i>0:
+            if i > 0:
                 self.logger.warning(
                     'Retrying read_integer({:d}) operation in ModbusTCP device {}'.format(
                         regno, self.name))
@@ -108,7 +109,7 @@ class DeviceBackend_ModbusTCP(DeviceBackend):
         result = None
         reconnect_failed = False
         for i in range(self.modbus_send_retries):
-            if i>0:
+            if i > 0:
                 self.logger.warning(
                     'Retrying write_coil({:d}, {}) operation in ModbusTCP device {}'.format(
                         coilno, val, self.name))
@@ -130,7 +131,7 @@ class DeviceBackend_ModbusTCP(DeviceBackend):
         result = None
         reconnect_failed = False
         for i in range(self.modbus_send_retries):
-            if i>0:
+            if i > 0:
                 self.logger.warning(
                     'Retrying read_coils({:d}, {:d}) operation in ModbusTCP device {}'.format(
                         coilstart, coilnum, self.name))

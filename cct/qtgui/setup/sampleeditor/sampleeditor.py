@@ -217,9 +217,11 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             samplename = self.listWidget.selectedItems()[0].data(QtCore.Qt.DisplayRole)
         except IndexError:
             return
+
         def updatespinbox(spinbox, value):
             if spinbox.value() != value:
                 spinbox.setValue(value)
+
         try:
             self._updating_entries = True
             sample = self.credo.services['samplestore'].get_sample(samplename)

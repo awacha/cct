@@ -8,12 +8,13 @@ from .....core.instrument.privileges import PRIV_MOVEMOTORS
 
 class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_MOVEMOTORS
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         self.motorname = kwargs.pop('motorname')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        self.setupToolWindow(credo, required_devices=['Motor_'+self.motorname])
-        self._start_requested=False
+        self.setupToolWindow(credo, required_devices=['Motor_' + self.motorname])
+        self._start_requested = False
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -32,7 +33,7 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.motorComboBox.setEnabled(True)
         self.relativeCheckBox.setEnabled(True)
         self.movePushButton.setEnabled(True)
-        self._start_requested=False
+        self._start_requested = False
 
     def setBusy(self):
         self.movePushButton.setText('Stop')
@@ -47,14 +48,14 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         return self.credo.motors[self.motorComboBox.currentText()]
 
     def onMove(self):
-        if self.movePushButton.text()=='Move':
+        if self.movePushButton.text() == 'Move':
             self.movePushButton.setEnabled(False)
             self.motor().moveto()
         else:
             self.movePushButton.setEnabled(False)
             self.motor().stop()
 
-    def onMotorStart(self, motor:Motor):
+    def onMotorStart(self, motor: Motor):
         if self._start_requested:
             self.setBusy()
 
@@ -62,7 +63,7 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.setWindowTitle('Move motor {}'.format(self.motorComboBox.currentText()))
         for d in self.required_devices:
             self.unrequireDevice(d)
-        self.required_devices = ['Motor_'+self.motorComboBox.currentText()]
+        self.required_devices = ['Motor_' + self.motorComboBox.currentText()]
         self.requireDevice(self.required_devices[0])
         motor = self.credo.motors[self.motorComboBox.currentText()]
         self.onMotorPositionChange(motor, motor.where())

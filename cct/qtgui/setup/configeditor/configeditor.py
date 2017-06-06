@@ -6,8 +6,9 @@ from .configeditor_ui import Ui_Form
 from .configstore import ConfigStore
 from ...core.mixins import ToolWindow
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class ConfigEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -27,7 +28,7 @@ class ConfigEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.applyButton.clicked.connect(self.onApply)
 
     def onSelectionChanged(self):
-        si=self.treeView.selectionModel().selectedIndexes()
+        si = self.treeView.selectionModel().selectedIndexes()
         self._path = self.model.getPath(si[0])
         value = self.model.getValue(si[0])
         self.pathLabel.setText('.'.join([str(p) for p in self._path]))
@@ -39,24 +40,24 @@ class ConfigEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             del self._editorwidget
             self._editorwidget = None
         if isinstance(value, str):
-            self._editorwidget=QtWidgets.QLineEdit(value, None)
+            self._editorwidget = QtWidgets.QLineEdit(value, None)
             assert isinstance(self._editorwidget, QtWidgets.QLineEdit)
             self._editorwidget.textChanged.connect(self.onValueChangedInEditor)
         elif isinstance(value, float):
-            self._editorwidget=QtWidgets.QDoubleSpinBox(None)
+            self._editorwidget = QtWidgets.QDoubleSpinBox(None)
             self._editorwidget.setMinimum(-1e10)
             self._editorwidget.setMaximum(1e10)
             self._editorwidget.setDecimals(6)
             self._editorwidget.setValue(value)
             self._editorwidget.valueChanged.connect(self.onValueChangedInEditor)
         elif isinstance(value, int):
-            self._editorwidget=QtWidgets.QSpinBox(None)
+            self._editorwidget = QtWidgets.QSpinBox(None)
             self._editorwidget.setMinimum(-1e10)
             self._editorwidget.setMaximum(1e10)
             self._editorwidget.setValue(value)
             self._editorwidget.valueChanged.connect(self.onValueChangedInEditor)
         elif isinstance(value, bool):
-            self._editorwidget=QtWidgets.QPushButton(None)
+            self._editorwidget = QtWidgets.QPushButton(None)
             self._editorwidget.setCheckable(True)
             if value:
                 self._editorwidget.setChecked(True)
@@ -97,6 +98,3 @@ class ConfigEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def onReset(self):
         return self.onSelectionChanged()
-
-
-

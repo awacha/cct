@@ -29,9 +29,11 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def updateUiFromConfig(self, credo: Instrument):
         super().updateUiFromConfig(credo)
         self._updating_ui = True
+
         def updatespinbox(spinbox, value):
             if spinbox.value() != value:
                 spinbox.setValue(value)
+
         try:
             updatespinbox(self.l0DoubleSpinBox, credo.config['geometry']['dist_source_ph1'])
             updatespinbox(self.l1DoubleSpinBox, credo.config['geometry']['dist_ph1_ph2'])

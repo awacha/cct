@@ -11,23 +11,23 @@ from .capillarymeasurement_ui import Ui_Form
 from ...core.mixins import ToolWindow
 
 
-class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
+class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
-        credo=kwargs.pop('credo')
+        credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
-        self._peaklines=[None, None]
-        self._peakposittions=[None,None]
+        self._peaklines = [None, None]
+        self._peakposittions = [None, None]
         self.setupUi(self)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
-        layout=QtWidgets.QVBoxLayout(self.figureContainerWidget)
+        layout = QtWidgets.QVBoxLayout(self.figureContainerWidget)
         self.figureContainerWidget.setLayout(layout)
-        self.figure=Figure()
-        self.canvas=FigureCanvasQTAgg(self.figure)
-        self.figureToolbar=NavigationToolbar2QT(self.canvas, self.figureContainerWidget)
-        self.axes=self.figure.add_subplot(1,1,1)
+        self.figure = Figure()
+        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.figureToolbar = NavigationToolbar2QT(self.canvas, self.figureContainerWidget)
+        self.axes = self.figure.add_subplot(1, 1, 1)
         self.axes.grid(True, which='both')
         layout.addWidget(self.canvas)
         layout.addWidget(self.figureToolbar)
@@ -38,7 +38,7 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
         self.derivativeCheckBox.toggled.connect(self.plotSignal)
         self.fitNegativePushButton.clicked.connect(self.fitNegative)
         self.fitPositivePushButton.clicked.connect(self.fitPositive)
-        scanfile=self.credo.services['filesequence'].get_scanfile()
+        scanfile = self.credo.services['filesequence'].get_scanfile()
         self.scanFileNameLineEdit.setText(scanfile)
         self.loadScanFile()
 
@@ -46,8 +46,8 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
         return self.scanFileNameLineEdit.text()
 
     def browse(self):
-        cwd, filename=os.path.split(self.filename())
-        filename, filter = QtWidgets.QFileDialog.getOpenFileName(self,"Open scan file",cwd, filter='*.spec')
+        cwd, filename = os.path.split(self.filename())
+        filename, filter = QtWidgets.QFileDialog.getOpenFileName(self, "Open scan file", cwd, filter='*.spec')
         if not filename:
             return
         self.scanFileNameLineEdit.setText(filename)
@@ -70,24 +70,26 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
             try:
                 self.scan = self.scanfile.get_scan(index)
             except KeyError:
-                QtWidgets.QMessageBox.critical(self,'Error','Scan #{:d} not in file {}.'.format(index, self.filename()),QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.critical(self, 'Error',
+                                               'Scan #{:d} not in file {}.'.format(index, self.filename()),
+                                               QtWidgets.QMessageBox.Ok)
                 return
         self.scan.reload()
         self.signalNameComboBox.setEnabled(True)
         self.derivativeCheckBox.setEnabled(True)
-        prevsignal=self.signalNameComboBox.currentText()
+        prevsignal = self.signalNameComboBox.currentText()
         self.signalNameComboBox.clear()
         self.signalNameComboBox.addItems(self.scan.columnnames[1:])
         if prevsignal:
-            idx=self.signalNameComboBox.findText(prevsignal)
+            idx = self.signalNameComboBox.findText(prevsignal)
             if idx is not None:
                 self.signalNameComboBox.setCurrentIndex(idx)
             else:
                 self.signalNameComboBox.setCurrentIndex(0)
         else:
             self.signalNameComboBox.setCurrentIndex(0)
-        while self.signalNameComboBox.currentText()=='FSN':
-            self.signalNameComboBox.setCurrentIndex(self.signalNameComboBox.currentIndex()+1)
+        while self.signalNameComboBox.currentText() == 'FSN':
+            self.signalNameComboBox.setCurrentIndex(self.signalNameComboBox.currentIndex() + 1)
         assert isinstance(self.axes, Axes)
         self.axes.set_xlabel(self.scan.motor)
         self.axes.set_title(self.scan.comment)
@@ -108,20 +110,20 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
         signal = self.scan.data[self.signalNameComboBox.currentText()]
         x = self.scan.data[self.scan.motor]
         if self.derivativeCheckBox.checkState():
-            signal=(signal[1:]-signal[:-1])/(x[1:]-x[:-1])
-            x=0.5*(x[1:]+x[:-1])
+            signal = (signal[1:] - signal[:-1]) / (x[1:] - x[:-1])
+            x = 0.5 * (x[1:] + x[:-1])
         if zoomed:
             xmin, xmax, ymin, ymax = self.axes.axis()
-            idx = np.logical_and(np.logical_and(x>=xmin,x<=xmax),np.logical_and(signal>=ymin,signal<=ymax))
-            x=x[idx]
-            signal=signal[idx]
+            idx = np.logical_and(np.logical_and(x >= xmin, x <= xmax), np.logical_and(signal >= ymin, signal <= ymax))
+            x = x[idx]
+            signal = signal[idx]
         return x, signal, self.derivativeCheckBox.checkState(), signalname
 
     def clearGraph(self):
         self.axes.clear()
         self.canvas.draw()
-        self._peaklines=[]
-        self._peakposittions=[]
+        self._peaklines = []
+        self._peakposittions = []
 
     def plotSignal(self):
         try:
@@ -131,7 +133,7 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
         assert isinstance(self.axes, Axes)
         for l in self.axes.lines:
             l.remove()
-        self.axes.plot(x,signal,'b.-',label=self.signalNameComboBox.currentText())
+        self.axes.plot(x, signal, 'b.-', label=self.signalNameComboBox.currentText())
         self.axes.legend(loc='best')
         self.axes.set_ylabel(self.signalNameComboBox.currentText())
         self.axes.relim()
@@ -145,13 +147,15 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
             x, signal, isderivative, signalname = self.getSignal(zoomed=True)
         except ValueError:
             return
-        retx=np.linspace(x.min(),x.max(),100)
-        pos,hwhm,baseline,amplitude,stat, fitted=sastool.misc.basicfit.findpeak_single(x,signal,None,return_stat=True,return_x = retx)
-        self._peakposittions[sign>0]=pos
-        if self._peaklines[sign>0] is not None:
-            self._peaklines[sign>0].remove()
-        self._peaklines[sign>0]=self.axes.plot(retx, fitted, 'r-')[0]
-        if sign<0:
+        retx = np.linspace(x.min(), x.max(), 100)
+        pos, hwhm, baseline, amplitude, stat, fitted = sastool.misc.basicfit.findpeak_single(x, signal, None,
+                                                                                             return_stat=True,
+                                                                                             return_x=retx)
+        self._peakposittions[sign > 0] = pos
+        if self._peaklines[sign > 0] is not None:
+            self._peaklines[sign > 0].remove()
+        self._peaklines[sign > 0] = self.axes.plot(retx, fitted, 'r-')[0]
+        if sign < 0:
             self.negativeValDoubleSpinBox.setValue(pos.val)
             self.negativeErrDoubleSpinBox.setValue(pos.err)
         else:
@@ -170,5 +174,3 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
 
     def updateThickness(self):
         pass
-
-

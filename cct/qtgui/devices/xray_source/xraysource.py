@@ -10,12 +10,13 @@ from ....core.devices import GeniX, Device, Motor
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['genix']
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
-        self._updating_ui=False
+        self._updating_ui = False
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self.setupUi(self)
@@ -42,7 +43,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
         try:
             genix.set_power('full')
         except Exception as exc:
-            QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot power up X-ray tube: '+exc.args[0])
+            QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot power up X-ray tube: ' + exc.args[0])
 
     def onStandby(self):
         if self._updating_ui:
@@ -52,7 +53,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
         try:
             genix.set_power('low')
         except Exception as exc:
-            QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot set X-ray tube to standby mode: '+exc.args[0])
+            QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot set X-ray tube to standby mode: ' + exc.args[0])
 
     def onWarmUp(self):
         if self._updating_ui:
@@ -63,13 +64,12 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
             try:
                 genix.start_warmup()
             except Exception as exc:
-                QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot start warm-up procedure: '+exc.args[0])
+                QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot start warm-up procedure: ' + exc.args[0])
         else:
             try:
                 genix.stop_warmup()
             except Exception as exc:
-                QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot stop warm-up procedure: '+exc.args[0])
-
+                QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot stop warm-up procedure: ' + exc.args[0])
 
     def onPowerOff(self):
         if self._updating_ui:
@@ -79,7 +79,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
         try:
             genix.set_power('off')
         except Exception as exc:
-            QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot power off X-ray tube: '+exc.args[0])
+            QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot power off X-ray tube: ' + exc.args[0])
 
     def onShutter(self):
         if self._updating_ui:
@@ -102,7 +102,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(genix, GeniX)
         genix.reset_faults()
 
-    def setFlagBackground(self, flag:QtWidgets.QLabel, state:bool):
+    def setFlagBackground(self, flag: QtWidgets.QLabel, state: bool):
         palette = flag.palette()
         assert isinstance(palette, QtGui.QPalette)
         if state is None:
@@ -173,9 +173,9 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
             elif variablename == 'overridden':
                 self.setFlagBackground(self.overriddenFlag, not newvalue)
             elif variablename == '_auxstatus':
-                self.statusLabel.setText(device.get_variable('_status')+'\n('+newvalue+')')
+                self.statusLabel.setText(device.get_variable('_status') + '\n(' + newvalue + ')')
             elif variablename == '_status':
-                self.statusLabel.setText(newvalue+'\n('+device.get_variable('_auxstatus')+')')
+                self.statusLabel.setText(newvalue + '\n(' + device.get_variable('_auxstatus') + ')')
                 if newvalue == 'Power off':
                     self.xraysOnPushButton.setEnabled(True)
                     self.warmUpPushButton.setEnabled(True)

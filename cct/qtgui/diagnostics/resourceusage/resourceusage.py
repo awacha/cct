@@ -10,18 +10,18 @@ from ....core.services.telemetry import TelemetryManager, TelemetryInfo
 
 class ResourceUsage(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
-        credo= kwargs.pop('credo')
+        credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
-        self._telemetry_connections=[]
+        self._telemetry_connections = []
         self._updating = False
         self.setupUi(self)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
-        tm=self.credo.services['telemetrymanager']
+        tm = self.credo.services['telemetrymanager']
         assert isinstance(tm, TelemetryManager)
-        self._telemetry_connections=[
+        self._telemetry_connections = [
             self.credo.services['telemetrymanager'].connect(
                 'telemetry', self.onTelemetry)
         ]
@@ -31,18 +31,18 @@ class ResourceUsage(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.comboBox.currentIndexChanged.connect(self.getTelemetry)
 
     def getTelemetry(self):
-        tm=self.credo.services['telemetrymanager']
+        tm = self.credo.services['telemetrymanager']
         unit = self.comboBox.currentText()
         if unit == '-- overall --':
             unit = None
         self.onTelemetry(tm, unit, tm.get_telemetry(unit))
 
-    def onTelemetry(self, telemetrymanager:TelemetryManager, unit:Optional[str], tm:TelemetryInfo):
+    def onTelemetry(self, telemetrymanager: TelemetryManager, unit: Optional[str], tm: TelemetryInfo):
         if self._updating:
             return False
         if unit is None:
             unit = '-- overall --'
-        units_available = ['-- overall --']+sorted(telemetrymanager.keys())
+        units_available = ['-- overall --'] + sorted(telemetrymanager.keys())
         units_known = [self.comboBox.itemText(i) for i in range(self.comboBox.count())]
         if units_available != units_known:
             self._updating = True
@@ -63,4 +63,4 @@ class ResourceUsage(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def cleanup(self):
         for c in self._telemetry_connections:
             self.credo.services['telemetrymanager'].disconnect(c)
-        self._telemetry_connections=[]
+        self._telemetry_connections = []

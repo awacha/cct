@@ -6,16 +6,16 @@ from ....core.instrument.instrument import Instrument
 
 
 class ConfigStore(QtCore.QAbstractItemModel):
-    def __init__(self, credo:Instrument):
+    def __init__(self, credo: Instrument):
         super().__init__(None)
         self.credo = credo
-        self._paths=[]
+        self._paths = []
         self._indices = {}
         self._credo_connection = []
         self.destroyed.connect(self.onDestroyed)
         self.credo.connect('config-changed', self.onConfigChanged)
 
-    def onConfigChanged(self, credo:Instrument):
+    def onConfigChanged(self, credo: Instrument):
         self.beginResetModel()
         self.endResetModel()
 
@@ -51,24 +51,24 @@ class ConfigStore(QtCore.QAbstractItemModel):
             return None
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
-        if orientation == QtCore.Qt.Horizontal and role==QtCore.Qt.DisplayRole:
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return 'Key'
         else:
             return None
 
-    def _get_path(self, index:QtCore.QModelIndex):
+    def _get_path(self, index: QtCore.QModelIndex):
         if not index.isValid():
             return []
         else:
             return index.internalPointer().split(':')
 
-    def _get_object(self, index:QtCore.QModelIndex):
+    def _get_object(self, index: QtCore.QModelIndex):
         if not index.isValid():
             return self.credo.config
         dic = self.credo.config
         path = index.internalPointer().split(':')
         for p in path:
-            dic=dic[p]
+            dic = dic[p]
         return dic
 
     def parent(self, child: QtCore.QModelIndex):
@@ -82,7 +82,7 @@ class ConfigStore(QtCore.QAbstractItemModel):
         else:
             dic = self.credo.config
             for p in path[:-1]:
-                dic=dic[p]
+                dic = dic[p]
             row = sorted(list(dic.keys())).index(path[-1])
             return self.createIndex(row, 0, path[:-1])
 
@@ -90,14 +90,14 @@ class ConfigStore(QtCore.QAbstractItemModel):
         if not isinstance(parent, QtCore.QModelIndex):
             parent = QtCore.QModelIndex()
         if not parent.isValid():
-            path=[sorted(list(self.credo.config.keys()))[row]]
+            path = [sorted(list(self.credo.config.keys()))[row]]
             return self.createIndex(row, column, path)
         else:
             parentpath = parent.internalPointer().split(':')
             dic = self.credo.config
             for p in parentpath:
                 dic = dic[p]
-            path=parentpath+[sorted(list(dic.keys()))[row]]
+            path = parentpath + [sorted(list(dic.keys()))[row]]
             return self.createIndex(row, column, path)
 
     def createIndex(self, row: int, column: int, object: typing.Any = ...):
@@ -110,7 +110,7 @@ class ConfigStore(QtCore.QAbstractItemModel):
 
     def setData(self, index: QtCore.QModelIndex, value: typing.Any, role: int = ...):
         if role in [QtCore.Qt.EditRole, QtCore.Qt.DisplayRole]:
-            dic=self.credo.config
+            dic = self.credo.config
             path = self._get_path(index)
             for p in path[:-1]:
                 dic = dic[p]
@@ -129,10 +129,10 @@ class ConfigStore(QtCore.QAbstractItemModel):
         else:
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren
 
-    def getValue(self, index:QtCore.QModelIndex):
+    def getValue(self, index: QtCore.QModelIndex):
         return self._get_object(index)
 
-    def getPath(self, index:QtCore.QModelIndex):
+    def getPath(self, index: QtCore.QModelIndex):
         return self._get_path(index)
 
     def getIndexForPath(self, path) -> QtCore.QModelIndex:

@@ -1,8 +1,7 @@
 import logging
 import weakref
 
-
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 from ....core.instrument.instrument import Instrument
 from ....core.services.interpreter import Interpreter
@@ -29,13 +28,14 @@ class ToolWindow(object):
         self._device_connections = {}
         for d in self.required_devices + required_devices:
             self.requireDevice(d)
-        self._privlevelconnection = self.credo.services['accounting'].connect('privlevel-changed', self.onPrivLevelChanged)
+        self._privlevelconnection = self.credo.services['accounting'].connect('privlevel-changed',
+                                                                              self.onPrivLevelChanged)
         self._credoconnections = [self.credo.connect('config-changed', self.updateUiFromConfig)]
         self._interpreterconnections = []
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 
     @classmethod
-    def testRequirements(cls, credo:Instrument):
+    def testRequirements(cls, credo: Instrument):
         """Return True if the instrument is in a state when this window can be opened. If this
         class method returns False, the window won't be opened or will be closed or disabled if
         it is already open."""
@@ -104,10 +104,10 @@ class ToolWindow(object):
     def onMotorStop(self, motor: Motor, targetpositionreached: bool):
         return False
 
-    def onMotorStart(self, motor:Motor):
+    def onMotorStart(self, motor: Motor):
         return False
 
-    def unrequireDevice(self, device:Union[str, Device, Motor]):
+    def unrequireDevice(self, device: Union[str, Device, Motor]):
         if isinstance(device, str):
             device = self.credo.get_device(device)
         try:
@@ -125,32 +125,37 @@ class ToolWindow(object):
             self.unrequireDevice(d)
         if self._privlevelconnection is not None:
             self.credo.services['accounting'].disconnect(self._privlevelconnection)
-            self._privlevelconnection=None
+            self._privlevelconnection = None
         for c in self._credoconnections:
             self.credo.disconnect(c)
         self._credoconnections = []
         logger.debug('Cleanup() finished on ToolWindow {}'.format(self.objectName()))
 
-    def event(self, event:QtCore.QEvent):
-        if event.type()==QtCore.QEvent.ActivationChange:
+    def event(self, event: QtCore.QEvent):
+        if event.type() == QtCore.QEvent.ActivationChange:
             self.activationChangeEvent(event)
         return QtWidgets.QWidget.event(self, event)
 
-    def activationChangeEvent(self, event:QtCore.QEvent):
+    def activationChangeEvent(self, event: QtCore.QEvent):
         assert isinstance(self, QtWidgets.QWidget)
         if self.windowState() & QtCore.Qt.WindowActive:
-            logger.debug('ToolWindow {} activation changed: it is now active. State: {}, {}'.format(self.objectName(), self.isActiveWindow(), self.windowState()&0xffff))
+            logger.debug('ToolWindow {} activation changed: it is now active. State: {}, {}'.format(self.objectName(),
+                                                                                                    self.isActiveWindow(),
+                                                                                                    self.windowState() & 0xffff))
         else:
-            logger.debug('ToolWindow {} activation changed: it is now not active. State: {}, {}'.format(self.objectName(), self.isActiveWindow(), self.windowState()&0xffff))
+            logger.debug(
+                'ToolWindow {} activation changed: it is now not active. State: {}, {}'.format(self.objectName(),
+                                                                                               self.isActiveWindow(),
+                                                                                               self.windowState() & 0xffff))
 
-    def closeEvent(self, event:QtGui.QCloseEvent):
+    def closeEvent(self, event: QtGui.QCloseEvent):
         assert isinstance(self, QtWidgets.QWidget)
         logger.debug('CloseEvent received for ToolWindow {}'.format(self.objectName()))
         if self._busy:
             result = QtWidgets.QMessageBox.question(
-                    self, "Really close?",
-                    "The process behind this window is still working. If you close this window now, "
-                    "you can break something. Are you <b>really</b> sure?")
+                self, "Really close?",
+                "The process behind this window is still working. If you close this window now, "
+                "you can break something. Are you <b>really</b> sure?")
             logger.debug('Question result: {}'.format(result))
             if result != QtWidgets.QMessageBox.Yes:
                 event.ignore()
@@ -163,7 +168,7 @@ class ToolWindow(object):
             return QtWidgets.QDockWidget.closeEvent(self, event)
         elif isinstance(self, QtWidgets.QMainWindow):
             return QtWidgets.QMainWindow.closeEvent(self, event)
-        else: #isinstance(self, QtWidgets.QWidget)
+        else:  # isinstance(self, QtWidgets.QWidget)
             return QtWidgets.QWidget.closeEvent(self, event)
 
     def setBusy(self):
@@ -189,23 +194,23 @@ class ToolWindow(object):
         except (AttributeError, RuntimeError):
             pass
 
-    def onCmdReturn(self, interpreter:Interpreter, cmdname:str, retval):
+    def onCmdReturn(self, interpreter: Interpreter, cmdname: str, retval):
         self.cleanupAfterCommand()
 
-    def onCmdFail(self, interpreter:Interpreter, cmdname:str, exception:Exception, traceback:str):
+    def onCmdFail(self, interpreter: Interpreter, cmdname: str, exception: Exception, traceback: str):
         pass
 
-    def onCmdProgress(self, interpreter:Interpreter, cmdname:str, description:str, fraction:float):
+    def onCmdProgress(self, interpreter: Interpreter, cmdname: str, description: str, fraction: float):
         try:
             self.progressBar.setVisible(True)
             self.progressBar.setMinimum(0)
             self.progressBar.setMaximum(100000)
-            self.progressBar.setValue(100000*fraction)
+            self.progressBar.setValue(100000 * fraction)
             self.progressBar.setFormat(description)
         except (AttributeError, RuntimeError):
             pass
 
-    def onCmdPulse(self, interpreter:Interpreter, cmdname:str, description:str):
+    def onCmdPulse(self, interpreter: Interpreter, cmdname: str, description: str):
         try:
             self.progressBar.setVisible(True)
             self.progressBar.setMinimum(0)
@@ -215,26 +220,28 @@ class ToolWindow(object):
         except (AttributeError, RuntimeError):
             pass
 
-    def onCmdMessage(self, interpreter:Interpreter, cmdname:str, message:str):
+    def onCmdMessage(self, interpreter: Interpreter, cmdname: str, message: str):
         pass
 
-    def onCmdDetail(self, interpreter:Interpreter, cmdname:str, detail):
+    def onCmdDetail(self, interpreter: Interpreter, cmdname: str, detail):
         pass
 
-    def executeCommand(self, command:Type[Command], *args, **kwargs):
+    def executeCommand(self, command: Type[Command], *args, **kwargs):
         logger.debug('executeCommand({}, {}, {})'.format(command.name, args, kwargs))
         interpreter = self.credo.services['interpreter']
         if self._interpreterconnections:
-            raise ValueError('Cannot run another command: either the previous command is still running or it has not been cleaned up yet.')
+            raise ValueError(
+                'Cannot run another command: either the previous command is still running or it has not been cleaned up yet.')
         self._interpreterconnections = [interpreter.connect('cmd-return', self.onCmdReturn),
                                         interpreter.connect('cmd-fail', self.onCmdFail),
                                         interpreter.connect('cmd-detail', self.onCmdDetail),
                                         interpreter.connect('progress', self.onCmdProgress),
                                         interpreter.connect('pulse', self.onCmdPulse),
-                                        interpreter.connect('cmd-message', self.onCmdMessage),]
+                                        interpreter.connect('cmd-message', self.onCmdMessage), ]
         assert isinstance(interpreter, Interpreter)
         try:
             interpreter.execute_command(command, args, kwargs)
         except Exception as exc:
-            QtWidgets.QMessageBox.critical(self, 'Error executing command', 'Cannot execute command {}: {}'.format(command.name, exc.args[0]))
+            QtWidgets.QMessageBox.critical(self, 'Error executing command',
+                                           'Cannot execute command {}: {}'.format(command.name, exc.args[0]))
             self.cleanupAfterCommand()

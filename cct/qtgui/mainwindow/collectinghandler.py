@@ -1,5 +1,6 @@
 import logging
 
+
 class CollectingHandler(logging.Handler):
     instance = None
 

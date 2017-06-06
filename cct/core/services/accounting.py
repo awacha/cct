@@ -21,7 +21,8 @@ class User(object):
     privlevel = None
     email = None
 
-    def __init__(self, uname: str, firstname: str, lastname: str, privlevel: PrivilegeLevel = PRIV_LAYMAN, email:str = ''):
+    def __init__(self, uname: str, firstname: str, lastname: str, privlevel: PrivilegeLevel = PRIV_LAYMAN,
+                 email: str = ''):
         self.username = uname
         self.firstname = firstname
         self.lastname = lastname
@@ -44,7 +45,7 @@ class Accounting(Service):
     __signals__ = {'privlevel-changed': (SignalFlags.RUN_FIRST, None, (object,)),
                    'project-changed': (SignalFlags.RUN_FIRST, None, ()),
                    'user-changed': (SignalFlags.RUN_FIRST, None, (object,)),
-                   'userlist-changed':(SignalFlags.RUN_FIRST, None, ())}
+                   'userlist-changed': (SignalFlags.RUN_FIRST, None, ())}
 
     state = {'dbfile': 'userdb',
              'projectid': 'MachineStudies 01',

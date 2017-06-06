@@ -1,5 +1,6 @@
 import logging
-logger=logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 from PyQt5 import QtWidgets, QtCore
 from ..mixins import ToolWindow
@@ -10,7 +11,7 @@ from sastool.classes2 import Exposure
 
 
 class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
-    FSNSelected = QtCore.pyqtSignal(int ,'QString', Exposure)
+    FSNSelected = QtCore.pyqtSignal(int, 'QString', Exposure)
     horizontal = False
 
     def __init__(self, *args, **kwargs):
@@ -18,21 +19,22 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self.setupUi(self)
-        self._fsconnections=[]
+        self._fsconnections = []
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
         if self.horizontal:
             self.hlayout = QtWidgets.QHBoxLayout()
-            self.hlayout.setContentsMargins(0,0,0,0)
+            self.hlayout.setContentsMargins(0, 0, 0, 0)
             self.hlayout.addWidget(self.label)
             self.hlayout.addWidget(self.prefixComboBox)
             self.hlayout.addWidget(self.label_2)
             self.hlayout.addWidget(self.FSNSpinBox)
             self.hlayout.addWidget(self.buttonContainer)
-            self.hlayout.addSpacerItem(QtWidgets.QSpacerItem(0,0,QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Minimum))
+            self.hlayout.addSpacerItem(
+                QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Minimum))
             del self.formLayout
-            QtWidgets.QWidget().setLayout(self.layout()) # an ugly trick to get rid of the original layout.
+            QtWidgets.QWidget().setLayout(self.layout())  # an ugly trick to get rid of the original layout.
             self.setLayout(self.hlayout)
         self.prefixComboBox.clear()
         assert isinstance(self.credo, Instrument)
@@ -41,7 +43,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.prefixComboBox.addItems(sorted(fs.get_prefixes()))
         self.prefixComboBox.setCurrentIndex(0)
         self.prefixComboBox.currentIndexChanged.connect(self.onPrefixChanged)
-        self._fsconnections=[fs.connect('lastfsn-changed', self.onLastFSNChanged)]
+        self._fsconnections = [fs.connect('lastfsn-changed', self.onLastFSNChanged)]
         self.FSNSpinBox.valueChanged.connect(self.onFSNSpinBoxValueChanged)
         self.onPrefixChanged()
 
@@ -68,10 +70,12 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def cleanup(self):
         for c in self._fsconnections:
             self.credo.services['filesequence'].disconnect(c)
-        self._fsconnections=[]
+        self._fsconnections = []
         super().cleanup()
+
 
 class FSNSelectorHorizontal(FSNSelector):
     horizontal = True
+
 
 FSNSelectorVertical = FSNSelector

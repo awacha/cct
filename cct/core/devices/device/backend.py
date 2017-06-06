@@ -19,6 +19,7 @@ class QueueLogHandler(QueueHandler):
 class ExitWorkerLoop(Exception):
     pass
 
+
 class Watchdog(object):
     """A simple timeout-keeper watchdog.
     """

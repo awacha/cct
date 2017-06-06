@@ -3,7 +3,7 @@ import logging
 import os
 import time
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 from .service import Service, ServiceError
@@ -40,7 +40,7 @@ class TelemetryManager(Service):
         super().start()
         self.init_memlog_file()
         self._memlog_timeout_handle = TimeOut(self.state['memlog_interval'] * 1000,
-                                                       self.write_memlog_line)
+                                              self.write_memlog_line)
 
     def incoming_telemetry(self, label, telemetry: TelemetryInfo):
         self.telemetries[label] = telemetry

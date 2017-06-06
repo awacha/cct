@@ -24,13 +24,14 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.setupUi(self)
 
     @classmethod
-    def testRequirements(cls, credo:Instrument):
+    def testRequirements(cls, credo: Instrument):
         if not super().testRequirements(credo):
             return False
         for m in credo.motors:
             if not credo.motors[m].controller.ready:
                 return False
-        for motor in ['Sample_X', 'Sample_Y', 'PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X', 'PH3_Y', 'BeamStop_X', 'BeamStop_Y']:
+        for motor in ['Sample_X', 'Sample_Y', 'PH1_X', 'PH1_Y', 'PH2_X', 'PH2_Y', 'PH3_X', 'PH3_Y', 'BeamStop_X',
+                      'BeamStop_Y']:
             if motor not in credo.motors:
                 return False
         return True
@@ -55,20 +56,20 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.treeView.activated.connect(self.onMotorViewLineActivated)
         self.treeView.customContextMenuRequested.connect(self.onTreeViewContextMenuRequested)
 
-    def onTreeViewContextMenuRequested(self, pos:QtCore.QPoint):
+    def onTreeViewContextMenuRequested(self, pos: QtCore.QPoint):
         if self._popupmenu is not None:
             try:
                 self._popupmenu.close()
             except RuntimeError:
                 pass
             self._popupmenu = None
-            self._motor_for_popupmenu=None
+            self._motor_for_popupmenu = None
         index = self.treeView.indexAt(pos)
         print(index)
         motor = self.credo.motors[sorted(self.credo.motors.keys())[index.row()]]
         assert isinstance(motor, Motor)
         self._popupmenu = QtWidgets.QMenu('Operations with motor {}'.format(motor.name))
-        self._motor_for_popupmenu=motor
+        self._motor_for_popupmenu = motor
         if MoveMotor.testRequirements(self.credo):
             icon = QtGui.QIcon()
             icon.addPixmap(QtGui.QPixmap(":/icons/motor.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -76,10 +77,12 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if MotorConfig.testRequirements(self.credo):
             icon = QtGui.QIcon()
             icon.addPixmap(QtGui.QPixmap(":/icons/editconfig.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-            self._popupmenu.addAction(icon, 'Configure {}'.format(motor.name), self.onConfigureMotorRequestedFromContextMenu)
+            self._popupmenu.addAction(icon, 'Configure {}'.format(motor.name),
+                                      self.onConfigureMotorRequestedFromContextMenu)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/icons/calibration.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self._popupmenu.addAction(icon, 'Calibrate {}'.format(motor.name), self.onCalibrateMotorRequestedFromContextMenu)
+        self._popupmenu.addAction(icon, 'Calibrate {}'.format(motor.name),
+                                  self.onCalibrateMotorRequestedFromContextMenu)
         self._popupmenu.popup(QtGui.QCursor.pos())
 
     def onCalibrateMotorRequestedFromContextMenu(self):
@@ -93,11 +96,13 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         try:
             self._calibrationwindows[self._motor_for_popupmenu.name].raise_()
         except (RuntimeError, KeyError):
-            self._calibrationwindows[self._motor_for_popupmenu.name] = MotorConfig(None, motor=self._motor_for_popupmenu, credo=self.credo)
+            self._calibrationwindows[self._motor_for_popupmenu.name] = MotorConfig(None,
+                                                                                   motor=self._motor_for_popupmenu,
+                                                                                   credo=self.credo)
             self._calibrationwindows[self._motor_for_popupmenu.name].show()
             self._calibrationwindows[self._motor_for_popupmenu.name].raise_()
 
-    def onMotorViewLineActivated(self, index:QtCore.QModelIndex):
+    def onMotorViewLineActivated(self, index: QtCore.QModelIndex):
         motor = self.credo.motors[sorted(self.credo.motors.keys())[index.row()]]
         self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.findText(motor.name))
 
@@ -189,7 +194,8 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 'Do you want to calibrate the current beamstop position ({:.4f}, {:.4f}) as the new {} position?'.format(
                     self.credo.motors['BeamStop_X'].where(), self.credo.motors['BeamStop_Y'].where(), what),
                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No) in [QtWidgets.QMessageBox.Yes]:
-            self.credo.config['beamstop'][what] = (self.credo.motors['BeamStop_X'].where(), self.credo.motors['BeamStop_Y'].where())
+            self.credo.config['beamstop'][what] = (
+            self.credo.motors['BeamStop_X'].where(), self.credo.motors['BeamStop_Y'].where())
             self.credo.save_state()
 
     def onMotorNameChosen(self):

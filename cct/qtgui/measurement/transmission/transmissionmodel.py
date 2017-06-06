@@ -8,24 +8,24 @@ class TransmissionModel(QtCore.QAbstractItemModel):
     def __init__(self, parent, credo):
         super().__init__()
         try:
-            self.credo=weakref.proxy(credo)
+            self.credo = weakref.proxy(credo)
         except TypeError:
-            self.credo=credo
+            self.credo = credo
         self._samples = []
 
     def add_sample(self, samplename):
         if samplename not in self:
-            self.beginInsertRows(QtCore.QModelIndex(), len(self._samples), len(self._samples)+1)
+            self.beginInsertRows(QtCore.QModelIndex(), len(self._samples), len(self._samples) + 1)
             self._samples.append([samplename, None, None, None, None])
             self.endInsertRows()
 
     def _update_intensityvalue(self, samplename, value, i, j=None):
-        [s for s in self._samples if s[0]==samplename][0][i] = value
-        s = [s_ for s_ in self._samples if s_[0]==samplename][0]
+        [s for s in self._samples if s[0] == samplename][0][i] = value
+        s = [s_ for s_ in self._samples if s_[0] == samplename][0]
         row = self._samples.index(s)
         if j is None:
-            j=i
-        self.dataChanged(self.createIndex(row,i),self.createIndex(row,j))
+            j = i
+        self.dataChanged(self.createIndex(row, i), self.createIndex(row, j))
 
     def update_dark(self, samplename, value):
         return self._update_intensityvalue(samplename, value, 1)
@@ -54,9 +54,9 @@ class TransmissionModel(QtCore.QAbstractItemModel):
     def data(self, index: QtCore.QModelIndex, role: int = QtCore.Qt.DisplayRole):
         if role != QtCore.Qt.DisplayRole:
             return
-        if index.column()==0:
+        if index.column() == 0:
             return self._samples[index.row()][0]
-        elif index.column() in [1,2,3,4]:
+        elif index.column() in [1, 2, 3, 4]:
             val = self._samples[index.row()][index.column()]
             if val is None:
                 val = '--'
@@ -64,18 +64,18 @@ class TransmissionModel(QtCore.QAbstractItemModel):
                 assert isinstance(val, ErrorValue)
                 val = val.tostring()
             return val
-        elif index.column() in [5,6]:
-            thickness=self.credo.services['samplestore'].get_sample(self._samples[index.row()][0]).thickness
+        elif index.column() in [5, 6]:
+            thickness = self.credo.services['samplestore'].get_sample(self._samples[index.row()][0]).thickness
             transm = self._samples[index.row()][4]
             if transm is None:
                 return '--'
             assert isinstance(transm, ErrorValue)
             assert isinstance(thickness, ErrorValue)
-            mu = - transm.log()/thickness
-            if index.column()==5:
+            mu = - transm.log() / thickness
+            if index.column() == 5:
                 return mu.tostring()
             else:
-                return (1/mu).tostring()
+                return (1 / mu).tostring()
         else:
             return None
 
@@ -84,7 +84,9 @@ class TransmissionModel(QtCore.QAbstractItemModel):
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = QtCore.Qt.DisplayRole):
         if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
-            return ['Name','Dark intensity','Empty intensity','Sample intensity','Transmission','Lin.abs.coeff (1/cm)','Absorption length (cm)'][section]
+            return \
+            ['Name', 'Dark intensity', 'Empty intensity', 'Sample intensity', 'Transmission', 'Lin.abs.coeff (1/cm)',
+             'Absorption length (cm)'][section]
         else:
             return None
 

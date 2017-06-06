@@ -2,12 +2,12 @@ import logging
 
 from  PyQt5.QtCore import QTimer
 
-logger= logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 class TimeOut(object):
-    def __init__(self, interval:int, function, start:bool=True, singleShot=False):
+    def __init__(self, interval: int, function, start: bool = True, singleShot=False):
         self.function = function
         self.timer = QTimer(None)
         self.timer.setInterval(interval)
@@ -28,6 +28,7 @@ class TimeOut(object):
         if self.timer.receivers(self.timer.timeout):
             self.timer.timeout.disconnect()
 
+
 class IdleFunction(object):
     def __init__(self, function, interval=0, *args, **kwargs):
         self.function = function
@@ -36,7 +37,7 @@ class IdleFunction(object):
         self.kwargs = kwargs
         self.timer = QTimer(None)
         self.timer.setSingleShot(False)
-        self.timer.setInterval(0) # schedule the first timeout to as soon as possible
+        self.timer.setInterval(0)  # schedule the first timeout to as soon as possible
         self.timer.timeout.connect(self.onTimeout)
         self.timer.start()
         logger.debug('Timer started in an IdleFunction')
@@ -47,7 +48,7 @@ class IdleFunction(object):
         except KeyError:
             pass
         if self.function(*self.args, **self.kwargs):
-            self.timer.setInterval(self.interval) # avoid too frequent subsequent calls
+            self.timer.setInterval(self.interval)  # avoid too frequent subsequent calls
         else:
             self.stop()
 
@@ -56,13 +57,15 @@ class IdleFunction(object):
         if self.timer.receivers(self.timer.timeout):
             self.timer.timeout.disconnect()
 
+
 class SingleIdleFunction(object):
     instances = []
+
     def __init__(self, function, *args, **kwargs):
         self.function = function
         self.args = args
         self.kwargs = kwargs
-        self.timer=QTimer.singleShot(0, self.onTimeout)
+        self.timer = QTimer.singleShot(0, self.onTimeout)
         logger.debug('Initialized a SingleIdleFunction')
         type(self).instances.append(self)
 

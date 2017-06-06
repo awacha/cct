@@ -121,7 +121,7 @@ class FileSequence(Service):
                 f.write('#P{:d} '.format(i))
                 f.write(' '.join(['{:f}'.format(
                     self.instrument.motors[m].where())
-                                  for m in sorted(self.instrument.motors)]))
+                    for m in sorted(self.instrument.motors)]))
                 f.write('\n')
             f.write('#N {:d}\n'.format(N))  # the number of scan points
             f.write('#L ' + '  '.join([motorname] +
@@ -414,13 +414,13 @@ class FileSequence(Service):
             sampledict = self.instrument.services['samplestore'].get_samples()[0].todict()
             for v in sampledict:
                 if isinstance(sampledict[v], str):
-                    sampledict[v]='---'
-                elif isinstance(sampledict[v], (float,int)):
-                    sampledict[v]=0
+                    sampledict[v] = '---'
+                elif isinstance(sampledict[v], (float, int)):
+                    sampledict[v] = 0
                 elif isinstance(sampledict[v], ErrorValue):
-                    sampledict[v]=ErrorValue(0,0)
+                    sampledict[v] = ErrorValue(0, 0)
                 else:
-                    sampledict[v]=None
+                    sampledict[v] = None
             params['sample'] = sampledict
             distcalib = dist
         params['geometry']['truedistance'] = distcalib.val

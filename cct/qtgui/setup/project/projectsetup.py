@@ -8,6 +8,7 @@ from ....core.services.accounting import Accounting
 
 class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_PROJECTMAN
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -37,7 +38,6 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.renamePushButton.setEnabled(False)
         self.onProjectSelected()
 
-
     def onProjectIDChanged(self):
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
@@ -55,9 +55,9 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def onUpdateProject(self):
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
-        prj=self.selectedProject()
-        prj.proposer=self.proposerLineEdit.text()
-        prj.projectname=self.projectTitleLineEdit.text()
+        prj = self.selectedProject()
+        prj.proposer = self.proposerLineEdit.text()
+        prj.projectname = self.projectTitleLineEdit.text()
         self.updatePushButton.setEnabled(False)
 
     def cleanup(self):
@@ -124,7 +124,7 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
             name = self.selectedProject()
             acc = self.credo.services['accounting']
             assert isinstance(acc, Accounting)
-            prj=acc.get_project(name)
+            prj = acc.get_project(name)
             self.projectIDLineEdit.setText(prj.projectid)
             self.projectTitleLineEdit.setText(prj.projectname)
             self.proposerLineEdit.setText(prj.proposer)

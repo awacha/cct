@@ -22,7 +22,7 @@ class ResourceConsumption(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         credo = kwargs.pop('credo')
         QtWidgets.QDockWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
-        self._telemetryconnections=[]
+        self._telemetryconnections = []
         self.setupUi(self)
 
     def setupUi(self, DockWidget):
@@ -30,14 +30,14 @@ class ResourceConsumption(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         assert isinstance(self.credo, Instrument)
         tm = self.credo.services['telemetrymanager']
         assert isinstance(tm, TelemetryManager)
-        self._telemetryconnections=[tm.connect('telemetry', self.onTelemetry)]
+        self._telemetryconnections = [tm.connect('telemetry', self.onTelemetry)]
         try:
             self.onTelemetry(tm, None, tm.get_telemetry(None))
         except ServiceError:
             # this can happen if no telemetries have been acquired yet.
             pass
 
-    def onTelemetry(self, telemetrymanager:TelemetryManager, category:Optional[str], telemetrydata:TelemetryInfo):
+    def onTelemetry(self, telemetrymanager: TelemetryManager, category: Optional[str], telemetrydata: TelemetryInfo):
         if category is not None:
             return False
         self.freeMemLabel.setText('{:.2f} from {:.2f} GB ({:.2f} %)'.format(
@@ -51,11 +51,11 @@ class ResourceConsumption(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         self.wallTimeLabel.setText('{:d}d.{:d}:{:d}:{:d}'.format(*split_time(
             time.monotonic() - self.credo.starttime)))
         self.liveTimeLabel.setText('{:d}d.{:d}:{:d}:{:d}'.format(*split_time(
-            telemetrydata.systemtime+telemetrydata.usertime)))
-        self.memLabel.setText('{:.2f} MB'.format(telemetrydata.memusage/(1048576)))
+            telemetrydata.systemtime + telemetrydata.usertime)))
+        self.memLabel.setText('{:.2f} MB'.format(telemetrydata.memusage / (1048576)))
         self.loadAvgLabel.setText(telemetrydata.loadavg)
 
     def cleanup(self):
         for c in self._telemetryconnections:
             self.credo.services['telemetrymanager'].disconnect(c)
-        self._telemetryconnections=[]
+        self._telemetryconnections = []

@@ -13,7 +13,7 @@ from ...core.plotimage import PlotImage
 
 class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
-        credo=kwargs.pop('credo')
+        credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self.setupUi(self)
@@ -39,15 +39,15 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                     self.plotimage.axesComboBox.removeItem(i)
                     break
         self.plotimage.axesComboBox.setCurrentIndex(0)
-        w=QtWidgets.QWidget(self)
+        w = QtWidgets.QWidget(self)
         self.setCentralWidget(w)
 
         self.addToolBar(QtCore.Qt.BottomToolBarArea, self.plotimage.figtoolbar)
         w.setObjectName('plotimageCanvas')
-        l=QtWidgets.QVBoxLayout(w)
+        l = QtWidgets.QVBoxLayout(w)
         w.setLayout(l)
-        l.setContentsMargins(0,0,0,0)
-        self.fsnSelector=FSNSelectorHorizontal(w, credo=self.credo)
+        l.setContentsMargins(0, 0, 0, 0)
+        self.fsnSelector = FSNSelectorHorizontal(w, credo=self.credo)
         l.addWidget(self.fsnSelector)
         l.addWidget(self.plotimage.canvas)
         self.fsnSelector.FSNSelected.connect(self.onFSNSelected)

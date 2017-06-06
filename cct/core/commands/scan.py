@@ -64,8 +64,8 @@ class GeneralScan(Command):
         self.file_being_exposed = None
         self.exposure_startdate = None
         self._ea_connection = None
-        self._outstanding_scanpoints=0
-        self._work_status=None
+        self._outstanding_scanpoints = 0
+        self._work_status = None
         self.killed = None
 
     def validate(self):
@@ -105,15 +105,15 @@ class GeneralScan(Command):
             if self.idx < self.npoints:
                 nextpos = self.start + (self.end - self.start) / (self.npoints - 1) * self.idx
                 # self.emit('message', 'Moving motor {} to {:.3f}'.format(self.motorname, nextpos))
-                self._work_status='Moving'
+                self._work_status = 'Moving'
                 self.get_motor(self.motorname).moveto(nextpos)
             else:
                 # Otherwise this was the last point. We wait for exposureanalyzer to finish all its jobs.
                 # We will test that case in self.on_scanpoint()
-                self._work_status='Finalizing'
+                self._work_status = 'Finalizing'
                 self.emit('message', 'Finalizing scan #{:d}.'.format(self.scanfsn))
         elif (device.name == 'pilatus') and (variablename == 'imgpath') and (
-            self._work_status == 'Initializing detector'):
+                    self._work_status == 'Initializing detector'):
             self.emit('message', 'Moving motor {} to start position ({:.3f})'.format(self.motorname, self.start))
             self.get_motor(self.motorname).moveto(self.start)
             self._work_status = 'Moving'
@@ -155,7 +155,7 @@ class GeneralScan(Command):
         self.file_being_exposed = self.services['filesequence'].exposurefileformat(
             self.prefix, self.fsn_being_exposed) + '.cbf'
         self.exposure_startdate = datetime.datetime.now()
-        self._work_status='Exposing'
+        self._work_status = 'Exposing'
         self.get_device('pilatus').expose(self.file_being_exposed)
         self._outstanding_scanpoints += 1
 
@@ -178,7 +178,7 @@ class GeneralScan(Command):
             self.config['path']['directories']['images_detector'][0] + '/' +
             self.config['path']['prefixes']['scn'])
         self._work_status = 'Initializing detector'
-        self._outstanding_scanpoints=0
+        self._outstanding_scanpoints = 0
         self.emit('message', 'Scan #{:d} started.'.format(self.scanfsn))
 
     def cleanup(self, *args, **kwargs):

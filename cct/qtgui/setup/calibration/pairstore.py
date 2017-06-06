@@ -12,29 +12,29 @@ class PairStore(QtCore.QAbstractItemModel):
     def rowCount(self, parent=None, *args, **kwargs):
         return len(self._pairs)
 
-    def parent(self, index:QtCore.QModelIndex=None):
+    def parent(self, index: QtCore.QModelIndex = None):
         return QtCore.QModelIndex()
 
-    def data(self, index:QtCore.QModelIndex, role=None):
+    def data(self, index: QtCore.QModelIndex, role=None):
         if role == QtCore.Qt.DisplayRole:
             return str(self._pairs[index.row()][index.column()])
         else:
             return None
 
-    def index(self, row:int, column:int, parent:QtCore.QModelIndex):
+    def index(self, row: int, column: int, parent: QtCore.QModelIndex):
         return self.createIndex(row, column, None)
 
     def addPair(self, uncalibrated, calibrated):
-        self.beginInsertRows(QtCore.QModelIndex(), len(self._pairs), len(self._pairs)+1)
+        self.beginInsertRows(QtCore.QModelIndex(), len(self._pairs), len(self._pairs) + 1)
         self._pairs.append((uncalibrated, calibrated))
         self.endInsertRows()
 
     def removePair(self, row):
-        self.beginRemoveRows(QtCore.QModelIndex(), row, row+1)
+        self.beginRemoveRows(QtCore.QModelIndex(), row, row + 1)
         del self._pairs[row]
         self.endRemoveRows()
 
-    def flags(self, index:QtCore.QModelIndex):
+    def flags(self, index: QtCore.QModelIndex):
         return QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemNeverHasChildren
 
     def pairs(self):

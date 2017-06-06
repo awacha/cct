@@ -221,7 +221,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                 recorded yet. `datalength > len(scandata)` is an error.
         """
         if not isinstance(scandata, np.ndarray):
-            scandata = np.zeros(datalength, dtype=zip(scandata, [np.double]*len(scandata)))
+            scandata = np.zeros(datalength, dtype=zip(scandata, [np.double] * len(scandata)))
             datalength = 0
         if datalength is None:
             datalength = len(scandata)
@@ -281,9 +281,9 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             else:
                 self.actionMotor_to_cursor.setEnabled(not motor.ismoving())
                 self.actionMotor_to_cursor.setEnabled((not motor.ismoving()) and (self._lastpeakposition is not None))
-                self.requireDevice('Motor_'+self.abscissaName())
+                self.requireDevice('Motor_' + self.abscissaName())
 
-    def onMotorStart(self, motor:Motor):
+    def onMotorStart(self, motor: Motor):
         self.actionMotor_to_cursor.setEnabled(False)
         self.actionMotor_to_peak.setEnabled(False)
 
@@ -313,7 +313,8 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         try:
             motor.moveto(self._lastpeakposition.val)
         except Exception as exc:
-            QtWidgets.QMessageBox.critical(self, 'Cannot move motor','Cannot move motor {}: {}'.format(self.abscissaName(), exc.args[0]))
+            QtWidgets.QMessageBox.critical(self, 'Cannot move motor',
+                                           'Cannot move motor {}: {}'.format(self.abscissaName(), exc.args[0]))
 
     def onMotorToCursor(self):
         motor = self.credo.motors[self.abscissaName()]
@@ -321,4 +322,5 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         try:
             motor.moveto(self._data[self.abscissaName()][self._cursorposition])
         except Exception as exc:
-            QtWidgets.QMessageBox.critical(self, 'Cannot move motor','Cannot move motor {}: {}'.format(self.abscissaName(), exc.args[0]))
+            QtWidgets.QMessageBox.critical(self, 'Cannot move motor',
+                                           'Cannot move motor {}: {}'.format(self.abscissaName(), exc.args[0]))

@@ -9,18 +9,19 @@ from .....core.instrument.privileges import PRIV_MOTORCONFIG
 
 class MotorConfig(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_MOTORCONFIG
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         self.motor = kwargs.pop('motor')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        self.setupToolWindow(credo, required_devices=['Motor_'+self.motor.name])
+        self.setupToolWindow(credo, required_devices=['Motor_' + self.motor.name])
         self.setupUi(self)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
         self.warningIconLabel.setPixmap(
             QtGui.QIcon.fromTheme('dialog-warning').pixmap(
-                48,48
+                48, 48
             ))
         self.setWindowTitle('Configure Motor {}'.format(self.motor.name))
         self.applyPushButton.clicked.connect(self.onApply)
@@ -56,7 +57,7 @@ class MotorConfig(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 raise TypeError(type(widget))
 
     def onWidgetChanged(self):
-        pal=self.sender().palette()
+        pal = self.sender().palette()
         pal.setColor(pal.Base, QtGui.QColor('yellow'))
         self.sender().setPalette(pal)
 
@@ -96,25 +97,25 @@ class MotorConfig(QtWidgets.QWidget, Ui_Form, ToolWindow):
             (self.standbyRMSCurrentDoubleSpinBox, 'standbycurrent'),
             (self.freewheelingDelayDoubleSpinBox, 'freewheelingdelay'),
             (self.pulseDivisorSpinBox, 'pulsedivisor'),
-            (self.rampDivisorSpinBox,'rampdivisor'),
-            (self.microstepExponentSpinBox,'microstepresolution'),
-            (self.rawMaxSpeedSpinBox,'maxspeedraw'),
-            (self.rawMaxAccelSpinBox,'maxaccelerationraw'),
-            (self.leftSwitchEnabledCheckBox,'leftswitchenable'),
-            (self.rightSwitchEnabledCheckBox,'rightswitchenable'),
-            (self.leftLimitDoubleSpinBox,'softleft'),
-            (self.rightLimitDoubleSpinBox,'softright')]:
+            (self.rampDivisorSpinBox, 'rampdivisor'),
+            (self.microstepExponentSpinBox, 'microstepresolution'),
+            (self.rawMaxSpeedSpinBox, 'maxspeedraw'),
+            (self.rawMaxAccelSpinBox, 'maxaccelerationraw'),
+            (self.leftSwitchEnabledCheckBox, 'leftswitchenable'),
+            (self.rightSwitchEnabledCheckBox, 'rightswitchenable'),
+            (self.leftLimitDoubleSpinBox, 'softleft'),
+            (self.rightLimitDoubleSpinBox, 'softright')]:
             assert isinstance(widget, QtWidgets.QWidget)
-            if widget.palette().color(QtGui.QPalette.Base)!=QtGui.QColor('yellow'):
+            if widget.palette().color(QtGui.QPalette.Base) != QtGui.QColor('yellow'):
                 continue
             if isinstance(widget, (QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox)):
-                changes[attribute]=widget.value()
+                changes[attribute] = widget.value()
             elif isinstance(widget, QtWidgets.QCheckBox):
-                changes[attribute]=widget.isChecked()
+                changes[attribute] = widget.isChecked()
         result = QtWidgets.QMessageBox.warning(
             self,
             'Confirm changes',
-            'Do you really want to commit the following changes to motor {}?\n'.format(self.motor.name)+
+            'Do you really want to commit the following changes to motor {}?\n'.format(self.motor.name) +
             '\n'.join(['{}: {} -> {}'.format(attr, self.motor.get_variable(attr), changes[attr])
                        for attr in sorted(changes)]),
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No
@@ -165,27 +166,28 @@ class MotorConfig(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def calculateSpeedAndAccel(self):
         assert isinstance(self.motor._controller, TMCMCard)
-        nustep=2**self.microstepExponentSpinBox.value()
-        ustepsize=self.motor._controller.full_step_size/nustep
-        maxustepfreq=self.motor._controller.clock_frequency*self.rawMaxSpeedSpinBox.value()/(2.0**self.pulseDivisorSpinBox.value()*2048*32)
-        maxstepfreq=maxustepfreq/nustep
-        maxspeed = maxstepfreq* self.motor._controller.full_step_size
-        maxaccel = self.motor._controller.clock_frequency**2*self.rawMaxAccelSpinBox.value()/(
-            2.0**(self.pulseDivisorSpinBox.value()+
-                  self.rampDivisorSpinBox.value()+
-                  29+
-                  self.microstepExponentSpinBox.value()))*self.motor._controller.full_step_size
+        nustep = 2 ** self.microstepExponentSpinBox.value()
+        ustepsize = self.motor._controller.full_step_size / nustep
+        maxustepfreq = self.motor._controller.clock_frequency * self.rawMaxSpeedSpinBox.value() / (
+        2.0 ** self.pulseDivisorSpinBox.value() * 2048 * 32)
+        maxstepfreq = maxustepfreq / nustep
+        maxspeed = maxstepfreq * self.motor._controller.full_step_size
+        maxaccel = self.motor._controller.clock_frequency ** 2 * self.rawMaxAccelSpinBox.value() / (
+            2.0 ** (self.pulseDivisorSpinBox.value() +
+                    self.rampDivisorSpinBox.value() +
+                    29 +
+                    self.microstepExponentSpinBox.value())) * self.motor._controller.full_step_size
         self.nMicrostepLabel.setText('{:d}'.format(nustep))
-        self.microStepSizeLabel.setText('{:.4f}'.format(1000*ustepsize))
+        self.microStepSizeLabel.setText('{:.4f}'.format(1000 * ustepsize))
         self.maximumSpeedLabel.setText('{:.4f}'.format(maxspeed))
         self.maxMicrostepFrequencyLabel.setText('{:.4f}'.format(maxustepfreq))
         self.maxFullstepFrequencyLabel.setText('{:.4f}'.format(maxstepfreq))
         self.accelerationLabel.setText('{:.4f}'.format(maxaccel))
-        self.accelTimeLabel.setText('{:.4f}'.format(maxspeed/maxaccel))
-        self.accelLengthLabel.setText('{:.4f}'.format(maxspeed**2/2/maxaccel))
+        self.accelTimeLabel.setText('{:.4f}'.format(maxspeed / maxaccel))
+        self.accelLengthLabel.setText('{:.4f}'.format(maxspeed ** 2 / 2 / maxaccel))
 
     def onCalibrate(self):
         self.motor.calibrate(self.calibrationDoubleSpinBox.value())
-        pal=self.calibrationDoubleSpinBox.palette()
+        pal = self.calibrationDoubleSpinBox.palette()
         pal.setColor(pal.Base, QtGui.QColor('white'))
         self.calibrationDoubleSpinBox.setPalette(pal)

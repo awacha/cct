@@ -11,21 +11,21 @@ class LogModel(QtCore.QAbstractItemModel):
     """A model for storing log records.
     """
 
-    columnConfig=[('asctime','Date'), ('levelname', 'Level'),
-                  ('origin', 'Origin'), ('message', 'Message')]
+    columnConfig = [('asctime', 'Date'), ('levelname', 'Level'),
+                    ('origin', 'Origin'), ('message', 'Message')]
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._records=[]
+        self._records = []
         self._level = logging.NOTSET
 
-    def index(self, row:int, column:int, parent=None, *args, **kwargs):
-        if column <0 or column>=len(self.columnConfig):
+    def index(self, row: int, column: int, parent=None, *args, **kwargs):
+        if column < 0 or column >= len(self.columnConfig):
             raise ValueError('Invalid column: {}'.format(column))
-        recs=self.records()
+        recs = self.records()
         if row >= len(recs):
             raise ValueError('Invalid row: {}'.format(row))
-        return self.createIndex(row, column, getattr(recs[row],self.columnConfig[column][0]))
+        return self.createIndex(row, column, getattr(recs[row], self.columnConfig[column][0]))
 
     def headerData(self, index, orientation, role=None):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
@@ -41,14 +41,14 @@ class LogModel(QtCore.QAbstractItemModel):
     def columnCount(self, parent=None, *args, **kwargs):
         return len(self.columnConfig)
 
-    def flags(self, index:QtCore.QModelIndex):
+    def flags(self, index: QtCore.QModelIndex):
         return Qt.ItemNeverHasChildren | Qt.ItemIsEnabled
 
     def data(self, modelindex, role=None):
         if role is None:
             role = QtCore.Qt.DisplayRole
         if role == QtCore.Qt.DisplayRole:
-            rec=self.records()[modelindex.row()]
+            rec = self.records()[modelindex.row()]
             return str(getattr(rec, self.columnConfig[modelindex.column()][0]))
         elif role == QtCore.Qt.BackgroundRole:
             rec = self.records()[modelindex.row()]
@@ -75,15 +75,15 @@ class LogModel(QtCore.QAbstractItemModel):
         return None
 
     def append(self, logrecord):
-        logrecord.origin=logrecord.module+':{:d}'.format(logrecord.lineno)
-        self.beginInsertRows(QtCore.QModelIndex(), len(self.records()),len(self.records()))
+        logrecord.origin = logrecord.module + ':{:d}'.format(logrecord.lineno)
+        self.beginInsertRows(QtCore.QModelIndex(), len(self.records()), len(self.records()))
         self._records.append(logrecord)
         self.endInsertRows()
 
-    def setLevel(self, level:int):
+    def setLevel(self, level: int):
         self.beginRemoveRows(QtCore.QModelIndex(), 0, len(self.records()))
         self.endRemoveRows()
-        self._level=level
+        self._level = level
         self.beginInsertRows(QtCore.QModelIndex(), 0, len(self.records()))
         self.endInsertRows()
 
@@ -91,31 +91,32 @@ class LogModel(QtCore.QAbstractItemModel):
         return self._level
 
     def records(self):
-        return [r for r in self._records if r.levelno>=self._level]
+        return [r for r in self._records if r.levelno >= self._level]
 
     def __len__(self):
         return len(self._records)
 
     def reduceTo(self, length=0):
-        if len(self._records)<=length:
+        if len(self._records) <= length:
             return True
         else:
-            self.beginRemoveRows(QtCore.QModelIndex(), 0, len(self)-length-1)
-            self._records = self._records[len(self)-length :]
+            self.beginRemoveRows(QtCore.QModelIndex(), 0, len(self) - length - 1)
+            self._records = self._records[len(self) - length:]
             self.endRemoveRows()
+
 
 class LogViewer(QtWidgets.QWidget, Ui_Form, logging.Handler):
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         logging.Handler.__init__(self)
-        self._lastrecordarrived=0
+        self._lastrecordarrived = 0
         formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
         self.setFormatter(formatter)
         self.setupUi(self)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
-        Form.logModel=LogModel()
+        Form.logModel = LogModel()
         Form.logTreeView.setModel(Form.logModel)
         Form.logLevelModel = QtGui.QStandardItemModel()
         Form.logLevelModel.setColumnCount(2)
@@ -141,8 +142,9 @@ class LogViewer(QtWidgets.QWidget, Ui_Form, logging.Handler):
         self.format(record)
         self.logModel.append(record)
         self.shownMessagesLabel.setText('{:d} from {:d}'.format(self.logModel.rowCount(), len(self.logModel)))
-        if self.autoscrollCheckBox.checkState() == Qt.Checked and record.levelno >= logging.INFO and (time.monotonic()-self._lastrecordarrived)>0.5:
+        if self.autoscrollCheckBox.checkState() == Qt.Checked and record.levelno >= logging.INFO and (
+            time.monotonic() - self._lastrecordarrived) > 0.5:
             self.logTreeView.scrollToBottom()
         self._lastrecordarrived = time.monotonic()
         if record.levelno >= logging.WARNING:
-            self.logTreeView.resizeColumnToContents(self.logModel.columnCount()-1)
+            self.logTreeView.resizeColumnToContents(self.logModel.columnCount() - 1)

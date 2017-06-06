@@ -9,7 +9,7 @@ from ....core.services.filesequence import FileSequence
 
 
 class ScanViewer(QtWidgets.QWidget, Ui_Form, ToolWindow):
-    def __init__(self,*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
@@ -19,9 +19,9 @@ class ScanViewer(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
         assert isinstance(self.credo, Instrument)
-        fs=self.credo.services['filesequence']
+        fs = self.credo.services['filesequence']
         assert isinstance(fs, FileSequence)
-        self.scanModel=ScanModel(None, self.credo, fs.get_scanfile())
+        self.scanModel = ScanModel(None, self.credo, fs.get_scanfile())
         self.scanFileComboBox.addItems(fs.get_scanfiles())
         self.treeView.setModel(self.scanModel)
         self.scanFileComboBox.currentTextChanged.connect(self.onScanFileSelected)
@@ -44,10 +44,10 @@ class ScanViewer(QtWidgets.QWidget, Ui_Form, ToolWindow):
         for c in range(self.scanModel.columnCount()):
             self.treeView.resizeColumnToContents(c)
 
-    def onDoubleClicked(self, index:QtCore.QModelIndex):
+    def onDoubleClicked(self, index: QtCore.QModelIndex):
         scanindex = self.scanModel.data(self.scanModel.index(index.row(), 0), QtCore.Qt.DisplayRole)
         assert isinstance(self.credo, Instrument)
-        fs=self.credo.services['filesequence']
+        fs = self.credo.services['filesequence']
         assert isinstance(fs, FileSequence)
         scan = fs.load_scan(scanindex, self.scanModel.scanfile)
         sg = ScanGraph(credo=self.credo)

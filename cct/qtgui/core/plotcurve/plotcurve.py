@@ -18,25 +18,25 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         Ui_Form.setupUi(self, Form)
         self.figure = Figure()
         self.canvas = FigureCanvasQTAgg(self.figure)
-        self.axes = self.figure.add_subplot(1,1,1)
+        self.axes = self.figure.add_subplot(1, 1, 1)
         self.figureContainer.setLayout(QtWidgets.QVBoxLayout())
         self.figureContainer.layout().addWidget(self.canvas)
-        self.figureToolbar=NavigationToolbar2QT(self.canvas, self.figureContainer)
+        self.figureToolbar = NavigationToolbar2QT(self.canvas, self.figureContainer)
         self.figureContainer.layout().addWidget(self.figureToolbar)
         assert isinstance(self.figureToolbar, QtWidgets.QToolBar)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/icons/legend.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.legendAction=QtWidgets.QAction(icon, 'Show legend', None)
+        self.legendAction = QtWidgets.QAction(icon, 'Show legend', None)
         self.legendAction.setCheckable(True)
         self.legendAction.setChecked(True)
         self.legendAction.triggered.connect(self.onLegendTriggered)
         icon = QtGui.QIcon.fromTheme("edit-clear-all")
-        self.clearAxesAction=QtWidgets.QAction(icon,'Clear all curves', None)
+        self.clearAxesAction = QtWidgets.QAction(icon, 'Clear all curves', None)
         self.clearAxesAction.triggered.connect(self.onClearAxes)
-        toolbutton=QtWidgets.QToolButton()
+        toolbutton = QtWidgets.QToolButton()
         toolbutton.setDefaultAction(self.legendAction)
         self.figureToolbar.insertWidget(self.figureToolbar.actions()[0], toolbutton)
-        toolbutton=QtWidgets.QToolButton()
+        toolbutton = QtWidgets.QToolButton()
         toolbutton.setDefaultAction(self.clearAxesAction)
         self.figureToolbar.insertWidget(self.figureToolbar.actions()[0], toolbutton)
         self.legendAction.setVisible(True)
@@ -49,10 +49,10 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         self.canvas.draw()
 
     def addFitCurve(self, x, y, **kwargs):
-        self.axes.plot(x,y, **kwargs)
+        self.axes.plot(x, y, **kwargs)
         self.onLegendTriggered()
 
-    def addCurve(self, curve:Curve, label='_nolabel_', hold_mode=True, **kwargs):
+    def addCurve(self, curve: Curve, label='_nolabel_', hold_mode=True, **kwargs):
         if not hold_mode:
             for l in self.axes.lines:
                 l.remove()
@@ -78,12 +78,12 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         self.canvas.draw()
 
     def getZoomRange(self):
-        xmin,xmax,ymin,ymax=self.axes.axis()
+        xmin, xmax, ymin, ymax = self.axes.axis()
         for line in self.axes.lines:
             assert isinstance(line, Line2D)
-            x=line.get_xdata()
-            y=line.get_ydata()
-            idx=np.logical_and(np.logical_and(x>=xmin, x<=xmax), np.logical_and(y>=ymin, y<=ymax))
+            x = line.get_xdata()
+            y = line.get_ydata()
+            idx = np.logical_and(np.logical_and(x >= xmin, x <= xmax), np.logical_and(y >= ymin, y <= ymax))
             if idx.sum():
                 return x[idx].min(), x[idx].max(), y[idx].min(), y[idx].max()
         return (xmin, xmax, ymin, ymax)

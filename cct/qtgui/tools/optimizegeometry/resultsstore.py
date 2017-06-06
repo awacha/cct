@@ -10,7 +10,7 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
         super().__init__(*args)
         self._list = []
 
-    def parent(self, parent:QtCore.QModelIndex=None):
+    def parent(self, parent: QtCore.QModelIndex = None):
         return QtCore.QModelIndex()
 
     def columnCount(self, parent=None, *args, **kwargs):
@@ -19,13 +19,13 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
     def rowCount(self, parent=None, *args, **kwargs):
         return len(self._list)
 
-    def flags(self, index:QtCore.QModelIndex):
+    def flags(self, index: QtCore.QModelIndex):
         return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable
 
     def index(self, row, column, parent=None, *args, **kwargs):
         return self.createIndex(row, column, None)
 
-    def data(self, index:QtCore.QModelIndex, role=None):
+    def data(self, index: QtCore.QModelIndex, role=None):
         if role == QtCore.Qt.DisplayRole:
             pc = self._list[index.row()]
             assert isinstance(pc, PinholeConfiguration)
@@ -52,13 +52,13 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
             elif index.column() == 10:
                 return pc.sd
             elif index.column() == 11:
-                return pc.alpha*1000
+                return pc.alpha * 1000
             elif index.column() == 12:
                 return pc.qmin
             elif index.column() == 13:
                 return pc.dmax
             elif index.column() == 14:
-                return 1/pc.qmin
+                return 1 / pc.qmin
             elif index.column() == 15:
                 return pc.dspheremax
             elif index.column() == 16:
@@ -67,20 +67,20 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
                 return None
 
     def addConfiguration(self, phc: PinholeConfiguration):
-        self.beginInsertRows(QtCore.QModelIndex(),self.rowCount(), self.rowCount()+1)
+        self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount() + 1)
         self._list.append(phc)
         self.endInsertRows()
 
     def addConfigurations(self, phcs: List[PinholeConfiguration]):
-        self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount()+len(phcs))
+        self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount() + len(phcs))
         self._list.extend(phcs)
         self.endInsertRows()
 
-    def getConfiguration(self, index:int)-> PinholeConfiguration:
+    def getConfiguration(self, index: int) -> PinholeConfiguration:
         return self._list[index]
 
     def headerData(self, i, orientation, role=None):
-        if orientation ==QtCore.Qt.Horizontal and role==QtCore.Qt.DisplayRole:
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             # headertext = ['<i>l<sub>1</sub></i> parts (mm)',
             #         '<i>l<sub>2</sub></i> parts (mm)',
             #         '1<sup>st</sup> aperture (\u03bcm)',

@@ -9,7 +9,7 @@ class MotorModel(QtCore.QAbstractItemModel):
         self.credo = kwargs.pop('credo')
         assert isinstance(self.credo, Instrument)
         super().__init__(*args, **kwargs)
-        self._motor_connections=[]
+        self._motor_connections = []
         for m in self.credo.motors:
             motor = self.credo.motors[m]
             self._motor_connections.append((motor, motor.connect('variable-change', self.onMotorVariableChange)))
@@ -19,14 +19,15 @@ class MotorModel(QtCore.QAbstractItemModel):
             motor.disconnect(cid)
         self._motor_connections = []
 
-    def onMotorVariableChange(self, motor:Motor, variable:str, value):
-        variables = ['softleft', 'softright', 'actualposition', 'actualspeed', 'leftswitchstatus', 'rightswitchstatus', 'load', 'errorflags']
+    def onMotorVariableChange(self, motor: Motor, variable: str, value):
+        variables = ['softleft', 'softright', 'actualposition', 'actualspeed', 'leftswitchstatus', 'rightswitchstatus',
+                     'load', 'errorflags']
         try:
             column = variables.index(variable)
         except ValueError:
             return False
-        row=sorted(self.credo.motors.keys()).index(motor.name)
-        self.dataChanged.emit(self.index(row,column), self.index(row+1,column+1), [QtCore.Qt.DisplayRole])
+        row = sorted(self.credo.motors.keys()).index(motor.name)
+        self.dataChanged.emit(self.index(row, column), self.index(row + 1, column + 1), [QtCore.Qt.DisplayRole])
         return False
 
     def columnCount(self, parent=None, *args, **kwargs):
@@ -84,11 +85,11 @@ class MotorModel(QtCore.QAbstractItemModel):
         else:
             return None
 
-    def flags(self, index:QtCore.QModelIndex):
+    def flags(self, index: QtCore.QModelIndex):
         return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
     def headerData(self, column, orientation, role=None):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return \
-            ['Motor name', 'Left limit', 'Right limit', 'Position', 'Speed', 'Left switch', 'Right switch', 'Load',
-             'Status flags'][column]
+                ['Motor name', 'Left limit', 'Right limit', 'Position', 'Speed', 'Left switch', 'Right switch', 'Load',
+                 'Status flags'][column]

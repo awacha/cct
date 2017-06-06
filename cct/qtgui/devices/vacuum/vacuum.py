@@ -10,6 +10,7 @@ from ....core.devices.vacuumgauge import TPG201
 
 class VacuumGauge(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['tpg201']
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -25,7 +26,7 @@ class VacuumGauge(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def onDeviceVariableChange(self, device: Union[Device, Motor], variablename: str, newvalue):
         assert isinstance(device, TPG201)
-        if variablename=='pressure':
+        if variablename == 'pressure':
             self.vacuumLcdNumber.display(newvalue)
         elif variablename == '_status':
             self.statusLabel.setText(newvalue)

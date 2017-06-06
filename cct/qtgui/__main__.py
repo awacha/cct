@@ -14,24 +14,23 @@ from ..core.instrument.privileges import PRIV_SUPERUSER
 
 
 class AnsiColorFormatter(logging.Formatter):
-    def __init__(self, oldformatter:logging.Formatter):
+    def __init__(self, oldformatter: logging.Formatter):
         super().__init__()
         self._oldformatter = oldformatter
 
-    def format(self, record:logging.LogRecord):
+    def format(self, record: logging.LogRecord):
         s = self._oldformatter.format(record)
-        if record.levelno>= logging.CRITICAL:
-            s='\x1b\x5b30m\x1b\x5b1m\x1b\x5b41m'+s+'\x1b\x5b0m'
-        elif record.levelno>= logging.ERROR:
-            s='\x1b\x5b31m\x1b\x5b1m'+s+'\x1b\x5b0m'
-        elif record.levelno>= logging.WARNING:
-            s='\x1b\x5b33m\x1b\x5b1m'+s+'\x1b\x5b0m'
-        elif record.levelno>= logging.INFO:
-            s='\x1b\x5b32m'+s+'\x1b\x5b0m'
-        elif record.levelno>= logging.DEBUG:
-            s='\x1b\x5b37m'+s+'\x1b\x5b0m'
+        if record.levelno >= logging.CRITICAL:
+            s = '\x1b\x5b30m\x1b\x5b1m\x1b\x5b41m' + s + '\x1b\x5b0m'
+        elif record.levelno >= logging.ERROR:
+            s = '\x1b\x5b31m\x1b\x5b1m' + s + '\x1b\x5b0m'
+        elif record.levelno >= logging.WARNING:
+            s = '\x1b\x5b33m\x1b\x5b1m' + s + '\x1b\x5b0m'
+        elif record.levelno >= logging.INFO:
+            s = '\x1b\x5b32m' + s + '\x1b\x5b0m'
+        elif record.levelno >= logging.DEBUG:
+            s = '\x1b\x5b37m' + s + '\x1b\x5b0m'
         return s
-
 
 
 # initialize the root logger
@@ -51,12 +50,12 @@ logging.root.addHandler(ch)
 logging.root.info('------------------- Program startup v{} -------------------'.format(
     pkg_resources.get_distribution('cct').version))
 
-
 app = QApplication(sys.argv)
 
 credo = Instrument(online='--online' in app.arguments()[1:])
 
-oldexcepthook=sys.excepthook
+oldexcepthook = sys.excepthook
+
 
 def my_excepthook(type_, value, traceback_):
     # noinspection PyBroadException
@@ -67,6 +66,7 @@ def my_excepthook(type_, value, traceback_):
         logging.root.critical(
             'Error in excepthook: ' + traceback.format_exc())
     oldexcepthook(type_, value, traceback_)
+
 
 sys.excepthook = my_excepthook
 
@@ -81,11 +81,11 @@ else:
         credo.services['accounting'].add_user('root', 'Rootus', 'Systemus', PRIV_SUPERUSER)
         credo.services['accounting'].select_user('root')
 mw = MainWindow(credo=credo)
-mw.setWindowTitle(mw.windowTitle()+' v{}'.format(pkg_resources.get_distribution('cct').version))
+mw.setWindowTitle(mw.windowTitle() + ' v{}'.format(pkg_resources.get_distribution('cct').version))
 app.setWindowIcon(mw.windowIcon())
 credo.start()
 mw.show()
-result=app.exec_()
+result = app.exec_()
 logging.root.debug('QApplication exited.')
 del mw
 logging.root.debug('MW deleted.')

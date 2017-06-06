@@ -2,7 +2,7 @@ import logging
 import os
 import re
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 from PyQt5 import QtCore, QtWidgets, QtGui
@@ -13,22 +13,24 @@ from ....core.commands import Command
 from ....core.services.interpreter import Interpreter
 from ....core.commands.script import Script
 
+
 class HighLighter(QtGui.QSyntaxHighlighter):
     def __init__(self, *args, **kwargs):
         QtGui.QSyntaxHighlighter.__init__(self, *args, **kwargs)
         self.keywordformat = QtGui.QTextCharFormat()
         self.keywordformat.setFontWeight(QtGui.QFont.Bold)
         self.keywordformat.setForeground(QtCore.Qt.darkMagenta)
-        self.keywords_re = [re.compile('\\b'+c.name+'\\b') for c in Command.allcommands()]
+        self.keywords_re = [re.compile('\\b' + c.name + '\\b') for c in Command.allcommands()]
 
-    def highlightBlock(self, text:str):
+    def highlightBlock(self, text: str):
         for kw in self.keywords_re:
             for match in kw.finditer(text):
                 self.setFormat(match.start(), match.end(), self.keywordformat)
 
+
 class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
-        credo= kwargs.pop('credo')
+        credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self.lastfilename = None
@@ -88,7 +90,7 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                 assert isinstance(self.document, QtGui.QTextDocument)
                 f.write(self.document.toPlainText())
         except PermissionError:
-            QtWidgets.QMessageBox.critical(self, 'Error','Cannot open file {}'.format(self.lastfilename))
+            QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot open file {}'.format(self.lastfilename))
             return
         self.document.setModified(False)
 
@@ -121,12 +123,12 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             path = os.path.split(self.lastfilename)
         if self.confirmDropChanges():
             filename, filter = QtWidgets.QFileDialog.getOpenFileName(
-                self,"Open a script file", path, '*.cct')
+                self, "Open a script file", path, '*.cct')
             try:
                 with open(filename, 'rt') as f:
                     text = ''.join(f.readlines())
-            except (PermissionError,FileNotFoundError):
-                QtWidgets.QMessageBox.critical(self, 'Error','Cannot open file {}'.format(self.lastfilename))
+            except (PermissionError, FileNotFoundError):
+                QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot open file {}'.format(self.lastfilename))
                 return
             assert isinstance(self.document, QtGui.QTextDocument)
             self.document.setPlainText(text)
@@ -173,19 +175,19 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             return True
         return True
 
-    def onCmdDetail(self, interpreter:Interpreter, cmdname:str, detail):
+    def onCmdDetail(self, interpreter: Interpreter, cmdname: str, detail):
         assert isinstance(detail, tuple)
-        if detail[0]=='cmd-start':
+        if detail[0] == 'cmd-start':
             self.onCommandStarted(detail[1])
-        elif detail[0]=='paused':
+        elif detail[0] == 'paused':
             self.onScriptPaused()
 
-    def onCommandStarted(self, linenumber:int):
+    def onCommandStarted(self, linenumber: int):
         logger.debug('Command started on line {:d}'.format(linenumber))
-        es=QtWidgets.QTextEdit.ExtraSelection()
+        es = QtWidgets.QTextEdit.ExtraSelection()
         fmt = QtGui.QTextCharFormat()
         fmt.setBackground(QtGui.QBrush(QtCore.Qt.green))
-        es.format=fmt
+        es.format = fmt
         cursor = QtGui.QTextCursor(self.document)
         cursor.movePosition(QtGui.QTextCursor.Start)
         cursor.movePosition(QtGui.QTextCursor.Down, QtGui.QTextCursor.MoveAnchor, linenumber)
@@ -195,7 +197,7 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         es.cursor = cursor
         self.scriptEdit.setExtraSelections([es])
 
-    def onCmdReturn(self, interpreter:Interpreter, cmdname:str, retval):
+    def onCmdReturn(self, interpreter: Interpreter, cmdname: str, retval):
         super().onCmdReturn(interpreter, cmdname, retval)
         self.setIdle()
 

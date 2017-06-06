@@ -15,26 +15,26 @@ from queue import Empty
 def worker(queue: Queue, spacers, pinholes, ls, lbs, sd, mindist_l1, mindist_l2, sealringwidth, wavelength,
            crit_sample, crit_beamstop, crit_l1, crit_l2, keep_best_n=200):
     try:
-        results=[]
+        results = []
         for phc in PinholeConfiguration.enumerate(spacers, pinholes, ls, lbs, sd, mindist_l1, mindist_l2, sealringwidth,
                                                   wavelength):
             assert isinstance(phc, PinholeConfiguration)
             if phc.l1 < crit_l1:
-#                print('L1 not OK: {} < {}'.format(phc.l1, crit_l1))
+                #                print('L1 not OK: {} < {}'.format(phc.l1, crit_l1))
                 continue
             if phc.l2 < crit_l2:
-#                print('L2 not OK: {} < {}'.format(phc.l2, crit_l2))
+                #                print('L2 not OK: {} < {}'.format(phc.l2, crit_l2))
                 continue
             if phc.Dbs < crit_beamstop[0] or phc.Dbs > crit_beamstop[1]:
-#                print('BS not OK: {} not between {} and {}'.format(phc.Dbs, crit_beamstop[0], crit_beamstop[1]))
+                #                print('BS not OK: {} not between {} and {}'.format(phc.Dbs, crit_beamstop[0], crit_beamstop[1]))
                 continue
             if phc.Dsample < crit_sample[0] or phc.Dsample > crit_sample[1]:
-#                print('Sample not OK: {} not between {} and {}'.format(phc.Dsample, crit_sample[0], crit_sample[1]))
+                #                print('Sample not OK: {} not between {} and {}'.format(phc.Dsample, crit_sample[0], crit_sample[1]))
                 continue
-#            print('OK: {}'.format(phc))
+            #            print('OK: {}'.format(phc))
             results.append(phc)
     finally:
-        queue.put_nowait(sorted(results, key=lambda phc:-phc.intensity)[:keep_best_n])
+        queue.put_nowait(sorted(results, key=lambda phc: -phc.intensity)[:keep_best_n])
 
 
 class OptimizeGeometry(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -135,7 +135,7 @@ class OptimizeGeometry(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def checkWorkerResults(self):
         try:
             result = self.resultsQueue.get_nowait()
-            #logger.debug('Finished processing.')
+            # logger.debug('Finished processing.')
             self.process.join()
             self.timer.stop()
             del self.resultsQueue
@@ -149,56 +149,56 @@ class OptimizeGeometry(QtWidgets.QWidget, Ui_Form, ToolWindow):
             return
 
     def copyToHTML(self):
-        html="""<table>\n"""
-        html+="  <tr>\n"
-        html+="     <th><i>l<sub>1</sub></i> parts (mm)</th>\n"
-        html+="     <th><i>l<sub>2</sub></i> parts (mm)</th>\n"
-        html+="     <th>1<sup>st</sup> aperture (\u03bcm)</th>\n"
-        html+="     <th>2<sup>nd</sup> aperture (\u03bcm)</th>\n"
-        html+="     <th>3<sup>rd</sup> aperture (\u03bcm)</th>\n"
-        html+="     <th>Intensity (\u03bcm<sup>4</sup>mm<sup>-2</sup>)</th>\n"
-        html+="     <th>Sample size (mm)</th>\n"
-        html+="     <th>Beamstop size (mm)</th>\n"
-        html+="     <th><i>l<sub>1</sub></i> (mm)</th>\n"
-        html+="     <th><i>l<sub>2</sub></i> (mm)</th>\n"
-        html+="     <th>S-D distance (mm)</th>\n"
-        html+="     <th>Divergence (mrad)</th>\n"
-        html+="     <th>Smallest <i>q</i> (nm<sup>-1</sup>)</th>\n"
-        html+="     <th>Largest <i>d</i> (nm)</th>\n"
-        html+="     <th>Largest <i>R<sub>g</sub></i> (nm)</th>\n"
-        html+="     <th>Largest sphere size (nm)</th>\n"
-        html+="     <th>Dominant constraint</th>\n"
-        html+="  </tr>\n"
-        selectedrows=sorted({index.row() for index in self.treeView.selectedIndexes()})
+        html = """<table>\n"""
+        html += "  <tr>\n"
+        html += "     <th><i>l<sub>1</sub></i> parts (mm)</th>\n"
+        html += "     <th><i>l<sub>2</sub></i> parts (mm)</th>\n"
+        html += "     <th>1<sup>st</sup> aperture (\u03bcm)</th>\n"
+        html += "     <th>2<sup>nd</sup> aperture (\u03bcm)</th>\n"
+        html += "     <th>3<sup>rd</sup> aperture (\u03bcm)</th>\n"
+        html += "     <th>Intensity (\u03bcm<sup>4</sup>mm<sup>-2</sup>)</th>\n"
+        html += "     <th>Sample size (mm)</th>\n"
+        html += "     <th>Beamstop size (mm)</th>\n"
+        html += "     <th><i>l<sub>1</sub></i> (mm)</th>\n"
+        html += "     <th><i>l<sub>2</sub></i> (mm)</th>\n"
+        html += "     <th>S-D distance (mm)</th>\n"
+        html += "     <th>Divergence (mrad)</th>\n"
+        html += "     <th>Smallest <i>q</i> (nm<sup>-1</sup>)</th>\n"
+        html += "     <th>Largest <i>d</i> (nm)</th>\n"
+        html += "     <th>Largest <i>R<sub>g</sub></i> (nm)</th>\n"
+        html += "     <th>Largest sphere size (nm)</th>\n"
+        html += "     <th>Dominant constraint</th>\n"
+        html += "  </tr>\n"
+        selectedrows = sorted({index.row() for index in self.treeView.selectedIndexes()})
         for index in selectedrows:
-            phc=self.resultsStore.getConfiguration(index)
-            html+="  <tr>\n"
-            html+="    <td>{}</td>\n".format(", ".join([str(x) for x in phc.l1_elements]))
-            html+="    <td>{}</td>\n".format(", ".join([str(x) for x in phc.l2_elements]))
-            html+="    <td>{:.0f}</td>\n".format(phc.D1)
-            html+="    <td>{:.0f}</td>\n".format(phc.D2)
-            html+="    <td>{:.0f}</td>\n".format(phc.D3)
-            html+="    <td>{:.1f}</td>\n".format(phc.intensity)
-            html+="    <td>{:.3f}</td>\n".format(phc.Dsample)
-            html+="    <td>{:.3f}</td>\n".format(phc.Dbs)
-            html+="    <td>{:.0f}</td>\n".format(phc.l1)
-            html+="    <td>{:.0f}</td>\n".format(phc.l2)
-            html+="    <td>{:.2f}</td>\n".format(phc.sd)
-            html+="    <td>{:.3f}</td>\n".format(phc.alpha*1000)
-            html+="    <td>{:.4f}</td>\n".format(phc.qmin)
-            html+="    <td>{:.1f}</td>\n".format(phc.dmax)
-            html+="    <td>{:.1f}</td>\n".format(phc.Rgmax)
-            html+="    <td>{:.1f}</td>\n".format(phc.dspheremax)
-            html+="    <td>{}</td>\n".format(phc.dominant_constraint)
-            html+="  </tr>\n"
-        html+="</table>\n"
-        clipboard=QtGui.QGuiApplication.clipboard()
+            phc = self.resultsStore.getConfiguration(index)
+            html += "  <tr>\n"
+            html += "    <td>{}</td>\n".format(", ".join([str(x) for x in phc.l1_elements]))
+            html += "    <td>{}</td>\n".format(", ".join([str(x) for x in phc.l2_elements]))
+            html += "    <td>{:.0f}</td>\n".format(phc.D1)
+            html += "    <td>{:.0f}</td>\n".format(phc.D2)
+            html += "    <td>{:.0f}</td>\n".format(phc.D3)
+            html += "    <td>{:.1f}</td>\n".format(phc.intensity)
+            html += "    <td>{:.3f}</td>\n".format(phc.Dsample)
+            html += "    <td>{:.3f}</td>\n".format(phc.Dbs)
+            html += "    <td>{:.0f}</td>\n".format(phc.l1)
+            html += "    <td>{:.0f}</td>\n".format(phc.l2)
+            html += "    <td>{:.2f}</td>\n".format(phc.sd)
+            html += "    <td>{:.3f}</td>\n".format(phc.alpha * 1000)
+            html += "    <td>{:.4f}</td>\n".format(phc.qmin)
+            html += "    <td>{:.1f}</td>\n".format(phc.dmax)
+            html += "    <td>{:.1f}</td>\n".format(phc.Rgmax)
+            html += "    <td>{:.1f}</td>\n".format(phc.dspheremax)
+            html += "    <td>{}</td>\n".format(phc.dominant_constraint)
+            html += "  </tr>\n"
+        html += "</table>\n"
+        clipboard = QtGui.QGuiApplication.clipboard()
         assert isinstance(clipboard, QtGui.QClipboard)
-        mimedata=QtCore.QMimeData()
+        mimedata = QtCore.QMimeData()
         mimedata.setHtml(html)
         clipboard.setMimeData(mimedata)
-        QtWidgets.QMessageBox.information(self, "Configurations copied", "{} pinhole configuration(s) copied to the clipboard.".format(selectedrows))
-
+        QtWidgets.QMessageBox.information(self, "Configurations copied",
+                                          "{} pinhole configuration(s) copied to the clipboard.".format(selectedrows))
 
     def updateSetupParameters(self):
 

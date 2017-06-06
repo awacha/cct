@@ -369,7 +369,7 @@ command {} or in the \'expose_prefix\' variable'.format(self.name))
             # if we still have some files to wait for, re-queue us to the time when the next will be available.
             elapsedtime = (datetime.datetime.now() - self.starttime).total_seconds()
             self.filechecker_handle = TimeOut(1000 * max(0, (min(self.due_times) - elapsedtime)),
-                                                       self.filechecker)
+                                              self.filechecker)
         else:
             # all files received:
             self.files_received = True

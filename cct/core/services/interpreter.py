@@ -154,7 +154,9 @@ class Interpreter(Service):
                 raise InterpreterError('Unknown command: ' + commandname)
             self.command_namespace_locals['_commandline'] = commandline_cleaned
         assert issubclass(commandclass, Command)
-        logger.debug('Executing command: {}. Args: {}. Kwargs: {}. Namespace: {}'.format(commandclass.name, arguments, kwargs, self.command_namespace_locals))
+        logger.debug(
+            'Executing command: {}. Args: {}. Kwargs: {}. Namespace: {}'.format(commandclass.name, arguments, kwargs,
+                                                                                self.command_namespace_locals))
         self._command = commandclass(self, arguments, kwargs, self.command_namespace_locals)
         self._command_connections[self._command] = [
             self._command.connect('return', self.on_command_return),

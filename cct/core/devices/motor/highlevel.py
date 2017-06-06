@@ -136,7 +136,9 @@ class Motor(Callbacks):
             try:
                 self._controller.disconnect(c)
             except:
-                logger.error('Error while disconnecting signal handler {} from motor controller {}.'.format(self._connection, self._controller.name))
+                logger.error(
+                    'Error while disconnecting signal handler {} from motor controller {}.'.format(self._connection,
+                                                                                                   self._controller.name))
         self._connection = []
 
     def get_limits(self):

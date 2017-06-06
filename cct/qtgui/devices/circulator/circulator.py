@@ -11,6 +11,7 @@ from ....core.devices.circulator import HaakePhoenix
 
 class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['haakephoenix']
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -53,7 +54,7 @@ class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def onStartStop(self):
         dev = self.credo.get_device('haakephoenix')
         assert isinstance(dev, HaakePhoenix)
-        if self.startStopPushButton.text()=='Start':
+        if self.startStopPushButton.text() == 'Start':
             dev.execute_command('start')
             self.startStopPushButton.setEnabled(False)
         elif self.startStopPushButton.text() == 'Stop':
@@ -63,7 +64,7 @@ class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
             # should not happen.
             assert False
 
-    def setFlagBackground(self, flag:QtWidgets.QLabel, state:bool, label:Optional[str]=None):
+    def setFlagBackground(self, flag: QtWidgets.QLabel, state: bool, label: Optional[str] = None):
         palette = flag.palette()
         assert isinstance(palette, QtGui.QPalette)
         if state is None:

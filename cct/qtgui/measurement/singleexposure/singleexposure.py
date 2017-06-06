@@ -15,8 +15,9 @@ from ....core.services.filesequence import FileSequence
 from ....core.services.interpreter import Interpreter
 from ....core.services.samples import SampleStore
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['genix', 'pilatus']
@@ -40,7 +41,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._eaconnections = []
         for c in self._samconnections:
             self.credo.services['samplestore'].disconnect(c)
-        self._samconnections=[]
+        self._samconnections = []
         super().cleanup()
 
     def setupUi(self, Form):
@@ -51,7 +52,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(fs, FileSequence)
         ea = self.credo.services['exposureanalyzer']
         assert isinstance(ea, ExposureAnalyzer)
-        sams= self.credo.services['samplestore']
+        sams = self.credo.services['samplestore']
         assert isinstance(sams, SampleStore)
         self.prefixComboBox.addItems(fs.get_prefixes())
         self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText('tst'))
@@ -63,21 +64,21 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.exposePushButton.clicked.connect(self.onExpose)
         self.adjustSize()
 
-    def onSampleListChanged(self, samplestore:SampleStore):
+    def onSampleListChanged(self, samplestore: SampleStore):
         currentsample = self.sampleNameComboBox.currentText()
         self.sampleNameComboBox.clear()
         self.sampleNameComboBox.addItems([s.title for s in samplestore.get_samples()])
         idx = self.sampleNameComboBox.findText(currentsample)
-        if idx<0:
+        if idx < 0:
             idx = self.sampleNameComboBox.findText(samplestore.get_active_name())
         self.sampleNameComboBox.setCurrentIndex(idx)
 
-    def onImage(self, ea: ExposureAnalyzer, prefix: str, fsn:int, image:np.ndarray, params:dict, mask:np.ndarray):
+    def onImage(self, ea: ExposureAnalyzer, prefix: str, fsn: int, image: np.ndarray, params: dict, mask: np.ndarray):
         logger.debug('Image received.')
         pi = PlotImage.lastinstance
         if pi is None:
-            pi=PlotImage()
-        ex=Exposure(image,None,Header(params),mask)
+            pi = PlotImage()
+        ex = Exposure(image, None, Header(params), mask)
         pi.setExposure(ex)
         pi.show()
         return False
@@ -142,7 +143,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
             if self.autoShutterCheckBox.isChecked():
                 self.executeCommand(Shutter, False)
             else:
-                self.onCmdReturn(interpreter, 'shutter',False)
+                self.onCmdReturn(interpreter, 'shutter', False)
 
     def onCmdFail(self, interpreter: Interpreter, cmdname: str, exception: Exception, traceback: str):
         self._failed = True

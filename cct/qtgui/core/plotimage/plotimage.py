@@ -23,6 +23,7 @@ def get_colormaps():
 
 class PlotImage(QtWidgets.QWidget, Ui_Form):
     lastinstance = None
+
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
         self._exposure = None
@@ -83,9 +84,9 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
              })
         m = scipy.misc.face(True)
         self._exposure = sastool.io.credo_cct.Exposure(m * 1.0,
-                                  m * 0.1,
-                                  header,
-                                  m - m.min() > 0.2 * (m.max() - m.min()))
+                                                       m * 0.1,
+                                                       header,
+                                                       m - m.min() > 0.2 * (m.max() - m.min()))
         self.replot()
 
     def setupUi(self, Form):
@@ -106,7 +107,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.figtoolbar = NavigationToolbar2QT(self.canvas, self.figureContainer)
         layout.addWidget(self.figtoolbar)
         assert isinstance(self.figtoolbar, QtWidgets.QToolBar)
-        self.showToolbarButton=QtWidgets.QToolButton(self.figtoolbar)
+        self.showToolbarButton = QtWidgets.QToolButton(self.figtoolbar)
         self.showToolbarButton.setText('Plot setup')
         self.showToolbarButton.setCheckable(True)
         self.showToolbarButton.setChecked(False)
@@ -177,16 +178,16 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             assert isinstance(ex, Exposure)
             axestype = self.axesComboBox.currentText()
             if axestype == 'abs. pixel':
-                matrix=self.exposure().intensity
+                matrix = self.exposure().intensity
                 beampos = (ex.header.beamcenterx.val, ex.header.beamcentery.val)
                 assert isinstance(self.axes, Axes)
-                self._crosshair=self.axes.plot([0, matrix.shape[1]],[beampos[1],beampos[1]],'w-',
-                                                [beampos[0], beampos[0]], [0, matrix.shape[0]], 'w-',
-                                               scalex=False, scaley=False)
+                self._crosshair = self.axes.plot([0, matrix.shape[1]], [beampos[1], beampos[1]], 'w-',
+                                                 [beampos[0], beampos[0]], [0, matrix.shape[0]], 'w-',
+                                                 scalex=False, scaley=False)
             else:
-                extent=self._image.get_extent()
-                self._crosshair=self.axes.plot(extent[0:2], [0,0], 'w-',
-                                               [0,0], extent[2:4], 'w-', scalex=False, scaley=False)
+                extent = self._image.get_extent()
+                self._crosshair = self.axes.plot(extent[0:2], [0, 0], 'w-',
+                                                 [0, 0], extent[2:4], 'w-', scalex=False, scaley=False)
         gc.collect()
 
     def replot(self):
@@ -217,7 +218,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             extent = (0, matrix.shape[1] - 1, matrix.shape[0] - 1, 0)  # left, right, bottom, top
         elif axesscale == 'rel. pixel':
             extent = (0 - beampos[0], matrix.shape[1] - 1 - beampos[0],
-                      matrix.shape[0] - 1 - beampos[1], 0 - beampos[1], )
+                      matrix.shape[0] - 1 - beampos[1], 0 - beampos[1],)
         elif axesscale == 'detector radius':
             extent = (
                 (0 - beampos[0]) * pixelsize[0],

@@ -11,23 +11,23 @@ from ....core.services.samples import SampleStore
 
 
 class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
-    required_devices = ['genix', 'pilatus', 'Motor_BeamStop_X','Motor_BeamStop_Y', 'Motor_Sample_X', 'Motor_Sample_Y']
+    required_devices = ['genix', 'pilatus', 'Motor_BeamStop_X', 'Motor_BeamStop_Y', 'Motor_Sample_X', 'Motor_Sample_Y']
     required_privilege = PRIV_BEAMSTOP
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
-        self._samplestoreconnections=[]
-        self._updating=False
+        self._samplestoreconnections = []
+        self._updating = False
         self.setupUi(self)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
-        self.model=TransmissionModel(None, self.credo)
+        self.model = TransmissionModel(None, self.credo)
         self.treeView.setModel(self.model)
         assert isinstance(self.credo, Instrument)
-        ss=self.credo.services['samplestore']
+        ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
         self._samplestoreconnections.append(
             ss.connect('list-changed', self.updateSampleComboBoxen)
@@ -36,7 +36,8 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.cleanTablePushButton.clicked.connect(self.onCleanClicked)
         self.sampleNameComboBox.currentIndexChanged.connect(self.onSampleSelected)
         self.updateSampleComboBoxen(ss)
-        self.emptyNameComboBox.setCurrentIndex(self.emptyNameComboBox.findText(self.credo.config['datareduction']['backgroundname']))
+        self.emptyNameComboBox.setCurrentIndex(
+            self.emptyNameComboBox.findText(self.credo.config['datareduction']['backgroundname']))
         self.sampleNameComboBox.setCurrentIndex(-1)
 
     def onSampleSelected(self):
@@ -46,13 +47,13 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             return
         self.model.add_sample(self.sampleNameComboBox.currentText())
         try:
-            self._updating=True
+            self._updating = True
             self.sampleNameComboBox.setCurrentIndex(-1)
         finally:
-            self._updating=False
+            self._updating = False
 
     def onStartClicked(self):
-        if self.startPushButton.text()=='Start':
+        if self.startPushButton.text() == 'Start':
             self.setBusy()
             try:
                 self.executeCommand(
@@ -66,24 +67,24 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 self.setIdle()
                 raise
         else:
-            assert self.startPushButton.text()=='Stop'
+            assert self.startPushButton.text() == 'Stop'
             self.credo.services['interpreter'].kill()
 
-    def onCmdReturn(self, interpreter:Interpreter, cmdname:str, retval):
-        assert cmdname=='transmission'
+    def onCmdReturn(self, interpreter: Interpreter, cmdname: str, retval):
+        assert cmdname == 'transmission'
         super().onCmdReturn(interpreter, cmdname, retval)
         self.setIdle()
 
-    def onCmdDetail(self, interpreter:Interpreter, cmdname:str, detail):
+    def onCmdDetail(self, interpreter: Interpreter, cmdname: str, detail):
         what, samplename, intensity = detail
-        if what=='dark':
+        if what == 'dark':
             self.model.update_dark(samplename, intensity)
         elif what == 'empty':
             self.model.update_empty(samplename, intensity)
-        elif what=='sample':
+        elif what == 'sample':
             self.model.update_sample(samplename, intensity)
         else:
-            assert what=='transmission'
+            assert what == 'transmission'
             self.model.update_transm(samplename, intensity)
         return False
 
@@ -103,9 +104,9 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.model = TransmissionModel(None, self.credo)
         self.treeView.setModel(self.model)
 
-    def updateSampleComboBoxen(self, samplestore:SampleStore):
-        self._updating=True
-        ss=self.credo.services['samplestore']
+    def updateSampleComboBoxen(self, samplestore: SampleStore):
+        self._updating = True
+        ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
         try:
             ebname = self.emptyNameComboBox.currentText()
@@ -116,10 +117,10 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.sampleNameComboBox.addItems(sorted([sam.title for sam in ss]))
             self.emptyNameComboBox.setCurrentIndex(-1)
         finally:
-            self._updating=False
+            self._updating = False
 
     def cleanup(self):
         for c in self._samplestoreconnections:
             self.credo.services['samplestore'].disconnect(c)
-        self._samplestoreconnections=[]
+        self._samplestoreconnections = []
         super().cleanup()

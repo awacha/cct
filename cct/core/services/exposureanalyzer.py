@@ -583,14 +583,17 @@ class ExposureAnalyzer(Service):
                 self.emit('datareduction-done', message['prefix'], message['fsn'], message['image'])
             elif message['type'] == 'transmdata':
                 logger.debug(
-                    'transmission data for sample {} ({}): {}'.format(message['sample'], message['what'], message['data']))
+                    'transmission data for sample {} ({}): {}'.format(message['sample'], message['what'],
+                                                                      message['data']))
                 self.emit('transmdata', message['prefix'], message['fsn'], message['sample'], message['what'],
                           message['data'])
             elif message['type'] == 'image':
-                logger.debug('New image received from exposureanalyzer backend: fsn: {}, prefix: {}'.format(message['fsn'],
-                                                                                                            message[
-                                                                                                                'prefix']))
-                self.emit('image', message['prefix'], message['fsn'], message['data'], message['param'], message['mask'])
+                logger.debug(
+                    'New image received from exposureanalyzer backend: fsn: {}, prefix: {}'.format(message['fsn'],
+                                                                                                   message[
+                                                                                                       'prefix']))
+                self.emit('image', message['prefix'], message['fsn'], message['data'], message['param'],
+                          message['mask'])
             elif message['type'] == 'telemetry':
                 self.emit('telemetry', message['telemetry'])
             elif message['type'] == 'log':
