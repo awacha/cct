@@ -9,12 +9,11 @@ from ....core.instrument.instrument import Instrument
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
 class DeviceConnections(QtWidgets.QWidget, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
-        QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo)
+        QtWidgets.QWidget.__init__(self,*args, **kwargs)
+        self.setupToolWindow(credo)
         self._connectbuttons={}
         self._disconnectbuttons={}
         self.setupUi(self)

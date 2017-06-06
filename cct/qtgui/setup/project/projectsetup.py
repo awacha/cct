@@ -11,7 +11,7 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo=credo)
+        self.setupToolWindow(credo=credo)
         self._updating_ui = False
         self._acc_connections = []
         self.setupUi(self)

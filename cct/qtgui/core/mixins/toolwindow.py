@@ -17,7 +17,8 @@ class ToolWindow(object):
     required_devices = []
     required_privilege = PRIV_LAYMAN
 
-    def __init__(self, credo, required_devices=[]):
+    def setupToolWindow(self, credo, required_devices=[]):
+        """An initialization method with a similar task as __init__()"""
         self._busy = False
         assert isinstance(self, QtWidgets.QWidget)
         try:

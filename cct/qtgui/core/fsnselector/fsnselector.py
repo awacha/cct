@@ -14,17 +14,11 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
     horizontal = False
 
     def __init__(self, *args, **kwargs):
-        logger.debug('Initializing an FSNSelector')
         credo = kwargs.pop('credo')
-        logger.debug('Got CREDO')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        logger.debug('Initialized QWidget')
-        ToolWindow.__init__(self, credo)
-        logger.debug('Initialized ToolWindow')
-        logger.debug('Running setupUi')
+        self.setupToolWindow(credo)
         self.setupUi(self)
         self._fsconnections=[]
-        logger.debug('__init__ done.')
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)

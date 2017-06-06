@@ -16,7 +16,7 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo)
+        self.setupToolWindow(credo)
         self.setupUi(self)
         self._samplestoreconnections = []
         self._updating_entries = False

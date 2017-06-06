@@ -13,7 +13,7 @@ class MotorConfig(QtWidgets.QWidget, Ui_Form, ToolWindow):
         credo = kwargs.pop('credo')
         self.motor = kwargs.pop('motor')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo, required_devices=['Motor_'+self.motor.name])
+        self.setupToolWindow(credo, required_devices=['Motor_'+self.motor.name])
         self.setupUi(self)
 
     def setupUi(self, Form):

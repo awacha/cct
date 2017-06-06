@@ -15,7 +15,7 @@ class CapillaryMeasurement(QtWidgets.QWidget,Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo=kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo)
+        self.setupToolWindow(credo)
         self._peaklines=[None, None]
         self._peakposittions=[None,None]
         self.setupUi(self)

@@ -15,7 +15,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, parent, credo):
         QtWidgets.QWidget.__init__(self, parent)
         assert isinstance(credo, Instrument)
-        ToolWindow.__init__(self, credo, required_devices=['Motor_' + m for m in credo.motors])
+        self.setupToolWindow(credo, required_devices=['Motor_' + m for m in credo.motors])
         self._updating_ui = False
         self._current_task = None
         self._samplestore_connections = []

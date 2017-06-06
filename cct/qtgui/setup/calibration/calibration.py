@@ -25,7 +25,7 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
         self._updating_ui = False
-        ToolWindow.__init__(self, credo)
+        self.setupToolWindow(credo)
         self.setupUi(self)
 
     def setupUi(self, MainWindow):

@@ -13,7 +13,7 @@ class ShutterAndBeamstop(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QDockWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo)
+        self.setupToolWindow(credo)
         self._genixconnections=[]
         self._bsxconnections=[]
         self._bsyconnections=[]

@@ -24,7 +24,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo)
+        self.setupToolWindow(credo)
         self._failed = False
         self._fsconnections = []
         self._eaconnections = []

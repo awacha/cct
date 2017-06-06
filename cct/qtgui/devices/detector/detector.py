@@ -17,7 +17,7 @@ class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         credo = kwargs.pop('credo')
         self._updating_ui=False
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo)
+        self.setupToolWindow(credo)
         self.setupUi(self)
 
     def setupUi(self, Form):

@@ -10,7 +10,7 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._updating_ui = False
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo)
+        self.setupToolWindow(credo)
         self.setupUi(self)
 
     def setupUi(self, Form):

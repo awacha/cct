@@ -15,7 +15,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo=kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo)
+        self.setupToolWindow(credo)
         self.setupUi(self)
         self.undoStack = []
         self.undoStackPointer = 0

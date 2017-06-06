@@ -12,7 +12,7 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         credo = kwargs.pop('credo')
         self.motorname = kwargs.pop('motorname')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        ToolWindow.__init__(self, credo, required_devices=['Motor_'+self.motorname])
+        self.setupToolWindow(credo, required_devices=['Motor_'+self.motorname])
         self._start_requested=False
         self.setupUi(self)
 
