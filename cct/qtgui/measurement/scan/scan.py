@@ -36,6 +36,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.stepsSpinBox.valueChanged.connect(self.recalculateStepSize)
         self.progressBar.setVisible(False)
         self.startStopPushButton.clicked.connect(self.onStartStop)
+        self.adjustSize()
 
     def onMotorSelected(self):
         if self._motor is not None:
