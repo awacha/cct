@@ -39,22 +39,8 @@ def getresourcefiles():
     return reslist
 
 
-#def update_languagespec():
-#    from cct.core.commands import Command
-#    allcommands = sorted([c.name for c in Command.allcommands()])
-#    with open('cct/resource/language-specs/cct.lang.in', 'rt', encoding='utf-8') as fin:
-#        with open('cct/resource/language-specs/cct.lang', 'wt', encoding='utf-8') as fout:
-#            for l in fin:
-#                if l.startswith('% KEYWORDS %'):
-#                    for c in allcommands:
-#                        fout.write('      <keyword>%s</keyword>\n' % c)
-#                else:
-#                    fout.write(l)
-#    print('Updated language spec. Command list:\n' + ', '.join(allcommands))
-
-
 extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
-                        ["cct/qtgui/tools/optimizegeometry/estimateworksize.pyx"],
+                        [os.path.join("cct","qtgui","tools","optimizegeometry","estimateworksize.pyx")],
                         include_dirs=[get_include()])]
 
 #extensions=[]

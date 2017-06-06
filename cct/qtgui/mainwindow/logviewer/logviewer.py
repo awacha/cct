@@ -1,3 +1,4 @@
+import gc
 import logging
 import time
 
@@ -110,6 +111,8 @@ class LogViewer(QtWidgets.QWidget, Ui_Form, logging.Handler):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         logging.Handler.__init__(self)
         self._lastrecordarrived = 0
+        self._lastrecordlevel = None
+        self._scrollerTimeout = None
         formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
         self.setFormatter(formatter)
         self.setupUi(self)
@@ -138,13 +141,23 @@ class LogViewer(QtWidgets.QWidget, Ui_Form, logging.Handler):
         self.logModel.setLevel(level)
         self.shownMessagesLabel.setText('{:d} from {:d}'.format(self.logModel.rowCount(), len(self.logModel)))
 
-    def emit(self, record):
+    def emit(self, record:logging.LogRecord):
         self.format(record)
         self.logModel.append(record)
         self.shownMessagesLabel.setText('{:d} from {:d}'.format(self.logModel.rowCount(), len(self.logModel)))
-        if self.autoscrollCheckBox.checkState() == Qt.Checked and record.levelno >= logging.INFO and (
-            time.monotonic() - self._lastrecordarrived) > 0.5:
-            self.logTreeView.scrollToBottom()
+        if self.autoscrollCheckBox.isChecked():
+            if (time.monotonic() - self._lastrecordarrived)<0.5:
+                if self._scrollerTimeout is None:
+                    self._scrollerTimeout = QtCore.QTimer.singleShot(500, self.onTimeout)
+            else:
+                self.logTreeView.scrollToBottom()
         self._lastrecordarrived = time.monotonic()
+        self._lastrecordlevel = record.levelno
         if record.levelno >= logging.WARNING:
             self.logTreeView.resizeColumnToContents(self.logModel.columnCount() - 1)
+
+    def onTimeout(self):
+        self._scrollerTimeout = None
+        gc.collect()
+        if self.autoscrollCheckBox.isChecked():
+            self.logTreeView.scrollToBottom()
