@@ -2,6 +2,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 from .motorlist import MotorModel
 from .motorview_ui import Ui_Form
+from ..motorcalibration import MotorCalibration
 from ..motorconfig import MotorConfig
 from ..movemotor import MoveMotor
 from ....core.mixins import ToolWindow
@@ -86,7 +87,8 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._popupmenu.popup(QtGui.QCursor.pos())
 
     def onCalibrateMotorRequestedFromContextMenu(self):
-        pass
+        mc = MotorCalibration(credo=self.credo, motorname=self._motor_for_popupmenu.name)
+        mc.show()
 
     def onMoveMotorRequestedFromContextMenu(self):
         mm = MoveMotor(credo=self.credo, motorname=self._motor_for_popupmenu.name)
@@ -103,8 +105,8 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self._calibrationwindows[self._motor_for_popupmenu.name].raise_()
 
     def onMotorViewLineActivated(self, index: QtCore.QModelIndex):
-        motor = self.credo.motors[sorted(self.credo.motors.keys())[index.row()]]
-        self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.findText(motor.name))
+        mm = MoveMotor(credo=self.credo, motorname=sorted(self.credo.motors.keys())[index.row()])
+        mm.show()
 
     def cleanup(self):
         for c in self._samplestore_connections:

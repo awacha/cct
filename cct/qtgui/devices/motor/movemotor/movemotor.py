@@ -22,6 +22,11 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.motorComboBox.addItems(sorted(self.credo.motors.keys()))
         self.motorComboBox.currentTextChanged.connect(self.onMotorSelected)
         self.movePushButton.clicked.connect(self.onMove)
+        self.motorComboBox.setCurrentIndex(self.motorComboBox.findText(self.motorname))
+        self.relativeCheckBox.toggled.connect(self.onRelativeChanged)
+
+    def onRelativeChanged(self):
+        self.onMotorPositionChange(self.motor(), self.motor().where())
 
     def setIdle(self):
         super().setIdle()
@@ -50,7 +55,11 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def onMove(self):
         if self.movePushButton.text() == 'Move':
             self.movePushButton.setEnabled(False)
-            self.motor().moveto()
+            self._start_requested = True
+            if self.relativeCheckBox.isChecked():
+                self.motor().moverel(self.targetDoubleSpinBox.value())
+            else:
+                self.motor().moveto(self.targetDoubleSpinBox.value())
         else:
             self.movePushButton.setEnabled(False)
             self.motor().stop()
