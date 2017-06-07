@@ -210,7 +210,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.updateActionEnabledStates()
 
     def onCredoDeviceConnected(self, credo: Instrument, device: Device):
-        pass
+        self.updateActionEnabledStates()
 
     def onCredoDeviceDisconnected(self, credo: Instrument, device: Device, expected: bool):
         self.updateActionEnabledStates()
