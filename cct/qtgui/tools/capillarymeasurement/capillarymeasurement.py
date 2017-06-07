@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -9,7 +10,10 @@ from matplotlib.figure import Figure
 
 from .capillarymeasurement_ui import Ui_Form
 from ...core.mixins import ToolWindow
+from ....core.services.samples import SampleStore
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -17,7 +21,9 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self._peaklines = [None, None]
-        self._peakposittions = [None, None]
+        self._peakpositions = [None, None]
+        self._samplestoreconnections = []
+        self._updating = False
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -41,6 +47,17 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         scanfile = self.credo.services['filesequence'].get_scanfile()
         self.scanFileNameLineEdit.setText(scanfile)
         self.loadScanFile()
+        self._samplestoreconnections=[self.credo.services['samplestore'].connect('list-changed', self.onSampleListChanged)]
+
+    def onSampleListChanged(self, ss:SampleStore):
+        self._updating = True
+        try:
+            samplename = self.sampleNameComboBox.currentText()
+            self.sampleNameComboBox.clear()
+            self.sampleNameComboBox.addItems(sorted([s.title for s in ss.get_samples()]))
+            self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(samplename))
+        finally:
+            self._updating = False
 
     def filename(self):
         return self.scanFileNameLineEdit.text()
@@ -123,7 +140,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.axes.clear()
         self.canvas.draw()
         self._peaklines = []
-        self._peakposittions = []
+        self._peakpositions = []
 
     def plotSignal(self):
         try:
@@ -151,7 +168,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         pos, hwhm, baseline, amplitude, stat, fitted = sastool.misc.basicfit.findpeak_single(x, signal, None,
                                                                                              return_stat=True,
                                                                                              return_x=retx)
-        self._peakposittions[sign > 0] = pos
+        self._peakpositions[sign > 0] = pos
         if self._peaklines[sign > 0] is not None:
             self._peaklines[sign > 0].remove()
         self._peaklines[sign > 0] = self.axes.plot(retx, fitted, 'r-')[0]
@@ -170,7 +187,22 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         return self.fitPeak(+1)
 
     def updateCenter(self):
-        pass
+        ss = self.credo.services['samplestore']
+        assert isinstance(ss, SampleStore)
+        sample = ss.get_sample(self.sampleNameComboBox.currentText())
+        if self.scan.motor.endswith('X'):
+            sample.positionx = 0.5*(self._peakpositions[0]+self._peakpositions[1])
+            logger.info('X position updated for sample {} to {}'.format(sample.title, sample.positionx))
+        else:
+            assert self.scan.motor.endswith('Y')
+            sample.positiony = 0.5*(self._peakpositions[0]+self._peakpositions[1])
+            logger.info('Y position updated for sample {} to {}'.format(sample.title, sample.positiony))
+        ss.set_sample(sample.title, sample)
 
     def updateThickness(self):
-        pass
+        ss = self.credo.services['samplestore']
+        assert isinstance(ss, SampleStore)
+        sample = ss.get_sample(self.sampleNameComboBox.currentText())
+        sample.thickness = abs(self._peakpositions[0]-self._peakpositions[1])*0.1
+        logger.info('Thickness updated for sample {} to {} cm'.format(sample.title, sample.thickness))
+        ss.set_sample(sample.title, sample)
