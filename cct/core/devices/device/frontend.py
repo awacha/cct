@@ -188,6 +188,7 @@ class Device(Callbacks):
         self.configdir = configdir
         # this is the parameter logfile. Note that this is another kind of logging, not related to the logging module.
         self.logfile = os.path.join(logdir, instancename + '.log')
+        self.frontendqueue_warn_state = False
         # some devices keep a copy of the configuration dictionary
         if configdict is not None:
             self.config = configdict
@@ -323,10 +324,14 @@ class Device(Callbacks):
                 try:
                     message = self._queue_to_frontend.get_nowait()
                     assert isinstance(message, Message)
-                    if (self._queue_to_frontend.qsize() > self.frontendqueue_warn_length) and self.ready:
+                    if ((self._queue_to_frontend.qsize() > self.frontendqueue_warn_length) and self.ready and not self.frontendqueue_warn_state):
                         logger.warning(
                             'Too many messages (exactly {}) are waiting in the front-end queue for device {}.'.format(
                                 self._queue_to_frontend.qsize(), self.name))
+                        self.frontendqueue_warn_state=True
+                    elif (self._queue_to_frontend.qsize() <0.75*self.frontendqueue_warn_length) and self.frontendqueue_warn_state:
+                        logger.info('Number of messages waiting in the front-end queue for device {} is now below the limit.'.format(self.name))
+                        self.frontendqueue_warn_state=False
                 except queue.Empty:
                     break
                 if message['type'] == 'exited':
