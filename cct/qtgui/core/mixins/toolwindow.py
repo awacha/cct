@@ -2,7 +2,7 @@ import logging
 import weakref
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 from ....core.instrument.instrument import Instrument
 from ....core.services.interpreter import Interpreter
 from ....core.commands import Command
