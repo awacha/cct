@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>motorcalibration.svg</file>
     <file>motorconfig.svg</file>
     <file>project.svg</file>
     <file>beamshutter.svg</file>
