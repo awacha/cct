@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>989</width>
+    <height>482</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Motor autocalibration</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../../resource/icons/icons.qrc">
+    <normaloff>:/icons/motorcalibration.svg</normaloff>:/icons/motorcalibration.svg</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Warning! Ensure that the selected motors are free to move between the physical limits, and at least the left limit switch is enabled!&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Each motor is calibrated in the following way:&lt;/p&gt;&lt;p&gt;1. The current motor position is calibrated to be the right limit (no motor movement).&lt;/p&gt;&lt;p&gt;2. Move the motor left until it hits the left limit switch.&lt;/p&gt;&lt;p&gt;3. Move the motor right by the given buffering distance (to compensate for slight changes in the switching point of the mechanical switch).&lt;/p&gt;&lt;p&gt;4. Calibrate this point to the left limit (no motor movement).&lt;/p&gt;&lt;p&gt;5. Move back to the starting point.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="1">
+      <widget class="QComboBox" name="addMotorComboBox"/>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Add this motor:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Buffer distance:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QDoubleSpinBox" name="bufferDistanceDoubleSpinBox">
+       <property name="decimals">
+        <number>4</number>
+       </property>
+       <property name="maximum">
+        <double>100.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>0.100000000000000</double>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QTreeView" name="motorTreeView">
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="uniformRowHeights">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="removeMotorPushButton">
+       <property name="text">
+        <string>Remove motor</string>
+       </property>
+       <property name="icon">
+        <iconset theme="list-remove">
+         <normaloff>.</normaloff>.</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="executePushButton">
+       <property name="text">
+        <string>Execute</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../../../resource/icons/icons.qrc">
+         <normaloff>:/icons/motorcalibration.svg</normaloff>:/icons/motorcalibration.svg</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../../../../resource/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>

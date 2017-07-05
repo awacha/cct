@@ -582,9 +582,16 @@
     <property name="title">
      <string>&amp;Devices</string>
     </property>
+    <widget class="QMenu" name="menuMotors">
+     <property name="title">
+      <string>Motors</string>
+     </property>
+     <addaction name="actionMotors"/>
+     <addaction name="actionCalibrateMotors"/>
+    </widget>
     <addaction name="actionX_ray_source"/>
     <addaction name="actionDetector"/>
-    <addaction name="actionMotors"/>
+    <addaction name="menuMotors"/>
     <addaction name="actionVacuum_gauge"/>
     <addaction name="actionTemperature_stage"/>
     <addaction name="separator"/>
@@ -799,7 +806,7 @@
      <normaloff>:/icons/motor.svg</normaloff>:/icons/motor.svg</iconset>
    </property>
    <property name="text">
-    <string>Motors</string>
+    <string>Overview</string>
    </property>
    <property name="toolTip">
     <string>Control the motors</string>
@@ -1055,6 +1062,18 @@
    </property>
    <property name="toolTip">
     <string>About Qt</string>
+   </property>
+  </action>
+  <action name="actionCalibrateMotors">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/motorcalibration.svg</normaloff>:/icons/motorcalibration.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Calibrate</string>
+   </property>
+   <property name="toolTip">
+    <string>Calibrate motors</string>
    </property>
   </action>
  </widget>

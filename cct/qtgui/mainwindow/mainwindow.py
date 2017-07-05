@@ -33,6 +33,7 @@ from ..view.exposureview import ExposureView
 from ..devices.xray_source import XraySource
 from ..devices.detector import Detector
 from ..devices.motor import MotorOverview
+from ..devices.motor.motorautocalibration import MotorAutoCalibration
 from ..devices.circulator import TemperatureController
 from ..devices.vacuum import VacuumGauge
 from ..devices.connections import DeviceConnections
@@ -84,6 +85,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionUser_management: UserManager,
             self.actionEdit_configuration: ConfigEditor,
             self.actionDevice_connections: DeviceConnections,
+            self.actionCalibrateMotors: MotorAutoCalibration,
         }
         self._dockwidgets = {}
 
