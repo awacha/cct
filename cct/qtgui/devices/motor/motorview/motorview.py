@@ -10,6 +10,7 @@ from .....core.devices import DeviceError
 from .....core.devices.motor import Motor
 from .....core.instrument.instrument import Instrument
 from .....core.services.samples import SampleStore, Sample
+from .....core.utils.inhibitor import Inhibitor
 
 
 class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -17,7 +18,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         QtWidgets.QWidget.__init__(self, parent)
         assert isinstance(credo, Instrument)
         self.setupToolWindow(credo, required_devices=['Motor_' + m for m in credo.motors])
-        self._updating_ui = False
+        self._updating_ui = Inhibitor()
         self._current_task = None
         self._samplestore_connections = []
         self._popupmenu = None
@@ -115,16 +116,13 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         return super().cleanup()
 
     def onSampleListChanged(self):
-        self._updating_ui = True
-        lastsample = self.sampleNameComboBox.currentText()
-        try:
+        with self._updating_ui:
+            lastsample = self.sampleNameComboBox.currentText()
             ss = self.credo.services['samplestore']
             assert isinstance(ss, SampleStore)
             self.sampleNameComboBox.clear()
             self.sampleNameComboBox.addItems(sorted([s.title for s in ss.get_samples()]))
             self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(lastsample))
-        finally:
-            self._updating_ui = False
 
     def onMoveToSample(self):
         self._current_task = 'movetosample'
@@ -264,8 +262,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self._current_task = None
 
     def updateBeamstopIndicator(self):
-        self._updating_ui = True
-        try:
+        with self._updating_ui:
             assert isinstance(self.credo, Instrument)
             if self.credo.get_beamstop_state() == 'in':
                 self.beamstopControlComboBox.setCurrentIndex(0)
@@ -273,8 +270,6 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 self.beamstopControlComboBox.setCurrentIndex(1)
             else:
                 self.beamstopControlComboBox.setCurrentIndex(-1)
-        finally:
-            self._updating_ui = False
 
     def onMotorPositionChange(self, motor: Motor, newposition: float):
         pass

@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 from .capillarymeasurement_ui import Ui_Form
 from ...core.mixins import ToolWindow
 from ....core.services.samples import SampleStore
+from ....core.utils.inhibitor import Inhibitor
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,7 +24,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._peaklines = [None, None]
         self._peakpositions = [None, None]
         self._samplestoreconnections = []
-        self._updating = False
+        self._updating = Inhibitor()
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -50,14 +51,11 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._samplestoreconnections=[self.credo.services['samplestore'].connect('list-changed', self.onSampleListChanged)]
 
     def onSampleListChanged(self, ss:SampleStore):
-        self._updating = True
-        try:
+        with self._updating:
             samplename = self.sampleNameComboBox.currentText()
             self.sampleNameComboBox.clear()
             self.sampleNameComboBox.addItems(sorted([s.title for s in ss.get_samples()]))
             self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(samplename))
-        finally:
-            self._updating = False
 
     def filename(self):
         return self.scanFileNameLineEdit.text()

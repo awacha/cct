@@ -6,6 +6,7 @@ from .resourceusage_ui import Ui_Form
 from .telemetrymodel import TelemetryModel
 from ...core.mixins import ToolWindow
 from ....core.services.telemetry import TelemetryManager, TelemetryInfo
+from ....core.utils.inhibitor import Inhibitor
 
 
 class ResourceUsage(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -14,7 +15,7 @@ class ResourceUsage(QtWidgets.QWidget, Ui_Form, ToolWindow):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self._telemetry_connections = []
-        self._updating = False
+        self._updating = Inhibitor()
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -45,16 +46,13 @@ class ResourceUsage(QtWidgets.QWidget, Ui_Form, ToolWindow):
         units_available = ['-- overall --'] + sorted(telemetrymanager.keys())
         units_known = [self.comboBox.itemText(i) for i in range(self.comboBox.count())]
         if units_available != units_known:
-            self._updating = True
-            try:
+            with self._updating:
                 selected_unit = self.comboBox.currentText()
                 self.comboBox.clear()
                 self.comboBox.addItems(units_available)
                 self.comboBox.setCurrentIndex(self.comboBox.findText(selected_unit))
                 if not self.comboBox.currentText():
                     self.comboBox.setCurrentIndex(0)
-            finally:
-                self._updating = False
         if self.comboBox.currentText() == unit:
             self.model.update_telemetry(tm)
         self.treeView.resizeColumnToContents(0)

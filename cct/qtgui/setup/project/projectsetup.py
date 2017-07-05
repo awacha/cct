@@ -4,6 +4,7 @@ from .projectsetup_ui import Ui_Form
 from ...core.mixins import ToolWindow
 from ....core.instrument.privileges import PRIV_PROJECTMAN
 from ....core.services.accounting import Accounting
+from ....core.utils.inhibitor import Inhibitor
 
 
 class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -13,7 +14,7 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo=credo)
-        self._updating_ui = False
+        self._updating_ui = Inhibitor()
         self._acc_connections = []
         self.setupUi(self)
 
@@ -88,52 +89,45 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.onProjectSelected()
 
     def onRenameProject(self):
-        self._updating_ui = True
-        try:
+        with self._updating_ui:
+            self.renamePushButton.setEnabled(False)
             acc = self.credo.services['accounting']
             assert isinstance(acc, Accounting)
             selected = self.selectedProject()
             newname = self.projectIDLineEdit.text()
             acc.rename_project(selected, newname)
             self.selectProject(newname)
-        finally:
-            self._updating_ui = False
-            self.renamePushButton.setEnabled(False)
 
     def selectProject(self, projectid):
         self.listWidget.findItems(projectid, QtCore.Qt.MatchExactly)[0].setSelected(True)
 
     def onProjectChanged(self, acc: Accounting):
-        self._updating_ui = True
-        try:
-            selected = self.selectedProject()
-            self.listWidget.clear()
-            self.listWidget.addItems(sorted(acc.get_projectids()))
-            self.selectProject(selected)
-        except IndexError:
-            return
-        finally:
-            self._updating_ui = False
+        with self._updating_ui:
+            try:
+                selected = self.selectedProject()
+                self.listWidget.clear()
+                self.listWidget.addItems(sorted(acc.get_projectids()))
+                self.selectProject(selected)
+            except IndexError:
+                return
 
     def selectedProject(self):
         return self.listWidget.selectedItems()[0].data(QtCore.Qt.DisplayRole)
 
     def onProjectSelected(self):
-        self._updating_ui = True
-        try:
-            name = self.selectedProject()
-            acc = self.credo.services['accounting']
-            assert isinstance(acc, Accounting)
-            prj = acc.get_project(name)
-            self.projectIDLineEdit.setText(prj.projectid)
-            self.projectTitleLineEdit.setText(prj.projectname)
-            self.proposerLineEdit.setText(prj.proposer)
-            self.removePushButton.setEnabled(True)
-        except IndexError:
-            self.projectIDLineEdit.setText('')
-            self.projectTitleLineEdit.setText('')
-            self.proposerLineEdit.setText('')
-            self.removePushButton.setEnabled(True)
-        finally:
-            self.updatePushButton.setEnabled(False)
-            self._updating_ui = False
+        with self._updating_ui:
+            try:
+                self.updatePushButton.setEnabled(False)
+                name = self.selectedProject()
+                acc = self.credo.services['accounting']
+                assert isinstance(acc, Accounting)
+                prj = acc.get_project(name)
+                self.projectIDLineEdit.setText(prj.projectid)
+                self.projectTitleLineEdit.setText(prj.projectname)
+                self.proposerLineEdit.setText(prj.proposer)
+                self.removePushButton.setEnabled(True)
+            except IndexError:
+                self.projectIDLineEdit.setText('')
+                self.projectTitleLineEdit.setText('')
+                self.proposerLineEdit.setText('')
+                self.removePushButton.setEnabled(True)

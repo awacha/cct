@@ -8,6 +8,7 @@ from ....core.instrument.instrument import Instrument
 from ....core.instrument.privileges import PRIV_BEAMSTOP
 from ....core.services.interpreter import Interpreter
 from ....core.services.samples import SampleStore
+from ....core.utils.inhibitor import Inhibitor
 
 
 class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -19,7 +20,7 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self._samplestoreconnections = []
-        self._updating = False
+        self._updating = Inhibitor()
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -46,11 +47,8 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if not self.sampleNameComboBox.currentText():
             return
         self.model.add_sample(self.sampleNameComboBox.currentText())
-        try:
-            self._updating = True
+        with self._updating:
             self.sampleNameComboBox.setCurrentIndex(-1)
-        finally:
-            self._updating = False
 
     def onStartClicked(self):
         if self.startPushButton.text() == 'Start':
@@ -105,10 +103,9 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.treeView.setModel(self.model)
 
     def updateSampleComboBoxen(self, samplestore: SampleStore):
-        self._updating = True
-        ss = self.credo.services['samplestore']
-        assert isinstance(ss, SampleStore)
-        try:
+        with self._updating:
+            ss = self.credo.services['samplestore']
+            assert isinstance(ss, SampleStore)
             ebname = self.emptyNameComboBox.currentText()
             self.emptyNameComboBox.clear()
             self.emptyNameComboBox.addItems(sorted([sam.title for sam in ss]))
@@ -116,8 +113,6 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.sampleNameComboBox.clear()
             self.sampleNameComboBox.addItems(sorted([sam.title for sam in ss]))
             self.emptyNameComboBox.setCurrentIndex(-1)
-        finally:
-            self._updating = False
 
     def cleanup(self):
         for c in self._samplestoreconnections:

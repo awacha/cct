@@ -6,6 +6,7 @@ from PyQt5 import QtWidgets, QtGui
 from .xraysource_ui import Ui_Form
 from ...core.mixins import ToolWindow
 from ....core.devices import GeniX, Device, Motor
+from ....core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -16,7 +17,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
-        self._updating_ui = False
+        self._updating_ui = Inhibitor()
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self.setupUi(self)
@@ -115,8 +116,7 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
         flag.setAutoFillBackground(True)
 
     def onDeviceVariableChange(self, device: Union[Device, Motor], variablename: str, newvalue):
-        self._updating_ui = True
-        try:
+        with self._updating_ui:
             assert isinstance(device, GeniX)
             if variablename == 'ht':
                 self.voltageLcdNumber.display(newvalue)
@@ -248,5 +248,3 @@ class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):
                     self.shutterPushButton.setEnabled(device.get_variable('interlock'))
                     self.standbyPushButton.setEnabled(False)
                     self.fullPowerPushButton.setEnabled(False)
-        finally:
-            self._updating_ui = False

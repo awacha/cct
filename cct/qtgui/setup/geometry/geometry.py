@@ -3,11 +3,12 @@ from PyQt5 import QtWidgets
 from .geometry_ui import Ui_Form
 from ...core.mixins import ToolWindow
 from ....core.instrument.instrument import Instrument
+from ....core.utils.inhibitor import Inhibitor
 
 
 class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
-        self._updating_ui = False
+        self._updating_ui = Inhibitor()
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
@@ -28,13 +29,12 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def updateUiFromConfig(self, credo: Instrument):
         super().updateUiFromConfig(credo)
-        self._updating_ui = True
 
         def updatespinbox(spinbox, value):
             if spinbox.value() != value:
                 spinbox.setValue(value)
 
-        try:
+        with self._updating_ui:
             updatespinbox(self.l0DoubleSpinBox, credo.config['geometry']['dist_source_ph1'])
             updatespinbox(self.l1DoubleSpinBox, credo.config['geometry']['dist_ph1_ph2'])
             updatespinbox(self.l2DoubleSpinBox, credo.config['geometry']['dist_ph2_ph3'])
@@ -54,8 +54,6 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.maskFileNameLineEdit.setText(credo.config['geometry']['mask'])
             if self.descriptionPlainTextEdit.toPlainText() != credo.config['geometry']['description']:
                 self.descriptionPlainTextEdit.setPlainText(credo.config['geometry']['description'])
-        finally:
-            self._updating_ui = False
 
     def onBrowseMask(self):
         filename, filter = QtWidgets.QFileDialog.getOpenFileName(

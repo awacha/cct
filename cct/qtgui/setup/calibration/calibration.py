@@ -18,13 +18,14 @@ from ...core.mixins import ToolWindow
 from ...core.plotcurve import PlotCurve
 from ...core.plotimage import PlotImage
 from ....core.instrument.instrument import Instrument
+from ....core.utils.inhibitor import Inhibitor
 
 
 class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
-        self._updating_ui = False
+        self._updating_ui = Inhibitor()
         self.setupToolWindow(credo)
         self.setupUi(self)
 
@@ -117,12 +118,9 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def onCalibrantChanged(self):
         calibrant = self.calibrantComboBox.currentText()
-        self._updating_ui = True
-        try:
+        with self._updating_ui:
             self.peakComboBox.clear()
             self.peakComboBox.addItems(sorted(self.credo.config['calibrants'][calibrant]))
-        finally:
-            self._updating_ui = False
         self.peakComboBox.setCurrentIndex(0)
         self.onPeakChosen()
 
@@ -207,16 +205,13 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                                 color='blue', ls='-', marker='.')
         self.plotCurve.setXLabel('Pixel coordinate')
         self.plotCurve.setYLabel('Total counts')
-        self._updating_ui = True
-        try:
+        with self._updating_ui:
             self.beamXDoubleSpinBox.setValue(exposure.header.beamcenterx.val)
             self.beamXErrDoubleSpinBox.setValue(exposure.header.beamcenterx.err)
             self.beamYDoubleSpinBox.setValue(exposure.header.beamcentery.val)
             self.beamYErrDoubleSpinBox.setValue(exposure.header.beamcentery.err)
             self.sdDistDoubleSpinBox.setValue(exposure.header.distance.val)
             self.sdDistErrDoubleSpinBox.setValue(exposure.header.distance.err)
-        finally:
-            self._updating_ui = False
 
     def newBeamPosFound(self, posx, posy):
         exposure = self.plotImage.exposure()

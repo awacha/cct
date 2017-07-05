@@ -10,7 +10,7 @@ logger.setLevel(logging.DEBUG)
 from .sampleeditor_ui import Ui_Form
 from ...core.mixins import ToolWindow
 from ....core.services.samples import Sample, SampleStore
-
+from ....core.utils.inhibitor import Inhibitor
 
 class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -19,7 +19,7 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.setupToolWindow(credo)
         self.setupUi(self)
         self._samplestoreconnections = []
-        self._updating_entries = False
+        self._updating_entries = Inhibitor()
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
@@ -222,8 +222,7 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             if spinbox.value() != value:
                 spinbox.setValue(value)
 
-        try:
-            self._updating_entries = True
+        with self._updating_entries:
             sample = self.credo.services['samplestore'].get_sample(samplename)
             assert isinstance(sample, Sample)
             self.sampleNameLineEdit.setText(sample.title)
@@ -244,8 +243,6 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             updatespinbox(self.transmissionValDoubleSpinBox, sample.transmission.val)
             updatespinbox(self.transmissionErrDoubleSpinBox, sample.transmission.err)
             self.calendarWidget.setSelectedDate(sample.preparetime.date())
-        finally:
-            self._updating_entries = False
 
     def onSampleListChanged(self, samplestore: SampleStore):
         logger.debug('Sample list changed. Selected items: {}'.format(self.listWidget.selectedItems()))

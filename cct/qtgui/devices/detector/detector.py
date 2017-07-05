@@ -6,6 +6,7 @@ from PyQt5 import QtWidgets, QtGui
 from .detector_ui import Ui_Form
 from ...core.mixins import ToolWindow
 from ....core.devices import Pilatus, Device, Motor
+from ....core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -16,7 +17,7 @@ class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
-        self._updating_ui = False
+        self._updating_ui = Inhibitor()
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self.setupUi(self)
@@ -70,8 +71,7 @@ class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 raise ValueError(self.gainComboBox.currentText())
 
     def onDeviceVariableChange(self, device: Union[Device, Motor], variablename: str, newvalue):
-        self._updating_ui = True
-        try:
+        with self._updating_ui:
             assert isinstance(device, Pilatus)
             if variablename == 'gain':
                 self.gainLabel.setText(newvalue)
@@ -153,5 +153,3 @@ class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):
                     self.thresholdSpinBox.setEnabled(True)
                     self.gainComboBox.setEnabled(True)
                     self.trimPushButton.setEnabled(True)
-        finally:
-            self._updating_ui = False

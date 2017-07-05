@@ -16,7 +16,6 @@ class ConfigEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self._editorwidget = None
-        self._updating = False
         self.setupUi(self)
 
     def setupUi(self, Form):
