@@ -55,6 +55,7 @@ class MotorConfig(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 widget.toggled.connect(self.onWidgetChanged)
             else:
                 raise TypeError(type(widget))
+        self.adjustSize()
 
     def onWidgetChanged(self):
         pal = self.sender().palette()

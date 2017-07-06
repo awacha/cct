@@ -33,6 +33,7 @@ class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(pilatus.get_variable('gain') + 'G'))
         self.onGainChanged()
         self.thresholdSpinBox.setValue(int(pilatus.get_variable('threshold')))
+        self.adjustSize()
 
     def setFlagBackground(self, flag: QtWidgets.QLabel, state: str):
         palette = flag.palette()
