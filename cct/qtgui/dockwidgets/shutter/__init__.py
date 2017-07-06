@@ -1,0 +1,1 @@
+from .shutter import ShutterDockWidget
