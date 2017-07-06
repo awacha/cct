@@ -9,16 +9,21 @@ from .....core.instrument.instrument import Instrument
 class MotorAutoCalibrationModel(QtCore.QAbstractItemModel):
     # columns: name, position, left limit, right limit, pos before, pos after, delta
     def __init__(self, credo:Instrument):
+        super().__init__()
         self.credo = credo
         self._rows = []
 
     def columnCount(self, parent: QtCore.QModelIndex = ...):
+        if not isinstance(parent, QtCore.QModelIndex):
+            parent = QtCore.QModelIndex()
         if not parent.isValid():
             return 7
         else:
             return 0
 
     def rowCount(self, parent: QtCore.QModelIndex = ...):
+        if not isinstance(parent, QtCore.QModelIndex):
+            parent = QtCore.QModelIndex()
         if not parent.isValid():
             return len(self._rows)
         else:
@@ -85,6 +90,8 @@ class MotorAutoCalibrationModel(QtCore.QAbstractItemModel):
             return None
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...):
+        if not isinstance(parent, QtCore.QModelIndex):
+            parent = QtCore.QModelIndex()
         if not parent.isValid():
             return self.createIndex(row, column, None)
         else:
@@ -94,7 +101,7 @@ class MotorAutoCalibrationModel(QtCore.QAbstractItemModel):
         return QtCore.QModelIndex()
 
     def flags(self, index: QtCore.QModelIndex):
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled
+        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
         if orientation == QtCore.Qt.Horizontal and role==QtCore.Qt.DisplayRole:
@@ -103,6 +110,8 @@ class MotorAutoCalibrationModel(QtCore.QAbstractItemModel):
             return None
 
     def removeRow(self, row: int, parent: QtCore.QModelIndex = ...):
+        if not isinstance(parent, QtCore.QModelIndex):
+            parent = QtCore.QModelIndex()
         if parent.isValid():
             return None
         else:
