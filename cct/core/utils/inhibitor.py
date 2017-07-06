@@ -14,7 +14,7 @@ class Inhibitor(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert self._inhibited >= 1
         self._inhibited -= 1
-        if self._inhibited == 0:
+        if (self._inhibited == 0) and (self.callback is not None):
             self.callback()
 
     @property
