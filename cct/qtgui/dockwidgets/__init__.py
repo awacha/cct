@@ -1,4 +1,5 @@
 from .accounting import Accounting
+from .beamstop import BeamStopDockWidget
 from .fsncounter import FSNCounter
 from .resourceconsumption import ResourceConsumption
-from .shutterandbeamstop import ShutterAndBeamstop
+from .shutter import ShutterDockWidget

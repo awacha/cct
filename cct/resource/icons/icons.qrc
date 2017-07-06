@@ -4,6 +4,8 @@
     <file>motorconfig.svg</file>
     <file>project.svg</file>
     <file>beamshutter.svg</file>
+    <file>beamshutter_closed.svg</file>
+    <file>beamshutter_open.svg</file>
     <file>beamstop-in.svg</file>
     <file>beamstop-inconsistent.svg</file>
     <file>beamstop-out.svg</file>

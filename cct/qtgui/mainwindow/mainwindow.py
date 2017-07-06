@@ -58,8 +58,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._dockwidgetinfo = {
             self.actionAccounting: dockwidgets.Accounting,
             self.actionFSN_counters: dockwidgets.FSNCounter,
-            self.actionShutter_and_beamstop: dockwidgets.ShutterAndBeamstop,
+            self.actionShutter: dockwidgets.ShutterDockWidget,
             self.actionResource_usage: dockwidgets.ResourceConsumption,
+            self.actionBeamstop: dockwidgets.BeamStopDockWidget,
         }
         self._action_to_windowclass = {
             self.actionSample_editor: SampleEditor,
@@ -104,11 +105,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         for record in CollectingHandler.instance.collected:
             self.logViewer.emit(record)
         logging.root.removeHandler(CollectingHandler.instance)
-        for action in [self.actionAccounting, self.actionFSN_counters, self.actionShutter_and_beamstop,
-                       self.actionResource_usage]:
-            action.setChecked(False)
-            action.toggled.connect(self.showHideDockWidget)
-            action.toggle()
         assert isinstance(self.credo, Instrument)
         self._credo_connections = [
             self.credo.connect('shutdown', self.onCredoShutdown),
@@ -126,14 +122,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             ip.connect('cmd-message', self.onCmdMessage),
             ip.connect('idle-changed', self.onInterpreterIdleChanged)
         ]
-        acc = self.credo.services['accounting']
-        assert isinstance(acc, Accounting)
-        self._accounting_connections = [
-            acc.connect('privlevel-changed', lambda *args: self.updateActionEnabledStates())]
         self.setAttribute(QtCore.Qt.WA_QuitOnClose, True)
         self.progressBar.hide()
         if self.credo.online:
             self.credo.connect_devices()
+        for action in [self.actionAccounting, self.actionFSN_counters, self.actionShutter,
+                       self.actionBeamstop, self.actionResource_usage]:
+            action.setChecked(False)
+            action.toggled.connect(self.showHideDockWidget)
+            action.toggle()
+        acc = self.credo.services['accounting']
+        assert isinstance(acc, Accounting)
+        self._accounting_connections = [
+            acc.connect('privlevel-changed', lambda *args: self.updateActionEnabledStates())]
         self.updateActionEnabledStates()
         self.executePushButton.clicked.connect(self.onExecuteCommandLine)
         self.commandLineEdit.returnPressed.connect(self.onExecuteCommandLine)
@@ -226,7 +227,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self._dockwidgets[action].destroyed.disconnect(action.setChecked)
                 self._dockwidgets[action].close()
                 del self._dockwidgets[action]
-            except RuntimeError:
+            except (RuntimeError, TypeError):
                 del self._dockwidgets[action]
             except KeyError:
                 pass
