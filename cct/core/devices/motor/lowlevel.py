@@ -562,11 +562,12 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                             self.properties[side + 'switchstatus$' + str(motor)] and
                             self.properties[side + 'switchenable$' + str(motor)]):
                         self.logger.error('Cannot start motor {:d}: {} limit switch active'.format(motor, side))
-                        raise DeviceError('Cannot move motor {:d} to the right: limit switch active'.format(motor),
+                        raise DeviceError('Cannot move motor {:d} to the {}: limit switch active'.format(motor, side),
                                           '_status$' + str(motor))
                 # If we survived, then we need and can move. Issue the command.
+                absposraw = self._convert_pos_to_raw(abspos, motor)
                 posraw = self._convert_pos_to_raw(pos, motor)
-                self.on_motor_start(motor, self.properties['actualpositionraw$' + str(motor)], pos, posraw)
+                self.on_motor_start(motor, self.properties['actualpositionraw$' + str(motor)], abspos, absposraw)
                 self.send_tmcl_command(4, int(commandname == 'moverel'), motor, posraw)
                 self.logger.debug('Issued move command.')
             except Exception as exc:
@@ -596,7 +597,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
             motor_idx = None
         try:
             if variable.startswith('targetposition$'):
-                assert isinstance(value, float)
+                assert isinstance(value, (float, int))
                 self.set_variable('targetpositionraw${:d}'.format(motor_idx),
                                   self._convert_pos_to_raw(value, motor_idx))
             elif variable.startswith('targetpositionraw$'):
@@ -604,7 +605,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                 self.send_tmcl_command(
                     5, 0, motor_idx, value)
             elif variable.startswith('actualposition$'):
-                assert isinstance(value, float)
+                assert isinstance(value, (float,int))
                 self.set_variable('actualpositionraw${:d}'.format(motor_idx),
                                   self._convert_pos_to_raw(value, motor_idx))
             elif variable.startswith('actualpositionraw$'):
@@ -613,21 +614,21 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                     5, 1, motor_idx, value)
             # TODO: make all setters use raw setters as the above two.
             elif variable.startswith('targetspeed$'):
-                assert isinstance(value, float)
+                assert isinstance(value, (float, int))
                 self.set_variable('targetspeedraw${:d}'.format(motor_idx),
                                   self._convert_speed_to_raw(value, motor_idx))
             elif variable.startswith('targetspeedraw$'):
                 self.send_tmcl_command(
                     5, 2, motor_idx, value)
             elif variable.startswith('actualspeed$'):
-                assert isinstance(value, float)
+                assert isinstance(value, (float, int))
                 self.set_variable('actualspeedraw${:d}'.format(motor_idx),
                                   self._convert_speed_to_raw(value, motor_idx))
             elif variable.startswith('actualspeedraw$'):
                 self.send_tmcl_command(
                     5, 3, motor_idx, value)
             elif variable.startswith('maxspeed$'):
-                assert isinstance(value, float)
+                assert isinstance(value, (float, int))
                 self.set_variable('maxspeedraw${:d}'.format(motor_idx),
                                   self._convert_speed_to_raw(value, motor_idx))
             elif variable.startswith('maxspeedraw$'):
@@ -636,7 +637,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                 self.send_tmcl_command(
                     7, 4, motor_idx, 0)  # issue a STAP command as well
             elif variable.startswith('maxacceleration$'):
-                assert isinstance(value, float)
+                assert isinstance(value, (float, int))
                 self.set_variable('maxaccelerationraw${:d}'.format(motor_idx),
                                   self._convert_accel_to_raw(value, motor_idx))
             elif variable.startswith('maxaccelerationraw$'):
@@ -645,14 +646,14 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                 self.send_tmcl_command(
                     7, 5, motor_idx, 0)  # issue a STAP command as well
             elif variable.startswith('maxcurrent$'):
-                assert isinstance(value, float)
+                assert isinstance(value, (float, int))
                 self.set_variable('maxcurrentraw${:d}'.format(motor_idx),
                                   self._convert_current_to_raw(value))
             elif variable.startswith('maxcurrentraw$'):
                 self.send_tmcl_command(
                     5, 6, motor_idx, value)
             elif variable.startswith('standbycurrent$'):
-                assert isinstance(value, float)
+                assert isinstance(value, (float, int))
                 self.set_variable('standbycurrentraw${:d}'.format(motor_idx),
                                   self._convert_current_to_raw(value))
             elif variable.startswith('standbycurrentraw$'):
