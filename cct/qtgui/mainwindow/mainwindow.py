@@ -38,6 +38,7 @@ from ..devices.circulator import TemperatureController
 from ..devices.vacuum import VacuumGauge
 from ..devices.connections import DeviceConnections
 from ..diagnostics.resourceusage import ResourceUsage
+from ..tools.samplepositioncheck import SamplePositionChecker
 from .logviewer import LogViewer
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
@@ -87,6 +88,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionEdit_configuration: ConfigEditor,
             self.actionDevice_connections: DeviceConnections,
             self.actionCalibrateMotors: MotorAutoCalibration,
+            self.actionSamplePositionChecker: SamplePositionChecker,
         }
         self._dockwidgets = {}
 
@@ -234,6 +236,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             assert action not in self._dockwidgets
             cls = [self._dockwidgetinfo[a] for a in self._dockwidgetinfo if a is action][0]
+            if not cls.testRequirements(self.credo):
+                return False
             self._dockwidgets[action] = cls(self, credo=self.credo)
             self._dockwidgets[action].setSizePolicy(
                 QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum,

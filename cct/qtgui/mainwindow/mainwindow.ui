@@ -622,6 +622,7 @@
     <addaction name="separator"/>
     <addaction name="actionResource_consumption"/>
     <addaction name="actionOptimize_geometry"/>
+    <addaction name="actionSamplePositionChecker"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -1093,6 +1094,14 @@
    </property>
    <property name="toolTip">
     <string>Show the beamstop control dockwidget</string>
+   </property>
+  </action>
+  <action name="actionSamplePositionChecker">
+   <property name="text">
+    <string>Check sample positions</string>
+   </property>
+   <property name="toolTip">
+    <string>Make a graph of the relative positions of selected samples</string>
    </property>
   </action>
  </widget>
