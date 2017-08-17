@@ -5,7 +5,7 @@ import re
 from PyQt5 import QtWidgets, QtCore, QtGui
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 from .sampleeditor_ui import Ui_Form
 from ...core.mixins import ToolWindow
@@ -17,9 +17,9 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
+        self._updating_entries = Inhibitor()
         self.setupUi(self)
         self._samplestoreconnections = []
-        self._updating_entries = Inhibitor()
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
@@ -156,7 +156,8 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         while not samplestore.add(Sample(sampletitle)):
             index += 1
             sampletitle = 'Unnamed_{:d}'.format(index)
-        samplestore.set_active(sampletitle)
+        self.selectSample(sampletitle)
+
 
     def onRemoveSample(self):
         selectedsamplename = self.listWidget.selectedItems()[0].data(QtCore.Qt.DisplayRole)
