@@ -41,7 +41,11 @@ def getresourcefiles():
 
 extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
                         [os.path.join("cct","qtgui","tools","optimizegeometry","estimateworksize.pyx")],
-                        include_dirs=[get_include()])]
+                        include_dirs=[get_include()]),
+              Extension("cct.core.services.accounting.krb5_check_pass",
+                        [os.path.join("cct","core","services","accounting","krb5_check_pass.pyx")],
+                        include_dirs=[get_include()], libraries=['krb5'])
+              ]
 
 #extensions=[]
 
@@ -54,8 +58,7 @@ setup(name='cct', author='Andras Wacha',
       setup_requires=['setuptools_scm'],
       #      cmdclass = {'build_ext': build_ext},
       ext_modules=cythonize(extensions),
-      install_requires=['numpy>=1.11.1', 'scipy>=0.18.0', 'matplotlib>=1.5.2', 'sastool>=0.7.3', 'pymodbustcp>=0.0.13',
-                        'pykerberos>=1.1.10', 'psutil>=4.1.0'],
+      install_requires=['numpy>=1.11.1', 'scipy>=0.18.0', 'matplotlib>=1.5.2', 'sastool>=0.7.3', 'pymodbustcp>=0.0.13', 'psutil>=4.1.0'],
       entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run'],
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",
