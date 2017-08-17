@@ -12,7 +12,7 @@ from ...utils.callback import Callbacks, SignalFlags
 from ...utils.timeout import IdleFunction
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Device(Callbacks):

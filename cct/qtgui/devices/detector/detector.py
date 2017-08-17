@@ -9,7 +9,7 @@ from ....core.devices import Pilatus, Device, Motor
 from ....core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Detector(QtWidgets.QWidget, Ui_Form, ToolWindow):

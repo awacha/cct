@@ -14,7 +14,7 @@ from ..utils.telemetry import TelemetryInfo
 from ..utils.timeout import TimeOut
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DummyTm(object):
@@ -393,6 +393,7 @@ class Instrument(Callbacks):
         """
         bsx = kwargs.pop('BeamStop_X', None)
         bsy = kwargs.pop('BeamStop_Y', None)
+        logger.debug('Checking beamstop state at: {}, {}'.format(bsx, bsy))
         try:
             if bsx is None:
                 bsx = self.motors['BeamStop_X'].where()
@@ -400,11 +401,17 @@ class Instrument(Callbacks):
                 bsy = self.motors['BeamStop_Y'].where()
         except KeyError:
             raise
+        logger.debug('Coordinates are: {}, {}'.format(bsx,bsy))
+        logger.debug('Coordiantes for in: {}, {}'.format(*self.config['beamstop']['in']))
+        logger.debug('Coordiantes for out: {}, {}'.format(*self.config['beamstop']['out']))
         if abs(bsx - self.config['beamstop']['in'][0]) < 0.001 and abs(bsy - self.config['beamstop']['in'][1]) < 0.001:
+            logger.debug('Beamstop verdict: in')
             return 'in'
         if abs(bsx - self.config['beamstop']['out'][0]) < 0.001 and abs(
                         bsy - self.config['beamstop']['out'][1]) < 0.001:
+            logger.debug('Beamstop verdict: out')
             return 'out'
+        logger.debug('Beamstop verdict: unknown')
         return 'unknown'
 
     def connect_devices(self):

@@ -4,7 +4,7 @@ import os
 import time
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 from .service import Service, ServiceError
 from ..utils.callback import SignalFlags

@@ -10,7 +10,7 @@ from ..utils.callback import Callbacks, SignalFlags
 from ..utils.timeout import TimeOut, SingleIdleFunction
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class CommandError(Exception):

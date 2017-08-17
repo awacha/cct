@@ -8,7 +8,7 @@ from ..utils.callback import SignalFlags
 from ..utils.timeout import SingleIdleFunction
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ScriptError(CommandError):

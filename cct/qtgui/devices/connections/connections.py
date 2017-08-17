@@ -8,7 +8,7 @@ from ....core.instrument.instrument import Instrument
 from ....core.instrument.privileges import PRIV_CONNECTDEVICES
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DeviceConnections(QtWidgets.QWidget, ToolWindow):

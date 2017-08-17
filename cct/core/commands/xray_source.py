@@ -2,7 +2,7 @@ import logging
 import traceback
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 from .command import Command, CommandError, CommandArgumentError, CommandKilledError
 

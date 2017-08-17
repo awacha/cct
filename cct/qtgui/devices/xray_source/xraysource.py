@@ -9,7 +9,7 @@ from ....core.devices import GeniX, Device, Motor
 from ....core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class XraySource(QtWidgets.QWidget, Ui_Form, ToolWindow):

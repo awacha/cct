@@ -12,7 +12,7 @@ from .....core.instrument.privileges import PRIV_MOTORCALIB
 from .....core.utils.inhibitor import Inhibitor
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class MotorAutoCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_MOTORCALIB
