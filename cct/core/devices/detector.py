@@ -1,3 +1,4 @@
+import datetime
 import logging
 import re
 import time
@@ -464,6 +465,8 @@ class Pilatus_Backend(DeviceBackend_TCP):
         self.queryone(variable)
 
     def on_ready(self):
+        self.update_variable('filename', '')
+        self.update_variable('starttime', datetime.datetime.utcfromtimestamp(0))
         self.update_variable('_status', 'idle')
 
 
