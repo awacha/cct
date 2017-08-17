@@ -57,7 +57,7 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def onBrowseMask(self):
         filename, filter = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Open mask file...', self.credo.config['path']['mask'], '*.mat',
+            self, 'Open mask file...', self.credo.config['path']['directories']['mask'], '*.mat',
         )
         if filename:
             self.maskFileNameLineEdit.setText(filename)

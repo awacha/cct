@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>846</width>
-    <height>431</height>
+    <width>1014</width>
+    <height>399</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -42,42 +42,42 @@
          <item row="0" column="0">
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Source to 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;0&lt;/span&gt;; mm):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Source to 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;0&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole to 2&lt;span style=&quot; vertical-align:super;&quot;&gt;nd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;1&lt;/span&gt;; mm): &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole to 2&lt;span style=&quot; vertical-align:super;&quot;&gt;nd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;1&lt;/span&gt;): &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
          <item row="2" column="0">
           <widget class="QLabel" name="label_3">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;nd&lt;/span&gt; pinhole to 3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;2&lt;/span&gt;; mm):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;nd&lt;/span&gt; pinhole to 3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;2&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
          <item row="3" column="0">
           <widget class="QLabel" name="label_4">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole to sample (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;s&lt;/span&gt;; mm):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole to sample (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;s&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
          <item row="4" column="0">
           <widget class="QLabel" name="label_5">
            <property name="text">
-            <string>Sample to detector (&lt;i&gt;sd&lt;/i&gt;; mm):</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sample to detector (&lt;span style=&quot; font-style:italic;&quot;&gt;sd&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
          <item row="5" column="0">
           <widget class="QLabel" name="label_6">
            <property name="text">
-            <string>Beamstop front to detector (&lt;i&gt;l&lt;sub&gt;bs&lt;/sub&gt;&lt;/i&gt;; mm):</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Beamstop front to detector (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;bs&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -89,8 +89,11 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> mm</string>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>10000.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -102,8 +105,11 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> mm</string>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>10000.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -115,8 +121,11 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> mm</string>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>10000.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -128,8 +137,11 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> mm</string>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>10000.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -141,8 +153,11 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> mm</string>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>1000.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -172,11 +187,14 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="suffix">
+               <string> mm</string>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
               <property name="maximum">
-               <double>100000.000000000000000</double>
+               <double>99999.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -195,11 +213,14 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="suffix">
+               <string> mm</string>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
               <property name="maximum">
-               <double>100000.000000000000000</double>
+               <double>99999.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -218,7 +239,7 @@
          <item row="0" column="0">
           <widget class="QLabel" name="label_8">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Diameter of the 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;1&lt;/span&gt;; μm):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Diameter of the 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;1&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -230,15 +251,18 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> μm</string>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>10000.000000000000000</double>
            </property>
           </widget>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_9">
            <property name="text">
-            <string>Diameter of the 2&lt;sup&gt;nd&lt;/sup&gt; pinhole (&lt;i&gt;d&lt;sub&gt;2&lt;/sub&gt;&lt;/i&gt;; μm):</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Diameter of the 2&lt;span style=&quot; vertical-align:super;&quot;&gt;nd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;2&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -250,15 +274,18 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> μm</string>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>10000.000000000000000</double>
            </property>
           </widget>
          </item>
          <item row="2" column="0">
           <widget class="QLabel" name="label_10">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Diameter of the 3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;3&lt;/span&gt;; μm):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Diameter of the 3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;3&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -270,15 +297,18 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> μm</string>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>10000.000000000000000</double>
            </property>
           </widget>
          </item>
          <item row="3" column="0">
           <widget class="QLabel" name="label_11">
            <property name="text">
-            <string>Beamstop diameter (&lt;i&gt;d&lt;sub&gt;bs&lt;/sub&gt;&lt;/i&gt;; mm):</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Beamstop diameter (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;bs&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -290,15 +320,18 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> mm</string>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>100.000000000000000</double>
            </property>
           </widget>
          </item>
          <item row="4" column="0">
           <widget class="QLabel" name="label_12">
            <property name="text">
-            <string>Pixel size (&lt;i&gt;h&lt;/i&gt;; mm):</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pixel size (&lt;span style=&quot; font-style:italic;&quot;&gt;h&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -310,15 +343,21 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="suffix">
+            <string> mm</string>
+           </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
            <property name="maximum">
-            <double>100000.000000000000000</double>
+            <double>10.000000000000000</double>
            </property>
           </widget>
          </item>
          <item row="5" column="0">
           <widget class="QLabel" name="label_15">
            <property name="text">
-            <string>X-ray wavelength (&lt;i&gt;λ&lt;/i&gt;; nm):</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;X-ray wavelength (&lt;span style=&quot; font-style:italic;&quot;&gt;λ&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -348,11 +387,14 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="suffix">
+               <string> nm</string>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
               <property name="maximum">
-               <double>100000.000000000000000</double>
+               <double>10.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -371,11 +413,14 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="suffix">
+               <string> nm</string>
+              </property>
               <property name="decimals">
                <number>4</number>
               </property>
               <property name="maximum">
-               <double>100000.000000000000000</double>
+               <double>10.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -404,7 +449,7 @@
       <item row="0" column="2">
        <widget class="QLabel" name="label_14">
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Vertical beam coordinate (&lt;span style=&quot; font-style:italic;&quot;&gt;beam&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;y&lt;/span&gt;; pixel):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Vertical beam coordinate (&lt;span style=&quot; font-style:italic;&quot;&gt;beam&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;y&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </item>
@@ -425,7 +470,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="label_13">
         <property name="text">
-         <string>Horizontal beam coordinate (&lt;i&gt;beam&lt;sub&gt;x&lt;/sub&gt;&lt;/i&gt;; pixel):</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Horizontal beam coordinate (&lt;span style=&quot; font-style:italic;&quot;&gt;beam&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;x&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </item>
@@ -437,14 +482,17 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="suffix">
+         <string> pixel</string>
+        </property>
         <property name="decimals">
          <number>4</number>
         </property>
         <property name="minimum">
-         <double>-100000.000000000000000</double>
+         <double>-9999.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>100000.000000000000000</double>
+         <double>9999.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -453,10 +501,16 @@
         <property name="text">
          <string>Browse...</string>
         </property>
+        <property name="icon">
+         <iconset theme="document-open"/>
+        </property>
        </widget>
       </item>
       <item row="3" column="1" colspan="3">
        <widget class="QPlainTextEdit" name="descriptionPlainTextEdit">
+        <property name="backgroundVisible">
+         <bool>false</bool>
+        </property>
         <property name="placeholderText">
          <string>Describe your setup here...</string>
         </property>
@@ -470,14 +524,17 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="suffix">
+         <string> pixel</string>
+        </property>
         <property name="decimals">
          <number>4</number>
         </property>
         <property name="minimum">
-         <double>-100000.000000000000000</double>
+         <double>-9999.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>100000.000000000000000</double>
+         <double>9999.000000000000000</double>
         </property>
        </widget>
       </item>
