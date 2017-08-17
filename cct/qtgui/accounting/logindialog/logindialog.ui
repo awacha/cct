@@ -22,6 +22,9 @@
     <height>96</height>
    </size>
   </property>
+  <property name="focusPolicy">
+   <enum>Qt::NoFocus</enum>
+  </property>
   <property name="windowTitle">
    <string>Log in to CCT</string>
   </property>

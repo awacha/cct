@@ -16,6 +16,7 @@ class LogInDialog(QtWidgets.QDialog, Ui_Dialog):
         self.defaultbase = self.passwordLineEdit.palette().color(QtGui.QPalette.Base)
         self.passwordLineEdit.setBackgroundRole(QtGui.QPalette.Base)
         self.passwordLineEdit.textChanged.connect(self.onTextChanged)
+        self.operatorLineEdit.setFocus()
 
     def onTextChanged(self):
         palette = self.passwordLineEdit.palette()
