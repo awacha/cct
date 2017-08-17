@@ -1,3 +1,5 @@
+import logging
+
 from PyQt5 import QtCore, QtWidgets
 
 from .projectsetup_ui import Ui_Form
@@ -6,6 +8,8 @@ from ....core.instrument.privileges import PRIV_PROJECTMAN
 from ....core.services.accounting import Accounting
 from ....core.utils.inhibitor import Inhibitor
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_PROJECTMAN
@@ -14,7 +18,7 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo=credo)
-        self._updating_ui = Inhibitor()
+        self._updating_ui = Inhibitor(max_inhibit=1)
         self._acc_connections = []
         self.setupUi(self)
 
@@ -54,11 +58,12 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.updatePushButton.setEnabled(True)
 
     def onUpdateProject(self):
+        logger.debug('Updating project')
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
-        prj = self.selectedProject()
-        prj.proposer = self.proposerLineEdit.text()
-        prj.projectname = self.projectTitleLineEdit.text()
+        acc.update_project(self.selectedProjectName(),
+                           self.projectTitleLineEdit.text(),
+                           self.proposerLineEdit.text())
         self.updatePushButton.setEnabled(False)
 
     def cleanup(self):
@@ -82,43 +87,57 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
         try:
-            acc.delete_project(self.selectedProject())
+            acc.delete_project(self.selectedProjectName())
         except ValueError as ve:
             QtWidgets.QMessageBox.critical(self, 'Error while removing project', ve.args[0])
         self.onProjectChanged(acc)
         self.onProjectSelected()
 
     def onRenameProject(self):
-        with self._updating_ui:
-            self.renamePushButton.setEnabled(False)
-            acc = self.credo.services['accounting']
-            assert isinstance(acc, Accounting)
-            selected = self.selectedProject()
-            newname = self.projectIDLineEdit.text()
+        logger.debug('onRenameProject()')
+        self.renamePushButton.setEnabled(False)
+        acc = self.credo.services['accounting']
+        assert isinstance(acc, Accounting)
+        selected = self.selectedProjectName()
+        newname = self.projectIDLineEdit.text()
+        try:
             acc.rename_project(selected, newname)
-            self.selectProject(newname)
+        except ValueError as ve:
+            QtWidgets.QMessageBox.critical(self, 'Cannot rename project', 'Cannot rename project: {}'.format(ve.args[0]))
+            return
+        self.selectProject(newname)
 
     def selectProject(self, projectid):
         self.listWidget.findItems(projectid, QtCore.Qt.MatchExactly)[0].setSelected(True)
 
     def onProjectChanged(self, acc: Accounting):
+        logger.debug('onProjectChanged()')
         with self._updating_ui:
             try:
-                selected = self.selectedProject()
+                selected = self.selectedProjectName()
                 self.listWidget.clear()
                 self.listWidget.addItems(sorted(acc.get_projectids()))
-                self.selectProject(selected)
             except IndexError:
                 return
+        try:
+            self.selectProject(selected)
+        except IndexError:
+            return
 
-    def selectedProject(self):
+    def selectedProjectName(self):
         return self.listWidget.selectedItems()[0].data(QtCore.Qt.DisplayRole)
 
+    def selectedProject(self):
+        return self.credo.services['accounting'].get_project(self.selectedProjectName())
+
     def onProjectSelected(self):
+        if self._updating_ui.inhibited:
+            logger.debug('Already inhibited')
+            return
         with self._updating_ui:
             try:
                 self.updatePushButton.setEnabled(False)
-                name = self.selectedProject()
+                name = self.selectedProjectName()
                 acc = self.credo.services['accounting']
                 assert isinstance(acc, Accounting)
                 prj = acc.get_project(name)
