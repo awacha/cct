@@ -48,15 +48,21 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.beamstopControlComboBox.currentTextChanged.connect(self.onBeamStopMovementRequest)
         self.calibrateBeamstopPushButton.clicked.connect(self.onCalibrate)
         self.motorNameComboBox.currentIndexChanged.connect(self.onMotorNameChosen)
+        self.motorTargetDoubleSpinBox.editingFinished.connect(self.onTargetEditingFinished)
         self.relativeMovementCheckBox.toggled.connect(self.onRelativeChecked)
         self.moveMotorPushButton.clicked.connect(self.onMoveMotorClicked)
         self.motorNameComboBox.addItems(sorted(self.credo.motors))
         ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
         self._samplestore_connections = [ss.connect('list-changed', self.onSampleListChanged)]
-        self.onSampleListChanged()
+        self.onSampleListChanged(ss)
         self.treeView.activated.connect(self.onMotorViewLineActivated)
         self.treeView.customContextMenuRequested.connect(self.onTreeViewContextMenuRequested)
+        #self.adjustSize()
+
+    def onTargetEditingFinished(self):
+        if self.motorTargetDoubleSpinBox.hasFocus():
+            self.onMoveMotorClicked()
 
     def onTreeViewContextMenuRequested(self, pos: QtCore.QPoint):
         if self._popupmenu is not None:
@@ -115,7 +121,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._samplestore_connections = []
         return super().cleanup()
 
-    def onSampleListChanged(self):
+    def onSampleListChanged(self, samplestore:SampleStore):
         with self._updating_ui:
             lastsample = self.sampleNameComboBox.currentText()
             ss = self.credo.services['samplestore']
@@ -136,7 +142,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
         sample = ss.get_sample(self.sampleNameComboBox.currentText())
-        assert isinstance(ss, Sample)
+        assert isinstance(sample, Sample)
         try:
             motor.moveto(sample.positionx.val)
         except DeviceError as exc:
@@ -154,7 +160,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
         sample = ss.get_sample(self.sampleNameComboBox.currentText())
-        assert isinstance(ss, Sample)
+        assert isinstance(sample, Sample)
         try:
             motor.moveto(sample.positiony.val)
         except DeviceError as exc:
