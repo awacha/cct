@@ -51,6 +51,16 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         l.addWidget(self.fsnSelector)
         l.addWidget(self.plotimage.canvas)
         self.fsnSelector.FSNSelected.connect(self.onFSNSelected)
+        self.actionLasso_selector.toggled.connect(self.selectPolygon)
+        self.actionPixel_hunt.toggled.connect(self.pixelHunt)
+        self.actionSelect_a_circle.toggled.connect(self.selectCircle)
+        self.actionSelect_rectangle.toggled.connect(self.selectRectangle)
+        self.actionSave_mask.triggered.connect(self.saveMask)
+        self.actionSave_mask_as.triggered.connect(self.saveAsMask)
+        self.actionOpen_mask.triggered.connect(self.loadMask)
+        self.actionNew_mask.triggered.connect(self.createNewMask)
+        self.actionUndo.triggered.connect(self.undo)
+        self.actionRedo.triggered.connect(self.redo)
 
     def onFSNSelected(self, prefix, fsn, exposure):
         self.setExposure(exposure)
