@@ -1,18 +1,19 @@
-import kerberos
 import logging
 import os
 import pickle
 import time
 from typing import Optional, List, Dict, Union
 
-from .service import Service, ServiceError
-from ..instrument.privileges import PRIV_LAYMAN, PRIV_SUPERUSER, PRIV_PROJECTMAN, PRIV_USERMAN, PrivilegeLevel, \
+from .krb5_check_pass import krb5_check_pass
+from ..service import Service, ServiceError
+from ...instrument.privileges import PRIV_LAYMAN, PRIV_SUPERUSER, PRIV_PROJECTMAN, PRIV_USERMAN, PrivilegeLevel, \
     PrivilegeError
-from ..utils.callback import SignalFlags
+from ...utils.callback import SignalFlags
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+__all__=['User', 'Accounting', 'Project']
 
 class User(object):
     username = None
@@ -68,14 +69,14 @@ class Accounting(Service):
         if '@' not in username:
             username = username + '@' + self.get_default_realm()
         try:
-            if kerberos.checkPassword(username, password, '', '', 0):
+            if krb5_check_pass(username, password):
                 logger.info('Authenticated user ' + username + '.')
                 if username.split('@', 1)[0] not in [u.username for u in self.users]:
                     self.add_user(username.split('@', 1)[0], 'Firstname', 'Lastname', PRIV_LAYMAN, 'nobody@example.com')
                 self.select_user(username)
                 return True
-        except kerberos.BasicAuthError as bae:
-            logger.info('Failed to authenticate user {}: {}'.format(username, str(bae)))
+        except RuntimeError as rte:
+            logger.info('Failed to authenticate user {}: {}'.format(username, str(rte.args[0])))
             return False
 
     def select_user(self, username: str):
@@ -182,10 +183,19 @@ class Accounting(Service):
 
     def rename_project(self, oldprojectid: str, newprojectid: str):
         this_is_the_current_project = self.project.projectid == oldprojectid
+        if [p for p in self.projects if p.projectid == newprojectid]:
+            raise ValueError('Project ID {} is in use.'.format(newprojectid))
         prj = [p for p in self.projects if p.projectid == oldprojectid][0]
         prj.projectid = newprojectid
+        self.emit('project-changed')
         if this_is_the_current_project:
             self.select_project(newprojectid)
+
+    def update_project(self, projectid: str, projectname: str, proposer: str):
+        p = self.get_project(projectid)
+        p.projectname=projectname
+        p.proposer=proposer
+        self.emit('project-changed')
 
     def new_project(self, projectid: str, projectname: str, proposer: str):
         if not self.has_privilege(PRIV_PROJECTMAN):
