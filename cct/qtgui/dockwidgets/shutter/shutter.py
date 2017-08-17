@@ -40,3 +40,8 @@ class ShutterDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
             with self._updating_ui:
                 self.shutterToolButton.setEnabled(newvalue)
         return False
+
+    def onDeviceReady(self, device: Union[Device, Motor]):
+        super().onDeviceReady(device)
+        self.onDeviceVariableChange(device, 'shutter', device.get_variable('shutter'))
+        self.onDeviceVariableChange(device, 'interlock', device.get_variable('interlock'))

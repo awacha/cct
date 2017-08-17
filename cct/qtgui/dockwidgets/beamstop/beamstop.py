@@ -1,11 +1,17 @@
+import logging
+from typing import Union
+
 from PyQt5 import QtWidgets, QtGui
 
 from .beamstop_ui import Ui_DockWidget
 from ...core.mixins import ToolWindow
+from ....core.devices import Device
 from ....core.devices.motor import Motor
 from ....core.instrument.instrument import Instrument
 from ....core.instrument.privileges import PRIV_BEAMSTOP
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class BeamStopDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
     required_privilege = PRIV_BEAMSTOP
@@ -26,12 +32,14 @@ class BeamStopDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         self.checkBeamStop()
 
     def onBeamstopIn(self):
+        logger.debug('onBeamstopIn')
         self._movetargets=[('BeamStop_X', self.credo.config['beamstop']['in'][0]),
-                           ('BeamStop_Y', self.credo.config['beamstop']['out'][1])]
+                           ('BeamStop_Y', self.credo.config['beamstop']['in'][1])]
         self.nextBeamstopMove()
 
     def onBeamstopOut(self):
-        self._movetargets=[('BeamStop_X', self.credo.config['beamstop']['in'][0]),
+        logger.debug('onBeamstopOut')
+        self._movetargets=[('BeamStop_X', self.credo.config['beamstop']['out'][0]),
                            ('BeamStop_Y', self.credo.config['beamstop']['out'][1])]
         self.nextBeamstopMove()
 
@@ -65,6 +73,7 @@ class BeamStopDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         return False
 
     def checkBeamStop(self, x=None, y=None):
+        logger.debug('checkBeamStop({}, {})'.format(x,y))
         assert isinstance(self.credo, Instrument)
         try:
             bsstate=self.credo.get_beamstop_state(bsx=x, bsy=y)
@@ -72,10 +81,18 @@ class BeamStopDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
             bsstate = 'unknown'
         self.beamstopInToolButton.setEnabled((bsstate!='in') and (not self._moving) and (not self._movetargets))
         self.beamstopOutToolButton.setEnabled((bsstate!='out') and (not self._moving) and (not self._movetargets))
+        logger.debug('')
         if bsstate=='in':
             iconfile='beamstop-in.svg'
         elif bsstate=='out':
             iconfile='beamstop-out.svg'
         else:
             iconfile='beamstop-inconsistent.svg'
+        logger.debug('Beamstop state: {}'.format(bsstate))
         self.beamstopIconLabel.setPixmap(QtGui.QPixmap(":/icons/{}".format(iconfile)).scaled(48,48))
+
+    def onDeviceReady(self, device: Union[Device, Motor]):
+        logger.debug('OnDeviceReady')
+        super().onDeviceReady(device)
+        self.checkBeamStop()
+        logger.debug('OnDeviceReady done')

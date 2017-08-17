@@ -35,7 +35,7 @@ class ToolWindow(object):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 
     @classmethod
-    def testRequirements(cls, credo: Instrument):
+    def testRequirements(cls, credo: Instrument, not_ready_is_ok:bool=False):
         """Return True if the instrument is in a state when this window can be opened. If this
         class method returns False, the window won't be opened or will be closed or disabled if
         it is already open."""
@@ -43,7 +43,7 @@ class ToolWindow(object):
             return False
         for r in cls.required_devices:
             try:
-                if not credo.get_device(r).ready:
+                if not (credo.get_device(r).ready or not_ready_is_ok):
                     return False
             except KeyError:
                 return False
@@ -87,6 +87,7 @@ class ToolWindow(object):
         return False
 
     def onDeviceDisconnect(self, device: Union[Device, Motor], abnormal_disconnection: bool):
+        logger.debug('Device disconnect')
         if self._busy:
             self.setEnabled(False)
         else:
@@ -137,16 +138,15 @@ class ToolWindow(object):
         return QtWidgets.QWidget.event(self, event)
 
     def activationChangeEvent(self, event: QtCore.QEvent):
-        assert isinstance(self, QtWidgets.QWidget)
-        if self.windowState() & QtCore.Qt.WindowActive:
-            logger.debug('ToolWindow {} activation changed: it is now active. State: {}, {}'.format(self.objectName(),
-                                                                                                    self.isActiveWindow(),
-                                                                                                    self.windowState() & 0xffff))
-        else:
-            logger.debug(
-                'ToolWindow {} activation changed: it is now not active. State: {}, {}'.format(self.objectName(),
-                                                                                               self.isActiveWindow(),
-                                                                                               self.windowState() & 0xffff))
+        pass
+#        assert isinstance(self, QtWidgets.QWidget)
+#        if self.windowState() & QtCore.Qt.WindowActive:
+#            logger.debug('ToolWindow {} activation changed: it is now active. State: {}, {}'.format(self.objectName(),
+#                                                                                                    self.isActiveWindow(),
+#                                                                                                    self.windowState() & 0xffff))
+#        else:
+#            logger.debug(
+#                'ToolWindow {} activation changed: it is now not active. State: {}, {}'.format(self.objectName(),
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         assert isinstance(self, QtWidgets.QWidget)
@@ -191,6 +191,7 @@ class ToolWindow(object):
         self._interpreterconnections = []
         try:
             self.progressBar.setVisible(False)
+            self.adjustSize()
         except (AttributeError, RuntimeError):
             pass
 
