@@ -29,6 +29,7 @@ class Motor(Callbacks):
             'variable-change', self.on_variable_change),
             self._controller.connect('error', self.on_error),
             self._controller.connect('disconnect', self.on_disconnect),
+            self._controller.connect('ready', self.on_controller_ready),
         ]
         self._moving = False
 
@@ -43,6 +44,9 @@ class Motor(Callbacks):
     @property
     def index(self):
         return self._index
+
+    def on_controller_ready(self, controller):
+        self.emit('ready')
 
     def on_variable_change(self, controller, variable, newvalue):
         try:
