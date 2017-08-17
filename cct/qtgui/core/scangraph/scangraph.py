@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import Union, List, Optional
 
@@ -15,6 +16,8 @@ from ...core.mixins import ToolWindow
 from ....core.devices import Motor
 from ....core.instrument.instrument import Instrument
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -22,7 +25,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self._data = None
-        self._cursorposition = 0
+        self._lastpeakposition = None
         self.setupUi(self)
 
     def setupUi(self, MainWindow):
@@ -93,6 +96,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             va = 'bottom'
         self._peaktexthandle = self.axes.text(pos.val, baseline.val + amplitude.val, pos.tostring(), ha='center', va=va)
         self._lastpeakposition = pos
+        self.actionMotor_to_peak.setEnabled(True)
         self.canvas.draw_idle()
 
     def drawLegend(self):
@@ -221,7 +225,9 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                 recorded yet. `datalength > len(scandata)` is an error.
         """
         if not isinstance(scandata, np.ndarray):
-            scandata = np.zeros(datalength, dtype=zip(scandata, [np.double] * len(scandata)))
+            logger.debug(scandata)
+            logger.debug(datalength)
+            scandata = np.zeros(datalength, dtype=list(zip(scandata, [np.double] * len(scandata))))
             datalength = 0
         if datalength is None:
             datalength = len(scandata)
@@ -280,7 +286,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                 pass
             else:
                 self.actionMotor_to_cursor.setEnabled(not motor.ismoving())
-                self.actionMotor_to_cursor.setEnabled((not motor.ismoving()) and (self._lastpeakposition is not None))
+                self.actionMotor_to_peak.setEnabled((not motor.ismoving()) and (self._lastpeakposition is not None))
                 self.requireDevice('Motor_' + self.abscissaName())
 
     def onMotorStart(self, motor: Motor):
@@ -320,7 +326,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         motor = self.credo.motors[self.abscissaName()]
         assert isinstance(motor, Motor)
         try:
-            motor.moveto(self._data[self.abscissaName()][self._cursorposition])
+            motor.moveto(self._data[self.abscissaName()][self.cursorSlider.value()])
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Cannot move motor',
                                            'Cannot move motor {}: {}'.format(self.abscissaName(), exc.args[0]))
