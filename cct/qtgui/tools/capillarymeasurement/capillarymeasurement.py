@@ -22,7 +22,6 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self._peaklines = [None, None]
-        self._peakpositions = [None, None]
         self._samplestoreconnections = []
         self._updating = Inhibitor()
         self.setupUi(self)
@@ -45,17 +44,27 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.derivativeCheckBox.toggled.connect(self.plotSignal)
         self.fitNegativePushButton.clicked.connect(self.fitNegative)
         self.fitPositivePushButton.clicked.connect(self.fitPositive)
+        self.updateCenterPushButton.clicked.connect(self.updateCenter)
+        self.updateThicknessPushButton.clicked.connect(self.updateThickness)
+        self.positiveErrDoubleSpinBox.valueChanged.connect(self.calculatePositionAndThickness)
+        self.positiveValDoubleSpinBox.valueChanged.connect(self.calculatePositionAndThickness)
+        self.negativeErrDoubleSpinBox.valueChanged.connect(self.calculatePositionAndThickness)
+        self.negativeValDoubleSpinBox.valueChanged.connect(self.calculatePositionAndThickness)
         scanfile = self.credo.services['filesequence'].get_scanfile()
         self.scanFileNameLineEdit.setText(scanfile)
         self.loadScanFile()
         self._samplestoreconnections=[self.credo.services['samplestore'].connect('list-changed', self.onSampleListChanged)]
+        self.onSampleListChanged(self.credo.services['samplestore'])
 
     def onSampleListChanged(self, ss:SampleStore):
         with self._updating:
             samplename = self.sampleNameComboBox.currentText()
             self.sampleNameComboBox.clear()
             self.sampleNameComboBox.addItems(sorted([s.title for s in ss.get_samples()]))
-            self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(samplename))
+            if not samplename:
+                self.sampleNameComboBox.setCurrentIndex(0)
+            else:
+                self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(samplename))
 
     def filename(self):
         return self.scanFileNameLineEdit.text()
@@ -138,7 +147,6 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.axes.clear()
         self.canvas.draw()
         self._peaklines = []
-        self._peakpositions = []
 
     def plotSignal(self):
         try:
@@ -149,7 +157,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         for l in self.axes.lines:
             l.remove()
         self.axes.plot(x, signal, 'b.-', label=self.signalNameComboBox.currentText())
-        self.axes.legend(loc='best')
+        #self.axes.legend(loc='best')
         self.axes.set_ylabel(self.signalNameComboBox.currentText())
         self.axes.relim()
         self.axes.autoscale_view(True, True, True)
@@ -166,7 +174,6 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         pos, hwhm, baseline, amplitude, stat, fitted = sastool.misc.basicfit.findpeak_single(x, signal, None,
                                                                                              return_stat=True,
                                                                                              return_x=retx)
-        self._peakpositions[sign > 0] = pos
         if self._peaklines[sign > 0] is not None:
             self._peaklines[sign > 0].remove()
         self._peaklines[sign > 0] = self.axes.plot(retx, fitted, 'r-')[0]
@@ -176,7 +183,16 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         else:
             self.positiveValDoubleSpinBox.setValue(pos.val)
             self.positiveErrDoubleSpinBox.setValue(pos.err)
+#        self.calculatePositionAndThickness()
         self.canvas.draw()
+
+    def calculatePositionAndThickness(self):
+        pos = 0.5*(self.peakPositionPositive()+self.peakPositionNegative())
+        thickness = (self.peakPositionPositive()-self.peakPositionNegative()).abs()
+        self.positionLabel.setText('{:.4f} mm'.format(pos))
+        self.thicknessLabel.setText('{:.4f} mm'.format(thickness))
+        self.updateCenterPushButton.setEnabled(True)
+        self.updateThicknessPushButton.setEnabled(True)
 
     def fitNegative(self):
         return self.fitPeak(-1)
@@ -184,23 +200,37 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def fitPositive(self):
         return self.fitPeak(+1)
 
+    def peakPositionPositive(self):
+        return sastool.ErrorValue(
+            self.positiveValDoubleSpinBox.value(),
+            self.positiveErrDoubleSpinBox.value()
+        )
+
+    def peakPositionNegative(self):
+        return sastool.ErrorValue(
+            self.negativeValDoubleSpinBox.value(),
+            self.negativeErrDoubleSpinBox.value()
+        )
+
     def updateCenter(self):
         ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
         sample = ss.get_sample(self.sampleNameComboBox.currentText())
         if self.scan.motor.endswith('X'):
-            sample.positionx = 0.5*(self._peakpositions[0]+self._peakpositions[1])
+            sample.positionx = 0.5*(self.peakPositionPositive() + self.peakPositionNegative())
             logger.info('X position updated for sample {} to {}'.format(sample.title, sample.positionx))
         else:
             assert self.scan.motor.endswith('Y')
-            sample.positiony = 0.5*(self._peakpositions[0]+self._peakpositions[1])
+            sample.positiony = 0.5*(self.peakPositionPositive()+self.peakPositionNegative())
             logger.info('Y position updated for sample {} to {}'.format(sample.title, sample.positiony))
         ss.set_sample(sample.title, sample)
+        self.updateCenterPushButton.setEnabled(False)
 
     def updateThickness(self):
         ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
         sample = ss.get_sample(self.sampleNameComboBox.currentText())
-        sample.thickness = abs(self._peakpositions[0]-self._peakpositions[1])*0.1
+        sample.thickness = (self.peakPositionPositive()-self.peakPositionNegative()).abs()*0.1
         logger.info('Thickness updated for sample {} to {} cm'.format(sample.title, sample.thickness))
         ss.set_sample(sample.title, sample)
+        self.updateThicknessPushButton.setEnabled(False)
