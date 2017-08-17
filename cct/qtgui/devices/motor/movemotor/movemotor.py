@@ -1,3 +1,5 @@
+import logging
+
 from PyQt5 import QtWidgets, QtGui
 
 from .movemotor_ui import Ui_Form
@@ -5,6 +7,8 @@ from ....core.mixins import ToolWindow
 from .....core.devices import Motor
 from .....core.instrument.privileges import PRIV_MOVEMOTORS
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_MOVEMOTORS
@@ -24,9 +28,20 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.movePushButton.clicked.connect(self.onMove)
         self.motorComboBox.setCurrentIndex(self.motorComboBox.findText(self.motorname))
         self.relativeCheckBox.toggled.connect(self.onRelativeChanged)
+        self.targetDoubleSpinBox.editingFinished.connect(self.onEditingFinished)
+        self.adjustSize()
+
+    def onEditingFinished(self):
+        if self.targetDoubleSpinBox.hasFocus():
+            self.onMove()
 
     def onRelativeChanged(self):
         self.onMotorPositionChange(self.motor(), self.motor().where())
+        if self.relativeCheckBox.isChecked():
+            self.targetDoubleSpinBox.setValue(0)
+        else:
+            self.targetDoubleSpinBox.setValue(self.motor().where())
+        self.adjustSize()
 
     def setIdle(self):
         super().setIdle()
@@ -82,7 +97,7 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.targetDoubleSpinBox.setValue(motor.where())
 
     def onMotorPositionChange(self, motor: Motor, newposition: float):
-        self.positionLabel.setText('{:.4f}'.format(newposition))
+        self.positionLabel.setText('<b>{:.4f}</b>'.format(newposition))
         left = motor.get_variable('softleft')
         right = motor.get_variable('softright')
         if self.relativeCheckBox.isChecked():
@@ -90,6 +105,9 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             right -= newposition
         self.targetDoubleSpinBox.setMinimum(left)
         self.targetDoubleSpinBox.setMaximum(right)
+        self.leftLimitLabel.setText('{:.4f}'.format(left))
+        self.rightLimitLabel.setText('{:.4f}'.format(right))
+        self.adjustSize()
 
     def onMotorStop(self, motor: Motor, targetpositionreached: bool):
         self.setIdle()
