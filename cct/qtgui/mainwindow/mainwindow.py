@@ -4,7 +4,7 @@ import weakref
 import pkg_resources
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
@@ -206,7 +206,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 except RuntimeError:
                     del self.windowdict[action]
         for action in list(self._dockwidgetinfo.keys()):
-            reqOk = self._dockwidgetinfo[action].testRequirements(self.credo)
+            reqOk = self._dockwidgetinfo[action].testRequirements(self.credo, not_ready_is_ok=True)
             action.setEnabled(reqOk)
             if not reqOk and action.isChecked():
                 action.setChecked(False)
@@ -236,7 +236,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             assert action not in self._dockwidgets
             cls = [self._dockwidgetinfo[a] for a in self._dockwidgetinfo if a is action][0]
-            if not cls.testRequirements(self.credo):
+            if not cls.testRequirements(self.credo, not_ready_is_ok=True):
                 return False
             self._dockwidgets[action] = cls(self, credo=self.credo)
             self._dockwidgets[action].setSizePolicy(
@@ -245,6 +245,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self._dockwidgets[action].setAttribute(QtCore.Qt.WA_DeleteOnClose)
             self._dockwidgets[action].destroyed.connect(lambda x=False: action.setChecked(False))
             self.addDockWidget(QtCore.Qt.TopDockWidgetArea, self._dockwidgets[action])
+            action.setChecked(True)
 
     def onQuit(self):
         assert isinstance(self.credo, Instrument)
