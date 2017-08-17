@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>492</width>
-    <height>362</height>
+    <width>399</width>
+    <height>383</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <iconset resource="../../../resource/icons/icons.qrc">
     <normaloff>:/icons/scan.svg</normaloff>:/icons/scan.svg</iconset>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <widget class="QWidget" name="inputForm" native="true">
      <property name="minimumSize">
@@ -26,7 +26,7 @@
        <height>0</height>
       </size>
      </property>
-     <layout class="QFormLayout" name="formLayout_2">
+     <layout class="QFormLayout" name="formLayout">
       <property name="leftMargin">
        <number>0</number>
       </property>
@@ -49,70 +49,42 @@
       <item row="0" column="1">
        <widget class="QComboBox" name="motorComboBox"/>
       </item>
-      <item row="1" column="0" colspan="2">
-       <widget class="QCheckBox" name="relativeScanCheckBox">
-        <property name="text">
-         <string>Relative scan</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_2">
+      <item row="3" column="0">
+       <widget class="QLabel" name="startLabel">
         <property name="text">
          <string>Start:</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>End:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Steps:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>Step size:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_6">
-        <property name="text">
-         <string>Counting time (sec):</string>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="0">
-       <widget class="QLabel" name="label_7">
-        <property name="text">
-         <string>Comment:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
+      <item row="3" column="1">
        <widget class="QDoubleSpinBox" name="startDoubleSpinBox">
         <property name="decimals">
          <number>4</number>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="4" column="0">
+       <widget class="QLabel" name="endLabel">
+        <property name="text">
+         <string>End:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="endDoubleSpinBox">
         <property name="decimals">
          <number>4</number>
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Steps:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
        <widget class="QSpinBox" name="stepsSpinBox">
         <property name="minimum">
          <number>2</number>
@@ -125,17 +97,50 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="1">
-       <widget class="QDoubleSpinBox" name="countingTimeDoubleSpinBox">
-        <property name="decimals">
-         <number>4</number>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Step size:</string>
         </property>
        </widget>
       </item>
-      <item row="5" column="1">
+      <item row="6" column="1">
        <widget class="QLabel" name="stepSizeLabel">
         <property name="text">
          <string>--</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>Counting time:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QDoubleSpinBox" name="countingTimeDoubleSpinBox">
+        <property name="suffix">
+         <string> sec</string>
+        </property>
+        <property name="decimals">
+         <number>4</number>
+        </property>
+        <property name="minimum">
+         <double>0.001000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>1000000.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>Comment:</string>
         </property>
        </widget>
       </item>
@@ -166,6 +171,95 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>Scan type:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="scanTypeComboBox">
+        <item>
+         <property name="text">
+          <string>Absolute</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Relative</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Symmetric relative</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Limits:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QLabel" name="leftLimitLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>TextLabel</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>to</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="rightLimitLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>TextLabel</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
      </layout>
     </widget>
    </item>
@@ -187,7 +281,6 @@
  </widget>
  <tabstops>
   <tabstop>motorComboBox</tabstop>
-  <tabstop>relativeScanCheckBox</tabstop>
   <tabstop>startDoubleSpinBox</tabstop>
   <tabstop>endDoubleSpinBox</tabstop>
   <tabstop>stepsSpinBox</tabstop>
@@ -195,7 +288,6 @@
   <tabstop>commentLineEdit</tabstop>
   <tabstop>autoShutterCheckBox</tabstop>
   <tabstop>goBackAfterEndCheckBox</tabstop>
-  <tabstop>startStopPushButton</tabstop>
  </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>

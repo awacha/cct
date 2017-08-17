@@ -1,3 +1,5 @@
+import logging
+
 from PyQt5 import QtWidgets, QtGui
 
 from .scan_ui import Ui_Form
@@ -11,6 +13,8 @@ from ....core.instrument.instrument import Instrument
 from ....core.instrument.privileges import PRIV_MOVEMOTORS
 from ....core.services.interpreter import Interpreter
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['pilatus', 'genix']
@@ -23,6 +27,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._motor = None
         self._scangraph = None
         self._failed = False
+        self._origin = None
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -31,16 +36,21 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.motorComboBox.addItems(sorted(self.credo.motors.keys()))
         self.motorComboBox.setCurrentIndex(0)
         self.motorComboBox.currentTextChanged.connect(self.onMotorSelected)
+        self.scanTypeComboBox.currentTextChanged.connect(self.onScanTypeSelected)
         self.startDoubleSpinBox.valueChanged.connect(self.recalculateStepSize)
         self.endDoubleSpinBox.valueChanged.connect(self.recalculateStepSize)
         self.stepsSpinBox.valueChanged.connect(self.recalculateStepSize)
         self.progressBar.setVisible(False)
         self.startStopPushButton.clicked.connect(self.onStartStop)
         self.adjustSize()
+        self.onMotorSelected()
+
+    def onScanTypeSelected(self, scantype):
+        self.updateSpinBoxes()
 
     def onMotorSelected(self):
         if self._motor is not None:
-            self.unrequireDevice(self._motor)
+            self.unrequireDevice('Motor_' + self._motor)
             self._motor = None
         self._motor = self.motorComboBox.currentText()
         self.requireDevice('Motor_' + self._motor)
@@ -49,25 +59,52 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def updateSpinBoxes(self, where=None):
         motor = self.credo.motors[self._motor]
         assert isinstance(motor, Motor)
-        if self.relativeScanCheckBox.isChecked():
+        if self.scanTypeComboBox.currentText()=='Relative':
             if where is None:
                 where = motor.where()
             self.startDoubleSpinBox.setMinimum(motor.get_variable('softleft') - where)
             self.startDoubleSpinBox.setMaximum(motor.get_variable('softright') - where)
             self.endDoubleSpinBox.setMinimum(motor.get_variable('softleft') - where)
             self.endDoubleSpinBox.setMaximum(motor.get_variable('softright') - where)
-        else:
+            self.leftLimitLabel.setText('{:.4f}'.format(motor.get_variable('softleft') -where))
+            self.rightLimitLabel.setText('{:.4f}'.format(motor.get_variable('softright') -where))
+            self.endLabel.setVisible(True)
+            self.startLabel.setText('Start:')
+            self.endDoubleSpinBox.setVisible(True)
+        elif self.scanTypeComboBox.currentText()=='Absolute':
             self.startDoubleSpinBox.setMinimum(motor.get_variable('softleft'))
             self.startDoubleSpinBox.setMaximum(motor.get_variable('softright'))
             self.endDoubleSpinBox.setMinimum(motor.get_variable('softleft'))
             self.endDoubleSpinBox.setMaximum(motor.get_variable('softright'))
+            self.leftLimitLabel.setText('{:.4f}'.format(motor.get_variable('softleft')))
+            self.rightLimitLabel.setText('{:.4f}'.format(motor.get_variable('softright')))
+            self.endLabel.setVisible(True)
+            self.startLabel.setText('Start:')
+            self.endDoubleSpinBox.setVisible(True)
+        elif self.scanTypeComboBox.currentText()=='Symmetric relative':
+            if where is None:
+                where = motor.where()
+            self.startDoubleSpinBox.setMinimum(0)
+            maxhwhm=min(where-motor.get_variable('softleft'), motor.get_variable('softright')-where)
+            self.leftLimitLabel.setText('{:.4f}'.format(-maxhwhm))
+            self.rightLimitLabel.setText('{:.4f}'.format(maxhwhm))
+            self.startDoubleSpinBox.setMaximum(maxhwhm)
+            self.startLabel.setText('Half width:')
+            self.endLabel.setVisible(False)
+            self.endDoubleSpinBox.setVisible(False)
+        else:
+            raise ValueError(self.scanTypeComboBox.currentText())
+        self.adjustSize()
 
     def recalculateStepSize(self):
-        self.stepSizeLabel.setText('{:.4f}'.format(
-            self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value() / (self.stepsSpinBox.value() - 1)))
+        if self.scanTypeComboBox.currentText()=='Symmetric relative':
+            stepsize = self.startDoubleSpinBox.value()*2/(self.stepsSpinBox.value()-1)
+        else:
+            stepsize = self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value() / (self.stepsSpinBox.value() - 1)
+        self.stepSizeLabel.setText('{:.4f}'.format(stepsize))
 
     def onMotorPositionChange(self, motor: Motor, newposition: float):
-        if not self.isBusy() and self.relativeScanCheckBox.isChecked():
+        if not self.isBusy() and self.scanTypeComboBox.currentText() in ['Relative', 'Symmetric relative']:
             self.updateSpinBoxes()
 
     def setBusy(self):
@@ -90,34 +127,45 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def onCmdReturn(self, interpreter: Interpreter, cmdname: str, retval):
         super().onCmdReturn(interpreter, cmdname, retval)
+        logger.debug('onCmdReturn(interpreter, {}, {})'.format(cmdname, retval))
         if cmdname == 'moveto':
-            if self._failed:
-                self.setIdle()
-            if self._origin is None:
+            if self._failed or self._origin is None:
+                logger.debug('Setting UI to idle after moveto')
                 self.setIdle()
             elif self.autoShutterCheckBox.isChecked():
+                logger.debug('Opening shutter after moveto')
                 self.executeCommand(Shutter, True)
             else:
+                logger.debug('Simulating opening shutter after moveto')
                 self.onCmdReturn(self.credo.services['interpreter'], 'shutter', True)
         elif cmdname == 'scan':
             if self.autoShutterCheckBox.isChecked():
+                logger.debug('Closing shutter after scan')
                 self.executeCommand(Shutter, False)
             else:
-                self.setIdle()
+                logger.debug('Simulating closing shutter after scan')
+                self.onCmdReturn(self.credo.services['interpreter'], 'shutter', False)
         elif cmdname == 'shutter' and retval:
             if self._failed:
                 self.setIdle()
             else:
+                logger.debug('Shutter is open, starting scan.')
                 # shutter is open, start scan.
                 motor = self.credo.motors[self._motor]
                 assert isinstance(motor, Motor)
-                if self.relativeScanCheckBox.isChecked():
+                if self.scanTypeComboBox.currentText()=='Relative':
                     start = motor.where()
                     end = motor.where() + self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value()
-                else:
+                elif self.scanTypeComboBox.currentText()=='Absolute':
                     start = self.startDoubleSpinBox.value()
                     end = self.endDoubleSpinBox.value()
+                elif self.scanTypeComboBox.currentText()=='Symmetric relative':
+                    start = motor.where()
+                    end=motor.where() + 2*self.startDoubleSpinBox.value()
+                else:
+                    raise ValueError(self.scanTypeComboBox.currentText())
                 self._scangraph = ScanGraph(credo=self.credo)
+                self._scangraph.setWindowTitle('Scan #{:d}'.format(self.credo.services['filesequence'].get_nextfreescan(acquire=False)))
                 self._scangraph.setCurve([self._motor] + self.credo.config['scan']['columns'],
                                          self.stepsSpinBox.value())
                 self._scangraph.show()
@@ -126,15 +174,18 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                                     self.countingTimeDoubleSpinBox.value(), self.commentLineEdit.text())
         elif cmdname == 'shutter' and not retval:
             if self.goBackAfterEndCheckBox.isChecked():
+                logger.debug('Going back to the start')
                 self.executeCommand(Moveto, self._motor, self._origin)
+                self._origin = None
             else:
+                logger.debug('Simulating going back to the start')
+                self._origin = None
                 self.onCmdReturn(interpreter, 'moveto', True)
-            self._origin = None
 
     def onCmdDetail(self, interpreter: Interpreter, cmdname: str, detail):
         fsn, position, counters = detail
         assert isinstance(self._scangraph, ScanGraph)
-        self._scangraph.appendScanPoint((position,) + tuple(counters))
+        self._scangraph.appendScanPoint(tuple(counters))
 
     def onStartStop(self):
         if self.startStopPushButton.text() == 'Start':
@@ -148,10 +199,14 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 motor = self.credo.motors[self._motor]
                 assert isinstance(motor, Motor)
                 self._origin = motor.where()
-                if self.relativeScanCheckBox.isChecked():
+                if self.scanTypeComboBox.currentText()=='Relative':
                     start = self.startDoubleSpinBox.value() + motor.where()
-                else:
+                elif self.scanTypeComboBox.currentText()=='Absolute':
                     start = self.startDoubleSpinBox.value()
+                elif self.scanTypeComboBox.currentText()=='Symmetric relative':
+                    start = motor.where() - self.startDoubleSpinBox.value()
+                else:
+                    raise ValueError(self.scanTypeComboBox.currentText())
                 self.executeCommand(Moveto, self._motor, start)
             except Exception as exc:
                 self.setIdle()
