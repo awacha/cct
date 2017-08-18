@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>616</width>
+    <height>536</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,6 +21,12 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QTabWidget" name="tabWidget">
+      <property name="minimumSize">
+       <size>
+        <width>600</width>
+        <height>400</height>
+       </size>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -65,6 +71,13 @@
       </widget>
      </widget>
     </item>
+    <item>
+     <widget class="QProgressBar" name="progressBar">
+      <property name="value">
+       <number>24</number>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -72,7 +85,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>616</width>
      <height>22</height>
     </rect>
    </property>
@@ -84,6 +97,8 @@
     <addaction name="actionLoad_script"/>
     <addaction name="actionSave_script"/>
     <addaction name="actionSaveAs"/>
+    <addaction name="separator"/>
+    <addaction name="actionClose"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -326,6 +341,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="actionClose">
+   <property name="icon">
+    <iconset theme="window-close"/>
+   </property>
+   <property name="text">
+    <string>Close</string>
+   </property>
+   <property name="toolTip">
+    <string>Close this window</string>
    </property>
   </action>
  </widget>

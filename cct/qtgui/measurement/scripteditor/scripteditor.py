@@ -35,7 +35,6 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self.lastfilename = None
-        self._script_pause_connection=None
         self.setupUi(self)
 
     def setupUi(self, MainWindow):
@@ -44,14 +43,16 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         for i in range(10):
             self.flags[i] = self.toolBarFlags.addAction(str(i), lambda i=i: self.flagtoggled(i))
             self.flags[i].setCheckable(True)
+
         self.document = self.scriptEdit.document()
         assert isinstance(self.document, QtGui.QTextDocument)
         self.document.undoAvailable.connect(self.actionUndo.setEnabled)
         self.document.redoAvailable.connect(self.actionRedo.setEnabled)
+        self.actionClose.triggered.connect(self.close)
         self.actionUndo.triggered.connect(self.document.undo)
         self.actionRedo.triggered.connect(self.document.redo)
-        self.actionUndo.setEnabled(False)
-        self.actionRedo.setEnabled(False)
+        self.actionUndo.setEnabled(self.document.isUndoAvailable())
+        self.actionRedo.setEnabled(self.document.isRedoAvailable())
         self.scriptEdit.copyAvailable.connect(self.actionCopy.setEnabled)
         self.scriptEdit.copyAvailable.connect(self.actionCut.setEnabled)
         self.scriptEdit.copyAvailable.connect(self.actionDelete.setEnabled)
@@ -72,12 +73,14 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.document.modificationChanged.connect(self.scriptModificationStateChanged)
         self.actionSave_script.setEnabled(False)
         self.actionSave_script.triggered.connect(self.saveScript)
+        self.actionSaveAs.triggered.connect(self.saveAsScript)
         self.actionNew_script.triggered.connect(self.newScript)
         self.actionLoad_script.triggered.connect(self.loadScript)
         self.actionStart.triggered.connect(self.runScript)
         self.actionPause.triggered.connect(self.pauseScript)
         self.syntaxHighLighter = HighLighter(self.document)
         self._currentline = QtGui.QTextCursor(self.document)
+        self.progressBar.setVisible(False)
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         if self.confirmDropChanges():
@@ -87,6 +90,16 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def flagtoggled(self, flagnumber):
         print('Flag #{} is now {}'.format(flagnumber, self.flags[flagnumber].isChecked()))
+        if self.flags[flagnumber].isChecked():
+            self.credo.services['interpreter'].set_flag(flagnumber)
+        else:
+            self.credo.services['interpreter'].clear_flag(flagnumber)
+
+    def onInterpreterFlag(self, interpreter: Interpreter, flag: str, state: bool):
+        try:
+            self.flags[int(flag)].setChecked(state)
+        except (ValueError, KeyError):
+            logger.warning('Unknown flag {} in ScriptEditor'.format(flag))
 
     def scriptModificationStateChanged(self, modified):
         self.actionSave_script.setEnabled(modified)
@@ -113,6 +126,8 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         if self.confirmDropChanges():
             self.document.setPlainText('')
             self.document.setModified(False)
+            self.lastfilename=None
+            self.setWindowTitle('CCT Script Editor :: *Untitled*')
 
     def saveAsScript(self):
         if self.lastfilename is None:
@@ -128,7 +143,10 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         if filename is None:
             return
         else:
+            if not filename.endswith('.cct'):
+                filename=filename+'.cct'
             self.lastfilename=filename
+            self.setWindowTitle('CCT Script Editor :: {}'.format(os.path.split(self.lastfilename)[-1]))
         return self.saveScript()
 
     def loadScript(self):
@@ -155,15 +173,26 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             assert isinstance(self.document, QtGui.QTextDocument)
             self.document.setPlainText(text)
             self.lastfilename = filename
+            self.setWindowTitle('CCT Script Editor :: {}'.format(os.path.split(self.lastfilename)[-1]))
             self.document.setModified(False)
 
     def setIdle(self):
+        for action in [self.actionNew_script, self.actionSave_script, self.actionSaveAs, self.actionPaste, self.actionLoad_script]:
+            action.setEnabled(True)
+        for action in [self.actionDelete, self.actionCut,
+                       self.actionCopy]:
+            action.setEnabled(self.scriptEdit.textCursor().hasSelection())
+        self.actionUndo.setEnabled(self.document.isUndoAvailable())
+        self.actionRedo.setEnabled(self.document.isRedoAvailable())
         self.scriptEdit.setReadOnly(False)
         self.scriptEdit.setExtraSelections([])
         self.actionStart.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
         super().setIdle()
 
     def setBusy(self):
+        for action in [self.actionNew_script, self.actionSave_script, self.actionSaveAs, self.actionLoad_script, self.actionCut,
+                       self.actionCopy, self.actionDelete, self.actionPaste, self.actionRedo, self.actionUndo]:
+            action.setEnabled(False)
         self.scriptEdit.setReadOnly(True)
         self.actionStart.setIcon(QtGui.QIcon.fromTheme('media-playback-stop'))
         super().setBusy()
@@ -171,13 +200,13 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def runScript(self):
         if self.actionStart.icon().name()=='media-playback-start':
             self.setBusy()
-            txt='Script started at {}'.format(datetime.datetime.now())
-            self.writeLogMessage('{0}\n{1}\n{0}\n'.format('-'*len(txt),txt), add_date=False)
+            txt='| Script started at {} |'.format(datetime.datetime.now())
+            self.writeLogMessage('{0}\n{1}\n{0}\n'.format('+'+'-'*len(txt-2)+'+',txt), add_date=False)
             self.executeCommand(Script, script=self.scriptEdit.document().toPlainText())
         elif self.actionStart.icon().name()=='media-playback-stop':
             self.credo.services['interpreter'].kill()
-            txt='Interrupting script at {}'.format(datetime.datetime.now())
-            self.writeLogMessage('{0}\n{1}\n{0}\n'.format('-'*len(txt),txt), add_date=False)
+            txt='| Interrupting script at {} |'.format(datetime.datetime.now())
+            self.writeLogMessage('{0}\n{1}\n{0}\n'.format('+'+'-'*len(txt-2)+'+',txt), add_date=False)
         else:
             raise ValueError(self.actionStart.icon().name())
 
@@ -188,11 +217,14 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         assert isinstance(cmd, Script)
         if cmd.is_paused():
             cmd.resume()
+            self.setWindowTitle(self.windowTitle().replace('(paused)','').strip())
+            self.statusBar().showMessage('Resuming operation...')
         else:
-            self._script_pause_connection=(cmd, cmd.connect('paused', self.onScriptPaused))
             cmd.pause()
+            self.statusBar().showMessage('Pausing script...')
             self.writeLogMessage('Waiting for script to end current command, then pausing...')
             self.toolBar.setEnabled(False)
+            self.setWindowTitle(self.windowTitle()+' (pausing...)')
 
     def confirmDropChanges(self):
         """Present a confirmation dialog before abandoning changes to the script.
@@ -242,31 +274,29 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def onCmdReturn(self, interpreter: Interpreter, cmdname: str, retval):
         super().onCmdReturn(interpreter, cmdname, retval)
-        txt='Script ended at {}'.format(datetime.datetime.now())
-        self.writeLogMessage('{0}\n{1}\n{0}\n'.format('-'*len(txt),txt))
+        txt='| Script ended at {} |'.format(datetime.datetime.now())
+        self.writeLogMessage('{0}\n{1}\n{0}\n'.format('+'+'-'*len(txt-2)+'+',txt), add_date=False)
+        self.statusBar().showMessage('Script ended.',10000)
         self.setIdle()
 
     def onScriptPaused(self):
-        try:
-            if self._script_pause_connection is not None:
-                self._script_pause_connection[0].disconnect(self._script_pause_connection[1])
-                self._script_pause_connection=None
-        finally:
-            self.toolBar.setEnabled(True)
-            self.writeLogMessage('Script paused.')
+        self.statusBar().showMessage('Script paused.')
+        self.toolBar.setEnabled(True)
+        self.writeLogMessage('Script paused.')
+        self.setWindowTitle(self.windowTitle().replace('(pausing...)','(paused)'))
 
     def onCmdMessage(self, interpreter: Interpreter, cmdname: str, message: str):
         self.writeLogMessage(message)
+        self.statusBar().showMessage(message)
 
     def writeLogMessage(self, msg, add_date=True):
         if add_date:
             msg = '{}: {}'.format(datetime.datetime.now(), msg)
         while msg.endswith('\n'):
             msg=msg[:-1]
-        msg=msg+'\n'
         self.logTextBrowser.append(msg)
         if self.lastfilename is None:
             return
         logfile = self.lastfilename.rsplit('.',1)[0]+'.log'
         with open(logfile, 'at') as f:
-            f.write(msg)
+            f.write(msg+'\n')

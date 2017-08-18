@@ -223,6 +223,7 @@ class Interpreter(Service):
             pass
 
     def set_flag(self, flagname):
+        flagname=str(flagname)
         if self._parent is not None:
             return self._parent.set_flag(flagname)
         else:
@@ -232,6 +233,7 @@ class Interpreter(Service):
                 self.emit('flag', flagname, True)
 
     def clear_flag(self, flagname=None):
+        flagname=str(flagname)
         if self._parent is not None:
             return self._parent.clear_flag(flagname)
         else:

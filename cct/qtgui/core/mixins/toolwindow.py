@@ -8,7 +8,7 @@ from ....core.services.interpreter import Interpreter
 from ....core.commands import Command
 from ....core.instrument.privileges import PRIV_LAYMAN
 from ....core.devices import Device, Motor
-from typing import Union, Type
+from typing import Union, Type, Any
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -205,8 +205,8 @@ class ToolWindow(object):
         try:
             self.progressBar.setVisible(True)
             self.progressBar.setMinimum(0)
-            self.progressBar.setMaximum(100000)
-            self.progressBar.setValue(100000 * fraction)
+            self.progressBar.setMaximum(1000)
+            self.progressBar.setValue(1000 * fraction)
             self.progressBar.setFormat(description)
         except (AttributeError, RuntimeError):
             pass
@@ -224,7 +224,10 @@ class ToolWindow(object):
     def onCmdMessage(self, interpreter: Interpreter, cmdname: str, message: str):
         pass
 
-    def onCmdDetail(self, interpreter: Interpreter, cmdname: str, detail):
+    def onCmdDetail(self, interpreter: Interpreter, cmdname: str, detail: Any):
+        pass
+
+    def onInterpreterFlag(self, interpreter: Interpreter, flag: str, state: bool):
         pass
 
     def executeCommand(self, command: Type[Command], *args, **kwargs):
@@ -238,7 +241,8 @@ class ToolWindow(object):
                                         interpreter.connect('cmd-detail', self.onCmdDetail),
                                         interpreter.connect('progress', self.onCmdProgress),
                                         interpreter.connect('pulse', self.onCmdPulse),
-                                        interpreter.connect('cmd-message', self.onCmdMessage), ]
+                                        interpreter.connect('cmd-message', self.onCmdMessage),
+                                        interpreter.connect('flag', self.onInterpreterFlag),]
         assert isinstance(interpreter, Interpreter)
         try:
             return interpreter.execute_command(command, args, kwargs)

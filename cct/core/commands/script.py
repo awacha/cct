@@ -243,7 +243,7 @@ class Script(Command):
         self._pause = False
 
     def is_paused(self):
-        return self._pause is False  # it can be None
+        return self._pause is not None  # it can be None
 
     def resume(self):
         if self._pause is None:
