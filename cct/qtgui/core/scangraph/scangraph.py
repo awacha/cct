@@ -12,12 +12,13 @@ from sastool.misc.basicfit import findpeak_single
 
 from .scangraph_ui import Ui_MainWindow
 from .signalsmodel import SignalModel
+from ..plotimage import PlotImage
 from ...core.mixins import ToolWindow
 from ....core.devices import Motor
 from ....core.instrument.instrument import Instrument
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -330,3 +331,17 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Cannot move motor',
                                            'Cannot move motor {}: {}'.format(self.abscissaName(), exc.args[0]))
+
+    def draw2D(self):
+        if not self.actionShow_2D.isChecked():
+            return
+        plot2d=PlotImage.get_lastinstance()
+        if self.cursorSlider.isEnabled():
+            cursor = self.cursorSlider.value()
+        else:
+            cursor = self._datalength-1
+        if cursor<0:
+            return
+        fsn = self.data['FSN'][cursor]
+        exp = self.credo.services['filesequence'].load_exposure(self.credo.config['path']['prefixes']['scn'],fsn)
+        plot2d.setExposure(exp)
