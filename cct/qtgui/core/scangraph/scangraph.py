@@ -64,6 +64,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionMotor_to_cursor.setEnabled(False)
         self.actionMotor_to_peak.triggered.connect(self.onMotorToPeak)
         self.actionMotor_to_cursor.triggered.connect(self.onMotorToCursor)
+        self.actionShow_2D.toggled.connect(self.replot)
         self.setCursorRange()
 
     def fit(self, functiontype, sign):
@@ -139,6 +140,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.cursorRightButton.setEnabled(position < self._datalength - 1)
         self.cursorHomeButton.setEnabled(position > 0)
         self.cursorEndButton.setEnabled(position < self._datalength - 1)
+        self.draw2D()
         self.drawScanCursor()
 
     def drawScanCursor(self):
@@ -186,6 +188,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.autoscale()
         self.drawLegend()
         self.drawScanCursor()
+        self.draw2D()
         self.requestRedraw()
         print('Replot took {} seconds'.format(time.monotonic() - t0))
 
@@ -336,12 +339,13 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         if not self.actionShow_2D.isChecked():
             return
         plot2d=PlotImage.get_lastinstance()
-        if self.cursorSlider.isEnabled():
+        plot2d.show()
+        if len(self._data) == self._datalength:
             cursor = self.cursorSlider.value()
         else:
             cursor = self._datalength-1
         if cursor<0:
             return
-        fsn = self.data['FSN'][cursor]
-        exp = self.credo.services['filesequence'].load_exposure(self.credo.config['path']['prefixes']['scn'],fsn)
+        fsn = self._data['FSN'][cursor]
+        exp = self.credo.services['filesequence'].load_exposure(self.credo.config['path']['prefixes']['scn'],int(fsn))
         plot2d.setExposure(exp)
