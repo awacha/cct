@@ -256,8 +256,11 @@ class GeniX(Device):
         """Turn X-ray generator on or off"""
         self.execute_command('xrays', on)
 
-    def is_busy(self):
-        return not (self.get_variable('_status') in ['Power off', 'Low power', 'Full power', 'X-rays off'])
+    def is_busy(self, status=None):
+        if status is None:
+            status = self.get_variable('_status')
+        return status not in ['Power off', 'Low power', 'Full power', 'X-rays off']
+
 
     def set_power(self, state: str):
         if not self.get_variable('xrays'):

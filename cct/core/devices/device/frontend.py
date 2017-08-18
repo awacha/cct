@@ -491,7 +491,7 @@ class Device(Callbacks):
         """Try to reconnect the device after a spontaneous disconnection."""
         return self.connect_device(*self.deviceconnectionparameters)
 
-    def is_busy(self) -> int:
+    def is_busy(self,  status=None) -> int:
         """Returns how many times the busy semaphore has been acquired. This
         way, the return value casted to bool makes sense semantically."""
         return self.max_busy_level - self._busy.get_value()
