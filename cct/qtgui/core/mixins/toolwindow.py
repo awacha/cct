@@ -241,7 +241,7 @@ class ToolWindow(object):
                                         interpreter.connect('cmd-message', self.onCmdMessage), ]
         assert isinstance(interpreter, Interpreter)
         try:
-            interpreter.execute_command(command, args, kwargs)
+            return interpreter.execute_command(command, args, kwargs)
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Error executing command',
                                            'Cannot execute command {}: {}'.format(command.name, exc.args[0]))
