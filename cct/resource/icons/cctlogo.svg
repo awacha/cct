@@ -13,7 +13,7 @@
         viewBox="0 0 372.04724 372.04724"
         id="svg2"
         version="1.1"
-        inkscape:version="0.91 r13725"
+        inkscape:version="0.92.2 5c3e80d, 2017-08-06"
         sodipodi:docname="cctlogo.svg"
         inkscape:export-filename="/home/labuser/PycharmProjects/cct/cct/resource/icons/64x64/cctlogo.png"
         inkscape:export-xdpi="15.48"
@@ -27,26 +27,30 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.98994949"
-     inkscape:cx="153.04825"
-     inkscape:cy="145.11111"
+     inkscape:zoom="0.7"
+     inkscape:cx="373.24956"
+     inkscape:cy="-132.69642"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:snap-object-midpoints="true"
      inkscape:snap-bbox="false"
      inkscape:snap-intersection-paths="true"
-     inkscape:object-paths="true"
+     inkscape:object-paths="false"
      inkscape:object-nodes="true"
      fit-margin-top="0"
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:window-width="1920"
-     inkscape:window-height="976"
+     inkscape:window-width="1280"
+     inkscape:window-height="949"
      inkscape:window-x="0"
-     inkscape:window-y="31"
-     inkscape:window-maximized="1" />
+     inkscape:window-y="26"
+     inkscape:window-maximized="1"
+     inkscape:snap-others="true"
+     inkscape:snap-smooth-nodes="true"
+     inkscape:snap-midpoints="true"
+     inkscape:snap-center="true" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -55,7 +59,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -82,21 +86,30 @@
        inkscape:transform-center-x="-1.9849616"
        inkscape:transform-center-y="-5.5155786" />
     <path
-       style="fill:#ff0000;fill-rule:evenodd;stroke:#ff0000;stroke-width:10;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 101.69954,321.69501 284.86302,0"
        id="path4138"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
+       style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:9.99921228;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:9.99921228,19.99842456;stroke-opacity:1;stroke-dashoffset:0"
+       d="m 323.76215,386.8605 c 0,0 11.16459,-1.12719 15.13734,-4.59457 15.83205,-13.81804 5.46706,-57.29458 26.29945,-57.29458 h 24.18835 M 241.32074,277.89543 c 0,0 -9.1917,2.41133 -16.75082,12.40651 -7.55912,9.99517 -12.91138,31.39307 -25.89573,31.39307 h -96.97465" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:180px;line-height:125%;font-family:Arial;-inkscape-font-specification:'Arial, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:Arial;-inkscape-font-specification:'Arial, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="24.24367"
        y="209.18941"
-       id="text4140"
-       sodipodi:linespacing="125%"><tspan
+       id="text4140"><tspan
          sodipodi:role="line"
          id="tspan4142"
          x="24.24367"
-         y="209.18941">CCT</tspan></text>
+         y="209.18941"
+         style="font-size:180px;line-height:1.25">CCT</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:180px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.93749994"
+       x="228.95235"
+       y="397.68756"
+       id="text828"><tspan
+         sodipodi:role="line"
+         id="tspan826"
+         x="228.95235"
+         y="397.68756"
+         style="stroke-width:0.93749994">3</tspan></text>
   </g>
 </svg>
