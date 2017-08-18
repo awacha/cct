@@ -123,7 +123,7 @@ class XrayFaultsReset(Command):
             raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
 
     def execute(self):
-        self.emit('Trying to reset X-ray generator fault flags.')
+        self.emit('message','Trying to reset X-ray generator fault flags.')
         self.get_device('xray_source').reset_faults()
 
     def on_variable_change(self, device, variablename, newvalue):
@@ -179,6 +179,7 @@ class XRayPower(Command):
         return True
 
     def execute(self):
+        self.emit('message', 'Setting X-ray source power to: {}'.format(self.target))
         self.get_device('xray_source').execute_command(self.command)
 
     def on_variable_change(self, device, variablename, newvalue):
@@ -214,6 +215,7 @@ class Warmup(Command):
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == '_status' and newvalue == 'Power off':
+            self.emit('message', 'X-ray source warmup procedure finished.')
             self.idle_return(newvalue)
 
     def validate(self):
