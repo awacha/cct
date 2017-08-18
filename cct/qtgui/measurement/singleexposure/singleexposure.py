@@ -57,9 +57,9 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.prefixComboBox.addItems(fs.get_prefixes())
         self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText('tst'))
         self.onPrefixChanged()
-        fs.connect('nextfsn-changed', self.onNextFSNChanged)
-        ea.connect('image', self.onImage)
-        sams.connect('list-changed', self.onSampleListChanged)
+        self._fsconnections=[fs.connect('nextfsn-changed', self.onNextFSNChanged)]
+        self._eaconnections=[ea.connect('image', self.onImage)]
+        self._samconnections=[sams.connect('list-changed', self.onSampleListChanged)]
         self.onSampleListChanged(sams)
         self.exposePushButton.clicked.connect(self.onExpose)
         self.adjustSize()
@@ -75,7 +75,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def onImage(self, ea: ExposureAnalyzer, prefix: str, fsn: int, image: np.ndarray, params: dict, mask: np.ndarray):
         logger.debug('Image received.')
-        pi = PlotImage.lastinstance
+        pi = PlotImage.get_lastinstance()
         if pi is None:
             pi = PlotImage()
         ex = Exposure(image, None, Header(params), mask)
