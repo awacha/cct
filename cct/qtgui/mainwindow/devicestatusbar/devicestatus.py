@@ -28,6 +28,7 @@ class DeviceStatus(QtWidgets.QWidget, Ui_Form):
         self.checkIfReady(device)
 
     def onDeviceVariableChange(self, device: Device, var: str, value: typing.Any):
+        status = device.get_variable('_status')
         if var == '_status':
             status = value
             auxstatus = device.get_variable('_auxstatus')
@@ -39,7 +40,7 @@ class DeviceStatus(QtWidgets.QWidget, Ui_Form):
         self.deviceStatusLabel.setText('{} ({})'.format(status, auxstatus))
         self.checkIfDeviceIsConnected(device)
         self.checkIfReady(device)
-        self.checkIfBusy(device)
+        self.checkIfBusy(device, status=status)
         return False
 
     def checkIfDeviceIsConnected(self, device: Device):
@@ -62,8 +63,8 @@ class DeviceStatus(QtWidgets.QWidget, Ui_Form):
         self.setLabelBackgroundColor(self.readyLabel, color)
         self.readyLabel.setToolTip(tooltip)
 
-    def checkIfBusy(self, device: Device):
-        if device.is_busy():
+    def checkIfBusy(self, device: Device, status=None):
+        if device.is_busy(status):
             color = QtGui.QColor('yellow')
             tooltip = 'Device is busy'
             text = 'BU'
