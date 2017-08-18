@@ -47,6 +47,8 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if not self.sampleNameComboBox.currentText():
             return
         self.model.add_sample(self.sampleNameComboBox.currentText())
+        for i in range(7):
+            self.treeView.resizeColumnToContents(i)
         with self._updating:
             self.sampleNameComboBox.setCurrentIndex(-1)
 
@@ -84,6 +86,8 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         else:
             assert what == 'transmission'
             self.model.update_transm(samplename, intensity)
+        for i in range(7):
+            self.treeView.resizeColumnToContents(i)
         return False
 
     def setIdle(self):
@@ -112,7 +116,7 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.emptyNameComboBox.setCurrentIndex(self.emptyNameComboBox.findText(ebname))
             self.sampleNameComboBox.clear()
             self.sampleNameComboBox.addItems(sorted([sam.title for sam in ss]))
-            self.emptyNameComboBox.setCurrentIndex(-1)
+            self.sampleNameComboBox.setCurrentIndex(-1)
 
     def cleanup(self):
         for c in self._samplestoreconnections:

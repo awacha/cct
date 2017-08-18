@@ -25,7 +25,7 @@ class TransmissionModel(QtCore.QAbstractItemModel):
         row = self._samples.index(s)
         if j is None:
             j = i
-        self.dataChanged(self.createIndex(row, i), self.createIndex(row, j))
+        self.dataChanged.emit(self.createIndex(row, i), self.createIndex(row, j))
 
     def update_dark(self, samplename, value):
         return self._update_intensityvalue(samplename, value, 1)
@@ -62,7 +62,7 @@ class TransmissionModel(QtCore.QAbstractItemModel):
                 val = '--'
             else:
                 assert isinstance(val, ErrorValue)
-                val = val.tostring()
+                val = val.tostring(plusminus=' \xb1 ')
             return val
         elif index.column() in [5, 6]:
             thickness = self.credo.services['samplestore'].get_sample(self._samples[index.row()][0]).thickness
@@ -73,9 +73,9 @@ class TransmissionModel(QtCore.QAbstractItemModel):
             assert isinstance(thickness, ErrorValue)
             mu = - transm.log() / thickness
             if index.column() == 5:
-                return mu.tostring()
+                return mu.tostring(plusminus=' \xb1 ')
             else:
-                return (1 / mu).tostring()
+                return (1 / mu).tostring(plusminus=' \xb1 ')
         else:
             return None
 
