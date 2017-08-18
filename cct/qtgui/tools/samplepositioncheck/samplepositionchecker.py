@@ -3,6 +3,7 @@ from PyQt5 import QtWidgets
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle
 
 from .samplepositionchecker_ui import Ui_Form
 from .sampleselectorlist import SampleSelectorModel
@@ -34,6 +35,7 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(ss,SampleStore)
         self._connections=[ss.connect('list-changed', self.onSampleListChanged)]
         self.model.dataChanged.connect(self.replot)
+        self.replot()
 
     def cleanup(self):
         for c in self._connections:
@@ -51,6 +53,16 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def replot(self):
         assert isinstance(self.axes, Axes)
         self.axes.clear()
+        try:
+            xmin=self.credo.motors['Sample_X'].get_variable('softleft')
+            ymin=self.credo.motors['Sample_Y'].get_variable('softleft')
+            xmax=self.credo.motors['Sample_X'].get_variable('softright')
+            ymax=self.credo.motors['Sample_Y'].get_variable('softright')
+            self.axes.add_patch(Rectangle([xmin,ymin],xmax-xmin,ymax-ymin, fill=True,color='lightgray'))
+        except KeyError:
+            pass
+        self.axes.grid(True,which='both')
+        self.axes.axis('equal')
         samples = self.model.getSelected()
         if not samples:
             self.canvas.draw()
@@ -62,5 +74,4 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if self.showLabelsCheckBox.isChecked():
             for s,x,y in zip(samples, coords[:,0],coords[:,1]):
                 self.axes.text(x,y,s,ha='left',va='center')
-        self.axes.axis('equal')
         self.canvas.draw()
