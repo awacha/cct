@@ -186,14 +186,14 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def onSaveResult(self):
         assert isinstance(self.credo, Instrument)
         if self.sender() is self.saveBeamXPushButton:
-            self.credo.config['geometry']['beamposx'] = self.beamXDoubleSpinBox.value()
-            self.credo.config['geometry']['beamposx.err'] = self.beamXErrDoubleSpinBox.value()
+            self.credo.config['geometry']['beamposx'] = self.beamYDoubleSpinBox.value()
+            self.credo.config['geometry']['beamposx.err'] = self.beamYErrDoubleSpinBox.value()
         elif self.sender() is self.saveBeamYPushButton:
-            self.credo.config['geometry']['beamposy'] = self.beamYDoubleSpinBox.value()
-            self.credo.config['geometry']['beamposy.err'] = self.beamYErrDoubleSpinBox.value()
+            self.credo.config['geometry']['beamposy'] = self.beamXDoubleSpinBox.value()
+            self.credo.config['geometry']['beamposy.err'] = self.beamXErrDoubleSpinBox.value()
         elif self.sender() is self.saveSDDistPushButton:
             self.credo.config['geometry']['dist_sample_det'] = self.sdDistDoubleSpinBox.value()
-            self.credo.config['geometry']['dist_sample_det.err'] = self.sdDistDoubleSpinBox.value()
+            self.credo.config['geometry']['dist_sample_det.err'] = self.sdDistErrDoubleSpinBox.value()
         else:
             raise ValueError(self.sender())
         self.sender().setEnabled(False)

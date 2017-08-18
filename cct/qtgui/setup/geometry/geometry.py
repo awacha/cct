@@ -49,8 +49,8 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
             updatespinbox(self.PixelSizeDoubleSpinBox, credo.config['geometry']['pixelsize'])
             updatespinbox(self.wavelengthValDoubleSpinBox, credo.config['geometry']['wavelength'])
             updatespinbox(self.wavelengthErrDoubleSpinBox, credo.config['geometry']['wavelength.err'])
-            updatespinbox(self.beamPosXDoubleSpinBox, credo.config['geometry']['beamposx'])
-            updatespinbox(self.beamPosYDoubleSpinBox, credo.config['geometry']['beamposy'])
+            updatespinbox(self.beamPosXDoubleSpinBox, credo.config['geometry']['beamposy'])
+            updatespinbox(self.beamPosYDoubleSpinBox, credo.config['geometry']['beamposx'])
             self.maskFileNameLineEdit.setText(credo.config['geometry']['mask'])
             if self.descriptionPlainTextEdit.toPlainText() != credo.config['geometry']['description']:
                 self.descriptionPlainTextEdit.setPlainText(credo.config['geometry']['description'])
@@ -108,9 +108,9 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         elif self.sender() == self.wavelengthErrDoubleSpinBox:
             self.credo.config['geometry']['wavelength.err'] = self.sender().value()
         elif self.sender() == self.beamPosXDoubleSpinBox:
-            self.credo.config['geometry']['beamposx'] = self.sender().value()
-        elif self.sender() == self.beamPosYDoubleSpinBox:
             self.credo.config['geometry']['beamposy'] = self.sender().value()
+        elif self.sender() == self.beamPosYDoubleSpinBox:
+            self.credo.config['geometry']['beamposx'] = self.sender().value()
         else:
             assert False
         self.credo.emit_config_change_signal()
