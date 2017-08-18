@@ -1,0 +1,44 @@
+package:
+  name: cct
+  version: {{ GIT_DESCRIBE_TAG }}
+
+source:
+  git_url: ./
+
+build:
+  number: {{ GIT_DESCRIBE_NUMBER }}
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - setuptools_scm
+    - numpy
+    - cython >=0.15
+    - matplotlib
+    - scipy
+    - sastool >=1.0.7
+    - krb5
+    - pyqt >=5
+    - psutil
+    - pymodbustcp
+
+  run:
+    - python
+    - numpy
+    - pymodbustcp
+    - psutil
+    - krb5
+    - scipy
+    - matplotlib
+    - sastool >=1.0.7
+    - pyqt >=5
+
+about:
+  home: https://github.com/awacha/cct
+  license: 3-clause BSD license
+  dev_url: https://github.com/awacha/cct.git
+  license_family: BSD
+  license_file: LICENSE
+  summary: DAQ for CREDO
+  description: Instrument control and data acquisition software for the CREDO SAXS instrument

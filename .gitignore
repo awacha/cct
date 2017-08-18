@@ -13,3 +13,4 @@ cct.lang
 *_ui.py
 *_rc.py
 /.eggs
+conda_build.sh
