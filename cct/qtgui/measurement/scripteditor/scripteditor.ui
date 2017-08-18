@@ -24,7 +24,7 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="log">
+      <widget class="QWidget" name="script">
        <attribute name="icon">
         <iconset resource="../../../resource/icons/icons.qrc">
          <normaloff>:/icons/script.svg</normaloff>:/icons/script.svg</iconset>
@@ -52,7 +52,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QTextBrowser" name="textBrowser">
+         <widget class="QTextBrowser" name="logTextBrowser">
           <property name="acceptRichText">
            <bool>false</bool>
           </property>
