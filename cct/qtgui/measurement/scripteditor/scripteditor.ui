@@ -69,6 +69,17 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="docs">
+       <attribute name="icon">
+        <iconset theme="help"/>
+       </attribute>
+       <attribute name="title">
+        <string>Command help</string>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Help on commands</string>
+       </attribute>
+      </widget>
      </widget>
     </item>
     <item>
@@ -119,15 +130,9 @@
     <addaction name="actionStart"/>
     <addaction name="actionPause"/>
    </widget>
-   <widget class="QMenu" name="menu_Help">
-    <property name="title">
-     <string>&amp;Help</string>
-    </property>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menu_Run"/>
-   <addaction name="menu_Help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -345,7 +350,8 @@
   </action>
   <action name="actionClose">
    <property name="icon">
-    <iconset theme="window-close"/>
+    <iconset theme="window-close">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Close</string>

@@ -20,6 +20,7 @@ from ..tools.capillarymeasurement import CapillaryMeasurement
 from ..tools.maskeditor import MaskEditor
 from ..tools.optimizegeometry import OptimizeGeometry
 from ..tools.datareduction import DataReduction
+from ..help import CommandHelp
 from ..setup.geometry import GeometrySetup
 from ..measurement.scripteditor import ScriptEditor
 from ..measurement.scan import ScanMeasurement
@@ -90,6 +91,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionDevice_connections: DeviceConnections,
             self.actionCalibrateMotors: MotorAutoCalibration,
             self.actionSamplePositionChecker: SamplePositionChecker,
+            self.actionCommands: CommandHelp,
         }
         self._dockwidgets = {}
 
