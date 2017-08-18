@@ -46,6 +46,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.fitPositivePushButton.clicked.connect(self.fitPositive)
         self.updateCenterPushButton.clicked.connect(self.updateCenter)
         self.updateThicknessPushButton.clicked.connect(self.updateThickness)
+        self.updateBothPushButton.clicked.connect(self.updateBoth)
         self.positiveErrDoubleSpinBox.valueChanged.connect(self.calculatePositionAndThickness)
         self.positiveValDoubleSpinBox.valueChanged.connect(self.calculatePositionAndThickness)
         self.negativeErrDoubleSpinBox.valueChanged.connect(self.calculatePositionAndThickness)
@@ -55,6 +56,9 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.loadScanFile()
         self._samplestoreconnections=[self.credo.services['samplestore'].connect('list-changed', self.onSampleListChanged)]
         self.onSampleListChanged(self.credo.services['samplestore'])
+        self.updateCenterPushButton.setEnabled(False)
+        self.updateThicknessPushButton.setEnabled(False)
+        self.updateBothPushButton.setEnabled(self.updateThicknessPushButton.isEnabled() and self.updateCenterPushButton.isEnabled())
 
     def onSampleListChanged(self, ss:SampleStore):
         with self._updating:
@@ -193,6 +197,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.thicknessLabel.setText('{:.4f} mm'.format(thickness))
         self.updateCenterPushButton.setEnabled(True)
         self.updateThicknessPushButton.setEnabled(True)
+        self.updateBothPushButton.setEnabled(self.updateThicknessPushButton.isEnabled() and self.updateCenterPushButton.isEnabled())
 
     def fitNegative(self):
         return self.fitPeak(-1)
@@ -225,6 +230,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             logger.info('Y position updated for sample {} to {}'.format(sample.title, sample.positiony))
         ss.set_sample(sample.title, sample)
         self.updateCenterPushButton.setEnabled(False)
+        self.updateBothPushButton.setEnabled(self.updateThicknessPushButton.isEnabled() and self.updateCenterPushButton.isEnabled())
 
     def updateThickness(self):
         ss = self.credo.services['samplestore']
@@ -234,3 +240,8 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         logger.info('Thickness updated for sample {} to {} cm'.format(sample.title, sample.thickness))
         ss.set_sample(sample.title, sample)
         self.updateThicknessPushButton.setEnabled(False)
+        self.updateBothPushButton.setEnabled(self.updateThicknessPushButton.isEnabled() and self.updateCenterPushButton.isEnabled())
+
+    def updateBoth(self):
+        self.updateCenter()
+        self.updateThickness()
