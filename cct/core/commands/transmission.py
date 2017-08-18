@@ -226,7 +226,7 @@ class Transmission(Command):
         self.fsns_currently_exposed = self.services['filesequence'].get_nextfreefsns(
             self.config['path']['prefixes']['tra'],
             self.nimages)
-        self.exposurestartdate = None
+        self.exposurestartdate = datetime.datetime.now()
         logger.debug('Starting exposure in the detector')
         self.get_device('detector').expose(
             self.services['filesequence'].exposurefileformat(
