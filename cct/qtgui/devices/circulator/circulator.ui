@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>507</width>
+    <width>553</width>
     <height>404</height>
    </rect>
   </property>
@@ -123,6 +123,9 @@
       </item>
       <item row="6" column="1">
        <widget class="QDateEdit" name="rtcDateEdit">
+        <property name="toolTip">
+         <string>Date shown by the clock in the circulator</string>
+        </property>
         <property name="readOnly">
          <bool>true</bool>
         </property>
@@ -140,6 +143,9 @@
       </item>
       <item row="7" column="1">
        <widget class="QTimeEdit" name="rtcTimeEdit">
+        <property name="toolTip">
+         <string>Time shown by the clock in the circulator</string>
+        </property>
         <property name="readOnly">
          <bool>true</bool>
         </property>
@@ -160,6 +166,12 @@
       </item>
       <item row="8" column="1">
        <widget class="QLabel" name="firmwareVersionLabel">
+        <property name="acceptDrops">
+         <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string>Firmware version</string>
+        </property>
         <property name="text">
          <string>TextLabel</string>
         </property>
@@ -341,6 +353,9 @@
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="2">
         <widget class="QPushButton" name="updateLowLimitPushButton">
+         <property name="statusTip">
+          <string>Update the low temperature limit</string>
+         </property>
          <property name="text">
           <string>Update</string>
          </property>
@@ -351,6 +366,9 @@
        </item>
        <item row="1" column="2">
         <widget class="QPushButton" name="updateHighLimitPushButton">
+         <property name="statusTip">
+          <string>Update the high temperature limit</string>
+         </property>
          <property name="text">
           <string>Update</string>
          </property>
@@ -361,6 +379,9 @@
        </item>
        <item row="2" column="2">
         <widget class="QPushButton" name="updateSetPointPushButton">
+         <property name="statusTip">
+          <string>Update the setpoint</string>
+         </property>
          <property name="text">
           <string>Update</string>
          </property>
@@ -370,7 +391,11 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QDoubleSpinBox" name="lowLimitDoubleSpinBox"/>
+        <widget class="QDoubleSpinBox" name="lowLimitDoubleSpinBox">
+         <property name="statusTip">
+          <string>Low temperature limit: if this is reached, an alert is generated and the circulator will be shut down</string>
+         </property>
+        </widget>
        </item>
        <item row="1" column="0">
         <widget class="QLabel" name="label_8">
@@ -380,7 +405,11 @@
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QDoubleSpinBox" name="setPointDoubleSpinBox"/>
+        <widget class="QDoubleSpinBox" name="setPointDoubleSpinBox">
+         <property name="whatsThis">
+          <string>The temperature to aim at</string>
+         </property>
+        </widget>
        </item>
        <item row="0" column="0">
         <widget class="QLabel" name="label_7">
@@ -390,7 +419,11 @@
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QDoubleSpinBox" name="highLimitDoubleSpinBox"/>
+        <widget class="QDoubleSpinBox" name="highLimitDoubleSpinBox">
+         <property name="statusTip">
+          <string>High temperature limit: if this is reached, an alert is generated and the circulator will be shut down</string>
+         </property>
+        </widget>
        </item>
        <item row="2" column="0">
         <widget class="QLabel" name="label_6">
@@ -403,16 +436,23 @@
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
           <widget class="QPushButton" name="startStopPushButton">
+           <property name="statusTip">
+            <string>Start/stop the pump</string>
+           </property>
            <property name="text">
             <string>Start</string>
            </property>
            <property name="icon">
-            <iconset theme="system-run"/>
+            <iconset theme="system-run">
+             <normaloff>.</normaloff>.</iconset>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="updateRTCPushButton">
+           <property name="statusTip">
+            <string>Set the real time clock in the device to the current date and time</string>
+           </property>
            <property name="text">
             <string>Set RTC</string>
            </property>

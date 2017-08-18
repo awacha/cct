@@ -495,6 +495,9 @@
        <property name="text">
         <string>Apply</string>
        </property>
+       <property name="icon">
+        <iconset theme="dialog-warning"/>
+       </property>
       </widget>
      </item>
      <item>

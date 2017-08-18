@@ -35,6 +35,9 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="toolTip">
+        <string>Select a motor here to add to the list below</string>
+       </property>
       </widget>
      </item>
      <item row="0" column="0">
@@ -53,6 +56,9 @@
      </item>
      <item row="1" column="1">
       <widget class="QDoubleSpinBox" name="bufferDistanceDoubleSpinBox">
+       <property name="toolTip">
+        <string>Buffering distance to compensate the changes in the switching point of the limit switch</string>
+       </property>
        <property name="decimals">
         <number>4</number>
        </property>
@@ -81,6 +87,9 @@
    </item>
    <item>
     <widget class="QTreeView" name="motorTreeView">
+     <property name="toolTip">
+      <string>Motors to calibrate</string>
+     </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
      </property>
@@ -106,6 +115,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="removeMotorPushButton">
+       <property name="toolTip">
+        <string>Remove the currently selected motor</string>
+       </property>
        <property name="text">
         <string>Remove motor</string>
        </property>
@@ -117,6 +129,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="executePushButton">
+       <property name="toolTip">
+        <string>Start the auto-calibration</string>
+       </property>
        <property name="text">
         <string>Execute</string>
        </property>

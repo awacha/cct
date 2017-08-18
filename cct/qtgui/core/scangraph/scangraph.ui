@@ -28,6 +28,9 @@
        <layout class="QGridLayout" name="gridLayout">
         <item row="1" column="0">
          <widget class="QPushButton" name="showAllButton">
+          <property name="toolTip">
+           <string>Show all signals</string>
+          </property>
           <property name="text">
            <string>Show all</string>
           </property>
@@ -39,6 +42,9 @@
         </item>
         <item row="1" column="1">
          <widget class="QPushButton" name="hideAllButton">
+          <property name="toolTip">
+           <string>Hide all signals</string>
+          </property>
           <property name="text">
            <string>Hide all</string>
           </property>
@@ -76,6 +82,9 @@
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
             <widget class="QPushButton" name="cursorHomeButton">
+             <property name="toolTip">
+              <string>Go to the first point</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -87,6 +96,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="cursorLeftButton">
+             <property name="toolTip">
+              <string>Go to the previous point</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -98,6 +110,9 @@
            </item>
            <item>
             <widget class="QSlider" name="cursorSlider">
+             <property name="toolTip">
+              <string>Move the cursor</string>
+             </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -108,6 +123,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="cursorRightButton">
+             <property name="toolTip">
+              <string>Go to the next point</string>
+             </property>
              <property name="text">
               <string/>
              </property>
@@ -119,6 +137,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="cursorEndButton">
+             <property name="toolTip">
+              <string>Go to the last point</string>
+             </property>
              <property name="text">
               <string/>
              </property>

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>183</width>
+    <width>214</width>
     <height>88</height>
    </rect>
   </property>
@@ -34,7 +34,11 @@
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="QComboBox" name="prefixComboBox"/>
+    <widget class="QComboBox" name="prefixComboBox">
+     <property name="toolTip">
+      <string>File name prefix (exposure class)</string>
+     </property>
+    </widget>
    </item>
    <item row="1" column="0">
     <widget class="QLabel" name="label_2">
@@ -45,6 +49,9 @@
    </item>
    <item row="1" column="1">
     <widget class="QSpinBox" name="FSNSpinBox">
+     <property name="toolTip">
+      <string>File sequence number</string>
+     </property>
      <property name="wrapping">
       <bool>true</bool>
      </property>
@@ -82,31 +89,43 @@
       </property>
       <item>
        <widget class="QPushButton" name="gotoFirstPushButton">
+        <property name="toolTip">
+         <string>Go to the first known file sequence number</string>
+        </property>
         <property name="text">
          <string>First</string>
         </property>
         <property name="icon">
-         <iconset theme="go-first"/>
+         <iconset theme="go-first">
+          <normaloff>.</normaloff>.</iconset>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="reloadPushButton">
+        <property name="toolTip">
+         <string>Load the currently selected file</string>
+        </property>
         <property name="text">
          <string>Reload</string>
         </property>
         <property name="icon">
-         <iconset theme="view-refresh"/>
+         <iconset theme="view-refresh">
+          <normaloff>.</normaloff>.</iconset>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="gotoLastPushButton">
+        <property name="toolTip">
+         <string>Go to the last known file sequence number</string>
+        </property>
         <property name="text">
          <string>Last</string>
         </property>
         <property name="icon">
-         <iconset theme="go-last"/>
+         <iconset theme="go-last">
+          <normaloff>.</normaloff>.</iconset>
         </property>
        </widget>
       </item>

@@ -90,6 +90,7 @@ class BeamStopDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
             iconfile='beamstop-inconsistent.svg'
         logger.debug('Beamstop state: {}'.format(bsstate))
         self.beamstopIconLabel.setPixmap(QtGui.QPixmap(":/icons/{}".format(iconfile)).scaled(48,48))
+        self.beamstopIconLabel.setToolTip('Beamstop is currently {}'.format(bsstate))
 
     def onDeviceReady(self, device: Union[Device, Motor]):
         logger.debug('OnDeviceReady')

@@ -29,6 +29,21 @@ class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.updateSetPointPushButton.clicked.connect(self.onUpdateSetpoint)
         self.startStopPushButton.clicked.connect(self.onStartStop)
         self.updateRTCPushButton.clicked.connect(self.onUpdateRTC)
+        self.lowLimitDoubleSpinBox.editingFinished.connect(self.onLowLimitEditingFinished)
+        self.highLimitDoubleSpinBox.editingFinished.connect(self.onHighLimitEditingFinished)
+        self.setPointDoubleSpinBox.editingFinished.connect(self.onSetPointEditingFinished)
+
+    def onLowLimitEditingFinished(self):
+        if self.lowLimitDoubleSpinBox.hasFocus():
+            self.onUpdateLowLimit()
+
+    def onHighLimitEditingFinished(self):
+        if self.highLimitDoubleSpinBox.hasFocus():
+            self.onUpdateHighLimit()
+
+    def onSetPointEditingFinished(self):
+        if self.setPointDoubleSpinBox.hasFocus():
+            self.onUpdateSetpoint()
 
     def onUpdateRTC(self):
         dev = self.credo.get_device('haakephoenix')

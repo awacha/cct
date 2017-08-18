@@ -27,6 +27,9 @@
    </item>
    <item row="0" column="1">
     <widget class="QDoubleSpinBox" name="positionDoubleSpinBox">
+     <property name="toolTip">
+      <string>The position to calibrate the motor to</string>
+     </property>
      <property name="decimals">
       <number>4</number>
      </property>
@@ -41,6 +44,9 @@
    </item>
    <item row="1" column="1">
     <widget class="QDoubleSpinBox" name="leftLimitDoubleSpinBox">
+     <property name="toolTip">
+      <string>Soft left limit</string>
+     </property>
      <property name="decimals">
       <number>4</number>
      </property>
@@ -55,6 +61,9 @@
    </item>
    <item row="2" column="1">
     <widget class="QDoubleSpinBox" name="rightLimitDoubleSpinBox">
+     <property name="toolTip">
+      <string>Soft right limit</string>
+     </property>
      <property name="decimals">
       <number>4</number>
      </property>
@@ -77,6 +86,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="calibratePushButton">
+       <property name="toolTip">
+        <string>Update the calibration parameters in the controller</string>
+       </property>
        <property name="text">
         <string>Calibrate</string>
        </property>
