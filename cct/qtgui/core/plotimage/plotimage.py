@@ -6,7 +6,7 @@ import matplotlib.colors
 import numpy as np
 import sastool.io.credo_cct
 import scipy.misc
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
@@ -22,13 +22,24 @@ def get_colormaps():
 
 
 class PlotImage(QtWidgets.QWidget, Ui_Form):
-    lastinstance = None
+    lastinstances = []
 
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
         self._exposure = None
         self.setupUi(self)
-        type(self).lastinstance = self
+        type(self).lastinstances.append(self)
+
+    @classmethod
+    def get_lastinstance(cls):
+        if not cls.lastinstances:
+            return cls()
+        else:
+            return cls.lastinstances[-1]
+
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        type(self).lastinstances.remove(self)
+        event.accept()
 
     def _testimage(self):
         header = sastool.io.credo_cct.Header(
