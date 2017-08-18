@@ -180,6 +180,9 @@ class Interpreter(Service):
         self.emit('idle-changed', False)
         return self._command
 
+    def current_command(self):
+        return self._command
+
     def is_busy(self):
         return self._command is not None
 
