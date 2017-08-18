@@ -16,7 +16,7 @@ from ....core.services.interpreter import Interpreter
 from ....core.services.samples import SampleStore
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):

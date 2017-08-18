@@ -11,7 +11,7 @@ from ...core.plotimage import PlotImage
 from ....core.services.filesequence import FileSequence
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ExposureView(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):

@@ -7,7 +7,7 @@ from .configstore import ConfigStore
 from ...core.mixins import ToolWindow
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ConfigEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):

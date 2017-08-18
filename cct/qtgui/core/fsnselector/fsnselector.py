@@ -1,7 +1,7 @@
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 from PyQt5 import QtWidgets, QtCore
 from ..mixins import ToolWindow
 from ....core.instrument.instrument import Instrument

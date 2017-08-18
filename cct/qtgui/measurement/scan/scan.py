@@ -14,7 +14,7 @@ from ....core.instrument.privileges import PRIV_MOVEMOTORS
 from ....core.services.interpreter import Interpreter
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['pilatus', 'genix']
