@@ -12,6 +12,7 @@ from ...core.instrument.instrument import Instrument
 from ...core.services.interpreter import Interpreter
 from ...core.services.accounting import Accounting
 from ...core.devices import Device
+from ...core.devices import GeniX, HaakePhoenix
 from .mainwindow_ui import Ui_MainWindow
 from .devicestatusbar import DeviceStatusBar
 from ..setup.sampleeditor import SampleEditor
@@ -142,6 +143,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.commandLineEdit.returnPressed.connect(self.onExecuteCommandLine)
         self.deviceStatusBar = DeviceStatusBar(self, self.credo)
         self.deviceStatusBarLayout.addWidget(self.deviceStatusBar)
+        self.panicPushButton.clicked.connect(self.onPanic)
+
+    def onPanic(self):
+        try:
+            genix= self.credo.get_device('genix')
+            assert isinstance(genix, GeniX)
+            genix.shutter(False)
+            genix.set_power(0)
+        except KeyError:
+            pass
+        for m in self.credo.motors:
+            self.credo.motors[m].stop()
+        try:
+            hp = self.credo.get_device('haakephoenix')
+            assert isinstance(hp, HaakePhoenix)
+            hp.execute_command('stop')
+        except KeyError:
+            pass
+        logger.critical('PANIC button pressed!')
 
     def onExecuteCommandLine(self):
         interpreter = self.credo.services['interpreter']
