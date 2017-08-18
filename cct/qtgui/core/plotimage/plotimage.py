@@ -35,7 +35,16 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         if not cls.lastinstances:
             return cls()
         else:
-            return cls.lastinstances[-1]
+            obj = cls.lastinstances[-1]
+            try:
+                assert isinstance(obj, cls)
+                obj.windowTitle()
+                return obj
+            except RuntimeError:
+                # wrapped C/C++ object of type PlotImage has been deleted
+                cls.lastinstances.remove(obj)
+                # try again
+                return cls.get_lastinstance()
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         type(self).lastinstances.remove(self)
@@ -268,7 +277,8 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self._image = self.axes.imshow(matrix,
                                        cmap=self.paletteComboBox.currentText(), norm=norm,
                                        aspect='equal', interpolation='nearest', origin='upper', zorder=1, extent=extent)
-        self.replot_colourbar()
+        if np.isfinite(matrix).sum()>0:
+            self.replot_colourbar()
         self.replot_crosshair()
         self.replot_mask()
         try:
