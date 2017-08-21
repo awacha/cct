@@ -245,3 +245,9 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def updateBoth(self):
         self.updateCenter()
         self.updateThickness()
+
+    def cleanup(self):
+        for c in self._samplestoreconnections:
+            self.credo.services['samplestore'].disconnect(c)
+        self._samplestoreconnections=[]
+        super().cleanup()
