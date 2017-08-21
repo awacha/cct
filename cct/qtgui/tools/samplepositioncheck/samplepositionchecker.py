@@ -65,9 +65,11 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
             pass
         self.axes.grid(True,which='both')
         self.axes.axis('equal')
+        xmin,xmax,ymin,ymax=self.axes.axis()
         if self.upsideDownToolButton.isChecked():
-            xmin,xmax,ymin,ymax=self.axes.axis()
             self.axes.axis(ymin=max(ymax,ymin), ymax=min(ymin,ymax))
+        else:
+            self.axes.axis(ymin=min(ymax,ymin), ymax=max(ymin,ymax))
         samples = self.model.getSelected()
         if not samples:
             self.canvas.draw()
@@ -79,7 +81,4 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if self.showLabelsToolButton.isChecked():
             for s,x,y in zip(samples, coords[:,0],coords[:,1]):
                 self.axes.text(x,y,' '+s+' ',ha='left',va='center', fontdict={'size':self.labelSizeHorizontalSlider.value()})
-        #if self.upsideDownToolButton.isChecked():
-        #    xmin,xmax,ymin,ymax=self.axes.axis()
-        #    self.axes.axis(ymin=ymax, ymax=ymin)
         self.canvas.draw()
