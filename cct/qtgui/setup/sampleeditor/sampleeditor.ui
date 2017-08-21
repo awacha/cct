@@ -624,6 +624,29 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>sampleNameLineEdit</tabstop>
+  <tabstop>renameSamplePushButton</tabstop>
+  <tabstop>descriptionPlainTextEdit</tabstop>
+  <tabstop>categoryComboBox</tabstop>
+  <tabstop>situationComboBox</tabstop>
+  <tabstop>preparedByLineEdit</tabstop>
+  <tabstop>thicknessValDoubleSpinBox</tabstop>
+  <tabstop>thicknessErrDoubleSpinBox</tabstop>
+  <tabstop>xPositionValDoubleSpinBox</tabstop>
+  <tabstop>xPositionErrDoubleSpinBox</tabstop>
+  <tabstop>yPositionValDoubleSpinBox</tabstop>
+  <tabstop>yPositionErrDoubleSpinBox</tabstop>
+  <tabstop>distminusValDoubleSpinBox</tabstop>
+  <tabstop>distminusErrDoubleSpinBox</tabstop>
+  <tabstop>transmissionValDoubleSpinBox</tabstop>
+  <tabstop>transmissionErrDoubleSpinBox</tabstop>
+  <tabstop>calendarWidget</tabstop>
+  <tabstop>listWidget</tabstop>
+  <tabstop>addSamplePushButton</tabstop>
+  <tabstop>removeSamplePushButton</tabstop>
+  <tabstop>duplicateSamplePushButton</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
