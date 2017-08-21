@@ -34,7 +34,13 @@ class HeaderModel(QtCore.QAbstractItemModel):
         for fsn in range(self.fsnfirst, self.fsnlast + 1):
             try:
                 h = fs.load_header(self.prefix, fsn)
-                self._headers.append([getattr(h, c) for c in self._columns])
+                hd=[]
+                for c in self._columns:
+                    try:
+                        hd.append(getattr(h, c))
+                    except KeyError:
+                        hd.append('N/A')
+                self._headers.append(hd)
                 for i, x in enumerate(self._headers[-1]):
                     if isinstance(x, ErrorValue):
                         self._headers[-1][i] = x.val
