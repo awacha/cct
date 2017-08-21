@@ -100,7 +100,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if self.scanTypeComboBox.currentText()=='Symmetric relative':
             stepsize = self.startDoubleSpinBox.value()*2/(self.stepsSpinBox.value()-1)
         else:
-            stepsize = self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value() / (self.stepsSpinBox.value() - 1)
+            stepsize = (self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value()) / (self.stepsSpinBox.value() - 1)
         self.stepSizeLabel.setText('{:.4f}'.format(stepsize))
 
     def onMotorPositionChange(self, motor: Motor, newposition: float):
