@@ -61,7 +61,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.showAllButton.clicked.connect(lambda: self.model.setVisible(None, True))
         self.actionReplot.triggered.connect(self.replot)
         self.actionMotor_to_peak.setEnabled(False)
-        self.actionMotor_to_cursor.setEnabled(False)
+        self.actionMotor_to_cursor.setEnabled(True)
         self.actionMotor_to_peak.triggered.connect(self.onMotorToPeak)
         self.actionMotor_to_cursor.triggered.connect(self.onMotorToCursor)
         self.actionShow_2D.toggled.connect(self.replot)
@@ -153,6 +153,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             del self._cursorhandle
         self._cursorhandle = self.axes.axvline(self._data[self.abscissaName()][cursorposition], color='black',
                                                alpha=0.8, lw=3)
+        self.cursorPositionLabel.setText('{:.4f}'.format(self._data[self.abscissaName()][cursorposition]))
         self.requestRedraw()
 
     def replot(self):
@@ -190,7 +191,6 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.drawScanCursor()
         self.draw2D()
         self.requestRedraw()
-        print('Replot took {} seconds'.format(time.monotonic() - t0))
 
     def setCurvesVisibility(self):
         for c in self._curvehandles:
@@ -203,6 +203,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def setCursorRange(self):
         self.cursorContainer.setEnabled(self._data is not None)
         self.cursorContainer.setVisible(self._data is not None)
+        self.cursorPositionLabel.setVisible(self._data is not None)
         if self._data is None:
             return
         self.cursorSlider.setMinimum(0)
