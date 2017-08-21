@@ -1100,6 +1100,10 @@
    </property>
   </action>
   <action name="actionSamplePositionChecker">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/sample_positions.svg</normaloff>:/icons/sample_positions.svg</iconset>
+   </property>
    <property name="text">
     <string>Check sample positions</string>
    </property>

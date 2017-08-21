@@ -1,5 +1,10 @@
 <RCC>
   <qresource prefix="icons">
+    <file>sample_positions.svg</file>
+    <file>motor_to_cursor.svg</file>
+    <file>motor_to_peak.svg</file>
+    <file>normal_orientation.svg</file>
+    <file>upside_down_orientation.svg</file>
     <file>motorcalibration.svg</file>
     <file>motorconfig.svg</file>
     <file>project.svg</file>

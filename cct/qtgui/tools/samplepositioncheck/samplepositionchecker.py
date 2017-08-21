@@ -30,11 +30,13 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.navtoolbar = NavigationToolbar2QT(self.canvas, None)
         self.verticalLayout.addWidget(self.canvas,1)
         self.verticalLayout.addWidget(self.navtoolbar)
-        self.showLabelsCheckBox.toggled.connect(self.onShowLabels)
+        self.showLabelsToolButton.toggled.connect(self.onShowLabels)
         ss=self.credo.services['samplestore']
         assert isinstance(ss,SampleStore)
         self._connections=[ss.connect('list-changed', self.onSampleListChanged)]
         self.model.dataChanged.connect(self.replot)
+        self.labelSizeHorizontalSlider.valueChanged.connect(self.replot)
+        self.upsideDownToolButton.toggled.connect(self.replot)
         self.replot()
 
     def cleanup(self):
@@ -63,6 +65,9 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
             pass
         self.axes.grid(True,which='both')
         self.axes.axis('equal')
+        if self.upsideDownToolButton.isChecked():
+            xmin,xmax,ymin,ymax=self.axes.axis()
+            self.axes.axis(ymin=max(ymax,ymin), ymax=min(ymin,ymax))
         samples = self.model.getSelected()
         if not samples:
             self.canvas.draw()
@@ -71,7 +76,10 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(ss, SampleStore)
         coords=np.array([[s.positionx.val, s.positiony.val, s.positionx.err, s.positiony.err] for s in ss if s.title in samples])
         self.axes.errorbar(coords[:,0],coords[:,1],coords[:,3],coords[:,2],'bo')
-        if self.showLabelsCheckBox.isChecked():
+        if self.showLabelsToolButton.isChecked():
             for s,x,y in zip(samples, coords[:,0],coords[:,1]):
-                self.axes.text(x,y,s,ha='left',va='center')
+                self.axes.text(x,y,' '+s+' ',ha='left',va='center', fontdict={'size':self.labelSizeHorizontalSlider.value()})
+        #if self.upsideDownToolButton.isChecked():
+        #    xmin,xmax,ymin,ymax=self.axes.axis()
+        #    self.axes.axis(ymin=ymax, ymax=ymin)
         self.canvas.draw()
