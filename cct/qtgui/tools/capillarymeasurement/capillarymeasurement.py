@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 
 from .capillarymeasurement_ui import Ui_Form
 from ...core.mixins import ToolWindow
+from ....core.services.filesequence import FileSequence
 from ....core.services.samples import SampleStore
 from ....core.utils.inhibitor import Inhibitor
 
@@ -23,6 +24,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.setupToolWindow(credo)
         self._peaklines = [None, None]
         self._samplestoreconnections = []
+        self._filesequenceconnections = []
         self._updating = Inhibitor()
         self.setupUi(self)
 
@@ -55,10 +57,16 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.scanFileNameLineEdit.setText(scanfile)
         self.loadScanFile()
         self._samplestoreconnections=[self.credo.services['samplestore'].connect('list-changed', self.onSampleListChanged)]
+        self._filesequenceconnections=[self.credo.services['filesequence'].connect('lastscan-changed', self.onLastScanChanged)]
         self.onSampleListChanged(self.credo.services['samplestore'])
         self.updateCenterPushButton.setEnabled(False)
         self.updateThicknessPushButton.setEnabled(False)
         self.updateBothPushButton.setEnabled(self.updateThicknessPushButton.isEnabled() and self.updateCenterPushButton.isEnabled())
+
+    def onLastScanChanged(self, fs:FileSequence, fsn:int):
+        if fs.get_scanfile() == self.scanFileNameLineEdit.text():
+            self.scanIndexSpinBox.setMaximum(fsn)
+        return False
 
     def onSampleListChanged(self, ss:SampleStore):
         with self._updating:
@@ -250,4 +258,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         for c in self._samplestoreconnections:
             self.credo.services['samplestore'].disconnect(c)
         self._samplestoreconnections=[]
+        for c in self._filesequenceconnections:
+            self.credo.services['filesequence'].disconnect(c)
+        self._filesequenceconnections=[]
         super().cleanup()
