@@ -678,6 +678,7 @@
    <addaction name="actionDetector"/>
    <addaction name="actionMotors"/>
    <addaction name="actionTemperature_stage"/>
+   <addaction name="actionVacuum_gauge"/>
    <addaction name="separator"/>
    <addaction name="actionScan"/>
    <addaction name="actionSingle_exposure"/>
@@ -834,6 +835,10 @@
    </property>
   </action>
   <action name="actionVacuum_gauge">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/tpg201.svg</normaloff>:/icons/tpg201.svg</iconset>
+   </property>
    <property name="text">
     <string>Vacuum gauge</string>
    </property>
