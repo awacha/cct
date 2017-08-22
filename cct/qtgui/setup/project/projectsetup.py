@@ -37,7 +37,7 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.projectIDLineEdit.textChanged.connect(self.onProjectIDChanged)
         self.proposerLineEdit.textChanged.connect(self.onProposerNameChanged)
         self.projectTitleLineEdit.textChanged.connect(self.onProjectTitleChanged)
-        self.addPushButton.setEnabled(False)
+        self.addPushButton.setEnabled(True)
         self.removePushButton.setEnabled(False)
         self.updatePushButton.setEnabled(False)
         self.renamePushButton.setEnabled(False)
@@ -46,7 +46,6 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def onProjectIDChanged(self):
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
-        self.addPushButton.setEnabled(self.projectIDLineEdit.text() not in acc.get_projectids())
         self.renamePushButton.setEnabled(True)
 
     def onProjectTitleChanged(self):
