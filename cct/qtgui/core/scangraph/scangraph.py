@@ -3,7 +3,7 @@ import time
 from typing import Union, List, Optional
 
 import numpy as np
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -134,6 +134,9 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self._curvehandles[current.row()].set_lw(3)
         self.drawLegend()
         self.canvas.draw_idle()
+
+    def isScanRunning(self):
+        return self._datalength < len(self._data)
 
     def cursorMoved(self, position):
         self.cursorLeftButton.setEnabled(position > 0)
@@ -350,3 +353,15 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         fsn = self._data['FSN'][cursor]
         exp = self.credo.services['filesequence'].load_exposure(self.credo.config['path']['prefixes']['scn'],int(fsn))
         plot2d.setExposure(exp)
+
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        if self.isScanRunning():
+            msg = QtWidgets.QMessageBox.warning(
+                self, 'Confirm close window',
+                'A scan measurement is still running. Do you really want to close the window?',
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No
+            )
+            if msg == QtWidgets.QMessageBox.YesRole:
+                super().closeEvent(event)
+            else:
+                event.ignore()
