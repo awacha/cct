@@ -1,1 +1,1 @@
-from .fsnselector import FSNSelectorHorizontal, FSNSelectorVertical
+from .fsnselector import FSNSelector

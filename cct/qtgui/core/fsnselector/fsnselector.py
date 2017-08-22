@@ -12,14 +12,15 @@ from sastool.classes2 import Exposure
 
 class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
     FSNSelected = QtCore.pyqtSignal(int, 'QString', Exposure)
-    horizontal = False
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
+        self.horizontal=kwargs.pop('horizontal',False)
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self.setupUi(self)
         self._fsconnections = []
+        print(self.__class__.__mro__)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
@@ -72,8 +73,12 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
             pass
 
     def onLastFSNChanged(self, filesequence, prefix, lastfsn):
-        if prefix != self.prefixComboBox.currentText():
-            return False
+        try:
+            if prefix != self.prefixComboBox.currentText():
+                return False
+        except RuntimeError:
+            self.cleanup()
+            self.close()
         self.FSNSpinBox.setMaximum(lastfsn)
         return False
 
@@ -82,14 +87,16 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.FSNSpinBox.setMaximum(self.credo.services['filesequence'].get_lastfsn(self.prefixComboBox.currentText()))
 
     def cleanup(self):
+        print('CLEANUP')
+        logger.debug('FSNselector cleanup called')
         for c in self._fsconnections:
             self.credo.services['filesequence'].disconnect(c)
         self._fsconnections = []
         super().cleanup()
 
 
-class FSNSelectorHorizontal(FSNSelector):
-    horizontal = True
+#class FSNSelectorHorizontal(FSNSelector):
+#    horizontal = True
 
 
-FSNSelectorVertical = FSNSelector
+#FSNSelectorVertical = FSNSelector

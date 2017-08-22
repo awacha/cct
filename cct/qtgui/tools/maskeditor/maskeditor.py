@@ -6,7 +6,7 @@ from sastool.classes2.exposure import Exposure
 from scipy.io import savemat, loadmat
 
 from .maskeditor_ui import Ui_MainWindow
-from ...core.fsnselector import FSNSelectorHorizontal
+from ...core.fsnselector import FSNSelector
 from ...core.mixins import ToolWindow
 from ...core.plotimage import PlotImage
 
@@ -47,7 +47,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         l = QtWidgets.QVBoxLayout(w)
         w.setLayout(l)
         l.setContentsMargins(0, 0, 0, 0)
-        self.fsnSelector = FSNSelectorHorizontal(w, credo=self.credo)
+        self.fsnSelector = FSNSelector(w, credo=self.credo, horizontal=True)
         l.addWidget(self.fsnSelector)
         l.addWidget(self.plotimage.canvas)
         self.fsnSelector.FSNSelected.connect(self.onFSNSelected)
@@ -61,6 +61,10 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionNew_mask.triggered.connect(self.createNewMask)
         self.actionUndo.triggered.connect(self.undo)
         self.actionRedo.triggered.connect(self.redo)
+
+    def cleanup(self):
+        self.fsnSelector.close()
+        super().cleanup()
 
     def onFSNSelected(self, prefix, fsn, exposure):
         self.setExposure(exposure)

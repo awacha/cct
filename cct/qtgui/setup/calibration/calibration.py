@@ -13,7 +13,7 @@ from sastool.utils2d import centering
 
 from .calibration_ui import Ui_MainWindow
 from .pairstore import PairStore
-from ...core.fsnselector import FSNSelectorVertical
+from ...core.fsnselector import FSNSelector
 from ...core.mixins import ToolWindow
 from ...core.plotcurve import PlotCurve
 from ...core.plotimage import PlotImage
@@ -32,7 +32,7 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def setupUi(self, MainWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
         self.fsnselectorPage.setLayout(QtWidgets.QVBoxLayout())
-        self.fsnSelector = FSNSelectorVertical(self.fsnselectorPage, credo=self.credo)
+        self.fsnSelector = FSNSelector(self.fsnselectorPage, credo=self.credo)
         self.fsnselectorPage.layout().addWidget(self.fsnSelector)
         self.tab2D.setLayout(QtWidgets.QVBoxLayout())
         self.plotImage = PlotImage(self.tab2D)
@@ -74,6 +74,10 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         assert isinstance(self.pairsTreeView, QtWidgets.QTreeView)
         self.pairsStore = PairStore()
         self.pairsTreeView.setModel(self.pairsStore)
+
+    def cleanup(self):
+        self.fsnSelector.close()
+        super().cleanup()
 
     def onAddPair(self):
         self.pairsStore.addPair(
