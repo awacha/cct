@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>399</width>
-    <height>383</height>
+    <height>385</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -104,13 +104,6 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="1">
-       <widget class="QLabel" name="stepSizeLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
       <item row="7" column="0">
        <widget class="QLabel" name="label_6">
         <property name="text">
@@ -168,6 +161,9 @@
        <widget class="QCheckBox" name="goBackAfterEndCheckBox">
         <property name="text">
          <string>Go back to the starting position after the scan</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -260,6 +256,25 @@
         </item>
        </layout>
       </item>
+      <item row="6" column="1">
+       <widget class="QDoubleSpinBox" name="stepSizeDoubleSpinBox">
+        <property name="keyboardTracking">
+         <bool>false</bool>
+        </property>
+        <property name="decimals">
+         <number>10</number>
+        </property>
+        <property name="minimum">
+         <double>0.000100000000000</double>
+        </property>
+        <property name="maximum">
+         <double>100000.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -281,13 +296,16 @@
  </widget>
  <tabstops>
   <tabstop>motorComboBox</tabstop>
+  <tabstop>scanTypeComboBox</tabstop>
   <tabstop>startDoubleSpinBox</tabstop>
   <tabstop>endDoubleSpinBox</tabstop>
   <tabstop>stepsSpinBox</tabstop>
+  <tabstop>stepSizeDoubleSpinBox</tabstop>
   <tabstop>countingTimeDoubleSpinBox</tabstop>
   <tabstop>commentLineEdit</tabstop>
   <tabstop>autoShutterCheckBox</tabstop>
   <tabstop>goBackAfterEndCheckBox</tabstop>
+  <tabstop>startStopPushButton</tabstop>
  </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>

@@ -12,6 +12,7 @@ from ....core.devices import Motor
 from ....core.instrument.instrument import Instrument
 from ....core.instrument.privileges import PRIV_MOVEMOTORS
 from ....core.services.interpreter import Interpreter
+from ....core.utils.inhibitor import Inhibitor
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -28,6 +29,8 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._scangraph = None
         self._failed = False
         self._origin = None
+        self._stepsize = None
+        self._updating_stepsize=Inhibitor()
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -39,11 +42,30 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.scanTypeComboBox.currentTextChanged.connect(self.onScanTypeSelected)
         self.startDoubleSpinBox.valueChanged.connect(self.recalculateStepSize)
         self.endDoubleSpinBox.valueChanged.connect(self.recalculateStepSize)
+        self.stepSizeDoubleSpinBox.valueChanged.connect(self.onStepSizeChanged)
         self.stepsSpinBox.valueChanged.connect(self.recalculateStepSize)
         self.progressBar.setVisible(False)
         self.startStopPushButton.clicked.connect(self.onStartStop)
         self.adjustSize()
         self.onMotorSelected()
+
+    def onStepSizeChanged(self):
+        if self._updating_stepsize.inhibited:
+            return
+        with self._updating_stepsize:
+            # try to find the best #steps
+            if self.scanTypeComboBox.currentText() in ['Absolute', 'Relative']:
+                span = self.endDoubleSpinBox.value()-self.startDoubleSpinBox.value()
+            elif self.scanTypeComboBox.currentText() in ['Symmetric relative']:
+                span = 2*self.startDoubleSpinBox.value()
+            else:
+                raise ValueError(self.scanTypeComboBox.currentText())
+            nsteps=round(abs(span)/self.stepSizeDoubleSpinBox.value())
+            if nsteps<self.stepsSpinBox.minimum() or  nsteps>self.stepsSpinBox.maximum():
+                pass
+            else:
+                self.stepsSpinBox.setValue(nsteps)
+        self.recalculateStepSize()
 
     def onScanTypeSelected(self, scantype):
         self.updateSpinBoxes()
@@ -101,7 +123,9 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             stepsize = self.startDoubleSpinBox.value()*2/(self.stepsSpinBox.value()-1)
         else:
             stepsize = (self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value()) / (self.stepsSpinBox.value() - 1)
-        self.stepSizeLabel.setText('{:.4f}'.format(stepsize))
+        if not self._updating_stepsize.inhibited:
+            with self._updating_stepsize:
+                self.stepSizeDoubleSpinBox.setValue(abs(stepsize))
 
     def onMotorPositionChange(self, motor: Motor, newposition: float):
         if not self.isBusy() and self.scanTypeComboBox.currentText() in ['Relative', 'Symmetric relative']:
