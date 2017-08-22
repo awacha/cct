@@ -105,6 +105,7 @@ class OptimizeGeometry(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def calculate(self):
         if hasattr(self, 'process'):
             return
+        self.resultsStore.clear()
         spacers = [float(x) for x in self.spacerList.items()]
         pinholes = [float(x) for x in self.pinholeList.items()]
         ls = self.ph3SampleDistanceDoubleSpinBox.value()

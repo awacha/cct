@@ -79,6 +79,11 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
     def getConfiguration(self, index: int) -> PinholeConfiguration:
         return self._list[index]
 
+    def clear(self):
+        self.beginResetModel()
+        self._list=[]
+        self.endResetModel()
+
     def headerData(self, i, orientation, role=None):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             # headertext = ['<i>l<sub>1</sub></i> parts (mm)',
