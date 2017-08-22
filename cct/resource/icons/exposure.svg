@@ -13,7 +13,7 @@
         viewBox="0 0 259.23706 259.23706"
         id="svg2"
         version="1.1"
-        inkscape:version="0.91 r13725"
+        inkscape:version="0.92.2 5c3e80d, 2017-08-06"
         sodipodi:docname="exposure.svg">
   <defs
      id="defs4" />
@@ -25,7 +25,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.4"
-     inkscape:cx="140.54183"
+     inkscape:cx="34.827544"
      inkscape:cy="105.4342"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -34,13 +34,13 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:window-width="1024"
-     inkscape:window-height="721"
+     inkscape:window-width="1280"
+     inkscape:window-height="949"
      inkscape:window-x="0"
-     inkscape:window-y="0"
+     inkscape:window-y="26"
      inkscape:window-maximized="1"
      inkscape:snap-bbox="true"
-     inkscape:snap-bbox-edge-midpoints="false"
+     inkscape:snap-bbox-edge-midpoints="true"
      inkscape:snap-midpoints="true"
      inkscape:snap-smooth-nodes="false"
      inkscape:object-nodes="true"
@@ -48,7 +48,9 @@
      inkscape:object-paths="false"
      inkscape:snap-bbox-midpoints="true"
      inkscape:snap-nodes="false"
-     inkscape:bbox-nodes="false" />
+     inkscape:bbox-nodes="true"
+     inkscape:snap-page="true"
+     inkscape:bbox-paths="true" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -57,7 +59,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -68,7 +70,7 @@
      transform="translate(-102.71655,-104.52011)">
     <g
        id="g4915"
-       transform="translate(11.428571,-13.571428)">
+       transform="matrix(1.2934137,0,0,1.2934137,-55.26762,-86.346564)">
       <rect
          y="210.90002"
          x="124.14512"
