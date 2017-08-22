@@ -218,6 +218,16 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>sampleNameCheckBox</tabstop>
+  <tabstop>sampleNameComboBox</tabstop>
+  <tabstop>prefixComboBox</tabstop>
+  <tabstop>expTimeDoubleSpinBox</tabstop>
+  <tabstop>nImagesSpinBox</tabstop>
+  <tabstop>delayDoubleSpinBox</tabstop>
+  <tabstop>autoShutterCheckBox</tabstop>
+  <tabstop>exposePushButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>
  </resources>

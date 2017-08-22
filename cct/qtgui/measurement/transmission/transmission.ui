@@ -199,6 +199,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>emptyNameComboBox</tabstop>
+  <tabstop>expTimeDoubleSpinBox</tabstop>
+  <tabstop>nImagesSpinBox</tabstop>
+  <tabstop>sampleNameComboBox</tabstop>
+  <tabstop>cleanTablePushButton</tabstop>
+  <tabstop>treeView</tabstop>
+  <tabstop>startPushButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>
  </resources>
