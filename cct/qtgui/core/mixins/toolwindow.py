@@ -54,7 +54,7 @@ class ToolWindow(object):
         try:
             device = self.credo.get_device(devicename)
         except KeyError:
-            # ToDo
+            logger.error('Required device {} not found'.format(devicename))
             raise
         assert isinstance(device, (Device, Motor))
         if device in self._device_connections:
