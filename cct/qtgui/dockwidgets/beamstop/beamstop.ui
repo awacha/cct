@@ -10,6 +10,9 @@
     <height>88</height>
    </rect>
   </property>
+  <property name="features">
+   <set>QDockWidget::DockWidgetClosable</set>
+  </property>
   <property name="windowTitle">
    <string>Beamstop</string>
   </property>
