@@ -9,6 +9,7 @@ from ...core.mixins import ToolWindow
 from ...core.plotcurve import PlotCurve
 from ...core.plotimage import PlotImage
 from ....core.services.filesequence import FileSequence
+from ....core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,8 +20,10 @@ class ExposureView(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
-        self.setupUi(self)
+        self._fsconnections=[]
+        self._updating = Inhibitor()
         self._curve_cache = {}
+        self.setupUi(self)
 
     def setupUi(self, MainWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
@@ -51,6 +54,23 @@ class ExposureView(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.treeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
         self.treeView.selectionModel().currentRowChanged.connect(self.onCurrentRowChanged)
         self.reloadHeaders()
+        self._fsconnections=[fs.connect('lastfsn-changed', self.onFSLastFSNChanged)]
+
+    def onFSLastFSNChanged(self, fs:FileSequence, prefix:str, lastfsn:int):
+        if prefix == self.prefixComboBox.currentText():
+            self.lastFSNSpinBox.setMaximum(lastfsn)
+        if prefix not in [self.prefixComboBox.itemText(i) for i in range(self.prefixComboBox.count())]:
+            currentprefix = self.prefixComboBox.currentText()
+            with self._updating:
+                self.prefixComboBox.clear()
+                self.prefixComboBox.addItems(sorted(fs.get_prefixes()))
+                self.prefixComboBox.setCurrentIndex(self.prefixComboBox.find(currentprefix))
+
+    def cleanup(self):
+        for c in self._fsconnections:
+            self.credo.services['filesequence'].disconnect(c)
+        self._fsconnections=[]
+        super().cleanup()
 
     def onSelectionChanged(self):
         logger.debug('onSelectionChanged')
@@ -93,6 +113,8 @@ class ExposureView(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.firstFSNSpinBox.setMaximum(self.lastFSNSpinBox.value())
 
     def onPrefixChanged(self):
+        if self._updating.inhibited:
+            return False
         self.updateSpinBoxLimits()
         self.reloadHeaders()
 
