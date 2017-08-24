@@ -119,6 +119,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         for c in self._samplestore_connections:
             self.credo.services['samplestore'].disconnect(c)
         self._samplestore_connections = []
+        self.motorModel.cleanup()
         return super().cleanup()
 
     def onSampleListChanged(self, samplestore:SampleStore):

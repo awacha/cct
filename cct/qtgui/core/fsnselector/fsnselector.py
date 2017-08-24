@@ -18,8 +18,8 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.horizontal=kwargs.pop('horizontal',False)
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
-        self.setupUi(self)
         self._fsconnections = []
+        self.setupUi(self)
         print(self.__class__.__mro__)
 
     def setupUi(self, Form):

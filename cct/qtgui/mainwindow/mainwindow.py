@@ -51,10 +51,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
         self.windowdict = {}
-        self.setupUi(self)
         self._credo_connections = []
         self._accounting_connections = []
         self._interpreter_connections = []
+        self.setupUi(self)
 
     def setupUi(self, MainWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
@@ -327,6 +327,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return True
 
     def cleanup(self):
+        for c in self._accounting_connections:
+            self.credo.services['accounting'].disconnect(c)
+        self._accounting_connections = []
         for c in self._interpreter_connections:
             self.credo.services['interpreter'].disconnect(c)
         self._interpreter_connections = []

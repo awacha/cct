@@ -18,8 +18,8 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self._updating_entries = Inhibitor()
-        self.setupUi(self)
         self._samplestoreconnections = []
+        self.setupUi(self)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)

@@ -72,6 +72,7 @@ class ToolWindow(object):
                 device.connect('stop', self.onMotorStop),
                 device.connect('start', self.onMotorStart),
             ])
+        logger.debug('Required device {} successfully in toolwindow {}'.format(devicename, self.windowTitle()))
 
     def onPrivLevelChanged(self, accountingservice, privlevel):
         assert isinstance(self, QtWidgets.QWidget)
@@ -115,12 +116,13 @@ class ToolWindow(object):
             for cid in self._device_connections[device]:
                 device.disconnect(cid)
         except KeyError:
-            pass
+            logger.error('Cannot unrequire device {}'.format(device.name))
         finally:
+            logger.debug('Unrequired device {}'.format(device.name))
             del self._device_connections[device]
 
     def cleanup(self):
-        logger.debug('Cleanup() called on ToolWindow {}'.format(self.objectName()))
+        logger.debug('Cleanup() called on ToolWindow {} ({})'.format(self.objectName(), self.windowTitle()))
         self.cleanupAfterCommand()
         for d in list(self._device_connections.keys()):
             self.unrequireDevice(d)
@@ -130,7 +132,7 @@ class ToolWindow(object):
         for c in self._credoconnections:
             self.credo.disconnect(c)
         self._credoconnections = []
-        logger.debug('Cleanup() finished on ToolWindow {}'.format(self.objectName()))
+        logger.debug('Cleanup() finished on ToolWindow {} ({})'.format(self.objectName(), self.windowTitle()))
 
     def event(self, event: QtCore.QEvent):
         if event.type() == QtCore.QEvent.ActivationChange:
