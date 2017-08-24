@@ -313,6 +313,7 @@ class GeniX(Device):
             # the warm-up process has just ended.
             if not self._warmup_stop_forced:
                 self.last_warmup = time.time()
+                self.execute_command('standby')
 
     def is_warmup_needed(self):
         """Warm-up is needed if both of the two criteria are met:
