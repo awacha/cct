@@ -111,6 +111,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.canvas.draw_idle()
 
     def autoscale(self):
+        self.axes.autoscale(self.actionAutoScale.isChecked(), tight=True)
         if self.actionAutoScale.isChecked():
             self.axes.relim(True)
             self.axes.autoscale_view(True, True, True)
@@ -134,9 +135,6 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self._curvehandles[current.row()].set_lw(3)
         self.drawLegend()
         self.canvas.draw_idle()
-
-    def isScanRunning(self):
-        return self._datalength < len(self._data)
 
     def cursorMoved(self, position):
         self.cursorLeftButton.setEnabled(position > 0)
@@ -254,6 +252,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                                                      QtCore.QItemSelectionModel.SelectCurrent | QtCore.QItemSelectionModel.Rows)
         self.setCursorRange()
         self.replot()
+        self.setCurvesVisibility()
 
     def signalsTreeModelChanged(self, idxfrom: QtCore.QModelIndex, idxto: QtCore.QModelIndex):
         print('dataChanged from signalsTreeModel: from ({}, {}) to ({}, {})'.format(
@@ -306,6 +305,8 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionMotor_to_peak.setEnabled(self._lastpeakposition is not None)
 
     def cleanup(self):
+        logger.debug('Cleaning up scangraph {}'.format(self.windowTitle()))
+        self.unrequireDevice('Motor_'+self.abscissaName())
         del self._data
         super().cleanup()
 
@@ -362,6 +363,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No
             )
             if msg == QtWidgets.QMessageBox.YesRole:
-                super().closeEvent(event)
+                ToolWindow.closeEvent(self,event)
             else:
                 event.ignore()
+        return ToolWindow.closeEvent(self, event)

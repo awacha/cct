@@ -2,9 +2,14 @@ from PyQt5 import QtCore
 
 
 class SignalModel(QtCore.QAbstractItemModel):
+    signals_invisible_by_default=['FSN','epoch']
+
     def __init__(self, signals, parent=None):
         super().__init__(parent)
         self._signaldata = [list(x) for x in list(zip(signals, [1.0] * len(signals), [True] * len(signals)))]
+        for signal in self._signaldata:
+            if signal[0] in self.signals_invisible_by_default:
+                signal[2]=False
 
     def columnCount(self, parent=None, *args, **kwargs):
         return 2
