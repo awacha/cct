@@ -127,9 +127,11 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         while self.signalNameComboBox.currentText() == 'FSN':
             self.signalNameComboBox.setCurrentIndex(self.signalNameComboBox.currentIndex() + 1)
         assert isinstance(self.axes, Axes)
+        self.clearGraph()
         self.axes.set_xlabel(self.scan.motor)
         self.axes.set_title(self.scan.comment)
         self.plotSignal()
+        self.figureToolbar
 
     def getSignal(self, zoomed=False):
         """Get the currently selected signal.
@@ -159,6 +161,13 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.axes.clear()
         self.canvas.draw()
         self._peaklines = []
+        self.axes.grid(True, which='both')
+        self.figureToolbar.update()
+        try:
+            self.axes.set_xlabel(self.scan.motor)
+            self.axes.set_title(self.scan.comment)
+        except AttributeError:
+            pass
 
     def plotSignal(self):
         try:
@@ -166,8 +175,13 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         except ValueError:
             return
         assert isinstance(self.axes, Axes)
-        for l in self.axes.lines:
-            l.remove()
+        try:
+            for l in self.axes.lines:
+                l.remove()
+        except ValueError:
+            self.clearGraph()
+        finally:
+            self._peaklines=[None, None]
         self.axes.plot(x, signal, 'b.-', label=self.signalNameComboBox.currentText())
         #self.axes.legend(loc='best')
         self.axes.set_ylabel(self.signalNameComboBox.currentText())
@@ -187,7 +201,10 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                                                                                              return_stat=True,
                                                                                              return_x=retx)
         if self._peaklines[sign > 0] is not None:
-            self._peaklines[sign > 0].remove()
+            try:
+                self._peaklines[sign > 0].remove()
+            except ValueError:
+                self._peaklines[sign>0]=None
         self._peaklines[sign > 0] = self.axes.plot(retx, fitted, 'r-')[0]
         if sign < 0:
             self.negativeValDoubleSpinBox.setValue(pos.val)
