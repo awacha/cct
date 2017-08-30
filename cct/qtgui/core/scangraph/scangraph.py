@@ -306,7 +306,6 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def cleanup(self):
         logger.debug('Cleaning up scangraph {}'.format(self.windowTitle()))
-        self.unrequireDevice('Motor_'+self.abscissaName())
         del self._data
         super().cleanup()
 
