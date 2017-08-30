@@ -1,4 +1,5 @@
 import datetime
+import logging
 from typing import Union, Optional
 
 from PyQt5 import QtWidgets, QtGui
@@ -8,6 +9,8 @@ from ...core.mixins import ToolWindow
 from ....core.devices import Device, Motor
 from ....core.devices.circulator import HaakePhoenix
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['haakephoenix']
@@ -159,5 +162,7 @@ class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.setFlagBackground(self.temperatureControlFlag, newvalue)
         elif variablename == 'control_external':
             self.setFlagBackground(self.externalControlStatusFlag, newvalue)
-        else:
-            print('Unknown variable: {} = {}'.format(variablename, newvalue))
+        elif variablename not in ['temperature_internal', '_auxstatus', 'faultstatus', 'temperature_external',
+                                  'watchdog_on', 'watchdog_setpoint']:
+            logger.error('Unknown variable: {}'.format(variablename))
+
