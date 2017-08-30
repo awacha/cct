@@ -89,8 +89,11 @@ class ExposureView(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             except KeyError:
                 ex = fs.load_exposure(self.prefixComboBox.currentText(), f)
                 rad = ex.radial_average()
-                self._curve_cache[f] = (rad, ex.header.title)
-                title = ex.header.title
+                try:
+                    title = ex.header.title
+                except KeyError:
+                    title = 'N/A'
+                self._curve_cache[f] = (rad, title)
                 logger.debug('Curve for FSN {:d} not found in cache.'.format(f))
             self.plotCurve.addCurve(rad, label='{:d}: {}'.format(f, title), hold_mode=True)
         self.plotCurve.setXLabel('q (nm$^{-1}$)')
