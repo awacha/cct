@@ -499,6 +499,8 @@ class Pilatus(Device):
                      'limhum_hi0', 'limhum_hi1', 'limhum_hi2',
                      ]
 
+    no_log_variables = ['telemetry_date']
+
     constant_variables = ['wpix', 'hpix', 'cameradef', 'cameraname',
                           'cameraSN', 'masterPID', 'controllingPID',
                           'pid', 'version']

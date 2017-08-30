@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 
 # noinspection PyPep8Naming
 class HaakePhoenix_Backend(DeviceBackend_TCP):
-    reply_timeout = 10
+    reply_timeout = 5
 
     def execute_command(self, commandname: str, arguments: Tuple):
         if commandname == 'start':
@@ -311,6 +311,10 @@ class HaakePhoenix(Device):
                         'temperature_external', 'pump_power', 'setpoint', 'cooling_on', 'diffcontrol_on']
 
     urgency_modulo = 10
+
+    query_timeout = 3
+
+    no_log_variables = ['time', 'date']
 
     minimum_query_variables = ['firmwareversion', 'faultstatus', 'time', 'temperature_internal',
                                'temperature_external', 'pump_power',

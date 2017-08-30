@@ -181,6 +181,9 @@ class Device(Callbacks):
     # Warn if the length of the frontend queue is larger than this.
     frontendqueue_warn_length = 10
 
+    # do not log these via the variable logging facility
+    no_log_variables = []
+
     def __init__(self, instancename, logdir='log', configdir='config', configdict=None):
         Callbacks.__init__(self)
         self._msgidcounter = 0

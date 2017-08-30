@@ -231,6 +231,8 @@ class GeniX(Device):
 
     last_warmup = 0
 
+    no_log_variables = ['interlock_lowlevel']
+
     queryall_interval = 0.7
 
     warmup_interval = 24 * 3600
