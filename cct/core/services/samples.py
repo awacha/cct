@@ -85,28 +85,28 @@ class Sample(object):
                  situation: str = 'vacuum'):
         if isinstance(title, self.__class__):
             self.title = title.title
-            self.positionx = title.positionx
-            self.positiony = title.positiony
-            self.thickness = title.thickness
-            self.transmission = title.transmission
+            self.positionx = ErrorValue(title.positionx)
+            self.positiony = ErrorValue(title.positiony)
+            self.thickness = ErrorValue(title.thickness)
+            self.transmission = ErrorValue(title.transmission)
             self.preparedby = title.preparedby
             self.preparetime = title.preparetime
-            self.distminus = title.distminus
+            self.distminus = ErrorValue(title.distminus)
             self.description = title.description
             self.category = title.category
             self.situation = title.situation
         else:
             self.title = title
-            self.positionx = positionx
-            self.positiony = positiony
-            self.thickness = thickness
-            self.transmission = transmission
+            self.positionx = ErrorValue(positionx)
+            self.positiony = ErrorValue(positiony)
+            self.thickness = ErrorValue(thickness)
+            self.transmission = ErrorValue(transmission)
             self.preparedby = preparedby
             self.category = category
             if preparetime is None:
                 preparetime = datetime.datetime.now()
             self.preparetime = preparetime
-            self.distminus = distminus
+            self.distminus = ErrorValue(distminus)
             self.description = description
             self.situation = situation
         if not isinstance(self.positionx, ErrorValue):
@@ -277,3 +277,6 @@ class SampleStore(Service):
 
     def get_samples(self):
         return list(self)
+
+    def do_list_changed(self):
+        self.instrument.save_state()
