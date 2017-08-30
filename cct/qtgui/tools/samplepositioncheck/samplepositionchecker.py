@@ -45,7 +45,7 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._connections=[]
         super().cleanup()
 
-    def onSampleListChanged(self):
+    def onSampleListChanged(self, ss:SampleStore):
         self.model.update()
         return False
 
