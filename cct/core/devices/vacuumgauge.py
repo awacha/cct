@@ -13,6 +13,8 @@ logger.setLevel(logging.INFO)
 
 # noinspection PyPep8Naming
 class TPG201_Backend(DeviceBackend_TCP):
+    invalid_characters = [b'\xc6', b'\xbe']
+
     def set_variable(self, variable: str, value: object):
         raise ReadOnlyVariable(variable)
 
@@ -35,6 +37,8 @@ class TPG201_Backend(DeviceBackend_TCP):
         return messages
 
     def process_incoming_message(self, message, original_sent=None):
+        for c in self.invalid_characters:
+            message = message.replace(c,b'')
         if not (message.startswith(b'001') and message.endswith(b'\r')):
             raise DeviceError('Invalid message: ' + str(message))
         message = message[:-1]
