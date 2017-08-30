@@ -214,6 +214,7 @@ class Accounting(Service):
         self.state['projectname'] = self.project.projectname
         self.state['proposer'] = self.project.proposer
         self.emit('project-changed')
+        self.instrument.save_state()
 
     def get_project(self, projectid: Optional[str] = None) -> Project:
         """Get the project instance with the given ID. If no ID is given, get
