@@ -144,6 +144,10 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/icons/scan.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.startStopPushButton.setIcon(icon)
+        try:
+            self._scangraph.truncateScan()
+        except AttributeError:
+            pass
         self._scangraph = None
 
     def onCmdFail(self, interpreter: Interpreter, cmdname: str, exception: Exception, traceback: str):
