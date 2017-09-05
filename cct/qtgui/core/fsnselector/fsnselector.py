@@ -20,7 +20,6 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.setupToolWindow(credo)
         self._fsconnections = []
         self.setupUi(self)
-        print(self.__class__.__mro__)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
@@ -87,7 +86,6 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.FSNSpinBox.setMaximum(self.credo.services['filesequence'].get_lastfsn(self.prefixComboBox.currentText()))
 
     def cleanup(self):
-        print('CLEANUP')
         logger.debug('FSNselector cleanup called')
         for c in self._fsconnections:
             self.credo.services['filesequence'].disconnect(c)

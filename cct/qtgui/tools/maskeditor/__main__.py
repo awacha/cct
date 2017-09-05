@@ -11,7 +11,6 @@ from .maskeditor import MaskEditor
 with open('/mnt/credo_processing/2015/Inhouse/Inhouse_15_01_DPPC_UA/201501/DPPC_UA_Chol_DSPE-PEG_2_50C.pickle',
           'rb') as f:
     exposure = pickle.load(f)
-print(exposure, type(exposure))
 app = QtWidgets.QApplication(sys.argv)
 w = MaskEditor()
 w.setExposure(exposure)

@@ -118,11 +118,9 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             self.canvas.draw_idle()
 
     def cursorToMaximum(self):
-        print(self.selectedSignal())
         self.cursorSlider.setValue(np.argmax(self._data[self.selectedSignal()]))
 
     def cursorToMinimum(self):
-        print(self.selectedSignal())
         self.cursorSlider.setValue(np.argmin(self._data[self.selectedSignal()]))
 
     def selectedSignal(self):
@@ -255,8 +253,6 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.setCurvesVisibility()
 
     def signalsTreeModelChanged(self, idxfrom: QtCore.QModelIndex, idxto: QtCore.QModelIndex):
-        print('dataChanged from signalsTreeModel: from ({}, {}) to ({}, {})'.format(
-            idxfrom.row(), idxfrom.column(), idxto.row(), idxto.column()))
         if idxfrom.column() == 0 or idxto.column() == 0:
             self.setCurvesVisibility()
         if idxfrom.column() == 1 or idxto.column() == 1:

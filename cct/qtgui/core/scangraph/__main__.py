@@ -16,11 +16,9 @@ with open(scanfile, 'rt') as f:
         if not l:
             raise RuntimeError('End of file while waiting for start of scan {}'.format(scannr))
         pass
-    print('Scan {} found.'.format(scannr))
     l = ''
     while not l.startswith('#L '):
         l = f.readline()
-    print('#L line found')
     columns = l.split()[1:]
     data = []
     while True:
@@ -29,11 +27,10 @@ with open(scanfile, 'rt') as f:
             if not data[-1]:
                 del data[-1]
             else:
-                print('Loaded data point #{}: {} columns'.format(len(data), len(data[-1])))
+                pass
         except ValueError:
             break
     scandatatype = np.dtype(list(zip(columns, itertools.repeat('f'))))
-    print(scandatatype.names)
     scandata = np.array(data, dtype=scandatatype)
 
 a = QtWidgets.QApplication(sys.argv)

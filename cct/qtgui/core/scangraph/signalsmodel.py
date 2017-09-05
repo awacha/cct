@@ -28,7 +28,6 @@ class SignalModel(QtCore.QAbstractItemModel):
         elif role == QtCore.Qt.CheckStateRole and index.column() == 0:
             return [QtCore.Qt.Unchecked, QtCore.Qt.Checked][self._signaldata[index.row()][2]]
         elif role == QtCore.Qt.EditRole and index.column() == 1:
-            print('EditRole requested from row {}'.format(index.row()))
             return float(self._signaldata[index.row()][1])
         return None
 
@@ -48,7 +47,6 @@ class SignalModel(QtCore.QAbstractItemModel):
             return ['Signal', 'Scaling'][column]
 
     def setData(self, index: QtCore.QModelIndex, value, role=None):
-        print('SetData: row {}, column {}, role {}'.format(index.row(), index.column(), role))
         if role == QtCore.Qt.CheckStateRole and index.column() == 0:
             self._signaldata[index.row()][2] = bool(value)
             self.dataChanged.emit(self.index(index.row(), 0), self.index(index.row(), 0))

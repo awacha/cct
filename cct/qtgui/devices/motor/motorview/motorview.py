@@ -73,7 +73,6 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self._popupmenu = None
             self._motor_for_popupmenu = None
         index = self.treeView.indexAt(pos)
-        print(index)
         motor = self.credo.motors[sorted(self.credo.motors.keys())[index.row()]]
         assert isinstance(motor, Motor)
         self._popupmenu = QtWidgets.QMenu('Operations with motor {}'.format(motor.name))

@@ -103,7 +103,6 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             event.ignore()
 
     def flagtoggled(self, flagnumber):
-        print('Flag #{} is now {}'.format(flagnumber, self.flags[flagnumber].isChecked()))
         if self.flags[flagnumber].isChecked():
             self.credo.services['interpreter'].set_flag(flagnumber)
         else:
