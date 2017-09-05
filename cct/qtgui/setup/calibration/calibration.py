@@ -35,7 +35,7 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.fsnSelector = FSNSelector(self.fsnselectorPage, credo=self.credo)
         self.fsnselectorPage.layout().addWidget(self.fsnSelector)
         self.tab2D.setLayout(QtWidgets.QVBoxLayout())
-        self.plotImage = PlotImage(self.tab2D)
+        self.plotImage = PlotImage(self.tab2D, register_instance=False)
         self.tab2D.layout().addWidget(self.plotImage)
         self.fsnSelector.FSNSelected.connect(self.onFSNSelected)
         self.tab1D.setLayout(QtWidgets.QVBoxLayout())
@@ -260,7 +260,6 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def onCursorPressed(self, event: MouseEvent):
         if not ((event.inaxes is self.plotImage.axes) and (event.button == 1)):
             return
-        print(event.button, event.x, event.y, event.xdata, event.ydata)
         assert isinstance(self.cursor, Cursor)
         self.cursor.horizOn = False
         self.cursor.vertOn = False

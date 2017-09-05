@@ -30,7 +30,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         for action in [self.actionUndo, self.actionRedo, self.actionSave_mask]:
             action.setEnabled(False)
         self.actionMask.setChecked(True)
-        self.plotimage = PlotImage()
+        self.plotimage = PlotImage(register_instance=False)
         self.plotimage.axesComboBox.setCurrentIndex(self.plotimage.axesComboBox.findText('abs. pixel'))
         while self.plotimage.axesComboBox.count() > 1:
             for i in range(self.plotimage.axesComboBox.count()):
@@ -66,7 +66,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.fsnSelector.close()
         super().cleanup()
 
-    def onFSNSelected(self, prefix, fsn, exposure):
+    def onFSNSelected(self, prefix:str, fsn:int, exposure:Exposure):
         self.setExposure(exposure)
         del exposure
 
@@ -150,7 +150,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def operation(self):
         return self.operationsGroup.checkedAction().iconText()
 
-    def initializeSelector(self, action, selectorclass, callbackfunction, **kwargs):
+    def initializeSelector(self, action:QtWidgets.QAction, selectorclass, callbackfunction, **kwargs):
         if action.isChecked():
             while self.plotimage.figtoolbar.mode != '':
                 # turn off zoom, pan, etc. modes in the matplotlib figure toolbar
@@ -254,6 +254,13 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.finalizeSelector()
 
     def updateMask(self, mask):
+        if mask.shape != self.exposure().shape:
+            QtWidgets.QMessageBox.critical(
+                self, 'Invalid mask size',
+                'This mask ({0[0]:d}x{0[0]:d}) is incompatible with the exposure ({1[0]:d}x{1[0]:d})'.format(
+                    mask.shape, self.exposure().shape
+                ), QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            return
         self.undoStack = self.undoStack[:self.undoStackPointer + 1]
         self.undoStack.append(mask)
         self.undoStackPointer += 1

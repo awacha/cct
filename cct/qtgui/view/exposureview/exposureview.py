@@ -27,18 +27,10 @@ class ExposureView(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def setupUi(self, MainWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
-        splitter = QtWidgets.QSplitter()
-        splitter.setOrientation(QtCore.Qt.Horizontal)
-        self.plotContainer.setLayout(QtWidgets.QVBoxLayout())
-        self.plotContainer.layout().addWidget(splitter)
-        layout = self.plotContainer.layout()
-        assert isinstance(layout, QtWidgets.QVBoxLayout)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.plotImage = PlotImage()
-        splitter.addWidget(self.plotImage)
-        splitter.setContentsMargins(0, 0, 0, 0)
+        self.plotImage = PlotImage(register_instance=False)
+        self.layout2D.addWidget(self.plotImage)
         self.plotCurve = PlotCurve()
-        splitter.addWidget(self.plotCurve)
+        self.layout1D.addWidget(self.plotCurve)
         fs = self.credo.services['filesequence']
         assert isinstance(fs, FileSequence)
         self.prefixComboBox.addItems(sorted(fs.get_prefixes()))

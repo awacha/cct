@@ -24,11 +24,12 @@ def get_colormaps():
 class PlotImage(QtWidgets.QWidget, Ui_Form):
     lastinstances = []
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, register_instance=True):
         QtWidgets.QWidget.__init__(self, parent)
         self._exposure = None
         self.setupUi(self)
-        type(self).lastinstances.append(self)
+        if register_instance:
+            type(self).lastinstances.append(self)
 
     @classmethod
     def get_lastinstance(cls):
@@ -47,7 +48,10 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
                 return cls.get_lastinstance()
 
     def closeEvent(self, event: QtGui.QCloseEvent):
-        type(self).lastinstances.remove(self)
+        try:
+            type(self).lastinstances.remove(self)
+        except ValueError:
+            pass
         event.accept()
 
     def _testimage(self):
