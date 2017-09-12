@@ -130,6 +130,8 @@ class DeviceBackend(object):
 
     # All timestamps are generated with time.monotonic()
 
+    max_outqueue_size = 40
+
     def __init__(self, name: str, configdir: str, config: Dict, deviceconnectionparameters: Tuple,
                  inqueue: multiprocessing.Queue, outqueue: multiprocessing.Queue,
                  watchdog_timeout: float, inqueue_timeout: float, query_timeout: float,
@@ -523,6 +525,9 @@ class DeviceBackend(object):
         """Initiate a query on all variables"""
         if (time.monotonic() - self.lasttimes['queryall']) < self.queryall_interval:
             # do not query all variables too frequently
+            return
+        if (self.outqueue.qsize() > self.max_outqueue_size):
+            # do not query all: the front-end cannot keep up with us
             return
         self.lasttimes['queryall'] = time.monotonic()
 
