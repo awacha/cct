@@ -367,11 +367,11 @@ class FileSequence(Service):
         # write header file if needed
         config = self.instrument.config
 
-        if prefix in [config['path']['prefixes']['crd'],
-                      config['path']['prefixes']['tst']]:
-            simpleparams = False
-        else:
+        if prefix in [config['path']['prefixes']['scn'],
+                      config['path']['prefixes']['tra']]:
             simpleparams = True
+        else:
+            simpleparams = False
 
         params = self.construct_params(prefix, fsn, startdate, simpleparams)
         picklefilename = params['filename']
