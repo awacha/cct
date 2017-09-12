@@ -30,8 +30,7 @@ class HaakePhoenix_Backend(DeviceBackend_TCP):
         else:
             raise UnknownCommand(commandname)
 
-    @staticmethod
-    def get_complete_messages(message: bytes) -> List[bytes]:
+    def get_complete_messages(self, message: bytes) -> List[bytes]:
         if len(message) > 64:
             raise CommunicationError(
                 'Haake Phoenix circulator not connected or not turned on, receiving garbage messages.')

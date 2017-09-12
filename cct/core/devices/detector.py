@@ -212,8 +212,7 @@ class Pilatus_Backend(DeviceBackend_TCP):
             raise UnknownVariable(variablename)
         return True
 
-    @staticmethod
-    def get_complete_messages(message: bytes) -> list:
+    def get_complete_messages(self, message: bytes) -> list:
         return message.split(b'\x18')
 
     def on_end_exposure(self, status: bool, message: bytes) -> None:

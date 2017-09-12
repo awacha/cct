@@ -29,14 +29,13 @@ class TPG201_Backend(DeviceBackend_TCP):
             raise UnknownVariable(variablename)
         return True
 
-    @staticmethod
-    def get_complete_messages(message):
+    def get_complete_messages(self, message:bytes):
         messages = message.split(b'\r')
         for i in range(len(messages) - 1):
             messages[i] = messages[i] + b'\r'
         return messages
 
-    def process_incoming_message(self, message, original_sent=None):
+    def process_incoming_message(self, message:bytes, original_sent=None):
         for c in self.invalid_characters:
             message = message.replace(c,b'')
         if not (message.startswith(b'001') and message.endswith(b'\r')):
