@@ -640,4 +640,5 @@ class ExposureAnalyzer(Service):
             self._handler.stop()
             self._handler = None
         self._backendprocess.join()
+        self._backendprocess = None
         self.starttime = None

@@ -349,6 +349,7 @@ class Device(Callbacks):
                     # to reinitialize the connection, thus after the emission of the signal,
                     # we can expect that self._background_process and self._idle_handler carry
                     # the new handlers.
+                    self._idle_handler.stop()
                     self._idle_handler = None
                     logger.debug('Emitting disconnect signal')
                     self.emit('disconnect', not message['normaltermination'])
@@ -388,8 +389,8 @@ class Device(Callbacks):
             self._properties['_status'] = 'Disconnected'
             self._timestamps['_status'] = time.monotonic()
             self.emit('variable-change', '_status', 'Disconnected')
-        else:
-            return True
+#        else:
+#            return True
         return False
 
     def do_ready(self) -> bool:
@@ -489,6 +490,12 @@ class Device(Callbacks):
         """
         if self._background_process is not None:
             self.send_to_backend('exit')
+        else:
+            # emit the 'disconnect' signal anyway.
+            if self._idle_handler is not None:
+                self._idle_handler.stop()
+                self._idle_handler = None
+            self.emit('disconnect',False)
 
     def reconnect_device(self):
         """Try to reconnect the device after a spontaneous disconnection."""
