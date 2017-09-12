@@ -145,8 +145,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
         else:
             raise UnknownVariable(variablename)
 
-    @staticmethod
-    def get_complete_messages(message):
+    def get_complete_messages(self, message):
         messages = []
         # messages from the TMCM cards always consist of 9 bytes.
         while len(message) >= 9:
