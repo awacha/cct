@@ -39,13 +39,21 @@ class FSNCounter(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         self.selectedPrefixLastLabel.setText(str(fs.get_lastfsn(prefix)))
 
     def onNextFSNChanged(self, filesequence, prefix, nextfsn):
-        self.lastPrefixLabel.setText(prefix)
+        if self.lastPrefixLabel.text() != prefix:
+            self.lastPrefixLabel.setText(prefix)
+            fs = self.credo.services['filesequence']
+            assert isinstance(fs, FileSequence)
+            self.lastPrefixLastLabel.setText(str(fs.get_lastfsn(prefix)))
         self.lastPrefixNextLabel.setText(str(nextfsn))
         if self.prefixComboBox.currentText() == prefix:
             self.selectedPrefixNextLabel.setText(str(nextfsn))
 
     def onLastFSNChanged(self, filesequence, prefix, lastfsn):
-        self.lastPrefixLabel.setText(prefix)
+        if self.lastPrefixLabel.text() != prefix:
+            self.lastPrefixLabel.setText(prefix)
+            fs = self.credo.services['filesequence']
+            assert isinstance(fs, FileSequence)
+            self.lastPrefixNextLabel.setText(fs.get_nextfreefsn(prefix, acquire=False))
         self.lastPrefixLastLabel.setText(str(lastfsn))
         if self.prefixComboBox.currentText() == prefix:
             self.selectedPrefixLastLabel.setText(str(lastfsn))
