@@ -521,7 +521,10 @@ class FileSequence(Service):
             self.instrument.config['path']['directories']['param']
         ]:
             try:
-                return Header.new_from_file(os.path.join(path, filebasename))
+                header = Header.new_from_file(os.path.join(path, filebasename))
+                if path==self.instrument.config['path']['directories']['param_override']:
+                    logger.debug('Using parameter override for prefix {} fsn {}. S-D: {}'.format(prefix, fsn, header.distance))
+                return header
             except FileNotFoundError:
                 continue
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), filebasename)
