@@ -87,10 +87,13 @@ class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(palette, QtGui.QPalette)
         if state is None:
             palette.setColor(QtGui.QPalette.Window, QtGui.QColor('gray'))
+            palette.setColor(QtGui.QPalette.Foreground, QtGui.QColor('black'))
         elif state:
-            palette.setColor(QtGui.QPalette.Window, QtGui.QColor('green'))
+            palette.setColor(QtGui.QPalette.Window, QtGui.QColor('lightgreen'))
+            palette.setColor(QtGui.QPalette.Foreground, QtGui.QColor('black'))
         else:
             palette.setColor(QtGui.QPalette.Window, QtGui.QColor('red'))
+            palette.setColor(QtGui.QPalette.Foreground, QtGui.QColor('white'))
         flag.setPalette(palette)
         flag.setAutoFillBackground(True)
         if label is not None:
