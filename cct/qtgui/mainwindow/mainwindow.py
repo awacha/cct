@@ -41,7 +41,7 @@ from ..devices.vacuum import VacuumGauge
 from ..devices.connections import DeviceConnections
 from ..diagnostics.resourceusage import ResourceUsage
 from ..tools.samplepositioncheck import SamplePositionChecker
-from .logviewer import LogViewer
+from .logviewer_text import LogViewerText
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
 
@@ -104,7 +104,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             action.triggered.connect(self.openWindow)
         layout = QtWidgets.QVBoxLayout()
         self.logViewerGroupBox.setLayout(layout)
-        self.logViewer = LogViewer(self.logViewerGroupBox)
+        #self.logViewer = LogViewer(self.logViewerGroupBox)
+        self.logViewer = LogViewerText(self.logViewerGroupBox)
         layout.addWidget(self.logViewer)
         logging.root.addHandler(self.logViewer)
         for record in CollectingHandler.instance.collected:
