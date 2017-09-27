@@ -43,6 +43,6 @@ class LogViewerText(QtWidgets.QWidget, Ui_Form, logging.Handler):
         else:
             cursor.insertText(msg, self.criticalformat)
         cursor.movePosition(QtGui.QTextCursor.End)
-        self.setCursor(cursor)
+        self.plainTextEdit.setTextCursor(cursor)
         self.plainTextEdit.ensureCursorVisible()
 
