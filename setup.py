@@ -26,7 +26,7 @@ def compile_uis(packageroot):
                 compileUi(fname, pyfile, from_imports=True, import_from='cct.resource')
             print('Compiled UI file: {} -> {}.'.format(fname, pyfilename))
 
-compile_uis(os.path.join('cct','qtgui'))
+compile_uis(os.path.join('cct'))
 
 
 
@@ -58,8 +58,9 @@ setup(name='cct', author='Andras Wacha',
       setup_requires=['setuptools_scm'],
       #      cmdclass = {'build_ext': build_ext},
       ext_modules=cythonize(extensions),
-      install_requires=['numpy>=1.11.1', 'scipy>=0.18.0', 'matplotlib>=1.5.2', 'sastool>=1.0.7', 'pyModbusTCP>=0.0.13', 'psutil>=4.1.0'],
-      entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run'],
+      install_requires=['numpy>=1.11.1', 'scipy>=0.18.0', 'matplotlib>=1.5.2', 'sastool>=1.0.7', 'pyModbusTCP>=0.0.13', 'psutil>=4.1.0', 'h5py'],
+      entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run',
+                                    'cpt = cct.processing.__main__:run'],
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",
       license="",
