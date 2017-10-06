@@ -41,8 +41,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>424</width>
-          <height>617</height>
+          <width>395</width>
+          <height>648</height>
          </rect>
         </property>
         <attribute name="label">
@@ -205,10 +205,58 @@
            </property>
            <layout class="QGridLayout" name="gridLayout_4">
             <item row="0" column="1">
-             <widget class="QComboBox" name="comboBox"/>
+             <widget class="QComboBox" name="errorPropagationComboBox">
+              <property name="currentIndex">
+               <number>3</number>
+              </property>
+              <item>
+               <property name="text">
+                <string>Weighted</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Average of errors</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Squared (Gaussian)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Conservative</string>
+               </property>
+              </item>
+             </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="comboBox_2"/>
+             <widget class="QComboBox" name="abscissaErrorPropagationComboBox">
+              <property name="currentIndex">
+               <number>3</number>
+              </property>
+              <item>
+               <property name="text">
+                <string>Independent</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Linear</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Squared</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Conservative</string>
+               </property>
+              </item>
+             </widget>
             </item>
             <item row="0" column="0">
              <widget class="QLabel" name="label_5">
@@ -225,16 +273,22 @@
              </widget>
             </item>
             <item row="4" column="0" colspan="2">
-             <widget class="QCheckBox" name="checkBox">
+             <widget class="QCheckBox" name="sanitizeCurvesCheckBox">
               <property name="text">
                <string>Sanitize scattering curves</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
             <item row="3" column="0" colspan="2">
-             <widget class="QCheckBox" name="checkBox_2">
+             <widget class="QCheckBox" name="logarithmicCorrelMatrixCheckBox">
               <property name="text">
                <string>Logarithmic correlation matrix</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -246,7 +300,11 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
+             <widget class="QDoubleSpinBox" name="stdMultiplierDoubleSpinBox">
+              <property name="value">
+               <double>2.700000000000000</double>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -337,34 +395,88 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="loadPage">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>424</width>
-          <height>617</height>
-         </rect>
-        </property>
-        <attribute name="label">
-         <string>Load...</string>
-        </attribute>
-       </widget>
        <widget class="QWidget" name="resultsPage">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>424</width>
-          <height>617</height>
+          <width>395</width>
+          <height>648</height>
          </rect>
         </property>
         <attribute name="label">
          <string>Results</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <widget class="QTreeView" name="resultsTreeView"/>
+        <layout class="QGridLayout" name="gridLayout_5">
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_9">
+           <property name="text">
+            <string>Distance:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="resultsSampleSelectorComboBox"/>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Sample:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="resultsDistanceSelectorComboBox"/>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="QGroupBox" name="groupBox_3">
+           <property name="title">
+            <string>Plot this type of results:</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_6">
+            <item row="0" column="1">
+             <widget class="QPushButton" name="plotImagePushButton">
+              <property name="text">
+               <string>Averaged image</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QPushButton" name="plotCurvesPushButton">
+              <property name="text">
+               <string>Scattering curves</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QPushButton" name="plotCorMatTestResultsPushButton">
+              <property name="text">
+               <string>Outlier test results</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QPushButton" name="plotCorMatPushButton">
+              <property name="text">
+               <string>Correlation matrix</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="3" column="0" colspan="2">
+          <spacer name="verticalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </widget>
@@ -374,9 +486,9 @@
         <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="currentIndex">
-           <number>0</number>
+           <number>2</number>
           </property>
-          <widget class="QWidget" name="tab">
+          <widget class="QWidget" name="headersContainerWidget">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -412,6 +524,20 @@
            <attribute name="title">
             <string>Images</string>
            </attribute>
+          </widget>
+          <widget class="QWidget" name="tableContainerWidget">
+           <attribute name="title">
+            <string>Tables</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QTreeView" name="treeView">
+              <property name="alternatingRowColors">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </widget>
         </item>

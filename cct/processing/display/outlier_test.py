@@ -32,10 +32,15 @@ class OutlierModel(QtCore.QAbstractItemModel):
             return None
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
+        if role!=QtCore.Qt.DisplayRole:
+            return None
         if orientation==QtCore.Qt.Horizontal:
-            return ['FSN','Date','Discrepancy','Relative discrepancy', 'Quality'][i]
+            return ['FSN','Date','Discrepancy','Relative discrepancy', 'Quality'][section]
         else:
             return None
+
+    def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...):
+        return self.createIndex(row, column, None)
 
 def display_outlier_test_results(grp:h5py.Group) -> OutlierModel:
     return OutlierModel(None, grp)

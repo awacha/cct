@@ -20,6 +20,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self._headers = []
         self._parent=parent
         self.rootdir=rootdir
+        self.eval2d_pathes=[]
+        self.mask_pathes=[]
         self.cache_pathes()
         self.reloadHeaders()
         

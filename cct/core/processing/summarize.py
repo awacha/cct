@@ -28,8 +28,8 @@ def correlmatrix(grp:h5py.Group, std_multiplier:Optional[float]=None, logarithmi
     rowavg=cm.sum(axis=0)/(len(grp)-1)
     for i in range(len(rowavg)):
         grp[sortedkeys[i]].attrs['correlmat_discrp']=rowavg[i]
-        grp[sortedkeys[i]].attrs['correlmat_rel_discrp']=(rowavg[i]-rowavg.median())/rowavg.std()
-        grp[sortedkeys[i]].attrs['correlmat_bad']=(rowavg[i]-rowavg.median())>std_multiplier*rowavg.std()
+        grp[sortedkeys[i]].attrs['correlmat_rel_discrp']=(rowavg[i]-np.median(rowavg))/rowavg.std()
+        grp[sortedkeys[i]].attrs['correlmat_bad']=(rowavg[i]-np.median(rowavg))>std_multiplier*rowavg.std()
     cm=cm+np.diagflat(rowavg)
     return cm
 
@@ -58,7 +58,7 @@ class Summarizer(object):
         self._headers = []
         self._masks = {}
 
-    def load_headers(self) -> None:
+    def load_headers(self, yield_messages=False):
         self._headers = []
         for f in self.fsns:
             for p in self.parampath:
@@ -66,18 +66,23 @@ class Summarizer(object):
                     self._headers.append(Header.new_from_file(
                         os.path.join(
                             p,
-                            '{{}}_{{0{:5d}d}}.pickle'.format(self.ndigits).format(f))
+                            '{{}}_{{:0{:d}d}}.pickle'.format(self.ndigits).format(self.prefix,f))
                     ))
+                    if yield_messages:
+                        yield '__header_loaded__', f
                     break
                 except FileNotFoundError:
                     pass
             else:
                 logger.error('No header found for prefix {}, fsn {}.'.format(self.prefix, f))
+                if yield_messages:
+                    yield '__header_notfound__', f
+        return None
 
     def get_mask(self, maskname:str):
         try:
             return self._masks[maskname]
-        except IndexError:
+        except KeyError:
             pass
         for p in self.maskpath:
             try:
@@ -101,33 +106,44 @@ class Summarizer(object):
                 ex=Exposure.new_from_file(
                     os.path.join(
                         p,
-                        '{{}}_{{0{:5d}d}}.pickle'.format(self.ndigits).format(fsn)),
+                        '{{}}_{{:0{:d}d}}.npz'.format(self.ndigits).format(self.prefix, fsn)),
                     header, mask
                 )
                 return ex
             except FileNotFoundError:
-                break
+                continue
         raise FileNotFoundError(fsn)
 
     def allsamplenames(self) -> List[str]:
         return sorted(set([h.title for h in self._headers]))
 
     def distances(self, samplename:str) ->List[int]:
-        return sorted(set([h.distance for h in self._headers if h.title==samplename]))
+        dists=set([float(h.distance) for h in self._headers if h.title==samplename])
+        distances = []
+        for d in dists:
+            if not any([abs(d-d_)<0.01 for d_ in distances]):
+                distances.append(d)
+        return distances
 
-    def collect_exposures(self, samplename:str, distance:float, hdf5:h5py.File):
+    def collect_exposures(self, samplename:str, distance:float, hdf5:h5py.File, yield_messages:bool=False):
         grp=hdf5.require_group('Samples/{}/{:.2f}'.format(samplename, distance))
-        headers = [h for h in self._headers if h.title==samplename and h.distance==distance]
+        headers = [h for h in self._headers if h.title==samplename and abs(float(h.distance)-float(distance))<0.01]
         group1d=grp.require_group('curves')
         dataset2d=None
         error2d=None
         curve = None
+        yield '__init_collect_exposures__', len(headers)
         for h in sorted(headers, key=lambda h:h.fsn):
+            yield '__ce_debug__',h.fsn
             try:
                 ex = self.load_exposure(h.fsn)
+                if yield_messages:
+                    yield '__exposure_loaded__', h.fsn
             except FileNotFoundError:
+                if yield_messages:
+                    yield '__exposure_notfound__', h.fsn
                 continue
-            if not dataset2d:
+            if dataset2d is None:
                 dataset2d=grp.create_dataset('image',data=ex.intensity)
                 error2d=grp.create_dataset('image_uncertainty', data=ex.error**2)
             else:
@@ -141,7 +157,7 @@ class Summarizer(object):
             if self.sanitize_curves:
                 curve=curve.sanitize()
             ds=group1d.create_dataset(
-                '{{0{:d}}d}'.format(self.ndigits).format(h.fsn),
+                '{{:0{:d}d}}'.format(self.ndigits).format(h.fsn),
                 shape=(len(curve),3),dtype=np.double)
             ds[:,0]=curve.q
             ds[:,1]=curve.Intensity
@@ -154,14 +170,14 @@ class Summarizer(object):
         error2d/=len(group1d)
 
     def stabilityassessment(self, samplename:str, distance:float, hdf5:h5py.File):
-        cmatrix, badidx, rowavg = correlmatrix(
+        cmatrix = correlmatrix(
             hdf5.require_group('Samples/{}/{:.2f}/curves'.format(samplename,distance)),
             self.std_multiplier, self.logarithmic_correlmatrix
         )
         grp=hdf5.require_group('correlmatrix')
-        grp.require_dataset('{}_{:.2f}'.format(samplename, distance), data=cmatrix)
+        grp.require_dataset('{}_{:.2f}'.format(samplename, distance), data=cmatrix, shape=cmatrix.shape, dtype=cmatrix.dtype)
 
-    def summarize(self, overwrite_results=True):
+    def summarize(self, overwrite_results=True, yield_messages=False):
         if overwrite_results:
             filemode='w'
         else:
@@ -169,9 +185,17 @@ class Summarizer(object):
         with h5py.File(self.outputfile,filemode) as hdf5:
             for groupname in ['Samples','masks', 'images','curves','correlmatrix','_meta_']:
                 hdf5.require_group(groupname)
+            num=sum([len(self.distances(sn)) for sn in self.allsamplenames()])
+            if yield_messages:
+                yield '__init_summarize__', num
             for sn in self.allsamplenames():
                 logger.info('Sample name: {}'.format(sn))
                 for dist in self.distances(sn):
+                    yield sn, dist
                     logger.info('Distance: {:.2f} mm (sample {})'.format(dist,sn))
-                    self.collect_exposures(sn, dist, hdf5)
+                    for msg in self.collect_exposures(sn, dist, hdf5, yield_messages=yield_messages):
+                        yield msg
+                    if yield_messages:
+                        yield '__init_stabilityassessment__', 0
                     self.stabilityassessment(sn, dist, hdf5)
+        return None
