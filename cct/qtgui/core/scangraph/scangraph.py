@@ -139,7 +139,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.cursorRightButton.setEnabled(position < self._datalength - 1)
         self.cursorHomeButton.setEnabled(position > 0)
         self.cursorEndButton.setEnabled(position < self._datalength - 1)
-        self.actionMotor_to_cursor.setEnabled(not self.credo.motors['Motor_'+self.abscissaName()].is_moving())
+        self.actionMotor_to_cursor.setEnabled(not self.credo.motors[self.abscissaName()].ismoving())
         self.draw2D()
         self.drawScanCursor()
 
