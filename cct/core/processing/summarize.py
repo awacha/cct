@@ -4,7 +4,9 @@ from typing import Iterable, List, Optional
 
 import h5py
 import numpy as np
+from sastool.classes2 import Curve
 from sastool.io.credo_cct import Header, Exposure
+from sastool.misc.errorvalue import ErrorValue
 from scipy.io import loadmat
 
 logger=logging.getLogger(__name__)
@@ -134,6 +136,7 @@ class Summarizer(object):
         curve = None
         yield '__init_collect_exposures__', len(headers)
         for h in sorted(headers, key=lambda h:h.fsn):
+            assert isinstance(h, Header)
             yield '__ce_debug__',h.fsn
             try:
                 ex = self.load_exposure(h.fsn)
@@ -144,13 +147,17 @@ class Summarizer(object):
                     yield '__exposure_notfound__', h.fsn
                 continue
             if dataset2d is None:
-                dataset2d=grp.create_dataset('image',data=ex.intensity)
-                error2d=grp.create_dataset('image_uncertainty', data=ex.error**2)
+                dataset2d=ex.intensity
+                error2d=ex.error**2
             else:
                 dataset2d+=ex.intensity
                 error2d+=ex.error**2
             if ex.header.maskname not in hdf5.require_group('masks'):
                 hdf5.require_group('masks').create_dataset(ex.header.maskname, data=ex.mask)
+            try:
+                grp['mask']=h5py.SoftLink('/masks/{}'.format(ex.header.maskname))
+            except RuntimeError:
+                pass
             curve = ex.radial_average(
                 abscissa_errorpropagation=self.abscissaerrorpropagation,
                 errorpropagation=self.errorpropagation)
@@ -158,24 +165,60 @@ class Summarizer(object):
                 curve=curve.sanitize()
             ds=group1d.create_dataset(
                 '{{:0{:d}d}}'.format(self.ndigits).format(h.fsn),
-                shape=(len(curve),3),dtype=np.double)
+                shape=(len(curve),4),dtype=np.double)
             ds[:,0]=curve.q
             ds[:,1]=curve.Intensity
             ds[:,2]=curve.Error
-            ds.attrs['date']=h.date.isoformat()
+            ds[:,3]=curve.qError
+            for attr in ['beamcenterx', 'beamcentery', 'distance', 'pixelsizex', 'pixelsizey',
+                         'wavelength', 'fsn', 'exposuretime', 'transmission', 'thickness', 'maskname',
+                         'absintfactor', 'flux', 'date', 'distancedecrease', 'fsn_absintref',
+                         'fsn_emptybeam','project','samplex','sampley','temperature','title','username','vacuum']:
+                try:
+                    a=getattr(h, attr)
+                except (AttributeError, KeyError):
+                    logger.warning('Missing attribute {} from header.'.format(attr))
+                    continue
+                if isinstance(a, ErrorValue):
+                    ds.attrs[attr] = a.val
+                    ds.attrs[attr+'.err'] = a.err
+                elif isinstance(a, (float, int, bool, str)):
+                    ds.attrs[attr] = a
+                else:
+                    ds.attrs[attr] = str(a)
+        # average parameters
+        for attr in ['beamcenterx', 'beamcentery', 'distance', 'pixelsizex', 'pixelsizey', 'wavelength',
+                     'transmission', 'thickness', 'absintfactor', 'flux', 'distancedecrease']:
+            try:
+                grp.attrs[attr]=np.mean([group1d[dsname].attrs[attr] for dsname in group1d.keys()])
+            except KeyError:
+                pass
+        # sum parameters
+        for attr in ['exposuretime']:
+            grp.attrs[attr]=np.sum([group1d[dsname].attrs[attr] for dsname in group1d.keys()])
         if curve is None:
             # no files have been loaded
             return
-        dataset2d/=len(group1d)
-        error2d/=len(group1d)
+        grp.create_dataset('image', data=dataset2d/len(group1d))
+        grp.create_dataset('image_uncertainty', data=(error2d/len(group1d))**0.5)
+        cavg=Curve.average(*[Curve(group1d[ds][:,0],group1d[ds][:,1],group1d[ds][:,2],group1d[ds][:,3]) for ds in group1d]).sanitize()
+        dsavg=grp.create_dataset('curve_averaged', shape=(len(cavg),4), dtype=np.double)
+        dsavg[:,0],dsavg[:,1],dsavg[:,2],dsavg[:,3]=(cavg.q, cavg.Intensity, cavg.Error, cavg.qError)
+        radavg=Exposure(np.array(grp['image']), np.array(grp['image_uncertainty']),headers[0],np.array(grp['mask'])).radial_average().sanitize()
+        dsradavg=grp.create_dataset('curve_reintegrated', shape=(len(radavg),4), dtype=np.double)
+        dsradavg[:,0], dsradavg[:,1], dsradavg[:,2], dsradavg[:,3] = (radavg.q, radavg.Intensity, radavg.Error, radavg.qError)
+        grp['curve'] = h5py.SoftLink('curve_reintegrated')
+        hdf5['images']['{}_{:.2f}'.format(samplename, distance)]=h5py.SoftLink('/Samples/{}/{:.2f}/image'.format(samplename, distance))
+        hdf5['curves']['{}_{:.2f}'.format(samplename, distance)]=h5py.SoftLink('/Samples/{}/{:.2f}/curve'.format(samplename, distance))
 
     def stabilityassessment(self, samplename:str, distance:float, hdf5:h5py.File):
         cmatrix = correlmatrix(
             hdf5.require_group('Samples/{}/{:.2f}/curves'.format(samplename,distance)),
             self.std_multiplier, self.logarithmic_correlmatrix
         )
-        grp=hdf5.require_group('correlmatrix')
-        grp.require_dataset('{}_{:.2f}'.format(samplename, distance), data=cmatrix, shape=cmatrix.shape, dtype=cmatrix.dtype)
+        grp=hdf5.require_group('Samples/{}/{:.2f}'.format(samplename, distance))
+        grp.create_dataset('correlmatrix', data=cmatrix, shape=cmatrix.shape, dtype=cmatrix.dtype)
+        hdf5['correlmatrix']['{}_{:.2f}'.format(samplename, distance)]=h5py.SoftLink('/Samples/{}/{:.2f}/correlmatrix')
 
     def summarize(self, overwrite_results=True, yield_messages=False):
         if overwrite_results:

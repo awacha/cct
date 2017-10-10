@@ -14,8 +14,11 @@ from sastool.io.credo_cct.header import Header
 
 from .headerpopup import HeaderPopup
 from .mainwindow_ui import Ui_MainWindow
+from ..display.correlmatrix import show_cmatrix
 from ..display.outlier_test import display_outlier_test_results
+from ..display.show_image import show_scattering_image
 from ..display.summarize_curves import summarize_curves
+from ..export_table import export_table
 from ..headermodel import HeaderModel
 from ...core.processing.summarize import Summarizer
 from ...core.utils.timeout import IdleFunction
@@ -60,25 +63,52 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.figure=Figure()
         self.canvas=FigureCanvasQTAgg(self.figure)
         vl=QtWidgets.QVBoxLayout(self.figureContainerWidget)
-        vl.addWidget(self.canvas, stretch=1)
+        vl.addWidget(self.canvas)
         self.figuretoolbar=NavigationToolbar2QT(self.canvas, self.figureContainerWidget)
         vl.addWidget(self.figuretoolbar)
+        self.exportHeaderTablePushButton.clicked.connect(self.onExportHeadersTable)
+        self.exportTablePushButton.clicked.connect(self.onExportTable)
+
+    def onExportHeadersTable(self):
+        fname, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Write table to file...','','MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
+                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
+        if not fname:
+            return
+        export_table(fname, self.headermodel)
+
+    def onExportTable(self):
+        fname, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Write table to file...','','MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
+                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
+        if not fname:
+            return
+        export_table(fname, self.treeView.model())
+
 
     def onPlotCorMat(self):
-        pass
+        with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
+            show_cmatrix(self.figure, f['Samples'][self.resultsSampleSelectorComboBox.currentText()][self.resultsDistanceSelectorComboBox.currentText()])
+        self.canvas.draw()
+        self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onPlotCorMatResults(self):
         with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
             model=display_outlier_test_results(f['Samples'][self.resultsSampleSelectorComboBox.currentText()][self.resultsDistanceSelectorComboBox.currentText()]['curves'])
             self.treeView.setModel(model)
+            for c in range(model.columnCount()):
+                self.treeView.resizeColumnToContents(c)
+        self.tabWidget.setCurrentWidget(self.tableContainerWidget)
 
     def onPlotCurves(self):
         with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
             summarize_curves(self.figure, f['Samples'][self.resultsSampleSelectorComboBox.currentText()][self.resultsDistanceSelectorComboBox.currentText()]['curves'])
-            self.canvas.draw()
+        self.canvas.draw()
+        self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onPlotImage(self):
-        pass
+        with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
+            show_scattering_image(self.figure, f['Samples'][self.resultsSampleSelectorComboBox.currentText()][self.resultsDistanceSelectorComboBox.currentText()])
+        self.canvas.draw()
+        self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onResultsSampleSelected(self):
         if not len(self.resultsSampleSelectorComboBox):
