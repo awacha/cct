@@ -21,13 +21,18 @@ def correlmatrix(grp:h5py.Group, std_multiplier:Optional[float]=None, logarithmi
             ds2=grp[sortedkeys[j]]
             if logarithmic:
                 idx=np.logical_and(np.logical_and(ds1[:,2]>0,ds2[:,2]>0),np.logical_and(ds1[:,1]>0,ds2[:,1]>0))
+                if idx.sum()==0:
+                    cm[i,j]=cm[j,i]=np.nan
+                    continue
                 w=(ds1[idx,2]/ds1[idx,1])**2+(ds2[idx,2]/ds2[idx,1])**2
                 cm[i,j]=cm[j,i]=((np.log(ds1[idx,1])-np.log(ds2[idx,1]))**2/w).sum()/(1/w).sum()
             else:
                 idx=np.logical_and(ds1[:,2]>0,ds2[:,2]>0)
+                if idx.sum()==0:
+                    cm[i,j]=cm[j,i]=np.nan
                 w=(ds1[idx,2]**2+ds2[idx,2]**2)
                 cm[i,j]=cm[j,i]=((ds1[idx,1]-ds2[idx,1])**2/w).sum()/(1/w).sum()
-    rowavg=cm.sum(axis=0)/(len(grp)-1)
+    rowavg=np.nanmean(cm, axis=0)
     for i in range(len(rowavg)):
         grp[sortedkeys[i]].attrs['correlmat_discrp']=rowavg[i]
         grp[sortedkeys[i]].attrs['correlmat_rel_discrp']=(rowavg[i]-np.median(rowavg))/rowavg.std()

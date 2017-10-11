@@ -22,9 +22,11 @@ requirements:
     - pyqt >=5
     - psutil
     - pymodbustcp
+    - appdirs
 
   run:
     - python
+    - appdirs
     - numpy
     - pymodbustcp
     - psutil

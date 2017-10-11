@@ -32,21 +32,27 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>200</width>
+         <width>400</width>
          <height>0</height>
         </size>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>4</number>
        </property>
-       <widget class="QWidget" name="processPage">
+       <widget class="QWidget" name="ioPage">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>354</width>
-          <height>703</height>
+          <width>400</width>
+          <height>747</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <attribute name="label">
          <string>Input/output</string>
@@ -54,6 +60,12 @@
         <layout class="QGridLayout" name="gridLayout">
          <item row="3" column="0">
           <widget class="QLabel" name="label_3">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="text">
             <string>Last FSN:</string>
            </property>
@@ -65,7 +77,7 @@
          <item row="2" column="0">
           <widget class="QLabel" name="label_2">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -80,6 +92,12 @@
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="text">
             <string>Data directory:</string>
            </property>
@@ -94,8 +112,8 @@
             <bool>false</bool>
            </property>
            <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
-             <horstretch>1</horstretch>
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -110,7 +128,7 @@
             <bool>false</bool>
            </property>
            <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -127,7 +145,7 @@
          <item row="1" column="2">
           <widget class="QPushButton" name="browsePushButton">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -144,8 +162,8 @@
          <item row="1" column="1">
           <widget class="QLineEdit" name="rootDirLineEdit">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>1</horstretch>
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -161,7 +179,7 @@
            </property>
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>1</horstretch>
+             <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -172,6 +190,12 @@
          </item>
          <item row="0" column="0">
           <widget class="QLabel" name="label_4">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="text">
             <string>Save results to:</string>
            </property>
@@ -183,8 +207,8 @@
          <item row="0" column="1">
           <widget class="QLineEdit" name="saveHDFLineEdit">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>1</horstretch>
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -211,22 +235,28 @@
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>20</width>
-             <height>40</height>
+             <width>0</width>
+             <height>0</height>
             </size>
            </property>
           </spacer>
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="page_2">
+       <widget class="QWidget" name="processingPage">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>689</height>
+          <height>353</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <attribute name="label">
          <string>Processing</string>
@@ -244,6 +274,12 @@
          </item>
          <item row="6" column="0" colspan="2">
           <widget class="QGroupBox" name="progressGroupBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Progress</string>
            </property>
@@ -429,14 +465,20 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="resultsPage">
+       <widget class="QWidget" name="perSampleResultsPage">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>354</width>
-          <height>703</height>
+          <width>305</width>
+          <height>186</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <attribute name="label">
          <string>Per-sample results</string>
@@ -470,6 +512,12 @@
          </item>
          <item row="3" column="0" colspan="2">
           <widget class="QGroupBox" name="groupBox_3">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Plot this type of results:</string>
            </property>
@@ -520,14 +568,20 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="page">
+       <widget class="QWidget" name="qcPage">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>354</width>
-          <height>703</height>
+          <width>287</width>
+          <height>80</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <attribute name="label">
          <string>Overall quality checks</string>
@@ -576,14 +630,20 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="page_3">
+       <widget class="QWidget" name="exportPage">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>354</width>
-          <height>703</height>
+          <width>400</width>
+          <height>747</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <attribute name="label">
          <string>Export</string>
@@ -801,7 +861,14 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_5">
             <item>
-             <widget class="QListWidget" name="sampleNameListWidget"/>
+             <widget class="QListWidget" name="sampleNameListWidget">
+              <property name="selectionMode">
+               <enum>QAbstractItemView::MultiSelection</enum>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -811,7 +878,7 @@
       </widget>
       <widget class="QWidget" name="rightContainer" native="true">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
          <horstretch>1</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -819,12 +886,18 @@
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
          <widget class="QTabWidget" name="tabWidget">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="currentIndex">
            <number>0</number>
           </property>
           <widget class="QWidget" name="headersContainerWidget">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -879,11 +952,23 @@
            </layout>
           </widget>
           <widget class="QWidget" name="figureContainerWidget">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <attribute name="title">
             <string>Figures</string>
            </attribute>
           </widget>
           <widget class="QWidget" name="tableContainerWidget">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <attribute name="title">
             <string>Tables</string>
            </attribute>
@@ -929,23 +1014,6 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1139</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menu_File">
-    <property name="title">
-     <string>&amp;File</string>
-    </property>
-   </widget>
-   <addaction name="menu_File"/>
-  </widget>
-  <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <tabstops>
   <tabstop>tabWidget</tabstop>

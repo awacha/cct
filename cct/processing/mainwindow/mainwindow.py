@@ -1,23 +1,23 @@
+import configparser
 import inspect
 import multiprocessing
 import multiprocessing.queues
 import os
 import pickle
 import queue
-from typing import Iterable
+from typing import Iterable, Optional, Union
 
+import appdirs
 import h5py
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 from sastool.io.credo_cct.header import Header
 
 from .headerpopup import HeaderPopup
 from .mainwindow_ui import Ui_MainWindow
-from ..display.correlmatrix import show_cmatrix
-from ..display.outlier_test import display_outlier_test_results
-from ..display.show_image import show_scattering_image
-from ..display.summarize_curves import summarize_curves
+from ..display import show_scattering_image, show_cmatrix, display_outlier_test_results, summarize_curves, \
+    plot_vacuum_and_flux, make_transmission_table, make_exptimes_table
 from ..export_table import export_table
 from ..headermodel import HeaderModel
 from ...core.processing.summarize import Summarizer
@@ -29,15 +29,110 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         QtWidgets.QMainWindow.__init__(self, None)
         self.rootdir=None
         self.processingprocess = None
+        self.header_columns=[]
         self.idlefcn = None
         self.setupUi(self)
-        self.setRootDir('/mnt/credo_data/2017')
-        self.firstFSNSpinBox.setValue(0)
-        self.lastFSNSpinBox.setValue(100)
-        self.reloadPushButton.click()
-        self.saveHDFLineEdit.setText('test.h5')
-        self.processPushButton.setEnabled(True)
-        self.updateResults()
+        self.load_state()
+
+#        self.setRootDir('/mnt/credo_data/2017')
+#        self.firstFSNSpinBox.setValue(0)
+#        self.lastFSNSpinBox.setValue(100)
+#        self.reloadPushButton.click()
+#        self.saveHDFLineEdit.setText('test.h5')
+#        self.processPushButton.setEnabled(True)
+        #self.updateResults()
+
+    def load_state(self):
+        statefile = os.path.join(appdirs.user_config_dir('cpt','CREDO',roaming=True),'cpt.ini')
+        config=configparser.ConfigParser()
+        config.read(statefile)
+        for lineedit, section, key in [
+            (self.saveHDFLineEdit, 'io', 'hdf5'),
+            (self.rootDirLineEdit, 'io', 'datadir'),
+            (self.exportFolderLineEdit, 'export', 'folder'),
+        ]:
+            try:
+                lineedit.setText(config[section][key])
+            except KeyError:
+                continue
+        for spinbox, section, key, converter in [
+            (self.firstFSNSpinBox, 'io','firstfsn', int),
+            (self.lastFSNSpinBox, 'io', 'lastfsn', int),
+            (self.stdMultiplierDoubleSpinBox, 'processing', 'std_multiplier', float),
+            (self.exportImageResolutionSpinBox, 'export', 'imagedpi', int),
+            (self.exportImageHeightDoubleSpinBox, 'export', 'imageheight', float),
+            (self.exportImageWidthDoubleSpinBox, 'export', 'imagewidth', float),
+        ]:
+            try:
+                spinbox.setValue(converter(config[section][key]))
+            except (KeyError, ValueError):
+                continue
+        for combobox, section, key in [
+            (self.errorPropagationComboBox, 'processing', 'errorpropagation'),
+            (self.abscissaErrorPropagationComboBox, 'processing', 'abscissaerrorpropagation'),
+            (self.exportImageFormatComboBox, 'export', 'imageformat'),
+            (self.exportImageHeightUnitsComboBox, 'export', 'imageheightunits'),
+            (self.exportImageWidthUnitsComboBox, 'export', 'imagewidthunits'),
+        ]:
+            try:
+                combobox.setCurrentIndex(combobox.findText(config[section][key]))
+            except (KeyError, ValueError):
+                combobox.setCurrentIndex(0)
+                continue
+        for checkbox, section, key in [
+            (self.logarithmicCorrelMatrixCheckBox, 'processing', 'logcorrelmatrix'),
+            (self.sanitizeCurvesCheckBox, 'processing', 'sanitizecurves'),
+        ]:
+            try:
+                checkbox.setChecked(config[section][key].lower()=='true')
+            except (KeyError,ValueError):
+                continue
+        if self.rootDirLineEdit.text():
+            self.setRootDir(self.rootDirLineEdit.text())
+        if self.saveHDFLineEdit.text():
+            self.processPushButton.setEnabled(True)
+        try:
+            self.header_columns=config['headerview']['fields'].split(';')
+        except KeyError:
+            pass
+        try:
+            self.updateResults()
+        except:
+            pass
+
+    def closeEvent(self, event: QtGui.QCloseEvent):
+        self.save_state()
+        event.accept()
+
+    def save_state(self):
+        configdir = appdirs.user_config_dir('cpt','CREDO',roaming=True)
+        os.makedirs(configdir, exist_ok=True)
+        statefile = os.path.join(configdir,'cpt.ini')
+        config=configparser.ConfigParser()
+        config['io']={}
+        config['io']['hdf5'] = self.saveHDFLineEdit.text()
+        config['io']['datadir'] = self.rootDirLineEdit.text()
+        config['io']['firstfsn'] = str(self.firstFSNSpinBox.value())
+        config['io']['lastfsn'] = str(self.lastFSNSpinBox.value())
+        config['processing']={}
+        config['processing']['errorpropagation'] = self.errorPropagationComboBox.currentText()
+        config['processing']['abscissaerrorpropagation'] = self.abscissaErrorPropagationComboBox.currentText()
+        config['processing']['std_multiplier'] = str(self.stdMultiplierDoubleSpinBox.value())
+        config['processing']['logcorrelmatrix'] = str(self.logarithmicCorrelMatrixCheckBox.isChecked())
+        config['processing']['sanitizecurves'] = str(self.sanitizeCurvesCheckBox.isChecked())
+        config['export']={}
+        config['export']['folder']=self.exportFolderLineEdit.text()
+        config['export']['imageformat']=self.exportImageFormatComboBox.currentText()
+        config['export']['imagedpi']=str(self.exportImageResolutionSpinBox.value())
+        config['export']['imagewidth']=str(self.exportImageWidthDoubleSpinBox.value())
+        config['export']['imageheight']=str(self.exportImageHeightDoubleSpinBox.value())
+        config['export']['imagewidthunits']=self.exportImageWidthUnitsComboBox.currentText()
+        config['export']['imageheightunits']=self.exportImageHeightUnitsComboBox.currentText()
+        config['headerview']={}
+        config['headerview']['fields'] = ';'.join(self.header_columns)
+        with open(statefile, 'wt', encoding='utf-8') as f:
+            config.write(f)
+
 
     def setupUi(self, MainWindow:QtWidgets.QMainWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
@@ -60,6 +155,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plotCorMatPushButton.clicked.connect(self.onPlotCorMat)
         self.plotCurvesPushButton.clicked.connect(self.onPlotCurves)
         self.plotImagePushButton.clicked.connect(self.onPlotImage)
+        self.qcVacuumFluxPushButton.clicked.connect(self.onQCVacuumFlux)
+        self.qcTransmissionsPushButton.clicked.connect(self.onQCTransmissions)
+        self.qcExposureTimesPushButton.clicked.connect(self.onQCExposureTimes)
         self.figure=Figure()
         self.canvas=FigureCanvasQTAgg(self.figure)
         vl=QtWidgets.QVBoxLayout(self.figureContainerWidget)
@@ -68,6 +166,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         vl.addWidget(self.figuretoolbar)
         self.exportHeaderTablePushButton.clicked.connect(self.onExportHeadersTable)
         self.exportTablePushButton.clicked.connect(self.onExportTable)
+
+    def onQCExposureTimes(self):
+        with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
+            model=make_exptimes_table(f['Samples'])
+        self.treeView.setModel(model)
+        for c in range(model.columnCount()):
+            self.treeView.resizeColumnToContents(c)
+        self.tabWidget.setCurrentWidget(self.tableContainerWidget)
+
+
+    def onQCTransmissions(self):
+        with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
+            model=make_transmission_table(f['Samples'])
+        self.treeView.setModel(model)
+        for c in range(model.columnCount()):
+            self.treeView.resizeColumnToContents(c)
+        self.tabWidget.setCurrentWidget(self.tableContainerWidget)
+
+
+    def onQCVacuumFlux(self):
+        with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
+            plot_vacuum_and_flux(self.figure, f['Samples'], self.config['datareduction']['absintrefname'])
+        self.canvas.draw()
+        self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onExportHeadersTable(self):
         fname, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Write table to file...','','MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
@@ -85,28 +207,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
     def onPlotCorMat(self):
-        with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
-            show_cmatrix(self.figure, f['Samples'][self.resultsSampleSelectorComboBox.currentText()][self.resultsDistanceSelectorComboBox.currentText()])
+        with getHDF5Group(self) as grp:
+            show_cmatrix(self.figure, grp)
         self.canvas.draw()
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onPlotCorMatResults(self):
-        with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
-            model=display_outlier_test_results(f['Samples'][self.resultsSampleSelectorComboBox.currentText()][self.resultsDistanceSelectorComboBox.currentText()]['curves'])
-            self.treeView.setModel(model)
-            for c in range(model.columnCount()):
-                self.treeView.resizeColumnToContents(c)
+        with getHDF5Group(self) as grp:
+            model=display_outlier_test_results(grp['curves'])
+        self.treeView.setModel(model)
+        for c in range(model.columnCount()):
+            self.treeView.resizeColumnToContents(c)
         self.tabWidget.setCurrentWidget(self.tableContainerWidget)
 
     def onPlotCurves(self):
-        with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
-            summarize_curves(self.figure, f['Samples'][self.resultsSampleSelectorComboBox.currentText()][self.resultsDistanceSelectorComboBox.currentText()]['curves'])
+        with getHDF5Group(self) as grp:
+            summarize_curves(self.figure, grp['curves'])
         self.canvas.draw()
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onPlotImage(self):
-        with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
-            show_scattering_image(self.figure, f['Samples'][self.resultsSampleSelectorComboBox.currentText()][self.resultsDistanceSelectorComboBox.currentText()])
+        with getHDF5Group(self) as grp:
+            show_scattering_image(self.figure, grp)
         self.canvas.draw()
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
@@ -151,10 +273,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def onHeaderPopupApplied(self):
         print('onHeaderPopupApplied')
         self.headermodel.visiblecolumns=self.headerpopup.fields
+        self.header_columns=self.headerpopup.fields
         self.headermodel.reloadHeaders()
+        self.resizeHeaderViewColumns()
 
     def onReload(self):
-        newheadermodel = HeaderModel(self, self.rootdir, self.config['path']['prefixes']['crd'], self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value())
+        newheadermodel = HeaderModel(self, self.rootdir, self.config['path']['prefixes']['crd'], self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value(), self.header_columns)
         self.headersTreeView.setModel(newheadermodel)
         if hasattr(self, 'headermodel'):
             self.headermodel.cleanup()
@@ -232,7 +356,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif msg1 in ['__header_loaded__', '__header_notfound__']:
                 # loaded a header for FSN
                 assert isinstance(msg2, int) # msg2 is the FSN of the header just loaded or not found.
-                self.progressBar1.setValue(msg2)
+                self.progressBar1.setValue(self.progressBar1.value()+1)
                 self.progressbar1StatusLabel.setText('{:d}'.format(msg2))
             elif msg1 in ['__exposure_loaded__', '__exposure_notfound__']:
                 self.progressBar2.setValue(self.progressBar2.value()+1)
@@ -301,18 +425,43 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not filename.endswith('.h5') and not filename.endswith('.hdf5'):
             filename=filename+'.h5'
         self.saveHDFLineEdit.setText(filename)
-        self.processPushButton.setEnabled(True)
         self.updateResults()
 
     def updateResults(self):
         try:
             with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
                 samples=sorted(f['Samples'].keys())
-                self.resultsSampleSelectorComboBox.clear()
-                self.resultsSampleSelectorComboBox.addItems(samples)
-                self.resultsSampleSelectorComboBox.setCurrentIndex(0)
-            self.resultsSampleSelectorComboBox.setEnabled(True)
-            self.resultsDistanceSelectorComboBox.setEnabled(True)
         except FileNotFoundError:
             return
+        self.resultsSampleSelectorComboBox.clear()
+        self.resultsSampleSelectorComboBox.addItems(samples)
+        self.resultsSampleSelectorComboBox.setCurrentIndex(0)
+        self.resultsSampleSelectorComboBox.setEnabled(True)
+        self.resultsDistanceSelectorComboBox.setEnabled(True)
+        self.sampleNameListWidget.clear()
+        self.sampleNameListWidget.addItems(samples)
+        self.sampleNameListWidget.selectAll()
 
+
+
+class getHDF5Group:
+    def __init__(self, mainwin:MainWindow, sample:Optional[str]=None, distance:Union[str, float, None]=None):
+        self.mainwin=mainwin
+        if sample is None:
+            sample=self.mainwin.resultsSampleSelectorComboBox.currentText()
+        if distance is None:
+            distance = self.mainwin.resultsDistanceSelectorComboBox.currentText()
+        if isinstance(distance, float):
+            distance='{:.2f}'.format(distance)
+        self.sample=sample
+        self.distance=distance
+        self.hdf5=None
+
+    def __enter__(self):
+        self.hdf5=h5py.File(self.mainwin.saveHDFLineEdit.text(),'r+')
+        print(list(self.hdf5.keys()))
+        return self.hdf5['Samples'][self.sample][self.distance]
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.hdf5.close()
+        self.hdf5=None

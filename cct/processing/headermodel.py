@@ -9,14 +9,15 @@ from sastool.misc.errorvalue import ErrorValue
 
 class HeaderModel(QtCore.QAbstractItemModel):
 
-    def __init__(self, parent, rootdir, prefix, fsnfirst, fsnlast):
+    def __init__(self, parent, rootdir, prefix, fsnfirst, fsnlast, visiblecolumns):
         super().__init__(None)
         self.prefix = prefix
         self.fsnfirst = fsnfirst
         self.fsnlast = fsnlast
         # the columns you want to display. Note that the first MUST be always 'fsn' or the code will break. Sorry!
-
-        self.visiblecolumns=['fsn', 'title', 'distance', 'date', 'temperature']
+        if not visiblecolumns:
+            visiblecolumns=['fsn', 'title', 'distance', 'date', 'temperature']
+        self.visiblecolumns=visiblecolumns
         self._headers = []
         self._parent=parent
         self.rootdir=rootdir
@@ -55,9 +56,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
         return [h[colidx] for h in self._headers].index(fsn)
 
     def reloadHeaders(self):
-        self.beginRemoveRows(self.index(0, 0), 0, self.rowCount())
+        self.beginResetModel()
         self._headers = []
-        self.endRemoveRows()
         for fsn in range(self.fsnfirst, self.fsnlast + 1):
             try:
                 h = self.load_header(fsn)
@@ -78,9 +78,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
                 del h
             except FileNotFoundError:
                 print('Not found header: {}'.format(fsn))
-
-        self.beginInsertRows(self.index(0, 0), 0, len(self._headers))
-        self.endInsertRows()
+        self.endResetModel()
 
     def rowCount(self, parent=None, *args, **kwargs):
         return len(self._headers)
