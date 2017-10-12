@@ -37,13 +37,6 @@ def plot_vacuum_and_flux(fig:Figure, group:h5py.Group, gc_name='Glassy_Carbon'):
     dates_vacuums=sorted(dates_vacuums, key=lambda x:x[0]) # sort according to date
     dates_fluxes=sorted(dates_fluxes, key=lambda x:x[0]) # sort according to date
 
-    print('---')
-    for d in dates_fluxes:
-        print(d[0])
-    print('---')
-    for d in dates_vacuums:
-        print(d[0])
-    print('---')
     ax=fig.add_subplot(1,1,1)
     assert isinstance(ax, Axes)
     ax.plot([x[0] for x in dates_fluxes], [x[1] for x in dates_fluxes], 'bo')

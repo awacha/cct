@@ -37,7 +37,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>4</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="ioPage">
         <property name="geometry">
@@ -45,7 +45,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>747</height>
+          <height>725</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -249,7 +249,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>353</height>
+          <height>725</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -262,7 +262,7 @@
          <string>Processing</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_3">
-         <item row="3" column="0" colspan="2">
+         <item row="4" column="0" colspan="2">
           <widget class="QCheckBox" name="logarithmicCorrelMatrixCheckBox">
            <property name="text">
             <string>Logarithmic correlation matrix</string>
@@ -272,7 +272,7 @@
            </property>
           </widget>
          </item>
-         <item row="6" column="0" colspan="2">
+         <item row="7" column="0" colspan="2">
           <widget class="QGroupBox" name="progressGroupBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -329,7 +329,7 @@
            </layout>
           </widget>
          </item>
-         <item row="5" column="0" colspan="2">
+         <item row="6" column="0" colspan="2">
           <widget class="QPushButton" name="processPushButton">
            <property name="enabled">
             <bool>false</bool>
@@ -356,7 +356,7 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="0" colspan="2">
+         <item row="5" column="0" colspan="2">
           <widget class="QCheckBox" name="sanitizeCurvesCheckBox">
            <property name="text">
             <string>Sanitize scattering curves</string>
@@ -450,7 +450,7 @@
            </property>
           </widget>
          </item>
-         <item row="7" column="0" colspan="2">
+         <item row="8" column="0" colspan="2">
           <spacer name="verticalSpacer_3">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -463,6 +463,16 @@
            </property>
           </spacer>
          </item>
+         <item row="3" column="0" colspan="2">
+          <widget class="QCheckBox" name="autoMarkBadExposuresCheckBox">
+           <property name="text">
+            <string>Automatically mark bad exposures</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="perSampleResultsPage">
@@ -470,8 +480,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>305</width>
-          <height>186</height>
+          <width>400</width>
+          <height>725</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -573,8 +583,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>287</width>
-          <height>80</height>
+          <width>400</width>
+          <height>725</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -589,6 +599,9 @@
         <layout class="QGridLayout" name="gridLayout_4">
          <item row="1" column="1">
           <widget class="QPushButton" name="qcEmptyBeamPushButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Empty beam overview</string>
            </property>
@@ -636,7 +649,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>747</height>
+          <height>725</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -649,7 +662,7 @@
          <string>Export</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_7">
-         <item row="6" column="0" colspan="3">
+         <item row="7" column="0" colspan="3">
           <layout class="QGridLayout" name="gridLayout_8">
            <item row="2" column="0">
             <widget class="QPushButton" name="exportAveragedCurvesGraphPushButton">
@@ -709,7 +722,7 @@
            </item>
           </layout>
          </item>
-         <item row="8" column="0" colspan="3">
+         <item row="9" column="0" colspan="3">
           <spacer name="verticalSpacer_5">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -754,29 +767,64 @@
          </item>
          <item row="1" column="1">
           <widget class="QComboBox" name="exportImageFormatComboBox">
+           <property name="frame">
+            <bool>true</bool>
+           </property>
+           <property name="modelColumn">
+            <number>0</number>
+           </property>
            <item>
             <property name="text">
-             <string>png</string>
+             <string comment="Portable Network Graphics">png</string>
+            </property>
+            <property name="icon">
+             <iconset theme="image-png">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>pdf</string>
+             <string comment="Scalable Vector Graphics">svg</string>
+            </property>
+            <property name="icon">
+             <iconset theme="svg">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>jpg</string>
+             <string comment="Portable Document Format">pdf</string>
+            </property>
+            <property name="icon">
+             <iconset theme="application-pdf">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>eps</string>
+             <string comment="Joint Photographics Experts Group format">jpg</string>
+            </property>
+            <property name="icon">
+             <iconset theme="image-jpeg">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>tif</string>
+             <string comment="Encapsulated PostScript">eps</string>
+            </property>
+            <property name="icon">
+             <iconset theme="image-x-eps">
+              <normaloff>.</normaloff>.</iconset>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string comment="Tagged Image File Format">tiff</string>
+            </property>
+            <property name="icon">
+             <iconset theme="image-tiff">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </item>
           </widget>
@@ -838,6 +886,10 @@
            <property name="text">
             <string>Browse...</string>
            </property>
+           <property name="icon">
+            <iconset theme="document-save-as">
+             <normaloff>.</normaloff>.</iconset>
+           </property>
           </widget>
          </item>
          <item row="3" column="1">
@@ -854,7 +906,7 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="0" colspan="3">
+         <item row="6" column="0" colspan="3">
           <widget class="QGroupBox" name="groupBox">
            <property name="title">
             <string>Select samples:</string>
@@ -871,6 +923,37 @@
              </widget>
             </item>
            </layout>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_17">
+           <property name="text">
+            <string>2D data format:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QComboBox" name="export2DDataFormatComboBox">
+           <item>
+            <property name="text">
+             <string>Numpy</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>ASCII</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Gzip'd ASCII</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Matlab</string>
+            </property>
+           </item>
           </widget>
          </item>
         </layout>
@@ -917,11 +1000,17 @@
               <property name="selectionBehavior">
                <enum>QAbstractItemView::SelectRows</enum>
               </property>
+              <property name="rootIsDecorated">
+               <bool>false</bool>
+              </property>
               <property name="uniformRowHeights">
                <bool>true</bool>
               </property>
               <property name="itemsExpandable">
                <bool>false</bool>
+              </property>
+              <property name="sortingEnabled">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -944,6 +1033,10 @@
                <widget class="QPushButton" name="exportHeaderTablePushButton">
                 <property name="text">
                  <string>Export table...</string>
+                </property>
+                <property name="icon">
+                 <iconset theme="document-save">
+                  <normaloff>.</normaloff>.</iconset>
                 </property>
                </widget>
               </item>
@@ -1000,6 +1093,10 @@
                 <property name="text">
                  <string>Export table...</string>
                 </property>
+                <property name="icon">
+                 <iconset theme="document-save">
+                  <normaloff>.</normaloff>.</iconset>
+                </property>
                </widget>
               </item>
              </layout>
@@ -1014,6 +1111,7 @@
     </item>
    </layout>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <tabstops>
   <tabstop>tabWidget</tabstop>

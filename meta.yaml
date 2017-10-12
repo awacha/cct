@@ -23,8 +23,10 @@ requirements:
     - psutil
     - pymodbustcp
     - appdirs
+    - pillow
 
   run:
+    - pillow
     - python
     - appdirs
     - numpy

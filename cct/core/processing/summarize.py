@@ -1,4 +1,3 @@
-import logging
 import os
 from typing import Iterable, List, Optional
 
@@ -9,8 +8,6 @@ from sastool.io.credo_cct import Header, Exposure
 from sastool.misc.errorvalue import ErrorValue
 from scipy.io import loadmat
 
-logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 def correlmatrix(grp:h5py.Group, std_multiplier:Optional[float]=None, logarithmic:bool=True):
     cm=np.zeros((len(grp),len(grp)),np.double)
@@ -65,7 +62,7 @@ class Summarizer(object):
         self._headers = []
         self._masks = {}
 
-    def load_headers(self, yield_messages=False):
+    def load_headers(self, yield_messages=False, logger=None):
         self._headers = []
         for f in self.fsns:
             for p in self.parampath:
@@ -81,12 +78,13 @@ class Summarizer(object):
                 except FileNotFoundError:
                     pass
             else:
-                logger.error('No header found for prefix {}, fsn {}.'.format(self.prefix, f))
+                if logger is not None:
+                    logger.error('No header found for prefix {}, fsn {}.'.format(self.prefix, f))
                 if yield_messages:
                     yield '__header_notfound__', f
         return None
 
-    def get_mask(self, maskname:str):
+    def get_mask(self, maskname:str, logger=None):
         try:
             return self._masks[maskname]
         except KeyError:
@@ -102,12 +100,13 @@ class Summarizer(object):
             self._masks[maskname]=m[[x for x in m.keys() if not x.startswith('_')][0]]
             return self._masks[maskname]
         else:
-            logger.error('Mask file {} not found.'.format(maskname))
+            if logger is not None:
+                logger.error('Mask file {} not found.'.format(maskname))
             raise FileNotFoundError('Mask {} not found'.format(maskname))
 
-    def load_exposure(self, fsn:int) -> Exposure:
+    def load_exposure(self, fsn:int, logger=None) -> Exposure:
         header = [h for h in self._headers if h.fsn==fsn][0]
-        mask = self.get_mask(header.maskname)
+        mask = self.get_mask(header.maskname, logger=logger)
         for p in self.exppath:
             try:
                 ex=Exposure.new_from_file(
@@ -132,7 +131,7 @@ class Summarizer(object):
                 distances.append(d)
         return distances
 
-    def collect_exposures(self, samplename:str, distance:float, hdf5:h5py.File, yield_messages:bool=False):
+    def collect_exposures(self, samplename:str, distance:float, hdf5:h5py.File, yield_messages:bool=False, logger=None):
         grp=hdf5.require_group('Samples/{}/{:.2f}'.format(samplename, distance))
         headers = [h for h in self._headers if h.title==samplename and abs(float(h.distance)-float(distance))<0.01]
         group1d=grp.require_group('curves')
@@ -144,7 +143,7 @@ class Summarizer(object):
             assert isinstance(h, Header)
             yield '__ce_debug__',h.fsn
             try:
-                ex = self.load_exposure(h.fsn)
+                ex = self.load_exposure(h.fsn, logger=logger)
                 if yield_messages:
                     yield '__exposure_loaded__', h.fsn
             except FileNotFoundError:
@@ -182,7 +181,8 @@ class Summarizer(object):
                 try:
                     a=getattr(h, attr)
                 except (AttributeError, KeyError):
-                    logger.warning('Missing attribute {} from header.'.format(attr))
+                    if logger is not None:
+                        logger.warning('Missing attribute {} from header.'.format(attr))
                     continue
                 if isinstance(a, ErrorValue):
                     ds.attrs[attr] = a.val
@@ -225,7 +225,7 @@ class Summarizer(object):
         grp.create_dataset('correlmatrix', data=cmatrix, shape=cmatrix.shape, dtype=cmatrix.dtype)
         hdf5['correlmatrix']['{}_{:.2f}'.format(samplename, distance)]=h5py.SoftLink('/Samples/{}/{:.2f}/correlmatrix')
 
-    def summarize(self, overwrite_results=True, yield_messages=False):
+    def summarize(self, overwrite_results=True, yield_messages=False, logger=None):
         if overwrite_results:
             filemode='w'
         else:
@@ -237,11 +237,13 @@ class Summarizer(object):
             if yield_messages:
                 yield '__init_summarize__', num
             for sn in self.allsamplenames():
-                logger.info('Sample name: {}'.format(sn))
+                if logger is not None:
+                    logger.info('Sample name: {}'.format(sn))
                 for dist in self.distances(sn):
                     yield sn, dist
-                    logger.info('Distance: {:.2f} mm (sample {})'.format(dist,sn))
-                    for msg in self.collect_exposures(sn, dist, hdf5, yield_messages=yield_messages):
+                    if logger is not None:
+                        logger.info('Distance: {:.2f} mm (sample {})'.format(dist,sn))
+                    for msg in self.collect_exposures(sn, dist, hdf5, yield_messages=yield_messages, logger=logger):
                         yield msg
                     if yield_messages:
                         yield '__init_stabilityassessment__', 0
