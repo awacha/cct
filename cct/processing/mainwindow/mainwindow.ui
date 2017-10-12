@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Credo Processing Tool</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../../resource/icons/icons.qrc">
+    <normaloff>:/icons/cptlogo.svg</normaloff>:/icons/cptlogo.svg</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
@@ -1141,6 +1145,8 @@
   <tabstop>treeView</tabstop>
   <tabstop>headersTreeView</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="../../resource/icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

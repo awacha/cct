@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>cptlogo.svg</file>
     <file>tpg201.svg</file>
     <file>sample_positions.svg</file>
     <file>motor_to_cursor.svg</file>
