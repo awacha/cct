@@ -34,7 +34,7 @@ def getresourcefiles():
     print('Generating resource list', flush=True)
     reslist = []
     for directory, subdirs, files in os.walk(os.path.join('cct','resource')):
-        reslist.extend([os.path.join(directory, f).split('/', 1)[1] for f in files])
+        reslist.extend([os.path.join(directory, f).split(os.path.sep, 1)[1] for f in files])
     print('Generated resource list:\n  ' + '\n  '.join(x for x in reslist) + '\n', flush=True)
     return reslist
 
