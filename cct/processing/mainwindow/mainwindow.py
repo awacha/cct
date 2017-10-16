@@ -192,6 +192,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.headersTreeView.header().sectionClicked.connect(self.onHeaderTreeViewSortRequest)
         self.headersTreeView.setSortingEnabled(True)
         self.headersTreeView.sortByColumn(1,QtCore.Qt.AscendingOrder)
+        self.ioProgressBar.setVisible(False)
         self.updateResults()
 
     def onHeaderTreeViewSortRequest(self, section:int):
@@ -546,11 +547,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def onHeaderPopupApplied(self):
         self.headermodel.visiblecolumns=self.headerpopup.fields
         self.header_columns=self.headerpopup.fields
+        self.reloadHeaders()
+
+    def reloadHeaders(self):
         self.headersTreeView.setSortingEnabled(False)
         self.headermodel.reloadHeaders()
-        self.headersTreeView.setSortingEnabled(True)
-        self.headersTreeView.sortByColumn(self._lastsortcolumn, self._lastsortdirection)
-        self.resizeHeaderViewColumns()
+
+    def onHeaderModelFSNLoaded(self, totalcount, currentcount, thisfsn):
+        if totalcount==currentcount==thisfsn==0:
+            logger.debug('Last FSN read.')
+            self.ioProgressBar.setVisible(False)
+            self.setEnabled(True)
+            self.headersTreeView.setSortingEnabled(True)
+            self.headersTreeView.sortByColumn(self._lastsortcolumn, self._lastsortdirection)
+            self.resizeHeaderViewColumns()
+        else:
+            if totalcount>0 and not self.ioProgressBar.isVisible():
+                logger.debug('First FSN read.')
+                self.setEnabled(False)
+                self.ioProgressBar.setVisible(True)
+                self.ioProgressBar.setMinimum(0)
+                self.ioProgressBar.setMaximum(totalcount)
+                self.ioProgressBar.setFormat('Loading headers...')
+            logger.debug('FSN {} ({} of {}) read.'.format(thisfsn, currentcount, totalcount))
+            self.ioProgressBar.setValue(currentcount)
 
     def onReload(self):
         try:
@@ -565,14 +585,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.header_columns,
                 os.path.join(appdirs.user_state_dir('cpt', 'CREDO',roaming=True),'badfsns')
             )
+            newheadermodel.fsnloaded.connect(self.onHeaderModelFSNLoaded)
+            newheadermodel.reloadHeaders()
             self.headersTreeView.setSortingEnabled(False)
             self.headersTreeView.setModel(newheadermodel)
             if hasattr(self, 'headermodel'):
+                self.headermodel.fsnloaded.disconnect(self.onHeaderModelFSNLoaded)
                 self.headermodel.cleanup()
                 del self.headermodel
             self.headermodel=newheadermodel
             self.resizeHeaderViewColumns()
-            self.statusBar.showMessage('Headers loaded.')
+            #self.statusBar.showMessage('Headers loaded.')
             self.headersTreeView.setSortingEnabled(True)
             self.headersTreeView.sortByColumn(self._lastsortcolumn, self._lastsortdirection)
         finally:
@@ -786,4 +809,3 @@ class getHDF5Group:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.hdf5.close()
         self.hdf5=None
-

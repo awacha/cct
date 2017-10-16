@@ -1,15 +1,21 @@
 import datetime
 import gc
+import multiprocessing
 import os
-from typing import List, Any
+import queue
+from typing import List, Any, Union, Iterable
 
 import numpy as np
 from PyQt5 import QtCore
 from sastool.io.credo_cct import Header
 from sastool.misc.errorvalue import ErrorValue
 
+from ..core.utils.timeout import IdleFunction
+
 
 class HeaderModel(QtCore.QAbstractItemModel):
+
+    fsnloaded = QtCore.pyqtSignal(int, int, int)
 
     def __init__(self, parent, rootdir, prefix, fsnfirst, fsnlast, visiblecolumns, badfsnsfile):
         super().__init__(None)
@@ -29,13 +35,12 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.eval2d_pathes=[]
         self.mask_pathes=[]
         self.cache_pathes()
-        self.reloadHeaders()
+        #self.reloadHeaders()
         
     def config(self):
         return self._parent.config
 
     def cache_pathes(self):
-        prefix = self.config()['path']['prefixes']['crd']
         for attrname, subdirname in [('eval2d_pathes', 'eval2d'),
                                      ('mask_pathes', 'mask')]:
             setattr(self, attrname, [os.path.join(
@@ -45,16 +50,6 @@ class HeaderModel(QtCore.QAbstractItemModel):
                     if entry.is_dir():
                         getattr(self, attrname).append(entry.path)
 
-    def load_header(self, fsn):
-        prefix = self.config()['path']['prefixes']['crd']
-        for p in self.eval2d_pathes:
-            try:
-                fn=os.path.join(p,'{{}}_{{:0{:d}d}}.pickle'.format(self.config()['path']['fsndigits']).format(prefix, fsn))
-                h=Header.new_from_file(os.path.join(p,'{{}}_{{:0{:d}d}}.pickle'.format(self.config()['path']['fsndigits']).format(prefix, fsn)))
-                return h
-            except FileNotFoundError:
-                continue
-        raise FileNotFoundError(fsn)
 
     def rowForFSN(self, fsn: int):
         colidx = self.visiblecolumns.index('fsn') # can raise IndexError
@@ -69,8 +64,11 @@ class HeaderModel(QtCore.QAbstractItemModel):
         except FileNotFoundError:
             return []
 
-    def is_badfsn(self, fsn:int) -> bool:
-        return fsn in self.get_badfsns()
+    def is_badfsn(self, fsn:Union[int, Iterable[int]]) -> Union[bool, List[bool]]:
+        if isinstance(fsn, int):
+            return fsn in self.get_badfsns()
+        bfs=self.get_badfsns()
+        return [f in bfs for f in fsn]
 
     def write_badfsns(self, badfsns:List[int]):
         folder, file= os.path.split(self.badfsnsfile)
@@ -78,31 +76,40 @@ class HeaderModel(QtCore.QAbstractItemModel):
         np.savetxt(self.badfsnsfile, badfsns)
 
     def reloadHeaders(self):
-        self.beginResetModel()
-        self._headers = []
-        for fsn in range(self.fsnfirst, self.fsnlast + 1):
+        self.queue=multiprocessing.Queue()
+        self.reloaderworker=multiprocessing.Process(None, loadHeaderDataWorker, args=(
+            self.queue, self.config()['path']['prefixes']['crd'],
+            self.config()['path']['fsndigits'],
+            self.eval2d_pathes, self.fsnfirst, self.fsnlast, self.visiblecolumns))
+        self._fsns_loaded=0
+        self.reloaderworker.start()
+        self._idlefcn = IdleFunction(self.checkReloaderWorker,100)
+
+    def checkReloaderWorker(self):
+        for i in range(10):
             try:
-                h = self.load_header(fsn)
-                hd=[]
-                for c in self.visiblecolumns:
-                    try:
-                        hd.append(getattr(h, c))
-                    except KeyError:
-                        hd.append('N/A')
-                self._headers.append(hd)
-                self._badstatus.append(self.is_badfsn(fsn))
-                self._fsns.append(fsn)
-                for i, x in enumerate(self._headers[-1]):
-                    if isinstance(x, ErrorValue):
-                        self._headers[-1][i] = x.val
-                    elif x is None:
-                        self._headers[-1][i] = '--'
-                    elif isinstance(x, datetime.datetime):
-                        self._headers[-1][i] = str(x)
-                del h
-            except FileNotFoundError:
-                pass
-        self.endResetModel()
+                fsn=self.queue.get_nowait()
+            except queue.Empty:
+                break
+            if isinstance(fsn, int):
+                print('FSN: {}'.format(fsn))
+                self._fsns_loaded+=1
+                self.fsnloaded.emit(self.fsnlast-self.fsnfirst+1, self._fsns_loaded, fsn)
+            else:
+                print('DONE!!!')
+                self.beginResetModel()
+                self._headers, self._fsns = fsn
+                self._badstatus = self.is_badfsn(self._fsns)
+                self.endResetModel()
+                self.fsnloaded.emit(0,0,0)
+                self.reloaderworker.join()
+                del self.queue
+                del self.reloaderworker
+                del self._fsns_loaded
+                self._idlefcn.stop()
+                del self._idlefcn
+                return False
+        return True
 
     def rowCount(self, parent=None, *args, **kwargs):
         return len(self._headers)
@@ -174,3 +181,42 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self._headers = [f[2] for f in sorteddata]
         self.endResetModel()
         pass
+
+def load_header(fsn, prefix, fsndigits, path):
+#    prefix = self.config()['path']['prefixes']['crd']
+    for p in path:
+        try:
+            fn=os.path.join(p,'{{}}_{{:0{:d}d}}.pickle'.format(fsndigits).format(prefix, fsn))
+            h=Header.new_from_file(fn)
+            return h
+        except FileNotFoundError:
+            continue
+    raise FileNotFoundError(fsn)
+
+def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, columns):
+    _headers=[]
+    _fsns=[]
+    for fsn in range(fsnfirst, fsnlast + 1):
+        try:
+            h = load_header(fsn, prefix, fsndigits, path)
+            hd=[]
+            for c in columns:
+                try:
+                    hd.append(getattr(h, c))
+                except (KeyError, AttributeError):
+                    hd.append('N/A')
+            _headers.append(hd)
+            _fsns.append(fsn)
+            for i, x in enumerate(_headers[-1]):
+                if isinstance(x, ErrorValue):
+                    _headers[-1][i] = x.val
+                elif x is None:
+                    _headers[-1][i] = '--'
+                elif isinstance(x, datetime.datetime):
+                    _headers[-1][i] = str(x)
+            queue.put_nowait(fsn)
+            del h
+        except FileNotFoundError:
+            pass
+    queue.put_nowait((_headers, _fsns))
+    return None

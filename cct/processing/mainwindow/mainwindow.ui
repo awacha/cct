@@ -245,6 +245,13 @@
            </property>
           </spacer>
          </item>
+         <item row="4" column="0" colspan="3">
+          <widget class="QProgressBar" name="ioProgressBar">
+           <property name="value">
+            <number>24</number>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="processingPage">
@@ -253,7 +260,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>725</height>
+          <height>382</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -484,8 +491,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>725</height>
+          <width>305</width>
+          <height>186</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -587,8 +594,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>725</height>
+          <width>287</width>
+          <height>80</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -652,8 +659,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>725</height>
+          <width>374</width>
+          <height>445</height>
          </rect>
         </property>
         <property name="sizePolicy">
