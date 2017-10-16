@@ -1,8 +1,8 @@
 import datetime
 import gc
-import multiprocessing
 import os
 import queue
+import threading
 from typing import List, Any, Union, Iterable
 
 import numpy as np
@@ -76,8 +76,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
         np.savetxt(self.badfsnsfile, badfsns)
 
     def reloadHeaders(self):
-        self.queue=multiprocessing.Queue()
-        self.reloaderworker=multiprocessing.Process(None, loadHeaderDataWorker, args=(
+        self.queue=queue.Queue()
+        self.reloaderworker=threading.Thread(None, loadHeaderDataWorker, args=(
             self.queue, self.config()['path']['prefixes']['crd'],
             self.config()['path']['fsndigits'],
             self.eval2d_pathes, self.fsnfirst, self.fsnlast, self.visiblecolumns))

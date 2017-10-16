@@ -2,11 +2,11 @@ import configparser
 import gc
 import inspect
 import logging
-import multiprocessing
-import multiprocessing.queues
+# import multiprocessing.queues
 import os
 import pickle
 import queue
+import threading
 from typing import Iterable, Optional, Union
 
 import appdirs
@@ -603,7 +603,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
 
     def onProcess(self):
-        self.queue = multiprocessing.Queue()
+        self.queue = queue.Queue()
         badfsns=self.headermodel.get_badfsns()
         kwargs={
             'fsns':[x for x in range(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value()+1) if x not in badfsns],
@@ -620,7 +620,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             'std_multiplier':self.stdMultiplierDoubleSpinBox.value(),
             'queue': self.queue,
         }
-        self.processingprocess = multiprocessing.Process(target=self.do_processing, name='Summarization', kwargs=kwargs)
+        self.processingprocess = threading.Thread(target=self.do_processing, name='Summarization', kwargs=kwargs)
         self.idlefcn = IdleFunction(self.check_processing_progress, 100)
         self.processingprocess.start()
         self.progressGroupBox.setVisible(True)
@@ -628,7 +628,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.toolBox.setEnabled(False)
 
 
-    def do_processing(self, queue:multiprocessing.queues.Queue,
+    def do_processing(self, queue:queue.Queue,
                       fsns:Iterable[int], exppath:Iterable[str], parampath:Iterable[str], maskpath:Iterable[str],
                       outputfile:str, prefix:str, ndigits:int, errorpropagation:int, abscissaerrorpropagation:int,
                       sanitize_curves:bool, logarithmic_correlmatrix:bool, std_multiplier:int,):
@@ -650,7 +650,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             self.toolBox.setEnabled(True)
             return False
         try:
-            assert isinstance(self.queue, multiprocessing.queues.Queue)
+            assert isinstance(self.queue, queue.Queue)
             msg1, msg2=self.queue.get_nowait()
             if msg1 == '__init_summarize__':
                 assert isinstance(msg2, int) # msg2 is the number of samples times the number of distances
