@@ -1,5 +1,6 @@
 #!/usb/bin/env python
 import os
+import sys
 
 from Cython.Build import cythonize
 from numpy.lib import get_include
@@ -39,12 +40,17 @@ def getresourcefiles():
     return reslist
 
 
+if sys.platform.lower().startswith('win') and sys.maxsize>2**32:
+    krb5_libs=['krb5_64']
+else:
+    krb5_libs=['krb5']
+
 extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
                         [os.path.join("cct","qtgui","tools","optimizegeometry","estimateworksize.pyx")],
                         include_dirs=[get_include()]),
               Extension("cct.core.services.accounting.krb5_check_pass",
                         [os.path.join("cct","core","services","accounting","krb5_check_pass.pyx")],
-                        include_dirs=[get_include()], libraries=['krb5_64'])
+                        include_dirs=[get_include()], libraries=krb5_libs)
               ]
 
 #extensions=[]

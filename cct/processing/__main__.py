@@ -33,8 +33,9 @@ class AnsiColorFormatter(logging.Formatter):
 # initialize the root logger
 handler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-ansiformatter = AnsiColorFormatter(formatter)
-handler.setFormatter(ansiformatter)
+if not sys.platform.lower().startswith('win'):
+    formatter = AnsiColorFormatter(formatter)
+handler.setFormatter(formatter)
 logging.root.addHandler(handler)
 #handler = logging.handlers.TimedRotatingFileHandler('log/cct.log', 'D', 1, encoding='utf-8', backupCount=0)
 #formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
