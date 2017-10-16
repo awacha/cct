@@ -14,6 +14,7 @@ from ..core.utils.timeout import IdleFunction
 
 
 class HeaderModel(QtCore.QAbstractItemModel):
+    visiblecolumns = ['fsn', 'title', 'distance', 'date', 'temperature']
 
     fsnloaded = QtCore.pyqtSignal(int, int, int)
 
