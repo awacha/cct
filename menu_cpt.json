@@ -4,7 +4,7 @@
     {
       "pywscript": "${PYTHON_SCRIPTS}/cpt.pyw",
       "name": "CREDO Processing Tool",
-      "icon": "${MENU_DIR}/cptlogo.png",
+      "icon": "${MENU_DIR}/cptlogo.ico",
       "desktop": true
     }
   ]
