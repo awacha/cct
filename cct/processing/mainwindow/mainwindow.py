@@ -39,7 +39,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         logging.Handler.__init__(self, logger.level)
         self.rootdir=None
         self.processingprocess = None
-        self.header_columns=[]
+        self.header_columns=HeaderModel.visiblecolumns
         self._lastsortcolumn=1
         self._lastsortdirection=QtCore.Qt.AscendingOrder
         self.idlefcn = None
@@ -771,7 +771,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                             self, 'Processing finished',
                             'No new bad exposures found',
                         )
-        except (FileNotFoundError, ValueError):
+        except (FileNotFoundError, ValueError, OSError):
             return
         self.resultsSampleSelectorComboBox.clear()
         self.resultsSampleSelectorComboBox.addItems(samples)
