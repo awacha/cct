@@ -1,5 +1,6 @@
 #!/usb/bin/env python
 import os
+import sys
 
 from Cython.Build import cythonize
 from numpy.lib import get_include
@@ -26,7 +27,7 @@ def compile_uis(packageroot):
                 compileUi(fname, pyfile, from_imports=True, import_from='cct.resource')
             print('Compiled UI file: {} -> {}.'.format(fname, pyfilename))
 
-compile_uis(os.path.join('cct','qtgui'))
+compile_uis(os.path.join('cct'))
 
 
 
@@ -34,17 +35,22 @@ def getresourcefiles():
     print('Generating resource list', flush=True)
     reslist = []
     for directory, subdirs, files in os.walk(os.path.join('cct','resource')):
-        reslist.extend([os.path.join(directory, f).split('/', 1)[1] for f in files])
+        reslist.extend([os.path.join(directory, f).split(os.path.sep, 1)[1] for f in files])
     print('Generated resource list:\n  ' + '\n  '.join(x for x in reslist) + '\n', flush=True)
     return reslist
 
+
+if sys.platform.lower().startswith('win') and sys.maxsize>2**32:
+    krb5_libs=['krb5_64']
+else:
+    krb5_libs=['krb5']
 
 extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
                         [os.path.join("cct","qtgui","tools","optimizegeometry","estimateworksize.pyx")],
                         include_dirs=[get_include()]),
               Extension("cct.core.services.accounting.krb5_check_pass",
                         [os.path.join("cct","core","services","accounting","krb5_check_pass.pyx")],
-                        include_dirs=[get_include()], libraries=['krb5'])
+                        include_dirs=[get_include()], libraries=krb5_libs)
               ]
 
 #extensions=[]
@@ -58,8 +64,9 @@ setup(name='cct', author='Andras Wacha',
       setup_requires=['setuptools_scm'],
       #      cmdclass = {'build_ext': build_ext},
       ext_modules=cythonize(extensions),
-      install_requires=['numpy>=1.11.1', 'scipy>=0.18.0', 'matplotlib>=1.5.2', 'sastool>=1.0.7', 'pyModbusTCP>=0.0.13', 'psutil>=4.1.0'],
-      entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run'],
+      install_requires=['appdirs', 'numpy>=1.11.1', 'scipy>=0.18.0', 'matplotlib>=1.5.2', 'sastool>=1.0.7', 'pyModbusTCP>=0.0.13', 'psutil>=4.1.0', 'h5py', 'pillow'],
+      entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run',
+                                    'cpt = cct.processing.__main__:run'],
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",
       license="",

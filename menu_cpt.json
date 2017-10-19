@@ -1,0 +1,12 @@
+{
+  "menu_name": "Anaconda${PY_VER} ${PLATFORM}",
+  "menu_items": [
+    {
+      "script": "${PYTHON_SCRIPTS}/cpt.exe",
+      "name": "CREDO Processing Tool",
+      "icon": "${MENU_DIR}/cptlogo.ico",
+      "desktop": true,
+      "workdir": "${USERPROFILE}/Documents/CREDOProcessing"
+    }
+  ]
+}

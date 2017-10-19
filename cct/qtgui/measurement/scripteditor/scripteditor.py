@@ -200,6 +200,7 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.scriptEdit.setReadOnly(False)
         self.scriptEdit.setExtraSelections([])
         self.actionStart.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
+        self.actionStart.setText('Start')
         super().setIdle()
 
     def setBusy(self):
@@ -208,6 +209,7 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             action.setEnabled(False)
         self.scriptEdit.setReadOnly(True)
         self.actionStart.setIcon(QtGui.QIcon.fromTheme('media-playback-stop'))
+        self.actionStart.setText('Stop')
         super().setBusy()
 
     def runScript(self):

@@ -1,6 +1,10 @@
 import multiprocessing
 import os
-import resource
+import warnings
+try:
+    import resource
+except ModuleNotFoundError:
+    warnings.warn('Module \'resource\' not found. Probably on Windows. CCT won\'t work as expected.')
 import time
 
 import psutil
