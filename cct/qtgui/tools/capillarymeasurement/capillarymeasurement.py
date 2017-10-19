@@ -62,6 +62,12 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.updateCenterPushButton.setEnabled(False)
         self.updateThicknessPushButton.setEnabled(False)
         self.updateBothPushButton.setEnabled(self.updateThicknessPushButton.isEnabled() and self.updateCenterPushButton.isEnabled())
+        self.sampleNameComboBox.currentIndexChanged.connect(self.onSampleChanged)
+
+    def onSampleChanged(self):
+        self.updateThicknessPushButton.setEnabled(True)
+        self.updateCenterPushButton.setEnabled(True)
+        self.updateBothPushButton.setEnabled(True)
 
     def onLastScanChanged(self, fs:FileSequence, fsn:int):
         if fs.get_scanfile() == self.scanFileNameLineEdit.text():
@@ -131,7 +137,6 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.axes.set_xlabel(self.scan.motor)
         self.axes.set_title(self.scan.comment)
         self.plotSignal()
-        self.figureToolbar
 
     def getSignal(self, zoomed=False):
         """Get the currently selected signal.
@@ -212,7 +217,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         else:
             self.positiveValDoubleSpinBox.setValue(pos.val)
             self.positiveErrDoubleSpinBox.setValue(pos.err)
-#        self.calculatePositionAndThickness()
+        self.calculatePositionAndThickness()
         self.canvas.draw()
 
     def calculatePositionAndThickness(self):
