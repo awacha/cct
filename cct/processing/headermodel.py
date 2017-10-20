@@ -93,11 +93,9 @@ class HeaderModel(QtCore.QAbstractItemModel):
             except queue.Empty:
                 break
             if isinstance(fsn, int):
-                print('FSN: {}'.format(fsn))
                 self._fsns_loaded+=1
                 self.fsnloaded.emit(self.fsnlast-self.fsnfirst+1, self._fsns_loaded, fsn)
             else:
-                print('DONE!!!')
                 self.beginResetModel()
                 self._headers, self._fsns = fsn
                 self._badstatus = self.is_badfsn(self._fsns)
@@ -182,6 +180,9 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self._headers = [f[2] for f in sorteddata]
         self.endResetModel()
         pass
+
+    def getFSN(self, index:QtCore.QModelIndex):
+        return self._fsns[index.row()]
 
 def load_header(fsn, prefix, fsndigits, path):
 #    prefix = self.config()['path']['prefixes']['crd']

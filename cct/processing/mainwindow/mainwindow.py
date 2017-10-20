@@ -12,6 +12,7 @@ from typing import Iterable, Optional, Union
 import appdirs
 import h5py
 import matplotlib
+import matplotlib.colors
 import numpy as np
 import pkg_resources
 import scipy.io
@@ -193,7 +194,69 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.headersTreeView.setSortingEnabled(True)
         self.headersTreeView.sortByColumn(1,QtCore.Qt.AscendingOrder)
         self.ioProgressBar.setVisible(False)
+        self.plot2DPushButton.clicked.connect(self.onPlot2D)
+        self.plot1DPushButton.clicked.connect(self.onPlot1D)
+        self.tablePlot1DPushButton.clicked.connect(self.onPlot1D)
+        self.tablePlot2DPushButton.clicked.connect(self.onPlot2D)
         self.updateResults()
+
+    def onPlot2D(self):
+        if self.sender()==self.plot2DPushButton:
+            treeview=self.headersTreeView
+        elif self.sender()==self.tablePlot2DPushButton:
+            treeview=self.treeView
+        else:
+            return
+        idx = treeview.currentIndex()
+        if not idx.isValid():
+            return
+        try:
+            fsn=treeview.model().getFSN(idx)
+        except AttributeError:
+            return
+        summarizer = Summarizer([fsn], self.headermodel.eval2d_pathes, self.headermodel.eval2d_pathes,
+                                self.headermodel.mask_pathes, self.saveHDFLineEdit.text(),
+                                self.config['path']['prefixes']['crd'],
+                                self.config['path']['fsndigits'])
+        for x in summarizer.load_headers(logger=logger):
+            pass
+        ex=summarizer.load_exposure(fsn,logger=logger)
+        self.figure.clear()
+        ax=self.figure.add_subplot(1,1,1)
+        ex.imshow(axes=ax, norm=matplotlib.colors.LogNorm())
+        ax.set_xlabel('q (nm$^{-1}$)')
+        ax.set_ylabel('q (nm$^{-1}$)')
+        self.canvas.draw()
+        self.tabWidget.setCurrentWidget(self.figureContainerWidget)
+
+    def onPlot1D(self):
+        if self.sender()==self.plot1DPushButton:
+            treeview=self.headersTreeView
+        elif self.sender()==self.tablePlot1DPushButton:
+            treeview=self.treeView
+        else:
+            return
+        idx = treeview.currentIndex()
+        if not idx.isValid():
+            return
+        try:
+            fsn=treeview.model().getFSN(idx)
+        except AttributeError:
+            return
+        summarizer = Summarizer([fsn], self.headermodel.eval2d_pathes, self.headermodel.eval2d_pathes,
+                                self.headermodel.mask_pathes, self.saveHDFLineEdit.text(),
+                                self.config['path']['prefixes']['crd'],
+                                self.config['path']['fsndigits'])
+        for x in summarizer.load_headers():
+            pass
+        ex=summarizer.load_exposure(fsn)
+        self.figure.clear()
+        ax=self.figure.add_subplot(1,1,1)
+        ex.radial_average().loglog(axes=ax)
+        ax.set_xlabel('q (nm$^{-1}$)')
+        ax.set_ylabel('Intensity (cm$^{-1}$ sr$^{-1}$)')
+        self.canvas.draw()
+        self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onHeaderTreeViewSortRequest(self, section:int):
         self.headersTreeView.setSortingEnabled(True)
@@ -353,6 +416,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onExportCorrelMatricesData(self):
         try:
+            self.setEnabled(False)
             with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
                 samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
                 for sn in hdf5['Samples']:
@@ -555,7 +619,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onHeaderModelFSNLoaded(self, totalcount, currentcount, thisfsn):
         if totalcount==currentcount==thisfsn==0:
-            logger.debug('Last FSN read.')
             self.ioProgressBar.setVisible(False)
             self.setEnabled(True)
             self.headersTreeView.setSortingEnabled(True)
@@ -563,13 +626,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             self.resizeHeaderViewColumns()
         else:
             if totalcount>0 and not self.ioProgressBar.isVisible():
-                logger.debug('First FSN read.')
                 self.setEnabled(False)
                 self.ioProgressBar.setVisible(True)
                 self.ioProgressBar.setMinimum(0)
                 self.ioProgressBar.setMaximum(totalcount)
                 self.ioProgressBar.setFormat('Loading headers...')
-            logger.debug('FSN {} ({} of {}) read.'.format(thisfsn, currentcount, totalcount))
             self.ioProgressBar.setValue(currentcount)
 
     def onReload(self):

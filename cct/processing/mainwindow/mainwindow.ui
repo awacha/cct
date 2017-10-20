@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1139</width>
-    <height>920</height>
+    <height>863</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -49,7 +49,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>725</height>
+          <height>668</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -260,7 +260,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>382</height>
+          <height>668</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -491,8 +491,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>305</width>
-          <height>186</height>
+          <width>400</width>
+          <height>668</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -594,8 +594,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>287</width>
-          <height>80</height>
+          <width>400</width>
+          <height>668</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -659,8 +659,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>374</width>
-          <height>445</height>
+          <width>400</width>
+          <height>668</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -1041,6 +1041,20 @@
                </spacer>
               </item>
               <item>
+               <widget class="QPushButton" name="plot2DPushButton">
+                <property name="text">
+                 <string>Plot 2D</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="plot1DPushButton">
+                <property name="text">
+                 <string>Plot 1D</string>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QPushButton" name="exportHeaderTablePushButton">
                 <property name="text">
                  <string>Export table...</string>
@@ -1098,6 +1112,20 @@
                  </size>
                 </property>
                </spacer>
+              </item>
+              <item>
+               <widget class="QPushButton" name="tablePlot2DPushButton">
+                <property name="text">
+                 <string>Plot 2D</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="tablePlot1DPushButton">
+                <property name="text">
+                 <string>Plot 1D</string>
+                </property>
+               </widget>
               </item>
               <item>
                <widget class="QPushButton" name="exportTablePushButton">

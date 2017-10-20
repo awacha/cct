@@ -42,5 +42,8 @@ class OutlierModel(QtCore.QAbstractItemModel):
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...):
         return self.createIndex(row, column, None)
 
+    def getFSN(self, index:QtCore.QModelIndex):
+        return self._data[index.row()][0]
+
 def display_outlier_test_results(grp:h5py.Group) -> OutlierModel:
     return OutlierModel(None, grp)
