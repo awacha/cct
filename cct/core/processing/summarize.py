@@ -73,7 +73,8 @@ class Summarizer(object):
                             '{{}}_{{:0{:d}d}}.pickle'.format(self.ndigits).format(self.prefix,f))
                     ))
                     if yield_messages:
-                        logger.debug('Header loaded for prefix {}, fsn {}'.format(self.prefix, f))
+                        if logger is not None:
+                            logger.debug('Header loaded for prefix {}, fsn {}'.format(self.prefix, f))
                         yield '__header_loaded__', f
                     break
                 except FileNotFoundError:
