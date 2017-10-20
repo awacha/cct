@@ -191,9 +191,7 @@ def load_header(fsn, prefix, fsndigits, path):
             h=Header.new_from_file(fn)
             return h
         except FileNotFoundError:
-            print('Header not found in folder {}'.format(p))
             continue
-    print('Raising FileNotFoundError on fsn {} because header not found'.format(fsn))
     raise FileNotFoundError(fsn)
 
 def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, columns):
@@ -220,7 +218,6 @@ def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, colu
             queue.put_nowait(fsn)
             del h
         except FileNotFoundError:
-            print('Header {} not found, continuing with the next one'.format(fsn))
             continue
     queue.put_nowait((_headers, _fsns))
     return None

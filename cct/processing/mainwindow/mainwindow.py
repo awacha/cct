@@ -760,7 +760,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                             for dset in f['Samples'][sn][dist]['curves'].values():
                                 if dset.attrs['correlmat_bad']:
                                     newbadfsns.append(dset.attrs['fsn'])
-                    self.headermodel.update_badfsns(newbadfsns)
+                    try:
+                        self.headermodel.update_badfsns(newbadfsns)
+                    except AttributeError:
+                        pass
                     if newbadfsns:
                         QtWidgets.QMessageBox.information(
                             self, 'Processing finished',
