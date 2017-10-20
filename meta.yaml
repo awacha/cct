@@ -24,6 +24,7 @@ requirements:
     - pymodbustcp
     - appdirs
     - pillow
+    - openpyxl
 
   run:
     - pillow
@@ -37,6 +38,7 @@ requirements:
     - matplotlib
     - sastool >=1.0.7
     - pyqt >=5
+    - openpyxl
 
 about:
   home: https://github.com/awacha/cct
