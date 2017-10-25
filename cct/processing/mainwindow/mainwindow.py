@@ -14,6 +14,11 @@ import h5py
 import matplotlib
 import matplotlib.colors
 import numpy as np
+import openpyxl
+import openpyxl.chart
+import openpyxl.chartsheet
+import openpyxl.styles
+import openpyxl.worksheet.worksheet
 import pkg_resources
 import scipy.io
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -71,11 +76,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             (self.exportImageFormatComboBox, 'export', 'imageformat'),
             (self.exportImageHeightUnitsComboBox, 'export', 'imageheightunits'),
             (self.exportImageWidthUnitsComboBox, 'export', 'imagewidthunits'),
+            (self.export1DDataFormatComboBox, 'export', 'onedimformat'),
         ]:
             try:
-                combobox.setCurrentIndex(combobox.findText(config[section][key]))
+                idx=combobox.findText(config[section][key])
+                if idx<0:
+                    continue
+                combobox.setCurrentIndex(idx)
             except (KeyError, ValueError):
-                combobox.setCurrentIndex(0)
+                # do not touch anything
                 continue
         for spinbox, section, key, converter in [
             (self.firstFSNSpinBox, 'io','firstfsn', int),
@@ -84,6 +93,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             (self.exportImageResolutionSpinBox, 'export', 'imagedpi', int),
             (self.exportImageHeightDoubleSpinBox, 'export', 'imageheight', float),
             (self.exportImageWidthDoubleSpinBox, 'export', 'imagewidth', float),
+            (self.qMaxDoubleSpinBox, 'processing', 'customqmax', float),
+            (self.qMinDoubleSpinBox, 'processing', 'customqmin', float),
+            (self.qBinCountSpinBox, 'processing', 'customqcount', int),
         ]:
             try:
                 spinbox.setValue(converter(config[section][key]))
@@ -92,6 +104,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         for checkbox, section, key in [
             (self.logarithmicCorrelMatrixCheckBox, 'processing', 'logcorrelmatrix'),
             (self.sanitizeCurvesCheckBox, 'processing', 'sanitizecurves'),
+            (self.logarithmicQCheckBox,'processing','customqlogscale'),
+            (self.qRangeOverrideGroupBox, 'processing', 'customq'),
         ]:
             try:
                 checkbox.setChecked(config[section][key].lower()=='true')
@@ -130,6 +144,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         config['processing']['std_multiplier'] = str(self.stdMultiplierDoubleSpinBox.value())
         config['processing']['logcorrelmatrix'] = str(self.logarithmicCorrelMatrixCheckBox.isChecked())
         config['processing']['sanitizecurves'] = str(self.sanitizeCurvesCheckBox.isChecked())
+        config['processing']['customqlogscale'] = str(self.logarithmicQCheckBox.isChecked())
+        config['processing']['customqmin'] = str(self.qMinDoubleSpinBox.value())
+        config['processing']['customqmax'] = str(self.qMaxDoubleSpinBox.value())
+        config['processing']['customqcount'] = str(self.qBinCountSpinBox.value())
+        config['processing']['customq'] = str(self.qRangeOverrideGroupBox.isChecked())
         config['export']={}
         config['export']['folder']=self.exportFolderLineEdit.text()
         config['export']['imageformat']=self.exportImageFormatComboBox.currentText()
@@ -138,6 +157,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         config['export']['imageheight']=str(self.exportImageHeightDoubleSpinBox.value())
         config['export']['imagewidthunits']=self.exportImageWidthUnitsComboBox.currentText()
         config['export']['imageheightunits']=self.exportImageHeightUnitsComboBox.currentText()
+        config['export']['onedimformat']=self.export1DDataFormatComboBox.currentText()
         config['headerview']={}
         config['headerview']['fields'] = ';'.join(self.header_columns)
         with open(statefile, 'wt', encoding='utf-8') as f:
@@ -354,6 +374,69 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             gc.collect()
 
     def onExportAveragedCurvesData(self):
+        if self.export1DDataFormatComboBox.currentText()=='ASCII (*.txt)':
+            self.onExportAveragedCurvesDataASCII()
+        elif self.export1DDataFormatComboBox.currentText().startswith('Excel 2007-'):
+            self.onExportAveragedCurvesDataXLSX()
+
+    def onExportAveragedCurvesDataXLSX(self):
+        try:
+            self.setEnabled(False)
+            wb = openpyxl.Workbook()
+            sheet=wb.get_active_sheet()
+            chart = openpyxl.chart.ScatterChart()
+            chart.y_axis.title='Intensity (1/cm * 1/sr)'
+            chart.x_axis.title='q (1/nm)'
+            chart.x_axis.scaling.logBase=10
+            chart.y_axis.scaling.logBase=10
+            chart.x_axis.majorTickMark='out'
+            chart.y_axis.majorTickMark='out'
+            chart.x_axis.minorTickMark='out'
+            chart.y_axis.minorTickMark='out'
+            assert isinstance(sheet, openpyxl.worksheet.worksheet.Worksheet)
+            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+                samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
+                i=0
+                qmins=[]
+                qmaxs=[]
+                Imins=[]
+                Imaxs=[]
+                for sn in sorted([s for s in hdf5['Samples'] if s in samplenames]):
+                    for dist in hdf5['Samples'][sn]:
+                        i+=1
+                        data = hdf5['Samples'][sn][dist]['curve']
+                        c=sheet.cell(row=1, column=(i-1)*4+1, value='{} @{} mm'.format(sn,dist))
+                        c.font=openpyxl.styles.Font(bold=True)
+                        c.alignment=openpyxl.styles.Alignment(horizontal='center')
+                        sheet.merge_cells(start_row=1, end_row=1, start_column=(i-1)*4+1,end_column=i*4)
+                        sheet.cell(row=2, column=(i-1)*4+1, value='q (1/nm)').font=openpyxl.styles.Font(bold=True)
+                        sheet.cell(row=2, column=(i-1)*4+2, value='Intensity (1/cm)').font=openpyxl.styles.Font(bold=True)
+                        sheet.cell(row=2, column=(i-1)*4+3, value='Error of intensity (1/cm)').font=openpyxl.styles.Font(bold=True)
+                        sheet.cell(row=2, column=(i-1)*4+4, value='Error of q (1/nm)').font=openpyxl.styles.Font(bold=True)
+                        for j in range(data.shape[0]):
+                            for k in range(data.shape[1]):
+                                sheet.cell(row=3+j,column=(i-1)*4+1+k,value=data[j,k])
+                        xvalues = openpyxl.chart.Reference(sheet, min_col=(i-1)*4+1, max_col=(i-1)*4+1, min_row=3,max_row=data.shape[0]+3)
+                        yvalues = openpyxl.chart.Reference(sheet, min_col=(i-1)*4+2, max_col=(i-1)*4+2, min_row=3,max_row=data.shape[0]+3)
+                        series = openpyxl.chart.Series(yvalues, xvalues, title='{} @{}'.format(sn, dist))
+                        chart.series.append(series)
+                        qmins.append(np.nanmin(data[:,0]))
+                        qmaxs.append(np.nanmax(data[:,0]))
+                        Imins.append(np.nanmin(data[:,1]))
+                        Imaxs.append(np.nanmax(data[:,1]))
+
+                chart.x_axis.scaling.min=min([x for x in qmins if x>0])
+                chart.x_axis.scaling.max=max(qmaxs)
+                chart.y_axis.scaling.min=min([x for x in Imins if x>0])
+                chart.y_axis.scaling.max=max(Imaxs)
+                #chart.style=13
+                sheet.add_chart(chart)
+                wb.save(os.path.join(self.exportFolderLineEdit.text(),'SAXS_curves.xlsx'))
+                logger.info('Wrote file {}'.format(os.path.join(self.exportFolderLineEdit.text(), 'SAXS_curves.xlsx')))
+        finally:
+            self.setEnabled(True)
+
+    def onExportAveragedCurvesDataASCII(self):
         try:
             self.setEnabled(False)
             with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
@@ -487,7 +570,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def onBrowseExportFolder(self):
         filename = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select the folder to output files to...')
         if filename:
-            self.exportFolderLineEdit.setText(filename)
+            self.exportFolderLineEdit.setText(os.path.normpath(filename))
 
 
     def onImageUnitsChanged(self):
@@ -666,6 +749,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def onProcess(self):
         self.queue = queue.Queue()
         badfsns=self.headermodel.get_badfsns()
+        if self.qRangeOverrideGroupBox.isChecked():
+            qmin = self.qMinDoubleSpinBox.value()
+            qmax = self.qMaxDoubleSpinBox.value()
+            nq=self.qBinCountSpinBox.value()
+            if self.logarithmicQCheckBox.isChecked():
+                qrange=np.logspace(np.log10(qmin), np.log10(qmax),nq)
+            else:
+                qrange = np.linspace(qmin, qmax, nq)
+        else:
+            qrange = None
         kwargs={
             'fsns':[x for x in range(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value()+1) if x not in badfsns],
             'exppath':self.headermodel.eval2d_pathes,
@@ -680,6 +773,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             'logarithmic_correlmatrix':self.logarithmicCorrelMatrixCheckBox.isChecked(),
             'std_multiplier':self.stdMultiplierDoubleSpinBox.value(),
             'queue': self.queue,
+            'qrange': qrange,
         }
         self.processingprocess = threading.Thread(target=self.do_processing, name='Summarization', kwargs=kwargs)
         self.idlefcn = IdleFunction(self.check_processing_progress, 100)
@@ -692,9 +786,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def do_processing(self, queue:queue.Queue,
                       fsns:Iterable[int], exppath:Iterable[str], parampath:Iterable[str], maskpath:Iterable[str],
                       outputfile:str, prefix:str, ndigits:int, errorpropagation:int, abscissaerrorpropagation:int,
-                      sanitize_curves:bool, logarithmic_correlmatrix:bool, std_multiplier:int,):
+                      sanitize_curves:bool, logarithmic_correlmatrix:bool, std_multiplier:int, qrange:Optional[np.ndarray]):
         s = Summarizer(fsns, exppath, parampath, maskpath, outputfile, prefix, ndigits, errorpropagation,
-                       abscissaerrorpropagation, sanitize_curves, logarithmic_correlmatrix, std_multiplier)
+                       abscissaerrorpropagation, sanitize_curves, logarithmic_correlmatrix, std_multiplier, qrange)
         queue.put_nowait(('__init_loadheaders__',len(fsns)))
         for msg1, msg2 in s.load_headers(yield_messages=True):
             queue.put_nowait((msg1, msg2))
@@ -761,7 +855,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.idlefcn=None
                 self.processPushButton.setEnabled(True)
                 self.toolBox.setEnabled(True)
-                self.updateResults()
+                self.updateResults(processingfinished=True)
                 return False
             elif msg1.startswith('__'):
                 pass
@@ -790,7 +884,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.firstFSNSpinBox.setEnabled(True)
         self.lastFSNSpinBox.setEnabled(True)
         self.reloadPushButton.setEnabled(True)
-        self.rootDirLineEdit.setText(rootdir)
+        self.rootDirLineEdit.setText(os.path.normpath(rootdir))
         return True
 
     def onBrowseRootDir(self):
@@ -807,10 +901,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             return
         if not filename.endswith('.h5') and not filename.endswith('.hdf5'):
             filename=filename+'.h5'
-        self.saveHDFLineEdit.setText(filename)
+        self.saveHDFLineEdit.setText(os.path.normpath(filename))
         self.updateResults()
 
-    def updateResults(self):
+    def updateResults(self, processingfinished=False):
         try:
             with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
                 samples=sorted(f['Samples'].keys())
@@ -825,16 +919,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                         self.headermodel.update_badfsns(newbadfsns)
                     except AttributeError:
                         pass
-                    if newbadfsns:
-                        QtWidgets.QMessageBox.information(
-                            self, 'Processing finished',
-                            'Found and marked new bad exposures:\n'+', '.join([str(f) for f in sorted(newbadfsns)]),
-                        )
-                    else:
-                        QtWidgets.QMessageBox.information(
-                            self, 'Processing finished',
-                            'No new bad exposures found',
-                        )
+                    if processingfinished:
+                        if newbadfsns:
+                            QtWidgets.QMessageBox.information(
+                                self, 'Processing finished',
+                                'Found and marked new bad exposures:\n'+', '.join([str(f) for f in sorted(newbadfsns)]),
+                            )
+                        else:
+                            QtWidgets.QMessageBox.information(
+                                self, 'Processing finished',
+                                'No new bad exposures found',
+                            )
         except (FileNotFoundError, ValueError, OSError):
             return
         self.resultsSampleSelectorComboBox.clear()

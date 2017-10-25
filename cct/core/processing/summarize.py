@@ -45,13 +45,14 @@ class Summarizer(object):
             outputfile:str, prefix:str='crd', ndigits:int=5,
             errorpropagation:int=3, abscissaerrorpropagation:int=3,
             sanitize_curves:bool=True, logarithmic_correlmatrix:bool=True,
-            std_multiplier:float=2.7,
+            std_multiplier:float=2.7, qrange:Optional[np.ndarray]=None,
     ):
         self.fsns=fsns
         self.exppath=exppath
         self.parampath=parampath
         self.maskpath = maskpath
         self.outputfile=outputfile
+        self.qrange = qrange
         self.prefix = prefix
         self.ndigits = ndigits
         self.errorpropagation = errorpropagation
@@ -164,7 +165,7 @@ class Summarizer(object):
                 grp['mask']=h5py.SoftLink('/masks/{}'.format(ex.header.maskname))
             except RuntimeError:
                 pass
-            curve = ex.radial_average(
+            curve = ex.radial_average(self.qrange,
                 abscissa_errorpropagation=self.abscissaerrorpropagation,
                 errorpropagation=self.errorpropagation)
             if self.sanitize_curves:
@@ -211,7 +212,8 @@ class Summarizer(object):
         cavg=Curve.average(*[Curve(group1d[ds][:,0],group1d[ds][:,1],group1d[ds][:,2],group1d[ds][:,3]) for ds in group1d]).sanitize()
         dsavg=grp.create_dataset('curve_averaged', shape=(len(cavg),4), dtype=np.double)
         dsavg[:,0],dsavg[:,1],dsavg[:,2],dsavg[:,3]=(cavg.q, cavg.Intensity, cavg.Error, cavg.qError)
-        radavg=Exposure(np.array(grp['image']), np.array(grp['image_uncertainty']),headers[0],np.array(grp['mask'])).radial_average().sanitize()
+        radavg=Exposure(np.array(grp['image']), np.array(grp['image_uncertainty']),headers[0],np.array(grp['mask'])).radial_average(
+            qrange=self.qrange, abscissa_errorpropagation=self.abscissaerrorpropagation, errorpropagation=self.errorpropagation).sanitize()
         dsradavg=grp.create_dataset('curve_reintegrated', shape=(len(radavg),4), dtype=np.double)
         dsradavg[:,0], dsradavg[:,1], dsradavg[:,2], dsradavg[:,3] = (radavg.q, radavg.Intensity, radavg.Error, radavg.qError)
         grp['curve'] = h5py.SoftLink('curve_reintegrated')

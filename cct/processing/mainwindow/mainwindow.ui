@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1139</width>
-    <height>863</height>
+    <height>747</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -49,7 +49,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>668</height>
+          <height>552</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -260,7 +260,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>668</height>
+          <height>552</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -283,7 +283,7 @@
            </property>
           </widget>
          </item>
-         <item row="7" column="0" colspan="2">
+         <item row="8" column="0" colspan="2">
           <widget class="QGroupBox" name="progressGroupBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -340,7 +340,7 @@
            </layout>
           </widget>
          </item>
-         <item row="6" column="0" colspan="2">
+         <item row="7" column="0" colspan="2">
           <widget class="QPushButton" name="processPushButton">
            <property name="enabled">
             <bool>false</bool>
@@ -461,7 +461,7 @@
            </property>
           </widget>
          </item>
-         <item row="8" column="0" colspan="2">
+         <item row="9" column="0" colspan="2">
           <spacer name="verticalSpacer_3">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -484,6 +484,73 @@
            </property>
           </widget>
          </item>
+         <item row="6" column="0" colspan="2">
+          <widget class="QGroupBox" name="qRangeOverrideGroupBox">
+           <property name="title">
+            <string>Override q-range:</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_9">
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_19">
+              <property name="text">
+               <string>End at (1/nm):</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_20">
+              <property name="text">
+               <string>Number of bins:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_18">
+              <property name="text">
+               <string>Start from (1/nm):</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="qMinDoubleSpinBox">
+              <property name="decimals">
+               <number>5</number>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QDoubleSpinBox" name="qMaxDoubleSpinBox">
+              <property name="decimals">
+               <number>5</number>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QSpinBox" name="qBinCountSpinBox">
+              <property name="maximum">
+               <number>1000000</number>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0" colspan="2">
+             <widget class="QCheckBox" name="logarithmicQCheckBox">
+              <property name="text">
+               <string>Logarithmic spacing</string>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="perSampleResultsPage">
@@ -492,7 +559,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>668</height>
+          <height>552</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -595,7 +662,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>668</height>
+          <height>552</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -660,7 +727,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>668</height>
+          <height>552</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -673,12 +740,12 @@
          <string>Export</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_7">
-         <item row="7" column="0" colspan="3">
+         <item row="8" column="0" colspan="3">
           <layout class="QGridLayout" name="gridLayout_8">
            <item row="2" column="0">
             <widget class="QPushButton" name="exportAveragedCurvesGraphPushButton">
              <property name="text">
-              <string>Averaging of curves</string>
+              <string>Averaged curves</string>
              </property>
             </widget>
            </item>
@@ -713,14 +780,14 @@
            <item row="2" column="1">
             <widget class="QPushButton" name="exportAveragedCurvesDataPushButton">
              <property name="text">
-              <string>Curves as .dat</string>
+              <string>Averaged curves</string>
              </property>
             </widget>
            </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label_15">
              <property name="text">
-              <string>Image files:</string>
+              <string>Picture files:</string>
              </property>
             </widget>
            </item>
@@ -733,7 +800,7 @@
            </item>
           </layout>
          </item>
-         <item row="9" column="0" colspan="3">
+         <item row="10" column="0" colspan="3">
           <spacer name="verticalSpacer_5">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -773,6 +840,16 @@
           <widget class="QLabel" name="label_13">
            <property name="text">
             <string>Image width:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="exportFolderLineEdit"/>
+         </item>
+         <item row="4" column="1">
+          <widget class="QDoubleSpinBox" name="exportImageHeightDoubleSpinBox">
+           <property name="maximum">
+            <double>100.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -839,16 +916,6 @@
             </property>
            </item>
           </widget>
-         </item>
-         <item row="4" column="1">
-          <widget class="QDoubleSpinBox" name="exportImageHeightDoubleSpinBox">
-           <property name="maximum">
-            <double>100.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="exportFolderLineEdit"/>
          </item>
          <item row="2" column="0">
           <widget class="QLabel" name="label_12">
@@ -917,7 +984,7 @@
            </property>
           </widget>
          </item>
-         <item row="6" column="0" colspan="3">
+         <item row="7" column="0" colspan="3">
           <widget class="QGroupBox" name="groupBox">
            <property name="title">
             <string>Select samples:</string>
@@ -963,6 +1030,27 @@
            <item>
             <property name="text">
              <string>Matlab</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_21">
+           <property name="text">
+            <string>1D data format:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QComboBox" name="export1DDataFormatComboBox">
+           <item>
+            <property name="text">
+             <string>ASCII (*.txt)</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Excel 2007- (*.xlsx)</string>
             </property>
            </item>
           </widget>
