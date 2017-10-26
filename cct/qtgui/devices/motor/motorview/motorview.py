@@ -58,7 +58,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.onSampleListChanged(ss)
         self.treeView.activated.connect(self.onMotorViewLineActivated)
         self.treeView.customContextMenuRequested.connect(self.onTreeViewContextMenuRequested)
-        #self.adjustSize()
+        # self.adjustSize()
 
     def onTargetEditingFinished(self):
         if self.motorTargetDoubleSpinBox.hasFocus():
@@ -121,7 +121,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.motorModel.cleanup()
         return super().cleanup()
 
-    def onSampleListChanged(self, samplestore:SampleStore):
+    def onSampleListChanged(self, samplestore: SampleStore):
         with self._updating_ui:
             lastsample = self.sampleNameComboBox.currentText()
             ss = self.credo.services['samplestore']
@@ -201,7 +201,7 @@ class MotorOverview(QtWidgets.QWidget, Ui_Form, ToolWindow):
                     self.credo.motors['BeamStop_X'].where(), self.credo.motors['BeamStop_Y'].where(), what),
                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No) in [QtWidgets.QMessageBox.Yes]:
             self.credo.config['beamstop'][what] = (
-            self.credo.motors['BeamStop_X'].where(), self.credo.motors['BeamStop_Y'].where())
+                self.credo.motors['BeamStop_X'].where(), self.credo.motors['BeamStop_Y'].where())
             self.credo.save_state()
 
     def onMotorNameChosen(self):

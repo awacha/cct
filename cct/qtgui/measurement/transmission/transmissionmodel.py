@@ -85,8 +85,9 @@ class TransmissionModel(QtCore.QAbstractItemModel):
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = QtCore.Qt.DisplayRole):
         if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
             return \
-            ['Name', 'Dark intensity', 'Empty intensity', 'Sample intensity', 'Transmission', 'Lin.abs.coeff (1/cm)',
-             'Absorption length (cm)'][section]
+                ['Name', 'Dark intensity', 'Empty intensity', 'Sample intensity', 'Transmission',
+                 'Lin.abs.coeff (1/cm)',
+                 'Absorption length (cm)'][section]
         else:
             return None
 

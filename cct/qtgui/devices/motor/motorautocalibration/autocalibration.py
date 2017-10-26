@@ -11,16 +11,18 @@ from .....core.devices.motor import Motor
 from .....core.instrument.privileges import PRIV_MOTORCALIB
 from .....core.utils.inhibitor import Inhibitor
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class MotorAutoCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_MOTORCALIB
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo=credo)
-        self._updating=Inhibitor()
+        self._updating = Inhibitor()
         self._motor_under_calibration = None
         self._calibration_phase = None
         self._moved_left = None
@@ -49,7 +51,7 @@ class MotorAutoCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
             motname = self.addMotorComboBox.currentText()
             if motname not in self.model:
                 self.model.addMotor(self.addMotorComboBox.currentText())
-                self.requireDevice('Motor_'+motname)
+                self.requireDevice('Motor_' + motname)
             self.addMotorComboBox.setCurrentIndex(-1)
 
     def onRemoveMotor(self):
@@ -61,13 +63,13 @@ class MotorAutoCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.model.removeRow(rowindex.row(), QtCore.QModelIndex())
 
     def onExecute(self):
-        if self.executePushButton.text()=='Execute':
-            self._stop_requested=False
+        if self.executePushButton.text() == 'Execute':
+            self._stop_requested = False
             self.model.resetCalibrationData()
             self.setBusy()
             self.nextMotor()
         else:
-            self._stop_requested=True
+            self._stop_requested = True
             self.executePushButton.setEnabled(False)
 
     def nextMotor(self):
@@ -84,7 +86,7 @@ class MotorAutoCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
         motor.calibrate(motor.get_variable('softright'))
 
     def onMotorPositionChange(self, motor: Motor, newposition: float):
-        #logger.debug('onMotorPositionChange({}, {}); phase: {}'.format(motor.name, newposition, self._calibration_phase))
+        # logger.debug('onMotorPositionChange({}, {}); phase: {}'.format(motor.name, newposition, self._calibration_phase))
         if motor.name not in self.model:
             return False
         self.model.updateMotorPosition(motor.name, newposition)
@@ -93,28 +95,30 @@ class MotorAutoCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
             return False
         if ((self._calibration_phase == 'CalibrateToRight') and
                 (self._motor_under_calibration == motor.name) and
-                (abs(newposition-motor.get_variable('softright'))<0.0001)):
+                (abs(newposition - motor.get_variable('softright')) < 0.0001)):
             # the calibration of the current motor to the right limit finished.
             # We need to move it as much left as we can.
             logger.info('The current position of motor {} is now {}'.format(self._motor_under_calibration, newposition))
             self._calibration_phase = 'MoveLeft'
-            logger.info('Moving motor {} to left; trying to hit left limit switch.'.format(self._motor_under_calibration))
+            logger.info(
+                'Moving motor {} to left; trying to hit left limit switch.'.format(self._motor_under_calibration))
             motor.moveto(motor.get_variable('softleft'))
         elif ((self._calibration_phase == 'CalibrateBeforeMoveSlightlyRight') and
-                (self._motor_under_calibration == motor.name) and
-                (abs(newposition-motor.get_variable('softleft'))<0.0001)):
+                  (self._motor_under_calibration == motor.name) and
+                  (abs(newposition - motor.get_variable('softleft')) < 0.0001)):
             # Moving the motor slightly right
             logger.info('The current position of motor {} is now {}'.format(self._motor_under_calibration, newposition))
             self._calibration_phase = 'MoveSlightlyRight'
             logger.info('Moving motor {} slightly to the right.'.format(self._motor_under_calibration))
             motor.moverel(self.bufferDistanceDoubleSpinBox.value())
         elif ((self._calibration_phase == 'FinalCalibrationToLeftLimit') and
-                (self._motor_under_calibration == motor.name) and
-                (abs(newposition-motor.get_variable('softleft'))<0.0001)):
+                  (self._motor_under_calibration == motor.name) and
+                  (abs(newposition - motor.get_variable('softleft')) < 0.0001)):
             # Move back to the starting point.
             logger.info('The current position of motor {} is now {}'.format(self._motor_under_calibration, newposition))
             self._calibration_phase = 'MoveBackToStart'
-            logger.info('Moving motor {} back to the starting position by {}'.format(self._motor_under_calibration, -self._moved_left))
+            logger.info('Moving motor {} back to the starting position by {}'.format(self._motor_under_calibration,
+                                                                                     -self._moved_left))
             motor.moverel(-self._moved_left)
         return False
 
@@ -128,7 +132,9 @@ class MotorAutoCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
         return False
 
     def onMotorStop(self, motor: Motor, targetpositionreached: bool):
-        logger.debug('Motor {} stopped. Calibration phase: {}. Motor under calibration: {}'.format(motor.name, self._calibration_phase, self._motor_under_calibration))
+        logger.debug('Motor {} stopped. Calibration phase: {}. Motor under calibration: {}'.format(motor.name,
+                                                                                                   self._calibration_phase,
+                                                                                                   self._motor_under_calibration))
         if ((self._calibration_phase == 'MoveLeft') and
                 (self._motor_under_calibration == motor.name)):
             self._moved_left = motor.where() - motor.get_variable('softright')
@@ -137,8 +143,10 @@ class MotorAutoCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 QtWidgets.QMessageBox.critical(self, 'Error', 'Left limit switch not reached!')
                 self.setIdle()
             self._calibration_phase = 'CalibrateBeforeMoveSlightlyRight'
-            if abs(motor.where()-motor.get_variable('softleft'))>0.001:
-                logger.debug('Calibrating to leftlimit: motor is at {} instead of the limit ({})'.format(motor.where(), motor.get_variable('softleft')))
+            if abs(motor.where() - motor.get_variable('softleft')) > 0.001:
+                logger.debug('Calibrating to leftlimit: motor is at {} instead of the limit ({})'.format(motor.where(),
+                                                                                                         motor.get_variable(
+                                                                                                             'softleft')))
                 motor.calibrate(motor.get_variable('softleft'))
             else:
                 logger.debug('Skipping calibration to leftlimit: already there')

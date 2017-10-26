@@ -66,7 +66,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.fsnSelector.close()
         super().cleanup()
 
-    def onFSNSelected(self, prefix:str, fsn:int, exposure:Exposure):
+    def onFSNSelected(self, prefix: str, fsn: int, exposure: Exposure):
         self.setExposure(exposure)
         del exposure
 
@@ -150,7 +150,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def operation(self):
         return self.operationsGroup.checkedAction().iconText()
 
-    def initializeSelector(self, action:QtWidgets.QAction, selectorclass, callbackfunction, **kwargs):
+    def initializeSelector(self, action: QtWidgets.QAction, selectorclass, callbackfunction, **kwargs):
         if action.isChecked():
             while self.plotimage.figtoolbar.mode != '':
                 # turn off zoom, pan, etc. modes in the matplotlib figure toolbar

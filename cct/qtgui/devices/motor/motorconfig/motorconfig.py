@@ -170,7 +170,7 @@ class MotorConfig(QtWidgets.QWidget, Ui_Form, ToolWindow):
         nustep = 2 ** self.microstepExponentSpinBox.value()
         ustepsize = self.motor._controller.full_step_size / nustep
         maxustepfreq = self.motor._controller.clock_frequency * self.rawMaxSpeedSpinBox.value() / (
-        2.0 ** self.pulseDivisorSpinBox.value() * 2048 * 32)
+            2.0 ** self.pulseDivisorSpinBox.value() * 2048 * 32)
         maxstepfreq = maxustepfreq / nustep
         maxspeed = maxstepfreq * self.motor._controller.full_step_size
         maxaccel = self.motor._controller.clock_frequency ** 2 * self.rawMaxAccelSpinBox.value() / (

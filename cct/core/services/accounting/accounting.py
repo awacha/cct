@@ -13,7 +13,8 @@ from ...utils.callback import SignalFlags
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-__all__=['User', 'Accounting', 'Project']
+__all__ = ['User', 'Accounting', 'Project']
+
 
 class User(object):
     username = None
@@ -193,8 +194,8 @@ class Accounting(Service):
 
     def update_project(self, projectid: str, projectname: str, proposer: str):
         p = self.get_project(projectid)
-        p.projectname=projectname
-        p.proposer=proposer
+        p.projectname = projectname
+        p.proposer = proposer
         self.emit('project-changed')
 
     def new_project(self, projectid: str, projectname: str, proposer: str):

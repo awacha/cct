@@ -281,7 +281,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self._image = self.axes.imshow(matrix,
                                        cmap=self.paletteComboBox.currentText(), norm=norm,
                                        aspect='equal', interpolation='nearest', origin='upper', zorder=1, extent=extent)
-        if np.isfinite(matrix).sum()>0:
+        if np.isfinite(matrix).sum() > 0:
             self.replot_colourbar()
         self.replot_crosshair()
         self.replot_mask()

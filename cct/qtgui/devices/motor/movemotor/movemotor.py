@@ -7,8 +7,9 @@ from ....core.mixins import ToolWindow
 from .....core.devices import Motor
 from .....core.instrument.privileges import PRIV_MOVEMOTORS
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_MOVEMOTORS

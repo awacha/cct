@@ -9,8 +9,9 @@ from ...core.mixins import ToolWindow
 from ....core.devices import Device, Motor
 from ....core.devices.circulator import HaakePhoenix
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['haakephoenix']
@@ -168,4 +169,3 @@ class TemperatureController(QtWidgets.QWidget, Ui_Form, ToolWindow):
         elif variablename not in ['temperature_internal', '_auxstatus', 'faultstatus', 'temperature_external',
                                   'watchdog_on', 'watchdog_setpoint']:
             logger.error('Unknown variable: {}'.format(variablename))
-

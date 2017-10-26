@@ -604,7 +604,7 @@ class TMCMCard_Backend(DeviceBackend_TCP):
                 self.send_tmcl_command(
                     5, 0, motor_idx, value)
             elif variable.startswith('actualposition$'):
-                assert isinstance(value, (float,int))
+                assert isinstance(value, (float, int))
                 self.set_variable('actualpositionraw${:d}'.format(motor_idx),
                                   self._convert_pos_to_raw(value, motor_idx))
             elif variable.startswith('actualpositionraw$'):

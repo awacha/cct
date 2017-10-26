@@ -14,8 +14,9 @@ from ....core.instrument.privileges import PRIV_MOVEMOTORS
 from ....core.services.interpreter import Interpreter
 from ....core.utils.inhibitor import Inhibitor
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_devices = ['pilatus', 'genix']
@@ -30,7 +31,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._failed = False
         self._origin = None
         self._stepsize = None
-        self._updating_stepsize=Inhibitor()
+        self._updating_stepsize = Inhibitor()
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -55,13 +56,13 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         with self._updating_stepsize:
             # try to find the best #steps
             if self.scanTypeComboBox.currentText() in ['Absolute', 'Relative']:
-                span = self.endDoubleSpinBox.value()-self.startDoubleSpinBox.value()
+                span = self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value()
             elif self.scanTypeComboBox.currentText() in ['Symmetric relative']:
-                span = 2*self.startDoubleSpinBox.value()
+                span = 2 * self.startDoubleSpinBox.value()
             else:
                 raise ValueError(self.scanTypeComboBox.currentText())
-            nsteps=round(abs(span)/self.stepSizeDoubleSpinBox.value())
-            if nsteps<self.stepsSpinBox.minimum() or  nsteps>self.stepsSpinBox.maximum():
+            nsteps = round(abs(span) / self.stepSizeDoubleSpinBox.value())
+            if nsteps < self.stepsSpinBox.minimum() or nsteps > self.stepsSpinBox.maximum():
                 pass
             else:
                 self.stepsSpinBox.setValue(nsteps)
@@ -81,19 +82,19 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def updateSpinBoxes(self, where=None):
         motor = self.credo.motors[self._motor]
         assert isinstance(motor, Motor)
-        if self.scanTypeComboBox.currentText()=='Relative':
+        if self.scanTypeComboBox.currentText() == 'Relative':
             if where is None:
                 where = motor.where()
             self.startDoubleSpinBox.setMinimum(motor.get_variable('softleft') - where)
             self.startDoubleSpinBox.setMaximum(motor.get_variable('softright') - where)
             self.endDoubleSpinBox.setMinimum(motor.get_variable('softleft') - where)
             self.endDoubleSpinBox.setMaximum(motor.get_variable('softright') - where)
-            self.leftLimitLabel.setText('{:.4f}'.format(motor.get_variable('softleft') -where))
-            self.rightLimitLabel.setText('{:.4f}'.format(motor.get_variable('softright') -where))
+            self.leftLimitLabel.setText('{:.4f}'.format(motor.get_variable('softleft') - where))
+            self.rightLimitLabel.setText('{:.4f}'.format(motor.get_variable('softright') - where))
             self.endLabel.setVisible(True)
             self.startLabel.setText('Start:')
             self.endDoubleSpinBox.setVisible(True)
-        elif self.scanTypeComboBox.currentText()=='Absolute':
+        elif self.scanTypeComboBox.currentText() == 'Absolute':
             self.startDoubleSpinBox.setMinimum(motor.get_variable('softleft'))
             self.startDoubleSpinBox.setMaximum(motor.get_variable('softright'))
             self.endDoubleSpinBox.setMinimum(motor.get_variable('softleft'))
@@ -103,11 +104,11 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.endLabel.setVisible(True)
             self.startLabel.setText('Start:')
             self.endDoubleSpinBox.setVisible(True)
-        elif self.scanTypeComboBox.currentText()=='Symmetric relative':
+        elif self.scanTypeComboBox.currentText() == 'Symmetric relative':
             if where is None:
                 where = motor.where()
             self.startDoubleSpinBox.setMinimum(0)
-            maxhwhm=min(where-motor.get_variable('softleft'), motor.get_variable('softright')-where)
+            maxhwhm = min(where - motor.get_variable('softleft'), motor.get_variable('softright') - where)
             self.leftLimitLabel.setText('{:.4f}'.format(-maxhwhm))
             self.rightLimitLabel.setText('{:.4f}'.format(maxhwhm))
             self.startDoubleSpinBox.setMaximum(maxhwhm)
@@ -119,10 +120,11 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.adjustSize()
 
     def recalculateStepSize(self):
-        if self.scanTypeComboBox.currentText()=='Symmetric relative':
-            stepsize = self.startDoubleSpinBox.value()*2/(self.stepsSpinBox.value()-1)
+        if self.scanTypeComboBox.currentText() == 'Symmetric relative':
+            stepsize = self.startDoubleSpinBox.value() * 2 / (self.stepsSpinBox.value() - 1)
         else:
-            stepsize = (self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value()) / (self.stepsSpinBox.value() - 1)
+            stepsize = (self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value()) / (
+            self.stepsSpinBox.value() - 1)
         if not self._updating_stepsize.inhibited:
             with self._updating_stepsize:
                 self.stepSizeDoubleSpinBox.setValue(abs(stepsize))
@@ -181,19 +183,20 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 # shutter is open, start scan.
                 motor = self.credo.motors[self._motor]
                 assert isinstance(motor, Motor)
-                if self.scanTypeComboBox.currentText()=='Relative':
+                if self.scanTypeComboBox.currentText() == 'Relative':
                     start = motor.where()
                     end = motor.where() + self.endDoubleSpinBox.value() - self.startDoubleSpinBox.value()
-                elif self.scanTypeComboBox.currentText()=='Absolute':
+                elif self.scanTypeComboBox.currentText() == 'Absolute':
                     start = self.startDoubleSpinBox.value()
                     end = self.endDoubleSpinBox.value()
-                elif self.scanTypeComboBox.currentText()=='Symmetric relative':
+                elif self.scanTypeComboBox.currentText() == 'Symmetric relative':
                     start = motor.where()
-                    end=motor.where() + 2*self.startDoubleSpinBox.value()
+                    end = motor.where() + 2 * self.startDoubleSpinBox.value()
                 else:
                     raise ValueError(self.scanTypeComboBox.currentText())
                 self._scangraph = ScanGraph(credo=self.credo)
-                self._scangraph.setWindowTitle('Scan #{:d}'.format(self.credo.services['filesequence'].get_nextfreescan(acquire=False)))
+                self._scangraph.setWindowTitle(
+                    'Scan #{:d}'.format(self.credo.services['filesequence'].get_nextfreescan(acquire=False)))
                 self._scangraph.setCurve([self._motor] + self.credo.config['scan']['columns'],
                                          self.stepsSpinBox.value())
                 self._scangraph.show()
@@ -227,11 +230,11 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 motor = self.credo.motors[self._motor]
                 assert isinstance(motor, Motor)
                 self._origin = motor.where()
-                if self.scanTypeComboBox.currentText()=='Relative':
+                if self.scanTypeComboBox.currentText() == 'Relative':
                     start = self.startDoubleSpinBox.value() + motor.where()
-                elif self.scanTypeComboBox.currentText()=='Absolute':
+                elif self.scanTypeComboBox.currentText() == 'Absolute':
                     start = self.startDoubleSpinBox.value()
-                elif self.scanTypeComboBox.currentText()=='Symmetric relative':
+                elif self.scanTypeComboBox.currentText() == 'Symmetric relative':
                     start = motor.where() - self.startDoubleSpinBox.value()
                 else:
                     raise ValueError(self.scanTypeComboBox.currentText())

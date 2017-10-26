@@ -29,15 +29,15 @@ class TPG201_Backend(DeviceBackend_TCP):
             raise UnknownVariable(variablename)
         return True
 
-    def get_complete_messages(self, message:bytes):
+    def get_complete_messages(self, message: bytes):
         messages = message.split(b'\r')
         for i in range(len(messages) - 1):
             messages[i] = messages[i] + b'\r'
         return messages
 
-    def process_incoming_message(self, message:bytes, original_sent=None):
+    def process_incoming_message(self, message: bytes, original_sent=None):
         for c in self.invalid_characters:
-            message = message.replace(c,b'')
+            message = message.replace(c, b'')
         if not (message.startswith(b'001') and message.endswith(b'\r')):
             raise DeviceError('Invalid message: ' + str(message))
         message = message[:-1]

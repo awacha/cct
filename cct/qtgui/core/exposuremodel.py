@@ -34,7 +34,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
         for fsn in range(self.fsnfirst, self.fsnlast + 1):
             try:
                 h = fs.load_header(self.prefix, fsn)
-                hd=[]
+                hd = []
                 for c in self._columns:
                     try:
                         hd.append(getattr(h, c))

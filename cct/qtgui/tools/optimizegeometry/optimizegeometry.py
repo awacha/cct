@@ -31,7 +31,7 @@ def worker(queue: Queue, spacers, pinholes, ls, lbs, sd, mindist_l1, mindist_l2,
             if phc.Dsample < crit_sample[0] or phc.Dsample > crit_sample[1]:
                 #                print('Sample not OK: {} not between {} and {}'.format(phc.Dsample, crit_sample[0], crit_sample[1]))
                 continue
-            #            print('OK: {}'.format(phc))
+            # print('OK: {}'.format(phc))
             results.append(phc)
     finally:
         queue.put_nowait(sorted(results, key=lambda phc: -phc.intensity)[:keep_best_n])

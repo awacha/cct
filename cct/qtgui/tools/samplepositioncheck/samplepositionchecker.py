@@ -15,25 +15,25 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        self._connections=[]
+        self._connections = []
         self.setupToolWindow(credo)
         self.setupUi(self)
 
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
-        self.model=SampleSelectorModel(self.credo)
+        self.model = SampleSelectorModel(self.credo)
         self.treeView.setModel(self.model)
         self.figure = Figure()
-        self.axes=self.figure.add_subplot(1,1,1)
+        self.axes = self.figure.add_subplot(1, 1, 1)
         self.canvas = FigureCanvasQTAgg(self.figure)
-        self.canvas.setMinimumSize(300,300)
+        self.canvas.setMinimumSize(300, 300)
         self.navtoolbar = NavigationToolbar2QT(self.canvas, None)
-        self.verticalLayout.addWidget(self.canvas,1)
+        self.verticalLayout.addWidget(self.canvas, 1)
         self.verticalLayout.addWidget(self.navtoolbar)
         self.showLabelsToolButton.toggled.connect(self.onShowLabels)
-        ss=self.credo.services['samplestore']
-        assert isinstance(ss,SampleStore)
-        self._connections=[ss.connect('list-changed', self.onSampleListChanged)]
+        ss = self.credo.services['samplestore']
+        assert isinstance(ss, SampleStore)
+        self._connections = [ss.connect('list-changed', self.onSampleListChanged)]
         self.model.dataChanged.connect(self.replot)
         self.labelSizeHorizontalSlider.valueChanged.connect(self.replot)
         self.upsideDownToolButton.toggled.connect(self.replot)
@@ -42,10 +42,10 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def cleanup(self):
         for c in self._connections:
             self.credo.services['samplestore'].disconnect(c)
-        self._connections=[]
+        self._connections = []
         super().cleanup()
 
-    def onSampleListChanged(self, ss:SampleStore):
+    def onSampleListChanged(self, ss: SampleStore):
         self.model.update()
         return False
 
@@ -56,29 +56,31 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(self.axes, Axes)
         self.axes.clear()
         try:
-            xmin=self.credo.motors['Sample_X'].get_variable('softleft')
-            ymin=self.credo.motors['Sample_Y'].get_variable('softleft')
-            xmax=self.credo.motors['Sample_X'].get_variable('softright')
-            ymax=self.credo.motors['Sample_Y'].get_variable('softright')
-            self.axes.add_patch(Rectangle([xmin,ymin],xmax-xmin,ymax-ymin, fill=True,color='lightgray'))
+            xmin = self.credo.motors['Sample_X'].get_variable('softleft')
+            ymin = self.credo.motors['Sample_Y'].get_variable('softleft')
+            xmax = self.credo.motors['Sample_X'].get_variable('softright')
+            ymax = self.credo.motors['Sample_Y'].get_variable('softright')
+            self.axes.add_patch(Rectangle([xmin, ymin], xmax - xmin, ymax - ymin, fill=True, color='lightgray'))
         except KeyError:
             pass
-        self.axes.grid(True,which='both')
+        self.axes.grid(True, which='both')
         self.axes.axis('equal')
-        xmin,xmax,ymin,ymax=self.axes.axis()
+        xmin, xmax, ymin, ymax = self.axes.axis()
         if self.upsideDownToolButton.isChecked():
-            self.axes.axis(ymin=max(ymax,ymin), ymax=min(ymin,ymax))
+            self.axes.axis(ymin=max(ymax, ymin), ymax=min(ymin, ymax))
         else:
-            self.axes.axis(ymin=min(ymax,ymin), ymax=max(ymin,ymax))
+            self.axes.axis(ymin=min(ymax, ymin), ymax=max(ymin, ymax))
         samples = self.model.getSelected()
         if not samples:
             self.canvas.draw()
             return False
-        ss=self.credo.services['samplestore']
+        ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
-        coords=np.array([[s.positionx.val, s.positiony.val, s.positionx.err, s.positiony.err] for s in ss if s.title in samples])
-        self.axes.errorbar(coords[:,0],coords[:,1],coords[:,3],coords[:,2],'bo')
+        coords = np.array(
+            [[s.positionx.val, s.positiony.val, s.positionx.err, s.positiony.err] for s in ss if s.title in samples])
+        self.axes.errorbar(coords[:, 0], coords[:, 1], coords[:, 3], coords[:, 2], 'bo')
         if self.showLabelsToolButton.isChecked():
-            for s,x,y in zip(samples, coords[:,0],coords[:,1]):
-                self.axes.text(x,y,' '+s+' ',ha='left',va='center', fontdict={'size':self.labelSizeHorizontalSlider.value()})
+            for s, x, y in zip(samples, coords[:, 0], coords[:, 1]):
+                self.axes.text(x, y, ' ' + s + ' ', ha='left', va='center',
+                               fontdict={'size': self.labelSizeHorizontalSlider.value()})
         self.canvas.draw()

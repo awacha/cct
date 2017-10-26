@@ -20,7 +20,7 @@ class ExposureView(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
-        self._fsconnections=[]
+        self._fsconnections = []
         self._updating = Inhibitor()
         self._curve_cache = {}
         self.setupUi(self)
@@ -46,9 +46,9 @@ class ExposureView(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.treeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
         self.treeView.selectionModel().currentRowChanged.connect(self.onCurrentRowChanged)
         self.reloadHeaders()
-        self._fsconnections=[fs.connect('lastfsn-changed', self.onFSLastFSNChanged)]
+        self._fsconnections = [fs.connect('lastfsn-changed', self.onFSLastFSNChanged)]
 
-    def onFSLastFSNChanged(self, fs:FileSequence, prefix:str, lastfsn:int):
+    def onFSLastFSNChanged(self, fs: FileSequence, prefix: str, lastfsn: int):
         if prefix == self.prefixComboBox.currentText():
             self.lastFSNSpinBox.setMaximum(lastfsn)
         if prefix not in [self.prefixComboBox.itemText(i) for i in range(self.prefixComboBox.count())]:
@@ -61,7 +61,7 @@ class ExposureView(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def cleanup(self):
         for c in self._fsconnections:
             self.credo.services['filesequence'].disconnect(c)
-        self._fsconnections=[]
+        self._fsconnections = []
         super().cleanup()
 
     def onSelectionChanged(self):

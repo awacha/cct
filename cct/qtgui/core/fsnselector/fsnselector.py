@@ -15,7 +15,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
-        self.horizontal=kwargs.pop('horizontal',False)
+        self.horizontal = kwargs.pop('horizontal', False)
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
         self._fsconnections = []
@@ -92,9 +92,8 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._fsconnections = []
         super().cleanup()
 
-
-#class FSNSelectorHorizontal(FSNSelector):
+# class FSNSelectorHorizontal(FSNSelector):
 #    horizontal = True
 
 
-#FSNSelectorVertical = FSNSelector
+# FSNSelectorVertical = FSNSelector

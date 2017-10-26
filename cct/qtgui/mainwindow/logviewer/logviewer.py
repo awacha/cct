@@ -141,12 +141,12 @@ class LogViewer(QtWidgets.QWidget, Ui_Form, logging.Handler):
         self.logModel.setLevel(level)
         self.shownMessagesLabel.setText('{:d} from {:d}'.format(self.logModel.rowCount(), len(self.logModel)))
 
-    def emit(self, record:logging.LogRecord):
+    def emit(self, record: logging.LogRecord):
         self.format(record)
         self.logModel.append(record)
         self.shownMessagesLabel.setText('{:d} from {:d}'.format(self.logModel.rowCount(), len(self.logModel)))
         if self.autoscrollCheckBox.isChecked():
-            if (time.monotonic() - self._lastrecordarrived)<0.5:
+            if (time.monotonic() - self._lastrecordarrived) < 0.5:
                 if self._scrollerTimeout is None:
                     self._scrollerTimeout = QtCore.QTimer.singleShot(500, self.onTimeout)
             else:

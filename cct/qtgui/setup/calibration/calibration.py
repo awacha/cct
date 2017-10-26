@@ -97,7 +97,7 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         if len(pairs) == 1:
             # calculate the distance directly
             dist = pairs[0][0] * self.credo.config['geometry']['pixelsize'] / (
-            ((pairs[0][1] * wl / 4 / np.pi).arcsin() * 2.0).tan())
+                ((pairs[0][1] * wl / 4 / np.pi).arcsin() * 2.0).tan())
         else:
             pix = [p[0] for p in pairs]
             q = [p[1] for p in pairs]

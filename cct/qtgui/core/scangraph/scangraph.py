@@ -17,8 +17,9 @@ from ...core.mixins import ToolWindow
 from ....core.devices import Motor
 from ....core.instrument.instrument import Instrument
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -339,16 +340,16 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def draw2D(self):
         if not self.actionShow_2D.isChecked():
             return
-        plot2d=PlotImage.get_lastinstance()
+        plot2d = PlotImage.get_lastinstance()
         plot2d.show()
         if len(self._data) == self._datalength:
             cursor = self.cursorSlider.value()
         else:
-            cursor = self._datalength-1
-        if cursor<0:
+            cursor = self._datalength - 1
+        if cursor < 0:
             return
         fsn = self._data['FSN'][cursor]
-        exp = self.credo.services['filesequence'].load_exposure(self.credo.config['path']['prefixes']['scn'],int(fsn))
+        exp = self.credo.services['filesequence'].load_exposure(self.credo.config['path']['prefixes']['scn'], int(fsn))
         plot2d.setExposure(exp)
 
     def closeEvent(self, event: QtGui.QCloseEvent):
@@ -359,7 +360,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No
             )
             if msg == QtWidgets.QMessageBox.YesRole:
-                ToolWindow.closeEvent(self,event)
+                ToolWindow.closeEvent(self, event)
             else:
                 event.ignore()
         return ToolWindow.closeEvent(self, event)

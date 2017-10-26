@@ -15,6 +15,7 @@ from ....core.services.interpreter import Interpreter
 from ....core.commands.script import Script
 from ...help import CommandHelp
 
+
 class HighLighter(QtGui.QSyntaxHighlighter):
     def __init__(self, *args, **kwargs):
         QtGui.QSyntaxHighlighter.__init__(self, *args, **kwargs)
@@ -24,7 +25,7 @@ class HighLighter(QtGui.QSyntaxHighlighter):
         self.keywords_re = [re.compile(r'\b' + c.name + r'\b') for c in Command.allcommands()]
         self.commentformat = QtGui.QTextCharFormat()
         self.commentformat.setForeground(QtCore.Qt.lightGray)
-        self.comment_re=re.compile('#.*$')
+        self.comment_re = re.compile('#.*$')
         self.labelformat = QtGui.QTextCharFormat()
         self.labelformat.setForeground(QtCore.Qt.blue)
         self.label_re = re.compile(r'^\s*\@.*$')
@@ -32,12 +33,11 @@ class HighLighter(QtGui.QSyntaxHighlighter):
     def highlightBlock(self, text: str):
         for kw in self.keywords_re:
             for match in kw.finditer(text):
-                self.setFormat(match.start(), match.end()-match.start(), self.keywordformat)
+                self.setFormat(match.start(), match.end() - match.start(), self.keywordformat)
         for match in self.comment_re.finditer(text):
-            self.setFormat(match.start(), match.end()-match.start(), self.commentformat)
+            self.setFormat(match.start(), match.end() - match.start(), self.commentformat)
         for match in self.label_re.finditer(text):
-            self.setFormat(match.start(), match.end()-match.start(), self.labelformat)
-
+            self.setFormat(match.start(), match.end() - match.start(), self.labelformat)
 
 
 class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
@@ -117,10 +117,10 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def scriptModificationStateChanged(self, modified):
         self.actionSave_script.setEnabled(modified)
         if modified:
-            self.setWindowTitle('*'+self.windowTitle()+'*')
-            self.tabWidget.setTabText(0,'Script (modified)')
+            self.setWindowTitle('*' + self.windowTitle() + '*')
+            self.tabWidget.setTabText(0, 'Script (modified)')
         else:
-            self.setWindowTitle(self.windowTitle().replace('*',''))
+            self.setWindowTitle(self.windowTitle().replace('*', ''))
             self.tabWidget.setTabText(0, 'Script')
 
     def saveScript(self):
@@ -139,7 +139,7 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         if self.confirmDropChanges():
             self.document.setPlainText('')
             self.document.setModified(False)
-            self.lastfilename=None
+            self.lastfilename = None
             self.setWindowTitle('CCT Script Editor :: *Untitled*')
 
     def saveAsScript(self):
@@ -157,8 +157,8 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             return
         else:
             if not filename.endswith('.cct'):
-                filename=filename+'.cct'
-            self.lastfilename=filename
+                filename = filename + '.cct'
+            self.lastfilename = filename
             self.setWindowTitle('CCT Script Editor :: {}'.format(os.path.split(self.lastfilename)[-1]))
         return self.saveScript()
 
@@ -190,7 +190,8 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             self.document.setModified(False)
 
     def setIdle(self):
-        for action in [self.actionNew_script, self.actionSave_script, self.actionSaveAs, self.actionPaste, self.actionLoad_script]:
+        for action in [self.actionNew_script, self.actionSave_script, self.actionSaveAs, self.actionPaste,
+                       self.actionLoad_script]:
             action.setEnabled(True)
         for action in [self.actionDelete, self.actionCut,
                        self.actionCopy]:
@@ -204,7 +205,8 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         super().setIdle()
 
     def setBusy(self):
-        for action in [self.actionNew_script, self.actionSave_script, self.actionSaveAs, self.actionLoad_script, self.actionCut,
+        for action in [self.actionNew_script, self.actionSave_script, self.actionSaveAs, self.actionLoad_script,
+                       self.actionCut,
                        self.actionCopy, self.actionDelete, self.actionPaste, self.actionRedo, self.actionUndo]:
             action.setEnabled(False)
         self.scriptEdit.setReadOnly(True)
@@ -213,33 +215,33 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         super().setBusy()
 
     def runScript(self):
-        if self.actionStart.icon().name()=='media-playback-start':
+        if self.actionStart.icon().name() == 'media-playback-start':
             self.setBusy()
-            txt='| Script started at {} |'.format(datetime.datetime.now())
-            self.writeLogMessage('{0}\n{1}\n{0}\n'.format('+'+'-'*(len(txt)-2)+'+',txt), add_date=False)
+            txt = '| Script started at {} |'.format(datetime.datetime.now())
+            self.writeLogMessage('{0}\n{1}\n{0}\n'.format('+' + '-' * (len(txt) - 2) + '+', txt), add_date=False)
             self.executeCommand(Script, script=self.scriptEdit.document().toPlainText())
-        elif self.actionStart.icon().name()=='media-playback-stop':
+        elif self.actionStart.icon().name() == 'media-playback-stop':
             self.credo.services['interpreter'].kill()
-            txt='| Interrupting script at {} |'.format(datetime.datetime.now())
-            self.writeLogMessage('{0}\n{1}\n{0}\n'.format('+'+'-'*(len(txt)-2)+'+',txt), add_date=False)
+            txt = '| Interrupting script at {} |'.format(datetime.datetime.now())
+            self.writeLogMessage('{0}\n{1}\n{0}\n'.format('+' + '-' * (len(txt) - 2) + '+', txt), add_date=False)
         else:
             raise ValueError(self.actionStart.icon().name())
 
     def pauseScript(self):
         interpreter = self.credo.services['interpreter']
         assert isinstance(interpreter, Interpreter)
-        cmd=interpreter.current_command()
+        cmd = interpreter.current_command()
         assert isinstance(cmd, Script)
         if cmd.is_paused():
             cmd.resume()
-            self.setWindowTitle(self.windowTitle().replace('(paused)','').strip())
+            self.setWindowTitle(self.windowTitle().replace('(paused)', '').strip())
             self.statusBar().showMessage('Resuming operation...')
         else:
             cmd.pause()
             self.statusBar().showMessage('Pausing script...')
             self.writeLogMessage('Waiting for script to end current command, then pausing...')
             self.toolBar.setEnabled(False)
-            self.setWindowTitle(self.windowTitle()+' (pausing...)')
+            self.setWindowTitle(self.windowTitle() + ' (pausing...)')
 
     def confirmDropChanges(self):
         """Present a confirmation dialog before abandoning changes to the script.
@@ -289,16 +291,16 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def onCmdReturn(self, interpreter: Interpreter, cmdname: str, retval):
         super().onCmdReturn(interpreter, cmdname, retval)
-        txt='| Script ended at {} |'.format(datetime.datetime.now())
-        self.writeLogMessage('{0}\n{1}\n{0}\n'.format('+'+'-'*(len(txt)-2)+'+',txt), add_date=False)
-        self.statusBar().showMessage('Script ended.',10000)
+        txt = '| Script ended at {} |'.format(datetime.datetime.now())
+        self.writeLogMessage('{0}\n{1}\n{0}\n'.format('+' + '-' * (len(txt) - 2) + '+', txt), add_date=False)
+        self.statusBar().showMessage('Script ended.', 10000)
         self.setIdle()
 
     def onScriptPaused(self):
         self.statusBar().showMessage('Script paused.')
         self.toolBar.setEnabled(True)
         self.writeLogMessage('Script paused.')
-        self.setWindowTitle(self.windowTitle().replace('(pausing...)','(paused)'))
+        self.setWindowTitle(self.windowTitle().replace('(pausing...)', '(paused)'))
 
     def onCmdMessage(self, interpreter: Interpreter, cmdname: str, message: str):
         self.writeLogMessage(message)
@@ -308,10 +310,10 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         if add_date:
             msg = '{}: {}'.format(datetime.datetime.now(), msg)
         while msg.endswith('\n'):
-            msg=msg[:-1]
+            msg = msg[:-1]
         self.logTextBrowser.append(msg)
         if self.lastfilename is None:
             return
-        logfile = self.lastfilename.rsplit('.',1)[0]+'.log'
+        logfile = self.lastfilename.rsplit('.', 1)[0] + '.log'
         with open(logfile, 'at') as f:
-            f.write(msg+'\n')
+            f.write(msg + '\n')

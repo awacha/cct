@@ -8,11 +8,12 @@ from .....core.instrument.privileges import PRIV_MOTORCALIB
 
 class MotorCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_MOTORCALIB
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         self.motorname = kwargs.pop('motorname')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        self.setupToolWindow(credo=credo, required_devices=['Motor_'+self.motorname])
+        self.setupToolWindow(credo=credo, required_devices=['Motor_' + self.motorname])
         self.setupUi(self)
 
     def setupUi(self, Form):

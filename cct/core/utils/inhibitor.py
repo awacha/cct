@@ -1,7 +1,7 @@
 class Inhibitor(object):
     """A simple counting context manager"""
 
-    def __init__(self, callback=None, max_inhibit = 1):
+    def __init__(self, callback=None, max_inhibit=1):
         self._inhibited = 0
         self.callback = callback
         self._max_inhibit = max_inhibit

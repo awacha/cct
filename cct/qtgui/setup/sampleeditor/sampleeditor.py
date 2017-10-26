@@ -12,6 +12,7 @@ from ...core.mixins import ToolWindow
 from ....core.services.samples import Sample, SampleStore
 from ....core.utils.inhibitor import Inhibitor
 
+
 class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
@@ -157,7 +158,6 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             index += 1
             sampletitle = 'Unnamed_{:d}'.format(index)
         self.selectSample(sampletitle)
-
 
     def onRemoveSample(self):
         selectedsamplename = self.listWidget.selectedItems()[0].data(QtCore.Qt.DisplayRole)

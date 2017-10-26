@@ -81,7 +81,7 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
 
     def clear(self):
         self.beginResetModel()
-        self._list=[]
+        self._list = []
         self.endResetModel()
 
     def headerData(self, i, orientation, role=None):

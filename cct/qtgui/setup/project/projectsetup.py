@@ -8,8 +8,9 @@ from ....core.instrument.privileges import PRIV_PROJECTMAN
 from ....core.services.accounting import Accounting
 from ....core.utils.inhibitor import Inhibitor
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
     required_privilege = PRIV_PROJECTMAN
@@ -102,7 +103,8 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         try:
             acc.rename_project(selected, newname)
         except ValueError as ve:
-            QtWidgets.QMessageBox.critical(self, 'Cannot rename project', 'Cannot rename project: {}'.format(ve.args[0]))
+            QtWidgets.QMessageBox.critical(self, 'Cannot rename project',
+                                           'Cannot rename project: {}'.format(ve.args[0]))
             return
         self.selectProject(newname)
 

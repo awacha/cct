@@ -123,7 +123,7 @@ class XrayFaultsReset(Command):
             raise CommandArgumentError('Command {} does not support positional arguments.'.format(self.name))
 
     def execute(self):
-        self.emit('message','Trying to reset X-ray generator fault flags.')
+        self.emit('message', 'Trying to reset X-ray generator fault flags.')
         self.get_device('xray_source').reset_faults()
 
     def on_variable_change(self, device, variablename, newvalue):

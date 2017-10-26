@@ -10,8 +10,9 @@ from ....core.devices.motor import Motor
 from ....core.instrument.instrument import Instrument
 from ....core.instrument.privileges import PRIV_BEAMSTOP
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class BeamStopDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
     required_privilege = PRIV_BEAMSTOP
@@ -21,26 +22,26 @@ class BeamStopDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         credo = kwargs.pop('credo')
         QtWidgets.QDockWidget.__init__(self, *args, **kwargs)
         self._moving = False
-        self._movetargets=[]
+        self._movetargets = []
         self.setupToolWindow(credo)
         self.setupUi(self)
 
     def setupUi(self, DockWidget):
-        Ui_DockWidget.setupUi(self,DockWidget)
+        Ui_DockWidget.setupUi(self, DockWidget)
         self.beamstopInToolButton.clicked.connect(self.onBeamstopIn)
         self.beamstopOutToolButton.clicked.connect(self.onBeamstopOut)
         self.checkBeamStop()
 
     def onBeamstopIn(self):
         logger.debug('onBeamstopIn')
-        self._movetargets=[('BeamStop_X', self.credo.config['beamstop']['in'][0]),
-                           ('BeamStop_Y', self.credo.config['beamstop']['in'][1])]
+        self._movetargets = [('BeamStop_X', self.credo.config['beamstop']['in'][0]),
+                             ('BeamStop_Y', self.credo.config['beamstop']['in'][1])]
         self.nextBeamstopMove()
 
     def onBeamstopOut(self):
         logger.debug('onBeamstopOut')
-        self._movetargets=[('BeamStop_X', self.credo.config['beamstop']['out'][0]),
-                           ('BeamStop_Y', self.credo.config['beamstop']['out'][1])]
+        self._movetargets = [('BeamStop_X', self.credo.config['beamstop']['out'][0]),
+                             ('BeamStop_Y', self.credo.config['beamstop']['out'][1])]
         self.nextBeamstopMove()
 
     def nextBeamstopMove(self):
@@ -50,7 +51,7 @@ class BeamStopDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
             self.checkBeamStop()
             return
         else:
-            self._moving=True
+            self._moving = True
             self.credo.motors[motor].moveto(target)
         return
 
@@ -73,23 +74,23 @@ class BeamStopDockWidget(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         return False
 
     def checkBeamStop(self, x=None, y=None):
-        logger.debug('checkBeamStop({}, {})'.format(x,y))
+        logger.debug('checkBeamStop({}, {})'.format(x, y))
         assert isinstance(self.credo, Instrument)
         try:
-            bsstate=self.credo.get_beamstop_state(bsx=x, bsy=y)
+            bsstate = self.credo.get_beamstop_state(bsx=x, bsy=y)
         except KeyError:
             bsstate = 'unknown'
-        self.beamstopInToolButton.setEnabled((bsstate!='in') and (not self._moving) and (not self._movetargets))
-        self.beamstopOutToolButton.setEnabled((bsstate!='out') and (not self._moving) and (not self._movetargets))
+        self.beamstopInToolButton.setEnabled((bsstate != 'in') and (not self._moving) and (not self._movetargets))
+        self.beamstopOutToolButton.setEnabled((bsstate != 'out') and (not self._moving) and (not self._movetargets))
         logger.debug('')
-        if bsstate=='in':
-            iconfile='beamstop-in.svg'
-        elif bsstate=='out':
-            iconfile='beamstop-out.svg'
+        if bsstate == 'in':
+            iconfile = 'beamstop-in.svg'
+        elif bsstate == 'out':
+            iconfile = 'beamstop-out.svg'
         else:
-            iconfile='beamstop-inconsistent.svg'
+            iconfile = 'beamstop-inconsistent.svg'
         logger.debug('Beamstop state: {}'.format(bsstate))
-        self.beamstopIconLabel.setPixmap(QtGui.QPixmap(":/icons/{}".format(iconfile)).scaled(48,48))
+        self.beamstopIconLabel.setPixmap(QtGui.QPixmap(":/icons/{}".format(iconfile)).scaled(48, 48))
         self.beamstopIconLabel.setToolTip('Beamstop is currently {}'.format(bsstate))
 
     def onDeviceReady(self, device: Union[Device, Motor]):

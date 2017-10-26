@@ -37,30 +37,31 @@ from ..headermodel import HeaderModel
 from ...core.processing.summarize import Summarizer
 from ...core.utils.timeout import IdleFunction
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self, None)
         logging.Handler.__init__(self, logger.level)
-        self.rootdir=None
+        self.rootdir = None
         self.processingprocess = None
-        self.header_columns=HeaderModel.visiblecolumns
-        self._lastsortcolumn=1
-        self._lastsortdirection=QtCore.Qt.AscendingOrder
+        self.header_columns = HeaderModel.visiblecolumns
+        self._lastsortcolumn = 1
+        self._lastsortdirection = QtCore.Qt.AscendingOrder
         self.idlefcn = None
         logging.root.addHandler(self)
         self.setupUi(self)
         self.load_state()
 
-    def emit(self, record:logging.LogRecord):
-        msg=self.format(record)
-        self.statusBar.showMessage(record.levelname+': '+record.msg)
+    def emit(self, record: logging.LogRecord):
+        msg = self.format(record)
+        self.statusBar.showMessage(record.levelname + ': ' + record.msg)
 
     def load_state(self):
-        statefile = os.path.join(appdirs.user_config_dir('cpt','CREDO',roaming=True),'cpt.ini')
-        config=configparser.ConfigParser()
+        statefile = os.path.join(appdirs.user_config_dir('cpt', 'CREDO', roaming=True), 'cpt.ini')
+        config = configparser.ConfigParser()
         config.read(statefile)
         for lineedit, section, key in [
             (self.saveHDFLineEdit, 'io', 'hdf5'),
@@ -80,15 +81,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             (self.export1DDataFormatComboBox, 'export', 'onedimformat'),
         ]:
             try:
-                idx=combobox.findText(config[section][key])
-                if idx<0:
+                idx = combobox.findText(config[section][key])
+                if idx < 0:
                     continue
                 combobox.setCurrentIndex(idx)
             except (KeyError, ValueError):
                 # do not touch anything
                 continue
         for spinbox, section, key, converter in [
-            (self.firstFSNSpinBox, 'io','firstfsn', int),
+            (self.firstFSNSpinBox, 'io', 'firstfsn', int),
             (self.lastFSNSpinBox, 'io', 'lastfsn', int),
             (self.stdMultiplierDoubleSpinBox, 'processing', 'std_multiplier', float),
             (self.exportImageResolutionSpinBox, 'export', 'imagedpi', int),
@@ -105,7 +106,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         for checkbox, section, key in [
             (self.logarithmicCorrelMatrixCheckBox, 'processing', 'logcorrelmatrix'),
             (self.sanitizeCurvesCheckBox, 'processing', 'sanitizecurves'),
-            (self.logarithmicQCheckBox,'processing','customqlogscale'),
+            (self.logarithmicQCheckBox, 'processing', 'customqlogscale'),
             (self.qRangeOverrideGroupBox, 'processing', 'customq'),
             (self.plot1dShowMeanCurveCheckBox, 'persample', 'showmeancurve'),
             (self.plot1dShowBadCurvesCheckBox, 'persample', 'showbadcurves'),
@@ -116,15 +117,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             (self.plot2dShowCenterCheckBox, 'persample', 'showcenter'),
         ]:
             try:
-                checkbox.setChecked(config[section][key].lower()=='true')
-            except (KeyError,ValueError):
+                checkbox.setChecked(config[section][key].lower() == 'true')
+            except (KeyError, ValueError):
                 continue
         if self.rootDirLineEdit.text():
             self.setRootDir(self.rootDirLineEdit.text())
         if self.saveHDFLineEdit.text():
             self.processPushButton.setEnabled(True)
         try:
-            self.header_columns=config['headerview']['fields'].split(';')
+            self.header_columns = config['headerview']['fields'].split(';')
         except KeyError:
             pass
         try:
@@ -137,16 +138,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         event.accept()
 
     def save_state(self):
-        configdir = appdirs.user_config_dir('cpt','CREDO',roaming=True)
+        configdir = appdirs.user_config_dir('cpt', 'CREDO', roaming=True)
         os.makedirs(configdir, exist_ok=True)
-        statefile = os.path.join(configdir,'cpt.ini')
-        config=configparser.ConfigParser()
-        config['io']={}
+        statefile = os.path.join(configdir, 'cpt.ini')
+        config = configparser.ConfigParser()
+        config['io'] = {}
         config['io']['hdf5'] = self.saveHDFLineEdit.text()
         config['io']['datadir'] = self.rootDirLineEdit.text()
         config['io']['firstfsn'] = str(self.firstFSNSpinBox.value())
         config['io']['lastfsn'] = str(self.lastFSNSpinBox.value())
-        config['processing']={}
+        config['processing'] = {}
         config['processing']['errorpropagation'] = self.errorPropagationComboBox.currentText()
         config['processing']['abscissaerrorpropagation'] = self.abscissaErrorPropagationComboBox.currentText()
         config['processing']['std_multiplier'] = str(self.stdMultiplierDoubleSpinBox.value())
@@ -157,31 +158,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         config['processing']['customqmax'] = str(self.qMaxDoubleSpinBox.value())
         config['processing']['customqcount'] = str(self.qBinCountSpinBox.value())
         config['processing']['customq'] = str(self.qRangeOverrideGroupBox.isChecked())
-        config['persample']={}
-        config['persample']['showmeancurve']=str(self.plot1dShowMeanCurveCheckBox.isChecked())
-        config['persample']['showgoodcurves']=str(self.plot1dShowGoodCurvesCheckBox.isChecked())
-        config['persample']['showbadcurves']=str(self.plot1dShowBadCurvesCheckBox.isChecked())
-        config['persample']['logx']=str(self.plot1dLogarithmicXCheckBox.isChecked())
-        config['persample']['logy']=str(self.plot1dLogarithmicYCheckBox.isChecked())
-        config['persample']['showmask']=str(self.plot2dShowMaskCheckBox.isChecked())
-        config['persample']['showcenter']=str(self.plot2dShowCenterCheckBox.isChecked())
-        config['export']={}
-        config['export']['folder']=self.exportFolderLineEdit.text()
-        config['export']['imageformat']=self.exportImageFormatComboBox.currentText()
-        config['export']['imagedpi']=str(self.exportImageResolutionSpinBox.value())
-        config['export']['imagewidth']=str(self.exportImageWidthDoubleSpinBox.value())
-        config['export']['imageheight']=str(self.exportImageHeightDoubleSpinBox.value())
-        config['export']['imagewidthunits']=self.exportImageWidthUnitsComboBox.currentText()
-        config['export']['imageheightunits']=self.exportImageHeightUnitsComboBox.currentText()
-        config['export']['onedimformat']=self.export1DDataFormatComboBox.currentText()
-        config['headerview']={}
+        config['persample'] = {}
+        config['persample']['showmeancurve'] = str(self.plot1dShowMeanCurveCheckBox.isChecked())
+        config['persample']['showgoodcurves'] = str(self.plot1dShowGoodCurvesCheckBox.isChecked())
+        config['persample']['showbadcurves'] = str(self.plot1dShowBadCurvesCheckBox.isChecked())
+        config['persample']['logx'] = str(self.plot1dLogarithmicXCheckBox.isChecked())
+        config['persample']['logy'] = str(self.plot1dLogarithmicYCheckBox.isChecked())
+        config['persample']['showmask'] = str(self.plot2dShowMaskCheckBox.isChecked())
+        config['persample']['showcenter'] = str(self.plot2dShowCenterCheckBox.isChecked())
+        config['export'] = {}
+        config['export']['folder'] = self.exportFolderLineEdit.text()
+        config['export']['imageformat'] = self.exportImageFormatComboBox.currentText()
+        config['export']['imagedpi'] = str(self.exportImageResolutionSpinBox.value())
+        config['export']['imagewidth'] = str(self.exportImageWidthDoubleSpinBox.value())
+        config['export']['imageheight'] = str(self.exportImageHeightDoubleSpinBox.value())
+        config['export']['imagewidthunits'] = self.exportImageWidthUnitsComboBox.currentText()
+        config['export']['imageheightunits'] = self.exportImageHeightUnitsComboBox.currentText()
+        config['export']['onedimformat'] = self.export1DDataFormatComboBox.currentText()
+        config['headerview'] = {}
         config['headerview']['fields'] = ';'.join(self.header_columns)
         with open(statefile, 'wt', encoding='utf-8') as f:
             config.write(f)
         logger.info('Configuration saved to {}'.format(statefile))
 
-
-    def setupUi(self, MainWindow:QtWidgets.QMainWindow):
+    def setupUi(self, MainWindow: QtWidgets.QMainWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
         self.browseHDFPushButton.clicked.connect(self.onBrowseSaveFile)
         self.browsePushButton.clicked.connect(self.onBrowseRootDir)
@@ -205,11 +205,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.qcVacuumFluxPushButton.clicked.connect(self.onQCVacuumFlux)
         self.qcTransmissionsPushButton.clicked.connect(self.onQCTransmissions)
         self.qcExposureTimesPushButton.clicked.connect(self.onQCExposureTimes)
-        self.figure=Figure()
-        self.canvas=FigureCanvasQTAgg(self.figure)
-        vl=QtWidgets.QVBoxLayout(self.figureContainerWidget)
+        self.figure = Figure()
+        self.canvas = FigureCanvasQTAgg(self.figure)
+        vl = QtWidgets.QVBoxLayout(self.figureContainerWidget)
         vl.addWidget(self.canvas)
-        self.figuretoolbar=NavigationToolbar2QT(self.canvas, self.figureContainerWidget)
+        self.figuretoolbar = NavigationToolbar2QT(self.canvas, self.figureContainerWidget)
         vl.addWidget(self.figuretoolbar)
         self.exportHeaderTablePushButton.clicked.connect(self.onExportHeadersTable)
         self.exportTablePushButton.clicked.connect(self.onExportTable)
@@ -228,7 +228,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.exportCorrelMatricesGraphPushButton.clicked.connect(self.onExportCorrelMatricesGraph)
         self.headersTreeView.header().sectionClicked.connect(self.onHeaderTreeViewSortRequest)
         self.headersTreeView.setSortingEnabled(True)
-        self.headersTreeView.sortByColumn(1,QtCore.Qt.AscendingOrder)
+        self.headersTreeView.sortByColumn(1, QtCore.Qt.AscendingOrder)
         self.ioProgressBar.setVisible(False)
         self.plot2DPushButton.clicked.connect(self.onPlot2D)
         self.plot1DPushButton.clicked.connect(self.onPlot1D)
@@ -243,77 +243,77 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onCmpPlot(self):
         try:
-            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+            with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
                 self.figure.clear()
                 self.figure.clf()
-                ax=self.figure.add_subplot(1,1,1)
-                arbunits=False
+                ax = self.figure.add_subplot(1, 1, 1)
+                arbunits = False
                 for sn in self.cmpSampleModel.selectedSamples():
                     for dist in hdf5['Samples'][sn]:
                         grp = hdf5['Samples'][sn][dist]
                         curve = grp['curve']
                         factor = self.cmpSampleModel.factorForSample(sn)
-                        if factor!=1:
-                            arbunits=True
+                        if factor != 1:
+                            arbunits = True
                         attrs = grp.attrs
                         try:
-                            lbl=string.Formatter().vformat(self.cmpLabelLineEdit.text(),(),attrs)
+                            lbl = string.Formatter().vformat(self.cmpLabelLineEdit.text(), (), attrs)
                         except Exception as exc:
                             print(list(attrs.keys()))
-                            lbl='--error-in-format-string--'
+                            lbl = '--error-in-format-string--'
                             raise
-                        if self.cmpPlotTypeComboBox.currentText()=='Kratky':
-                            x=curve[:,0]
-                            y=curve[:,1]*curve[:,0]**2*factor
-                            dy=(4*curve[:,0]**2*curve[:,1]**2*curve[:,2]**2+
-                                         curve[:,0]**4*curve[:,2]**2)**0.5
-                            dx=curve[:,3]
-                        elif self.cmpPlotTypeComboBox.currentText()=='Porod':
-                            x=curve[:,0]
-                            y=curve[:,1]*curve[:,0]**4*factor
-                            dy=(16*curve[:,0]**6*curve[:,1]**2*curve[:,2]**2+
-                                         curve[:,0]**8*curve[:,2]**2)**0.5
-                            dx=curve[:,3]
+                        if self.cmpPlotTypeComboBox.currentText() == 'Kratky':
+                            x = curve[:, 0]
+                            y = curve[:, 1] * curve[:, 0] ** 2 * factor
+                            dy = (4 * curve[:, 0] ** 2 * curve[:, 1] ** 2 * curve[:, 2] ** 2 +
+                                  curve[:, 0] ** 4 * curve[:, 2] ** 2) ** 0.5
+                            dx = curve[:, 3]
+                        elif self.cmpPlotTypeComboBox.currentText() == 'Porod':
+                            x = curve[:, 0]
+                            y = curve[:, 1] * curve[:, 0] ** 4 * factor
+                            dy = (16 * curve[:, 0] ** 6 * curve[:, 1] ** 2 * curve[:, 2] ** 2 +
+                                  curve[:, 0] ** 8 * curve[:, 2] ** 2) ** 0.5
+                            dx = curve[:, 3]
                         else:
-                            x=curve[:,0]
-                            y=curve[:,1]*factor
-                            dy=curve[:,2]*factor
-                            dx=curve[:,3]
+                            x = curve[:, 0]
+                            y = curve[:, 1] * factor
+                            dy = curve[:, 2] * factor
+                            dx = curve[:, 3]
                         if self.cmpErrorBarsCheckBox.isChecked():
-                            ax.errorbar(x,y,dy,dx,label=lbl)
+                            ax.errorbar(x, y, dy, dx, label=lbl)
                         else:
-                            ax.plot(x,y,label=lbl)
+                            ax.plot(x, y, label=lbl)
                 ax.set_xlabel('q (nm$^{-1}$)')
                 if arbunits:
-                    if self.cmpPlotTypeComboBox.currentText()=='Kratky':
+                    if self.cmpPlotTypeComboBox.currentText() == 'Kratky':
                         ax.set_ylabel('q$^2 \\times$ relative intensity (nm$^{-2}\\times$arb. units)')
-                    elif self.cmpPlotTypeComboBox.currentText()=='Kratky':
+                    elif self.cmpPlotTypeComboBox.currentText() == 'Kratky':
                         ax.set_ylabel('q$^4 \\times$ relative intensity (nm$^{-4}\\times$arb. units)')
                     else:
                         ax.set_ylabel('Relative intensity (arb. units)')
                 else:
-                    if self.cmpPlotTypeComboBox.currentText()=='Kratky':
+                    if self.cmpPlotTypeComboBox.currentText() == 'Kratky':
                         ax.set_ylabel('$q^2\\times d\Sigma/d\Omega$ (nm$^{-2}$ cm$^{-1}$ sr$^{-1}$)')
-                    elif self.cmpPlotTypeComboBox.currentText()=='Porod':
+                    elif self.cmpPlotTypeComboBox.currentText() == 'Porod':
                         ax.set_ylabel('$q^4\\times d\Sigma/d\Omega$ (nm$^{-4}$ cm$^{-1}$ sr$^{-1}$)')
                     else:
                         ax.set_ylabel('$d\Sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
-                if self.cmpPlotTypeComboBox.currentText()=='log I vs. log q':
+                if self.cmpPlotTypeComboBox.currentText() == 'log I vs. log q':
                     ax.set_xscale('log')
                     ax.set_yscale('log')
-                elif self.cmpPlotTypeComboBox.currentText()=='log I vs. q':
+                elif self.cmpPlotTypeComboBox.currentText() == 'log I vs. q':
                     ax.set_xscale('linear')
                     ax.set_yscale('log')
-                elif self.cmpPlotTypeComboBox.currentText()=='I vs. log q':
+                elif self.cmpPlotTypeComboBox.currentText() == 'I vs. log q':
                     ax.set_xscale('log')
                     ax.set_yscale('linear')
-                elif self.cmpPlotTypeComboBox.currentText()=='Guinier':
+                elif self.cmpPlotTypeComboBox.currentText() == 'Guinier':
                     ax.set_xscale('power', exponent=2)
                     ax.set_yscale('log')
-                elif self.cmpPlotTypeComboBox.currentText()=='Kratky':
+                elif self.cmpPlotTypeComboBox.currentText() == 'Kratky':
                     ax.set_xscale('linear')
                     ax.set_yscale('linear')
-                elif self.cmpPlotTypeComboBox.currentText()=='Porod':
+                elif self.cmpPlotTypeComboBox.currentText() == 'Porod':
                     ax.set_xscale('power', exponent=4)
                     ax.set_yscale('linear')
                 ax.grid(True, which='both')
@@ -324,7 +324,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.tabWidget.setCurrentWidget(self.figureContainerWidget)
         except (FileNotFoundError, ValueError, OSError):
             return
-
 
     def onCmpSelectAllSamples(self):
         self.cmpSampleModel.selectAll()
@@ -339,17 +338,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.sampleNameListWidget.clearSelection()
 
     def onPlot2D(self):
-        if self.sender()==self.plot2DPushButton:
-            treeview=self.headersTreeView
-        elif self.sender()==self.tablePlot2DPushButton:
-            treeview=self.treeView
+        if self.sender() == self.plot2DPushButton:
+            treeview = self.headersTreeView
+        elif self.sender() == self.tablePlot2DPushButton:
+            treeview = self.treeView
         else:
             return
         idx = treeview.currentIndex()
         if not idx.isValid():
             return
         try:
-            fsn=treeview.model().getFSN(idx)
+            fsn = treeview.model().getFSN(idx)
         except AttributeError:
             return
         summarizer = Summarizer([fsn], self.headermodel.eval2d_pathes, self.headermodel.eval2d_pathes,
@@ -358,9 +357,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                                 self.config['path']['fsndigits'])
         for x in summarizer.load_headers(logger=logger):
             pass
-        ex=summarizer.load_exposure(fsn,logger=logger)
+        ex = summarizer.load_exposure(fsn, logger=logger)
         self.figure.clear()
-        ax=self.figure.add_subplot(1,1,1)
+        ax = self.figure.add_subplot(1, 1, 1)
         ex.imshow(axes=ax, norm=matplotlib.colors.LogNorm())
         ax.set_xlabel('q (nm$^{-1}$)')
         ax.set_ylabel('q (nm$^{-1}$)')
@@ -368,17 +367,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onPlot1D(self):
-        if self.sender()==self.plot1DPushButton:
-            treeview=self.headersTreeView
-        elif self.sender()==self.tablePlot1DPushButton:
-            treeview=self.treeView
+        if self.sender() == self.plot1DPushButton:
+            treeview = self.headersTreeView
+        elif self.sender() == self.tablePlot1DPushButton:
+            treeview = self.treeView
         else:
             return
         idx = treeview.currentIndex()
         if not idx.isValid():
             return
         try:
-            fsn=treeview.model().getFSN(idx)
+            fsn = treeview.model().getFSN(idx)
         except AttributeError:
             return
         summarizer = Summarizer([fsn], self.headermodel.eval2d_pathes, self.headermodel.eval2d_pathes,
@@ -387,16 +386,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                                 self.config['path']['fsndigits'])
         for x in summarizer.load_headers():
             pass
-        ex=summarizer.load_exposure(fsn)
+        ex = summarizer.load_exposure(fsn)
         self.figure.clear()
-        ax=self.figure.add_subplot(1,1,1)
+        ax = self.figure.add_subplot(1, 1, 1)
         ex.radial_average().loglog(axes=ax)
         ax.set_xlabel('q (nm$^{-1}$)')
         ax.set_ylabel('Intensity (cm$^{-1}$ sr$^{-1}$)')
         self.canvas.draw()
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
-    def onHeaderTreeViewSortRequest(self, section:int):
+    def onHeaderTreeViewSortRequest(self, section: int):
         self.headersTreeView.setSortingEnabled(True)
         if section == self._lastsortcolumn:
             if self._lastsortdirection == QtCore.Qt.AscendingOrder:
@@ -411,7 +410,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def onExportAveraged2DData(self):
         try:
             self.setEnabled(False)
-            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+            with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
                 samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
                 for sn in hdf5['Samples']:
                     if sn not in samplenames:
@@ -420,54 +419,63 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                         image = hdf5['Samples'][sn][dist]['image']
                         error = hdf5['Samples'][sn][dist]['image_uncertainty']
                         mask = hdf5['Samples'][sn][dist]['mask']
-                        if self.export2DDataFormatComboBox.currentText()=='Numpy':
-                            fn = os.path.join(self.exportFolderLineEdit.text(),'{}_{}.npz'.format(sn,dist.replace('.','_')))
-                            np.savez(fn,intensity=image, error=error, mask=mask)
+                        if self.export2DDataFormatComboBox.currentText() == 'Numpy':
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              '{}_{}.npz'.format(sn, dist.replace('.', '_')))
+                            np.savez(fn, intensity=image, error=error, mask=mask)
                             logger.info('Wrote file {}'.format(fn))
                         elif self.export2DDataFormatComboBox.currentText() == 'Matlab':
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'{}_{}.mat'.format(sn,dist.replace('.','_')))
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              '{}_{}.mat'.format(sn, dist.replace('.', '_')))
                             scipy.io.savemat(fn,
-                                {'intensity':image,'error':error,'mask':mask}, do_compression=True
-                            )
+                                             {'intensity': image, 'error': error, 'mask': mask}, do_compression=True
+                                             )
                             logger.info('Wrote file {}'.format(fn))
                         elif self.export2DDataFormatComboBox.currentText() == 'ASCII':
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'{}_{}_intensity.txt'.format(sn,dist.replace('.','_')))
-                            np.savetxt(fn,image)
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              '{}_{}_intensity.txt'.format(sn, dist.replace('.', '_')))
+                            np.savetxt(fn, image)
                             logger.info('Wrote file {}'.format(fn))
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'{}_{}_error.txt'.format(sn,dist.replace('.','_')))
-                            np.savetxt(fn,error)
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              '{}_{}_error.txt'.format(sn, dist.replace('.', '_')))
+                            np.savetxt(fn, error)
                             logger.info('Wrote file {}'.format(fn))
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'{}_{}_mask.txt'.format(sn,dist.replace('.','_')))
-                            np.savetxt(fn,mask)
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              '{}_{}_mask.txt'.format(sn, dist.replace('.', '_')))
+                            np.savetxt(fn, mask)
                             logger.info('Wrote file {}'.format(fn))
-                        elif self.export2DDataFormatComboBox.currentText()=='Gzip\'d ASCII':
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'{}_{}_intensity.txt.gz'.format(sn,dist.replace('.','_')))
-                            np.savetxt(fn,image)
+                        elif self.export2DDataFormatComboBox.currentText() == 'Gzip\'d ASCII':
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              '{}_{}_intensity.txt.gz'.format(sn, dist.replace('.', '_')))
+                            np.savetxt(fn, image)
                             logger.info('Wrote file {}'.format(fn))
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'{}_{}_error.txt.gz'.format(sn,dist.replace('.','_')))
-                            np.savetxt(fn,error)
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              '{}_{}_error.txt.gz'.format(sn, dist.replace('.', '_')))
+                            np.savetxt(fn, error)
                             logger.info('Wrote file {}'.format(fn))
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'{}_{}_mask.txt.gz'.format(sn,dist.replace('.','_')))
-                            np.savetxt(fn,mask)
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              '{}_{}_mask.txt.gz'.format(sn, dist.replace('.', '_')))
+                            np.savetxt(fn, mask)
                             logger.info('Wrote file {}'.format(fn))
                         else:
-                            raise ValueError('Unknown 2D file format: {}'.format(self.export2DDataFormatComboBox.currentText()))
+                            raise ValueError(
+                                'Unknown 2D file format: {}'.format(self.export2DDataFormatComboBox.currentText()))
         finally:
             self.setEnabled(True)
 
     def onExportAveraged2DGraph(self):
-        width=self.exportImageWidthDoubleSpinBox.value()
-        height=self.exportImageHeightDoubleSpinBox.value()
-        if self.exportImageWidthUnitsComboBox.currentText()=='cm':
-            width/=2.54
-        if self.exportImageHeightUnitsComboBox.currentText()=='cm':
-            height/=2.54
+        width = self.exportImageWidthDoubleSpinBox.value()
+        height = self.exportImageHeightDoubleSpinBox.value()
+        if self.exportImageWidthUnitsComboBox.currentText() == 'cm':
+            width /= 2.54
+        if self.exportImageHeightUnitsComboBox.currentText() == 'cm':
+            height /= 2.54
 
-        fig=Figure(figsize=(width, height),dpi=self.exportImageResolutionSpinBox.value(), tight_layout=True)
+        fig = Figure(figsize=(width, height), dpi=self.exportImageResolutionSpinBox.value(), tight_layout=True)
         canvas = FigureCanvasQTAgg(fig)
         self.setEnabled(False)
         try:
-            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+            with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
                 samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
                 for sn in hdf5['Samples']:
                     if sn not in samplenames:
@@ -475,10 +483,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                     for dist in hdf5['Samples'][sn]:
                         show_scattering_image(fig, hdf5['Samples'][sn][dist])
                         self.putlogo(fig)
-                        fn=os.path.join(
-                                self.exportFolderLineEdit.text(),
-                                '{}_{}.{}'.format(sn,dist.replace('.','_'),self.exportImageFormatComboBox.currentText())
-                            )
+                        fn = os.path.join(
+                            self.exportFolderLineEdit.text(),
+                            '{}_{}.{}'.format(sn, dist.replace('.', '_'), self.exportImageFormatComboBox.currentText())
+                        )
                         fig.savefig(
                             fn,
                             dpi=self.exportImageResolutionSpinBox.value(),
@@ -492,7 +500,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             gc.collect()
 
     def onExportAveragedCurvesData(self):
-        if self.export1DDataFormatComboBox.currentText()=='ASCII (*.txt)':
+        if self.export1DDataFormatComboBox.currentText() == 'ASCII (*.txt)':
             self.onExportAveragedCurvesDataASCII()
         elif self.export1DDataFormatComboBox.currentText().startswith('Excel 2007-'):
             self.onExportAveragedCurvesDataXLSX()
@@ -501,55 +509,61 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         try:
             self.setEnabled(False)
             wb = openpyxl.Workbook()
-            sheet=wb.get_active_sheet()
+            sheet = wb.get_active_sheet()
             chart = openpyxl.chart.ScatterChart()
-            chart.y_axis.title='Intensity (1/cm * 1/sr)'
-            chart.x_axis.title='q (1/nm)'
-            chart.x_axis.scaling.logBase=10
-            chart.y_axis.scaling.logBase=10
-            chart.x_axis.majorTickMark='out'
-            chart.y_axis.majorTickMark='out'
-            chart.x_axis.minorTickMark='out'
-            chart.y_axis.minorTickMark='out'
+            chart.y_axis.title = 'Intensity (1/cm * 1/sr)'
+            chart.x_axis.title = 'q (1/nm)'
+            chart.x_axis.scaling.logBase = 10
+            chart.y_axis.scaling.logBase = 10
+            chart.x_axis.majorTickMark = 'out'
+            chart.y_axis.majorTickMark = 'out'
+            chart.x_axis.minorTickMark = 'out'
+            chart.y_axis.minorTickMark = 'out'
             assert isinstance(sheet, openpyxl.worksheet.worksheet.Worksheet)
-            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+            with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
                 samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
-                i=0
-                qmins=[]
-                qmaxs=[]
-                Imins=[]
-                Imaxs=[]
+                i = 0
+                qmins = []
+                qmaxs = []
+                Imins = []
+                Imaxs = []
                 for sn in sorted([s for s in hdf5['Samples'] if s in samplenames]):
                     for dist in hdf5['Samples'][sn]:
-                        i+=1
+                        i += 1
                         data = hdf5['Samples'][sn][dist]['curve']
-                        c=sheet.cell(row=1, column=(i-1)*4+1, value='{} @{} mm'.format(sn,dist))
-                        c.font=openpyxl.styles.Font(bold=True)
-                        c.alignment=openpyxl.styles.Alignment(horizontal='center')
-                        sheet.merge_cells(start_row=1, end_row=1, start_column=(i-1)*4+1,end_column=i*4)
-                        sheet.cell(row=2, column=(i-1)*4+1, value='q (1/nm)').font=openpyxl.styles.Font(bold=True)
-                        sheet.cell(row=2, column=(i-1)*4+2, value='Intensity (1/cm)').font=openpyxl.styles.Font(bold=True)
-                        sheet.cell(row=2, column=(i-1)*4+3, value='Error of intensity (1/cm)').font=openpyxl.styles.Font(bold=True)
-                        sheet.cell(row=2, column=(i-1)*4+4, value='Error of q (1/nm)').font=openpyxl.styles.Font(bold=True)
+                        c = sheet.cell(row=1, column=(i - 1) * 4 + 1, value='{} @{} mm'.format(sn, dist))
+                        c.font = openpyxl.styles.Font(bold=True)
+                        c.alignment = openpyxl.styles.Alignment(horizontal='center')
+                        sheet.merge_cells(start_row=1, end_row=1, start_column=(i - 1) * 4 + 1, end_column=i * 4)
+                        sheet.cell(row=2, column=(i - 1) * 4 + 1, value='q (1/nm)').font = openpyxl.styles.Font(
+                            bold=True)
+                        sheet.cell(row=2, column=(i - 1) * 4 + 2, value='Intensity (1/cm)').font = openpyxl.styles.Font(
+                            bold=True)
+                        sheet.cell(row=2, column=(i - 1) * 4 + 3,
+                                   value='Error of intensity (1/cm)').font = openpyxl.styles.Font(bold=True)
+                        sheet.cell(row=2, column=(i - 1) * 4 + 4,
+                                   value='Error of q (1/nm)').font = openpyxl.styles.Font(bold=True)
                         for j in range(data.shape[0]):
                             for k in range(data.shape[1]):
-                                sheet.cell(row=3+j,column=(i-1)*4+1+k,value=data[j,k])
-                        xvalues = openpyxl.chart.Reference(sheet, min_col=(i-1)*4+1, max_col=(i-1)*4+1, min_row=3,max_row=data.shape[0]+3)
-                        yvalues = openpyxl.chart.Reference(sheet, min_col=(i-1)*4+2, max_col=(i-1)*4+2, min_row=3,max_row=data.shape[0]+3)
+                                sheet.cell(row=3 + j, column=(i - 1) * 4 + 1 + k, value=data[j, k])
+                        xvalues = openpyxl.chart.Reference(sheet, min_col=(i - 1) * 4 + 1, max_col=(i - 1) * 4 + 1,
+                                                           min_row=3, max_row=data.shape[0] + 3)
+                        yvalues = openpyxl.chart.Reference(sheet, min_col=(i - 1) * 4 + 2, max_col=(i - 1) * 4 + 2,
+                                                           min_row=3, max_row=data.shape[0] + 3)
                         series = openpyxl.chart.Series(yvalues, xvalues, title='{} @{}'.format(sn, dist))
                         chart.series.append(series)
-                        qmins.append(np.nanmin(data[:,0]))
-                        qmaxs.append(np.nanmax(data[:,0]))
-                        Imins.append(np.nanmin(data[:,1]))
-                        Imaxs.append(np.nanmax(data[:,1]))
+                        qmins.append(np.nanmin(data[:, 0]))
+                        qmaxs.append(np.nanmax(data[:, 0]))
+                        Imins.append(np.nanmin(data[:, 1]))
+                        Imaxs.append(np.nanmax(data[:, 1]))
 
-                chart.x_axis.scaling.min=min([x for x in qmins if x>0])
-                chart.x_axis.scaling.max=max(qmaxs)
-                chart.y_axis.scaling.min=min([x for x in Imins if x>0])
-                chart.y_axis.scaling.max=max(Imaxs)
-                #chart.style=13
+                chart.x_axis.scaling.min = min([x for x in qmins if x > 0])
+                chart.x_axis.scaling.max = max(qmaxs)
+                chart.y_axis.scaling.min = min([x for x in Imins if x > 0])
+                chart.y_axis.scaling.max = max(Imaxs)
+                # chart.style=13
                 sheet.add_chart(chart)
-                wb.save(os.path.join(self.exportFolderLineEdit.text(),'SAXS_curves.xlsx'))
+                wb.save(os.path.join(self.exportFolderLineEdit.text(), 'SAXS_curves.xlsx'))
                 logger.info('Wrote file {}'.format(os.path.join(self.exportFolderLineEdit.text(), 'SAXS_curves.xlsx')))
         finally:
             self.setEnabled(True)
@@ -557,52 +571,51 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def onExportAveragedCurvesDataASCII(self):
         try:
             self.setEnabled(False)
-            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+            with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
                 samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
                 for sn in hdf5['Samples']:
                     if sn not in samplenames:
                         continue
                     for dist in hdf5['Samples'][sn]:
                         data = hdf5['Samples'][sn][dist]['curve']
-                        fn=os.path.join(
+                        fn = os.path.join(
                             self.exportFolderLineEdit.text(),
-                            '{}_{}.txt'.format(sn,dist.replace('.','_'),))
+                            '{}_{}.txt'.format(sn, dist.replace('.', '_'), ))
                         np.savetxt(fn, data)
                         logger.info('Wrote file {}'.format(fn))
         finally:
             self.setEnabled(True)
 
-
     def onExportAveragedCurvesGraph(self):
-        width=self.exportImageWidthDoubleSpinBox.value()
-        height=self.exportImageHeightDoubleSpinBox.value()
-        if self.exportImageWidthUnitsComboBox.currentText()=='cm':
-            width/=2.54
-        if self.exportImageHeightUnitsComboBox.currentText()=='cm':
-            height/=2.54
+        width = self.exportImageWidthDoubleSpinBox.value()
+        height = self.exportImageHeightDoubleSpinBox.value()
+        if self.exportImageWidthUnitsComboBox.currentText() == 'cm':
+            width /= 2.54
+        if self.exportImageHeightUnitsComboBox.currentText() == 'cm':
+            height /= 2.54
 
-        fig=Figure(figsize=(width, height),dpi=self.exportImageResolutionSpinBox.value(), tight_layout=True)
+        fig = Figure(figsize=(width, height), dpi=self.exportImageResolutionSpinBox.value(), tight_layout=True)
         canvas = FigureCanvasQTAgg(fig)
-        axes=fig.add_subplot(1,1,1)
+        axes = fig.add_subplot(1, 1, 1)
         try:
             self.setEnabled(False)
-            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+            with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
                 samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
                 for sn in hdf5['Samples']:
                     if sn not in samplenames:
                         continue
                     for dist in hdf5['Samples'][sn]:
                         data = hdf5['Samples'][sn][dist]['curve']
-                        axes.loglog(data[:,0], data[:,1], label='{} @{} mm'.format(sn,dist.replace('.','_')))
+                        axes.loglog(data[:, 0], data[:, 1], label='{} @{} mm'.format(sn, dist.replace('.', '_')))
                 axes.set_xlabel('$q$ (nm$^{-1}$')
                 axes.set_ylabel('$d\Sigma/d\Omega$ (cm$^{-1}$sr$^{-1}$)')
                 axes.legend(loc='best')
                 axes.grid(True, which='both')
             self.putlogo(fig)
-            fn=os.path.join(
-                    self.exportFolderLineEdit.text(),
-                    'SAXS_curves.{}'.format(self.exportImageFormatComboBox.currentText())
-                )
+            fn = os.path.join(
+                self.exportFolderLineEdit.text(),
+                'SAXS_curves.{}'.format(self.exportImageFormatComboBox.currentText())
+            )
             fig.savefig(
                 fn,
                 dpi=self.exportImageResolutionSpinBox.value(),
@@ -618,60 +631,64 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def onExportCorrelMatricesData(self):
         try:
             self.setEnabled(False)
-            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+            with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
                 samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
                 for sn in hdf5['Samples']:
                     if sn not in samplenames:
                         continue
                     for dist in hdf5['Samples'][sn]:
                         cmat = hdf5['Samples'][sn][dist]['correlmatrix']
-                        if self.export2DDataFormatComboBox.currentText()=='Numpy':
-                            fn = os.path.join(self.exportFolderLineEdit.text(),'correlmatrix_{}_{}.npz'.format(sn,dist.replace('.','_')))
-                            np.savez(fn,correlmatrix=cmat)
+                        if self.export2DDataFormatComboBox.currentText() == 'Numpy':
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              'correlmatrix_{}_{}.npz'.format(sn, dist.replace('.', '_')))
+                            np.savez(fn, correlmatrix=cmat)
                             logger.info('Wrote file {}'.format(fn))
                         elif self.export2DDataFormatComboBox.currentText() == 'Matlab':
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'correlmatrix_{}_{}.mat'.format(sn,dist.replace('.','_')))
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              'correlmatrix_{}_{}.mat'.format(sn, dist.replace('.', '_')))
                             scipy.io.savemat(fn,
-                                {'correlmatrix':cmat}, do_compression=True
-                            )
+                                             {'correlmatrix': cmat}, do_compression=True
+                                             )
                             logger.info('Wrote file {}'.format(fn))
                         elif self.export2DDataFormatComboBox.currentText() == 'ASCII':
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'correlmatrix_{}_{}.txt'.format(sn,dist.replace('.','_')))
-                            np.savetxt(fn,cmat)
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              'correlmatrix_{}_{}.txt'.format(sn, dist.replace('.', '_')))
+                            np.savetxt(fn, cmat)
                             logger.info('Wrote file {}'.format(fn))
-                        elif self.export2DDataFormatComboBox.currentText()=='Gzip\'d ASCII':
-                            fn=os.path.join(self.exportFolderLineEdit.text(),'correlmatrix_{}_{}.txt.gz'.format(sn,dist.replace('.','_')))
-                            np.savetxt(fn,cmat)
+                        elif self.export2DDataFormatComboBox.currentText() == 'Gzip\'d ASCII':
+                            fn = os.path.join(self.exportFolderLineEdit.text(),
+                                              'correlmatrix_{}_{}.txt.gz'.format(sn, dist.replace('.', '_')))
+                            np.savetxt(fn, cmat)
                             logger.info('Wrote file {}'.format(fn))
                         else:
-                            raise ValueError('Unknown 2D file format: {}'.format(self.export2DDataFormatComboBox.currentText()))
+                            raise ValueError(
+                                'Unknown 2D file format: {}'.format(self.export2DDataFormatComboBox.currentText()))
         finally:
             self.setEnabled(True)
 
-
     def onExportCorrelMatricesGraph(self):
-        width=self.exportImageWidthDoubleSpinBox.value()
-        height=self.exportImageHeightDoubleSpinBox.value()
-        if self.exportImageWidthUnitsComboBox.currentText()=='cm':
-            width/=2.54
-        if self.exportImageHeightUnitsComboBox.currentText()=='cm':
-            height/=2.54
+        width = self.exportImageWidthDoubleSpinBox.value()
+        height = self.exportImageHeightDoubleSpinBox.value()
+        if self.exportImageWidthUnitsComboBox.currentText() == 'cm':
+            width /= 2.54
+        if self.exportImageHeightUnitsComboBox.currentText() == 'cm':
+            height /= 2.54
 
-        fig=Figure(figsize=(width, height),dpi=self.exportImageResolutionSpinBox.value(), tight_layout=True)
+        fig = Figure(figsize=(width, height), dpi=self.exportImageResolutionSpinBox.value(), tight_layout=True)
         canvas = FigureCanvasQTAgg(fig)
         try:
             self.setEnabled(False)
-            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+            with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
                 samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
                 for sn in hdf5['Samples']:
                     if sn not in samplenames:
                         continue
                     for dist in hdf5['Samples'][sn]:
-                        show_cmatrix(fig,hdf5['Samples'][sn][dist])
+                        show_cmatrix(fig, hdf5['Samples'][sn][dist])
                         self.putlogo(fig)
-                        fn=os.path.join(
+                        fn = os.path.join(
                             self.exportFolderLineEdit.text(),
-                            'correlmatrix_{}_{}.{}'.format(sn, dist,self.exportImageFormatComboBox.currentText())
+                            'correlmatrix_{}_{}.{}'.format(sn, dist, self.exportImageFormatComboBox.currentText())
                         )
                         fig.savefig(
                             fn,
@@ -690,55 +707,54 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         if filename:
             self.exportFolderLineEdit.setText(os.path.normpath(filename))
 
-
     def onImageUnitsChanged(self):
-        if self.sender()==self.exportImageWidthUnitsComboBox:
+        if self.sender() == self.exportImageWidthUnitsComboBox:
             spinbox = self.exportImageWidthDoubleSpinBox
-        elif self.sender()==self.exportImageHeightUnitsComboBox:
+        elif self.sender() == self.exportImageHeightUnitsComboBox:
             spinbox = self.exportImageHeightDoubleSpinBox
         else:
             return
         if self.sender().currentText() == 'inch':
-            spinbox.setValue(spinbox.value()/2.54)
+            spinbox.setValue(spinbox.value() / 2.54)
         elif self.sender().currentText() == 'cm':
-            spinbox.setValue(spinbox.value()*2.54)
+            spinbox.setValue(spinbox.value() * 2.54)
 
     def onQCExposureTimes(self):
-        with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
-            model=make_exptimes_table(f['Samples'])
+        with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
+            model = make_exptimes_table(f['Samples'])
         self.treeView.setModel(model)
         for c in range(model.columnCount()):
             self.treeView.resizeColumnToContents(c)
         self.tabWidget.setCurrentWidget(self.tableContainerWidget)
-
 
     def onQCTransmissions(self):
-        with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
-            model=make_transmission_table(f['Samples'])
+        with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
+            model = make_transmission_table(f['Samples'])
         self.treeView.setModel(model)
         for c in range(model.columnCount()):
             self.treeView.resizeColumnToContents(c)
         self.tabWidget.setCurrentWidget(self.tableContainerWidget)
 
-
     def onQCVacuumFlux(self):
-        with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
+        with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
             plot_vacuum_and_flux(self.figure, f['Samples'], self.config['datareduction']['absintrefname'])
         self.putlogo()
         self.canvas.draw()
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onExportHeadersTable(self):
-        fname, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Write table to file...','','MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
-                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
+        fname, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Write table to file...', '',
+                                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
+                                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
         if not fname:
             return
         export_table(fname, self.headermodel)
         logger.info('Wrote file {}'.format(fname))
 
     def onExportTable(self):
-        fname, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Write table to file...','','MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
-                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
+        fname, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Write table to file...', '',
+                                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
+                                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
         if not fname:
             return
         export_table(fname, self.treeView.model())
@@ -753,7 +769,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onPlotCorMatResults(self):
         with getHDF5Group(self) as grp:
-            model=display_outlier_test_results(grp['curves'])
+            model = display_outlier_test_results(grp['curves'])
         self.treeView.setModel(model)
         for c in range(model.columnCount()):
             self.treeView.resizeColumnToContents(c)
@@ -772,7 +788,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onPlotImage(self):
         with getHDF5Group(self) as grp:
-            show_scattering_image(self.figure, grp, self.plot2dShowMaskCheckBox.isChecked(), self.plot2dShowCenterCheckBox.isChecked(),)
+            show_scattering_image(self.figure, grp, self.plot2dShowMaskCheckBox.isChecked(),
+                                  self.plot2dShowCenterCheckBox.isChecked(), )
         self.putlogo()
         self.canvas.draw()
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
@@ -781,29 +798,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         if not len(self.resultsSampleSelectorComboBox):
             return
         try:
-            with h5py.File(self.saveHDFLineEdit.text(),'r') as f:
+            with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
                 self.resultsDistanceSelectorComboBox.clear()
                 self.resultsDistanceSelectorComboBox.addItems(
                     sorted(f['Samples'][self.resultsSampleSelectorComboBox.currentText()],
-                           key=lambda x:float(x)))
+                           key=lambda x: float(x)))
                 self.resultsDistanceSelectorComboBox.setCurrentIndex(0)
         except (FileNotFoundError, ValueError, OSError):
             return
 
     def onResultsDistanceSelected(self):
-        self.plotImagePushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex()>=0)
-        self.plotCurvesPushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex()>=0)
-        self.plotCorMatPushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex()>=0)
-        self.plotCorMatTestResultsPushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex()>=0)
+        self.plotImagePushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex() >= 0)
+        self.plotCurvesPushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex() >= 0)
+        self.plotCorMatPushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex() >= 0)
+        self.plotCorMatTestResultsPushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex() >= 0)
 
     def resizeHeaderViewColumns(self):
         for i in range(self.headermodel.columnCount()):
             self.headersTreeView.resizeColumnToContents(i)
 
-    def onHeaderViewHeaderContextMenu(self, position:QtCore.QPoint):
-        self.headerpopup=HeaderPopup(
+    def onHeaderViewHeaderContextMenu(self, position: QtCore.QPoint):
+        self.headerpopup = HeaderPopup(
             self, self.headermodel.visiblecolumns,
-            sorted([x[0] for x in inspect.getmembers(Header) if isinstance(x[1],property)]))
+            sorted([x[0] for x in inspect.getmembers(Header) if isinstance(x[1], property)]))
         self.headerpopup.applied.connect(self.onHeaderPopupApplied)
         self.headerpopup.show()
         self.headerpopup.move(self.mapToGlobal(position))
@@ -814,8 +831,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         del self.headerpopup
 
     def onHeaderPopupApplied(self):
-        self.headermodel.visiblecolumns=self.headerpopup.fields
-        self.header_columns=self.headerpopup.fields
+        self.headermodel.visiblecolumns = self.headerpopup.fields
+        self.header_columns = self.headerpopup.fields
         self.reloadHeaders()
 
     def reloadHeaders(self):
@@ -823,14 +840,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.headermodel.reloadHeaders()
 
     def onHeaderModelFSNLoaded(self, totalcount, currentcount, thisfsn):
-        if totalcount==currentcount==thisfsn==0:
+        if totalcount == currentcount == thisfsn == 0:
             self.ioProgressBar.setVisible(False)
             self.setEnabled(True)
             self.headersTreeView.setSortingEnabled(True)
             self.headersTreeView.sortByColumn(self._lastsortcolumn, self._lastsortdirection)
             self.resizeHeaderViewColumns()
         else:
-            if totalcount>0 and not self.ioProgressBar.isVisible():
+            if totalcount > 0 and not self.ioProgressBar.isVisible():
                 self.setEnabled(False)
                 self.ioProgressBar.setVisible(True)
                 self.ioProgressBar.setMinimum(0)
@@ -849,7 +866,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.firstFSNSpinBox.value(),
                 self.lastFSNSpinBox.value(),
                 self.header_columns,
-                os.path.join(appdirs.user_state_dir('cpt', 'CREDO',roaming=True),'badfsns')
+                os.path.join(appdirs.user_state_dir('cpt', 'CREDO', roaming=True), 'badfsns')
             )
             newheadermodel.fsnloaded.connect(self.onHeaderModelFSNLoaded)
             newheadermodel.reloadHeaders()
@@ -859,41 +876,41 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.headermodel.fsnloaded.disconnect(self.onHeaderModelFSNLoaded)
                 self.headermodel.cleanup()
                 del self.headermodel
-            self.headermodel=newheadermodel
+            self.headermodel = newheadermodel
             self.resizeHeaderViewColumns()
-            #self.statusBar.showMessage('Headers loaded.')
+            # self.statusBar.showMessage('Headers loaded.')
             self.headersTreeView.setSortingEnabled(True)
             self.headersTreeView.sortByColumn(self._lastsortcolumn, self._lastsortdirection)
         finally:
             self.setEnabled(True)
 
-
     def onProcess(self):
         self.queue = queue.Queue()
-        badfsns=self.headermodel.get_badfsns()
+        badfsns = self.headermodel.get_badfsns()
         if self.qRangeOverrideGroupBox.isChecked():
             qmin = self.qMinDoubleSpinBox.value()
             qmax = self.qMaxDoubleSpinBox.value()
-            nq=self.qBinCountSpinBox.value()
+            nq = self.qBinCountSpinBox.value()
             if self.logarithmicQCheckBox.isChecked():
-                qrange=np.logspace(np.log10(qmin), np.log10(qmax),nq)
+                qrange = np.logspace(np.log10(qmin), np.log10(qmax), nq)
             else:
                 qrange = np.linspace(qmin, qmax, nq)
         else:
             qrange = None
-        kwargs={
-            'fsns':[x for x in range(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value()+1) if x not in badfsns],
-            'exppath':self.headermodel.eval2d_pathes,
-            'parampath':self.headermodel.eval2d_pathes,
-            'maskpath':self.headermodel.mask_pathes,
-            'outputfile':self.saveHDFLineEdit.text(),
-            'prefix':self.config['path']['prefixes']['crd'],
-            'ndigits':self.config['path']['fsndigits'],
-            'errorpropagation':self.errorPropagationComboBox.currentIndex(),
-            'abscissaerrorpropagation':self.abscissaErrorPropagationComboBox.currentIndex(),
-            'sanitize_curves':self.sanitizeCurvesCheckBox.isChecked(),
-            'logarithmic_correlmatrix':self.logarithmicCorrelMatrixCheckBox.isChecked(),
-            'std_multiplier':self.stdMultiplierDoubleSpinBox.value(),
+        kwargs = {
+            'fsns': [x for x in range(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value() + 1) if
+                     x not in badfsns],
+            'exppath': self.headermodel.eval2d_pathes,
+            'parampath': self.headermodel.eval2d_pathes,
+            'maskpath': self.headermodel.mask_pathes,
+            'outputfile': self.saveHDFLineEdit.text(),
+            'prefix': self.config['path']['prefixes']['crd'],
+            'ndigits': self.config['path']['fsndigits'],
+            'errorpropagation': self.errorPropagationComboBox.currentIndex(),
+            'abscissaerrorpropagation': self.abscissaErrorPropagationComboBox.currentIndex(),
+            'sanitize_curves': self.sanitizeCurvesCheckBox.isChecked(),
+            'logarithmic_correlmatrix': self.logarithmicCorrelMatrixCheckBox.isChecked(),
+            'std_multiplier': self.stdMultiplierDoubleSpinBox.value(),
             'queue': self.queue,
             'qrange': qrange,
         }
@@ -904,14 +921,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.processPushButton.setEnabled(False)
         self.toolBox.setEnabled(False)
 
-
-    def do_processing(self, queue:queue.Queue,
-                      fsns:Iterable[int], exppath:Iterable[str], parampath:Iterable[str], maskpath:Iterable[str],
-                      outputfile:str, prefix:str, ndigits:int, errorpropagation:int, abscissaerrorpropagation:int,
-                      sanitize_curves:bool, logarithmic_correlmatrix:bool, std_multiplier:int, qrange:Optional[np.ndarray]):
+    def do_processing(self, queue: queue.Queue,
+                      fsns: Iterable[int], exppath: Iterable[str], parampath: Iterable[str], maskpath: Iterable[str],
+                      outputfile: str, prefix: str, ndigits: int, errorpropagation: int, abscissaerrorpropagation: int,
+                      sanitize_curves: bool, logarithmic_correlmatrix: bool, std_multiplier: int,
+                      qrange: Optional[np.ndarray]):
         s = Summarizer(fsns, exppath, parampath, maskpath, outputfile, prefix, ndigits, errorpropagation,
                        abscissaerrorpropagation, sanitize_curves, logarithmic_correlmatrix, std_multiplier, qrange)
-        queue.put_nowait(('__init_loadheaders__',len(fsns)))
+        queue.put_nowait(('__init_loadheaders__', len(fsns)))
         for msg1, msg2 in s.load_headers(yield_messages=True):
             queue.put_nowait((msg1, msg2))
         for msg1, msg2 in s.summarize(True, yield_messages=True):
@@ -928,9 +945,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             return False
         try:
             assert isinstance(self.queue, queue.Queue)
-            msg1, msg2=self.queue.get_nowait()
+            msg1, msg2 = self.queue.get_nowait()
             if msg1 == '__init_summarize__':
-                assert isinstance(msg2, int) # msg2 is the number of samples times the number of distances
+                assert isinstance(msg2, int)  # msg2 is the number of samples times the number of distances
                 self.progressBar1.setMinimum(0)
                 self.progressBar1.setMaximum(msg2)
                 self.progressbar1StatusLabel.setText('')
@@ -942,7 +959,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.progressbar2TitleLabel.setVisible(True)
                 self.progressbar2StatusLabel.setVisible(True)
             elif msg1 == '__init_loadheaders__':
-                assert isinstance(msg2, int) # the number of headers to load
+                assert isinstance(msg2, int)  # the number of headers to load
                 self.progressBar2.setVisible(False)
                 self.progressbar2StatusLabel.setVisible(False)
                 self.progressbar2TitleLabel.setVisible(False)
@@ -953,11 +970,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.progressBar1.setValue(0)
             elif msg1 in ['__header_loaded__', '__header_notfound__']:
                 # loaded a header for FSN
-                assert isinstance(msg2, int) # msg2 is the FSN of the header just loaded or not found.
-                self.progressBar1.setValue(self.progressBar1.value()+1)
+                assert isinstance(msg2, int)  # msg2 is the FSN of the header just loaded or not found.
+                self.progressBar1.setValue(self.progressBar1.value() + 1)
                 self.progressbar1StatusLabel.setText('{:d}'.format(msg2))
             elif msg1 in ['__exposure_loaded__', '__exposure_notfound__']:
-                self.progressBar2.setValue(self.progressBar2.value()+1)
+                self.progressBar2.setValue(self.progressBar2.value() + 1)
                 self.progressbar2StatusLabel.setText('{:d}'.format(msg2))
             elif msg1 == '__init_collect_exposures__':
                 self.progressbar2TitleLabel.setText('Processed exposure:')
@@ -971,10 +988,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.progressbar2TitleLabel.setText('Stability assessment...')
             elif msg1 == '__done__':
                 self.processingprocess.join()
-                self.processingprocess=None
+                self.processingprocess = None
                 self.progressGroupBox.setVisible(False)
                 self.idlefcn.stop()
-                self.idlefcn=None
+                self.idlefcn = None
                 self.processPushButton.setEnabled(True)
                 self.toolBox.setEnabled(True)
                 self.updateResults(processingfinished=True)
@@ -982,26 +999,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             elif msg1.startswith('__'):
                 pass
             else:
-                assert isinstance(msg1, str) # sample
-                assert isinstance(msg2, float) # distance
-                self.progressBar1.setValue(self.progressBar1.value()+1)
+                assert isinstance(msg1, str)  # sample
+                assert isinstance(msg2, float)  # distance
+                self.progressBar1.setValue(self.progressBar1.value() + 1)
                 self.progressbar1StatusLabel.setText('{} ({:.2f} mm)'.format(msg1, msg2))
         except queue.Empty:
             return True
         return True
 
-
-    def setRootDir(self, rootdir:str):
+    def setRootDir(self, rootdir: str):
         self.rootdir = rootdir
         configfile = os.path.join(self.rootdir, 'config', 'cct.pickle')
         try:
             with open(configfile, 'rb') as f:
-                self.config=pickle.load(f)
+                self.config = pickle.load(f)
         except FileNotFoundError:
-            QtWidgets.QMessageBox.critical(self, 'Error while loading config file','Error while loading config file: {} not found.'.format(configfile))
+            QtWidgets.QMessageBox.critical(self, 'Error while loading config file',
+                                           'Error while loading config file: {} not found.'.format(configfile))
             return False
         except pickle.PickleError:
-            QtWidgets.QMessageBox.critical(self, 'Error while loading config file','Error while loading config file: {} is malformed'.format(configfile))
+            QtWidgets.QMessageBox.critical(self, 'Error while loading config file',
+                                           'Error while loading config file: {} is malformed'.format(configfile))
             return False
         self.firstFSNSpinBox.setEnabled(True)
         self.lastFSNSpinBox.setEnabled(True)
@@ -1016,22 +1034,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onBrowseSaveFile(self):
         filename, filter = QtWidgets.QFileDialog.getSaveFileName(
-            self, 'Save processed results to...','',
+            self, 'Save processed results to...', '',
             'HDF5 files (*.h5 *.hdf5);;All files (*)',
             'HDF5 files (*.h5 *.hdf5)')
         if filename is None:
             return
         if not filename.endswith('.h5') and not filename.endswith('.hdf5'):
-            filename=filename+'.h5'
+            filename = filename + '.h5'
         self.saveHDFLineEdit.setText(os.path.normpath(filename))
         self.updateResults()
 
     def updateResults(self, processingfinished=False):
         try:
             with h5py.File(self.saveHDFLineEdit.text(), 'r') as f:
-                samples=sorted(f['Samples'].keys())
+                samples = sorted(f['Samples'].keys())
                 if self.autoMarkBadExposuresCheckBox.isChecked():
-                    newbadfsns=[]
+                    newbadfsns = []
                     for sn in f['Samples']:
                         for dist in f['Samples'][sn]:
                             for dset in f['Samples'][sn][dist]['curves'].values():
@@ -1045,7 +1063,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                         if newbadfsns:
                             QtWidgets.QMessageBox.information(
                                 self, 'Processing finished',
-                                'Found and marked new bad exposures:\n'+', '.join([str(f) for f in sorted(newbadfsns)]),
+                                'Found and marked new bad exposures:\n' + ', '.join(
+                                    [str(f) for f in sorted(newbadfsns)]),
                             )
                         else:
                             QtWidgets.QMessageBox.information(
@@ -1065,30 +1084,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.cmpSampleModel = SampleScalerModel(samples)
         self.cmpSampleTreeView.setModel(self.cmpSampleModel)
 
-    def putlogo(self, figure:Optional[Figure]=None):
+    def putlogo(self, figure: Optional[Figure] = None):
         if figure is None:
             figure = self.figure
-        if not hasattr(self,'_logodata'):
-            self._logodata = imread(pkg_resources.resource_filename('cct', 'resource/credo_logo.png'), flatten=True)[::4,::4]
-        figure.figimage(self._logodata,10,10,cmap='gray',zorder=-10)
+        if not hasattr(self, '_logodata'):
+            self._logodata = imread(pkg_resources.resource_filename('cct', 'resource/credo_logo.png'), flatten=True)[
+                             ::4, ::4]
+        figure.figimage(self._logodata, 10, 10, cmap='gray', zorder=-10)
+
 
 class getHDF5Group:
-    def __init__(self, mainwin:MainWindow, sample:Optional[str]=None, distance:Union[str, float, None]=None):
-        self.mainwin=mainwin
+    def __init__(self, mainwin: MainWindow, sample: Optional[str] = None, distance: Union[str, float, None] = None):
+        self.mainwin = mainwin
         if sample is None:
-            sample=self.mainwin.resultsSampleSelectorComboBox.currentText()
+            sample = self.mainwin.resultsSampleSelectorComboBox.currentText()
         if distance is None:
             distance = self.mainwin.resultsDistanceSelectorComboBox.currentText()
         if isinstance(distance, float):
-            distance='{:.2f}'.format(distance)
-        self.sample=sample
-        self.distance=distance
-        self.hdf5=None
+            distance = '{:.2f}'.format(distance)
+        self.sample = sample
+        self.distance = distance
+        self.hdf5 = None
 
     def __enter__(self):
-        self.hdf5=h5py.File(self.mainwin.saveHDFLineEdit.text(),'r+')
+        self.hdf5 = h5py.File(self.mainwin.saveHDFLineEdit.text(), 'r+')
         return self.hdf5['Samples'][self.sample][self.distance]
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.hdf5.close()
-        self.hdf5=None
+        self.hdf5 = None

@@ -35,7 +35,7 @@ class ToolWindow(object):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 
     @classmethod
-    def testRequirements(cls, credo: Instrument, not_ready_is_ok:bool=False):
+    def testRequirements(cls, credo: Instrument, not_ready_is_ok: bool = False):
         """Return True if the instrument is in a state when this window can be opened. If this
         class method returns False, the window won't be opened or will be closed or disabled if
         it is already open."""
@@ -141,14 +141,15 @@ class ToolWindow(object):
 
     def activationChangeEvent(self, event: QtCore.QEvent):
         pass
-#        assert isinstance(self, QtWidgets.QWidget)
-#        if self.windowState() & QtCore.Qt.WindowActive:
-#            logger.debug('ToolWindow {} activation changed: it is now active. State: {}, {}'.format(self.objectName(),
-#                                                                                                    self.isActiveWindow(),
-#                                                                                                    self.windowState() & 0xffff))
-#        else:
-#            logger.debug(
-#                'ToolWindow {} activation changed: it is now not active. State: {}, {}'.format(self.objectName(),
+
+    #        assert isinstance(self, QtWidgets.QWidget)
+    #        if self.windowState() & QtCore.Qt.WindowActive:
+    #            logger.debug('ToolWindow {} activation changed: it is now active. State: {}, {}'.format(self.objectName(),
+    #                                                                                                    self.isActiveWindow(),
+    #                                                                                                    self.windowState() & 0xffff))
+    #        else:
+    #            logger.debug(
+    #                'ToolWindow {} activation changed: it is now not active. State: {}, {}'.format(self.objectName(),
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         assert isinstance(self, QtWidgets.QWidget)
@@ -244,7 +245,7 @@ class ToolWindow(object):
                                         interpreter.connect('progress', self.onCmdProgress),
                                         interpreter.connect('pulse', self.onCmdPulse),
                                         interpreter.connect('cmd-message', self.onCmdMessage),
-                                        interpreter.connect('flag', self.onInterpreterFlag),]
+                                        interpreter.connect('flag', self.onInterpreterFlag), ]
         assert isinstance(interpreter, Interpreter)
         try:
             return interpreter.execute_command(command, args, kwargs)

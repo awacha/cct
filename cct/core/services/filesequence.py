@@ -522,8 +522,9 @@ class FileSequence(Service):
         ]:
             try:
                 header = Header.new_from_file(os.path.join(path, filebasename))
-                if path==self.instrument.config['path']['directories']['param_override']:
-                    logger.debug('Using parameter override for prefix {} fsn {}. S-D: {}'.format(prefix, fsn, header.distance))
+                if path == self.instrument.config['path']['directories']['param_override']:
+                    logger.debug(
+                        'Using parameter override for prefix {} fsn {}. S-D: {}'.format(prefix, fsn, header.distance))
                 return header
             except FileNotFoundError:
                 continue

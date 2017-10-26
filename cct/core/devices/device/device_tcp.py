@@ -323,7 +323,7 @@ class DeviceBackend_TCP(DeviceBackend):
         tm.sendfrequency = self.send_frequency
         return tm
 
-    def get_complete_messages(self, message:bytes):
+    def get_complete_messages(self, message: bytes):
         """Check if the received message is complete. All devices signify the
         end of a message in some way: either by using fixed-length messages,
         or by a sentinel character at the end.

@@ -104,7 +104,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             action.triggered.connect(self.openWindow)
         layout = QtWidgets.QVBoxLayout()
         self.logViewerGroupBox.setLayout(layout)
-        #self.logViewer = LogViewer(self.logViewerGroupBox)
+        # self.logViewer = LogViewer(self.logViewerGroupBox)
         self.logViewer = LogViewerText(self.logViewerGroupBox)
         layout.addWidget(self.logViewer)
         logging.root.addHandler(self.logViewer)
@@ -150,7 +150,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def onPanic(self):
         try:
-            genix= self.credo.get_device('genix')
+            genix = self.credo.get_device('genix')
             assert isinstance(genix, GeniX)
             genix.shutter(False)
             genix.set_power(0)

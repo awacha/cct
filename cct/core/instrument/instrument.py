@@ -63,7 +63,7 @@ class Instrument(Callbacks):
         'config-changed': (SignalFlags.RUN_FIRST, None, ()),
     }
 
-    def __init__(self, online:bool):
+    def __init__(self, online: bool):
         Callbacks.__init__(self)
         self._online = online
         self.shutdown_requested = False
@@ -128,7 +128,7 @@ class Instrument(Callbacks):
                     'tra': 'tra',
                     'tst': 'tst'
                 },
-                'varlogfile':'varlog.log'
+                'varlogfile': 'varlog.log'
             },
             'geometry': {
                 'dist_sample_det': 1000.,
@@ -371,7 +371,7 @@ class Instrument(Callbacks):
         self._signalconnections[device.name] = [device.connect('ready', self.on_ready),
                                                 device.connect('disconnect', self.on_disconnect),
                                                 device.connect('telemetry', self.on_telemetry),
-                                                device.connect('variable-change', self.on_variable_changed),]
+                                                device.connect('variable-change', self.on_variable_changed), ]
 
     def disconnect_signals(self, device: Device):
         """Disconnect signal handlers from a device."""
@@ -403,7 +403,7 @@ class Instrument(Callbacks):
                 bsy = self.motors['BeamStop_Y'].where()
         except KeyError:
             raise
-        logger.debug('Coordinates are: {}, {}'.format(bsx,bsy))
+        logger.debug('Coordinates are: {}, {}'.format(bsx, bsy))
         logger.debug('Coordiantes for in: {}, {}'.format(*self.config['beamstop']['in']))
         logger.debug('Coordiantes for out: {}, {}'.format(*self.config['beamstop']['out']))
         if abs(bsx - self.config['beamstop']['in'][0]) < 0.001 and abs(bsy - self.config['beamstop']['in'][1]) < 0.001:
@@ -566,11 +566,12 @@ class Instrument(Callbacks):
             # this was a normal, requested disconnection.
             self._try_to_send_stopped_signal()
 
-    def on_variable_changed(self, device:Device, variablename:str, newvalue:Any):
+    def on_variable_changed(self, device: Device, variablename: str, newvalue: Any):
         if variablename in device.no_log_variables:
             return False
-        with open(os.path.join(self.config['path']['directories']['log'],self.config['path']['varlogfile']), 'at') as f:
-            f.write('{:.3f}: {}.{} = {}\n'.format(time.time(),device.name, variablename, newvalue))
+        with open(os.path.join(self.config['path']['directories']['log'], self.config['path']['varlogfile']),
+                  'at') as f:
+            f.write('{:.3f}: {}.{} = {}\n'.format(time.time(), device.name, variablename, newvalue))
         return False
 
     def create_services(self):

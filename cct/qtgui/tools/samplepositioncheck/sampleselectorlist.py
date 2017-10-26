@@ -7,10 +7,10 @@ from ....core.services.samples import SampleStore
 
 
 class SampleSelectorModel(QtCore.QAbstractItemModel):
-    def __init__(self, credo:Instrument):
+    def __init__(self, credo: Instrument):
         super().__init__(None)
-        self.credo=credo
-        self._samples={}
+        self.credo = credo
+        self._samples = {}
         self.update()
 
     def columnCount(self, parent: QtCore.QModelIndex = None):
@@ -32,22 +32,22 @@ class SampleSelectorModel(QtCore.QAbstractItemModel):
         return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsUserCheckable
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = QtCore.Qt.DisplayRole):
-        if orientation == QtCore.Qt.Horizontal and role==QtCore.Qt.DisplayRole and section==0:
+        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole and section == 0:
             return 'Sample name'
         return None
 
     def data(self, index: QtCore.QModelIndex, role: int = QtCore.Qt.DisplayRole):
-        if role==QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.DisplayRole:
             return list(sorted(self._samples))[index.row()]
-        elif role==QtCore.Qt.CheckStateRole:
+        elif role == QtCore.Qt.CheckStateRole:
             return self._samples[list(sorted(self._samples))[index.row()]]
         else:
             return None
 
     def setData(self, index: QtCore.QModelIndex, value: typing.Any, role: int = QtCore.Qt.DisplayRole):
-        sn=list(sorted(self._samples))[index.row()]
-        if role==QtCore.Qt.CheckStateRole:
-            self._samples[sn]=value
+        sn = list(sorted(self._samples))[index.row()]
+        if role == QtCore.Qt.CheckStateRole:
+            self._samples[sn] = value
             self.dataChanged.emit(index, index, [role])
             return True
         return False
@@ -58,7 +58,7 @@ class SampleSelectorModel(QtCore.QAbstractItemModel):
         assert isinstance(ss, SampleStore)
         for x in ss:
             if x.title not in self._samples:
-                self._samples[x.title]=False
+                self._samples[x.title] = False
         for x in list(self._samples):
             if x not in ss:
                 del self._samples[x]

@@ -327,14 +327,18 @@ class Device(Callbacks):
                 try:
                     message = self._queue_to_frontend.get_nowait()
                     assert isinstance(message, Message)
-                    if ((self._queue_to_frontend.qsize() > self.frontendqueue_warn_length) and self.ready and not self.frontendqueue_warn_state):
+                    if ((
+                            self._queue_to_frontend.qsize() > self.frontendqueue_warn_length) and self.ready and not self.frontendqueue_warn_state):
                         logger.warning(
                             'Too many messages (exactly {}) are waiting in the front-end queue for device {}.'.format(
                                 self._queue_to_frontend.qsize(), self.name))
-                        self.frontendqueue_warn_state=True
-                    elif (self._queue_to_frontend.qsize() <0.75*self.frontendqueue_warn_length) and self.frontendqueue_warn_state:
-                        logger.info('Number of messages waiting in the front-end queue for device {} is now below the limit.'.format(self.name))
-                        self.frontendqueue_warn_state=False
+                        self.frontendqueue_warn_state = True
+                    elif (
+                        self._queue_to_frontend.qsize() < 0.75 * self.frontendqueue_warn_length) and self.frontendqueue_warn_state:
+                        logger.info(
+                            'Number of messages waiting in the front-end queue for device {} is now below the limit.'.format(
+                                self.name))
+                        self.frontendqueue_warn_state = False
                 except queue.Empty:
                     break
                 if message['type'] == 'exited':
@@ -389,8 +393,8 @@ class Device(Callbacks):
             self._properties['_status'] = 'Disconnected'
             self._timestamps['_status'] = time.monotonic()
             self.emit('variable-change', '_status', 'Disconnected')
-#        else:
-#            return True
+        #        else:
+        #            return True
         return False
 
     def do_ready(self) -> bool:
@@ -495,13 +499,13 @@ class Device(Callbacks):
             if self._idle_handler is not None:
                 self._idle_handler.stop()
                 self._idle_handler = None
-            self.emit('disconnect',False)
+            self.emit('disconnect', False)
 
     def reconnect_device(self):
         """Try to reconnect the device after a spontaneous disconnection."""
         return self.connect_device(*self.deviceconnectionparameters)
 
-    def is_busy(self,  status=None) -> int:
+    def is_busy(self, status=None) -> int:
         """Returns how many times the busy semaphore has been acquired. This
         way, the return value casted to bool makes sense semantically."""
         return self.max_busy_level - self._busy.get_value()

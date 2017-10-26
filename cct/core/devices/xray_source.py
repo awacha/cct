@@ -263,7 +263,6 @@ class GeniX(Device):
             status = self.get_variable('_status')
         return status not in ['Power off', 'Low power', 'Full power', 'X-rays off']
 
-
     def set_power(self, state: str):
         if not self.get_variable('xrays'):
             raise ValueError('Cannot set state to {}: X-ray generator is off.'.format(state))

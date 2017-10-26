@@ -57,9 +57,9 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.prefixComboBox.addItems(fs.get_prefixes())
         self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText('tst'))
         self.onPrefixChanged()
-        self._fsconnections=[fs.connect('nextfsn-changed', self.onNextFSNChanged)]
-        self._eaconnections=[ea.connect('image', self.onImage)]
-        self._samconnections=[sams.connect('list-changed', self.onSampleListChanged)]
+        self._fsconnections = [fs.connect('nextfsn-changed', self.onNextFSNChanged)]
+        self._eaconnections = [ea.connect('image', self.onImage)]
+        self._samconnections = [sams.connect('list-changed', self.onSampleListChanged)]
         self.onSampleListChanged(sams)
         self.exposePushButton.clicked.connect(self.onExpose)
         self.adjustSize()

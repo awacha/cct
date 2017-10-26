@@ -24,8 +24,8 @@ class LogViewerText(QtWidgets.QWidget, Ui_Form, logging.Handler):
         self.criticalformat.setBackground(QtCore.Qt.red)
         self.infoformat = QtGui.QTextCharFormat()
 
-    def emit(self, record:logging.LogRecord):
-        msg=self.format(record)+'\n'
+    def emit(self, record: logging.LogRecord):
+        msg = self.format(record) + '\n'
         cursor = self.plainTextEdit.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
 
@@ -42,4 +42,3 @@ class LogViewerText(QtWidgets.QWidget, Ui_Form, logging.Handler):
         cursor.movePosition(QtGui.QTextCursor.End)
         self.plainTextEdit.setTextCursor(cursor)
         self.plainTextEdit.ensureCursorVisible()
-
