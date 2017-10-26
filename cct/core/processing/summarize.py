@@ -194,6 +194,16 @@ class Summarizer(object):
                     ds.attrs[attr] = a
                 else:
                     ds.attrs[attr] = str(a)
+        # copy parameters
+        for attr in ['title', 'project', 'maskname', 'samplex', 'sampley', 'username']:
+            for dsname in group1d:
+                try:
+                    grp.attrs[attr]=group1d[dsname].attrs[attr]
+                    break
+                except KeyError:
+                    continue
+            else:
+                grp.attrs[attr]=None
         # average parameters
         for attr in ['beamcenterx', 'beamcentery', 'distance', 'pixelsizex', 'pixelsizey', 'wavelength',
                      'transmission', 'thickness', 'absintfactor', 'flux', 'distancedecrease']:

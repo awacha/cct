@@ -49,7 +49,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>552</height>
+          <height>521</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -260,7 +260,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>552</height>
+          <height>551</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -559,7 +559,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>552</height>
+          <height>521</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -572,6 +572,65 @@
          <string>Per-sample results</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_5">
+         <item row="2" column="0" colspan="2">
+          <widget class="QGroupBox" name="groupBox_2">
+           <property name="title">
+            <string>When plotting curves:</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_11">
+            <item row="2" column="0">
+             <widget class="QCheckBox" name="plot1dShowGoodCurvesCheckBox">
+              <property name="text">
+               <string>Show good curves</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QCheckBox" name="plot1dShowBadCurvesCheckBox">
+              <property name="text">
+               <string>Show BAD (outlier) curves</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="plot1dShowMeanCurveCheckBox">
+              <property name="text">
+               <string>Show averaged curve</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QCheckBox" name="plot1dLogarithmicXCheckBox">
+              <property name="text">
+               <string>Logarithmic X</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QCheckBox" name="plot1dLogarithmicYCheckBox">
+              <property name="text">
+               <string>Logarithmic Y</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_9">
            <property name="text">
@@ -598,7 +657,7 @@
          <item row="1" column="1">
           <widget class="QComboBox" name="resultsDistanceSelectorComboBox"/>
          </item>
-         <item row="3" column="0" colspan="2">
+         <item row="4" column="0" colspan="2">
           <widget class="QGroupBox" name="groupBox_3">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -641,7 +700,7 @@
            </layout>
           </widget>
          </item>
-         <item row="4" column="0" colspan="2">
+         <item row="5" column="0" colspan="2">
           <spacer name="verticalSpacer_2">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -654,6 +713,176 @@
            </property>
           </spacer>
          </item>
+         <item row="3" column="0" colspan="2">
+          <widget class="QGroupBox" name="groupBox_4">
+           <property name="title">
+            <string>When plotting images:</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_10">
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="plot2dShowMaskCheckBox">
+              <property name="text">
+               <string>Show mask</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QCheckBox" name="plot2dShowCenterCheckBox">
+              <property name="text">
+               <string>Show center</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="compareCurvesPage">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>400</width>
+          <height>521</height>
+         </rect>
+        </property>
+        <attribute name="label">
+         <string>Compare scattering curves</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout_13">
+         <item row="8" column="0" colspan="2">
+          <spacer name="verticalSpacer_6">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QTreeView" name="cmpSampleTreeView"/>
+         </item>
+         <item row="2" column="1">
+          <widget class="QPushButton" name="cmpDeselectAllSamplesPushButton">
+           <property name="text">
+            <string>Deselect all</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QPushButton" name="cmpSelectAllSamplesPushButton">
+           <property name="text">
+            <string>Select all</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0" colspan="2">
+          <widget class="QPushButton" name="cmpPlotPushButton">
+           <property name="text">
+            <string>Plot</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0" colspan="2">
+          <layout class="QGridLayout" name="gridLayout_14">
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="cmpLabelLineEdit">
+             <property name="text">
+              <string>{title} @{distance:.2f} mm</string>
+             </property>
+             <property name="clearButtonEnabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="3">
+            <widget class="QCheckBox" name="cmpLegendCheckBox">
+             <property name="text">
+              <string>Show legend</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_22">
+             <property name="text">
+              <string>Plot type:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_23">
+             <property name="text">
+              <string>Legend format:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QToolButton" name="toolButton">
+             <property name="text">
+              <string>...</string>
+             </property>
+             <property name="icon">
+              <iconset theme="help">
+               <normaloff>.</normaloff>.</iconset>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1" colspan="2">
+            <widget class="QComboBox" name="cmpPlotTypeComboBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>1</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <item>
+              <property name="text">
+               <string>log I vs. log q</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>I vs. log q</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>log I vs. q</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>I vs. q</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="3">
+            <widget class="QCheckBox" name="cmpErrorBarsCheckBox">
+             <property name="text">
+              <string>Show error bars</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="qcPage">
@@ -662,7 +891,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>552</height>
+          <height>521</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -727,7 +956,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>552</height>
+          <height>521</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -989,8 +1218,22 @@
            <property name="title">
             <string>Select samples:</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_5">
-            <item>
+           <layout class="QGridLayout" name="gridLayout_12">
+            <item row="2" column="0">
+             <widget class="QPushButton" name="sampleNameListSelectAllPushButton">
+              <property name="text">
+               <string>Select all</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QPushButton" name="sampleNameListDeselectAllPushButton">
+              <property name="text">
+               <string>Deselect all</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0" colspan="2">
              <widget class="QListWidget" name="sampleNameListWidget">
               <property name="selectionMode">
                <enum>QAbstractItemView::MultiSelection</enum>

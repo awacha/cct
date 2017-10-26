@@ -2,10 +2,10 @@ import configparser
 import gc
 import inspect
 import logging
-# import multiprocessing.queues
 import os
 import pickle
 import queue
+import string
 import threading
 from typing import Iterable, Optional, Union
 
@@ -29,6 +29,7 @@ from scipy.misc import imread
 
 from .headerpopup import HeaderPopup
 from .mainwindow_ui import Ui_MainWindow
+from .samplescalermodel import SampleScalerModel
 from ..display import show_scattering_image, show_cmatrix, display_outlier_test_results, summarize_curves, \
     plot_vacuum_and_flux, make_transmission_table, make_exptimes_table
 from ..export_table import export_table
@@ -106,6 +107,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             (self.sanitizeCurvesCheckBox, 'processing', 'sanitizecurves'),
             (self.logarithmicQCheckBox,'processing','customqlogscale'),
             (self.qRangeOverrideGroupBox, 'processing', 'customq'),
+            (self.plot1dShowMeanCurveCheckBox, 'persample', 'showmeancurve'),
+            (self.plot1dShowBadCurvesCheckBox, 'persample', 'showbadcurves'),
+            (self.plot1dShowGoodCurvesCheckBox, 'persample', 'showgoodcurves'),
+            (self.plot1dLogarithmicXCheckBox, 'persample', 'logx'),
+            (self.plot1dLogarithmicYCheckBox, 'persample', 'logy'),
+            (self.plot2dShowMaskCheckBox, 'persample', 'showmask'),
+            (self.plot2dShowCenterCheckBox, 'persample', 'showcenter'),
         ]:
             try:
                 checkbox.setChecked(config[section][key].lower()=='true')
@@ -149,6 +157,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         config['processing']['customqmax'] = str(self.qMaxDoubleSpinBox.value())
         config['processing']['customqcount'] = str(self.qBinCountSpinBox.value())
         config['processing']['customq'] = str(self.qRangeOverrideGroupBox.isChecked())
+        config['persample']={}
+        config['persample']['showmeancurve']=str(self.plot1dShowMeanCurveCheckBox.isChecked())
+        config['persample']['showgoodcurves']=str(self.plot1dShowGoodCurvesCheckBox.isChecked())
+        config['persample']['showbadcurves']=str(self.plot1dShowBadCurvesCheckBox.isChecked())
+        config['persample']['logx']=str(self.plot1dLogarithmicXCheckBox.isChecked())
+        config['persample']['logy']=str(self.plot1dLogarithmicYCheckBox.isChecked())
+        config['persample']['showmask']=str(self.plot2dShowMaskCheckBox.isChecked())
+        config['persample']['showcenter']=str(self.plot2dShowCenterCheckBox.isChecked())
         config['export']={}
         config['export']['folder']=self.exportFolderLineEdit.text()
         config['export']['imageformat']=self.exportImageFormatComboBox.currentText()
@@ -218,7 +234,109 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.plot1DPushButton.clicked.connect(self.onPlot1D)
         self.tablePlot1DPushButton.clicked.connect(self.onPlot1D)
         self.tablePlot2DPushButton.clicked.connect(self.onPlot2D)
+        self.sampleNameListSelectAllPushButton.clicked.connect(self.onSelectAllSamples)
+        self.sampleNameListDeselectAllPushButton.clicked.connect(self.onDeselectAllSamples)
+        self.cmpSelectAllSamplesPushButton.clicked.connect(self.onCmpSelectAllSamples)
+        self.cmpDeselectAllSamplesPushButton.clicked.connect(self.onCmpDeselectAllSamples)
+        self.cmpPlotPushButton.clicked.connect(self.onCmpPlot)
         self.updateResults()
+
+    def onCmpPlot(self):
+        try:
+            with h5py.File(self.saveHDFLineEdit.text(),'r') as hdf5:
+                self.figure.clear()
+                self.figure.clf()
+                ax=self.figure.add_subplot(1,1,1)
+                arbunits=False
+                for sn in self.cmpSampleModel.selectedSamples():
+                    for dist in hdf5['Samples'][sn]:
+                        grp = hdf5['Samples'][sn][dist]
+                        curve = grp['curve']
+                        factor = self.cmpSampleModel.factorForSample(sn)
+                        if factor!=1:
+                            arbunits=True
+                        attrs = grp.attrs
+                        try:
+                            lbl=string.Formatter().vformat(self.cmpLabelLineEdit.text(),(),attrs)
+                        except Exception as exc:
+                            print(list(attrs.keys()))
+                            lbl='--error-in-format-string--'
+                            raise
+                        if self.cmpPlotTypeComboBox.currentText()=='Kratky':
+                            x=curve[:,0]
+                            y=curve[:,1]*curve[:,0]**2*factor
+                            dy=(4*curve[:,0]**2*curve[:,1]**2*curve[:,2]**2+
+                                         curve[:,0]**4*curve[:,2]**2)**0.5
+                            dx=curve[:,3]
+                        elif self.cmpPlotTypeComboBox.currentText()=='Porod':
+                            x=curve[:,0]
+                            y=curve[:,1]*curve[:,0]**4*factor
+                            dy=(16*curve[:,0]**6*curve[:,1]**2*curve[:,2]**2+
+                                         curve[:,0]**8*curve[:,2]**2)**0.5
+                            dx=curve[:,3]
+                        else:
+                            x=curve[:,0]
+                            y=curve[:,1]*factor
+                            dy=curve[:,2]*factor
+                            dx=curve[:,3]
+                        if self.cmpErrorBarsCheckBox.isChecked():
+                            ax.errorbar(x,y,dy,dx,label=lbl)
+                        else:
+                            ax.plot(x,y,label=lbl)
+                ax.set_xlabel('q (nm$^{-1}$)')
+                if arbunits:
+                    if self.cmpPlotTypeComboBox.currentText()=='Kratky':
+                        ax.set_ylabel('q$^2 \\times$ relative intensity (nm$^{-2}\\times$arb. units)')
+                    elif self.cmpPlotTypeComboBox.currentText()=='Kratky':
+                        ax.set_ylabel('q$^4 \\times$ relative intensity (nm$^{-4}\\times$arb. units)')
+                    else:
+                        ax.set_ylabel('Relative intensity (arb. units)')
+                else:
+                    if self.cmpPlotTypeComboBox.currentText()=='Kratky':
+                        ax.set_ylabel('$q^2\\times d\Sigma/d\Omega$ (nm$^{-2}$ cm$^{-1}$ sr$^{-1}$)')
+                    elif self.cmpPlotTypeComboBox.currentText()=='Porod':
+                        ax.set_ylabel('$q^4\\times d\Sigma/d\Omega$ (nm$^{-4}$ cm$^{-1}$ sr$^{-1}$)')
+                    else:
+                        ax.set_ylabel('$d\Sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
+                if self.cmpPlotTypeComboBox.currentText()=='log I vs. log q':
+                    ax.set_xscale('log')
+                    ax.set_yscale('log')
+                elif self.cmpPlotTypeComboBox.currentText()=='log I vs. q':
+                    ax.set_xscale('linear')
+                    ax.set_yscale('log')
+                elif self.cmpPlotTypeComboBox.currentText()=='I vs. log q':
+                    ax.set_xscale('log')
+                    ax.set_yscale('linear')
+                elif self.cmpPlotTypeComboBox.currentText()=='Guinier':
+                    ax.set_xscale('power', exponent=2)
+                    ax.set_yscale('log')
+                elif self.cmpPlotTypeComboBox.currentText()=='Kratky':
+                    ax.set_xscale('linear')
+                    ax.set_yscale('linear')
+                elif self.cmpPlotTypeComboBox.currentText()=='Porod':
+                    ax.set_xscale('power', exponent=4)
+                    ax.set_yscale('linear')
+                ax.grid(True, which='both')
+                if self.cmpLegendCheckBox.isChecked():
+                    ax.legend(loc='best')
+                self.figure.tight_layout()
+                self.canvas.draw()
+                self.tabWidget.setCurrentWidget(self.figureContainerWidget)
+        except (FileNotFoundError, ValueError, OSError):
+            return
+
+
+    def onCmpSelectAllSamples(self):
+        self.cmpSampleModel.selectAll()
+
+    def onCmpDeselectAllSamples(self):
+        self.cmpSampleModel.deselectAll()
+
+    def onSelectAllSamples(self):
+        self.sampleNameListWidget.selectAll()
+
+    def onDeselectAllSamples(self):
+        self.sampleNameListWidget.clearSelection()
 
     def onPlot2D(self):
         if self.sender()==self.plot2DPushButton:
@@ -643,14 +761,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onPlotCurves(self):
         with getHDF5Group(self) as grp:
-            summarize_curves(self.figure, grp['curves'])
+            summarize_curves(self.figure, grp['curves'], self.plot1dShowGoodCurvesCheckBox.isChecked(),
+                             self.plot1dShowBadCurvesCheckBox.isChecked(),
+                             self.plot1dShowMeanCurveCheckBox.isChecked(),
+                             self.plot1dLogarithmicXCheckBox.isChecked(),
+                             self.plot1dLogarithmicYCheckBox.isChecked())
         self.putlogo()
         self.canvas.draw()
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onPlotImage(self):
         with getHDF5Group(self) as grp:
-            show_scattering_image(self.figure, grp)
+            show_scattering_image(self.figure, grp, self.plot2dShowMaskCheckBox.isChecked(), self.plot2dShowCenterCheckBox.isChecked(),)
         self.putlogo()
         self.canvas.draw()
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
@@ -665,7 +787,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                     sorted(f['Samples'][self.resultsSampleSelectorComboBox.currentText()],
                            key=lambda x:float(x)))
                 self.resultsDistanceSelectorComboBox.setCurrentIndex(0)
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError, OSError):
             return
 
     def onResultsDistanceSelected(self):
@@ -940,6 +1062,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.sampleNameListWidget.clear()
         self.sampleNameListWidget.addItems(samples)
         self.sampleNameListWidget.selectAll()
+        self.cmpSampleModel = SampleScalerModel(samples)
+        self.cmpSampleTreeView.setModel(self.cmpSampleModel)
 
     def putlogo(self, figure:Optional[Figure]=None):
         if figure is None:

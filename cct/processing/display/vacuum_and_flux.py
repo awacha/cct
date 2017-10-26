@@ -45,8 +45,8 @@ def plot_vacuum_and_flux(fig:Figure, group:h5py.Group, gc_name='Glassy_Carbon'):
     ax.set_ylabel('Flux (photon/sec)', color='b')
     ax2.set_ylabel('Vacuum (mbar)', color='r')
     ax.set_xlabel('Date of exposure')
-    fig.tight_layout()
     ax.set_xticklabels(ax.get_xticklabels(),rotation=90)
     ax.set_yticklabels(ax.get_yticklabels(),color='b')
     ax2.set_yticklabels(ax2.get_yticklabels(),color='r')
+    fig.tight_layout()
 
