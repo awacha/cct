@@ -38,7 +38,7 @@ class Interpreter(Service):
         # emitted when a flag changes. Arguments: the name and the new state of the flag.
         'flag': (SignalFlags.RUN_FIRST, None, (str, bool,)),
         # emitted when a flag name changes.
-        'newflag': (SignalFlags.RUN_FIRST, None, (str, str)),
+        'newflag': (SignalFlags.RUN_FIRST, None, (str,)),
     }
 
     def __init__(self, *args, **kwargs):
@@ -256,14 +256,13 @@ class Interpreter(Service):
             return self._parent.is_flag(flagname)
         else:
             # we have no parent
+            self.new_flag(flagname) # try to create the flag
             return flagname in self._flags
 
-    def set_flag_name(self, flag, name):
+    def new_flag(self, flag):
         if self._parent is not None:
-            return self._parent.set_flag_name(flag, name)
-        if flag in self._flags:
-            self._flags=[f for f in self._flags if f==flag]+[name]
-        self.emit('newflag', flag, name)
+            return self._parent.new_flag(flag)
+        self.emit('newflag', flag)
 
 
 

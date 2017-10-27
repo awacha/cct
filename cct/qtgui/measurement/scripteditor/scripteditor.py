@@ -110,9 +110,11 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def onInterpreterFlag(self, interpreter: Interpreter, flag: str, state: bool):
         try:
-            self.flags[int(flag)].setChecked(state)
-        except (ValueError, KeyError):
-            logger.warning('Unknown flag {} in ScriptEditor'.format(flag))
+            self.flags[flag].setChecked(state)
+        except KeyError:
+            self.onInterpreterNewFlag(interpreter, flag)
+            self.onInterpreterFlag(interpreter, flag, state)
+        return False
 
     def scriptModificationStateChanged(self, modified):
         self.actionSave_script.setEnabled(modified)
@@ -306,15 +308,14 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.writeLogMessage(message)
         self.statusBar().showMessage(message)
 
-    def onInterpreterNewFlag(self, interpreter: Interpreter, flag: str, newname: str):
+    def onInterpreterNewFlag(self, interpreter: Interpreter, flag: str):
         # check if we have a flag with this name.
         if flag in self.flags:
-            self.flags[newname] = self.flags[flag]
-            self.flags[newname].setText(newname)
-            del self.flags[flag]
+            # do nothing
+            pass
         else:
-            self.flags[newname] = self.toolBarFlags.addAction(newname, lambda f=newname: self.flagtoggled(f))
-            self.flags[newname].setCheckable(True)
+            self.flags[flag] = self.toolBarFlags.addAction(flag, lambda f=flag: self.flagtoggled(f))
+            self.flags[flag].setCheckable(True)
         return False
 
     def writeLogMessage(self, msg, add_date=True):

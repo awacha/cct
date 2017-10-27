@@ -251,32 +251,29 @@ class SetFlag(Command):
         self.emit('message', 'Setting flag: {}'.format(self.flag))
         self.idle_return(None)
 
-class SetFlagName(Command):
-    """Set a flag name.
+class NewFlag(Command):
+    """Create a new flag
 
-    Invocation: setflagname(<flagname>, <humanreadablename>)
+    Invocation: newflag(<flagname>)
 
     Arguments:
         <flagname>: a string containing the name of the flag
-        <humanreadablename>: a string containing the human-readable
-            name of the flag.
 
     Remarks:
-        Can only be used in scripts. The human-readable name will
-        be an alias usable by the script later on.
+        Can only be used in scripts. The newly created flag is
+        cleared by default.
     """
-    name = 'setflagname'
+    name = 'newflag'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.kwargs:
             raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
-        if len(self.args) != 2:
-            raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
+        if len(self.args) != 1:
+            raise CommandArgumentError('Command {} requires exactly one positional argument.'.format(self.name))
         self.flag = str(self.args[0])
-        self.humanname = str(self.args[1])
 
     def execute(self):
-        self.interpreter.set_flag_name(self.flag, self.humanname)
-        self.emit('message', 'Setting name of flag {} to {}'.format(self.flag, self.humanname))
+        self.interpreter.new_flag(self.flag)
+        self.emit('message', 'Creating new flag (if it not yet exists): {}'.format(self.flag))
         self.idle_return(None)

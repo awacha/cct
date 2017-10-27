@@ -233,7 +233,7 @@ class ToolWindow(object):
     def onInterpreterFlag(self, interpreter: Interpreter, flag: str, state: bool):
         pass
 
-    def onInterpreterNewFlag(self, interpreter: Interpreter, flag: str, newname: str):
+    def onInterpreterNewFlag(self, interpreter: Interpreter, flag: str):
         pass
 
     def executeCommand(self, command: Type[Command], *args, **kwargs):
