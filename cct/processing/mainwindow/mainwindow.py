@@ -127,8 +127,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             config.write(f)
         logger.info('Configuration saved to {}'.format(statefile))
 
+    def onUiStyleChange(self):
+        QtWidgets.QApplication.instance().setStyle(self.uiStyleComboBox.currentText())
+
     def setupUi(self, MainWindow: QtWidgets.QMainWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
+        self.uiStyleComboBox.addItems(QtWidgets.QStyleFactory.keys())
+        currentkey = [k for k in QtWidgets.QStyleFactory.keys() if
+                      k.upper() == QtWidgets.QApplication.instance().style().objectName().upper()][0]
+        idx = self.uiStyleComboBox.findText(currentkey)
+        self.uiStyleComboBox.setCurrentIndex(idx)
+        self.uiStyleComboBox.currentIndexChanged.connect(self.onUiStyleChange)
         self.browseHDFPushButton.clicked.connect(self.onBrowseSaveFile)
         self.browsePushButton.clicked.connect(self.onBrowseRootDir)
         self.processPushButton.clicked.connect(self.onProcess)
@@ -186,6 +195,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.cmpDeselectAllSamplesPushButton.clicked.connect(self.onCmpDeselectAllSamples)
         self.cmpPlotPushButton.clicked.connect(self.onCmpPlot)
         self._configwidgets = [
+            (self.uiStyleComboBox, 'io', 'uistyle'),
             (self.saveHDFLineEdit, 'io', 'hdf5'),
             (self.rootDirLineEdit, 'io', 'datadir'),
             (self.exportFolderLineEdit, 'export', 'folder'),
