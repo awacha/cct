@@ -57,69 +57,34 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def emit(self, record: logging.LogRecord):
         msg = self.format(record)
-        self.statusBar.showMessage(record.levelname + ': ' + record.msg)
+        self.statusBar.showMessage(record.levelname + ': ' + msg)
 
     def load_state(self):
         statefile = os.path.join(appdirs.user_config_dir('cpt', 'CREDO', roaming=True), 'cpt.ini')
         config = configparser.ConfigParser()
         config.read(statefile)
-        for lineedit, section, key in [
-            (self.saveHDFLineEdit, 'io', 'hdf5'),
-            (self.rootDirLineEdit, 'io', 'datadir'),
-            (self.exportFolderLineEdit, 'export', 'folder'),
-        ]:
+        for widget, section, key in self._configwidgets:
             try:
-                lineedit.setText(config[section][key])
+                value = config[section][key]
             except KeyError:
                 continue
-        for combobox, section, key in [
-            (self.errorPropagationComboBox, 'processing', 'errorpropagation'),
-            (self.abscissaErrorPropagationComboBox, 'processing', 'abscissaerrorpropagation'),
-            (self.exportImageFormatComboBox, 'export', 'imageformat'),
-            (self.exportImageHeightUnitsComboBox, 'export', 'imageheightunits'),
-            (self.exportImageWidthUnitsComboBox, 'export', 'imagewidthunits'),
-            (self.export1DDataFormatComboBox, 'export', 'onedimformat'),
-        ]:
-            try:
-                idx = combobox.findText(config[section][key])
+            if isinstance(widget, QtWidgets.QLineEdit):
+                widget.setText(value)
+            elif isinstance(widget, QtWidgets.QComboBox):
+                idx = widget.findText(config[section][key])
                 if idx < 0:
                     continue
-                combobox.setCurrentIndex(idx)
-            except (KeyError, ValueError):
-                # do not touch anything
-                continue
-        for spinbox, section, key, converter in [
-            (self.firstFSNSpinBox, 'io', 'firstfsn', int),
-            (self.lastFSNSpinBox, 'io', 'lastfsn', int),
-            (self.stdMultiplierDoubleSpinBox, 'processing', 'std_multiplier', float),
-            (self.exportImageResolutionSpinBox, 'export', 'imagedpi', int),
-            (self.exportImageHeightDoubleSpinBox, 'export', 'imageheight', float),
-            (self.exportImageWidthDoubleSpinBox, 'export', 'imagewidth', float),
-            (self.qMaxDoubleSpinBox, 'processing', 'customqmax', float),
-            (self.qMinDoubleSpinBox, 'processing', 'customqmin', float),
-            (self.qBinCountSpinBox, 'processing', 'customqcount', int),
-        ]:
-            try:
-                spinbox.setValue(converter(config[section][key]))
-            except (KeyError, ValueError):
-                continue
-        for checkbox, section, key in [
-            (self.logarithmicCorrelMatrixCheckBox, 'processing', 'logcorrelmatrix'),
-            (self.sanitizeCurvesCheckBox, 'processing', 'sanitizecurves'),
-            (self.logarithmicQCheckBox, 'processing', 'customqlogscale'),
-            (self.qRangeOverrideGroupBox, 'processing', 'customq'),
-            (self.plot1dShowMeanCurveCheckBox, 'persample', 'showmeancurve'),
-            (self.plot1dShowBadCurvesCheckBox, 'persample', 'showbadcurves'),
-            (self.plot1dShowGoodCurvesCheckBox, 'persample', 'showgoodcurves'),
-            (self.plot1dLogarithmicXCheckBox, 'persample', 'logx'),
-            (self.plot1dLogarithmicYCheckBox, 'persample', 'logy'),
-            (self.plot2dShowMaskCheckBox, 'persample', 'showmask'),
-            (self.plot2dShowCenterCheckBox, 'persample', 'showcenter'),
-        ]:
-            try:
-                checkbox.setChecked(config[section][key].lower() == 'true')
-            except (KeyError, ValueError):
-                continue
+                widget.setCurrentIndex(idx)
+            elif isinstance(widget, QtWidgets.QGroupBox):
+                widget.setChecked(config[section][key].lower() == 'true')
+            elif isinstance(widget, QtWidgets.QCheckBox):
+                widget.setChecked(config[section][key].lower() == 'true')
+            elif isinstance(widget, QtWidgets.QDoubleSpinBox):
+                widget.setValue(float(value))
+            elif isinstance(widget, QtWidgets.QSpinBox):
+                widget.setValue(int(value))
+            else:
+                raise ValueError('Unknown widget type for section {} key {}: {}'.format(section, key, type(widget)))
         if self.rootDirLineEdit.text():
             self.setRootDir(self.rootDirLineEdit.text())
         if self.saveHDFLineEdit.text():
@@ -142,39 +107,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         os.makedirs(configdir, exist_ok=True)
         statefile = os.path.join(configdir, 'cpt.ini')
         config = configparser.ConfigParser()
-        config['io'] = {}
-        config['io']['hdf5'] = self.saveHDFLineEdit.text()
-        config['io']['datadir'] = self.rootDirLineEdit.text()
-        config['io']['firstfsn'] = str(self.firstFSNSpinBox.value())
-        config['io']['lastfsn'] = str(self.lastFSNSpinBox.value())
-        config['processing'] = {}
-        config['processing']['errorpropagation'] = self.errorPropagationComboBox.currentText()
-        config['processing']['abscissaerrorpropagation'] = self.abscissaErrorPropagationComboBox.currentText()
-        config['processing']['std_multiplier'] = str(self.stdMultiplierDoubleSpinBox.value())
-        config['processing']['logcorrelmatrix'] = str(self.logarithmicCorrelMatrixCheckBox.isChecked())
-        config['processing']['sanitizecurves'] = str(self.sanitizeCurvesCheckBox.isChecked())
-        config['processing']['customqlogscale'] = str(self.logarithmicQCheckBox.isChecked())
-        config['processing']['customqmin'] = str(self.qMinDoubleSpinBox.value())
-        config['processing']['customqmax'] = str(self.qMaxDoubleSpinBox.value())
-        config['processing']['customqcount'] = str(self.qBinCountSpinBox.value())
-        config['processing']['customq'] = str(self.qRangeOverrideGroupBox.isChecked())
-        config['persample'] = {}
-        config['persample']['showmeancurve'] = str(self.plot1dShowMeanCurveCheckBox.isChecked())
-        config['persample']['showgoodcurves'] = str(self.plot1dShowGoodCurvesCheckBox.isChecked())
-        config['persample']['showbadcurves'] = str(self.plot1dShowBadCurvesCheckBox.isChecked())
-        config['persample']['logx'] = str(self.plot1dLogarithmicXCheckBox.isChecked())
-        config['persample']['logy'] = str(self.plot1dLogarithmicYCheckBox.isChecked())
-        config['persample']['showmask'] = str(self.plot2dShowMaskCheckBox.isChecked())
-        config['persample']['showcenter'] = str(self.plot2dShowCenterCheckBox.isChecked())
-        config['export'] = {}
-        config['export']['folder'] = self.exportFolderLineEdit.text()
-        config['export']['imageformat'] = self.exportImageFormatComboBox.currentText()
-        config['export']['imagedpi'] = str(self.exportImageResolutionSpinBox.value())
-        config['export']['imagewidth'] = str(self.exportImageWidthDoubleSpinBox.value())
-        config['export']['imageheight'] = str(self.exportImageHeightDoubleSpinBox.value())
-        config['export']['imagewidthunits'] = self.exportImageWidthUnitsComboBox.currentText()
-        config['export']['imageheightunits'] = self.exportImageHeightUnitsComboBox.currentText()
-        config['export']['onedimformat'] = self.export1DDataFormatComboBox.currentText()
+        for widget, section, item in self._configwidgets:
+            if section not in config:
+                config[section] = {}
+            if isinstance(widget, QtWidgets.QLineEdit):
+                config[section][item] = widget.text()
+            elif isinstance(widget, (QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox)):
+                config[section][item] = str(widget.value())
+            elif isinstance(widget, (QtWidgets.QCheckBox, QtWidgets.QGroupBox)):
+                config[section][item] = str(widget.isChecked())
+            elif isinstance(widget, (QtWidgets.QComboBox,)):
+                config[section][item] = widget.currentText()
+            else:
+                raise ValueError(
+                    'Unknown widget type for config section {} item {}: {}'.format(section, item, type(widget)))
         config['headerview'] = {}
         config['headerview']['fields'] = ';'.join(self.header_columns)
         with open(statefile, 'wt', encoding='utf-8') as f:
@@ -239,6 +185,41 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.cmpSelectAllSamplesPushButton.clicked.connect(self.onCmpSelectAllSamples)
         self.cmpDeselectAllSamplesPushButton.clicked.connect(self.onCmpDeselectAllSamples)
         self.cmpPlotPushButton.clicked.connect(self.onCmpPlot)
+        self._configwidgets = [
+            (self.saveHDFLineEdit, 'io', 'hdf5'),
+            (self.rootDirLineEdit, 'io', 'datadir'),
+            (self.exportFolderLineEdit, 'export', 'folder'),
+            (self.cmpLabelLineEdit, 'curvecmp', 'legendformat'),
+            (self.errorPropagationComboBox, 'processing', 'errorpropagation'),
+            (self.abscissaErrorPropagationComboBox, 'processing', 'abscissaerrorpropagation'),
+            (self.exportImageFormatComboBox, 'export', 'imageformat'),
+            (self.exportImageHeightUnitsComboBox, 'export', 'imageheightunits'),
+            (self.exportImageWidthUnitsComboBox, 'export', 'imagewidthunits'),
+            (self.export1DDataFormatComboBox, 'export', 'onedimformat'),
+            (self.cmpPlotTypeComboBox, 'curvecmp', 'plottype'),
+            (self.firstFSNSpinBox, 'io', 'firstfsn'),
+            (self.lastFSNSpinBox, 'io', 'lastfsn'),
+            (self.stdMultiplierDoubleSpinBox, 'processing', 'std_multiplier'),
+            (self.exportImageResolutionSpinBox, 'export', 'imagedpi'),
+            (self.exportImageHeightDoubleSpinBox, 'export', 'imageheight'),
+            (self.exportImageWidthDoubleSpinBox, 'export', 'imagewidth'),
+            (self.qMaxDoubleSpinBox, 'processing', 'customqmax'),
+            (self.qMinDoubleSpinBox, 'processing', 'customqmin'),
+            (self.qBinCountSpinBox, 'processing', 'customqcount'),
+            (self.logarithmicCorrelMatrixCheckBox, 'processing', 'logcorrelmatrix'),
+            (self.sanitizeCurvesCheckBox, 'processing', 'sanitizecurves'),
+            (self.logarithmicQCheckBox, 'processing', 'customqlogscale'),
+            (self.qRangeOverrideGroupBox, 'processing', 'customq'),
+            (self.plot1dShowMeanCurveCheckBox, 'persample', 'showmeancurve'),
+            (self.plot1dShowBadCurvesCheckBox, 'persample', 'showbadcurves'),
+            (self.plot1dShowGoodCurvesCheckBox, 'persample', 'showgoodcurves'),
+            (self.plot1dLogarithmicXCheckBox, 'persample', 'logx'),
+            (self.plot1dLogarithmicYCheckBox, 'persample', 'logy'),
+            (self.plot2dShowMaskCheckBox, 'persample', 'showmask'),
+            (self.plot2dShowCenterCheckBox, 'persample', 'showcenter'),
+            (self.cmpErrorBarsCheckBox, 'curvecmp', 'errorbars'),
+            (self.cmpLegendCheckBox, 'curvecmp', 'legend'),
+        ]
         self.updateResults()
 
     def onCmpPlot(self):
@@ -259,9 +240,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                         try:
                             lbl = string.Formatter().vformat(self.cmpLabelLineEdit.text(), (), attrs)
                         except Exception as exc:
-                            print(list(attrs.keys()))
                             lbl = '--error-in-format-string--'
-                            raise
                         if self.cmpPlotTypeComboBox.currentText() == 'Kratky':
                             x = curve[:, 0]
                             y = curve[:, 1] * curve[:, 0] ** 2 * factor
@@ -743,18 +722,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
 
     def onExportHeadersTable(self):
-        fname, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Write table to file...', '',
-                                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
-                                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
+        fname, fltr = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Write table to file...', '',
+            'MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
+            'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
         if not fname:
             return
         export_table(fname, self.headermodel)
         logger.info('Wrote file {}'.format(fname))
 
     def onExportTable(self):
-        fname, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Write table to file...', '',
-                                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
-                                                              'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
+        fname, fltr = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Write table to file...', '',
+            'MS Excel 2007-2016 files (*.xlsx, *.xlsm);;MS Excel files (*.xls);;All files (*)',
+            'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
         if not fname:
             return
         export_table(fname, self.treeView.model())
@@ -1033,7 +1014,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             self.setRootDir(filename)
 
     def onBrowseSaveFile(self):
-        filename, filter = QtWidgets.QFileDialog.getSaveFileName(
+        filename, fltr = QtWidgets.QFileDialog.getSaveFileName(
             self, 'Save processed results to...', '',
             'HDF5 files (*.h5 *.hdf5);;All files (*)',
             'HDF5 files (*.h5 *.hdf5)')
