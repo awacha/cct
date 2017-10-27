@@ -51,9 +51,9 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def setupUi(self, MainWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
         self.flags = {}
-        for i in range(10):
-            self.flags[i] = self.toolBarFlags.addAction(str(i), lambda i=i: self.flagtoggled(i))
-            self.flags[i].setCheckable(True)
+        for i in range(3):
+            self.flags[str(i)] = self.toolBarFlags.addAction(str(i), lambda i=str(i): self.flagtoggled(i))
+            self.flags[str(i)].setCheckable(True)
 
         self.document = self.scriptEdit.document()
         assert isinstance(self.document, QtGui.QTextDocument)
@@ -305,6 +305,17 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def onCmdMessage(self, interpreter: Interpreter, cmdname: str, message: str):
         self.writeLogMessage(message)
         self.statusBar().showMessage(message)
+
+    def onInterpreterNewFlag(self, interpreter: Interpreter, flag: str, newname: str):
+        # check if we have a flag with this name.
+        if flag in self.flags:
+            self.flags[newname] = self.flags[flag]
+            self.flags[newname].setText(newname)
+            del self.flags[flag]
+        else:
+            self.flags[newname] = self.toolBarFlags.addAction(newname, lambda f=newname: self.flagtoggled(f))
+            self.flags[newname].setCheckable(True)
+        return False
 
     def writeLogMessage(self, msg, add_date=True):
         if add_date:

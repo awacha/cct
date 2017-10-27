@@ -250,3 +250,33 @@ class SetFlag(Command):
         self.interpreter.set_flag(self.flag)
         self.emit('message', 'Setting flag: {}'.format(self.flag))
         self.idle_return(None)
+
+class SetFlagName(Command):
+    """Set a flag name.
+
+    Invocation: setflagname(<flagname>, <humanreadablename>)
+
+    Arguments:
+        <flagname>: a string containing the name of the flag
+        <humanreadablename>: a string containing the human-readable
+            name of the flag.
+
+    Remarks:
+        Can only be used in scripts. The human-readable name will
+        be an alias usable by the script later on.
+    """
+    name = 'setflagname'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.kwargs:
+            raise CommandArgumentError('Command {} does not support keyword arguments.'.format(self.name))
+        if len(self.args) != 2:
+            raise CommandArgumentError('Command {} requires exactly two positional arguments.'.format(self.name))
+        self.flag = str(self.args[0])
+        self.humanname = str(self.args[1])
+
+    def execute(self):
+        self.interpreter.set_flag_name(self.flag, self.humanname)
+        self.emit('message', 'Setting name of flag {} to {}'.format(self.flag, self.humanname))
+        self.idle_return(None)

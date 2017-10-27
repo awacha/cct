@@ -37,6 +37,8 @@ class Interpreter(Service):
         'cmd-message': (SignalFlags.RUN_FIRST, None, (str, str,)),
         # emitted when a flag changes. Arguments: the name and the new state of the flag.
         'flag': (SignalFlags.RUN_FIRST, None, (str, bool,)),
+        # emitted when a flag name changes.
+        'newflag': (SignalFlags.RUN_FIRST, None, (str, str)),
     }
 
     def __init__(self, *args, **kwargs):
@@ -255,6 +257,14 @@ class Interpreter(Service):
         else:
             # we have no parent
             return flagname in self._flags
+
+    def set_flag_name(self, flag, name):
+        if self._parent is not None:
+            return self._parent.set_flag_name(flag, name)
+        if flag in self._flags:
+            self._flags=[f for f in self._flags if f==flag]+[name]
+        self.emit('newflag', flag, name)
+
 
 
 def get_parentheses_pairs(cmdline, opening_types='([{'):

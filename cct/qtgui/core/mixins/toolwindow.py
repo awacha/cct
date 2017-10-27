@@ -233,6 +233,9 @@ class ToolWindow(object):
     def onInterpreterFlag(self, interpreter: Interpreter, flag: str, state: bool):
         pass
 
+    def onInterpreterNewFlag(self, interpreter: Interpreter, flag: str, newname: str):
+        pass
+
     def executeCommand(self, command: Type[Command], *args, **kwargs):
         logger.debug('executeCommand({}, {}, {})'.format(command.name, args, kwargs))
         interpreter = self.credo.services['interpreter']
@@ -245,7 +248,9 @@ class ToolWindow(object):
                                         interpreter.connect('progress', self.onCmdProgress),
                                         interpreter.connect('pulse', self.onCmdPulse),
                                         interpreter.connect('cmd-message', self.onCmdMessage),
-                                        interpreter.connect('flag', self.onInterpreterFlag), ]
+                                        interpreter.connect('flag', self.onInterpreterFlag),
+                                        interpreter.connect('newflag', self.onInterpreterNewFlag),
+                                        ]
         assert isinstance(interpreter, Interpreter)
         try:
             return interpreter.execute_command(command, args, kwargs)
