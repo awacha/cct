@@ -1078,6 +1078,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.sampleNameListWidget.selectAll()
         self.cmpSampleModel = SampleScalerModel(samples)
         self.cmpSampleTreeView.setModel(self.cmpSampleModel)
+        for i in range(self.cmpSampleModel.columnCount()):
+            self.cmpSampleTreeView.resizeColumnToContents(i)
 
     def putlogo(self, figure: Optional[Figure] = None):
         if figure is None:

@@ -23,27 +23,37 @@ class ExpTimeModel(QtCore.QAbstractItemModel):
         return self.createIndex(row, column, None)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...):
-        return len(self._data)
+        return len(self._data)+1
 
     def data(self, index: QtCore.QModelIndex, role: int = ...):
         if role != QtCore.Qt.DisplayRole:
             return None
-        if index.column() == 0:  # sample name
-            return self._data[index.row()][0]
-        elif index.column() == 1:  # distance
-            return '{:.2f}'.format(self._data[index.row()][1])
-        elif index.column() == 2:  # exptime
-            return '{:.2f}'.format(self._data[index.row()][2] / 3600.)
-        elif index.column() == 3:  # exptime pcnt
-            return '{:.2f} %'.format(100 * self._data[index.row()][2] / sum(d[2] for d in self._data))
-        elif index.column() == 4:  # nr. of exposures
-            return '{}'.format(self._data[index.row()][3])
-        elif index.column() == 5:  # avg. exptime
-            return '{:.2f}'.format(self._data[index.row()][2] / self._data[index.row()][3])
+        if index.row() == len(self._data):
+            if index.column() == 0: # sample name
+                return '-- Total --'
+            elif index.column() == 4: # exptime
+                return '{:.2f}'.format(sum([d[2] for d in self._data])/3600.)
+            elif index.column() == 5: # exptime pcnt
+                return '100 %'
+            else:
+                return ''
+        else:
+            if index.column() == 0:  # sample name
+                return self._data[index.row()][0]
+            elif index.column() == 1:  # distance
+                return '{:.2f}'.format(self._data[index.row()][1])
+            elif index.column() == 2:  # nr. of exposures
+                return '{}'.format(self._data[index.row()][3])
+            elif index.column() == 3:  # avg. exptime
+                return '{:.2f}'.format(self._data[index.row()][2] / self._data[index.row()][3])
+            elif index.column() == 4:  # exptime
+                return '{:.2f}'.format(self._data[index.row()][2] / 3600.)
+            elif index.column() == 5:  # exptime pcnt
+                return '{:.2f} %'.format(100 * self._data[index.row()][2] / sum(d[2] for d in self._data))
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
-            return ['Sample', 'Distance (cm)', 'Live time (h)', 'Rel. live time', '# of exposures', 'Frame time'][
+            return ['Sample', 'Distance (cm)', '# of exposures', 'Frame time (sec)', 'Live time (h)', 'Rel. live time'][
                 section]
         return None
 
