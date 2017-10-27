@@ -62,7 +62,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def load_state(self):
         statefile = os.path.join(appdirs.user_config_dir('cpt', 'CREDO', roaming=True), 'cpt.ini')
         config = configparser.ConfigParser()
-        config.read(statefile)
+        try:
+            with open(statefile, 'rt', encoding='utf-8') as f:
+                config.read_file(f)
+        except FileNotFoundError:
+            pass
         for widget, section, key in self._configwidgets:
             try:
                 value = config[section][key]
