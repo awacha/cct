@@ -397,7 +397,14 @@ class DeviceBackend_TCP(DeviceBackend):
         self.logger.debug('Waiting for TCP communication process of {} to exit'.format(self.name))
         self.tcpprocess_exited.wait()
         self.logger.debug('Join-ing TCP communication process of {}'.format(self.name))
-        self.tcp_communicator.join()
+        assert isinstance(self.tcp_communicator, multiprocessing.Process)
+        if self.tcp_communicator.is_alive:
+            self.tcp_communicator.join(2)
+            if self.tcp_communicator.exitcode is None:
+                # not yet terminated
+                self.logger.warning('Forcing termination of tcp_communicator subthread.')
+                self.tcp_communicator.terminate()
+
         self.tcp_communicator = None
         self.logger.debug('TCP communication process of {} exited'.format(self.name))
 
