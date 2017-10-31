@@ -149,7 +149,8 @@ class Instrument(Callbacks):
                 'beamposy': 257.,
                 'beamposx.err': 0.,
                 'beamposy.err': 0.,
-                'pixelsize': 0.172,
+                'pixelsize': 0.1721,
+                'pixelsize.err': 0.0002,
                 'mask': 'mask.mat'
             },
             'connections': {
