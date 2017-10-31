@@ -612,6 +612,7 @@
     <addaction name="actionSingle_exposure"/>
     <addaction name="actionTransmission"/>
     <addaction name="actionScript"/>
+    <addaction name="actionFirstPrinciplesCalibration"/>
    </widget>
    <widget class="QMenu" name="menu_Tools">
     <property name="title">
@@ -1114,6 +1115,14 @@
    </property>
    <property name="toolTip">
     <string>Make a graph of the relative positions of selected samples</string>
+   </property>
+  </action>
+  <action name="actionFirstPrinciplesCalibration">
+   <property name="text">
+    <string>First Principles Calibration</string>
+   </property>
+   <property name="toolTip">
+    <string>Calibration of q-calibrants by a first principles method</string>
    </property>
   </action>
  </widget>

@@ -26,6 +26,7 @@ from ..measurement.scripteditor import ScriptEditor
 from ..measurement.scan import ScanMeasurement
 from ..measurement.transmission import TransmissionMeasurement
 from ..measurement.singleexposure import SingleExposure
+from ..measurement.qcalibration import QCalibration
 from ..setup.calibration import Calibration
 from ..setup.project import ProjectSetup
 from ..setup.users import UserManager
@@ -92,6 +93,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionCalibrateMotors: MotorAutoCalibration,
             self.actionSamplePositionChecker: SamplePositionChecker,
             self.actionCommands: CommandHelp,
+            self.actionFirstPrinciplesCalibration: QCalibration,
         }
         self._dockwidgets = {}
 
