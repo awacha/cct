@@ -1,5 +1,6 @@
 import dateutil.parser
 import h5py
+import matplotlib.dates as mdates
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
@@ -45,7 +46,14 @@ def plot_vacuum_and_flux(fig: Figure, group: h5py.Group, gc_name='Glassy_Carbon'
     ax.set_ylabel('Flux (photon/sec)', color='b')
     ax2.set_ylabel('Vacuum (mbar)', color='r')
     ax.set_xlabel('Date of exposure')
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
-    ax.set_yticklabels(ax.get_yticklabels(), color='b')
-    ax2.set_yticklabels(ax2.get_yticklabels(), color='r')
+    ax.spines['left'].set_color('b')
+    ax2.spines['right'].set_color('r')
+    ax.yaxis.label.set_color('b')
+    ax2.yaxis.label.set_color('r')
+    ax.tick_params(axis='x',rotation=90)
+    ax.tick_params(axis='y', colors='b')
+    ax2.tick_params(axis='y', colors = 'r')
+    fig.autofmt_xdate()
+    ax.fmt_xdata = mdates.DateFormatter('%Y-%m-%d %H:%M')
+    ax2.fmt_xdata = mdates.DateFormatter('%Y-%m-%d %H:%M')
     fig.tight_layout()
