@@ -9,6 +9,7 @@ from matplotlib.figure import Figure
 from sastool.misc.errorvalue import ErrorValue
 
 from .calibrationmodel import CalibrationModel
+from .peakmodel import PeakModel
 from .qcalibration_ui import Ui_Form
 from ...core.mixins import ToolWindow
 from ....core.commands.detector import Expose
@@ -81,36 +82,12 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.toolbarCalibration = NavigationToolbar2QT(self.canvasCalibration, self.calibrationTab)
         self.calibrationTab.layout().addWidget(self.toolbarCalibration)
         self.exposuresTreeView.selectionModel().selectionChanged.connect(self.onExposureSelectionChanged)
-        self.hSpinBox.valueChanged.connect(self.onhklChanged)
-        self.kSpinBox.valueChanged.connect(self.onhklChanged)
-        self.lSpinBox.valueChanged.connect(self.onhklChanged)
-        self.peakSetIndexSpinBox.valueChanged.connect(self.onPeakSetChanged)
         sam = self.credo.services['samplestore']
         assert isinstance(sam, SampleStore)
         self.onSampleListChanged(sam)
-
-    def onPeakSetChanged(self):
-        if self._updating.inhibited:
-            return
-        try:
-            q, sd = self.exposureModel.calibrate(
-                self.peakSetIndexSpinBox.value(),
-            )
-        except ValueError:
-            return
-        self.qLabel.setText('{0.val:.4f} \xb1 {0.err:.4f} 1/nm'.format(q))
-        self.sdLabel.setText('{0.val:.4f} \xb1 {0.err:.4f} mm'.format(sd))
-        self.onhklChanged()
-
-    def onhklChanged(self):
-        sqrthkl = (self.hSpinBox.value() ** 2 + self.kSpinBox.value() ** 2 + self.lSpinBox.value() ** 2) ** 0.5
-        try:
-            q, sd = self.exposureModel.calibrate(
-                self.peakSetIndexSpinBox.value())
-        except ValueError:
-            return
-        a = 2 * np.pi * sqrthkl / q
-        self.latticeParameterLabel.setText('{0.val:.4f} \xb1 {0.err:.4f} nm'.format(a))
+        self.peaksModel=PeakModel()
+        self.peaksModel.calibrationChanged.connect(self.onPeakModelCalibrationChanged)
+        self.peaksTreeView.setModel(self.peaksModel)
 
     def onExposureSelectionChanged(self):
         try:
@@ -160,7 +137,6 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.drawPeaks()
         self.drawBeamPos()
         self.drawCurves()
-        self.onPeakSetChanged()
 
     def onRemoveSelectedExposure(self):
         self.exposureModel.removeRow(self.exposuresTreeView.selectedIndexes()[0].row(), None)
@@ -230,8 +206,6 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.canvasCurves.draw()
 
     def onUpdateResults(self):
-        self.peakSetIndexSpinBox.setMinimum(0)
-        self.peakSetIndexSpinBox.setMaximum(self.exposureModel.peakClassesCount() - 1)
         alpha = self.exposureModel.alpha(None)
         alphax = self.exposureModel.alphax()
         alphay = self.exposureModel.alphay()
@@ -241,7 +215,23 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
             1000 * alphax, alphax * 180 / np.pi))
         self.alphaYLabel.setText('{0.val:.2f} \xb1 {0.err:.2f} mrad ({1.val:.2f} \xb1 {1.err:.2f}°)'.format(
             1000 * alphay, alphay * 180 / np.pi))
-        self.onPeakSetChanged()
+        self.updatePeakData()
+
+    def onPeakModelCalibrationChanged(self):
+        par, stat=self.peaksModel.fitLatticeParameter()
+        self.latticeParameterLabel.setText('{0.val:.4f} \xb1 {0.err:.4f} nm'.format(par))
+
+    def updatePeakData(self):
+        self.peaksModel.calibrationChanged.disconnect()
+        self.peaksModel=PeakModel()
+        self.peaksTreeView.setModel(self.peaksModel)
+        self.peaksModel.calibrationChanged.connect(self.onPeakModelCalibrationChanged)
+        for pi in range(self.exposureModel.peakClassesCount()):
+            q,dist0=self.exposureModel.calibrate(pi)
+            self.peaksModel.addPeak(q, dist0)
+        for c in range(self.peaksModel.columnCount()):
+            self.peaksTreeView.resizeColumnToContents(c)
+
 
     def onBrowseForMask(self):
         fs = self.credo.services['filesequence']
