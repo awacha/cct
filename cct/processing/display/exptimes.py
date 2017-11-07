@@ -32,7 +32,11 @@ class ExpTimeModel(QtCore.QAbstractItemModel):
             if index.column() == 0: # sample name
                 return '-- Total --'
             elif index.column() == 4: # exptime
-                return '{:.2f}'.format(sum([d[2] for d in self._data])/3600.)
+                exptime = sum([d[2] for d in self._data])/3600.
+                hours=exptime//3600
+                mins=(exptime-3600*hours)//60
+                secs=(exptime-3600*hours-60*mins)
+                return '{:.0f}:{:.0f}:{:.0f}'.format(hours,mins,secs)
             elif index.column() == 5: # exptime pcnt
                 return '100 %'
             else:
@@ -47,13 +51,17 @@ class ExpTimeModel(QtCore.QAbstractItemModel):
             elif index.column() == 3:  # avg. exptime
                 return '{:.2f}'.format(self._data[index.row()][2] / self._data[index.row()][3])
             elif index.column() == 4:  # exptime
-                return '{:.2f}'.format(self._data[index.row()][2] / 3600.)
+                exptime = self._data[index.row()][2]
+                hours=exptime//3600
+                mins=(exptime-3600*hours)//60
+                secs=(exptime-3600*hours-60*mins)
+                return '{:.0f}:{:.0f}:{:.0f}'.format(hours,mins,secs)
             elif index.column() == 5:  # exptime pcnt
                 return '{:.2f} %'.format(100 * self._data[index.row()][2] / sum(d[2] for d in self._data))
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
-            return ['Sample', 'Distance (cm)', '# of exposures', 'Frame time (sec)', 'Live time (h)', 'Rel. live time'][
+            return ['Sample', 'Distance (cm)', '# of exposures', 'Frame time (sec)', 'Live time (h:m:s)', 'Rel. live time'][
                 section]
         return None
 
