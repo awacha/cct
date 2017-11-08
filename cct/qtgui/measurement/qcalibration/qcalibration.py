@@ -184,8 +184,12 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
             dpeaks = dpeaks[valid]
             x = np.linspace(shifts.min() - shifts.ptp() / len(shifts), shifts.max() + shifts.ptp() / len(shifts), 100)
             line = ax.errorbar(shifts, peaks, dpeaks, dshifts, 'o')[0]
-            poly = np.polyfit(shifts, peaks, 1)
-            ax.plot(x, poly[0] * x + poly[1], '--', color=line.get_color())
+            try:
+                poly = np.polyfit(shifts, peaks, 1)
+                ax.plot(x, poly[0] * x + poly[1], '--', color=line.get_color())
+            except ValueError:
+                # do not draw fit lines if we have only one point
+                pass
         ax.set_xlabel('Shift (mm)')
         ax.set_ylabel('Peak position (pixel)')
         self.figureCalibration.tight_layout()

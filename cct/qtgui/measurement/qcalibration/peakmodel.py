@@ -34,8 +34,10 @@ class PeakModel(QtCore.QAbstractItemModel):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...):
         if role == QtCore.Qt.DisplayRole:
-            if index.column() in [0, 5]:
-                return '{0.val:.4f} \xb1 {0.err:.4f}'.format(self._peaks[index.row()][index.column()])
+            if index.column()==0:
+                return '{0.val:.4f} \xb1 {0.err:.4f}'.format(self._peaks[index.row()][0])
+            elif index.column()==5:
+                return '{0.val:.4f} \xb1 {0.err:.4f}'.format(self._peaks[index.row()][4])
             elif index.column() in [1,2,3]:
                 return str(self._peaks[index.row()][index.column()])
             else:
