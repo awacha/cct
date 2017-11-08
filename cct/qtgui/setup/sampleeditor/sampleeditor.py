@@ -46,6 +46,18 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         for combobox in [self.categoryComboBox, self.situationComboBox]:
             combobox.currentTextChanged.connect(self.onComboBoxChanged)
         self.calendarWidget.selectionChanged.connect(self.onCalendarChanged)
+        self.todayPushButton.clicked.connect(self.onTodayClicked)
+
+    def onTodayClicked(self):
+        if self._updating_entries:
+            return
+        selectedsamplename = self.selectedSampleName()
+        if selectedsamplename is None:
+            return
+        sample = self.credo.services['samplestore'].get_sample(selectedsamplename)
+        sample.preparetime=datetime.datetime.now()
+        self.credo.services['samplestore'].set_sample(selectedsamplename, sample)
+        self.selectSample(sample.title)
 
     def selectedSampleName(self):
         try:
