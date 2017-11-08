@@ -494,7 +494,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onExportAveragedCurvesData(self):
         if self.export1DDataFormatComboBox.currentText() == 'ASCII (*.txt)':
-            self.onExportAveragedCurvesDataASCII()
+            self.onExportAveragedCurvesDataASCII(with_qerror=True, extn='txt')
+        elif self.export1DDataFormatComboBox.currentText() == 'ASCII (*.dat)':
+            self.onExportAveragedCurvesDataASCII(with_qerror=False, extn='dat')
         elif self.export1DDataFormatComboBox.currentText().startswith('Excel 2007-'):
             self.onExportAveragedCurvesDataXLSX()
 
@@ -561,7 +563,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         finally:
             self.setEnabled(True)
 
-    def onExportAveragedCurvesDataASCII(self):
+    def onExportAveragedCurvesDataASCII(self, with_qerror=True, extn='txt'):
         try:
             self.setEnabled(False)
             with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
@@ -573,8 +575,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                         data = hdf5['Samples'][sn][dist]['curve']
                         fn = os.path.join(
                             self.exportFolderLineEdit.text(),
-                            '{}_{}.txt'.format(sn, dist.replace('.', '_'), ))
-                        np.savetxt(fn, data)
+                            '{}_{}.{}'.format(sn, dist.replace('.', '_'), extn))
+                        with open(fn, 'wt') as f:
+                            if with_qerror:
+                                f.write('# q\tIntensity\tError\tqError\n')
+                                np.savetxt(f, data)
+                            else:
+                                f.write('# q\tIntensity\tError\n')
+                                np.savetxt(f, data[:,:3])
                         logger.info('Wrote file {}'.format(fn))
         finally:
             self.setEnabled(True)
