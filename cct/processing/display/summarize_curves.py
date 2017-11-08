@@ -32,6 +32,7 @@ def summarize_curves(fig: Figure, group: h5py.Group, showgoods: bool = True, sho
         ax_std.set_xscale('log')
     if logy:
         ax_curves.set_yscale('log')
+        ax_std.set_yscale('log')
     ax_std.axis(xmin=ax_curves.axis()[0], xmax=ax_curves.axis()[1])
     ax_curves.grid(True, which='both')
     ax_std.grid(True, which='both')
