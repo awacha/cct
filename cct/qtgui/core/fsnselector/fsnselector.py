@@ -61,6 +61,15 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def onReload(self):
         self.onFSNSpinBoxValueChanged()
 
+    def setFSN(self, fsn:int):
+        if self.FSNSpinBox.value() != fsn:
+            self.FSNSpinBox.setValue(fsn)
+            self.onReload()
+
+    def setPrefix(self, prefix:str):
+        if self.prefixComboBox.currentText() != prefix:
+            self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText(prefix))
+
     def onFSNSpinBoxValueChanged(self):
         fs = self.credo.services['filesequence']
         assert isinstance(fs, FileSequence)

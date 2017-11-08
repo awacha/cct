@@ -27,8 +27,14 @@
         <height>400</height>
        </size>
       </property>
+      <property name="tabShape">
+       <enum>QTabWidget::Rounded</enum>
+      </property>
       <property name="currentIndex">
        <number>0</number>
+      </property>
+      <property name="documentMode">
+       <bool>false</bool>
       </property>
       <widget class="QWidget" name="script">
        <attribute name="icon">
@@ -79,6 +85,20 @@
        </attribute>
        <attribute name="toolTip">
         <string>Help on commands</string>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="lastExposureTab">
+       <attribute name="icon">
+        <iconset resource="../../../resource/icons/icons.qrc">
+         <normaloff>:/icons/exposureviewer.svg</normaloff>:/icons/exposureviewer.svg</iconset>
+       </attribute>
+       <attribute name="title">
+        <string>Last exposure</string>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="lastCurveTab">
+       <attribute name="title">
+        <string>Last curve</string>
        </attribute>
       </widget>
      </widget>

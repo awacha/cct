@@ -2,6 +2,9 @@ import datetime
 import logging
 import os
 import re
+from typing import Dict
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -10,8 +13,12 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 
 from .scripteditor_ui import Ui_MainWindow
 from ...core.mixins import ToolWindow
+from ...core.fsnselector import FSNSelector
+from ...core.plotimage import PlotImage
+from ...core.plotcurve import PlotCurve
 from ....core.commands import Command
 from ....core.services.interpreter import Interpreter
+from ....core.services.exposureanalyzer import ExposureAnalyzer
 from ....core.commands.script import Script
 from ...help import CommandHelp
 
@@ -95,6 +102,56 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.cmdHelp = CommandHelp(self.docs, credo=self.credo)
         self.docsLayout = QtWidgets.QVBoxLayout(self.docs)
         self.docsLayout.addWidget(self.cmdHelp)
+        self.lastExposureTab.setLayout(QtWidgets.QVBoxLayout())
+        self.lastExposureTabFSNSelector=FSNSelector(self.lastExposureTab, credo=self.credo, horizontal=True)
+        self.lastExposureTab.layout().addWidget(self.lastExposureTabFSNSelector)
+        self.lastExposureImage=PlotImage(self.lastExposureTab, False)
+        self.lastExposureTab.layout().addWidget(self.lastExposureImage)
+        self.lastCurveTab.setLayout(QtWidgets.QVBoxLayout())
+        self.lastCurveTabFSNSelector=FSNSelector(self.lastExposureTab, credo=self.credo, horizontal=True)
+        self.lastCurveTab.layout().addWidget(self.lastCurveTabFSNSelector)
+        self.lastCurveCurve=PlotCurve(self.lastCurveTab)
+        self.lastCurveTab.layout().addWidget(self.lastCurveCurve)
+        self.lastExposureTabFSNSelector.FSNSelected.connect(self.onLastExposureFSNSelected)
+        self.lastCurveTabFSNSelector.FSNSelected.connect(self.onLastCurveFSNSelected)
+        ea=self.credo.services['exposureanalyzer']
+        assert isinstance(ea, ExposureAnalyzer)
+        self._eaconnections=[
+            ea.connect('image', self.onImageReceived)
+        ]
+        self.tabWidget.currentChanged.connect(self.onTabChanged)
+
+    def onTabChanged(self):
+        if self.tabWidget.currentWidget()==self.lastExposureTab:
+            self.lastExposureTabFSNSelector.onGotoLast()
+        elif self.tabWidget.currentWidget()==self.lastCurveTab:
+            self.lastCurveTabFSNSelector.onGotoLast()
+
+    def cleanup(self):
+        for c in self._eaconnections:
+            self.credo.services['exposureanalyzer'].disconnect(c)
+        self._eaconnections=[]
+        super().cleanup()
+
+    def onImageReceived(self, exposureanalyzer:ExposureAnalyzer, prefix:str, fsn:int, intensity:np.ndarray,
+                        params:Dict, mask:np.ndarray):
+        if self.tabWidget.currentWidget()==self.lastExposureTab:
+            self.lastExposureTabFSNSelector.setPrefix(prefix)
+            self.lastExposureTabFSNSelector.setFSN(fsn)
+        elif self.tabWidget.currentWidget()==self.lastCurveTab:
+            self.lastCurveTabFSNSelector.setPrefix(prefix)
+            self.lastCurveTabFSNSelector.setFSN(fsn)
+
+    def onLastExposureFSNSelected(self, fsn, prefix, exposure):
+        self.lastExposureImage.setExposure(exposure)
+
+    def onLastCurveFSNSelected(self, fsn, prefix, exposure):
+        try:
+            title = exposure.header.title
+        except KeyError:
+            title = '_nolabel_'
+        self.lastCurveCurve.clear()
+        self.lastCurveCurve.addCurve(exposure.radial_average(), title, hold_mode=False)
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         if self.confirmDropChanges():
