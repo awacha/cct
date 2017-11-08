@@ -395,7 +395,7 @@ class DeviceBackend_TCP(DeviceBackend):
         """
         self.killflag.set()
         self.logger.debug('Waiting for TCP communication process of {} to exit'.format(self.name))
-        self.tcpprocess_exited.wait()
+        self.tcpprocess_exited.wait(5) # wait for clean exit
         self.logger.debug('Join-ing TCP communication process of {}'.format(self.name))
         assert isinstance(self.tcp_communicator, multiprocessing.Process)
         if self.tcp_communicator.is_alive:
