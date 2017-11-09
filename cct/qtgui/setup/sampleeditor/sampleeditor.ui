@@ -227,13 +227,6 @@
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QPushButton" name="renameSamplePushButton">
-            <property name="text">
-             <string>Rename</string>
-            </property>
-           </widget>
-          </item>
          </layout>
         </widget>
        </item>
@@ -667,7 +660,6 @@
  </widget>
  <tabstops>
   <tabstop>sampleNameLineEdit</tabstop>
-  <tabstop>renameSamplePushButton</tabstop>
   <tabstop>descriptionPlainTextEdit</tabstop>
   <tabstop>categoryComboBox</tabstop>
   <tabstop>situationComboBox</tabstop>
@@ -689,22 +681,5 @@
   <tabstop>duplicateSamplePushButton</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>sampleNameLineEdit</sender>
-   <signal>returnPressed()</signal>
-   <receiver>renameSamplePushButton</receiver>
-   <slot>click()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>500</x>
-     <y>31</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>638</x>
-     <y>31</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

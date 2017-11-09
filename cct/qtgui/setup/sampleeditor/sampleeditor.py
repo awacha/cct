@@ -20,6 +20,7 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.setupToolWindow(credo)
         self._updating_entries = Inhibitor()
         self._samplestoreconnections = []
+        self._selectedsample = None
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -36,7 +37,6 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.onSelectionChanged()
         for lineedit in [self.preparedByLineEdit]:
             lineedit.textEdited.connect(self.onTextEdited)
-        self.renameSamplePushButton.clicked.connect(self.onRenameSample)
         self.descriptionPlainTextEdit.textChanged.connect(self.onTextEdited)
         for spinbox in [self.transmissionErrDoubleSpinBox, self.transmissionValDoubleSpinBox,
                         self.thicknessErrDoubleSpinBox, self.thicknessValDoubleSpinBox, self.distminusErrDoubleSpinBox,
@@ -47,6 +47,14 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             combobox.currentTextChanged.connect(self.onComboBoxChanged)
         self.calendarWidget.selectionChanged.connect(self.onCalendarChanged)
         self.todayPushButton.clicked.connect(self.onTodayClicked)
+        self.sampleNameLineEdit.installEventFilter(self)
+
+    def eventFilter(self, obj:QtCore.QObject, event:QtCore.QEvent):
+        if obj is self.sampleNameLineEdit and isinstance(event, QtGui.QFocusEvent):
+            if event.lostFocus():
+                logger.debug('Sample name editor has lost focus.')
+                self.onRenameSample()
+        return super().eventFilter(obj, event)
 
     def onTodayClicked(self):
         if self._updating_entries:
@@ -69,7 +77,10 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
         try:
-            ss.get_sample(self.sampleNameLineEdit.text())
+            sample = ss.get_sample(self.sampleNameLineEdit.text())
+            if sample is self._selectedsample:
+                # avoid error if renaming the selected sample to the same name.
+                raise KeyError
         except KeyError:
             # this is normal.
             sample = Sample(ss.get_sample(self.selectedSampleName()))
@@ -256,6 +267,7 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             updatespinbox(self.transmissionValDoubleSpinBox, sample.transmission.val)
             updatespinbox(self.transmissionErrDoubleSpinBox, sample.transmission.err)
             self.calendarWidget.setSelectedDate(sample.preparetime.date())
+            self._selectedsample = sample
 
     def onSampleListChanged(self, samplestore: SampleStore):
         logger.debug('Sample list changed. Selected items: {}'.format(self.listWidget.selectedItems()))
