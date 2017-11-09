@@ -120,6 +120,16 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             ea.connect('image', self.onImageReceived)
         ]
         self.tabWidget.currentChanged.connect(self.onTabChanged)
+        self.scriptEdit.installEventFilter(self)
+
+    def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent):
+        if obj == self.scriptEdit and isinstance(event, QtGui.QKeyEvent):
+            if event.key() == QtCore.Qt.Key_Tab and event.type()==QtCore.QEvent.KeyPress:
+                self.scriptEdit.insertPlainText('    ')
+                return True
+            return super().eventFilter(obj, event)
+        else:
+            return super().eventFilter(obj, event)
 
     def onTabChanged(self):
         if self.tabWidget.currentWidget()==self.lastExposureTab:
