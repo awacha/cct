@@ -40,9 +40,9 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.emptyNameComboBox.setCurrentIndex(
             self.emptyNameComboBox.findText(self.credo.config['datareduction']['backgroundname']))
         self.sampleNameComboBox.setCurrentIndex(-1)
+        self.adjustSize()
         for i in range(7):
             self.treeView.resizeColumnToContents(i)
-        self.adjustSize()
 
     def onSampleSelected(self):
         if self._updating:
@@ -50,9 +50,9 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if not self.sampleNameComboBox.currentText():
             return
         self.model.add_sample(self.sampleNameComboBox.currentText())
+        self.adjustSize()
         for i in range(7):
             self.treeView.resizeColumnToContents(i)
-        self.adjustSize()
         with self._updating:
             self.sampleNameComboBox.setCurrentIndex(-1)
 

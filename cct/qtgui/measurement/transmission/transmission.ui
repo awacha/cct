@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>820</width>
-    <height>327</height>
+    <width>1004</width>
+    <height>334</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -155,8 +155,17 @@
       </item>
       <item row="4" column="0" colspan="2">
        <widget class="QTreeView" name="treeView">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="horizontalScrollBarPolicy">
          <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="sizeAdjustPolicy">
+         <enum>QAbstractScrollArea::AdjustToContents</enum>
         </property>
        </widget>
       </item>

@@ -1119,10 +1119,10 @@
   </action>
   <action name="actionFirstPrinciplesCalibration">
    <property name="text">
-    <string>First Principles Calibration</string>
+    <string>Q-calibrant calibration</string>
    </property>
    <property name="toolTip">
-    <string>Calibration of q-calibrants by a first principles method</string>
+    <string>Calibration of q-calibrant samples using the detector shifting technique</string>
    </property>
   </action>
  </widget>
