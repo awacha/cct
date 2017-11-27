@@ -96,10 +96,10 @@ class Summarizer(object):
         for p in self.maskpath:
             try:
                 m = loadmat(os.path.join(p, maskname))
-            except FileNotFoundError:
+            except (FileNotFoundError, TypeError):
                 try:
                     m = loadmat(os.path.join(p, maskname + '.mat'))
-                except FileNotFoundError:
+                except (FileNotFoundError, TypeError):
                     continue
             self._masks[maskname] = m[[x for x in m.keys() if not x.startswith('_')][0]]
             return self._masks[maskname]
