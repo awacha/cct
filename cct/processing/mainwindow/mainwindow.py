@@ -22,6 +22,7 @@ import openpyxl.worksheet.worksheet
 import pkg_resources
 import scipy.io
 from PyQt5 import QtWidgets, QtCore, QtGui
+from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 from sastool.io.credo_cct.header import Header
@@ -170,6 +171,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         vl.addWidget(self.canvas)
         self.figuretoolbar = NavigationToolbar2QT(self.canvas, self.figureContainerWidget)
         vl.addWidget(self.figuretoolbar)
+        self._canvaskeypresshandler=self.canvas.mpl_connect('key_press_event', self.onCanvasKeyPressEvent)
+
         self.exportHeaderTablePushButton.clicked.connect(self.onExportHeadersTable)
         self.exportTablePushButton.clicked.connect(self.onExportTable)
         self.exportImageWidthUnitsComboBox.setCurrentIndex(self.exportImageWidthUnitsComboBox.findText('inch'))
@@ -236,11 +239,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         ]
         self.updateResults()
 
+    def onCanvasKeyPressEvent(self, event):
+        key_press_handler(event, self.canvas, self.figuretoolbar)
+
+    def clearFigure(self):
+        self.figure.clear()
+
     def onCmpPlot(self):
         try:
             with h5py.File(self.saveHDFLineEdit.text(), 'r') as hdf5:
-                self.figure.clear()
-                self.figure.clf()
+                self.clearFigure()
                 ax = self.figure.add_subplot(1, 1, 1)
                 arbunits = False
                 for sn in self.cmpSampleModel.selectedSamples():
@@ -351,7 +359,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         for x in summarizer.load_headers(logger=logger):
             pass
         ex = summarizer.load_exposure(fsn, logger=logger)
-        self.figure.clear()
+        self.clearFigure()
         ax = self.figure.add_subplot(1, 1, 1)
         ex.imshow(axes=ax, norm=matplotlib.colors.LogNorm())
         ax.set_xlabel('q (nm$^{-1}$)')
@@ -380,7 +388,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         for x in summarizer.load_headers():
             pass
         ex = summarizer.load_exposure(fsn)
-        self.figure.clear()
+        self.clearFigure()
         ax = self.figure.add_subplot(1, 1, 1)
         ex.radial_average().loglog(axes=ax)
         ax.set_xlabel('q (nm$^{-1}$)')
@@ -576,12 +584,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                         fn = os.path.join(
                             self.exportFolderLineEdit.text(),
                             '{}_{}.{}'.format(sn, dist.replace('.', '_'), extn))
-                        with open(fn, 'wt') as f:
+                        with open(fn, 'wb') as f:
                             if with_qerror:
-                                f.write('# q\tIntensity\tError\tqError\n')
+                                f.write('# q\tIntensity\tError\tqError\n'.encode('utf-8'))
                                 np.savetxt(f, data)
                             else:
-                                f.write('# q\tIntensity\tError\n')
+                                f.write('# q\tIntensity\tError\n'.encode('utf-8'))
                                 np.savetxt(f, data[:,:3])
                         logger.info('Wrote file {}'.format(fn))
         finally:
@@ -1045,6 +1053,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         if not filename.endswith('.h5') and not filename.endswith('.hdf5'):
             filename = filename + '.h5'
         self.saveHDFLineEdit.setText(os.path.normpath(filename))
+        self.processPushButton.setEnabled(True)
         self.updateResults()
 
     def updateResults(self, processingfinished=False):
