@@ -1,6 +1,6 @@
 import collections
 import math
-from typing import Sequence, Union, SupportsFloat
+from typing import Sequence, Union, SupportsFloat, Optional
 
 from .estimateworksize import pickfromlist
 
@@ -125,7 +125,7 @@ class PinholeConfiguration(object):
 
     @property
     def rs_parasitic(self) -> float:
-        return self.r3 + (self.r2 + self.r3) * (self.ls / self.l2)
+        return self.rs_parasitic1(None)
 
     rs = rs_direct
 
@@ -136,8 +136,7 @@ class PinholeConfiguration(object):
 
     @property
     def rbs_parasitic(self) -> float:
-        return ((self.r2 + self.r3) * (self.l2 + self.l3 - self.lbs) /
-                self.l2 - self.r2)
+        return self.rbs_parasitic1(None)
 
     rbs = rbs_parasitic
 
@@ -148,8 +147,7 @@ class PinholeConfiguration(object):
 
     @property
     def rdet_parasitic(self) -> float:
-        return ((self.r2 + self.r3) * (self.l2 + self.l3) /
-                self.l2 - self.r2)
+        return self.rdet_parasitic1(None)
 
     rdet = rdet_parasitic
 
@@ -181,6 +179,24 @@ class PinholeConfiguration(object):
     @property
     def Rgmax(self) -> float:
         return 1 / self.qmin
+
+    def rdet_parasitic1(self, r3:Optional[float]=None) -> float:
+        if r3 is None:
+            r3 = self.r3
+        return ((self.r2 + r3) * (self.l2 + self.l3) /
+                self.l2 - self.r2)
+
+    def rbs_parasitic1(self, r3:Optional[float]=None) -> float:
+        if r3 is None:
+            r3 = self.r3
+        return ((self.r2 + r3) * (self.l2 + self.l3 - self.lbs) /
+                self.l2 - self.r2)
+
+    def rs_parasitic1(self, r3:Optional[float]=None) -> float:
+        if r3 is None:
+            r3 = self.r3
+        return r3 + (self.r2 + r3) * (self.ls / self.l2)
+
 
     def __str__(self) -> str:
         return 'l1: %.2f mm; l2: %.2f mm; D1: %.0f um; D2: %.0f um;\

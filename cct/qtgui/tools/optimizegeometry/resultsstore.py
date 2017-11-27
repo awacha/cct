@@ -14,7 +14,7 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
         return QtCore.QModelIndex()
 
     def columnCount(self, parent=None, *args, **kwargs):
-        return 17
+        return 18
 
     def rowCount(self, parent=None, *args, **kwargs):
         return len(self._list)
@@ -40,28 +40,30 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
             elif index.column() == 4:
                 return pc.D3
             elif index.column() == 5:
-                return pc.intensity
+                return self.suggestPinholeSize(pc)
             elif index.column() == 6:
-                return pc.Dsample
+                return pc.intensity
             elif index.column() == 7:
-                return pc.Dbs
+                return pc.Dsample
             elif index.column() == 8:
-                return pc.l1
+                return pc.rbs_parasitic1(self.suggestPinholeSize(pc)*0.5e-3)*2
             elif index.column() == 9:
-                return pc.l2
+                return pc.l1
             elif index.column() == 10:
-                return pc.sd
+                return pc.l2
             elif index.column() == 11:
-                return pc.alpha * 1000
+                return pc.sd
             elif index.column() == 12:
-                return pc.qmin
+                return pc.alpha * 1000
             elif index.column() == 13:
-                return pc.dmax
+                return pc.qmin
             elif index.column() == 14:
-                return 1 / pc.qmin
+                return pc.dmax
             elif index.column() == 15:
-                return pc.dspheremax
+                return 1 / pc.qmin
             elif index.column() == 16:
+                return pc.dspheremax
+            elif index.column() == 17:
                 return pc.dominant_constraint
             else:
                 return None
@@ -108,6 +110,7 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
                           '1st aperture (\u03bcm)',
                           '2nd aperture (\u03bcm)',
                           '3rd aperture (\u03bcm)',
+                          'Suggested 3rd aperture (\u03bcm)',
                           'Intensity (\u03bcm^4/mm^2)',
                           'Sample size (mm)',
                           'Beamstop size (mm)',
@@ -123,3 +126,10 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
             return headertext
         else:
             return None
+
+    def setPinholeSizes(self, sizes=List[float]) -> None:
+        self._pinholesizes = sizes
+
+    def suggestPinholeSize(self, pc:PinholeConfiguration) -> float:
+        return sorted([p for p in self._pinholesizes if pc.D3<p], key=lambda x:x-pc.D3)[0]
+

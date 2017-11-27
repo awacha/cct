@@ -106,6 +106,7 @@ class OptimizeGeometry(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if hasattr(self, 'process'):
             return
         self.resultsStore.clear()
+        self.resultsStore.setPinholeSizes([float(x) for x in self.pinholeList.items()])
         spacers = [float(x) for x in self.spacerList.items()]
         pinholes = [float(x) for x in self.pinholeList.items()]
         ls = self.ph3SampleDistanceDoubleSpinBox.value()
@@ -202,5 +203,20 @@ class OptimizeGeometry(QtWidgets.QWidget, Ui_Form, ToolWindow):
                                           "{} pinhole configuration(s) copied to the clipboard.".format(selectedrows))
 
     def updateSetupParameters(self):
-
-        pass
+        selectedrows = sorted({index.row() for index in self.treeView.selectedIndexes()})
+        try:
+            phc = self.resultsStore.getConfiguration(selectedrows[0])
+        except IndexError:
+            return
+        suggested_ph3 = sorted([float(x) for x in self.pinholeList.items() if x-phc.D3>0], key=lambda x:x-phc.D3)[0]
+        self.credo.config['geometry']['dist_ph1_ph2'] = phc.l1
+        self.credo.config['geometry']['dist_ph2_ph3'] = phc.l2
+        self.credo.config['geometry']['dist_ph3_sample'] = phc.ls
+        self.credo.config['geometry']['dist_det_beamstop'] = phc.lbs
+        self.credo.config['geometry']['dist_sample_det'] = phc.sd
+        self.credo.config['geometry']['pinhole_1'] = phc.D1
+        self.credo.config['geometry']['pinhole_2'] = phc.D2
+        self.credo.config['geometry']['pinhole_3'] = suggested_ph3
+        #self.credo.config['geometry']['beamstop']
+        self.credo.config['geometry']['wavelength'] = self.wavelengthDoubleSpinBox.value()
+        self.credo.save_state()
