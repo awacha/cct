@@ -50,7 +50,7 @@ def plot_vacuum_and_flux(fig: Figure, group: h5py.Group, gc_name='Glassy_Carbon'
     ax2.spines['right'].set_color('r')
     ax.yaxis.label.set_color('b')
     ax2.yaxis.label.set_color('r')
-    ax.tick_params(axis='x',rotation=90)
+    #ax.tick_params(axis='x',rotation=90)
     ax.tick_params(axis='y', colors='b')
     ax2.tick_params(axis='y', colors = 'r')
     fig.autofmt_xdate()

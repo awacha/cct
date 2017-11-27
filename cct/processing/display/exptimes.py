@@ -32,7 +32,7 @@ class ExpTimeModel(QtCore.QAbstractItemModel):
             if index.column() == 0: # sample name
                 return '-- Total --'
             elif index.column() == 4: # exptime
-                exptime = sum([d[2] for d in self._data])/3600.
+                exptime = sum([d[2] for d in self._data])
                 hours=exptime//3600
                 mins=(exptime-3600*hours)//60
                 secs=(exptime-3600*hours-60*mins)
