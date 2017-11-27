@@ -5,6 +5,7 @@ from typing import Union, List, Optional
 import numpy as np
 from PyQt5 import QtWidgets, QtCore, QtGui
 from matplotlib.axes import Axes
+from matplotlib.backend_bases import key_press_handler, KeyEvent
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
@@ -18,7 +19,7 @@ from ....core.devices import Motor
 from ....core.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
@@ -38,6 +39,8 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.canvas.setSizePolicy(
             QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
         self.figuretoolbar = NavigationToolbar2QT(self.canvas, self.figureContainer)
+        self.canvas.mpl_connect('key_press_event', self.onCanvasKeyPress)
+        self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.figureContainer.layout().insertWidget(0, self.figuretoolbar)
         self.axes = self.figure.add_subplot(1, 1, 1)
         self.axes.grid(True, which='both')
@@ -67,6 +70,21 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionMotor_to_cursor.triggered.connect(self.onMotorToCursor)
         self.actionShow_2D.toggled.connect(self.replot)
         self.setCursorRange()
+        self.canvas.setFocus(QtCore.Qt.OtherFocusReason)
+
+    def onCanvasKeyPress(self, event:KeyEvent):
+        logger.debug('Key pressed on canvas: {}'.format(event.key))
+        if event.key == 'left':
+            self.cursorSlider.triggerAction(self.cursorSlider.SliderSingleStepSub)
+        elif event.key == 'right':
+            self.cursorSlider.triggerAction(self.cursorSlider.SliderSingleStepAdd)
+        elif event.key in ['shift+left', 'pagedown']:
+            self.cursorSlider.triggerAction(self.cursorSlider.SliderPageStepSub)
+        elif event.key in ['shift+right', 'pageup']:
+            self.cursorSlider.triggerAction(self.cursorSlider.SliderPageStepAdd)
+        else:
+            key_press_handler(event, self.canvas, self.figuretoolbar)
+        return True
 
     def fit(self, functiontype, sign):
         xmin, xmax, ymin, ymax = self.axes.axis()
