@@ -61,6 +61,7 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         )
         if filename:
             self.maskFileNameLineEdit.setText(filename)
+            self.onMaskChanged()
             # this ensures the updating of the config as well.
 
     def onDescriptionChanged(self):
