@@ -375,6 +375,14 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.writeLogMessage(message)
         self.statusBar().showMessage(message)
 
+    def onCmdPulse(self, interpreter: Interpreter, cmdname: str, description: str):
+        self.statusBar().showMessage(description)
+        return super().onCmdPulse(interpreter, cmdname, description)
+
+    def onCmdProgress(self, interpreter: Interpreter, cmdname: str, description: str, fraction: float):
+        self.statusBar().showMessage(description)
+        return super().onCmdProgress(interpreter, cmdname, description, fraction)
+
     def onInterpreterNewFlag(self, interpreter: Interpreter, flag: str):
         # check if we have a flag with this name.
         if flag in self.flags:
