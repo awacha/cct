@@ -1,11 +1,10 @@
 import logging
 import time
-import traceback
 
 from .command import Command, CommandArgumentError, CommandError
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class StartStop(Command):
@@ -65,9 +64,9 @@ class StartStop(Command):
             self.get_device('temperature').execute_command('stop')
 
     def on_variable_change(self, device, variablename, newvalue):
-        if variablename == '_status' and newvalue == 'start' and self.requested_state:
+        if variablename == '_status' and newvalue == 'running' and self.requested_state:
             self.cleanup(True)
-        elif variablename == '_status' and newvalue == 'stop' and not self.requested_state:
+        elif variablename == '_status' and newvalue == 'stopped' and not self.requested_state:
             self.cleanup(False)
         else:
             pass
@@ -135,12 +134,14 @@ class SetTemperature(Command):
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'setpoint':
             if abs(newvalue - self.target_temperature) > 0.01:
-                try:
-                    raise CommandError(
-                        'Could not set target temperature. Desired: {:f}. Got: {:f}'.format(
-                            self.target_temperature, newvalue))
-                except CommandError as ce:
-                    self.emit('fail', ce, traceback.format_exc())
+                # we are not there yet
+                return False
+#                try:
+#                    raise CommandError(
+#                        'Could not set target temperature. Desired: {:f}. Got: {:f}'.format(
+#                            self.target_temperature, newvalue))
+#                except CommandError as ce:
+#                    self.emit('fail', ce, traceback.format_exc())
             else:
                 self.cleanup(newvalue)
 
@@ -202,8 +203,10 @@ class WaitTemperature(Command):
 
     def on_variable_change(self, device, variablename, newvalue):
         if variablename == 'temperature':
+            logger.debug('Command wait_temp sees a temperature change to {}'.format(newvalue))
             if abs(newvalue - device.get_variable('setpoint')) > self.tolerance:
                 self.in_tolerance_interval = 0
             elif self.in_tolerance_interval == 0:
                 self.in_tolerance_interval = time.monotonic()
+            self.temperature = newvalue
         return False
