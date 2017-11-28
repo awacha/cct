@@ -198,6 +198,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.progressBar.setMaximum(0)
         self.progressBar.setValue(0)
         self.progressBar.setFormat(description)
+        self.statusBar().showMessage(description,10000)
 
     def onCmdProgress(self, interpreter: Interpreter, commandname: str, description: str, fraction: float):
         self.progressBar.setVisible(True)
@@ -205,6 +206,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.progressBar.setMaximum(100000)
         self.progressBar.setValue(100000 * fraction)
         self.progressBar.setFormat(description)
+        self.statusBar().showMessage(description,10000)
 
     def onCmdMessage(self, interpreter: Interpreter, commandname: str, message: str):
         logger.info(message)

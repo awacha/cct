@@ -373,14 +373,14 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def onCmdMessage(self, interpreter: Interpreter, cmdname: str, message: str):
         self.writeLogMessage(message)
-        self.statusBar().showMessage(message)
+        self.statusBar().showMessage(message, 10000)
 
     def onCmdPulse(self, interpreter: Interpreter, cmdname: str, description: str):
-        self.statusBar().showMessage(description)
+        self.statusBar().showMessage(description, 10000)
         return super().onCmdPulse(interpreter, cmdname, description)
 
     def onCmdProgress(self, interpreter: Interpreter, cmdname: str, description: str, fraction: float):
-        self.statusBar().showMessage(description)
+        self.statusBar().showMessage(description, 10000)
         return super().onCmdProgress(interpreter, cmdname, description, fraction)
 
     def onInterpreterNewFlag(self, interpreter: Interpreter, flag: str):
