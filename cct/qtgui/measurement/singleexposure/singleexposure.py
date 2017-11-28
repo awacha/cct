@@ -30,6 +30,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._fsconnections = []
         self._eaconnections = []
         self._samconnections = []
+        self._image_expected = False
         self.setupUi(self)
 
     def cleanup(self):
@@ -42,6 +43,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         for c in self._samconnections:
             self.credo.services['samplestore'].disconnect(c)
         self._samconnections = []
+        self._image_expected = False
         super().cleanup()
 
     def setupUi(self, Form):
@@ -74,6 +76,8 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.sampleNameComboBox.setCurrentIndex(idx)
 
     def onImage(self, ea: ExposureAnalyzer, prefix: str, fsn: int, image: np.ndarray, params: dict, mask: np.ndarray):
+        if not self._image_expected:
+            return False
         logger.debug('Image received.')
         pi = PlotImage.get_lastinstance()
         if pi is None:
@@ -81,6 +85,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
         ex = Exposure(image, None, Header(params), mask)
         pi.setExposure(ex)
         pi.show()
+        self._image_expected = False
         return False
 
     def onNextFSNChanged(self, fs: FileSequence, prefix: str, nextfsn: int):
@@ -132,6 +137,7 @@ class SingleExposure(QtWidgets.QWidget, Ui_Form, ToolWindow):
             else:
                 self.executeCommand(Expose, self.expTimeDoubleSpinBox.value(),
                                     self.prefixComboBox.currentText())
+            self._image_expected = True
         elif cmdname == 'sample':
             # open shutter if needed
             logger.debug('Sample in place.')
