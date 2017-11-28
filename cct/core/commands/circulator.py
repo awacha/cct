@@ -4,7 +4,7 @@ import time
 from .command import Command, CommandArgumentError, CommandError
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class StartStop(Command):
@@ -165,7 +165,7 @@ class WaitTemperature(Command):
     """
     name = "wait_temp"
 
-    pulse = 1
+    pulse_interval = 1
 
     required_devices = ['temperature']
 
@@ -177,7 +177,7 @@ class WaitTemperature(Command):
             raise CommandArgumentError('Command {} needs exactly two positional arguments.'.format(self.name))
         try:
             self.tolerance = float(self.args[0])
-            self.delay = float(self.args[0])
+            self.delay = float(self.args[1])
         except ValueError:
             raise CommandArgumentError('Invalid argument to command {}'.format(self.name))
         self.in_tolerance_interval = 0
@@ -193,6 +193,7 @@ class WaitTemperature(Command):
             spent_time = (time.monotonic() - self.in_tolerance_interval)
             remainingtime = (self.delay - spent_time)
             fraction = spent_time / self.delay
+            logger.debug('Wait_temp fraction: {}. remaining: {}, spent: {}'.format(fraction, remainingtime, spent_time))
             if fraction < 1:
                 self.emit('progress',
                           'Temperature stability reached ({:.2f} °C), waiting for {:.0f} seconds'.format(
@@ -207,6 +208,7 @@ class WaitTemperature(Command):
             if abs(newvalue - device.get_variable('setpoint')) > self.tolerance:
                 self.in_tolerance_interval = 0
             elif self.in_tolerance_interval == 0:
+                logger.debug('Temperature is now in the tolerance interval')
                 self.in_tolerance_interval = time.monotonic()
             self.temperature = newvalue
         return False
