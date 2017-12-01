@@ -67,6 +67,13 @@ def my_excepthook(type_, value, traceback_):
 sys.excepthook = my_excepthook
 
 mw = MainWindow()
+try:
+    mw.setHDF5File(sys.argv[1])
+except IndexError:
+    pass
+except OSError:
+    pass
+
 mw.setWindowTitle(mw.windowTitle() + ' v{}'.format(pkg_resources.get_distribution('cct').version))
 app.setWindowIcon(mw.windowIcon())
 mw.show()

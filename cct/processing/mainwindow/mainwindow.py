@@ -99,7 +99,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         except KeyError:
             pass
         try:
-            self.updateResults()
+            self.setHDF5File(self.saveHDFLineEdit.text())
         except:
             pass
 
@@ -1043,6 +1043,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         if filename:
             self.setRootDir(filename)
 
+    def setHDF5File(self, filename):
+        self.saveHDFLineEdit.setText(os.path.normpath(filename))
+        self.processPushButton.setEnabled(True)
+        self.updateResults()
+
     def onBrowseSaveFile(self):
         filename, fltr = QtWidgets.QFileDialog.getSaveFileName(
             self, 'Save processed results to...', '',
@@ -1052,9 +1057,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             return
         if not filename.endswith('.h5') and not filename.endswith('.hdf5'):
             filename = filename + '.h5'
-        self.saveHDFLineEdit.setText(os.path.normpath(filename))
-        self.processPushButton.setEnabled(True)
-        self.updateResults()
+        self.setHDF5File(filename)
 
     def updateResults(self, processingfinished=False):
         try:
