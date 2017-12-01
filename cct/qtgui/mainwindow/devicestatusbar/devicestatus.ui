@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>159</width>
-    <height>55</height>
+    <width>153</width>
+    <height>62</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -126,6 +126,22 @@
            </size>
           </property>
          </spacer>
+        </item>
+        <item>
+         <widget class="QToolButton" name="reconnectToolButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Reconnect to device</string>
+          </property>
+          <property name="text">
+           <string>R</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>

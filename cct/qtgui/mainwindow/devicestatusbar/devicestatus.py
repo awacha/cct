@@ -1,3 +1,4 @@
+import logging
 import typing
 
 from PyQt5 import QtWidgets, QtGui
@@ -6,6 +7,8 @@ from .devicestatus_ui import Ui_Form
 from ....core.devices.device import Device
 from ....core.services.telemetry import TelemetryInfo
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class DeviceStatus(QtWidgets.QWidget, Ui_Form):
     def __init__(self, parent, device: Device):
@@ -23,6 +26,17 @@ class DeviceStatus(QtWidgets.QWidget, Ui_Form):
                              self.device.connect('ready', self.onDeviceReady)]
         self.checkIfReady(self.device)
         self.onDeviceVariableChange(self.device, '_status', self.device.get_variable('_status'))
+        self.reconnectToolButton.clicked.connect(self.onReconnect)
+
+    def onReconnect(self):
+        try:
+            self.device.disconnect_device()
+        except Exception as exc:
+            logger.error('Error while disconnecting device: {}'.format(str(exc)))
+        try:
+            self.device.reconnect_device()
+        except Exception as exc:
+            logger.error('Error while reconnecting device: {}'.format(str(exc)))
 
     def onDeviceReady(self, device: Device):
         self.checkIfReady(device)
