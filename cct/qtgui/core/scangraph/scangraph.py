@@ -9,7 +9,7 @@ from matplotlib.backend_bases import key_press_handler, KeyEvent
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-from sastool.misc.basicfit import findpeak_single
+from sastool.misc.basicfit import findpeak_single, findpeak_asymmetric
 
 from .scangraph_ui import Ui_MainWindow
 from .signalsmodel import SignalModel
@@ -59,6 +59,10 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionFit_positive_Gaussian.triggered.connect(lambda: self.fit('Gaussian', +1))
         self.actionFit_negative_Lorentzian.triggered.connect(lambda: self.fit('Lorentzian', -1))
         self.actionFit_positive_Lorentzian.triggered.connect(lambda: self.fit('Lorentzian', +1))
+        self.actionFit_asymmetric_negative_peak.triggered.connect(lambda: self.fit('Lorentzian', -1, True))
+        self.actionFit_symmetric_negative_peak.triggered.connect(lambda: self.fit('Lorentzian', -1, False))
+        self.actionFit_asymmetric_peak.triggered.connect(lambda: self.fit('Lorentzian', 1, True))
+        self.actionFit_symmetric_peak.triggered.connect(lambda: self.fit('Lorentzian', 1, False))
         self.actionAutoScale.toggled.connect(self.autoscale)
         self.actionShowLegend.toggled.connect(self.drawLegend)
         self.hideAllButton.clicked.connect(lambda: self.model.setVisible(None, False))
@@ -86,7 +90,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             key_press_handler(event, self.canvas, self.figuretoolbar)
         return True
 
-    def fit(self, functiontype, sign):
+    def fit(self, functiontype, sign, asymmetric=False):
         xmin, xmax, ymin, ymax = self.axes.axis()
         x = self._data[self.abscissaName()]
         y = self._data[self.selectedSignal()]
@@ -98,24 +102,29 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                 "Error while peak fitting: not enough points in the current view "
                 "from the currently selected signal ({})".format(self.selectedSignal()))
             return
-        pos, hwhm, baseline, amplitude = findpeak_single(x[idx], y[idx], curve=functiontype, signs=(sign,))
-        x = np.linspace(x.min(), x.max(), 1000)
-        if functiontype == 'Gaussian':
-            y = amplitude.val * np.exp(-0.5 * (x - pos.val) ** 2 / hwhm.val ** 2) + baseline.val
-        elif functiontype == 'Lorentzian':
-            y = amplitude.val * hwhm.val ** 2 / (hwhm.val ** 2 + (pos.val - x) ** 2) + +baseline.val
+        return_x = np.linspace(x.min(), x.max(), 1000)
+        if asymmetric:
+            if sign>0:
+                pos, hwhm1, hwhm2, baseline, amplitude, yfit = findpeak_asymmetric(x[idx], y[idx], np.ones_like(y[idx]), curve=functiontype, return_x=return_x)
+            else:
+                pos, hwhm1, hwhm2, baseline, amplitude, yfit = findpeak_asymmetric(x[idx], -y[idx], np.ones_like(y[idx]), curve=functiontype, return_x=return_x)
+                yfit = -yfit
+                baseline = -baseline
+                amplitude = -amplitude
+        else:
+            pos, hwhm, baseline, amplitude, yfit = findpeak_single(x[idx], y[idx], curve=functiontype, signs=(sign,), return_x=return_x)
         for attr in ['_fitcurvehandle', '_peaktexthandle']:
             try:
                 getattr(self, attr).remove()
                 delattr(self, attr)
             except AttributeError:
                 pass
-        self._fitcurvehandle = self.axes.plot(x, y, 'r--')[0]
+        self._fitcurvehandle = self.axes.plot(return_x, yfit, 'r--')[0]
         if sign < 0:
             va = 'top'
         if sign > 0:
             va = 'bottom'
-        self._peaktexthandle = self.axes.text(pos.val, baseline.val + amplitude.val, pos.tostring(), ha='center', va=va)
+        self._peaktexthandle = self.axes.text(float(pos), float(baseline) + float(amplitude), pos.tostring(), ha='center', va=va)
         self._lastpeakposition = pos
         self.actionMotor_to_peak.setEnabled(True)
         self.canvas.draw_idle()
@@ -158,7 +167,10 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.cursorRightButton.setEnabled(position < self._datalength - 1)
         self.cursorHomeButton.setEnabled(position > 0)
         self.cursorEndButton.setEnabled(position < self._datalength - 1)
-        self.actionMotor_to_cursor.setEnabled(not self.credo.motors[self.abscissaName()].ismoving())
+        try:
+            self.actionMotor_to_cursor.setEnabled(not self.credo.motors[self.abscissaName()].ismoving())
+        except KeyError:
+            self.actionMotor_to_cursor.setEnabled(False)
         self.draw2D()
         self.drawScanCursor()
 

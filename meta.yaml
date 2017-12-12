@@ -17,7 +17,7 @@ requirements:
     - cython >=0.15
     - matplotlib
     - scipy
-    - sastool >=1.0.7
+    - sastool >=1.0.10
     - krb5
     - pyqt >=5
     - psutil
@@ -36,7 +36,7 @@ requirements:
     - krb5
     - scipy
     - matplotlib
-    - sastool >=1.0.7
+    - sastool >=1.0.10
     - pyqt >=5
     - openpyxl
 

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>710</width>
+    <width>833</width>
     <height>690</height>
    </rect>
   </property>
@@ -74,8 +74,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>282</width>
-            <height>455</height>
+            <width>365</width>
+            <height>440</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -93,8 +93,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>160</width>
-            <height>70</height>
+            <width>365</width>
+            <height>440</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -154,8 +154,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>289</width>
-            <height>266</height>
+            <width>365</width>
+            <height>440</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -593,7 +593,7 @@
              <bool>false</bool>
             </property>
             <property name="text">
-             <string/>
+             <string>Save</string>
             </property>
             <property name="icon">
              <iconset theme="document-save">
@@ -608,6 +608,9 @@
               <horstretch>1</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="maximum">
+             <double>10000.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -667,6 +670,9 @@
             <property name="buttonSymbols">
              <enum>QAbstractSpinBox::UpDownArrows</enum>
             </property>
+            <property name="maximum">
+             <double>10000.000000000000000</double>
+            </property>
            </widget>
           </item>
           <item row="1" column="4">
@@ -675,7 +681,7 @@
              <bool>false</bool>
             </property>
             <property name="text">
-             <string/>
+             <string>Save</string>
             </property>
             <property name="icon">
              <iconset theme="document-save">
@@ -691,6 +697,9 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="maximum">
+             <double>10000.000000000000000</double>
+            </property>
            </widget>
           </item>
           <item row="2" column="4">
@@ -699,7 +708,7 @@
              <bool>false</bool>
             </property>
             <property name="text">
-             <string/>
+             <string>Save</string>
             </property>
             <property name="icon">
              <iconset theme="document-save">

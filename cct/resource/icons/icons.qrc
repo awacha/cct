@@ -1,5 +1,9 @@
 <RCC>
   <qresource prefix="icons">
+    <file>fitpeak_negative_asymmetric.svg</file>
+    <file>fitpeak_negative_symmetric.svg</file>
+    <file>fitpeak_positive_asymmetric.svg</file>
+    <file>fitpeak_positive_symmetric.svg</file>
     <file>cptlogo.svg</file>
     <file>tpg201.svg</file>
     <file>sample_positions.svg</file>

@@ -6,7 +6,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationTool
 from matplotlib.figure import Figure
 from matplotlib.widgets import Cursor
 from sastool.classes2 import Exposure
-from sastool.misc.basicfit import findpeak_single
+from sastool.misc.basicfit import findpeak_asymmetric
 from sastool.misc.easylsq import nonlinear_odr
 from sastool.misc.errorvalue import ErrorValue
 from sastool.utils2d import centering
@@ -166,7 +166,7 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
         rad = rad.trim(xmin, xmax, ymin, ymax)
         x = np.linspace(rad.q.min(), rad.q.max())
-        peak, hwhm, baseline, amplitude, y = findpeak_single(rad.q, rad.Intensity, rad.Error, curve=curvetype,
+        peak, hwhm, baseline, amplitude, y = findpeak_asymmetric(rad.q, rad.Intensity, rad.Error, curve=curvetype,
                                                              return_x=x)
         self.uncalibratedValDoubleSpinBox.setValue(peak.val)
         self.uncalibratedErrDoubleSpinBox.setValue(peak.err)
@@ -221,10 +221,10 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         exposure = self.plotImage.exposure()
         exposure.header.beamcentery = posy
         exposure.header.beamcenterx = posx
-        self.beamXDoubleSpinBox.setValue(posx)
-        self.beamXErrDoubleSpinBox.setValue(0.0)  # ToDo
-        self.beamYDoubleSpinBox.setValue(posy)
-        self.beamYErrDoubleSpinBox.setValue(0.0)  # ToDo
+        self.beamXDoubleSpinBox.setValue(exposure.header.beamcenterx.val)
+        self.beamXErrDoubleSpinBox.setValue(exposure.header.beamcenterx.err)
+        self.beamYDoubleSpinBox.setValue(exposure.header.beamcentery.val)
+        self.beamYErrDoubleSpinBox.setValue(exposure.header.beamcentery.err)
         self.onFSNSelected(exposure.header.fsn, '', exposure)
 
     def onCenteringRequested(self):
@@ -234,9 +234,10 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             self.newBeamPosFound(posx, posy)
         elif self.centeringMethodComboBox.currentText() == 'Peak amplitude':
             xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
-            posy, posx = centering.findbeam_radialpeak(exposure.intensity,
-                                                       [exposure.header.beamcentery, exposure.header.beamcenterx],
-                                                       exposure.mask, xmin, xmax, drive_by='amplitude')
+            posy, posx = centering.findbeam_radialpeakheight(exposure.intensity,
+                                                             [exposure.header.beamcentery,
+                                                              exposure.header.beamcenterx],
+                                                             exposure.mask, xmin, xmax)
             self.newBeamPosFound(posx, posy)
         elif self.centeringMethodComboBox.currentText() == 'Peak width':
             xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()

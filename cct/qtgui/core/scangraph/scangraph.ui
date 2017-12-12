@@ -215,10 +215,10 @@
    <addaction name="actionAutoScale"/>
    <addaction name="actionShowLegend"/>
    <addaction name="separator"/>
-   <addaction name="actionFit_positive_Lorentzian"/>
-   <addaction name="actionFit_negative_Lorentzian"/>
-   <addaction name="actionFit_positive_Gaussian"/>
-   <addaction name="actionFit_negative_Gaussian"/>
+   <addaction name="actionFit_symmetric_peak"/>
+   <addaction name="actionFit_symmetric_negative_peak"/>
+   <addaction name="actionFit_asymmetric_peak"/>
+   <addaction name="actionFit_asymmetric_negative_peak"/>
    <addaction name="separator"/>
    <addaction name="actionCursor_to_Minimum"/>
    <addaction name="actionCursor_to_Maximum"/>
@@ -413,6 +413,54 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+C</string>
+   </property>
+  </action>
+  <action name="actionFit_symmetric_peak">
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/fitpeak.svg</normaloff>:/icons/fitpeak.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Fit symmetric peak</string>
+   </property>
+   <property name="toolTip">
+    <string>Fit a symmetric, positive Lorentzian peak</string>
+   </property>
+  </action>
+  <action name="actionFit_asymmetric_peak">
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/fitpeak_positive_asymmetric.svg</normaloff>:/icons/fitpeak_positive_asymmetric.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Fit asymmetric peak</string>
+   </property>
+   <property name="toolTip">
+    <string>Fit an asymmetric, positive Lorentzian peak</string>
+   </property>
+  </action>
+  <action name="actionFit_asymmetric_negative_peak">
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/fitpeak_negative_asymmetric.svg</normaloff>:/icons/fitpeak_negative_asymmetric.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Fit asymmetric negative peak</string>
+   </property>
+   <property name="toolTip">
+    <string>Fit an asymmetric, negative Lorentzian peak</string>
+   </property>
+  </action>
+  <action name="actionFit_symmetric_negative_peak">
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/fitpeak_negative_symmetric.svg</normaloff>:/icons/fitpeak_negative_symmetric.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Fit a symmetric negative peak</string>
+   </property>
+   <property name="toolTip">
+    <string>Fit a symmetric, negative Lorentzian peak</string>
    </property>
   </action>
  </widget>
