@@ -50,7 +50,6 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if not self.sampleNameComboBox.currentText():
             return
         self.model.add_sample(self.sampleNameComboBox.currentText())
-        self.adjustSize()
         for i in range(7):
             self.treeView.resizeColumnToContents(i)
         with self._updating:

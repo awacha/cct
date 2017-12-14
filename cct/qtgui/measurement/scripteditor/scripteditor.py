@@ -138,6 +138,8 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             self.lastCurveTabFSNSelector.onGotoLast()
 
     def cleanup(self):
+        self.lastExposureTabFSNSelector.cleanup()
+        self.lastCurveTabFSNSelector.cleanup()
         for c in self._eaconnections:
             self.credo.services['exposureanalyzer'].disconnect(c)
         self._eaconnections=[]

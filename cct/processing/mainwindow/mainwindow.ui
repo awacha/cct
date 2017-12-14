@@ -589,8 +589,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>521</height>
+          <width>360</width>
+          <height>390</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -780,8 +780,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>521</height>
+          <width>242</width>
+          <height>278</height>
          </rect>
         </property>
         <attribute name="label">
@@ -910,8 +910,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>521</height>
+          <width>287</width>
+          <height>80</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -989,67 +989,71 @@
          <string>Export</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_7">
-         <item row="7" column="0" colspan="3">
-          <layout class="QGridLayout" name="gridLayout_8">
-           <item row="2" column="0">
-            <widget class="QPushButton" name="exportAveragedCurvesGraphPushButton">
-             <property name="text">
-              <string>Averaged curves</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="exportAveraged2DDataPushButton">
-             <property name="text">
-              <string>Averaged patterns</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QPushButton" name="exportCorrelMatricesGraphPushButton">
-             <property name="text">
-              <string>Correlation matrices</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QPushButton" name="exportCorrelMatricesDataPushButton">
-             <property name="text">
-              <string>Correlation matrices</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QPushButton" name="exportAveraged2DGraphPushButton">
-             <property name="text">
-              <string>Averaged patterns</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="exportAveragedCurvesDataPushButton">
-             <property name="text">
-              <string>Averaged curves</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_15">
-             <property name="text">
+         <item row="9" column="0" colspan="3">
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QGroupBox" name="groupBox_6">
+             <property name="title">
               <string>Picture files:</string>
              </property>
+             <layout class="QVBoxLayout" name="verticalLayout_5">
+              <item>
+               <widget class="QPushButton" name="exportAveragedCurvesGraphPushButton">
+                <property name="text">
+                 <string>Averaged curves</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="exportAveraged2DGraphPushButton">
+                <property name="text">
+                 <string>Averaged patterns</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="exportCorrelMatricesGraphPushButton">
+                <property name="text">
+                 <string>Correlation matrices</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QLabel" name="label_16">
-             <property name="text">
+           <item>
+            <widget class="QGroupBox" name="groupBox_5">
+             <property name="title">
               <string>Data files:</string>
              </property>
+             <layout class="QVBoxLayout" name="verticalLayout_6">
+              <item>
+               <widget class="QPushButton" name="exportAveraged2DDataPushButton">
+                <property name="text">
+                 <string>Averaged patterns</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="exportAveragedCurvesDataPushButton">
+                <property name="text">
+                 <string>Averaged curves</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="exportCorrelMatricesDataPushButton">
+                <property name="text">
+                 <string>Correlation matrices</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
           </layout>
          </item>
-         <item row="9" column="0" colspan="3">
+         <item row="8" column="0" colspan="3">
           <spacer name="verticalSpacer_5">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -1104,6 +1108,34 @@
            <property name="text">
             <string>Image resolution:</string>
            </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QComboBox" name="exportImageWidthUnitsComboBox">
+           <item>
+            <property name="text">
+             <string>cm</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>inch</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QComboBox" name="exportImageHeightUnitsComboBox">
+           <item>
+            <property name="text">
+             <string>cm</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>inch</string>
+            </property>
+           </item>
           </widget>
          </item>
          <item row="0" column="1">
@@ -1166,34 +1198,6 @@
             <property name="icon">
              <iconset theme="image-tiff">
               <normaloff>.</normaloff>.</iconset>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="3" column="2">
-          <widget class="QComboBox" name="exportImageHeightUnitsComboBox">
-           <item>
-            <property name="text">
-             <string>cm</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>inch</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="QComboBox" name="exportImageWidthUnitsComboBox">
-           <item>
-            <property name="text">
-             <string>cm</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>inch</string>
             </property>
            </item>
           </widget>

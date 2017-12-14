@@ -956,64 +956,65 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             return False
         try:
             assert isinstance(self.queue, queue.Queue)
-            msg1, msg2 = self.queue.get_nowait()
-            if msg1 == '__init_summarize__':
-                assert isinstance(msg2, int)  # msg2 is the number of samples times the number of distances
-                self.progressBar1.setMinimum(0)
-                self.progressBar1.setMaximum(msg2)
-                self.progressbar1StatusLabel.setText('')
-                self.progressbar1TitleLabel.setText('Processed sample:')
-                self.progressbar2TitleLabel.setText('Processed exposure:')
-                self.progressBar2.setMinimum(0)
-                self.progressBar2.setMaximum(0)
-                self.progressBar2.setVisible(True)
-                self.progressbar2TitleLabel.setVisible(True)
-                self.progressbar2StatusLabel.setVisible(True)
-            elif msg1 == '__init_loadheaders__':
-                assert isinstance(msg2, int)  # the number of headers to load
-                self.progressBar2.setVisible(False)
-                self.progressbar2StatusLabel.setVisible(False)
-                self.progressbar2TitleLabel.setVisible(False)
-                self.progressbar1TitleLabel.setText('Loaded header:')
-                self.progressbar1StatusLabel.setText('')
-                self.progressBar1.setMinimum(0)
-                self.progressBar1.setMaximum(msg2)
-                self.progressBar1.setValue(0)
-            elif msg1 in ['__header_loaded__', '__header_notfound__']:
-                # loaded a header for FSN
-                assert isinstance(msg2, int)  # msg2 is the FSN of the header just loaded or not found.
-                self.progressBar1.setValue(self.progressBar1.value() + 1)
-                self.progressbar1StatusLabel.setText('{:d}'.format(msg2))
-            elif msg1 in ['__exposure_loaded__', '__exposure_notfound__']:
-                self.progressBar2.setValue(self.progressBar2.value() + 1)
-                self.progressbar2StatusLabel.setText('{:d}'.format(msg2))
-            elif msg1 == '__init_collect_exposures__':
-                self.progressbar2TitleLabel.setText('Processed exposure:')
-                self.progressbar2StatusLabel.setText('')
-                self.progressBar2.setMinimum(0)
-                self.progressBar2.setMaximum(msg2)
-            elif msg1 == '__init_stabilityassessment__':
-                self.progressBar2.setMinimum(0)
-                self.progressBar2.setMaximum(0)
-                self.progressbar2StatusLabel.setText('')
-                self.progressbar2TitleLabel.setText('Stability assessment...')
-            elif msg1 == '__done__':
-                self.processingprocess.join()
-                self.processingprocess = None
-                self.progressGroupBox.setVisible(False)
-                self.idlefcn.stop()
-                self.idlefcn = None
-                self.processPushButton.setEnabled(True)
-                self.toolBox.setEnabled(True)
-                self.updateResults(processingfinished=True)
-                return False
-            elif msg1.startswith('__'):
-                pass
-            else:
-                assert isinstance(msg1, str)  # sample
-                assert isinstance(msg2, float)  # distance
-                self.progressBar1.setValue(self.progressBar1.value() + 1)
-                self.progressbar1StatusLabel.setText('{} ({:.2f} mm)'.format(msg1, msg2))
+            for imessage in range(20):
+                msg1, msg2 = self.queue.get_nowait()
+                if msg1 == '__init_summarize__':
+                    assert isinstance(msg2, int)  # msg2 is the number of samples times the number of distances
+                    self.progressBar1.setMinimum(0)
+                    self.progressBar1.setMaximum(msg2)
+                    self.progressbar1StatusLabel.setText('')
+                    self.progressbar1TitleLabel.setText('Processed sample:')
+                    self.progressbar2TitleLabel.setText('Processed exposure:')
+                    self.progressBar2.setMinimum(0)
+                    self.progressBar2.setMaximum(0)
+                    self.progressBar2.setVisible(True)
+                    self.progressbar2TitleLabel.setVisible(True)
+                    self.progressbar2StatusLabel.setVisible(True)
+                elif msg1 == '__init_loadheaders__':
+                    assert isinstance(msg2, int)  # the number of headers to load
+                    self.progressBar2.setVisible(False)
+                    self.progressbar2StatusLabel.setVisible(False)
+                    self.progressbar2TitleLabel.setVisible(False)
+                    self.progressbar1TitleLabel.setText('Loaded header:')
+                    self.progressbar1StatusLabel.setText('')
+                    self.progressBar1.setMinimum(0)
+                    self.progressBar1.setMaximum(msg2)
+                    self.progressBar1.setValue(0)
+                elif msg1 in ['__header_loaded__', '__header_notfound__']:
+                    # loaded a header for FSN
+                    assert isinstance(msg2, int)  # msg2 is the FSN of the header just loaded or not found.
+                    self.progressBar1.setValue(self.progressBar1.value() + 1)
+                    self.progressbar1StatusLabel.setText('{:d}'.format(msg2))
+                elif msg1 in ['__exposure_loaded__', '__exposure_notfound__']:
+                    self.progressBar2.setValue(self.progressBar2.value() + 1)
+                    self.progressbar2StatusLabel.setText('{:d}'.format(msg2))
+                elif msg1 == '__init_collect_exposures__':
+                    self.progressbar2TitleLabel.setText('Processed exposure:')
+                    self.progressbar2StatusLabel.setText('')
+                    self.progressBar2.setMinimum(0)
+                    self.progressBar2.setMaximum(msg2)
+                elif msg1 == '__init_stabilityassessment__':
+                    self.progressBar2.setMinimum(0)
+                    self.progressBar2.setMaximum(0)
+                    self.progressbar2StatusLabel.setText('')
+                    self.progressbar2TitleLabel.setText('Stability assessment...')
+                elif msg1 == '__done__':
+                    self.processingprocess.join()
+                    self.processingprocess = None
+                    self.progressGroupBox.setVisible(False)
+                    self.idlefcn.stop()
+                    self.idlefcn = None
+                    self.processPushButton.setEnabled(True)
+                    self.toolBox.setEnabled(True)
+                    self.updateResults(processingfinished=True)
+                    return False
+                elif msg1.startswith('__'):
+                    pass
+                else:
+                    assert isinstance(msg1, str)  # sample
+                    assert isinstance(msg2, float)  # distance
+                    self.progressBar1.setValue(self.progressBar1.value() + 1)
+                    self.progressbar1StatusLabel.setText('{} ({:.2f} mm)'.format(msg1, msg2))
         except queue.Empty:
             return True
         return True
