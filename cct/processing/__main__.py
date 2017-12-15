@@ -78,11 +78,13 @@ mw.setWindowTitle(mw.windowTitle() + ' v{}'.format(pkg_resources.get_distributio
 app.setWindowIcon(mw.windowIcon())
 mw.show()
 result = app.exec_()
+mw.deleteLater()
 logging.root.debug('QApplication exited.')
 del mw
 logging.root.debug('MW deleted.')
 gc.collect()
 logging.root.debug('Garbage collected.')
+app.deleteLater()
 del app
 logging.root.debug('App deleted.')
 gc.collect()

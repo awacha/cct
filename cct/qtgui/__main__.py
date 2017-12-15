@@ -87,10 +87,12 @@ credo.start()
 mw.show()
 result = app.exec_()
 logging.root.debug('QApplication exited.')
+mw.deleteLater()
 del mw
 logging.root.debug('MW deleted.')
 gc.collect()
 logging.root.debug('Garbage collected.')
+app.deleteLater()
 del app
 logging.root.debug('App deleted.')
 gc.collect()
