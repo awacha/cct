@@ -1,5 +1,9 @@
 <RCC>
   <qresource prefix="icons">
+    <file>graph_orientation_lower.svg</file>
+    <file>graph_orientation_ltr.svg</file>
+    <file>graph_orientation_rtl.svg</file>
+    <file>graph_orientation_upper.svg</file>
     <file>fitpeak_negative_asymmetric.svg</file>
     <file>fitpeak_negative_symmetric.svg</file>
     <file>fitpeak_positive_asymmetric.svg</file>
@@ -9,8 +13,6 @@
     <file>sample_positions.svg</file>
     <file>motor_to_cursor.svg</file>
     <file>motor_to_peak.svg</file>
-    <file>normal_orientation.svg</file>
-    <file>upside_down_orientation.svg</file>
     <file>motorcalibration.svg</file>
     <file>motorconfig.svg</file>
     <file>project.svg</file>

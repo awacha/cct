@@ -12,6 +12,7 @@ from ....core.services.samples import SampleStore
 
 
 class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -37,7 +38,39 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.model.dataChanged.connect(self.replot)
         self.labelSizeHorizontalSlider.valueChanged.connect(self.replot)
         self.upsideDownToolButton.toggled.connect(self.replot)
+        self.rightToLeftToolButton.toggled.connect(self.replot)
+        self.loadPersistence()
         self.replot()
+
+    def savePersistence(self):
+        self.credo.savePersistence(
+            'samplepositionchecker',
+            {'show_labels':self.showLabelsToolButton.isChecked(),
+             'rtl':self.rightToLeftToolButton.isChecked(),
+             'upsidedown':self.upsideDownToolButton.isChecked(),
+             'samples':self.model.getSelected()
+             })
+
+    def loadPersistence(self):
+        data=self.credo.loadPersistence('samplepositionchecker')
+        if not data:
+            return
+        try:
+            self.showLabelsToolButton.setChecked(data['show_labels'])
+        except KeyError:
+            pass
+        try:
+            self.rightToLeftToolButton.setChecked(data['rtl'])
+        except KeyError:
+            pass
+        try:
+            self.upsideDownToolButton.setChecked(data['upsidedown'])
+        except KeyError:
+            pass
+        try:
+            self.model.setSelected(data['samples'])
+        except KeyError:
+            pass
 
     def cleanup(self):
         for c in self._connections:
@@ -68,6 +101,10 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         xmin, xmax, ymin, ymax = self.axes.axis()
         if self.upsideDownToolButton.isChecked():
             self.axes.axis(ymin=max(ymax, ymin), ymax=min(ymin, ymax))
+        else:
+            self.axes.axis(ymin=min(ymax, ymin), ymax=max(ymin, ymax))
+        if self.rightToLeftToolButton.isChecked():
+            self.axes.axis(xmin = max(xmax, xmin), xmax = min(xmax, xmin))
         else:
             self.axes.axis(ymin=min(ymax, ymin), ymax=max(ymin, ymax))
         samples = self.model.getSelected()

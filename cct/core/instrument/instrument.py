@@ -3,7 +3,7 @@ import os
 import pickle
 import time
 import traceback
-from typing import List, Any
+from typing import List, Any, Dict, Optional
 
 from ..devices.device import Device, DeviceBackend_ModbusTCP, DeviceBackend_TCP, DeviceError
 from ..devices.motor import Motor
@@ -306,6 +306,20 @@ class Instrument(Callbacks):
             }
         }
         self.emit_config_change_signal()
+
+    def savePersistence(self, classname:str, dictionary:Dict):
+        os.makedirs(os.path.join(self.config['path']['directories']['config'],'uipersistence'),exist_ok=True)
+        with open(os.path.join(self.config['path']['directories']['config'], 'uipersistence', classname+'.pickle'),'wb') as f:
+            pickle.dump(dictionary, f)
+
+    def loadPersistence(self, classname:str) -> Optional[Dict]:
+        try:
+            with open(os.path.join(
+                    self.config['path']['directories']['config'],
+                    'uipersistence', classname+'.pickle'), 'rb') as f:
+                return pickle.load(f)
+        except FileNotFoundError:
+            return None
 
     def save_state(self):
         """Save the current configuration (including that of all devices) to a

@@ -52,8 +52,8 @@
      id="layer1">
     <path
        id="path3755"
-       d="m 65.714286,386.6479 0,300 311.238574,0"
-       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#Arrow1Lstart);marker-end:url(#Arrow1Lend)" />
+       d="m 367.54222,386.6479 v 300 H 56.303642"
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#Arrow1Lstart);marker-end:url(#Arrow1Lend)" />
     <circle
        r="11.428572"
        cy="608.95294"

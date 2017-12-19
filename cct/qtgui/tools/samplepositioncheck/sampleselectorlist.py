@@ -66,3 +66,8 @@ class SampleSelectorModel(QtCore.QAbstractItemModel):
 
     def getSelected(self):
         return sorted([s for s in self._samples if self._samples[s]])
+
+    def setSelected(self, lis):
+        for sn in self._samples:
+            self._samples[sn]=sn in lis
+        self.dataChanged.emit(self.index(0,0), self.index(self.rowCount(),0), [QtCore.Qt.CheckStateRole])

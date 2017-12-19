@@ -15,6 +15,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class ToolWindow(object):
     required_devices = []
     required_privilege = PRIV_LAYMAN
+    classname = None
 
     def setupToolWindow(self, credo, required_devices=[]):
         """An initialization method with a similar task as __init__()"""
@@ -33,6 +34,10 @@ class ToolWindow(object):
         self._credoconnections = [self.credo.connect('config-changed', self.updateUiFromConfig)]
         self._interpreterconnections = []
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+
+    def savePersistence(self):
+        # do not do anything by default, it is up to the subclass to redefine this.
+        return
 
     @classmethod
     def testRequirements(cls, credo: Instrument, not_ready_is_ok: bool = False):
@@ -122,6 +127,7 @@ class ToolWindow(object):
             del self._device_connections[device]
 
     def cleanup(self):
+        self.savePersistence()
         logger.debug('Cleanup() called on ToolWindow {} ({})'.format(self.objectName(), self.windowTitle()))
         self.cleanupAfterCommand()
         for d in list(self._device_connections.keys()):
