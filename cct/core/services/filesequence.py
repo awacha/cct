@@ -87,8 +87,7 @@ class FileSequence(Service):
                 f.write('#D {}\n'.format(time.asctime()))
                 f.write('#C CREDO scan file\n')
                 f.write('#O0 ' + '  '.join(sorted([m['name'] for m in
-                                                   self.instrument.config['motors']],
-                                                  key=lambda x: x['name'])) + '\n')
+                                                   self.instrument.config['motors'].values()])) + '\n')
                 f.write('\n')
 
     # noinspection PyPep8Naming
