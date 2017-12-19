@@ -1,18 +1,21 @@
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 from PyQt5 import QtWidgets
 from .accounting_ui import Ui_DockWidget
+from .projectsmodel import ProjectsModel
 from ...core.mixins import ToolWindow
 from ....core.instrument.instrument import Instrument
 from ....core.services.accounting import Accounting as AccountingService
+from ....core.utils.inhibitor import Inhibitor
 
 
 class Accounting(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
     def __init__(self, *args, **kwargs):
         self._accountingserviceconnections = []
+        self._updating = Inhibitor()
         credo = kwargs.pop('credo')
         QtWidgets.QDockWidget.__init__(self, *args, **kwargs)
         self.setupToolWindow(credo)
@@ -30,29 +33,51 @@ class Accounting(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         self.onPrivilegeChanged(a, a.get_privilegelevel())
         self.privilegesComboBox.currentTextChanged.connect(self.onPrivilegeChange)
         self.onProjectChanged(a)
-        self.projectIDComboBox.currentTextChanged.connect(self.onProjectChange)
+        self.projectsModel = ProjectsModel(self.credo)
+        self.projectsView = QtWidgets.QTreeView(self.projectIDComboBox)
+        self.projectsView.setRootIsDecorated(False)
+        self.projectsView.setHeaderHidden(True)
+        self.projectsView.setAllColumnsShowFocus(True)
+        self.projectsView.setAlternatingRowColors(True)
+        self.projectsView.setWordWrap(True)
+        self.projectsView.resizeColumnToContents(0)
+        self.projectsView.resizeColumnToContents(1)
+        self.projectsView.setMinimumWidth(300)
+        self.projectIDComboBox.setModel(self.projectsModel)
+        self.projectIDComboBox.setView(self.projectsView)
+        self.projectIDComboBox.setSizeAdjustPolicy(self.projectIDComboBox.AdjustToContents)
+        self.projectIDComboBox.setModelColumn(0)
+        self.projectIDComboBox.currentIndexChanged.connect(self.onProjectChange)
         self._accountingserviceconnections = [
             a.connect('privlevel-changed', self.onPrivilegeChanged),
             a.connect('project-changed', self.onProjectChanged)
         ]
 
     def onProjectChange(self):
-        a = self.credo.services['accounting']
-        if a.get_project().projectid == self.projectIDComboBox.currentText():
+        if self._updating:
             return
+        a = self.credo.services['accounting']
         assert isinstance(a, AccountingService)
-        logger.debug('Selecting project: {}'.format(self.projectIDComboBox.currentText()))
-        a.select_project(self.projectIDComboBox.currentText())
+        selectedprojectid=sorted(a.get_projectids())[self.projectIDComboBox.currentIndex()]
+        logger.debug('selectedprojectid: {}'.format(selectedprojectid))
+        if a.get_project().projectid == selectedprojectid:
+            return
+        logger.debug('Selecting project: {}'.format(selectedprojectid))
+        with self._updating:
+            a.select_project(selectedprojectid)
 
     def onProjectChanged(self, accounting: AccountingService):
         project = accounting.get_project()
+        logger.debug('OnProjectChanged: {}'.format(project.projectid))
         self.proposerNameLabel.setText(project.proposer)
         self.projectTitleLabel.setText(project.projectname)
         self.projectIDComboBox.blockSignals(True)
-        self.projectIDComboBox.clear()
-        self.projectIDComboBox.addItems(accounting.get_projectids())
+#        self.projectIDComboBox.clear()
+#        self.projectIDComboBox.addItems(accounting.get_projectids())
         self.projectIDComboBox.blockSignals(False)
-        self.projectIDComboBox.setCurrentIndex(self.projectIDComboBox.findText(project.projectid))
+        newindex = sorted(accounting.get_projectids()).index(project.projectid)
+        logger.debug('newindex: {}'.format(newindex))
+        self.projectIDComboBox.setCurrentIndex(newindex)
 
     def onPrivilegeChange(self):
         a = self.credo.services['accounting']
@@ -64,6 +89,7 @@ class Accounting(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
 
     def cleanup(self):
         super().cleanup()
+        self.projectsModel.cleanup()
         try:
             for c in self._accountingserviceconnections:
                 self.credo.services['accounting'].disconnect(c)
