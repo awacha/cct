@@ -106,7 +106,7 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if self.rightToLeftToolButton.isChecked():
             self.axes.axis(xmin = max(xmax, xmin), xmax = min(xmax, xmin))
         else:
-            self.axes.axis(ymin=min(ymax, ymin), ymax=max(ymin, ymax))
+            self.axes.axis(xmin=min(xmax, xmin), xmax=max(xmin, xmax))
         samples = self.model.getSelected()
         if not samples:
             self.canvas.draw()
