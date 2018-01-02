@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>786</width>
+    <width>978</width>
     <height>571</height>
    </rect>
   </property>
@@ -117,7 +117,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>786</width>
+     <width>978</width>
      <height>22</height>
     </rect>
    </property>
@@ -126,6 +126,7 @@
      <string>&amp;File</string>
     </property>
     <addaction name="actionNew_script"/>
+    <addaction name="actionScript_wizard"/>
     <addaction name="actionLoad_script"/>
     <addaction name="actionSave_script"/>
     <addaction name="actionSaveAs"/>
@@ -157,6 +158,12 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
@@ -170,6 +177,8 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionNew_script"/>
+   <addaction name="actionScript_wizard"/>
+   <addaction name="actionNew_from_template"/>
    <addaction name="actionLoad_script"/>
    <addaction name="actionSave_script"/>
    <addaction name="actionSaveAs"/>
@@ -382,6 +391,30 @@
    </property>
    <property name="toolTip">
     <string>Close this window</string>
+   </property>
+  </action>
+  <action name="actionNew_from_template">
+   <property name="icon">
+    <iconset theme="text-x-generic-template">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>Open template</string>
+   </property>
+   <property name="toolTip">
+    <string>Create a new script from a template</string>
+   </property>
+  </action>
+  <action name="actionScript_wizard">
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/scriptwizard.svg</normaloff>:/icons/scriptwizard.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Script wizard...</string>
+   </property>
+   <property name="toolTip">
+    <string>Create a script using an user-friendly wizard interface</string>
    </property>
   </action>
  </widget>

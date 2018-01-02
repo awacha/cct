@@ -21,7 +21,7 @@ from ....core.services.interpreter import Interpreter
 from ....core.services.exposureanalyzer import ExposureAnalyzer
 from ....core.commands.script import Script
 from ...help import CommandHelp
-
+from .scriptcreatorwizard import ScriptWizard
 
 class HighLighter(QtGui.QSyntaxHighlighter):
     def __init__(self, *args, **kwargs):
@@ -71,6 +71,9 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionRedo.triggered.connect(self.document.redo)
         self.actionUndo.setEnabled(self.document.isUndoAvailable())
         self.actionRedo.setEnabled(self.document.isRedoAvailable())
+        self.actionNew_from_template.setEnabled(True)
+        self.actionNew_from_template.triggered.connect(self.onNewFromTemplate)
+        self.actionScript_wizard.triggered.connect(self.onWizard)
         self.scriptEdit.copyAvailable.connect(self.actionCopy.setEnabled)
         self.scriptEdit.copyAvailable.connect(self.actionCut.setEnabled)
         self.scriptEdit.copyAvailable.connect(self.actionDelete.setEnabled)
@@ -93,7 +96,7 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionSave_script.triggered.connect(self.saveScript)
         self.actionSaveAs.triggered.connect(self.saveAsScript)
         self.actionNew_script.triggered.connect(self.newScript)
-        self.actionLoad_script.triggered.connect(self.loadScript)
+        self.actionLoad_script.triggered.connect(self.onLoadScript)
         self.actionStart.triggered.connect(self.runScript)
         self.actionPause.triggered.connect(self.pauseScript)
         self.syntaxHighLighter = HighLighter(self.document)
@@ -121,6 +124,18 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         ]
         self.tabWidget.currentChanged.connect(self.onTabChanged)
         self.scriptEdit.installEventFilter(self)
+
+    def onWizard(self):
+        if not self.confirmDropChanges():
+            return
+        wizard = ScriptWizard(self, self.credo)
+        if wizard.exec_() == wizard.Accepted:
+            self.document.setModified(False) # this is to ensure that newScript won't ask for overwrite confirmation.
+            self.newScript()
+            self.scriptEdit.setPlainText(wizard.script())
+            self.document.setModified(True)
+        wizard.cleanup()
+
 
     def eventFilter(self, obj: QtCore.QObject, event: QtCore.QEvent):
         if obj == self.scriptEdit and isinstance(event, QtGui.QKeyEvent):
@@ -213,6 +228,9 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             self.lastfilename = None
             self.setWindowTitle('CCT Script Editor :: *Untitled*')
 
+    def onNewFromTemplate(self):
+        return self.loadScript(prefer_templates=True)
+
     def saveAsScript(self):
         if self.lastfilename is None:
             if self.credo is not None:
@@ -223,7 +241,10 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         else:
             path = os.path.split(self.lastfilename)[0]
         filename, filter = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Save script to file", path, '*.cct')
+            self, "Save script to file", path,
+            'CCT Script Files (*.cct);;CCT Template Files (*.ctt);;All files (*)',
+            'CCT Script Files (*.cct)'
+        )
         if filename is None:
             return
         else:
@@ -233,7 +254,10 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             self.setWindowTitle('CCT Script Editor :: {}'.format(os.path.split(self.lastfilename)[-1]))
         return self.saveScript()
 
-    def loadScript(self):
+    def onLoadScript(self):
+        return self.loadScript(prefer_templates=False)
+
+    def loadScript(self, prefer_templates=False):
         if self.lastfilename is None:
             if self.credo is not None:
                 path = os.path.join(
@@ -244,25 +268,32 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             path = os.path.split(self.lastfilename)[0]
         if self.confirmDropChanges():
             filename, filter = QtWidgets.QFileDialog.getOpenFileName(
-                self, "Open a script file", path, '*.cct')
-            if filename is None:
+                self, ["Open a script file", "Open a script template file"][int(prefer_templates)],
+                path, 'CCT Script Files (*.cct);;CCT Template Files (*.ctt);;All files (*)',
+                ['CCT Script Files (*.cct)', 'CCT Template Files (*.ctt)'][int(prefer_templates)])
+            if not filename:
                 # Cancel was pressed
                 return
             try:
                 with open(filename, 'rt') as f:
                     text = ''.join(f.readlines())
             except (PermissionError, FileNotFoundError):
-                QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot open file {}'.format(self.lastfilename))
+                QtWidgets.QMessageBox.critical(self, 'Error', 'Cannot open file {}'.format(filename))
                 return
             assert isinstance(self.document, QtGui.QTextDocument)
             self.document.setPlainText(text)
-            self.lastfilename = filename
-            self.setWindowTitle('CCT Script Editor :: {}'.format(os.path.split(self.lastfilename)[-1]))
+            if filename.endswith('.ctt') or prefer_templates:
+                self.lastfilename = None
+                self.setWindowTitle('CCT Script Editor :: *Untitled*')
+            else:
+                self.lastfilename = filename
+                self.setWindowTitle('CCT Script Editor :: {}'.format(os.path.split(self.lastfilename)[-1]))
             self.document.setModified(False)
+
 
     def setIdle(self):
         for action in [self.actionNew_script, self.actionSave_script, self.actionSaveAs, self.actionPaste,
-                       self.actionLoad_script]:
+                       self.actionLoad_script, self.actionNew_from_template, self.actionScript_wizard]:
             action.setEnabled(True)
         for action in [self.actionDelete, self.actionCut,
                        self.actionCopy]:
@@ -278,7 +309,8 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def setBusy(self):
         for action in [self.actionNew_script, self.actionSave_script, self.actionSaveAs, self.actionLoad_script,
                        self.actionCut,
-                       self.actionCopy, self.actionDelete, self.actionPaste, self.actionRedo, self.actionUndo]:
+                       self.actionCopy, self.actionDelete, self.actionPaste, self.actionRedo, self.actionUndo,
+                       self.actionNew_from_template, self.actionScript_wizard]:
             action.setEnabled(False)
         self.scriptEdit.setReadOnly(True)
         self.actionStart.setIcon(QtGui.QIcon.fromTheme('media-playback-stop'))
