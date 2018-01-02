@@ -126,7 +126,7 @@ class Expose(Command):
         <exptime>: exposure time in seconds
         <prefix>: the prefix of the resulting file name, e.g. 'crd', 'scn', 
             'tra', 'tst', etc. If not given, it is taken from the variable
-            `expose_prefix`
+            `expose_prefix`. If it is not present, defaults to 'crd'
         <otherargs>: a dictionary, used internally, e.g. by scan.
 
     Returns:
@@ -155,9 +155,7 @@ class Expose(Command):
             try:
                 self.prefix = self.namespace['expose_prefix']
             except KeyError:
-                raise CommandArgumentError(
-                    'Exposure prefix must be given either as an argument to \
-command {} or in the \'expose_prefix\' variable'.format(self.name))
+                self.prefix = self.interpreter.instrument.config['path']['prefixes']['crd']
         try:
             assert isinstance(self.args[2], dict)
         except IndexError:
@@ -243,7 +241,7 @@ class ExposeMulti(Command):
         <nimages>: the number of images expected
         <prefix>: the prefix of the resulting file name, e.g. 'crd', 'scn', 
             'tra', 'tst', etc. If not given, it is taken from the variable
-            `expose_prefix`
+            `expose_prefix`. If it is not available, 'crd' will be used.
         <expdelay>: the delay time between exposures. Defaults to 0.003 sec,
             which is the lowest allowed value.
         <otherargs>: a dictionary, used internally, e.g. by scan.
@@ -277,9 +275,7 @@ class ExposeMulti(Command):
             try:
                 self.prefix = self.namespace['expose_prefix']
             except KeyError:
-                raise CommandArgumentError(
-                    'Exposure prefix must be given either as an argument to \
-command {} or in the \'expose_prefix\' variable'.format(self.name))
+                self.prefix = self.interpreter.instrument.config['path']['prefixes']['crd']
         try:
             self.expdelay = float(self.args[3])
             if self.expdelay < 0.003:
