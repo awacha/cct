@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>949</width>
     <height>640</height>
    </rect>
   </property>
@@ -557,7 +557,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>949</width>
      <height>22</height>
     </rect>
    </property>
@@ -579,6 +579,7 @@
     <addaction name="actionCalibration"/>
     <addaction name="separator"/>
     <addaction name="actionUser_management"/>
+    <addaction name="actionChange_password"/>
     <addaction name="actionProject_management"/>
    </widget>
    <widget class="QMenu" name="menu_Devices">
@@ -656,6 +657,12 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
@@ -1123,6 +1130,18 @@
    </property>
    <property name="toolTip">
     <string>Calibration of q-calibrant samples using the detector shifting technique</string>
+   </property>
+  </action>
+  <action name="actionChange_password">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/changepassword.svg</normaloff>:/icons/changepassword.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Change password...</string>
+   </property>
+   <property name="toolTip">
+    <string>Change passwords</string>
    </property>
   </action>
  </widget>

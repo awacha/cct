@@ -1,3 +1,4 @@
+import crypt
 import logging
 import os
 import pickle
@@ -22,14 +23,16 @@ class User(object):
     lastname = None
     privlevel = None
     email = None
+    passwordhash = None
 
     def __init__(self, uname: str, firstname: str, lastname: str, privlevel: PrivilegeLevel = PRIV_LAYMAN,
-                 email: str = ''):
+                 email: str = '', passwordhash: Optional[str]=None):
         self.username = uname
         self.firstname = firstname
         self.lastname = lastname
         self.privlevel = privlevel
         self.email = email
+        self.passwordhash = passwordhash
 
 
 class Project(object):
@@ -66,7 +69,7 @@ class Accounting(Service):
         self.projects = []
         super().__init__(*args, **kwargs)
 
-    def authenticate(self, username, password):
+    def authenticate(self, username, password, setuser=True):
         if '@' not in username:
             username = username + '@' + self.get_default_realm()
         try:
@@ -74,10 +77,27 @@ class Accounting(Service):
                 logger.info('Authenticated user ' + username + '.')
                 if username.split('@', 1)[0] not in [u.username for u in self.users]:
                     self.add_user(username.split('@', 1)[0], 'Firstname', 'Lastname', PRIV_LAYMAN, 'nobody@example.com')
-                self.select_user(username)
+                if setuser:
+                    self.select_user(username)
                 return True
+            else:
+                raise RuntimeError('Kerberos authentication failed')
         except RuntimeError as rte:
-            logger.info('Failed to authenticate user {}: {}'.format(username, str(rte.args[0])))
+            logger.info('Failed to authenticate user {} from Kerberos: {}'.format(username, str(rte.args[0])))
+            username = username.split('@')[0]
+            try:
+                if self.get_user(username).passwordhash is not None:
+                    if self.get_user(username).passwordhash == crypt.crypt(password, crypt.METHOD_SHA512):
+                        if setuser:
+                            self.select_user(username)
+                        logger.info('Authenticated user ' + username + ' using the local password database.')
+                        return True
+                    else:
+                        logger.info('Failed to authenticate user {} from the local password database: invalid password.'.format(username))
+                        return False
+            except KeyError:
+                logger.error('User {} not present in the user database.'.format(username))
+                return False
             return False
 
     def select_user(self, username: str):
@@ -113,6 +133,8 @@ class Accounting(Service):
             return self.current_user
         else:
             user = [u for u in self.users if u.username == username]
+            if not user:
+                raise KeyError(username)
             assert (len(user) == 1)  # the username is a "key": duplicates are not allowed
             return user[0]
 
@@ -280,3 +302,11 @@ class Accounting(Service):
     # noinspection PyMethodMayBeStatic
     def do_privlevel_changed(self, new_privlevel: PrivilegeLevel):
         logger.info('Privilege level changed to: ' + new_privlevel.name)
+
+    def change_local_password(self, username:str, oldpassword:str, newpassword:str):
+        if not self.has_privilege(PRIV_USERMAN) and (username != self.get_user().username):
+            raise ServiceError('Insufficient privileges to change the password of other users.')
+        if not self.authenticate(username, oldpassword, setuser=False):
+            raise ServiceError('Your supplied password has not been accepted.')
+        self.get_user(username).passwordhash=crypt.crypt(newpassword, crypt.METHOD_SHA512)
+        self.instrument.save_state()

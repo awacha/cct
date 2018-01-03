@@ -45,7 +45,7 @@ from ..tools.samplepositioncheck import SamplePositionChecker
 from .logviewer_text import LogViewerText
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
-
+from ..setup.users.cpw import ChangePasswordDialog
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
@@ -96,7 +96,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionFirstPrinciplesCalibration: QCalibration,
         }
         self._dockwidgets = {}
-
+        self.actionChange_password.triggered.connect(self.onChangePassword)
         self.actionQuit.triggered.connect(self.onQuit)
         self.actionSave_settings.triggered.connect(self.onSaveSettings)
         self.actionAbout.triggered.connect(self.onAbout)
@@ -149,6 +149,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.deviceStatusBar = DeviceStatusBar(self, self.credo)
         self.deviceStatusBarLayout.addWidget(self.deviceStatusBar)
         self.panicPushButton.clicked.connect(self.onPanic)
+
+    def onChangePassword(self):
+        dialog = ChangePasswordDialog(self, self.credo)
+        dialog.exec()
+        dialog.deleteLater()
+        return
 
     def onPanic(self):
         try:
