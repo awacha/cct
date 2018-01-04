@@ -304,9 +304,16 @@ class Accounting(Service):
         logger.info('Privilege level changed to: ' + new_privlevel.name)
 
     def change_local_password(self, username:str, oldpassword:str, newpassword:str):
-        if not self.has_privilege(PRIV_USERMAN) and (username != self.get_user().username):
+        if (not self.has_privilege(PRIV_USERMAN)) and (username != self.get_user().username):
+            # if we do not have the PRIV_USERMAN privilege, we can only change our password.
             raise ServiceError('Insufficient privileges to change the password of other users.')
-        if not self.authenticate(username, oldpassword, setuser=False):
+        if not self.authenticate(self.get_user().username, oldpassword, setuser=False):
+            # we always authenticate the current user, not the one whose password is about to be changed.
+            # Two cases can happen:
+            #    a) we have PRIV_USERMAN: we can change the password of any other user, but we must supply
+            #       our own password.
+            #    b) we do not have PRIV_USERMAN: we can change only our password, this has already been
+            #       ensured above. We must supply our own password once again.
             raise ServiceError('Your supplied password has not been accepted.')
         self.get_user(username).passwordhash=crypt.crypt(newpassword, crypt.METHOD_SHA512)
         self.instrument.save_state()
