@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from PyQt5 import QtWidgets, QtCore
 from matplotlib.path import Path
@@ -10,6 +12,8 @@ from ...core.fsnselector import FSNSelector
 from ...core.mixins import ToolWindow
 from ...core.plotimage import PlotImage
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -67,6 +71,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         super().cleanup()
 
     def onFSNSelected(self, prefix: str, fsn: int, exposure: Exposure):
+        logger.debug('FSN selected, setting exposure.')
         self.setExposure(exposure)
         del exposure
 
