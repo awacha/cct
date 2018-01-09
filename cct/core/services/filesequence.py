@@ -533,8 +533,13 @@ class FileSequence(Service):
         header = self.load_header(prefix, fsn)
         cbfbasename = self.exposurefileformat(prefix, fsn) + '.cbf'
         imgpath = self.instrument.config['path']['directories']['images']
+        try:
+            mask = self.get_mask(header.maskname)
+        except FileNotFoundError:
+            raise FileNotFoundError('Cannot load exposure {} (prefix {}): mask {} not found.'.format(fsn, prefix, header.maskname))
         for path in [os.path.join(imgpath, prefix), imgpath]:
             try:
+                logger.debug('Trying to load fsn {}, prefix {} from path {}.'.format(fsn, prefix, path))
                 return Exposure.new_from_file(
                     os.path.join(path, cbfbasename), header,
                     self.get_mask(header.maskname))
