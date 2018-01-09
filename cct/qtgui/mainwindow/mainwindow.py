@@ -42,6 +42,7 @@ from ..devices.vacuum import VacuumGauge
 from ..devices.connections import DeviceConnections
 from ..diagnostics.resourceusage import ResourceUsage
 from ..tools.samplepositioncheck import SamplePositionChecker
+from ..tools.logbook import LogBook
 from .logviewer_text import LogViewerText
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
@@ -94,6 +95,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionSamplePositionChecker: SamplePositionChecker,
             self.actionCommands: CommandHelp,
             self.actionFirstPrinciplesCalibration: QCalibration,
+            self.actionLogbook: LogBook,
         }
         self._dockwidgets = {}
         self.actionChange_password.triggered.connect(self.onChangePassword)

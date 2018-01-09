@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>logbook.svg</file>
     <file>changepassword.svg</file>
     <file>scriptwizard.svg</file>
     <file>graph_orientation_lower.svg</file>

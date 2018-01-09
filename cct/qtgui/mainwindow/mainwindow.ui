@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>949</width>
+    <width>1066</width>
     <height>640</height>
    </rect>
   </property>
@@ -557,8 +557,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>949</width>
-     <height>22</height>
+     <width>1066</width>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -588,7 +588,7 @@
     </property>
     <widget class="QMenu" name="menuMotors">
      <property name="title">
-      <string>Motors</string>
+      <string>&amp;Motors</string>
      </property>
      <property name="icon">
       <iconset resource="../../resource/icons/icons.qrc">
@@ -628,6 +628,7 @@
     <addaction name="actionResource_consumption"/>
     <addaction name="actionOptimize_geometry"/>
     <addaction name="actionSamplePositionChecker"/>
+    <addaction name="actionLogbook"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -697,6 +698,8 @@
    <addaction name="actionCapillary_sizing"/>
    <addaction name="actionView_images_and_curves"/>
    <addaction name="actionView_scans"/>
+   <addaction name="separator"/>
+   <addaction name="actionLogbook"/>
   </widget>
   <action name="actionSample_editor">
    <property name="icon">
@@ -704,7 +707,7 @@
      <normaloff>:/icons/sample.svg</normaloff>:/icons/sample.svg</iconset>
    </property>
    <property name="text">
-    <string>Sample editor</string>
+    <string>&amp;Sample editor</string>
    </property>
    <property name="toolTip">
     <string>Open the sample database editor</string>
@@ -716,7 +719,7 @@
      <normaloff>:/icons/geometry.svg</normaloff>:/icons/geometry.svg</iconset>
    </property>
    <property name="text">
-    <string>Geometry editor</string>
+    <string>&amp;Geometry editor</string>
    </property>
    <property name="toolTip">
     <string>Edit geometry parameters</string>
@@ -728,7 +731,7 @@
      <normaloff>../../../../cpt/src/cpt/widgets/mainwindow</normaloff>../../../../cpt/src/cpt/widgets/mainwindow</iconset>
    </property>
    <property name="text">
-    <string>Save settings</string>
+    <string>&amp;Save settings</string>
    </property>
    <property name="toolTip">
     <string>Save the settings</string>
@@ -740,7 +743,7 @@
      <normaloff>../../../../cpt/src/cpt/widgets/mainwindow</normaloff>../../../../cpt/src/cpt/widgets/mainwindow</iconset>
    </property>
    <property name="text">
-    <string>Quit</string>
+    <string>&amp;Quit</string>
    </property>
    <property name="toolTip">
     <string>Quit the application</string>
@@ -752,7 +755,7 @@
      <normaloff>:/icons/calibration.svg</normaloff>:/icons/calibration.svg</iconset>
    </property>
    <property name="text">
-    <string>Calibration</string>
+    <string>&amp;Calibration</string>
    </property>
    <property name="toolTip">
     <string>Calibrate the beam center and the sample-to-detector distance</string>
@@ -764,7 +767,7 @@
      <normaloff>:/icons/editconfig.svg</normaloff>:/icons/editconfig.svg</iconset>
    </property>
    <property name="text">
-    <string>Edit configuration</string>
+    <string>&amp;Edit configuration</string>
    </property>
    <property name="toolTip">
     <string>Configuration editor for advanced users</string>
@@ -776,7 +779,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>User management</string>
+    <string>&amp;User management</string>
    </property>
    <property name="toolTip">
     <string>Manage users</string>
@@ -788,7 +791,7 @@
      <normaloff>:/icons/project.svg</normaloff>:/icons/project.svg</iconset>
    </property>
    <property name="text">
-    <string>Project management</string>
+    <string>&amp;Project management</string>
    </property>
    <property name="toolTip">
     <string>Manage projects</string>
@@ -800,7 +803,7 @@
      <normaloff>:/icons/xraysource.svg</normaloff>:/icons/xraysource.svg</iconset>
    </property>
    <property name="text">
-    <string>X-ray source</string>
+    <string>&amp;X-ray source</string>
    </property>
    <property name="toolTip">
     <string>Control the X-ray source</string>
@@ -812,7 +815,7 @@
      <normaloff>:/icons/detector.svg</normaloff>:/icons/detector.svg</iconset>
    </property>
    <property name="text">
-    <string>Detector</string>
+    <string>&amp;Detector</string>
    </property>
    <property name="toolTip">
     <string>Control the detector</string>
@@ -824,7 +827,7 @@
      <normaloff>:/icons/motor.svg</normaloff>:/icons/motor.svg</iconset>
    </property>
    <property name="text">
-    <string>Overview</string>
+    <string>&amp;Overview</string>
    </property>
    <property name="toolTip">
     <string>Control the motors</string>
@@ -836,7 +839,7 @@
      <normaloff>:/icons/circulator.svg</normaloff>:/icons/circulator.svg</iconset>
    </property>
    <property name="text">
-    <string>Temperature stage</string>
+    <string>&amp;Temperature stage</string>
    </property>
    <property name="toolTip">
     <string>Control the temperature regulator</string>
@@ -848,7 +851,7 @@
      <normaloff>:/icons/tpg201.svg</normaloff>:/icons/tpg201.svg</iconset>
    </property>
    <property name="text">
-    <string>Vacuum gauge</string>
+    <string>&amp;Vacuum gauge</string>
    </property>
    <property name="toolTip">
     <string>Control the vacuum gauge</string>
@@ -860,7 +863,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Device connections</string>
+    <string>Device &amp;connections</string>
    </property>
    <property name="toolTip">
     <string>Connect/disconnect devices</string>
@@ -872,7 +875,7 @@
      <normaloff>:/icons/scan.svg</normaloff>:/icons/scan.svg</iconset>
    </property>
    <property name="text">
-    <string>Scan</string>
+    <string>&amp;Scan</string>
    </property>
    <property name="toolTip">
     <string>Perform scan measurements</string>
@@ -884,7 +887,7 @@
      <normaloff>:/icons/exposure.svg</normaloff>:/icons/exposure.svg</iconset>
    </property>
    <property name="text">
-    <string>Single exposure</string>
+    <string>Single &amp;exposure</string>
    </property>
    <property name="toolTip">
     <string>Take manual exposures</string>
@@ -896,7 +899,7 @@
      <normaloff>:/icons/transmission.svg</normaloff>:/icons/transmission.svg</iconset>
    </property>
    <property name="text">
-    <string>Transmission</string>
+    <string>&amp;Transmission</string>
    </property>
    <property name="toolTip">
     <string>Measure transmission of several samples</string>
@@ -908,7 +911,7 @@
      <normaloff>:/icons/script.svg</normaloff>:/icons/script.svg</iconset>
    </property>
    <property name="text">
-    <string>Script</string>
+    <string>S&amp;cript</string>
    </property>
    <property name="toolTip">
     <string>Automated measurements</string>
@@ -920,7 +923,7 @@
      <normaloff>:/icons/flipmask.svg</normaloff>:/icons/flipmask.svg</iconset>
    </property>
    <property name="text">
-    <string>Mask editor</string>
+    <string>&amp;Mask editor</string>
    </property>
    <property name="toolTip">
     <string>Edit mask matrices</string>
@@ -932,7 +935,7 @@
      <normaloff>:/icons/exposureviewer.svg</normaloff>:/icons/exposureviewer.svg</iconset>
    </property>
    <property name="text">
-    <string>View images and curves</string>
+    <string>&amp;View images and curves</string>
    </property>
    <property name="toolTip">
     <string>View recorded scattering patterns and scattering curves</string>
@@ -944,7 +947,7 @@
      <normaloff>:/icons/scanviewer.svg</normaloff>:/icons/scanviewer.svg</iconset>
    </property>
    <property name="text">
-    <string>View scans</string>
+    <string>View &amp;scans</string>
    </property>
    <property name="toolTip">
     <string>View scan curves</string>
@@ -956,7 +959,7 @@
      <normaloff>:/icons/capillarysizer.svg</normaloff>:/icons/capillarysizer.svg</iconset>
    </property>
    <property name="text">
-    <string>Capillary sizing</string>
+    <string>&amp;Capillary sizing</string>
    </property>
    <property name="toolTip">
     <string>Determine capillary position and thickness</string>
@@ -968,7 +971,7 @@
      <normaloff>:/icons/datareduction.svg</normaloff>:/icons/datareduction.svg</iconset>
    </property>
    <property name="text">
-    <string>Data reduction</string>
+    <string>&amp;Data reduction</string>
    </property>
    <property name="toolTip">
     <string>Post-process data</string>
@@ -980,7 +983,7 @@
      <normaloff>:/icons/resourceusage.svg</normaloff>:/icons/resourceusage.svg</iconset>
    </property>
    <property name="text">
-    <string>Resource consumption</string>
+    <string>&amp;Resource consumption</string>
    </property>
    <property name="toolTip">
     <string>Analyze resource consumption and internal telemetry</string>
@@ -988,7 +991,7 @@
   </action>
   <action name="actionOptimize_geometry">
    <property name="text">
-    <string>Optimize geometry</string>
+    <string>&amp;Optimize geometry</string>
    </property>
    <property name="toolTip">
     <string>Calculate the optimum geometry</string>
@@ -1000,7 +1003,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>About</string>
+    <string>&amp;About</string>
    </property>
    <property name="toolTip">
     <string>About this program</string>
@@ -1012,7 +1015,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Commands</string>
+    <string>&amp;Commands</string>
    </property>
    <property name="toolTip">
     <string>Help on the script commands</string>
@@ -1026,7 +1029,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Accounting</string>
+    <string>&amp;Accounting</string>
    </property>
    <property name="toolTip">
     <string>Open accounting dockwidget</string>
@@ -1040,7 +1043,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Shutter</string>
+    <string>&amp;Shutter</string>
    </property>
    <property name="toolTip">
     <string>Show the shutter control dockwidget</string>
@@ -1054,7 +1057,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>FSN counters</string>
+    <string>&amp;FSN counters</string>
    </property>
    <property name="toolTip">
     <string>Show file sequence numbers</string>
@@ -1068,7 +1071,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Resource usage</string>
+    <string>&amp;Resource usage</string>
    </property>
    <property name="toolTip">
     <string>Show resource usage dockwidget</string>
@@ -1080,7 +1083,7 @@
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>About Qt</string>
+    <string>About &amp;Qt</string>
    </property>
    <property name="toolTip">
     <string>About Qt</string>
@@ -1092,7 +1095,7 @@
      <normaloff>:/icons/motorcalibration.svg</normaloff>:/icons/motorcalibration.svg</iconset>
    </property>
    <property name="text">
-    <string>Calibrate</string>
+    <string>&amp;Calibrate</string>
    </property>
    <property name="toolTip">
     <string>Calibrate motors</string>
@@ -1106,7 +1109,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Beamstop</string>
+    <string>&amp;Beamstop</string>
    </property>
    <property name="toolTip">
     <string>Show the beamstop control dockwidget</string>
@@ -1118,7 +1121,7 @@
      <normaloff>:/icons/sample_positions.svg</normaloff>:/icons/sample_positions.svg</iconset>
    </property>
    <property name="text">
-    <string>Check sample positions</string>
+    <string>Check sample &amp;positions</string>
    </property>
    <property name="toolTip">
     <string>Make a graph of the relative positions of selected samples</string>
@@ -1126,7 +1129,7 @@
   </action>
   <action name="actionFirstPrinciplesCalibration">
    <property name="text">
-    <string>Q-calibrant calibration</string>
+    <string>&amp;Q-calibrant calibration</string>
    </property>
    <property name="toolTip">
     <string>Calibration of q-calibrant samples using the detector shifting technique</string>
@@ -1138,10 +1141,22 @@
      <normaloff>:/icons/changepassword.svg</normaloff>:/icons/changepassword.svg</iconset>
    </property>
    <property name="text">
-    <string>Change password...</string>
+    <string>C&amp;hange password...</string>
    </property>
    <property name="toolTip">
     <string>Change passwords</string>
+   </property>
+  </action>
+  <action name="actionLogbook">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/logbook.svg</normaloff>:/icons/logbook.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Logbook</string>
+   </property>
+   <property name="toolTip">
+    <string>Open the user logbook</string>
    </property>
   </action>
  </widget>
