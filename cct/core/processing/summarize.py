@@ -235,7 +235,7 @@ class Summarizer(object):
         dsradavg = grp.create_dataset('curve_reintegrated', shape=(len(radavg), 4), dtype=np.double)
         dsradavg[:, 0], dsradavg[:, 1], dsradavg[:, 2], dsradavg[:, 3] = (
         radavg.q, radavg.Intensity, radavg.Error, radavg.qError)
-        grp['curve'] = h5py.SoftLink('curve_reintegrated')
+        grp['curve'] = h5py.SoftLink('curve_averaged')
         hdf5['images']['{}_{:.2f}'.format(samplename, distance)] = h5py.SoftLink(
             '/Samples/{}/{:.2f}/image'.format(samplename, distance))
         hdf5['curves']['{}_{:.2f}'.format(samplename, distance)] = h5py.SoftLink(
