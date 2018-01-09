@@ -40,13 +40,19 @@ class PinholeConfigurationStore(QtCore.QAbstractItemModel):
             elif index.column() == 4:
                 return pc.D3
             elif index.column() == 5:
-                return self.suggestPinholeSize(pc)
+                try:
+                    return self.suggestPinholeSize(pc)
+                except IndexError:
+                    return 'No good choice'
             elif index.column() == 6:
                 return pc.intensity
             elif index.column() == 7:
                 return pc.Dsample
             elif index.column() == 8:
-                return pc.rbs_parasitic1(self.suggestPinholeSize(pc)*0.5e-3)*2
+                try:
+                    return pc.rbs_parasitic1(self.suggestPinholeSize(pc)*0.5e-3)*2
+                except IndexError:
+                    return pc.rbs_parasitic
             elif index.column() == 9:
                 return pc.l1
             elif index.column() == 10:

@@ -208,7 +208,10 @@ class OptimizeGeometry(QtWidgets.QWidget, Ui_Form, ToolWindow):
             phc = self.resultsStore.getConfiguration(selectedrows[0])
         except IndexError:
             return
-        suggested_ph3 = sorted([float(x) for x in self.pinholeList.items() if x-phc.D3>0], key=lambda x:x-phc.D3)[0]
+        try:
+            suggested_ph3 = sorted([float(x) for x in self.pinholeList.items() if float(x)-phc.D3>0], key=lambda x:x-phc.D3)[0]
+        except IndexError:
+            suggested_ph3 = phc.D3
         self.credo.config['geometry']['dist_ph1_ph2'] = phc.l1
         self.credo.config['geometry']['dist_ph2_ph3'] = phc.l2
         self.credo.config['geometry']['dist_ph3_sample'] = phc.ls
