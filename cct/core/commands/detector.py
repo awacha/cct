@@ -200,7 +200,7 @@ class Expose(Command):
         else:
             spent_time = (datetime.datetime.now() - self.starttime).total_seconds()
             timeleft = self.exptime - spent_time
-            self.emit('progress', 'Exposing. Remaining time: {:4.1f}'.format(timeleft), spent_time / self.exptime)
+            self.emit('progress', 'Exposing. Remaining time: {:4.1f} sec'.format(timeleft), spent_time / self.exptime)
         return True
 
     def on_variable_change(self, device, variablename, newvalue):
