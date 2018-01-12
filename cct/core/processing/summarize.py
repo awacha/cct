@@ -51,6 +51,7 @@ class Summarizer(object):
             errorpropagation: int = 3, abscissaerrorpropagation: int = 3,
             sanitize_curves: bool = True, logarithmic_correlmatrix: bool = True,
             std_multiplier: float = 2.7, qrange: Optional[np.ndarray] = None,
+            samplenamelist: Optional[List[str]] = None
     ):
         self.fsns = fsns
         self.exppath = exppath
@@ -65,6 +66,7 @@ class Summarizer(object):
         self.sanitize_curves = sanitize_curves
         self.logarithmic_correlmatrix = logarithmic_correlmatrix
         self.std_multiplier = std_multiplier
+        self.samplenamelist = samplenamelist
         self._headers = []
         self._masks = {}
 
@@ -129,7 +131,10 @@ class Summarizer(object):
         raise FileNotFoundError(fsn)
 
     def allsamplenames(self) -> List[str]:
-        return sorted(set([h.title for h in self._headers]))
+        if self.samplenamelist is None:
+            return sorted(set([h.title for h in self._headers]))
+        else:
+            return self.samplenamelist
 
     def distances(self, samplename: str) -> List[int]:
         dists = set([float(h.distance) for h in self._headers if h.title == samplename])

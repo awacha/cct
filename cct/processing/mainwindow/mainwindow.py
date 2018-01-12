@@ -811,6 +811,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onPlotCurves(self):
         with getHDF5Group(self) as grp:
+            if 'curves' not in grp:
+                QtWidgets.QMessageBox.information(
+                    self,
+                    'Cannot plot curves',
+                    'Sample {} has no direct measured curves associated: possibly a subtracted sample.'.format(
+                        self.resultsSampleSelectorComboBox.currentText()))
+                return
             summarize_curves(self.figure, grp['curves'], self.plot1dShowGoodCurvesCheckBox.isChecked(),
                              self.plot1dShowBadCurvesCheckBox.isChecked(),
                              self.plot1dShowMeanCurveCheckBox.isChecked(),
@@ -949,6 +956,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             'queue': self.queue,
             'qrange': qrange,
             'backgroundsubtraction': self.backgroundList.getBackgroundSubtractionList(),
+            'samplenamelist': self.backgroundList.getEnabledSampleNameList(),
         }
         self.processingprocess = threading.Thread(target=self.do_processing, name='Summarization', kwargs=kwargs)
         self.idlefcn = IdleFunction(self.check_processing_progress, 100)
@@ -961,9 +969,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                       fsns: Iterable[int], exppath: Iterable[str], parampath: Iterable[str], maskpath: Iterable[str],
                       outputfile: str, prefix: str, ndigits: int, errorpropagation: int, abscissaerrorpropagation: int,
                       sanitize_curves: bool, logarithmic_correlmatrix: bool, std_multiplier: int,
-                      qrange: Optional[np.ndarray], backgroundsubtraction: List[List[str]]):
+                      qrange: Optional[np.ndarray], backgroundsubtraction: List, samplenamelist: List[str]):
         s = Summarizer(fsns, exppath, parampath, maskpath, outputfile, prefix, ndigits, errorpropagation,
-                       abscissaerrorpropagation, sanitize_curves, logarithmic_correlmatrix, std_multiplier, qrange)
+                       abscissaerrorpropagation, sanitize_curves, logarithmic_correlmatrix, std_multiplier, qrange, samplenamelist)
         queue.put_nowait(('__init_loadheaders__', len(fsns)))
         for msg1, msg2 in s.load_headers(yield_messages=True):
             queue.put_nowait((msg1, msg2))
