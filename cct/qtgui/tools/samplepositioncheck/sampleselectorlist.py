@@ -40,14 +40,14 @@ class SampleSelectorModel(QtCore.QAbstractItemModel):
         if role == QtCore.Qt.DisplayRole:
             return list(sorted(self._samples))[index.row()]
         elif role == QtCore.Qt.CheckStateRole:
-            return self._samples[list(sorted(self._samples))[index.row()]]
+            return [QtCore.Qt.Unchecked, QtCore.Qt.Checked][self._samples[list(sorted(self._samples))[index.row()]]]
         else:
             return None
 
     def setData(self, index: QtCore.QModelIndex, value: typing.Any, role: int = QtCore.Qt.DisplayRole):
         sn = list(sorted(self._samples))[index.row()]
         if role == QtCore.Qt.CheckStateRole:
-            self._samples[sn] = value
+            self._samples[sn] = bool(value)
             self.dataChanged.emit(index, index, [role])
             return True
         return False

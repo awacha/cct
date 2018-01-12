@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Sample database</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../../../resource/icons/icons.qrc">
+    <normaloff>:/icons/sample.svg</normaloff>:/icons/sample.svg</iconset>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <widget class="QSplitter" name="splitter">
@@ -680,6 +684,8 @@
   <tabstop>removeSamplePushButton</tabstop>
   <tabstop>duplicateSamplePushButton</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="../../../resource/icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>
