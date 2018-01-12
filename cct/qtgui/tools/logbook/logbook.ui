@@ -32,7 +32,14 @@
        </widget>
       </item>
       <item row="0" column="2">
-       <widget class="QDateTimeEdit" name="dateTimeEdit"/>
+       <widget class="QDateTimeEdit" name="dateTimeEdit">
+        <property name="displayFormat">
+         <string>MM/dd/yy h:mm AP</string>
+        </property>
+        <property name="calendarPopup">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
       <item row="1" column="1">
        <widget class="QRadioButton" name="nowDateRadioButton">
@@ -110,6 +117,9 @@
         </property>
         <property name="itemsExpandable">
          <bool>false</bool>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
         </property>
        </widget>
       </item>

@@ -20,6 +20,8 @@ class LogBook(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.model = LogBookModel(self.logTreeView, os.path.join(self.credo.config['path']['directories']['log'], 'userlog.pickle'))
         self.submitPushButton.clicked.connect(self.onSubmit)
         self.logTreeView.setModel(self.model)
+        self.resizeTreeViewColumns()
+        self.dateTimeEdit.setCalendarPopup(True)
 
     def onSubmit(self):
         if self.customDateRadioButton.isChecked():
@@ -27,3 +29,8 @@ class LogBook(QtWidgets.QWidget, Ui_Form, ToolWindow):
         else:
             date = datetime.datetime.now()
         self.model.addLogEntry(date, self.credo.services['accounting'].get_user().username, self.logMessagePlainTextEdit.toPlainText())
+        self.resizeTreeViewColumns()
+
+    def resizeTreeViewColumns(self):
+        self.logTreeView.resizeColumnToContents(0)
+        self.logTreeView.resizeColumnToContents(1)

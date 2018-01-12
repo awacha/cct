@@ -15,11 +15,11 @@ class LogBookModel(QtCore.QAbstractItemModel):
         return QtCore.QModelIndex()
 
     def flags(self, index: QtCore.QModelIndex):
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable
+        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
     def data(self, index: QtCore.QModelIndex, role: int = ...):
         if role == QtCore.Qt.DisplayRole:
-            return self._logdata[index.row()][index.column()]
+            return str(self._logdata[index.row()][index.column()])
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...):
         return self.createIndex(row, column, None)
@@ -32,12 +32,17 @@ class LogBookModel(QtCore.QAbstractItemModel):
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
         if role == QtCore.Qt.DisplayRole and orientation==QtCore.Qt.Horizontal:
-            return ['Date', 'User', 'Message'][section]
+            try:
+                return ['Date', 'User', 'Message'][section]
+            except IndexError:
+                return '{} This should not happen'.format(section)
+        return None
 
     def addLogEntry(self, date:datetime.datetime, username:str, message:str):
         self.beginInsertRows(QtCore.QModelIndex(), len(self._logdata), len(self._logdata))
         self._logdata.append((date, username, message))
-        self.endInsertColumns()
+        self.writeLogFile()
+        self.endInsertRows()
 
     def readLogFile(self):
         self.beginResetModel()
