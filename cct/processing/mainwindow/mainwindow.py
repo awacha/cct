@@ -7,7 +7,7 @@ import pickle
 import queue
 import string
 import threading
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Union, List
 
 import appdirs
 import h5py
@@ -28,6 +28,7 @@ from matplotlib.figure import Figure
 from sastool.io.credo_cct.header import Header
 from scipy.misc import imread
 
+from .backgroundsubtractionmodel import BackgroundSubtractionModel, ComboBoxDelegate
 from .headerpopup import HeaderPopup
 from .mainwindow_ui import Ui_MainWindow
 from .samplescalermodel import SampleScalerModel
@@ -201,6 +202,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.cmpSelectAllSamplesPushButton.clicked.connect(self.onCmpSelectAllSamples)
         self.cmpDeselectAllSamplesPushButton.clicked.connect(self.onCmpDeselectAllSamples)
         self.cmpPlotPushButton.clicked.connect(self.onCmpPlot)
+        self.backgroundList=BackgroundSubtractionModel()
+        self.backgroundListTreeView.setModel(self.backgroundList)
+        self.backgroundListDelegate = ComboBoxDelegate()
+        self.backgroundListTreeView.setItemDelegateForColumn(0, self.backgroundListDelegate)
+        self.backgroundListTreeView.setItemDelegateForColumn(1, self.backgroundListDelegate)
+        self.backgroundListAddPushButton.clicked.connect(self.onAddBackgroundListElement)
+        self.backgroundListDeletePushButton.clicked.connect(self.onDeleteBackgroundListElement)
+        self.backgroundListClearPushButton.clicked.connect(self.onClearBackgroundList)
         self._configwidgets = [
             (self.uiStyleComboBox, 'io', 'uistyle'),
             (self.saveHDFLineEdit, 'io', 'hdf5'),
@@ -238,6 +247,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             (self.cmpLegendCheckBox, 'curvecmp', 'legend'),
         ]
         self.updateResults()
+
+    def onAddBackgroundListElement(self):
+        self.backgroundList.addSample(None)
+
+    def onDeleteBackgroundListElement(self):
+        while self.backgroundListTreeView.selectedIndexes():
+            sel = self.backgroundListTreeView.selectedIndexes()
+            self.backgroundList.removeRow(sel.row(), None)
+
+    def onClearBackgroundList(self):
+        self.backgroundList.clear()
+
+    def updateBackgroundList(self):
+        self.backgroundList.setSampleNameList(sorted(self.headermodel.sampleNames()))
 
     def onCanvasKeyPressEvent(self, event):
         key_press_handler(event, self.canvas, self.figuretoolbar)
@@ -865,6 +888,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.ioProgressBar.setMaximum(totalcount)
                 self.ioProgressBar.setFormat('Loading headers...')
             self.ioProgressBar.setValue(currentcount)
+        self.updateBackgroundList()
 
     def onReload(self):
         try:
@@ -924,6 +948,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             'std_multiplier': self.stdMultiplierDoubleSpinBox.value(),
             'queue': self.queue,
             'qrange': qrange,
+            'backgroundsubtraction': self.backgroundList.getBackgroundSubtractionList(),
         }
         self.processingprocess = threading.Thread(target=self.do_processing, name='Summarization', kwargs=kwargs)
         self.idlefcn = IdleFunction(self.check_processing_progress, 100)
@@ -936,13 +961,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                       fsns: Iterable[int], exppath: Iterable[str], parampath: Iterable[str], maskpath: Iterable[str],
                       outputfile: str, prefix: str, ndigits: int, errorpropagation: int, abscissaerrorpropagation: int,
                       sanitize_curves: bool, logarithmic_correlmatrix: bool, std_multiplier: int,
-                      qrange: Optional[np.ndarray]):
+                      qrange: Optional[np.ndarray], backgroundsubtraction: List[List[str]]):
         s = Summarizer(fsns, exppath, parampath, maskpath, outputfile, prefix, ndigits, errorpropagation,
                        abscissaerrorpropagation, sanitize_curves, logarithmic_correlmatrix, std_multiplier, qrange)
         queue.put_nowait(('__init_loadheaders__', len(fsns)))
         for msg1, msg2 in s.load_headers(yield_messages=True):
             queue.put_nowait((msg1, msg2))
         for msg1, msg2 in s.summarize(True, yield_messages=True):
+            queue.put_nowait((msg1, msg2))
+        for msg1, msg2 in s.backgroundsubtraction(backgroundsubtraction, yield_messages=True):
             queue.put_nowait((msg1, msg2))
         queue.put_nowait(('__done__', None))
         return True
@@ -1008,13 +1035,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                     self.toolBox.setEnabled(True)
                     self.updateResults(processingfinished=True)
                     return False
+                elif msg1 == '__init_backgroundsubtraction__':
+                    self.progressbar1TitleLabel.setText('Background subtraction')
+                    self.progressbar1StatusLabel.setText('')
+                    self.progressbar2StatusLabel.setVisible(False)
+                    self.progressbar2TitleLabel.setVisible(False)
+                    self.progressBar2.setVisible(False)
+                    self.progressBar1.setMinimum(0)
+                    self.progressBar1.setMaximum(msg2)
                 elif msg1.startswith('__'):
                     pass
                 else:
                     assert isinstance(msg1, str)  # sample
-                    assert isinstance(msg2, float)  # distance
+                    if isinstance(msg2, float): # distance
+                        self.progressbar1StatusLabel.setText('{} ({:.2f} mm)'.format(msg1, msg2))
+                    elif isinstance(msg2, str): # background name
+                        self.progressbar1StatusLabel.setText('{} - {}'.format(msg1, msg2))
                     self.progressBar1.setValue(self.progressBar1.value() + 1)
-                    self.progressbar1StatusLabel.setText('{} ({:.2f} mm)'.format(msg1, msg2))
         except queue.Empty:
             return True
         return True
@@ -1068,9 +1105,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                     newbadfsns = []
                     for sn in f['Samples']:
                         for dist in f['Samples'][sn]:
+                            if 'curves' not in f['Samples'][sn][dist]:
+                                continue
                             for dset in f['Samples'][sn][dist]['curves'].values():
                                 if dset.attrs['correlmat_bad']:
                                     newbadfsns.append(dset.attrs['fsn'])
+
                     try:
                         self.headermodel.update_badfsns(newbadfsns)
                     except AttributeError:

@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Iterable, List, Optional
 
@@ -40,6 +41,9 @@ def correlmatrix(grp: h5py.Group, std_multiplier: Optional[float] = None, logari
 
 
 class Summarizer(object):
+    dist_tolerance = 0.01
+    q_relative_tolerance = 0.1
+
     def __init__(
             self, fsns: Iterable[int], exppath: Iterable[str],
             parampath: Iterable[str], maskpath: Iterable[str],
@@ -131,7 +135,7 @@ class Summarizer(object):
         dists = set([float(h.distance) for h in self._headers if h.title == samplename])
         distances = []
         for d in dists:
-            if not any([abs(d - d_) < 0.01 for d_ in distances]):
+            if not any([abs(d - d_) < self.dist_tolerance for d_ in distances]):
                 distances.append(d)
         return distances
 
@@ -139,7 +143,7 @@ class Summarizer(object):
                           logger=None):
         grp = hdf5.require_group('Samples/{}/{:.2f}'.format(samplename, distance))
         headers = [h for h in self._headers if
-                   h.title == samplename and abs(float(h.distance) - float(distance)) < 0.01]
+                   h.title == samplename and abs(float(h.distance) - float(distance)) < self.dist_tolerance]
         group1d = grp.require_group('curves')
         dataset2d = None
         error2d = None
@@ -275,3 +279,67 @@ class Summarizer(object):
                         yield '__init_stabilityassessment__', 0
                     self.stabilityassessment(sn, dist, hdf5)
         return None
+
+    def backgroundsubtraction(self, backgroundlist, yield_messages=False, logger = None):
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        if yield_messages:
+            yield '__init_backgroundsubtraction__', len(backgroundlist)
+        with h5py.File(self.outputfile, 'a') as hdf5:
+            for samplename, backgroundname, factor in backgroundlist:
+                if yield_messages:
+                    yield samplename, backgroundname
+                if factor is None:
+                    factor = 1.0
+                subname = samplename +'-'+backgroundname
+                if samplename not in hdf5['Samples']:
+                    logger.warning('Background subtraction: no sample {}'.format(samplename))
+                    continue
+                if backgroundname not in hdf5['Samples']:
+                    logger.warning('Background subtraction: missing background measurement ({}) for sample {}'.format(backgroundname, samplename))
+                    continue
+                for dist in hdf5['Samples'][samplename]:
+                    try:
+                        bgdist = sorted([d for d in hdf5['Samples'][backgroundname] if abs(float(d)-float(dist))<self.dist_tolerance], key=lambda x:abs(float(x)-float(dist)))[0]
+                    except IndexError:
+                        logger.warning('No background measurement ({}) at {} mm for sample {}'.format(backgroundname, dist, samplename))
+                        continue
+                    samg = hdf5['Samples'][samplename][dist]
+                    bgg= hdf5['Samples'][backgroundname][bgdist]
+                    hdf5['Samples'].require_group(subname)
+                    hdf5['Samples'][subname].require_group(dist)
+                    subg = hdf5['Samples'][subname][dist]
+                    for attr in samg.attrs:
+                        subg.attrs[attr]=samg.attrs[attr]
+                    subg.attrs['title'] = subname
+                    for datasetname in ['curve', 'curve_averaged','curve_reintegrated', 'image', 'image_uncertainty', 'mask']:
+                        try:
+                            del subg[datasetname]
+                        except KeyError:
+                            pass
+                    if len({samg['image'].shape, bgg['image'].shape, samg['image_uncertainty'].shape, bgg['image_uncertainty'].shape})>1:
+                        logger.warning('Image and uncertainty matrices must be of the same shape while subtracting {} from {} at distance {}.'.format(backgroundname, samplename, dist))
+                        continue
+                    subg.create_dataset('image', shape = samg['image'].shape, dtype=np.double, data=np.array(samg['image'])-factor*np.array(bgg['image']))
+                    subg.create_dataset('image_uncertainty', shape= samg['image'].shape, dtype=np.double,
+                                        data=(np.array(samg['image_uncertainty'])**2+factor**2*np.array(bgg['image_uncertainty'])**2)**0.5)
+                    subg.create_dataset('mask', shape = samg['image'].shape, dtype=np.uint8,
+                                        data = np.logical_and(np.array(samg['mask']), np.array(bgg['mask'])))
+                    for curvetype in ['curve_averaged', 'curve_reintegrated']:
+                        if samg[curvetype].shape[0]!=bgg[curvetype].shape[0]:
+                            logger.warning('Incompatible curve shape while subtracting {} from {} at {} mm.'.format(backgroundname, samplename, dist))
+                            continue
+                        qdiscr = np.nanmax(np.abs(np.array(samg[curvetype][:,0])-np.array(bgg[curvetype][:,0]))/(np.array(samg[curvetype][:,0])+np.array(bgg[curvetype][:,0]))*2)
+                        if qdiscr >self.q_relative_tolerance:
+                            logger.warning('Relative tolerance in q ({} > {}) exceeded while subtracting {} from {} at {} mm.'.format(
+                                qdiscr, self.q_relative_tolerance, backgroundname, samplename, dist))
+                            continue
+                        ds=subg.create_dataset(curvetype, shape = samg[curvetype].shape, dtype=np.double)
+                        ds[:,0]=0.5*(np.array(samg[curvetype][:,0])+np.array(bgg[curvetype][:,0]))
+                        ds[:,3]=0.5*(np.array(samg[curvetype][:,3])**2+np.array(bgg[curvetype][:,3])**2)**0.5
+                        ds[:,1]=np.array(samg[curvetype][:,1])-np.array(bgg[curvetype][:,1])*factor
+                        ds[:,2]=(np.array(samg[curvetype][:,2])**2+factor**2*np.array(bgg[curvetype][:,2])**2)**0.5
+                    subg['curve'] = h5py.SoftLink('curve_averaged')
+
+
+

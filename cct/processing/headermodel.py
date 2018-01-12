@@ -3,7 +3,7 @@ import gc
 import os
 import queue
 import threading
-from typing import List, Any, Union, Iterable
+from typing import List, Any, Union, Iterable, Set
 
 import numpy as np
 from PyQt5 import QtCore
@@ -24,13 +24,11 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.fsnfirst = fsnfirst
         self.fsnlast = fsnlast
         self.badfsnsfile = badfsnsfile
-        self._badstatus = []
-        self._fsns = []
-        # the columns you want to display. Note that the first MUST be always 'fsn' or the code will break. Sorry!
+        self._data = [] # fsn, title, distance, isbad, (visible parameters)
+        # the columns you want to display
         if not visiblecolumns:
             visiblecolumns = ['fsn', 'title', 'distance', 'date', 'temperature']
         self.visiblecolumns = visiblecolumns
-        self._headers = []
         self._parent = parent
         self.rootdir = rootdir
         self.eval2d_pathes = []
@@ -52,8 +50,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
                         getattr(self, attrname).append(entry.path)
 
     def rowForFSN(self, fsn: int):
-        colidx = self.visiblecolumns.index('fsn')  # can raise IndexError
-        return [h[colidx] for h in self._headers].index(fsn)
+        return [h[0] for h in self._data].index(fsn)
 
     def get_badfsns(self):
         try:
@@ -96,8 +93,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
                 self.fsnloaded.emit(self.fsnlast - self.fsnfirst + 1, self._fsns_loaded, fsn)
             else:
                 self.beginResetModel()
-                self._headers, self._fsns = fsn
-                self._badstatus = self.is_badfsn(self._fsns)
+                fsns, titles, distances, visiblecolumndata = fsn
+                self._data=list(zip(fsns, titles, distances, self.is_badfsn(fsns), visiblecolumndata))
                 self.endResetModel()
                 self.fsnloaded.emit(0, 0, 0)
                 self.reloaderworker.join()
@@ -110,7 +107,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
         return True
 
     def rowCount(self, parent=None, *args, **kwargs):
-        return len(self._headers)
+        return len(self._data)
 
     def columnCount(self, parent=None, *args, **kwargs):
         return len(self.visiblecolumns) + 1
@@ -126,26 +123,27 @@ class HeaderModel(QtCore.QAbstractItemModel):
 
         if index.column() == 0:
             flags |= QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled
-        elif not self._badstatus[index.row()]:
+        elif not self._data[index.row()][3]:
             flags |= QtCore.Qt.ItemIsEnabled
         return flags
 
     def data(self, index: QtCore.QModelIndex, role=None):
         if role == QtCore.Qt.DisplayRole:
             if index.column() == 0:
-                return ['OK', 'BAD'][self._badstatus[index.row()]]
+                return ['OK', 'BAD'][self._data[index.row()][3]]
             else:
-                return self._headers[index.row()][index.column() - 1]
+                return self._data[index.row()][-1][index.column()-1]
         if role == QtCore.Qt.CheckStateRole and index.column() == 0:
-            return (QtCore.Qt.Unchecked, QtCore.Qt.Checked)[self._badstatus[index.row()]]
+            return (QtCore.Qt.Unchecked, QtCore.Qt.Checked)[self._data[index.row()][3]]
         return None
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...):
         if role == QtCore.Qt.CheckStateRole and index.column() == 0:
-            self._badstatus[index.row()] = bool(value)
+            originaldata = self._data[index.row()]
+            self._data[index.row()] = originaldata[:3]+(bool(value),)+originaldata[4:]
             self.dataChanged.emit(self.index(index.row(), 0), self.index(index.row(), self.columnCount()),
                                   [QtCore.Qt.CheckStateRole, QtCore.Qt.DisplayRole])
-            self.write_badfsns([f for f, bs in zip(self._fsns, self._badstatus) if bs])
+            self.write_badfsns([d[0] for d in self._data if d[3]])
             return True
         return False
 
@@ -155,36 +153,31 @@ class HeaderModel(QtCore.QAbstractItemModel):
         return None
 
     def update_badfsns(self, badfsns):
-        for i, f in enumerate(self._fsns):
-            if f in badfsns:
-                self._badstatus[i] = True
+        for i, d in enumerate(self._data):
+            if d[0] in badfsns:
+                self._data[i] = d[:3] + (True, ) + d[4:]
                 self.dataChanged.emit(self.index(i, 0), self.index(i, self.columnCount()),
                                       [QtCore.Qt.DisplayRole, QtCore.Qt.CheckStateRole])
-        self.write_badfsns([f for f, bs in zip(self._fsns, self._badstatus) if bs])
+        self.write_badfsns([d[0] for d in self._data if d[3]])
 
     def cleanup(self):
         self.beginResetModel()
-        del self._headers
-        self._headers = []
+        del self._data
+        self._data = []
         self.endResetModel()
         gc.collect()
 
     def sort(self, column: int, order: QtCore.Qt.SortOrder = ...):
-        data = zip(self._fsns, self._badstatus, self._headers)
-        if column > 0:
-            sorteddata = sorted(data, key=lambda x: x[2][column - 1], reverse=order == QtCore.Qt.DescendingOrder)
-        else:
-            sorteddata = sorted(data, key=lambda x: x[1], reverse=order == QtCore.Qt.DescendingOrder)
+        sorteddata = sorted(self._data, key=lambda x: x[-1][column], reverse=order == QtCore.Qt.DescendingOrder)
         self.beginResetModel()
-        self._fsns = [f[0] for f in sorteddata]
-        self._badstatus = [f[1] for f in sorteddata]
-        self._headers = [f[2] for f in sorteddata]
+        self._data = sorteddata
         self.endResetModel()
-        pass
 
     def getFSN(self, index: QtCore.QModelIndex):
-        return self._fsns[index.row()]
+        return self._data[index.row()][0]
 
+    def sampleNames(self) -> Set[str]:
+        return {d[1] for d in self._data}
 
 def load_header(fsn, prefix, fsndigits, path):
     #    prefix = self.config()['path']['prefixes']['crd']
@@ -201,6 +194,8 @@ def load_header(fsn, prefix, fsndigits, path):
 def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, columns):
     _headers = []
     _fsns = []
+    _titles = []
+    _distances = []
     for fsn in range(fsnfirst, fsnlast + 1):
         try:
             h = load_header(fsn, prefix, fsndigits, path)
@@ -212,6 +207,9 @@ def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, colu
                     hd.append('N/A')
             _headers.append(hd)
             _fsns.append(fsn)
+            _titles.append(h.title)
+            _distances.append(h.distance)
+            # some type adjustments...
             for i, x in enumerate(_headers[-1]):
                 if isinstance(x, ErrorValue):
                     _headers[-1][i] = x.val
@@ -223,5 +221,5 @@ def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, colu
             del h
         except FileNotFoundError:
             continue
-    queue.put_nowait((_headers, _fsns))
+    queue.put_nowait((_fsns, _titles, _distances, _headers))
     return None
