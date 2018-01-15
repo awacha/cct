@@ -331,6 +331,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.windowdict[action].show()
             self.windowdict[action].raise_()
             self.windowdict[action].activateWindow()
+            self.windowdict[action].showNormal()
         except (KeyError, RuntimeError):
             logger.debug(
                 'Window not found for action {}; creating new one, an instance of {}'.format(action.objectName(),
