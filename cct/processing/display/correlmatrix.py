@@ -5,7 +5,10 @@ from matplotlib.figure import Figure
 
 def show_cmatrix(fig: Figure, grp: Group):
     fig.clear()
-    cmat = grp['correlmatrix']
+    try:
+        cmat = grp['correlmatrix']
+    except KeyError:
+        return
     ax = fig.add_subplot(1, 1, 1)
     ax.imshow(cmat, cmap=matplotlib.cm.coolwarm, interpolation='nearest')
     fsns = sorted([grp['curves'][ds].attrs['fsn'] for ds in grp['curves'].keys()])

@@ -261,6 +261,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def updateBackgroundList(self):
         self.backgroundList.setSampleNameList(sorted(self.headermodel.sampleNames()))
+        for c in range(self.backgroundList.columnCount()):
+            self.backgroundListTreeView.resizeColumnToContents(c)
 
     def onCanvasKeyPressEvent(self, event):
         key_press_handler(event, self.canvas, self.figuretoolbar)
@@ -669,7 +671,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                     if sn not in samplenames:
                         continue
                     for dist in hdf5['Samples'][sn]:
-                        cmat = hdf5['Samples'][sn][dist]['correlmatrix']
+                        try:
+                            cmat = hdf5['Samples'][sn][dist]['correlmatrix']
+                        except KeyError:
+                            logger.warning('Cannot export correlation matrix for sample {} at {} mm: no correlation matrix. Possibly a subtracted measurement.'.format(sn, dist))
+                            continue
                         if self.export2DDataFormatComboBox.currentText() == 'Numpy':
                             fn = os.path.join(self.exportFolderLineEdit.text(),
                                               'correlmatrix_{}_{}.npz'.format(sn, dist.replace('.', '_')))
@@ -716,6 +722,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                     if sn not in samplenames:
                         continue
                     for dist in hdf5['Samples'][sn]:
+                        if 'correlmatrix' not in hdf5['Samples'][sn][dist]:
+                            logger.warning('No correlation matrix for sample {} at {} mm.'.format(sn, dist))
+                            continue
                         show_cmatrix(fig, hdf5['Samples'][sn][dist])
                         self.putlogo(fig)
                         fn = os.path.join(
@@ -803,6 +812,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onPlotCorMatResults(self):
         with getHDF5Group(self) as grp:
+            if 'curves' not in grp:
+                QtWidgets.QMessageBox.information(
+                    self,
+                    'Cannot show outlier test results',
+                    'Sample {} has no direct measured curves associated: possibly a subtracted sample.'.format(
+                        self.resultsSampleSelectorComboBox.currentText()))
+                return
             model = display_outlier_test_results(grp['curves'])
         self.treeView.setModel(model)
         for c in range(model.columnCount()):
@@ -887,6 +903,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             self.headersTreeView.setSortingEnabled(True)
             self.headersTreeView.sortByColumn(self._lastsortcolumn, self._lastsortdirection)
             self.resizeHeaderViewColumns()
+            self.updateBackgroundList()
         else:
             if totalcount > 0 and not self.ioProgressBar.isVisible():
                 self.setEnabled(False)
@@ -895,7 +912,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.ioProgressBar.setMaximum(totalcount)
                 self.ioProgressBar.setFormat('Loading headers...')
             self.ioProgressBar.setValue(currentcount)
-        self.updateBackgroundList()
 
     def onReload(self):
         try:
