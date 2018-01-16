@@ -58,7 +58,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
             if not isinstance(data, list):
                 data = [data]
             return [int(d) for d in data]
-        except FileNotFoundError:
+        except (FileNotFoundError, OSError):
             return []
 
     def is_badfsn(self, fsn: Union[int, Iterable[int]]) -> Union[bool, List[bool]]:
