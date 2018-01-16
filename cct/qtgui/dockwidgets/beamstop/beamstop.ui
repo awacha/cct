@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>92</width>
-    <height>88</height>
+    <width>110</width>
+    <height>93</height>
    </rect>
   </property>
   <property name="features">
@@ -36,7 +36,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>In</string>
+         <string>Move in</string>
         </property>
        </widget>
       </item>
@@ -49,7 +49,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Out</string>
+         <string>Move out</string>
         </property>
        </widget>
       </item>
