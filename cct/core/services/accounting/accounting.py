@@ -1,4 +1,4 @@
-import crypt
+import hashlib
 import logging
 import os
 import pickle
@@ -87,7 +87,7 @@ class Accounting(Service):
             username = username.split('@')[0]
             try:
                 if self.get_user(username).passwordhash is not None:
-                    if self.get_user(username).passwordhash == crypt.crypt(password, crypt.METHOD_SHA512):
+                    if self.get_user(username).passwordhash == hashlib.sha512(password.encode('utf-8')).hexdigest():
                         if setuser:
                             self.select_user(username)
                         logger.info('Authenticated user ' + username + ' using the local password database.')
@@ -315,5 +315,5 @@ class Accounting(Service):
             #    b) we do not have PRIV_USERMAN: we can change only our password, this has already been
             #       ensured above. We must supply our own password once again.
             raise ServiceError('Your supplied password has not been accepted.')
-        self.get_user(username).passwordhash=crypt.crypt(newpassword, crypt.METHOD_SHA512)
+        self.get_user(username).passwordhash=hashlib.sha512(newpassword.encode('utf-8')).hexdigest()
         self.instrument.save_state()
