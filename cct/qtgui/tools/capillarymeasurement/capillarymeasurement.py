@@ -68,9 +68,24 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.sampleNameComboBox.currentIndexChanged.connect(self.onSampleChanged)
 
     def onSampleChanged(self):
-        self.updateThicknessPushButton.setEnabled(True)
-        self.updateCenterPushButton.setEnabled(True)
-        self.updateBothPushButton.setEnabled(True)
+        if not self._updating:
+            self.updateThicknessPushButton.setEnabled(True)
+            self.updateCenterPushButton.setEnabled(True)
+            self.updateBothPushButton.setEnabled(True)
+        ss = self.credo.services['samplestore']
+        assert isinstance(ss, SampleStore)
+        sample = ss.get_sample(self.sampleNameComboBox.currentText())
+        if self.scan.motor.endswith('X'):
+            pos = sample.positionx
+        elif self.scan.motor.endswith('Y'):
+            pos = sample.positiony
+        else:
+            pos = None
+        if pos is None:
+            self.currentPositionLabel.setText('--')
+        else:
+            self.currentPositionLabel.setText('{:.4f} \xb1 {:.4f}'.format(pos.val, pos.err))
+        self.currentThicknessLabel.setText('{:.4f} \xb1 {:.4f} cm'.format(sample.thickness.val, sample.thickness.err))
 
     def onLastScanChanged(self, fs: FileSequence, fsn: int):
         if fs.get_scanfile() == self.scanFileNameLineEdit.text():
@@ -265,7 +280,9 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             assert self.scan.motor.endswith('Y')
             sample.positiony = 0.5 * (self.peakPositionPositive() + self.peakPositionNegative())
             logger.info('Y position updated for sample {} to {}'.format(sample.title, sample.positiony))
-        ss.set_sample(sample.title, sample)
+        with self._updating:
+            ss.set_sample(sample.title, sample)
+            self.onSampleChanged()
         self.updateCenterPushButton.setEnabled(False)
         self.updateBothPushButton.setEnabled(False)
 
@@ -275,9 +292,12 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         sample = ss.get_sample(self.sampleNameComboBox.currentText())
         sample.thickness = (self.peakPositionPositive() - self.peakPositionNegative()).abs() * 0.1
         logger.info('Thickness updated for sample {} to {} cm'.format(sample.title, sample.thickness))
-        ss.set_sample(sample.title, sample)
+        with self._updating:
+            ss.set_sample(sample.title, sample)
+            self.onSampleChanged()
         self.updateThicknessPushButton.setEnabled(False)
         self.updateBothPushButton.setEnabled(False)
+
 
     def updateBoth(self):
         self.updateCenter()

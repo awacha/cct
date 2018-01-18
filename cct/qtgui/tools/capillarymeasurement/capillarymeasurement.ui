@@ -377,6 +377,13 @@
           <string>Update sample</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Current position:</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_11">
             <property name="text">
@@ -390,7 +397,7 @@
           <item row="0" column="1">
            <widget class="QComboBox" name="sampleNameComboBox"/>
           </item>
-          <item row="1" column="0" colspan="2">
+          <item row="3" column="0" colspan="2">
            <widget class="QWidget" name="widget_4" native="true">
             <property name="minimumSize">
              <size>
@@ -435,6 +442,27 @@
             </layout>
            </widget>
           </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Current thickness:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="currentPositionLabel">
+            <property name="text">
+             <string>--</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="currentThicknessLabel">
+            <property name="text">
+             <string>--</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -466,6 +494,8 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>scanFileNameLineEdit</tabstop>
+  <tabstop>browsePushButton</tabstop>
   <tabstop>scanIndexSpinBox</tabstop>
   <tabstop>reloadPushButton</tabstop>
   <tabstop>signalNameComboBox</tabstop>

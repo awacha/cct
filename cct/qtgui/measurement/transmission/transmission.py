@@ -97,13 +97,15 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         super().setIdle()
         self.startPushButton.setText('Start')
         self.startPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
-        self.entryWidget.setEnabled(True)
+        for widget in [self.emptyNameComboBox, self.expTimeDoubleSpinBox, self.nImagesSpinBox, self.sampleNameComboBox, self.cleanTablePushButton]:
+            widget.setEnabled(True)
 
     def setBusy(self):
         super().setBusy()
         self.startPushButton.setText('Stop')
         self.startPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
-        self.entryWidget.setEnabled(False)
+        for widget in [self.emptyNameComboBox, self.expTimeDoubleSpinBox, self.nImagesSpinBox, self.sampleNameComboBox, self.cleanTablePushButton]:
+            widget.setEnabled(False)
 
     def onCleanClicked(self):
         self.model = TransmissionModel(None, self.credo)
