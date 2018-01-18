@@ -13,6 +13,8 @@ def plot_vacuum_and_flux(fig: Figure, group: h5py.Group, gc_name='Glassy_Carbon'
     for sn in group.keys():
         for dist in group[sn].keys():
             grp = group[sn][dist]
+            if 'curves' not in grp:
+                continue
             dates_vacuums.extend(
                 [(dateutil.parser.parse(grp['curves'][c].attrs['date']),
                   grp['curves'][c].attrs['vacuum'])

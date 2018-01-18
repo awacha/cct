@@ -10,8 +10,11 @@ class ExpTimeModel(QtCore.QAbstractItemModel):
         self._data = []
         for sn in sorted(group.keys()):
             for dist in sorted(group[sn].keys(), key=float):
-                self._data.append(
-                    (sn, float(dist), group[sn][dist].attrs['exposuretime'], len(group[sn][dist]['curves'])))
+                try:
+                    self._data.append(
+                        (sn, float(dist), group[sn][dist].attrs['exposuretime'], len(group[sn][dist]['curves'])))
+                except KeyError:
+                    continue
 
     def columnCount(self, parent: QtCore.QModelIndex = ...):
         return 6

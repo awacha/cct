@@ -11,6 +11,8 @@ class TransmissionModel(QtCore.QAbstractItemModel):
         self._data = []
         for sn in sorted(group.keys()):
             for dist in sorted(group[sn].keys(), key=float):
+                if 'curves' not in group[sn][dist]:
+                    continue
                 for c in group[sn][dist]['curves'].keys():
                     dset = group[sn][dist]['curves'][c]
                     res = (sn, float(dist), dset.attrs['transmission'], dset.attrs['transmission.err'],

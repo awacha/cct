@@ -7,11 +7,12 @@ def show_cmatrix(fig: Figure, grp: Group):
     fig.clear()
     try:
         cmat = grp['correlmatrix']
+        curvesgrp = grp['curves']
     except KeyError:
         return
     ax = fig.add_subplot(1, 1, 1)
     ax.imshow(cmat, cmap=matplotlib.cm.coolwarm, interpolation='nearest')
-    fsns = sorted([grp['curves'][ds].attrs['fsn'] for ds in grp['curves'].keys()])
+    fsns = sorted([curvesgrp[ds].attrs['fsn'] for ds in curvesgrp.keys()])
     ax.set_xticks(list(range(len(fsns))))
     ax.set_xticklabels([str(f) for f in fsns], rotation='vertical')
     ax.set_yticks(list(range(len(fsns))))
