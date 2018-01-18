@@ -36,6 +36,11 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.cache_pathes()
         # self.reloadHeaders()
 
+    def setBadFSNFile(self, badfsnsfile):
+        self.beginResetModel()
+        self.badfsnsfile = badfsnsfile
+        self.endResetModel()
+
     def config(self):
         return self._parent.config
 

@@ -142,8 +142,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         currentkey = [k for k in QtWidgets.QStyleFactory.keys() if
                       k.upper() == QtWidgets.QApplication.instance().style().objectName().upper()][0]
         idx = self.uiStyleComboBox.findText(currentkey)
+        self.badFSNListFileNameLineEdit.setText(os.path.join(appdirs.user_state_dir('cpt', 'CREDO', roaming=True), 'badfsns'))
         self.uiStyleComboBox.setCurrentIndex(idx)
         self.uiStyleComboBox.currentIndexChanged.connect(self.onUiStyleChange)
+        self.browseBadFSNListFileNamePushButton.clicked.connect(self.onBrowseBadFSNListFileName)
         self.browseHDFPushButton.clicked.connect(self.onBrowseSaveFile)
         self.browsePushButton.clicked.connect(self.onBrowseRootDir)
         self.processPushButton.clicked.connect(self.onProcess)
@@ -212,6 +214,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.backgroundListClearPushButton.clicked.connect(self.onClearBackgroundList)
         self._configwidgets = [
             (self.uiStyleComboBox, 'io', 'uistyle'),
+            (self.badFSNListFileNameLineEdit, 'io', 'badfsnsfile'),
             (self.saveHDFLineEdit, 'io', 'hdf5'),
             (self.rootDirLineEdit, 'io', 'datadir'),
             (self.exportFolderLineEdit, 'export', 'folder'),
@@ -924,7 +927,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 self.firstFSNSpinBox.value(),
                 self.lastFSNSpinBox.value(),
                 self.header_columns,
-                os.path.join(appdirs.user_state_dir('cpt', 'CREDO', roaming=True), 'badfsns')
+                self.badFSNListFileNameLineEdit.text()
             )
             newheadermodel.fsnloaded.connect(self.onHeaderModelFSNLoaded)
             newheadermodel.reloadHeaders()
@@ -1120,6 +1123,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         if not filename.endswith('.h5') and not filename.endswith('.hdf5'):
             filename = filename + '.h5'
         self.setHDF5File(filename)
+
+    def onBrowseBadFSNListFileName(self):
+        filename, fltr = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Select bad FSN list file...', '',
+            'Text files (*.txt *.dat);;All files (*)',
+            'Text files (*.txt *.dat)')
+        if filename is None:
+            return
+        if not filename.endswith('.txt') and not filename.endswith('.dat'):
+            filename = filename + '.txt'
+        self.setBadFSNFile(filename)
+
+    def setBadFSNFile(self, filename):
+        self.badFSNListFileNameLineEdit.setText(filename)
+        try:
+            self.headermodel.setBadFSNFile(filename)
+        except AttributeError:
+            pass
 
     def updateResults(self, processingfinished=False):
         try:

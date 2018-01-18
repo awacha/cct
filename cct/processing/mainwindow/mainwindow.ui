@@ -65,32 +65,8 @@
          <string>Input/output</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout">
-         <item row="8" column="0" colspan="3">
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>0</width>
-             <height>0</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item row="3" column="1">
+         <item row="4" column="1">
           <widget class="QLineEdit" name="exportFolderLineEdit"/>
-         </item>
-         <item row="3" column="2">
-          <widget class="QPushButton" name="browseExportFolderPushButton">
-           <property name="text">
-            <string>Browse...</string>
-           </property>
-           <property name="icon">
-            <iconset theme="document-save-as">
-             <normaloff>.</normaloff>.</iconset>
-           </property>
-          </widget>
          </item>
          <item row="0" column="1" colspan="2">
           <widget class="QComboBox" name="uiStyleComboBox"/>
@@ -102,59 +78,7 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QLineEdit" name="saveHDFLineEdit">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>HDF5 file:</string>
-           </property>
-           <property name="buddy">
-            <cstring>saveHDFLineEdit</cstring>
-           </property>
-          </widget>
-         </item>
          <item row="6" column="1">
-          <widget class="QSpinBox" name="lastFSNSpinBox">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximum">
-            <number>999999</number>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_10">
-           <property name="text">
-            <string>Export folder:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
           <widget class="QSpinBox" name="firstFSNSpinBox">
            <property name="enabled">
             <bool>false</bool>
@@ -170,7 +94,7 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="2" rowspan="2">
+         <item row="6" column="2" rowspan="2">
           <widget class="QPushButton" name="reloadPushButton">
            <property name="enabled">
             <bool>false</bool>
@@ -190,7 +114,7 @@
            </property>
           </widget>
          </item>
-         <item row="6" column="0">
+         <item row="7" column="0">
           <widget class="QLabel" name="label_3">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -206,7 +130,7 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="0">
+         <item row="6" column="0">
           <widget class="QLabel" name="label_2">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -222,10 +146,86 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="2">
+         <item row="7" column="1">
+          <widget class="QSpinBox" name="lastFSNSpinBox">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximum">
+            <number>999999</number>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>Export folder:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLineEdit" name="saveHDFLineEdit">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <widget class="QPushButton" name="browseExportFolderPushButton">
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+           <property name="icon">
+            <iconset theme="document-save-as">
+             <normaloff>.</normaloff>.</iconset>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="0" colspan="3">
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>HDF5 file:</string>
+           </property>
+           <property name="buddy">
+            <cstring>saveHDFLineEdit</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
           <widget class="QPushButton" name="browseHDFPushButton">
            <property name="text">
-            <string>Browse</string>
+            <string>Browse...</string>
            </property>
            <property name="icon">
             <iconset theme="document-save-as">
@@ -233,14 +233,14 @@
            </property>
           </widget>
          </item>
-         <item row="7" column="0" colspan="3">
+         <item row="8" column="0" colspan="3">
           <widget class="QProgressBar" name="ioProgressBar">
            <property name="value">
             <number>24</number>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
+         <item row="2" column="0">
           <widget class="QLabel" name="label">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -256,7 +256,7 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
+         <item row="2" column="1">
           <widget class="QLineEdit" name="rootDirLineEdit">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
@@ -269,7 +269,7 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="2">
+         <item row="2" column="2">
           <widget class="QPushButton" name="browsePushButton">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -278,7 +278,7 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>Browse</string>
+            <string>Browse...</string>
            </property>
            <property name="icon">
             <iconset theme="document-open">
@@ -286,9 +286,41 @@
            </property>
           </widget>
          </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_15">
+           <property name="text">
+            <string>Bad FSN list:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="badFSNListFileNameLineEdit">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QPushButton" name="browseBadFSNListFileNamePushButton">
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+           <property name="icon">
+            <iconset theme="document-open"/>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="sampleSelectionPage">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>400</width>
+          <height>490</height>
+         </rect>
+        </property>
         <attribute name="label">
          <string>Sample selection</string>
         </attribute>
@@ -314,7 +346,8 @@
               <string>Add</string>
              </property>
              <property name="icon">
-              <iconset theme="list-add"/>
+              <iconset theme="list-add">
+               <normaloff>.</normaloff>.</iconset>
              </property>
             </widget>
            </item>
@@ -324,7 +357,8 @@
               <string>Remove</string>
              </property>
              <property name="icon">
-              <iconset theme="list-remove"/>
+              <iconset theme="list-remove">
+               <normaloff>.</normaloff>.</iconset>
              </property>
             </widget>
            </item>
@@ -334,7 +368,8 @@
               <string>Clear</string>
              </property>
              <property name="icon">
-              <iconset theme="edit-clear-all"/>
+              <iconset theme="edit-clear-all">
+               <normaloff>.</normaloff>.</iconset>
              </property>
             </widget>
            </item>
@@ -1562,28 +1597,85 @@
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <tabstops>
-  <tabstop>tabWidget</tabstop>
+  <tabstop>uiStyleComboBox</tabstop>
+  <tabstop>badFSNListFileNameLineEdit</tabstop>
+  <tabstop>browseBadFSNListFileNamePushButton</tabstop>
+  <tabstop>rootDirLineEdit</tabstop>
+  <tabstop>browsePushButton</tabstop>
   <tabstop>saveHDFLineEdit</tabstop>
+  <tabstop>browseHDFPushButton</tabstop>
+  <tabstop>exportFolderLineEdit</tabstop>
+  <tabstop>browseExportFolderPushButton</tabstop>
   <tabstop>firstFSNSpinBox</tabstop>
   <tabstop>lastFSNSpinBox</tabstop>
+  <tabstop>reloadPushButton</tabstop>
+  <tabstop>backgroundListTreeView</tabstop>
+  <tabstop>backgroundListAddPushButton</tabstop>
+  <tabstop>backgroundListDeletePushButton</tabstop>
+  <tabstop>backgroundListClearPushButton</tabstop>
   <tabstop>errorPropagationComboBox</tabstop>
   <tabstop>abscissaErrorPropagationComboBox</tabstop>
   <tabstop>stdMultiplierDoubleSpinBox</tabstop>
+  <tabstop>autoMarkBadExposuresCheckBox</tabstop>
   <tabstop>logarithmicCorrelMatrixCheckBox</tabstop>
   <tabstop>sanitizeCurvesCheckBox</tabstop>
+  <tabstop>qRangeOverrideGroupBox</tabstop>
+  <tabstop>qMinDoubleSpinBox</tabstop>
+  <tabstop>qMaxDoubleSpinBox</tabstop>
+  <tabstop>qBinCountSpinBox</tabstop>
+  <tabstop>logarithmicQCheckBox</tabstop>
   <tabstop>processPushButton</tabstop>
   <tabstop>resultsSampleSelectorComboBox</tabstop>
   <tabstop>resultsDistanceSelectorComboBox</tabstop>
+  <tabstop>plot1dShowMeanCurveCheckBox</tabstop>
+  <tabstop>plot1dLogarithmicXCheckBox</tabstop>
+  <tabstop>plot1dShowBadCurvesCheckBox</tabstop>
+  <tabstop>plot1dLogarithmicYCheckBox</tabstop>
+  <tabstop>plot1dShowGoodCurvesCheckBox</tabstop>
+  <tabstop>plot2dShowMaskCheckBox</tabstop>
+  <tabstop>plot2dShowCenterCheckBox</tabstop>
   <tabstop>plotCurvesPushButton</tabstop>
   <tabstop>plotImagePushButton</tabstop>
   <tabstop>plotCorMatTestResultsPushButton</tabstop>
   <tabstop>plotCorMatPushButton</tabstop>
+  <tabstop>cmpSampleTreeView</tabstop>
+  <tabstop>cmpSelectAllSamplesPushButton</tabstop>
+  <tabstop>cmpDeselectAllSamplesPushButton</tabstop>
+  <tabstop>cmpPlotTypeComboBox</tabstop>
+  <tabstop>cmpLabelLineEdit</tabstop>
+  <tabstop>cmpErrorBarsCheckBox</tabstop>
+  <tabstop>cmpLegendCheckBox</tabstop>
+  <tabstop>cmpPlotPushButton</tabstop>
   <tabstop>qcVacuumFluxPushButton</tabstop>
   <tabstop>qcTransmissionsPushButton</tabstop>
   <tabstop>qcExposureTimesPushButton</tabstop>
   <tabstop>qcEmptyBeamPushButton</tabstop>
-  <tabstop>treeView</tabstop>
+  <tabstop>exportImageFormatComboBox</tabstop>
+  <tabstop>exportImageResolutionSpinBox</tabstop>
+  <tabstop>exportImageWidthDoubleSpinBox</tabstop>
+  <tabstop>exportImageWidthUnitsComboBox</tabstop>
+  <tabstop>exportImageHeightDoubleSpinBox</tabstop>
+  <tabstop>exportImageHeightUnitsComboBox</tabstop>
+  <tabstop>export2DDataFormatComboBox</tabstop>
+  <tabstop>export1DDataFormatComboBox</tabstop>
+  <tabstop>sampleNameListWidget</tabstop>
+  <tabstop>sampleNameListSelectAllPushButton</tabstop>
+  <tabstop>sampleNameListDeselectAllPushButton</tabstop>
+  <tabstop>exportAveragedCurvesGraphPushButton</tabstop>
+  <tabstop>exportAveraged2DDataPushButton</tabstop>
+  <tabstop>exportAveraged2DGraphPushButton</tabstop>
+  <tabstop>exportAveragedCurvesDataPushButton</tabstop>
+  <tabstop>exportCorrelMatricesGraphPushButton</tabstop>
+  <tabstop>exportCorrelMatricesDataPushButton</tabstop>
+  <tabstop>tabWidget</tabstop>
   <tabstop>headersTreeView</tabstop>
+  <tabstop>plot2DPushButton</tabstop>
+  <tabstop>plot1DPushButton</tabstop>
+  <tabstop>exportHeaderTablePushButton</tabstop>
+  <tabstop>treeView</tabstop>
+  <tabstop>tablePlot2DPushButton</tabstop>
+  <tabstop>tablePlot1DPushButton</tabstop>
+  <tabstop>exportTablePushButton</tabstop>
  </tabstops>
  <resources>
   <include location="../../resource/icons/icons.qrc"/>
