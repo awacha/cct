@@ -310,6 +310,11 @@ class GeniX(Device):
     def do_variable_change(self, varname: str, newvalue: object):
         if varname == 'power' and newvalue >= 9:
             self.last_powered = time.time()
+        try:
+            if self.get_variable('power') >= 9:
+                self.last_powered = time.time()
+        except KeyError:
+            pass
         if varname == 'warmingup' and newvalue == False and self.get_variable('_status') == 'Warming up':
             # the warm-up process has just ended.
             if not self._warmup_stop_forced:
