@@ -51,7 +51,7 @@ class TransmissionModel(QtCore.QAbstractItemModel):
             else:
                 return '\u221e'  # infinity
         elif index.column() == 5:  # 1/mu
-            if transm.val == 1:
+            if abs(transm.val-1)<0.0001:
                 return '\u221e'  # infinity
             else:
                 return (-thickness / transm.log()).tostring(plusminus=' \xb1 ')
