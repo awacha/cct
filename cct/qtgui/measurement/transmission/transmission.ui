@@ -158,6 +158,16 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="removeSelectedPushButton">
+       <property name="text">
+        <string>Remove</string>
+       </property>
+       <property name="icon">
+        <iconset theme="list-remove"/>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="cleanTablePushButton">
        <property name="text">
         <string>Clear</string>

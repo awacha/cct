@@ -36,6 +36,7 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.startPushButton.clicked.connect(self.onStartClicked)
         self.cleanTablePushButton.clicked.connect(self.onCleanClicked)
         self.sampleNameComboBox.currentIndexChanged.connect(self.onSampleSelected)
+        self.removeSelectedPushButton.clicked.connect(self.onRemoveSelectedSample)
         self.updateSampleComboBoxen(ss)
         self.emptyNameComboBox.setCurrentIndex(
             self.emptyNameComboBox.findText(self.credo.config['datareduction']['backgroundname']))
@@ -43,6 +44,10 @@ class TransmissionMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.adjustSize()
         for i in range(7):
             self.treeView.resizeColumnToContents(i)
+
+    def onRemoveSelectedSample(self):
+        if self.treeView.selectedIndexes():
+            self.model.removeRow(self.treeView.selectedIndexes()[0].row())
 
     def onSampleSelected(self):
         if self._updating:

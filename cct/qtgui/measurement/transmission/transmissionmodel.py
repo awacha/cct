@@ -1,4 +1,5 @@
 import weakref
+from typing import Optional
 
 from PyQt5 import QtCore
 from sastool.misc.errorvalue import ErrorValue
@@ -96,3 +97,8 @@ class TransmissionModel(QtCore.QAbstractItemModel):
 
     def samplenames(self):
         return [s[0] for s in self._samples]
+
+    def removeRow(self, row: int, parent: Optional[QtCore.QModelIndex] = None):
+        self.beginRemoveRows(QtCore.QModelIndex(), row, row)
+        del self._samples[row]
+        self.endRemoveRows()
