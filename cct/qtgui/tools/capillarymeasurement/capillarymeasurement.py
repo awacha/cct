@@ -74,7 +74,10 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.updateBothPushButton.setEnabled(True)
         ss = self.credo.services['samplestore']
         assert isinstance(ss, SampleStore)
-        sample = ss.get_sample(self.sampleNameComboBox.currentText())
+        try:
+            sample = ss.get_sample(self.sampleNameComboBox.currentText())
+        except KeyError:
+            return
         if self.scan.motor.endswith('X'):
             pos = sample.positionx
         elif self.scan.motor.endswith('Y'):
@@ -93,6 +96,8 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         return False
 
     def onSampleListChanged(self, ss: SampleStore):
+        if self._updating:
+            return
         with self._updating:
             samplename = self.sampleNameComboBox.currentText()
             self.sampleNameComboBox.clear()
@@ -297,7 +302,6 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.onSampleChanged()
         self.updateThicknessPushButton.setEnabled(False)
         self.updateBothPushButton.setEnabled(False)
-
 
     def updateBoth(self):
         self.updateCenter()
