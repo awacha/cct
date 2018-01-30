@@ -38,7 +38,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         Ui_Form.setupUi(self, Form)
         assert isinstance(self.credo, Instrument)
         self.motorComboBox.addItems(sorted(self.credo.motors.keys()))
-        self.motorComboBox.setCurrentIndex(0)
+        self.motorComboBox.setCurrentIndex(-1)
         self.motorComboBox.currentTextChanged.connect(self.onMotorSelected)
         self.scanTypeComboBox.currentTextChanged.connect(self.onScanTypeSelected)
         self.startDoubleSpinBox.valueChanged.connect(self.recalculateStepSize)
@@ -47,8 +47,12 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.stepsSpinBox.valueChanged.connect(self.recalculateStepSize)
         self.progressBar.setVisible(False)
         self.startStopPushButton.clicked.connect(self.onStartStop)
+        self.commentLineEdit.textEdited.connect(self.onCommentEdited)
         self.adjustSize()
         self.onMotorSelected()
+
+    def onCommentEdited(self):
+        self.startStopPushButton.setEnabled(self.motorComboBox.currentIndex()>=0 and len(self.commentLineEdit.text()))
 
     def onStepSizeChanged(self):
         if self._updating_stepsize.inhibited:
@@ -61,7 +65,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 span = 2 * self.startDoubleSpinBox.value()
             else:
                 raise ValueError(self.scanTypeComboBox.currentText())
-            nsteps = round(abs(span) / self.stepSizeDoubleSpinBox.value())
+            nsteps = round(abs(span) / self.stepSizeDoubleSpinBox.value())+1
             if nsteps < self.stepsSpinBox.minimum() or nsteps > self.stepsSpinBox.maximum():
                 pass
             else:
@@ -72,9 +76,18 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.updateSpinBoxes()
 
     def onMotorSelected(self):
+        self.startStopPushButton.setEnabled(self.motorComboBox.currentIndex()>=0 and len(self.commentLineEdit.text()))
         if self._motor is not None:
             self.unrequireDevice('Motor_' + self._motor)
             self._motor = None
+        if self.motorComboBox.currentIndex()<0:
+            return
+        else:
+            self.scanTypeComboBox.setEnabled(True)
+            self.startDoubleSpinBox.setEnabled(True)
+            self.endDoubleSpinBox.setEnabled(True)
+            self.stepSizeDoubleSpinBox.setEnabled(True)
+            self.stepsSpinBox.setEnabled(True)
         self._motor = self.motorComboBox.currentText()
         self.requireDevice('Motor_' + self._motor)
         self.updateSpinBoxes()

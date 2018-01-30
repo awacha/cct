@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>399</width>
-    <height>385</height>
+    <width>403</width>
+    <height>410</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -58,8 +58,14 @@
       </item>
       <item row="3" column="1">
        <widget class="QDoubleSpinBox" name="startDoubleSpinBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>4</number>
+        </property>
+        <property name="maximum">
+         <double>0.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -72,8 +78,14 @@
       </item>
       <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="endDoubleSpinBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="decimals">
          <number>4</number>
+        </property>
+        <property name="maximum">
+         <double>0.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -86,6 +98,9 @@
       </item>
       <item row="5" column="1">
        <widget class="QSpinBox" name="stepsSpinBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="minimum">
          <number>2</number>
         </property>
@@ -176,6 +191,9 @@
       </item>
       <item row="1" column="1">
        <widget class="QComboBox" name="scanTypeComboBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <item>
          <property name="text">
           <string>Absolute</string>
@@ -211,7 +229,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>TextLabel</string>
+           <string>N/A</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -234,7 +252,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>TextLabel</string>
+           <string>N/A</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -258,6 +276,9 @@
       </item>
       <item row="6" column="1">
        <widget class="QDoubleSpinBox" name="stepSizeDoubleSpinBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="keyboardTracking">
          <bool>false</bool>
         </property>
@@ -283,6 +304,9 @@
    </item>
    <item>
     <widget class="QPushButton" name="startStopPushButton">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="text">
       <string>Start</string>
      </property>
