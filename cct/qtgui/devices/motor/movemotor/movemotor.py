@@ -30,6 +30,7 @@ class MoveMotor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.motorComboBox.setCurrentIndex(self.motorComboBox.findText(self.motorname))
         self.relativeCheckBox.toggled.connect(self.onRelativeChanged)
         self.targetDoubleSpinBox.editingFinished.connect(self.onEditingFinished)
+        self.onMotorSelected()
         self.adjustSize()
 
     def onEditingFinished(self):
