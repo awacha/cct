@@ -1,3 +1,5 @@
+import math
+
 import h5py
 from PyQt5 import QtCore
 
@@ -35,11 +37,11 @@ class ExpTimeModel(QtCore.QAbstractItemModel):
             if index.column() == 0: # sample name
                 return '-- Total --'
             elif index.column() == 4: # exptime
-                exptime = sum([d[2] for d in self._data])
-                hours=exptime//3600
-                mins=(exptime-3600*hours)//60
-                secs=(exptime-3600*hours-60*mins)
-                return '{:.0f}:{:.0f}:{:.0f}'.format(hours,mins,secs)
+                exptime = float(sum([d[2] for d in self._data]))
+                hours=math.floor(exptime/3600)
+                mins=math.floor((exptime-3600*hours)/60)
+                secs=math.floor((exptime-3600*hours-60*mins))
+                return '{:02.0f}:{:02.0f}:{:02.0f}'.format(hours,mins,secs)
             elif index.column() == 5: # exptime pcnt
                 return '100 %'
             else:
@@ -55,10 +57,10 @@ class ExpTimeModel(QtCore.QAbstractItemModel):
                 return '{:.2f}'.format(self._data[index.row()][2] / self._data[index.row()][3])
             elif index.column() == 4:  # exptime
                 exptime = self._data[index.row()][2]
-                hours=exptime//3600
-                mins=(exptime-3600*hours)//60
-                secs=(exptime-3600*hours-60*mins)
-                return '{:.0f}:{:.0f}:{:.0f}'.format(hours,mins,secs)
+                hours=math.floor(exptime/3600)
+                mins=math.floor((exptime-3600*hours)/60)
+                secs=math.floor((exptime-3600*hours-60*mins))
+                return '{:02.0f}:{:02.0f}:{:02.0f}'.format(hours,mins,secs)
             elif index.column() == 5:  # exptime pcnt
                 return '{:.2f} %'.format(100 * self._data[index.row()][2] / sum(d[2] for d in self._data))
 
