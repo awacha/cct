@@ -24,7 +24,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.fsnfirst = fsnfirst
         self.fsnlast = fsnlast
         self.badfsnsfile = badfsnsfile
-        self._data = [] # fsn, title, distance, isbad, (visible parameters)
+        self._data = [] # fsn, title, distance, isbad, date, exptime, (visible parameters)
         # the columns you want to display
         if not visiblecolumns:
             visiblecolumns = ['fsn', 'title', 'distance', 'date', 'temperature']
@@ -98,8 +98,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
                 self.fsnloaded.emit(self.fsnlast - self.fsnfirst + 1, self._fsns_loaded, fsn)
             else:
                 self.beginResetModel()
-                fsns, titles, distances, visiblecolumndata = fsn
-                self._data=list(zip(fsns, titles, distances, self.is_badfsn(fsns), visiblecolumndata))
+                fsns, titles, distances, exptimes, dates, visiblecolumndata = fsn
+                self._data=list(zip(fsns, titles, distances, self.is_badfsn(fsns), dates, exptimes, visiblecolumndata))
                 self.endResetModel()
                 self.fsnloaded.emit(0, 0, 0)
                 self.reloaderworker.join()
@@ -184,6 +184,27 @@ class HeaderModel(QtCore.QAbstractItemModel):
     def sampleNames(self) -> Set[str]:
         return {d[1] for d in self._data}
 
+    def netExposureTime(self):
+        return float(sum([d[5] for d in self._data]))
+# fsn, title, distance, isbad, date, exptime, (visible parameters)
+
+    def netGoodExposureTime(self):
+        return float(sum([d[5] for d in self._data if not d[3]]))
+
+    def netBadExposureTime(self):
+        return float(sum([d[5] for d in self._data if d[3]]))
+
+    def countGoodExposures(self):
+        return len([d for d in self._data if not d[3]])
+
+    def countBadExposures(self):
+        return len([d for d in self._data if d[3]])
+
+    def totalExperimentTime(self):
+        mintime = min([d[4] for d in self._data])
+        maxtime = max([d[4] for d in self._data])
+        return (maxtime-mintime).total_seconds()
+
 def load_header(fsn, prefix, fsndigits, path):
     #    prefix = self.config()['path']['prefixes']['crd']
     for p in path:
@@ -201,6 +222,8 @@ def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, colu
     _fsns = []
     _titles = []
     _distances = []
+    _exptimes = []
+    _dates = []
     for fsn in range(fsnfirst, fsnlast + 1):
         try:
             h = load_header(fsn, prefix, fsndigits, path)
@@ -213,6 +236,8 @@ def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, colu
             _headers.append(hd)
             _fsns.append(fsn)
             _titles.append(h.title)
+            _exptimes.append(h.exposuretime)
+            _dates.append(h.date)
             _distances.append(h.distance)
             # some type adjustments...
             for i, x in enumerate(_headers[-1]):
@@ -226,5 +251,5 @@ def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, colu
             del h
         except FileNotFoundError:
             continue
-    queue.put_nowait((_fsns, _titles, _distances, _headers))
+    queue.put_nowait((_fsns, _titles, _distances, _exptimes, _dates, _headers))
     return None
