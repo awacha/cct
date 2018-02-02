@@ -899,6 +899,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.headersTreeView.setSortingEnabled(False)
         self.headermodel.reloadHeaders()
 
+    def updateTimeLabels(self):
+        totaltime = self.headermodel.totalExperimentTime()
+        for labelwidget, timedelta in [
+            (self.totalExperimentTimeLabel, self.headermodel.totalExperimentTime()),
+            (self.goodExposureTimeLabel, self.headermodel.netGoodExposureTime()),
+            (self.badExposureTimeLabel, self.headermodel.netBadExposureTime()),
+            (self.netExposureTimeLabel, self.headermodel.netExposureTime()),
+            (self.deadTimeLabel, self.headermodel.totalExperimentTime()-self.headermodel.netExposureTime()),
+        ]:
+            time_h = np.floor(timedelta/3600)
+            time_min = np.floor(timedelta-time_h*3600)/60
+            time_sec = np.floor(timedelta-time_h*3600-time_min*60)
+            labelwidget.setText('{:02.0f}:{:02.0f}:{:02.0f} ({:.1f}%)'.format(
+                time_h, time_min, time_sec, timedelta/totaltime*100))
+
     def onHeaderModelFSNLoaded(self, totalcount, currentcount, thisfsn):
         if totalcount == currentcount == thisfsn == 0:
             self.ioProgressBar.setVisible(False)
@@ -907,19 +922,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             self.headersTreeView.sortByColumn(self._lastsortcolumn, self._lastsortdirection)
             self.resizeHeaderViewColumns()
             self.updateBackgroundList()
-            totaltime = self.headermodel.totalExperimentTime()
-            for labelwidget, timedelta in [
-                (self.totalExperimentTimeLabel, self.headermodel.totalExperimentTime()),
-                (self.goodExposureTimeLabel, self.headermodel.netGoodExposureTime()),
-                (self.badExposureTimeLabel, self.headermodel.netBadExposureTime()),
-                (self.netExposureTimeLabel, self.headermodel.netExposureTime()),
-                (self.deadTimeLabel, self.headermodel.totalExperimentTime()-self.headermodel.netExposureTime()),
-            ]:
-                time_h = np.floor(timedelta/3600)
-                time_min = np.floor(timedelta-time_h*3600)/60
-                time_sec = np.floor(timedelta-time_h*3600-time_min*60)
-                labelwidget.setText('{:02.0f}:{:02.0f}:{:02.0f} ({:.1f}%)'.format(
-                    time_h, time_min, time_sec, timedelta/totaltime*100))
+            self.updateTimeLabels()
             self.statusBar.clearMessage()
         else:
             if totalcount > 0 and not self.ioProgressBar.isVisible():
@@ -1200,6 +1203,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.cmpSampleTreeView.setModel(self.cmpSampleModel)
         for i in range(self.cmpSampleModel.columnCount()):
             self.cmpSampleTreeView.resizeColumnToContents(i)
+        self.updateTimeLabels()
+        self.statusBar.clearMessage()
 
     def putlogo(self, figure: Optional[Figure] = None):
         if figure is None:
