@@ -9,36 +9,47 @@ from sastool.io.credo_cct import Header, Exposure
 from sastool.misc.errorvalue import ErrorValue
 from scipy.io import loadmat
 
+from .correlmatrix import correlmatrix_cython
 
-def correlmatrix(grp: h5py.Group, std_multiplier: Optional[float] = None, logarithmic: bool = True):
-    cm = np.zeros((len(grp), len(grp)), np.double)
+
+def correlmatrix(grp: h5py.Group, std_multiplier:Optional[float] = None, logarithmic: bool = True, use_python:bool=False):
     sortedkeys = sorted(grp.keys(), key=lambda x: int(x))
-    for i in range(len(grp)):
-        for j in range(i + 1, len(grp)):
-            ds1 = grp[sortedkeys[i]]
-            ds2 = grp[sortedkeys[j]]
-            if logarithmic:
-                idx = np.logical_and(np.logical_and(ds1[:, 2] > 0, ds2[:, 2] > 0),
-                                     np.logical_and(ds1[:, 1] > 0, ds2[:, 1] > 0))
-                if idx.sum() == 0:
-                    cm[i, j] = cm[j, i] = np.nan
-                    continue
-                w = (ds1[idx, 2] / ds1[idx, 1]) ** 2 + (ds2[idx, 2] / ds2[idx, 1]) ** 2
-                cm[i, j] = cm[j, i] = ((np.log(ds1[idx, 1]) - np.log(ds2[idx, 1])) ** 2 / w).sum() / (1 / w).sum()
-            else:
-                idx = np.logical_and(ds1[:, 2] > 0, ds2[:, 2] > 0)
-                if idx.sum() == 0:
-                    cm[i, j] = cm[j, i] = np.nan
-                w = (ds1[idx, 2] ** 2 + ds2[idx, 2] ** 2)
-                cm[i, j] = cm[j, i] = ((ds1[idx, 1] - ds2[idx, 1]) ** 2 / w).sum() / (1 / w).sum()
-    rowavg = np.nanmean(cm, axis=0)
+    if use_python: # use the slower version implemented in pure Python
+        cm = np.zeros((len(grp), len(grp)), np.double)
+        for i in range(len(grp)):
+            for j in range(i + 1, len(grp)):
+                ds1 = grp[sortedkeys[i]]
+                ds2 = grp[sortedkeys[j]]
+                if logarithmic:
+                    idx = np.logical_and(np.logical_and(ds1[:, 2] > 0, ds2[:, 2] > 0),
+                                         np.logical_and(ds1[:, 1] > 0, ds2[:, 1] > 0))
+                    if idx.sum() == 0:
+                        cm[i, j] = cm[j, i] = np.nan
+                        continue
+                    w = (ds1[idx, 2] / ds1[idx, 1]) ** 2 + (ds2[idx, 2] / ds2[idx, 1]) ** 2
+                    cm[i, j] = cm[j, i] = ((np.log(ds1[idx, 1]) - np.log(ds2[idx, 1])) ** 2 / w).sum() / (1 / w).sum()
+                else:
+                    idx = np.logical_and(ds1[:, 2] > 0, ds2[:, 2] > 0)
+                    if idx.sum() == 0:
+                        cm[i, j] = cm[j, i] = np.nan
+                    w = (ds1[idx, 2] ** 2 + ds2[idx, 2] ** 2)
+                    cm[i, j] = cm[j, i] = ((ds1[idx, 1] - ds2[idx, 1]) ** 2 / w).sum() / (1 / w).sum()
+        rowavg = np.nanmean(cm, axis=0)
+        cm += np.diagflat(rowavg)
+    else: # use the faster version implemented in cython
+        npoints=grp[list(grp.keys())[0]].shape[0]
+        intensities = np.empty((npoints,len(grp)), dtype=np.double)
+        errors = np.empty((npoints,len(grp)), dtype=np.double)
+        for i,key in enumerate(sorted(grp.keys(), key=lambda x:int(x))):
+            intensities[:,i] = grp[key][:,1]
+            errors[:,i]=grp[key][:,2]
+        cm = correlmatrix_cython(intensities, errors, logarithmic)
+        rowavg = np.diag(cm)
     for i in range(len(rowavg)):
         grp[sortedkeys[i]].attrs['correlmat_discrp'] = rowavg[i]
         grp[sortedkeys[i]].attrs['correlmat_rel_discrp'] = (rowavg[i] - np.median(rowavg)) / rowavg.std()
         grp[sortedkeys[i]].attrs['correlmat_bad'] = (rowavg[i] - np.median(rowavg)) > std_multiplier * rowavg.std()
-    cm = cm + np.diagflat(rowavg)
     return cm
-
 
 class Summarizer(object):
     dist_tolerance = 0.01
