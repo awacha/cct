@@ -57,7 +57,7 @@ class DataReduction(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self._currentfsn,
             self.credo.services['filesequence'].exposurefileformat(prefix, self._currentfsn) + '.cbf',
             prefix,
-            param=header._data)
+            param=header._data, context='posthoc')
         self.treeView.selectionModel().select(
             self.model.index(self.model.rowForFSN(self._currentfsn), 0),
             QtCore.QItemSelectionModel.Current | QtCore.QItemSelectionModel.Rows

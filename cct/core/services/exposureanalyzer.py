@@ -7,7 +7,7 @@ import queue
 import time
 import traceback
 from logging.handlers import QueueHandler
-from typing import Union, Dict
+from typing import Union, Dict, Optional
 
 import numpy as np
 from sastool.io.credo_cct import Exposure, Header
@@ -103,13 +103,17 @@ class ExposureAnalyzer_Backend(object):
             self._logger.addHandler(logging.StreamHandler())
             self._logger.setLevel(loglevel)
         self.masks = {}
-        self._lastdarkbackground = None
-        self._lastabsintref = None
-        self._lastbackground = None
-        self._absintscalingfactor = None
-        self._absintqrange = None
-        self._absintstat = None
+        self._context = {}
         self._lasttelemetry = 0
+
+    def new_context(self, context:Optional[str] = None):
+        self._context[context]={'lastdarkbackground':None,
+                                'lastabsintref':None,
+                                'lastbackground':None,
+                                'absintscalingfactor':None,
+                                'absintqrange':None,
+                                'absintstat':None,
+                                }
 
     def get_telemetry(self):
         self._lasttelemetry = time.monotonic()
@@ -173,8 +177,12 @@ class ExposureAnalyzer_Backend(object):
                     self._logger.debug('File {} loaded successfully.'.format(message['filename']))
                     assert isinstance(cbfdata, np.ndarray)
                     self._logger.debug('Survived assertion')
-                    if message['prefix'] == self.config['path']['prefixes']['crd']:
+                    if message['prefix'] == self.config['path']['prefixes']['crd']: # production measurement, with data reduction
                         self._logger.debug('Data reduction needed.')
+                        try:
+                            context = message['context']
+                        except KeyError:
+                            context = None
                         # data reduction needed
                         try:
                             maskfilename = message['param']['geometry']['mask']
@@ -185,7 +193,7 @@ class ExposureAnalyzer_Backend(object):
                         try:
                             mask = self.get_mask(maskfilename)
                             assert isinstance(mask, np.ndarray)
-                            im = self.datareduction(cbfdata, mask, message['param'])
+                            im = self.datareduction(cbfdata, mask, message['param'], context)
                             self.savecorrected(message['prefix'], message['fsn'], im)
                             self.send_to_frontend('datareduction-done', prefix=message['prefix'], fsn=message['fsn'],
                                                   image=im)
@@ -212,7 +220,7 @@ class ExposureAnalyzer_Backend(object):
                                                   data=(cbfdata * transmmask).sum(), what=message['what'],
                                                   sample=message['sample'], )
                             self.send_to_frontend('done', prefix=message['prefix'], fsn=message['fsn'])
-                    elif message['prefix'] == self.config['path']['prefixes']['scn']:
+                    elif message['prefix'] == self.config['path']['prefixes']['scn']: # scan measurement
                         self._logger.debug('This is a scan point.')
                         try:
                             scanmask = self.get_mask(self.config['scan']['mask'])
@@ -278,33 +286,33 @@ class ExposureAnalyzer_Backend(object):
             self._logger.debug('Loaded mask {} from file {}'.format(maskname, filename))
             return self.masks[maskname]
 
-    def normalize_flux(self, im: Exposure, datared: Dict):
+    def normalize_flux(self, im: Exposure, datared: Dict, context:Optional[str]=None):
         im /= im.header.exposuretime
         datared['history'].append('Divided by exposure time')
         datared['statistics']['02_normalize_flux'] = im.get_statistics()
         self._logger.debug('Done normalizing by flux FSN {:d}'.format(im.header.fsn))
         return im, datared
 
-    def subtractdarkbackground(self, im: Exposure, datared: Dict):
+    def subtractdarkbackground(self, im: Exposure, datared: Dict, context:Optional[str]=None):
         if im.header.title == self.config['datareduction']['darkbackgroundname']:
-            self._lastdarkbackground = im.mean()
-            self._logger.debug('Determined background level: {:g} cps per pixel'.format(self._lastdarkbackground))
+            self._context[context]['lastdarkbackground'] = im.mean()
+            self._logger.debug('Determined background level: {:g} cps per pixel'.format(self._context[context]['lastdarkbackground']))
             self._logger.debug('Done darkbgsub FSN {:d}: this is dark background'.format(im.header.fsn))
             datared['history'].append(
                 'This is a dark background measurement. Level: {:g} cps per pixel (overall {:g} cps)'.format(
-                    self._lastdarkbackground, self._lastdarkbackground * im.shape[0] * im.shape[1]))
+                    self._context[context]['lastdarkbackground'], self._context[context]['lastdarkbackground'] * im.shape[0] * im.shape[1]))
             raise DataReductionEnd()
         # otherwise subtract the background.
-        im -= self._lastdarkbackground
+        im -= self._context[context]['lastdarkbackground']
         datared['history'].append(
             'Subtracted dark background level: {:g} cps per pixel (overall {:g} cps)'.format(
-                self._lastdarkbackground, self._lastdarkbackground * im.shape[0] * im.shape[1]))
-        datared['darkbackgroundlevel'] = self._lastdarkbackground
+                self._context[context]['lastdarkbackground'], self._context[context]['lastdarkbackground'] * im.shape[0] * im.shape[1]))
+        datared['darkbackgroundlevel'] = self._context[context]['lastdarkbackground']
         datared['statistics']['03_subtractdarkbackground'] = im.get_statistics()
         self._logger.debug('Done darkbgsub FSN {:d}'.format(im.header.fsn))
         return im, datared
 
-    def normalize_transmission(self, im: Exposure, datared: Dict):
+    def normalize_transmission(self, im: Exposure, datared: Dict, context:Optional[str]=None):
         transmission = im.header.transmission
         im /= im.header.transmission
         datared['history'].append('Divided by transmission: ' + str(im.header.transmission))
@@ -312,25 +320,25 @@ class ExposureAnalyzer_Backend(object):
         self._logger.debug('Done normalizing by transmission FSN {:d}'.format(im.header.fsn))
         return im, datared
 
-    def subtractemptybeambackground(self, im: Exposure, datared: Dict):
+    def subtractemptybeambackground(self, im: Exposure, datared: Dict, context:Optional[str]=None):
         if im.header.title == self.config['datareduction']['backgroundname']:
-            self._lastbackground = im
+            self._context[context]['lastbackground'] = im
             self._logger.debug('Done bgsub FSN {:d}: this is background'.format(im.header.fsn))
             datared['history'].append('This is an empty beam measurement.')
             raise DataReductionEnd()
-        if ((im.header.distance - self._lastbackground.header.distance).abs() <
+        if ((im.header.distance - self._context[context]['lastbackground'].header.distance).abs() <
                 self.config['datareduction']['distancetolerance']):
-            im -= self._lastbackground
+            im -= self._context[context]['lastbackground']
             datared['history'].append(
-                'Subtracted background FSN #{:d}'.format(self._lastbackground.header.fsn))
-            datared['emptybeamFSN'] = self._lastbackground.header.fsn
+                'Subtracted background FSN #{:d}'.format(self._context[context]['lastbackground'].header.fsn))
+            datared['emptybeamFSN'] = self._context[context]['lastbackground'].header.fsn
         else:
             raise ServiceError('Last seen background measurement does not match the exposure under reduction.')
         datared['statistics']['05_subtractbackground'] = im.get_statistics()
         self._logger.debug('Done bgsub FSN {:d}'.format(im.header.fsn))
         return im, datared
 
-    def correctgeometry(self, im: Exposure, datared: Dict):
+    def correctgeometry(self, im: Exposure, datared: Dict, context:Optional[str]=None):
         tth = im.twotheta
         assert isinstance(tth, ErrorValue)
         datared['tthval_statistics'] = self.get_matrix_statistics(tth.val)
@@ -373,14 +381,14 @@ class ExposureAnalyzer_Backend(object):
         self._logger.debug('Done correctgeometry FSN {:d}'.format(im.header.fsn))
         return im, datared
 
-    def dividebythickness(self, im: Exposure, datared: Dict):
+    def dividebythickness(self, im: Exposure, datared: Dict, context:Optional[str]=None):
         im /= im.header.thickness
         datared['history'].append('Divided by thickness {:g} cm'.format(im.header.thickness))
         datared['statistics']['07_dividebythickness'] = im.get_statistics()
         self._logger.debug('Done dividebythickness FSN {:d}'.format(im.header.fsn))
         return im, datared
 
-    def absolutescaling(self, im: Exposure, datared: Dict):
+    def absolutescaling(self, im: Exposure, datared: Dict, context:Optional[str]=None):
         if im.header.title == self.config['datareduction']['absintrefname']:
             self._logger.debug('History: {}'.format('\n'.join([h for h in datared['history']])))
             dataset = np.loadtxt(self.config['datareduction']['absintrefdata'])
@@ -405,37 +413,41 @@ class ExposureAnalyzer_Backend(object):
                                         'factor.err': scalingfactor.err, 'stat': stat}
             self._logger.debug('Scaling factor: ' + str(scalingfactor))
             self._logger.debug('Chi2: {:f}'.format(stat['Chi2_reduced']))
-            self._lastabsintref = im
-            self._absintscalingfactor = scalingfactor
-            self._absintstat = stat
-            self._absintqrange = q
+            self._context[context]['lastabsintref'] = im
+            self._context[context]['absintscalingfactor'] = scalingfactor
+            self._context[context]['absintstat'] = stat
+            self._context[context]['absintqrange'] = q
             datared['history'].append(
                 'This is an absolute intensity reference measurement. '
                 'Determined absolute intensity scaling factor: {}. Reduced Chi2: {:f}. DoF: {:d}. '
                 'This corresponds to beam flux {} photons*eta/sec'.format(
-                    self._absintscalingfactor, self._absintstat['Chi2_reduced'], self._absintstat['DoF'],
-                    1 / self._absintscalingfactor))
-        if ((im.header.distance - self._lastabsintref.header.distance).abs() <
+                    self._context[context]['absintscalingfactor'],
+                    self._context[context]['absintstat']['Chi2_reduced'],
+                    self._context[context]['absintstat']['DoF'],
+                    1 / self._context[context]['absintscalingfactor']))
+        if ((im.header.distance - self._context[context]['lastabsintref'].header.distance).abs() <
                 self.config['datareduction']['distancetolerance']):
-            im *= self._absintscalingfactor
+            im *= self._context[context]['absintscalingfactor']
             datared['statistics']['08_absolutescaling'] = im.get_statistics()
             datared['history'].append(
                 'Using absolute intensity factor {} from measurement FSN #{:d} '
                 'for absolute intensity calibration.'.format(
-                    self._absintscalingfactor, self._lastabsintref.header.fsn))
+                    self._context[context]['absintscalingfactor'],
+                    self._context[context]['lastabsintref'].header.fsn))
             datared['history'].append('Absint factor was determined with Chi2 {:f} (DoF {:d})'.format(
-                self._absintstat['Chi2_reduced'], self._absintstat['DoF']))
+                self._context[context]['absintstat']['Chi2_reduced'],
+                self._context[context]['absintstat']['DoF']))
             datared['history'].append('Estimated flux: {} photons*eta/sec'.format(
-                self._absintscalingfactor.__reciprocal__()))
-            datared['absintrefFSN'] = self._lastabsintref.header.fsn
-            datared['flux'] = self._absintscalingfactor.__reciprocal__().val
-            datared['flux.err'] = self._absintscalingfactor.__reciprocal__().err
-            datared['absintchi2'] = self._absintstat['Chi2_reduced']
-            datared['absintdof'] = self._absintstat['DoF']
-            datared['absintfactor'] = self._absintscalingfactor.val
-            datared['absintfactor.err'] = self._absintscalingfactor.err
-            datared['absintqmin'] = self._absintqrange.min()
-            datared['absintqmax'] = self._absintqrange.max()
+                self._context[context]['absintscalingfactor'].__reciprocal__()))
+            datared['absintrefFSN'] = self._context[context]['lastabsintref'].header.fsn
+            datared['flux'] = self._context[context]['absintscalingfactor'].__reciprocal__().val
+            datared['flux.err'] = self._context[context]['absintscalingfactor'].__reciprocal__().err
+            datared['absintchi2'] = self._context[context]['absintstat']['Chi2_reduced']
+            datared['absintdof'] = self._context[context]['absintstat']['DoF']
+            datared['absintfactor'] = self._context[context]['absintscalingfactor'].val
+            datared['absintfactor.err'] = self._context[context]['absintscalingfactor'].err
+            datared['absintqmin'] = self._context[context]['absintqrange'].min()
+            datared['absintqmax'] = self._context[context]['absintqrange'].max()
         else:
             raise ServiceError(
                 'S-D distance of the last seen absolute intensity reference measurement '
@@ -456,21 +468,23 @@ class ExposureAnalyzer_Backend(object):
         write_legacy_paramfile(picklefilename[:-len('.pickle')] + '.param', im.header.param)
         self._logger.debug('Done savecorrected FSN ' + str(im.header.fsn))
 
-    def datareduction(self, intensity: np.ndarray, mask: np.ndarray, params: dict):
+    def datareduction(self, intensity: np.ndarray, mask: np.ndarray, params: dict, context:Optional[str]=None):
         im = Exposure(intensity, intensity ** 0.5, Header(params), mask)
         im.mask_negative()
         im.mask_nonfinite()
         im.mask_nan()
         self._logger.debug('Commencing data reduction of FSN #{:d} (sample {}).'.format(im.header.fsn, im.header.title))
         datared = {'history': [], 'statistics': {'01_initial': im.get_statistics()}}
+        if context not in self._context:
+            self.new_context(context)
         try:
-            self.normalize_flux(im, datared)
-            self.subtractdarkbackground(im, datared)
-            self.normalize_transmission(im, datared)
-            self.subtractemptybeambackground(im, datared)
-            self.correctgeometry(im, datared)
-            self.dividebythickness(im, datared)
-            self.absolutescaling(im, datared)
+            self.normalize_flux(im, datared, context)
+            self.subtractdarkbackground(im, datared, context)
+            self.normalize_transmission(im, datared, context)
+            self.subtractemptybeambackground(im, datared, context)
+            self.correctgeometry(im, datared, context)
+            self.dividebythickness(im, datared, context)
+            self.absolutescaling(im, datared, context)
         except DataReductionEnd:
             pass
         self._logger.info('Data reduction history for FSN #{:d}:\n  '.format(im.header.fsn) +
