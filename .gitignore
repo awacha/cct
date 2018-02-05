@@ -9,6 +9,7 @@ radint.c
 cct.lang
 /cct/qtgui/tools/optimizegeometry/estimateworksize.c
 /cct/core/services/accounting/krb5_check_pass.c
+/cct/core/processing/correlmatrix.c
 /test
 *_ui.py
 *_rc.py
