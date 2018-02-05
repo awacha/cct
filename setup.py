@@ -50,7 +50,10 @@ extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
                         include_dirs=[get_include()]),
               Extension("cct.core.services.accounting.krb5_check_pass",
                         [os.path.join("cct","core","services","accounting","krb5_check_pass.pyx")],
-                        include_dirs=[get_include()], libraries=krb5_libs)
+                        include_dirs=[get_include()], libraries=krb5_libs),
+              Extension("cct.core.processing.correlmatrix",
+                        [os.path.join("cct","core","processing","correlmatrix.pyx")],
+                        include_dirs=[get_include()]),
               ]
 
 #extensions=[]
