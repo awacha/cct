@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from typing import Iterable, List, Optional
 
 import h5py
@@ -11,9 +12,27 @@ from scipy.io import loadmat
 
 from .correlmatrix import correlmatrix_cython
 
+def zscore(data:np.ndarray) -> np.ndarray:
+    return np.abs((data-np.nanmean(data))/np.nanstd(data))
 
-def correlmatrix(grp: h5py.Group, std_multiplier:Optional[float] = None, logarithmic: bool = True, use_python:bool=False):
+def zscore_mod(data:np.ndarray) -> np.ndarray:
+    median_abs_dev = np.nanmedian(np.abs(data-np.nanmedian(data)))
+    return  np.abs(0.6745*(data-np.nanmedian(data))/median_abs_dev)
+
+def outliers_zscore(data:np.ndarray, threshold:float=3) -> np.ndarray:
+    return zscore(data)>threshold
+
+def outliers_zscore_mod(data:np.ndarray, threshold:float=3.5) -> np.ndarray:
+    return zscore_mod(data) > threshold
+
+def outliers_interquartile(data: np.array, threshold:float=1.5) -> np.ndarray:
+    q1, q3=np.percentile(data, [25, 75])
+    iqr = q3-q1
+    return np.logical_or(data<q1-(iqr*threshold), data>q3+(iqr*threshold))
+
+def correlmatrix(grp: h5py.Group, std_multiplier:Optional[float] = None, logarithmic: bool = True, use_python:bool=False, method='zscore'):
     sortedkeys = sorted(grp.keys(), key=lambda x: int(x))
+    t0 = time.monotonic()
     if use_python: # use the slower version implemented in pure Python
         cm = np.zeros((len(grp), len(grp)), np.double)
         for i in range(len(grp)):
@@ -45,10 +64,27 @@ def correlmatrix(grp: h5py.Group, std_multiplier:Optional[float] = None, logarit
             errors[:,i]=grp[key][:,2]
         cm = correlmatrix_cython(intensities, errors, logarithmic)
         rowavg = np.diag(cm)
-    for i in range(len(rowavg)):
-        grp[sortedkeys[i]].attrs['correlmat_discrp'] = rowavg[i]
-        grp[sortedkeys[i]].attrs['correlmat_rel_discrp'] = (rowavg[i] - np.median(rowavg)) / rowavg.std()
-        grp[sortedkeys[i]].attrs['correlmat_bad'] = (rowavg[i] - np.median(rowavg)) > std_multiplier * rowavg.std()
+    for fsn, discrp, zsc, zscmod, bad_zsc, bad_zscmod, bad_iqr in zip(
+            sortedkeys, rowavg, zscore(rowavg), zscore_mod(rowavg),
+            outliers_zscore(rowavg, std_multiplier), outliers_zscore_mod(rowavg, std_multiplier),
+            outliers_interquartile(rowavg, std_multiplier)):
+        grp[fsn].attrs['correlmat_discrp'] = discrp
+        if method == 'zscore':
+            grp[fsn].attrs['correlmat_rel_discrp'] = zsc
+            grp[fsn].attrs['correlmat_bad'] = bad_zsc
+        elif method == 'zscore_mod':
+            grp[fsn].attrs['correlmat_rel_discrp'] = zscmod
+            grp[fsn].attrs['correlmat_bad'] = bad_zscmod
+        elif method == 'iqr':
+            grp[fsn].attrs['correlmat_rel_discrp'] = zsc
+            grp[fsn].attrs['correlmat_bad'] = bad_iqr
+        else:
+            raise ValueError(method)
+        grp[fsn].attrs['correlmat_zscore'] = zsc
+        grp[fsn].attrs['correlmat_zscore_mod'] = zscmod
+        grp[fsn].attrs['correlmat_bad_zscore'] = bad_zsc
+        grp[fsn].attrs['correlmat_bad_zscore_mod'] = bad_zscmod
+        grp[fsn].attrs['correlmat_bad_iqr'] = bad_iqr
     return cm
 
 class Summarizer(object):
@@ -62,7 +98,7 @@ class Summarizer(object):
             errorpropagation: int = 3, abscissaerrorpropagation: int = 3,
             sanitize_curves: bool = True, logarithmic_correlmatrix: bool = True,
             std_multiplier: float = 2.7, qrange: Optional[np.ndarray] = None,
-            samplenamelist: Optional[List[str]] = None
+            samplenamelist: Optional[List[str]] = None, corrmatoutliermethod:str='zscore',
     ):
         self.fsns = fsns
         self.exppath = exppath
@@ -78,6 +114,7 @@ class Summarizer(object):
         self.logarithmic_correlmatrix = logarithmic_correlmatrix
         self.std_multiplier = std_multiplier
         self.samplenamelist = samplenamelist
+        self.corrmatoutliermethod=corrmatoutliermethod
         self._headers = []
         self._masks = {}
 
@@ -264,7 +301,7 @@ class Summarizer(object):
     def stabilityassessment(self, samplename: str, distance: float, hdf5: h5py.File):
         cmatrix = correlmatrix(
             hdf5.require_group('Samples/{}/{:.2f}/curves'.format(samplename, distance)),
-            self.std_multiplier, self.logarithmic_correlmatrix
+            self.std_multiplier, self.logarithmic_correlmatrix, method=self.corrmatoutliermethod
         )
         grp = hdf5.require_group('Samples/{}/{:.2f}'.format(samplename, distance))
         grp.create_dataset('correlmatrix', data=cmatrix, shape=cmatrix.shape, dtype=cmatrix.dtype)
