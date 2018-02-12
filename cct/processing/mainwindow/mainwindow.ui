@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1139</width>
-    <height>747</height>
+    <height>841</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,7 +52,7 @@
           <x>0</x>
           <y>0</y>
           <width>400</width>
-          <height>490</height>
+          <height>584</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -318,8 +318,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>490</height>
+          <width>274</width>
+          <height>127</height>
          </rect>
         </property>
         <attribute name="label">
@@ -396,8 +396,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>551</height>
+          <width>407</width>
+          <height>582</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -410,7 +410,27 @@
          <string>Processing</string>
         </attribute>
         <layout class="QGridLayout" name="gridLayout_3">
-         <item row="4" column="0" colspan="2">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Error propagation in intensity:</string>
+           </property>
+           <property name="buddy">
+            <cstring>errorPropagationComboBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0" colspan="2">
+          <widget class="QCheckBox" name="sanitizeCurvesCheckBox">
+           <property name="text">
+            <string>Sanitize scattering curves</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0" colspan="2">
           <widget class="QCheckBox" name="logarithmicCorrelMatrixCheckBox">
            <property name="text">
             <string>Logarithmic correlation matrix</string>
@@ -420,7 +440,67 @@
            </property>
           </widget>
          </item>
-         <item row="8" column="0" colspan="2">
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Error propagation in q:</string>
+           </property>
+           <property name="buddy">
+            <cstring>abscissaErrorPropagationComboBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0" colspan="2">
+          <widget class="QCheckBox" name="autoMarkBadExposuresCheckBox">
+           <property name="text">
+            <string>Automatically mark bad exposures</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="0" colspan="2">
+          <spacer name="verticalSpacer_3">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="abscissaErrorPropagationComboBox">
+           <property name="currentIndex">
+            <number>3</number>
+           </property>
+           <item>
+            <property name="text">
+             <string>Independent</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Linear</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Squared</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Conservative</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="9" column="0" colspan="2">
           <widget class="QGroupBox" name="progressGroupBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -477,7 +557,7 @@
            </layout>
           </widget>
          </item>
-         <item row="7" column="0" colspan="2">
+         <item row="8" column="0" colspan="2">
           <widget class="QPushButton" name="processPushButton">
            <property name="enabled">
             <bool>false</bool>
@@ -497,68 +577,21 @@
            </property>
           </widget>
          </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Multiplier for corr.matrix analysis:</string>
+           </property>
+           <property name="buddy">
+            <cstring>stdMultiplierDoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
          <item row="2" column="1">
           <widget class="QDoubleSpinBox" name="stdMultiplierDoubleSpinBox">
            <property name="value">
             <double>2.700000000000000</double>
            </property>
-          </widget>
-         </item>
-         <item row="5" column="0" colspan="2">
-          <widget class="QCheckBox" name="sanitizeCurvesCheckBox">
-           <property name="text">
-            <string>Sanitize scattering curves</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_6">
-           <property name="text">
-            <string>Error propagation in q:</string>
-           </property>
-           <property name="buddy">
-            <cstring>abscissaErrorPropagationComboBox</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>Error propagation in intensity:</string>
-           </property>
-           <property name="buddy">
-            <cstring>errorPropagationComboBox</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QComboBox" name="abscissaErrorPropagationComboBox">
-           <property name="currentIndex">
-            <number>3</number>
-           </property>
-           <item>
-            <property name="text">
-             <string>Independent</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Linear</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Squared</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Conservative</string>
-            </property>
-           </item>
           </widget>
          </item>
          <item row="0" column="1">
@@ -588,40 +621,7 @@
            </item>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_7">
-           <property name="text">
-            <string>Multiplier for corr.matrix analysis:</string>
-           </property>
-           <property name="buddy">
-            <cstring>stdMultiplierDoubleSpinBox</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="9" column="0" colspan="2">
-          <spacer name="verticalSpacer_3">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>0</width>
-             <height>0</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item row="3" column="0" colspan="2">
-          <widget class="QCheckBox" name="autoMarkBadExposuresCheckBox">
-           <property name="text">
-            <string>Automatically mark bad exposures</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0" colspan="2">
+         <item row="7" column="0" colspan="2">
           <widget class="QGroupBox" name="qRangeOverrideGroupBox">
            <property name="title">
             <string>Override q-range:</string>
@@ -688,6 +688,32 @@
            </layout>
           </widget>
          </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_26">
+           <property name="text">
+            <string>Corr.matrix outlier search method:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QComboBox" name="corrmatOutlierMethodComboBox">
+           <item>
+            <property name="text">
+             <string>Z-score</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Modified Z-score</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Interquartile Range</string>
+            </property>
+           </item>
+          </widget>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="perSampleResultsPage">
@@ -695,8 +721,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>490</height>
+          <width>360</width>
+          <height>390</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -886,8 +912,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>490</height>
+          <width>242</width>
+          <height>278</height>
          </rect>
         </property>
         <attribute name="label">
@@ -1016,8 +1042,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>400</width>
-          <height>490</height>
+          <width>287</width>
+          <height>80</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -1081,7 +1107,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>386</width>
+          <width>356</width>
           <height>497</height>
          </rect>
         </property>
@@ -1566,6 +1592,13 @@
                  </size>
                 </property>
                </spacer>
+              </item>
+              <item>
+               <widget class="QPushButton" name="showMetaDataPushButton">
+                <property name="text">
+                 <string>Show metadata</string>
+                </property>
+               </widget>
               </item>
               <item>
                <widget class="QPushButton" name="plot2DPushButton">

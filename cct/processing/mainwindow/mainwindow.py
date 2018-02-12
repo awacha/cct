@@ -33,7 +33,8 @@ from .headerpopup import HeaderPopup
 from .mainwindow_ui import Ui_MainWindow
 from .samplescalermodel import SampleScalerModel
 from ..display import show_scattering_image, show_cmatrix, display_outlier_test_results, summarize_curves, \
-    plot_vacuum_and_flux, make_transmission_table, make_exptimes_table
+    plot_vacuum_and_flux, make_transmission_table, make_exptimes_table, display_outlier_test_results_graph, \
+    ParamPickleModel
 from ..export_table import export_table
 from ..headermodel import HeaderModel
 from ...core.processing.summarize import Summarizer
@@ -197,6 +198,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.ioProgressBar.setVisible(False)
         self.plot2DPushButton.clicked.connect(self.onPlot2D)
         self.plot1DPushButton.clicked.connect(self.onPlot1D)
+        self.showMetaDataPushButton.clicked.connect(self.onShowMetaData)
         self.tablePlot1DPushButton.clicked.connect(self.onPlot1D)
         self.tablePlot2DPushButton.clicked.connect(self.onPlot2D)
         self.sampleNameListSelectAllPushButton.clicked.connect(self.onSelectAllSamples)
@@ -248,6 +250,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             (self.plot2dShowCenterCheckBox, 'persample', 'showcenter'),
             (self.cmpErrorBarsCheckBox, 'curvecmp', 'errorbars'),
             (self.cmpLegendCheckBox, 'curvecmp', 'legend'),
+            (self.corrmatOutlierMethodComboBox, 'processing', 'corrmatmethod'),
         ]
         self.updateResults()
 
@@ -365,6 +368,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onDeselectAllSamples(self):
         self.sampleNameListWidget.clearSelection()
+
+    def onShowMetaData(self):
+        idx = self.headersTreeView.currentIndex()
+        if not idx.isValid():
+            return
+        fsn = self.headersTreeView.model().getFSN(idx)
+        for pth in self.headermodel.eval2d_pathes:
+            try:
+                fname = os.path.join(
+                    pth,
+                    '{{}}_{{:0{:d}d}}.pickle'.format(
+                        self.config['path']['fsndigits']).format(self.config['path']['prefixes']['crd'], fsn))
+                with open(fname, 'rb') as f:
+                    metadata = pickle.load(f)
+                model = ParamPickleModel(self.treeView)
+                model.setParamPickle(metadata)
+                self.treeView.setModel(model)
+                #self.treeView.expandAll()
+                self.tabWidget.setCurrentWidget(self.tableContainerWidget)
+                for c in range(2):
+                    self.treeView.resizeColumnToContents(c)
+                break
+            except (FileNotFoundError, OSError):
+                continue
 
     def onPlot2D(self):
         if self.sender() == self.plot2DPushButton:
@@ -823,6 +850,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                         self.resultsSampleSelectorComboBox.currentText()))
                 return
             model = display_outlier_test_results(grp['curves'])
+            display_outlier_test_results_graph(self.figure, grp['curves'], self.stdMultiplierDoubleSpinBox.value(),
+                                               ['zscore','zscore_mod','iqr'][self.corrmatOutlierMethodComboBox.currentIndex()])
         self.treeView.setModel(model)
         for c in range(model.columnCount()):
             self.treeView.resizeColumnToContents(c)
@@ -993,6 +1022,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             'qrange': qrange,
             'backgroundsubtraction': self.backgroundList.getBackgroundSubtractionList(),
             'samplenamelist': self.backgroundList.getEnabledSampleNameList(),
+            'corrmatoutliermethod': ['zscore', 'zscore_mod', 'iqr'][self.corrmatOutlierMethodComboBox.currentIndex()]
         }
         self.processingprocess = threading.Thread(target=self.do_processing, name='Summarization', kwargs=kwargs)
         self.idlefcn = IdleFunction(self.check_processing_progress, 100)
@@ -1005,9 +1035,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                       fsns: Iterable[int], exppath: Iterable[str], parampath: Iterable[str], maskpath: Iterable[str],
                       outputfile: str, prefix: str, ndigits: int, errorpropagation: int, abscissaerrorpropagation: int,
                       sanitize_curves: bool, logarithmic_correlmatrix: bool, std_multiplier: int,
-                      qrange: Optional[np.ndarray], backgroundsubtraction: List, samplenamelist: List[str]):
+                      qrange: Optional[np.ndarray], backgroundsubtraction: List, samplenamelist: List[str], corrmatoutliermethod:str):
         s = Summarizer(fsns, exppath, parampath, maskpath, outputfile, prefix, ndigits, errorpropagation,
-                       abscissaerrorpropagation, sanitize_curves, logarithmic_correlmatrix, std_multiplier, qrange, samplenamelist)
+                       abscissaerrorpropagation, sanitize_curves, logarithmic_correlmatrix, std_multiplier, qrange,
+                       samplenamelist, corrmatoutliermethod)
         queue.put_nowait(('__init_loadheaders__', len(fsns)))
         for msg1, msg2 in s.load_headers(yield_messages=True):
             queue.put_nowait((msg1, msg2))

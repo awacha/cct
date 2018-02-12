@@ -54,15 +54,15 @@ class HeaderModel(QtCore.QAbstractItemModel):
                     if entry.is_dir():
                         getattr(self, attrname).append(entry.path)
 
-    def rowForFSN(self, fsn: int):
+    def rowForFSN(self, fsn: int) -> int:
         return [h[0] for h in self._data].index(fsn)
 
-    def get_badfsns(self):
+    def get_badfsns(self) -> List[int]:
         try:
-            data = np.loadtxt(self.badfsnsfile).tolist()
-            if not isinstance(data, list):
-                data = [data]
-            return [int(d) for d in data]
+            f = np.loadtxt(self.badfsnsfile).flatten().astype(int).tolist()
+            if not isinstance(f, list):
+                f=list(f)
+            return list(set(f))
         except (FileNotFoundError, OSError):
             return []
 
@@ -73,9 +73,11 @@ class HeaderModel(QtCore.QAbstractItemModel):
         return [f in bfs for f in fsn]
 
     def write_badfsns(self, badfsns: List[int]):
+        badfsns_to_save=[b for b in self.get_badfsns() if b<self.fsnfirst or b> self.fsnlast] # do not touch fsns outside our range
+        badfsns_to_save.append(badfsns)
         folder, file = os.path.split(self.badfsnsfile)
         os.makedirs(folder, exist_ok=True)
-        np.savetxt(self.badfsnsfile, badfsns)
+        np.savetxt(self.badfsnsfile, badfsns_to_save, fmt='%.0f')
 
     def reloadHeaders(self):
         self.queue = queue.Queue()

@@ -66,4 +66,8 @@ def show_scattering_image(fig: Figure, group: Group, showmask: bool = True, show
         cax = None
     ax.set_xlabel('$q_x$ (nm$^{-1}$)')
     ax.set_ylabel('$q_x$ (nm$^{-1}$)')
-    ax.figure.colorbar(ret, cax=cax, ax=ax)
+    try:
+        ax.figure.colorbar(ret, cax=cax, ax=ax)
+    except ValueError:
+        # happens if "data has no positive values, and therefore cannot be log-scaled".
+        pass
