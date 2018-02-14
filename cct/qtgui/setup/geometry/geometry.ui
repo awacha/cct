@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1014</width>
-    <height>399</height>
+    <width>1031</width>
+    <height>431</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -502,7 +502,8 @@
          <string>Browse...</string>
         </property>
         <property name="icon">
-         <iconset theme="document-open"/>
+         <iconset theme="document-open">
+          <normaloff>.</normaloff>.</iconset>
         </property>
        </widget>
       </item>
@@ -543,6 +544,27 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>l0DoubleSpinBox</tabstop>
+  <tabstop>l1DoubleSpinBox</tabstop>
+  <tabstop>l2DoubleSpinBox</tabstop>
+  <tabstop>lsDoubleSpinBox</tabstop>
+  <tabstop>sdValDoubleSpinBox</tabstop>
+  <tabstop>sdErrDoubleSpinBox</tabstop>
+  <tabstop>lbsDoubleSpinBox</tabstop>
+  <tabstop>D1DoubleSpinBox</tabstop>
+  <tabstop>D2DoubleSpinBox</tabstop>
+  <tabstop>D3DoubleSpinBox</tabstop>
+  <tabstop>DBSDoubleSpinBox</tabstop>
+  <tabstop>PixelSizeDoubleSpinBox</tabstop>
+  <tabstop>wavelengthValDoubleSpinBox</tabstop>
+  <tabstop>wavelengthErrDoubleSpinBox</tabstop>
+  <tabstop>beamPosXDoubleSpinBox</tabstop>
+  <tabstop>beamPosYDoubleSpinBox</tabstop>
+  <tabstop>maskFileNameLineEdit</tabstop>
+  <tabstop>browseMaskPushButton</tabstop>
+  <tabstop>descriptionPlainTextEdit</tabstop>
+ </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>
  </resources>

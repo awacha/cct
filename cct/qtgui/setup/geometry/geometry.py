@@ -112,6 +112,8 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.credo.config['geometry']['beamposy'] = self.sender().value()
         elif self.sender() == self.beamPosYDoubleSpinBox:
             self.credo.config['geometry']['beamposx'] = self.sender().value()
+        elif self.sender() == self.DBSDoubleSpinBox:
+            self.credo.config['geometry']['beamstop'] = self.sender().value()
         else:
             assert False
         self.credo.emit_config_change_signal()
