@@ -51,7 +51,7 @@ def show_scattering_image(fig: Figure, group: Group, showmask: bool = True, show
     if showcenter:
         lims = ax.axis()  # save zoom state
         ax.plot([xmin, xmax], [0, 0], 'w-')
-        ax.plot([0, 0], [ymin, ymax], 'w-')
+        ax.plot([0, 0], [-ymin, -ymax], 'w-')
         ax.axis(lims)  # restore zoom state
     ax.set_facecolor('black')
     # try to find a suitable colorbar axes: check if the plot target axes already
