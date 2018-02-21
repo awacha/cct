@@ -17,7 +17,7 @@ from .mainwindow_ui import Ui_MainWindow
 from .devicestatusbar import DeviceStatusBar
 from ..setup.sampleeditor import SampleEditor
 from ..tools.capillarymeasurement import CapillaryMeasurement
-from ..tools.maskeditor import MaskEditor
+from ..tools.maskeditor2 import MaskEditor
 from ..tools.optimizegeometry import OptimizeGeometry
 from ..tools.datareduction import DataReduction
 from ..help import CommandHelp
