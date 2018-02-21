@@ -23,10 +23,13 @@ def get_colormaps():
 
 class PlotImage(QtWidgets.QWidget, Ui_Form):
     lastinstances = []
+    _exposure: Exposure=None
 
     def __init__(self, parent=None, register_instance=True):
         QtWidgets.QWidget.__init__(self, parent)
         self._exposure = None
+        self.previous_extent = None
+        self.previous_axestype = None
         self.setupUi(self)
         if register_instance:
             type(self).lastinstances.append(self)
@@ -113,13 +116,20 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
                                                        m - m.min() > 0.2 * (m.max() - m.min()))
         self.replot()
 
+    def setPixelMode(self, pixelmode:bool):
+        if pixelmode:
+            self.axesComboBox.setCurrentIndex(self.axesComboBox.findText('abs. pixel'))
+        self.axesComboBox.setVisible(not pixelmode)
+        self.axesLabel.setVisible(not pixelmode)
+        self.replot()
+
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
-        self.colourScaleComboBox.addItems(['linear', 'logarithmic', 'square', 'square root'])
+        #self.colourScaleComboBox.addItems(['linear', 'logarithmic', 'square', 'square root'])
         self.colourScaleComboBox.setCurrentIndex(self.colourScaleComboBox.findText('logarithmic'))
         self.paletteComboBox.addItems(get_colormaps())
         self.paletteComboBox.setCurrentIndex(self.paletteComboBox.findText(matplotlib.rcParams['image.cmap']))
-        self.axesComboBox.addItems(['abs. pixel', 'rel. pixel', 'detector radius', 'twotheta', 'q'])
+        #self.axesComboBox.addItems(['abs. pixel', 'rel. pixel', 'detector radius', 'twotheta', 'q'])
         self.axesComboBox.setCurrentIndex(self.axesComboBox.findText('q'))
         layout = QtWidgets.QVBoxLayout(self.figureContainer)
         self.figure = Figure()
@@ -131,7 +141,10 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.figtoolbar = NavigationToolbar2QT(self.canvas, self.figureContainer)
         layout.addWidget(self.figtoolbar)
         assert isinstance(self.figtoolbar, QtWidgets.QToolBar)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/icons/plotimage_config.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.showToolbarButton = QtWidgets.QToolButton(self.figtoolbar)
+        self.showToolbarButton.setIcon(icon)
         self.showToolbarButton.setText('Plot setup')
         self.showToolbarButton.setCheckable(True)
         self.showToolbarButton.setChecked(False)
@@ -141,9 +154,10 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.colourScaleComboBox.currentIndexChanged.connect(self.colourScaleChanged)
         self.axesComboBox.currentIndexChanged.connect(self.axesTypeChanged)
         self.paletteComboBox.currentIndexChanged.connect(self.paletteChanged)
-        self.showColourBarPushButton.toggled.connect(self.showColourBarChanged)
-        self.showMaskPushButton.toggled.connect(self.showMaskChanged)
-        self.showBeamPushButton.toggled.connect(self.showBeamChanged)
+        self.showColourBarToolButton.toggled.connect(self.showColourBarChanged)
+        self.showMaskToolButton.toggled.connect(self.showMaskChanged)
+        self.showBeamToolButton.toggled.connect(self.showBeamChanged)
+        self.equalAspectToolButton.toggled.connect(self.replot)
         self._testimage()
         self.figtoolbar.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum)
         self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -176,19 +190,20 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         if hasattr(self, '_colorbar'):
             self._colorbar.remove()
             del self._colorbar
-        if self.showColourBarPushButton.isChecked():
+        if self.showColourBarToolButton.isChecked():
             self._colorbar = self.figure.colorbar(self._image, ax=self.axes, use_gridspec=True)
 
     def replot_mask(self):
         if hasattr(self, '_mask'):
             self._mask.remove()
             del self._mask
-        if self.showMaskPushButton.isChecked():
+        if self.showMaskToolButton.isChecked():
             ex = self.exposure()
             assert isinstance(ex, Exposure)
             mf = np.ones(ex.shape, np.float)
             mf[ex.mask != 0] = np.nan
-            self._mask = self.axes.imshow(mf, cmap='gray_r', interpolation='nearest', aspect='equal', alpha=0.7,
+            aspect = ['auto','equal'][self.equalAspectToolButton.isChecked()]
+            self._mask = self.axes.imshow(mf, cmap='gray_r', interpolation='nearest', aspect=aspect, alpha=0.7,
                                           origin='upper', extent=self._image.get_extent(), zorder=2)
         gc.collect()
 
@@ -197,7 +212,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             for c in self._crosshair:
                 c.remove()
             del self._crosshair
-        if self.showBeamPushButton.isChecked():
+        if self.showBeamToolButton.isChecked():
             ex = self.exposure()
             assert isinstance(ex, Exposure)
             axestype = self.axesComboBox.currentText()
@@ -237,7 +252,10 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         wavelength = ex.header.wavelength.val
         pixelsize = ex.header.pixelsizex.val, ex.header.pixelsizey.val
         axesscale = self.axesComboBox.currentText()
-
+        if axesscale != self.previous_axestype:
+            self.previous_axestype = axesscale
+            self.clear()
+            return self.replot()
         if axesscale == 'abs. pixel':
             extent = (0, matrix.shape[1] - 1, matrix.shape[0] - 1, 0)  # left, right, bottom, top
         elif axesscale == 'rel. pixel':
@@ -271,16 +289,27 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
                       )
         else:
             raise ValueError(axesscale)
-
+        if extent != self.previous_extent:
+            self.previous_extent = extent
+            self.clear()
+            return self.replot()
         if hasattr(self, '_image'):
             if hasattr(self, '_colorbar'):
                 self._colorbar.remove()
                 del self._colorbar
+            if self._image.get_extent() != extent:
+                self.axes.axis( extent)
             self._image.remove()
             del self._image
+            firstplot = False
+        else:
+            firstplot = True
+        aspect = ['auto','equal'][self.equalAspectToolButton.isChecked()]
         self._image = self.axes.imshow(matrix,
                                        cmap=self.paletteComboBox.currentText(), norm=norm,
-                                       aspect='equal', interpolation='nearest', origin='upper', zorder=1, extent=extent)
+                                       aspect=aspect, interpolation='nearest', origin='upper', zorder=1, extent=extent)
+        if firstplot:
+            self.figtoolbar.update()
         if np.isfinite(matrix).sum() > 0:
             self.replot_colourbar()
         self.replot_crosshair()
@@ -327,3 +356,26 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             self.axesComboBox.setEnabled(False)
         else:
             self.axesComboBox.setEnabled(True)
+
+    def setMaskMatrix(self, mask:np.ndarray):
+        if self._exposure.mask.shape==mask.shape:
+            self._exposure.mask = mask
+            self.replot_mask()
+        else:
+            raise ValueError('Mismatched mask shape ({0[0]:d}, {0[1]:d}) for image of shape ({1[0]:d}, {1[1]:d})'.format(mask.shape, self._exposure.shape))
+
+    def maskMatrix(self)-> np.ndarray:
+        return self._exposure.mask
+
+    def clear(self):
+        try:
+            self._colorbar.remove()
+        except AttributeError:
+            pass
+        for attr in ['_crosshair', '_image', '_mask', '_colorbar']:
+            try:
+                delattr(self, attr)
+            except AttributeError:
+                pass
+        self.axes.clear()
+        self.canvas.draw()

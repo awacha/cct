@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>693</width>
+    <width>723</width>
     <height>511</height>
    </rect>
   </property>
@@ -23,13 +23,102 @@
       </sizepolicy>
      </property>
      <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string notr="true">Colour scale:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="7">
+       <widget class="QComboBox" name="axesComboBox">
+        <property name="toolTip">
+         <string>Scaling of the X and Y axes</string>
+        </property>
+        <property name="currentText">
+         <string notr="true">abs. pixel</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>abs. pixel</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>rel. pixel</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>detector radius</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>twotheta</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>q</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string notr="true">Palette:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="12">
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
       <item row="0" column="6">
-       <widget class="QPushButton" name="showMaskPushButton">
+       <widget class="QLabel" name="axesLabel">
+        <property name="text">
+         <string notr="true">Axes:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QComboBox" name="paletteComboBox">
+        <property name="toolTip">
+         <string>Select the colour palette</string>
+        </property>
+        <property name="currentText">
+         <string notr="true"/>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="8">
+       <widget class="QToolButton" name="showMaskToolButton">
         <property name="toolTip">
          <string>Show the mask</string>
         </property>
         <property name="text">
          <string notr="true">Mask</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../../../resource/icons/icons.qrc">
+          <normaloff>:/icons/flipmask.svg</normaloff>:/icons/flipmask.svg</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>24</width>
+          <height>24</height>
+         </size>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -45,58 +134,47 @@
          <string>Scaling of the intensity</string>
         </property>
         <property name="currentText">
-         <string notr="true"/>
+         <string notr="true">linear</string>
         </property>
+        <item>
+         <property name="text">
+          <string>linear</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>logarithmic</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>square</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>square root</string>
+         </property>
+        </item>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string notr="true">Palette:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QComboBox" name="paletteComboBox">
-        <property name="toolTip">
-         <string>Select the colour palette</string>
-        </property>
-        <property name="currentText">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string notr="true">Colour scale:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string notr="true">Axes:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="axesComboBox">
-        <property name="toolTip">
-         <string>Scaling of the X and Y axes</string>
-        </property>
-        <property name="currentText">
-         <string notr="true"/>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="6">
-       <widget class="QPushButton" name="showBeamPushButton">
+      <item row="0" column="9">
+       <widget class="QToolButton" name="showBeamToolButton">
         <property name="toolTip">
          <string>Show the beam center cross-hair</string>
         </property>
         <property name="text">
-         <string notr="true">Beam Center</string>
+         <string notr="true">Center</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../../../resource/icons/icons.qrc">
+          <normaloff>:/icons/pixelhunt.svg</normaloff>:/icons/pixelhunt.svg</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>24</width>
+          <height>24</height>
+         </size>
         </property>
         <property name="checkable">
          <bool>true</bool>
@@ -106,14 +184,24 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="6">
-       <widget class="QPushButton" name="showColourBarPushButton">
+      <item row="0" column="10">
+       <widget class="QToolButton" name="showColourBarToolButton">
         <property name="toolTip">
          <string>Show the colour bar</string>
         </property>
         <property name="text">
          <string notr="true">Colour bar</string>
         </property>
+        <property name="icon">
+         <iconset resource="../../../resource/icons/icons.qrc">
+          <normaloff>:/icons/colorbar.svg</normaloff>:/icons/colorbar.svg</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>24</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="checkable">
          <bool>true</bool>
         </property>
@@ -122,18 +210,31 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="9" rowspan="3">
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+      <item row="0" column="11">
+       <widget class="QToolButton" name="equalAspectToolButton">
+        <property name="toolTip">
+         <string>Set the aspect ratio 1:1 (pixels appear square on the plot)</string>
         </property>
-        <property name="sizeHint" stdset="0">
+        <property name="text">
+         <string>Equal aspect</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../../../resource/icons/icons.qrc">
+          <normaloff>:/icons/aspect_equal.svg</normaloff>:/icons/aspect_equal.svg</iconset>
+        </property>
+        <property name="iconSize">
          <size>
-          <width>0</width>
-          <height>20</height>
+          <width>24</width>
+          <height>24</height>
          </size>
         </property>
-       </spacer>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -150,6 +251,17 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <tabstops>
+  <tabstop>colourScaleComboBox</tabstop>
+  <tabstop>paletteComboBox</tabstop>
+  <tabstop>axesComboBox</tabstop>
+  <tabstop>showMaskToolButton</tabstop>
+  <tabstop>showBeamToolButton</tabstop>
+  <tabstop>showColourBarToolButton</tabstop>
+  <tabstop>equalAspectToolButton</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../../../resource/icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>
