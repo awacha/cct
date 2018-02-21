@@ -77,8 +77,8 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form, ToolWindow):
             exposure = fs.load_exposure(self.prefixComboBox.currentText(), self.FSNSpinBox.value())
             self.FSNSelected.emit(self.FSNSpinBox.value(), self.prefixComboBox.currentText(), exposure)
             del exposure
-        except FileNotFoundError:
-            pass
+        except FileNotFoundError as fnfe:
+            QtWidgets.QMessageBox.critical(self.window(), 'Error while loading exposure', 'Cannot load exposure {} #{}: cannot find file {}'.format(self.prefixComboBox.currentText(), self.FSNSpinBox.value(), fnfe.filename),)
 
     def onLastFSNChanged(self, filesequence, prefix, lastfsn):
         try:
