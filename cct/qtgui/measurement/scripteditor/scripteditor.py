@@ -98,7 +98,8 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionNew_script.triggered.connect(self.newScript)
         self.actionLoad_script.triggered.connect(self.onLoadScript)
         self.actionStart.triggered.connect(self.runScript)
-        self.actionPause.triggered.connect(self.pauseScript)
+        self.actionPause.triggered.connect(self.pauseScriptTriggered)
+        self.actionPause.toggled.connect(self.pauseScriptToggled)
         self.syntaxHighLighter = HighLighter(self.document)
         self._currentline = QtGui.QTextCursor(self.document)
         self.progressBar.setVisible(False)
@@ -330,21 +331,35 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         else:
             raise ValueError(self.actionStart.icon().name())
 
-    def pauseScript(self):
+    def pauseScriptTriggered(self, checked:bool):
+        # The Pause button has three states:
+        # 1) normal operation (running script): unchecked toggle button. If toggled, go to 2)
+        # 2) waiting for current command to finish: checked toggle button:
+        #      a) If toggled, go to 1)
+        #      b) If the current command ends, go to 3)
+        # 3) pause state: a simple clickable button (checkable == False). IF clicked, go to 1)
         interpreter = self.credo.services['interpreter']
         assert isinstance(interpreter, Interpreter)
         cmd = interpreter.current_command()
         assert isinstance(cmd, Script)
-        if cmd.is_paused():
+        if cmd.is_paused(): # we are in state #3, go to #1
             cmd.resume()
             self.setWindowTitle(self.windowTitle().replace('(paused)', '').strip())
             self.statusBar().showMessage('Resuming operation...')
-        else:
+            self.actionPause.setCheckable(True)
+            self.actionPause.setText('Pause')
+            self.actionPause.setChecked(QtCore.Qt.Unchecked)
+        else: # we are in state #1, go to #2
             cmd.pause()
             self.statusBar().showMessage('Pausing script...')
             self.writeLogMessage('Waiting for script to end current command, then pausing...')
             self.toolBar.setEnabled(False)
             self.setWindowTitle(self.windowTitle() + ' (pausing...)')
+            self.actionPause.setText('Pausing...')
+
+
+    def pauseScriptToggled(self):
+        pass
 
     def confirmDropChanges(self):
         """Present a confirmation dialog before abandoning changes to the script.
@@ -400,6 +415,9 @@ class ScriptEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.setIdle()
 
     def onScriptPaused(self):
+        self.actionPause.setCheckable(False)
+        self.actionPause.setChecked(QtCore.Qt.Unchecked)
+        self.actionPause.setText('Resume...')
         self.statusBar().showMessage('Script paused.')
         self.toolBar.setEnabled(True)
         self.writeLogMessage('Script paused.')
