@@ -1,5 +1,10 @@
 <RCC>
   <qresource prefix="icons">
+    <file>aspect_equal.svg</file>
+    <file>maskeditor.svg</file>
+    <file>selectlasso.svg</file>
+    <file>plotimage_config.svg</file>
+    <file>colorbar.svg</file>
     <file>logbook.svg</file>
     <file>changepassword.svg</file>
     <file>scriptwizard.svg</file>
