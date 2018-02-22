@@ -8,7 +8,7 @@ from ....core.services.interpreter import Interpreter
 from ....core.commands import Command
 from ....core.instrument.privileges import PRIV_LAYMAN
 from ....core.devices import Device, Motor
-from typing import Union, Type, Any
+from typing import Union, Type, Any, Optional
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -17,22 +17,25 @@ class ToolWindow(object):
     required_privilege = PRIV_LAYMAN
     classname = None
 
-    def setupToolWindow(self, credo, required_devices=[]):
+    def setupToolWindow(self, credo:Optional[Instrument], required_devices=[]):
         """An initialization method with a similar task as __init__()"""
         self._busy = False
         assert isinstance(self, QtWidgets.QWidget)
-        try:
-            self.credo = weakref.proxy(credo)
-        except TypeError:
-            self.credo = credo
-        assert isinstance(self.credo, Instrument)  # this works even if self.credo is a weakproxy to Instrument
-        self._device_connections = {}
-        for d in self.required_devices + required_devices:
-            self.requireDevice(d)
-        self._privlevelconnection = self.credo.services['accounting'].connect('privlevel-changed',
-                                                                              self.onPrivLevelChanged)
-        self._credoconnections = [self.credo.connect('config-changed', self.updateUiFromConfig)]
-        self._interpreterconnections = []
+        if credo is not None:
+            try:
+                self.credo = weakref.proxy(credo)
+            except TypeError:
+                self.credo = credo
+            assert isinstance(self.credo, Instrument)  # this works even if self.credo is a weakproxy to Instrument
+            self._device_connections = {}
+            for d in self.required_devices + required_devices:
+                self.requireDevice(d)
+            self._privlevelconnection = self.credo.services['accounting'].connect('privlevel-changed',
+                                                                                  self.onPrivLevelChanged)
+            self._credoconnections = [self.credo.connect('config-changed', self.updateUiFromConfig)]
+            self._interpreterconnections = []
+        else:
+            self.credo = None
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
 
     def savePersistence(self):
@@ -44,6 +47,8 @@ class ToolWindow(object):
         """Return True if the instrument is in a state when this window can be opened. If this
         class method returns False, the window won't be opened or will be closed or disabled if
         it is already open."""
+        if credo is None:
+            return True
         if not credo.services['accounting'].has_privilege(cls.required_privilege):
             return False
         for r in cls.required_devices:
@@ -55,6 +60,8 @@ class ToolWindow(object):
         return True
 
     def requireDevice(self, devicename: str):
+        if self.credo is None:
+            return
         assert isinstance(self.credo, Instrument)
         try:
             device = self.credo.get_device(devicename)
@@ -115,6 +122,8 @@ class ToolWindow(object):
         return False
 
     def unrequireDevice(self, device: Union[str, Device, Motor]):
+        if self.credo is None:
+            return
         if isinstance(device, str):
             device = self.credo.get_device(device)
         try:
@@ -130,14 +139,15 @@ class ToolWindow(object):
         self.savePersistence()
         logger.debug('Cleanup() called on ToolWindow {} ({})'.format(self.objectName(), self.windowTitle()))
         self.cleanupAfterCommand()
-        for d in list(self._device_connections.keys()):
-            self.unrequireDevice(d)
-        if self._privlevelconnection is not None:
-            self.credo.services['accounting'].disconnect(self._privlevelconnection)
-            self._privlevelconnection = None
-        for c in self._credoconnections:
-            self.credo.disconnect(c)
-        self._credoconnections = []
+        if self.credo is not None:
+            for d in list(self._device_connections.keys()):
+                self.unrequireDevice(d)
+            if self._privlevelconnection is not None:
+                self.credo.services['accounting'].disconnect(self._privlevelconnection)
+                self._privlevelconnection = None
+            for c in self._credoconnections:
+                self.credo.disconnect(c)
+            self._credoconnections = []
         logger.debug('Cleanup() finished on ToolWindow {} ({})'.format(self.objectName(), self.windowTitle()))
 
     def event(self, event: QtCore.QEvent):
@@ -195,14 +205,15 @@ class ToolWindow(object):
         return self._busy
 
     def cleanupAfterCommand(self):
-        for c in self._interpreterconnections:
-            self.credo.services['interpreter'].disconnect(c)
-        self._interpreterconnections = []
-        try:
-            self.progressBar.setVisible(False)
-            self.adjustSize()
-        except (AttributeError, RuntimeError):
-            pass
+        if self.credo is not None:
+            for c in self._interpreterconnections:
+                self.credo.services['interpreter'].disconnect(c)
+            self._interpreterconnections = []
+            try:
+                self.progressBar.setVisible(False)
+                self.adjustSize()
+            except (AttributeError, RuntimeError):
+                pass
 
     def onCmdReturn(self, interpreter: Interpreter, cmdname: str, retval):
         self.cleanupAfterCommand()
@@ -243,6 +254,8 @@ class ToolWindow(object):
         pass
 
     def executeCommand(self, command: Type[Command], *args, **kwargs):
+        if self.credo is None:
+            return None
         logger.debug('executeCommand({}, {}, {})'.format(command.name, args, kwargs))
         interpreter = self.credo.services['interpreter']
         if self._interpreterconnections:
