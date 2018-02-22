@@ -39,6 +39,7 @@ from ..export_table import export_table
 from ..headermodel import HeaderModel
 from ...core.processing.summarize import Summarizer
 from ...core.utils.timeout import IdleFunction
+from ..export import export2D
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -472,47 +473,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                     if sn not in samplenames:
                         continue
                     for dist in hdf5['Samples'][sn]:
-                        image = hdf5['Samples'][sn][dist]['image']
-                        error = hdf5['Samples'][sn][dist]['image_uncertainty']
-                        mask = hdf5['Samples'][sn][dist]['mask']
+                        group=hdf5['Samples'][sn][dist]
+                        basename = os.path.join(self.exportFolderLineEdit.text(),'{}_{}'.format(sn, dist.replace('.', '_')))
                         if self.export2DDataFormatComboBox.currentText() == 'Numpy':
-                            fn = os.path.join(self.exportFolderLineEdit.text(),
-                                              '{}_{}.npz'.format(sn, dist.replace('.', '_')))
-                            np.savez(fn, intensity=image, error=error, mask=mask)
-                            logger.info('Wrote file {}'.format(fn))
+                            export2D.exportNumpy(basename, group)
                         elif self.export2DDataFormatComboBox.currentText() == 'Matlab':
-                            fn = os.path.join(self.exportFolderLineEdit.text(),
-                                              '{}_{}.mat'.format(sn, dist.replace('.', '_')))
-                            scipy.io.savemat(fn,
-                                             {'intensity': image, 'error': error, 'mask': mask}, do_compression=True
-                                             )
-                            logger.info('Wrote file {}'.format(fn))
+                            export2D.exportMatlab(basename, group)
                         elif self.export2DDataFormatComboBox.currentText() == 'ASCII':
-                            fn = os.path.join(self.exportFolderLineEdit.text(),
-                                              '{}_{}_intensity.txt'.format(sn, dist.replace('.', '_')))
-                            np.savetxt(fn, image)
-                            logger.info('Wrote file {}'.format(fn))
-                            fn = os.path.join(self.exportFolderLineEdit.text(),
-                                              '{}_{}_error.txt'.format(sn, dist.replace('.', '_')))
-                            np.savetxt(fn, error)
-                            logger.info('Wrote file {}'.format(fn))
-                            fn = os.path.join(self.exportFolderLineEdit.text(),
-                                              '{}_{}_mask.txt'.format(sn, dist.replace('.', '_')))
-                            np.savetxt(fn, mask)
-                            logger.info('Wrote file {}'.format(fn))
+                            export2D.exportAscii(basename, group, gzip=False)
                         elif self.export2DDataFormatComboBox.currentText() == 'Gzip\'d ASCII':
-                            fn = os.path.join(self.exportFolderLineEdit.text(),
-                                              '{}_{}_intensity.txt.gz'.format(sn, dist.replace('.', '_')))
-                            np.savetxt(fn, image)
-                            logger.info('Wrote file {}'.format(fn))
-                            fn = os.path.join(self.exportFolderLineEdit.text(),
-                                              '{}_{}_error.txt.gz'.format(sn, dist.replace('.', '_')))
-                            np.savetxt(fn, error)
-                            logger.info('Wrote file {}'.format(fn))
-                            fn = os.path.join(self.exportFolderLineEdit.text(),
-                                              '{}_{}_mask.txt.gz'.format(sn, dist.replace('.', '_')))
-                            np.savetxt(fn, mask)
-                            logger.info('Wrote file {}'.format(fn))
+                            export2D.exportAscii(basename, group, gzip=True)
                         else:
                             raise ValueError(
                                 'Unknown 2D file format: {}'.format(self.export2DDataFormatComboBox.currentText()))
