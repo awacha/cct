@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1066</width>
+    <width>1681</width>
     <height>640</height>
    </rect>
   </property>
@@ -557,7 +557,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1066</width>
+     <width>1681</width>
      <height>30</height>
     </rect>
    </property>
@@ -622,6 +622,7 @@
     <addaction name="actionMask_editor"/>
     <addaction name="actionView_images_and_curves"/>
     <addaction name="actionView_scans"/>
+    <addaction name="actionAnisotropy"/>
     <addaction name="actionCapillary_sizing"/>
     <addaction name="actionData_reduction"/>
     <addaction name="separator"/>
@@ -698,6 +699,7 @@
    <addaction name="actionCapillary_sizing"/>
    <addaction name="actionView_images_and_curves"/>
    <addaction name="actionView_scans"/>
+   <addaction name="actionAnisotropy"/>
    <addaction name="separator"/>
    <addaction name="actionLogbook"/>
   </widget>
@@ -1153,10 +1155,22 @@
      <normaloff>:/icons/logbook.svg</normaloff>:/icons/logbook.svg</iconset>
    </property>
    <property name="text">
-    <string>Logbook</string>
+    <string>&amp;Logbook</string>
    </property>
    <property name="toolTip">
     <string>Open the user logbook</string>
+   </property>
+  </action>
+  <action name="actionAnisotropy">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/anisotropy.svg</normaloff>:/icons/anisotropy.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Anisotropy</string>
+   </property>
+   <property name="toolTip">
+    <string>Evaluate the anisotropy of scattering patterns</string>
    </property>
   </action>
  </widget>

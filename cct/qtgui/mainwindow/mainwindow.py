@@ -20,6 +20,7 @@ from ..tools.capillarymeasurement import CapillaryMeasurement
 from ..tools.maskeditor2 import MaskEditor
 from ..tools.optimizegeometry import OptimizeGeometry
 from ..tools.datareduction import DataReduction
+from ..tools.anisotropy import AnisotropyEvaluator
 from ..help import CommandHelp
 from ..setup.geometry import GeometrySetup
 from ..measurement.scripteditor import ScriptEditor
@@ -96,6 +97,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionCommands: CommandHelp,
             self.actionFirstPrinciplesCalibration: QCalibration,
             self.actionLogbook: LogBook,
+            self.actionAnisotropy: AnisotropyEvaluator,
         }
         self._dockwidgets = {}
         self.actionChange_password.triggered.connect(self.onChangePassword)

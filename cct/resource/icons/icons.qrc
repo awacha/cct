@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>anisotropy.svg</file>
     <file>aspect_equal.svg</file>
     <file>maskeditor.svg</file>
     <file>selectlasso.svg</file>
