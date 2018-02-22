@@ -32,6 +32,8 @@ class H5Selector(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.hlayout.addWidget(self.label_3)
             self.hlayout.addWidget(self.distanceComboBox)
             self.hlayout.addWidget(self.reloadFilePushButton)
+            self.reloadFilePushButton.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Maximum)
+            self.reloadFilePushButton.setText('Reload file')
             self.hlayout.addSpacerItem(
                 QtWidgets.QSpacerItem(0, 0, QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Minimum))
             del self.gridLayout

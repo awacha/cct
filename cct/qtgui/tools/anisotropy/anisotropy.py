@@ -1,15 +1,16 @@
-from PyQt5 import QtWidgets, QtCore
-from ...core.mixins import ToolWindow
-from ...core.plotcurve import PlotCurve
-from ...core.plotimage import PlotImage
+import numpy as np
+from PyQt5 import QtWidgets
+from matplotlib.patches import Circle
+from matplotlib.widgets import SpanSelector
+from sastool.classes2 import Exposure, Curve
+from sastool.utils2d.integrate import azimint, radint_errorprop
+
+from .anisotropy_ui import Ui_MainWindow
 from ...core.fsnselector import FSNSelector
 from ...core.h5selector import H5Selector
-from .anisotropy_ui import Ui_MainWindow
-from sastool.classes2 import Exposure, Curve
-from matplotlib.widgets import SpanSelector
-from matplotlib.patches import Circle
-from sastool.utils2d.integrate import azimint, radint_errorprop
-import numpy as np
+from ...core.mixins import ToolWindow
+from ...core.plotimage import PlotImage
+
 
 class AnisotropyEvaluator(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -26,23 +27,24 @@ class AnisotropyEvaluator(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         super().setupUi(MainWindow)
         self.setWindowTitle('Anisotropy Evaluator [*]')
         self.plotimage = PlotImage(self, False)
-        self.plotimage.setPixelMode(True)
-        self.plotcurve_full = PlotCurve(self.centralWidget)
-        self.plotcurve_azim = PlotCurve(self.centralWidget)
-        self.plotcurve_slice = PlotCurve(self.centralWidget)
-        self.gridLayout=QtWidgets.QGridLayout(self.centralWidget)
-        self.centralwidget.setLayout(QtWidgets.QGridLayout(self))
+        self.plotimage.figure.clf()
+        self.plotimage.axes = self.plotimage.figure.add_subplot(2,2,1)
+        self.plotimage.axes.set_facecolor('black')
+        self.axes_full = self.plotimage.figure.add_subplot(2,2,2)
+        self.axes_azim = self.plotimage.figure.add_subplot(2,2,3)
+        self.axes_slice = self.plotimage.figure.add_subplot(2,2,4)
+        self.vboxLayout = QtWidgets.QVBoxLayout(self.centralWidget())
+        self.centralWidget().setLayout(self.vboxLayout)
         if self.credo is not None:
             self.fsnSelector = FSNSelector(self, credo=self.credo, horizontal=True)
-            self.centralwidget.layout().addWidget(self.fsnSelector)
+            self.vboxlayout().addWidget(self.fsnSelector)
             self.fsnSelector.FSNSelected.connect(self.onFSNSelected)
         self.h5Selector = H5Selector(self, horizontal=True)
-        self.centralwidget.layout().addWidget(self.h5Selector)
+        self.vboxLayout.addWidget(self.h5Selector)
         self.h5Selector.H5Selected.connect(self.onH5Selected)
-        self.gridLayout.addWidget(self.plotimage, 0, 0, 1,1)
-        self.gridLayout.addWidget(self.plotcurve_full, 0, 1, 1,1)
-        self.gridLayout.addWidget(self.plotcurve_azim, 1, 0, 1,1)
-        self.gridLayout.addWidget(self.plotcurve_slice, 1,1,1,1)
+        self.vboxLayout.addWidget(self.plotimage, stretch=1)
+        self.plotimage.figure.tight_layout()
+        self.plotimage.canvas.draw()
 
     def onFSNSelected(self, prefix:str, fsn:int, exposure:Exposure):
         self.setExposure(exposure)
@@ -52,10 +54,16 @@ class AnisotropyEvaluator(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def setExposure(self, exposure:Exposure):
         self.removeCircles()
+        self.axes_azim.clear()
+        self.axes_slice.clear()
         self.plotimage.setExposure(exposure)
-        self.plotcurve_full.clear()
-        self.plotcurve_full.addCurve(exposure.radial_average(), label='Full radial average', hold_mode=False)
-        self.fullSpanSelector = SpanSelector(self.plotcurve_full.axes, self.onQRangeSelected, 'horizontal', span_stays=True)
+        self.axes_full.clear()
+        exposure.radial_average().loglog(axes=self.axes_full, label='Full radial average')
+        self.axes_full.set_xlabel('q (nm$^{-1}$)')
+        self.axes_full.set_ylabel('$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
+        self.axes_full.set_title('Circular average')
+        self.fullSpanSelector = SpanSelector(self.axes_full, self.onQRangeSelected, 'horizontal', span_stays=True)
+        self.plotimage.canvas.draw()
 
     def removeCircles(self):
         for c in self._circles:
@@ -68,28 +76,45 @@ class AnisotropyEvaluator(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             Circle([0,0], radius = qmin, color='white', fill=False, linestyle='--', zorder=100),
             Circle([0,0], radius = qmax, color='white', fill=False, linestyle='--', zorder=100)
         ]
+        self.plotimage.axes.add_patch(self._circles[0])
+        self.plotimage.axes.add_patch(self._circles[1])
+        self.plotimage.canvas.draw()
         ex=self.exposure()
+        ex.mask_nonfinite()
         phi, intensity, error, area, mask = azimint(ex.intensity, ex.error, ex.header.wavelength.val, ex.header.distance.val,
                                                     ex.header.pixelsizex.val, ex.header.beamcentery.val, ex.header.beamcenterx.val,
-                                                    (ex.mask==0).astype(np.uint8), qmin=qmin, qmax=qmax, returnmask=True
+                                                    (ex.mask==0).astype(np.uint8), qmin=min(qmin,qmax), qmax=max(qmin,qmax),
+                                                    returnmask=True
                                                     )
-        self.plotcurve_azim.clear()
-        self.plotcurve_azim.addCurve(Curve(phi, intensity, error), label='Azimuthal curve', hold_mode=False)
-        self.plotcurve_azim.axes.set_xscale('linear')
-        self.plotcurve_azim.axes.set_yscale('linear')
-        self.plotcurve_azim.canvas.draw()
-        self.azimSpanSelector = SpanSelector(self.plotcurve_azim.axes, self.onPhiRangeSelected, 'horizontal', span_stays=True)
+        self.axes_azim.clear()
+        self.axes_azim.plot(phi*180.0/np.pi, intensity, label='Azimuthal curve')
+        self.plotimage.canvas.draw()
+        self.azimSpanSelector = SpanSelector(self.axes_azim, self.onPhiRangeSelected, 'horizontal', span_stays=True)
+        self.axes_azim.set_xlabel('$\phi$ (°)')
+        self.axes_azim.set_ylabel('$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
+        self.axes_azim.set_title('Azimuthal scattering curve')
 
     def onPhiRangeSelected(self, phimin:float, phimax:float):
         ex = self.exposure()
+        phi0=(phimin+phimax)*0.5
+        dphi=(phimax-phimin)
+        ex.mask_nonfinite()
         q, dq, intensity, dintensity, area, mask = radint_errorprop(
             ex.intensity, ex.error, ex.header.wavelength.val, ex.header.wavelength.err, ex.header.distance.val,
             ex.header.distance.err, ex.header.pixelsizey.val, ex.header.pixelsizex.val, ex.header.beamcentery.val,
             ex.header.beamcentery.err, ex.header.beamcenterx.val, ex.header.beamcenterx.err,
-            (ex.mask==0).astype(np.uint8), phi0=(phimin+phimax)*0.5, dphi=phimax-phimin, returnmask=True,
+            (ex.mask==0).astype(np.uint8), phi0=phi0*np.pi/180.0, dphi=dphi*np.pi/180.0, returnmask=True,
             symmetric_sector=True,
         )
-        self.plotcurve_slice.addCurve(Curve(q, intensity, dintensity, dq), 'Slice average')
+        print('q:',q)
+        print('intensity:',intensity)
+        print('error:',dintensity)
+        print('qerror:',dq)
+        Curve(q, intensity, dintensity, dq).loglog(
+            axes=self.axes_slice,
+            label='$\phi_0={:.2f}^\circ$, $\Delta\phi = {:.2f}^\circ$'.format(phi0,dphi))
+        self.axes_slice.legend(loc='best')
+        self.axes_slice.set_title('Slices')
 
     def exposure(self) -> Exposure:
         return self.plotimage.exposure()

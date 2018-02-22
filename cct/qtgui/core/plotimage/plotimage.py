@@ -370,7 +370,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
     def clear(self):
         try:
             self._colorbar.remove()
-        except AttributeError:
+        except (AttributeError, KeyError):
             pass
         for attr in ['_crosshair', '_image', '_mask', '_colorbar']:
             try:
