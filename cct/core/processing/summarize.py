@@ -256,7 +256,10 @@ class Summarizer(object):
                 else:
                     ds.attrs[attr] = str(a)
         # copy parameters
-        for attr in ['title', 'project', 'maskname', 'samplex', 'sampley', 'username']:
+        all_attributes=set()
+        for dsname in group1d:
+            all_attributes.update(group1d[dsname].attrs)
+        for attr in sorted(all_attributes):
             for dsname in group1d:
                 try:
                     grp.attrs[attr] = group1d[dsname].attrs[attr]
