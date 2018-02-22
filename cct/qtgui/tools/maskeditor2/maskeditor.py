@@ -3,6 +3,7 @@ from ...core.mixins import ToolWindow
 from ...core.plotcurve import PlotCurve
 from ...core.plotimage import PlotImage
 from ...core.fsnselector import FSNSelector
+from ...core.h5selector import H5Selector
 from .maskeditor_ui import Ui_MainWindow
 from .stack import Stack
 from sastool.classes2.exposure import Exposure
@@ -21,10 +22,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         except KeyError:
             credo = None
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
-        if credo is not None:
-            self.setupToolWindow(credo)
-        else:
-            self.credo = None
+        self.setupToolWindow(credo)
         self.undoStack = Stack(self)
         self.setupUi(self)
 
@@ -38,8 +36,10 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         if self.credo is not None:
             self.fsnSelector = FSNSelector(self, credo=self.credo, horizontal=True)
             self.centralwidget.layout().addWidget(self.fsnSelector)
-        else:
-            self.fsnSelector = None
+            self.fsnSelector.FSNSelected.connect(self.onFSNSelected)
+        self.h5Selector = H5Selector(self, horizontal=True)
+        self.centralwidget.layout().addWidget(self.h5Selector)
+        self.h5Selector.H5Selected.connect(self.onH5Selected)
         self.hsplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal, self.centralwidget)
         self.centralwidget.layout().addWidget(self.hsplitter)
         self.hsplitter.setChildrenCollapsible(False)
@@ -66,7 +66,6 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionQ_range_cursor.triggered.connect(self.onQRangeCursor)
         self.undoStack.pointerChanged.connect(self.onUndoStackPointerChanged)
         self.undoStack.stackChanged.connect(self.onUndoStackChanged)
-        self.fsnSelector.FSNSelected.connect(self.onFSNSelected)
         self._plotimage_connection = [self.plotimage.canvas.mpl_connect('button_press_event', self.on2DCanvasButtonPress)]
         self.onUndoStackPointerChanged() # update the enabled state of the undo buttons
         self.spanSelector = None
@@ -96,6 +95,10 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             self.updateMask(mask)
         return False
 
+    def onH5Selected(self, filename:str, sample:str, dist:float, exposure:Exposure):
+        print('H5 selected')
+        self.setExposure(exposure)
+
     def onFSNSelected(self, fsn:int, prefix:str, exposure:Exposure):
         self.setExposure(exposure)
         # ToDo: what to do with the just loaded mask? Size mismatch?
@@ -114,6 +117,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         if self.confirmChanges():
             self.undoStack.reset()
             self.updateMask(np.zeros(self.plotimage.exposure().shape, np.bool))
+            self.setWindowFilePath('')
 
     def onLoadMask(self):
         if not self.confirmChanges():
@@ -137,7 +141,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def onSaveMaskAs(self):
         filename, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Save the mask...', self.windowFilePath(), 'Mask files (*.mat);;All files (*)', 'Mask files (*.mat)')
-        if filename is None:
+        if not filename:
             return
         self.setWindowFilePath(filename)
         self.onSaveMask()
@@ -347,6 +351,9 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionRedo.setEnabled(self.undoStack.canGoForward())
 
     def setExposure(self, exposure:Exposure):
+        for c in self._circles:
+            c.remove()
+        self._circles = []
         result = self.plotimage.setExposure(exposure)
         self.maskMatrix = exposure.mask
         return result
