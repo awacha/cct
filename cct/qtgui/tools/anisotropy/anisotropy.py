@@ -37,7 +37,7 @@ class AnisotropyEvaluator(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.centralWidget().setLayout(self.vboxLayout)
         if self.credo is not None:
             self.fsnSelector = FSNSelector(self, credo=self.credo, horizontal=True)
-            self.vboxlayout().addWidget(self.fsnSelector)
+            self.vboxLayout.addWidget(self.fsnSelector)
             self.fsnSelector.FSNSelected.connect(self.onFSNSelected)
         self.h5Selector = H5Selector(self, horizontal=True)
         self.vboxLayout.addWidget(self.h5Selector)
