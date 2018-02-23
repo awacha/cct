@@ -106,10 +106,6 @@ class AnisotropyEvaluator(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             (ex.mask==0).astype(np.uint8), phi0=phi0*np.pi/180.0, dphi=dphi*np.pi/180.0, returnmask=True,
             symmetric_sector=True,
         )
-        print('q:',q)
-        print('intensity:',intensity)
-        print('error:',dintensity)
-        print('qerror:',dq)
         Curve(q, intensity, dintensity, dq).loglog(
             axes=self.axes_slice,
             label='$\phi_0={:.2f}^\circ$, $\Delta\phi = {:.2f}^\circ$'.format(phi0,dphi))
