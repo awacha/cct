@@ -39,6 +39,7 @@ from ..export_table import export_table
 from ..headermodel import HeaderModel
 from ...core.processing.summarize import Summarizer
 from ...core.utils.timeout import IdleFunction
+from ...qtgui.tools.anisotropy import AnisotropyEvaluator
 from ..export import export2D
 
 logger = logging.getLogger(__name__)
@@ -166,6 +167,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.plotCorMatTestResultsPushButton.clicked.connect(self.onPlotCorMatResults)
         self.plotCorMatPushButton.clicked.connect(self.onPlotCorMat)
         self.plotCurvesPushButton.clicked.connect(self.onPlotCurves)
+        self.plotAnisotropyPushButton.clicked.connect(self.onPlotAnisotropy)
         self.plotImagePushButton.clicked.connect(self.onPlotImage)
         self.qcVacuumFluxPushButton.clicked.connect(self.onQCVacuumFlux)
         self.qcTransmissionsPushButton.clicked.connect(self.onQCTransmissions)
@@ -261,7 +263,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
     def onDeleteBackgroundListElement(self):
         while self.backgroundListTreeView.selectedIndexes():
             sel = self.backgroundListTreeView.selectedIndexes()
-            self.backgroundList.removeRow(sel.row(), None)
+            while sel:
+                self.backgroundList.removeRow(sel[0].row(), QtCore.QModelIndex())
+                sel = self.backgroundListTreeView.selectedIndexes()
 
     def onClearBackgroundList(self):
         self.backgroundList.clear()
@@ -451,6 +455,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         ax.set_ylabel('Intensity (cm$^{-1}$ sr$^{-1}$)')
         self.canvas.draw()
         self.tabWidget.setCurrentWidget(self.figureContainerWidget)
+
+    def onPlotAnisotropy(self):
+        a=AnisotropyEvaluator(self, credo=None)
+        a.h5Selector.h5FileNameLineEdit.setText(self.saveHDFLineEdit.text())
+        a.h5Selector.reloadFile()
+        a.h5Selector.sampleNameComboBox.setCurrentIndex(a.h5Selector.sampleNameComboBox.findText(self.resultsSampleSelectorComboBox.currentText()))
+        a.h5Selector.distanceComboBox.setCurrentIndex(a.h5Selector.distanceComboBox.findText(self.resultsDistanceSelectorComboBox.currentText()))
+        a.show()
 
     def onHeaderTreeViewSortRequest(self, section: int):
         self.headersTreeView.setSortingEnabled(True)
