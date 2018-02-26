@@ -104,7 +104,7 @@ class BackgroundSubtractionModel(QtCore.QAbstractItemModel):
 class ComboBoxDelegate(QtWidgets.QStyledItemDelegate):
     def createEditor(self, parent: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem, index: QtCore.QModelIndex):
         editor = QtWidgets.QComboBox(parent)
-        editor.addItems(index.model().sampleNameList())
+        editor.addItems(['(none)']+index.model().sampleNameList())
         return editor
 
     def setEditorData(self, editor: QtWidgets.QWidget, index: QtCore.QModelIndex):
