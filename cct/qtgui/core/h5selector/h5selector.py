@@ -46,7 +46,7 @@ class H5Selector(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def onBrowseFile(self):
         filename, filter = QtWidgets.QFileDialog.getOpenFileName(self, 'Open a HDF5 file made by CPT...', self.windowFilePath(), 'HDF5 files (*.h5 *.hdf5);;All files (*)', 'HDF5 files (*.h5 *.hdf5)')
-        if filename is None:
+        if not filename:
             return
         self.h5FileNameLineEdit.setText(filename)
         self.reloadFile()
