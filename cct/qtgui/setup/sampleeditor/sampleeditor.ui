@@ -248,6 +248,26 @@
          </item>
          <item>
           <property name="text">
+           <string>inert atmosphere</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>oxidising atmosphere</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>reducing atmosphere</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>other</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
            <string>sealed can</string>
           </property>
          </item>
@@ -255,16 +275,6 @@
        </item>
        <item row="3" column="1" colspan="3">
         <widget class="QComboBox" name="categoryComboBox">
-         <item>
-          <property name="text">
-           <string>calibration sample</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>normalization sample</string>
-          </property>
-         </item>
          <item>
           <property name="text">
            <string>sample</string>
@@ -282,7 +292,32 @@
          </item>
          <item>
           <property name="text">
+           <string>sample+buffer</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>buffer</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>calibration sample</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>normalization sample</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
            <string>none</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>sample environment</string>
           </property>
          </item>
         </widget>
