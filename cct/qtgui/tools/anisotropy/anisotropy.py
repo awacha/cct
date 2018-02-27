@@ -112,6 +112,9 @@ class AnisotropyEvaluator(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                                                     (ex.mask==0).astype(np.uint8), qmin=min(qmin,qmax), qmax=max(qmin,qmax),
                                                     returnmask=True
                                                     )
+        phi[area==0]=np.nan
+        intensity[area==0]=np.nan
+        error[area==0]=np.nan
         self.axes_azim.clear()
         self.axes_azim.plot(phi*180.0/np.pi, intensity, label='Azimuthal curve')
         self.plotimage.canvas.draw()
@@ -132,6 +135,10 @@ class AnisotropyEvaluator(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             (ex.mask==0).astype(np.uint8), phi0=phi0*np.pi/180.0, dphi=dphi*np.pi/180.0, returnmask=True,
             symmetric_sector=True,
         )
+        q[area==0] = np.nan
+        dq[area==0] = np.nan
+        intensity[area==0] = np.nan
+        dintensity[area==0] = np.nan
         line2d = Curve(q, intensity, dintensity, dq).loglog(
             axes=self.axes_slice,
             label='$\phi_0={:.2f}^\circ$, $\Delta\phi = {:.2f}^\circ$'.format(phi0,dphi))[0]
