@@ -160,6 +160,11 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.axes.set_xlabel(self.scan.motor)
         self.axes.set_title(self.scan.comment)
         self.plotSignal()
+        x=self.scan.data[self.scan.motor]
+        self.negativeValDoubleSpinBox.setMinimum(np.nanmin(x))
+        self.negativeValDoubleSpinBox.setMaximum(np.nanmax(x))
+        self.positiveValDoubleSpinBox.setMinimum(np.nanmin(x))
+        self.positiveValDoubleSpinBox.setMaximum(np.nanmax(x))
 
     def getSignal(self, zoomed=False):
         """Get the currently selected signal.
