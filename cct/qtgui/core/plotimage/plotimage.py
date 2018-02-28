@@ -361,6 +361,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         if self._exposure.mask.shape==mask.shape:
             self._exposure.mask = mask
             self.replot_mask()
+            self.canvas.draw()
         else:
             raise ValueError('Mismatched mask shape ({0[0]:d}, {0[1]:d}) for image of shape ({1[0]:d}, {1[1]:d})'.format(mask.shape, self._exposure.shape))
 

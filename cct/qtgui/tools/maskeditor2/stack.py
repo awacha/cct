@@ -15,6 +15,13 @@ class Stack(QtCore.QObject):
         self.pointerChanged.emit(self._pointer)
         self.stackChanged.emit()
 
+    def truncate(self):
+        if self._pointer<0:
+            return
+        self._stack = self._stack[:self._pointer+1]
+        self.stackChanged.emit()
+        self.pointerChanged.emit(self._pointer)
+
     def back(self) -> int:
         return self.goto(self._pointer-1)
 
@@ -22,8 +29,11 @@ class Stack(QtCore.QObject):
         return self.goto(self._pointer+1)
 
     def push(self, data:Any) -> int:
-        self._stack=self._stack[:self._pointer]
-        self._stack.append(data)
+        if len(self._stack) == 0:
+            self._stack=[data]
+        else:
+            self._stack=self._stack[:self._pointer+1]
+            self._stack.append(data)
         self._pointer=len(self._stack)-1
         self.stackChanged.emit()
         self.pointerChanged.emit(self._pointer)
@@ -38,7 +48,7 @@ class Stack(QtCore.QObject):
         return data
 
     def goto(self, index:int):
-        if index >=0 and index<len(self._stack)-1:
+        if index >=0 and index<=len(self._stack)-1:
             self._pointer = index
             self.pointerChanged.emit(self._pointer)
         return self._pointer

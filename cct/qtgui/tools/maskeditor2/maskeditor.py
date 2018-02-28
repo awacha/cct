@@ -96,7 +96,6 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         return False
 
     def onH5Selected(self, filename:str, sample:str, dist:float, exposure:Exposure):
-        print('H5 selected')
         self.setExposure(exposure)
 
     def onFSNSelected(self, fsn:int, prefix:str, exposure:Exposure):
@@ -109,7 +108,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                 self, 'Confirm discarding changes?',
                 'You have made changes to the current mask. Do you want to discard them?',
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No
-            ) == QtWidgets.QMessageBox.YesRole
+            ) == QtWidgets.QMessageBox.Yes
         else:
             return True
 
@@ -349,13 +348,18 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def onUndoStackPointerChanged(self):
         self.actionUndo.setEnabled(self.undoStack.canGoBack())
         self.actionRedo.setEnabled(self.undoStack.canGoForward())
+        try:
+            self.maskMatrix = self.undoStack.get()
+        except IndexError:
+            pass
 
     def setExposure(self, exposure:Exposure):
         for c in self._circles:
             c.remove()
         self._circles = []
         result = self.plotimage.setExposure(exposure)
-        self.maskMatrix = exposure.mask
+        self.undoStack.reset()
+        self.updateMask(exposure.mask)
         return result
 
     def exposure(self) -> Exposure:
