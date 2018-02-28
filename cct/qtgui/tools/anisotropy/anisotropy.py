@@ -182,3 +182,14 @@ class AnisotropyEvaluator(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def exposure(self) -> Exposure:
         return self.plotimage.exposure()
+
+    def cleanup(self):
+        try:
+            self.fsnSelector.cleanup()
+        except AttributeError:
+            pass
+        try:
+            self.h5Selector.cleanup()
+        except AttributeError:
+            pass
+        super().cleanup()
