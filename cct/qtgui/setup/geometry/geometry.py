@@ -69,14 +69,14 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         if self._updating_ui:
             return
         self.credo.config['geometry']['description'] = self.descriptionPlainTextEdit.toPlainText()
-        self.credo.emit_config_change_signal()
+        self.credo.save_state()
 
     def onMaskChanged(self):
         assert isinstance(self.credo, Instrument)
         if self._updating_ui:
             return
         self.credo.config['geometry']['mask'] = self.maskFileNameLineEdit.text()
-        self.credo.emit_config_change_signal()
+        self.credo.save_state()
 
     def onDoubleSpinBoxChanged(self):
         assert isinstance(self.credo, Instrument)
@@ -116,4 +116,4 @@ class GeometrySetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.credo.config['geometry']['beamstop'] = self.sender().value()
         else:
             assert False
-        self.credo.emit_config_change_signal()
+        self.credo.save_state()
