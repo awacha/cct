@@ -166,8 +166,9 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
         rad = rad.trim(xmin, xmax, ymin, ymax)
         x = np.linspace(rad.q.min(), rad.q.max())
-        peak, hwhm1, hwhm2, baseline, amplitude, y = findpeak_asymmetric(rad.q, rad.Intensity, rad.Error, curve=curvetype,
-                                                             return_x=x)
+        peak, hwhm1, hwhm2, baseline, amplitude, y = findpeak_asymmetric(rad.q, rad.Intensity, rad.Error,
+                                                                         curve=curvetype,
+                                                                         return_x=x)
         self.uncalibratedValDoubleSpinBox.setValue(peak.val)
         self.uncalibratedErrDoubleSpinBox.setValue(peak.err)
         self.plotCurve.addFitCurve(x, y, color='r', ls='-')
@@ -205,6 +206,7 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def onFSNSelected(self, fsn: int, prefix: str, exposure: Exposure):
         self.plotImage.setExposure(exposure)
+        self.plotCurve.clear()
         self.plotCurve.addCurve(exposure.radial_average(pixel=True), label=exposure.header.title, hold_mode=False,
                                 color='blue', ls='-', marker='.')
         self.plotCurve.setXLabel('Pixel coordinate')
@@ -237,10 +239,10 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
             posy, posx = centering.findbeam_radialpeak(exposure.intensity,
                                                        [exposure.header.beamcentery, exposure.header.beamcenterx],
                                                        exposure.mask, xmin, xmax, drive_by='amplitude')
-#            posy, posx = centering.findbeam_radialpeakheight(exposure.intensity,
-#                                                             [exposure.header.beamcentery,
-#                                                              exposure.header.beamcenterx],
-#                                                             exposure.mask, xmin, xmax)
+            #            posy, posx = centering.findbeam_radialpeakheight(exposure.intensity,
+            #                                                             [exposure.header.beamcentery,
+            #                                                              exposure.header.beamcenterx],
+            #                                                             exposure.mask, xmin, xmax)
             self.newBeamPosFound(posx, posy)
         elif self.centeringMethodComboBox.currentText() == 'Peak width':
             xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()

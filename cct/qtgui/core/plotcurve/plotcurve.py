@@ -49,14 +49,20 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         self.canvas.draw()
 
     def addFitCurve(self, x, y, **kwargs):
+        this_is_the_first = (len(self.axes.lines)==0)
         self.axes.plot(x, y, **kwargs)
+        if this_is_the_first:
+            self.figureToolbar.update()
         self.onLegendTriggered()
 
     def addCurve(self, curve: Curve, label='_nolabel_', hold_mode=True, **kwargs):
         if not hold_mode:
             for l in self.axes.lines:
                 l.remove()
+        this_is_the_first = (len(self.axes.lines)==0)
         curve.loglog(axes=self.axes, label=label, **kwargs)
+        if this_is_the_first:
+            self.figureToolbar.update()
         self.onLegendTriggered()
 
     def onLegendTriggered(self):
