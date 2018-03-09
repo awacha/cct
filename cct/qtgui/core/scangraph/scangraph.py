@@ -143,6 +143,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         if self.actionAutoScale.isChecked():
             self.axes.relim(True)
             self.axes.autoscale_view(True, True, True)
+            self.figuretoolbar.update()
             self.canvas.draw_idle()
 
     def cursorToMaximum(self):
@@ -278,7 +279,7 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.signalsTreeView.setModel(self.model)
         self.model.dataChanged.connect(self.signalsTreeModelChanged)
         self.signalsTreeView.selectionModel().currentChanged.connect(self.signalsTreeViewSelectionChanged)
-        self.signalsTreeView.selectionModel().select(self.model.index(0, 0),
+        self.signalsTreeView.selectionModel().select(self.model.index(1, 0),
                                                      QtCore.QItemSelectionModel.SelectCurrent | QtCore.QItemSelectionModel.Rows)
         self.setCursorRange()
         self.replot()
