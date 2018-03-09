@@ -136,8 +136,12 @@ class ToolWindow(object):
             del self._device_connections[device]
 
     def cleanup(self):
-        self.savePersistence()
-        logger.debug('Cleanup() called on ToolWindow {} ({})'.format(self.objectName(), self.windowTitle()))
+        try:
+            logger.debug('Cleanup() called on ToolWindow {} ({})'.format(self.objectName(), self.windowTitle()))
+            self.savePersistence()
+        except RuntimeError:
+            # this happens when the underlying C++ object has already been destroyed
+            pass
         self.cleanupAfterCommand()
         if self.credo is not None:
             for d in list(self._device_connections.keys()):
@@ -148,7 +152,11 @@ class ToolWindow(object):
             for c in self._credoconnections:
                 self.credo.disconnect(c)
             self._credoconnections = []
-        logger.debug('Cleanup() finished on ToolWindow {} ({})'.format(self.objectName(), self.windowTitle()))
+        try:
+            logger.debug('Cleanup() finished on ToolWindow {} ({})'.format(self.objectName(), self.windowTitle()))
+        except RuntimeError:
+            # this happens when the underlying C++ object has already been destroyed
+            pass
 
     def event(self, event: QtCore.QEvent):
         if event.type() == QtCore.QEvent.ActivationChange:
