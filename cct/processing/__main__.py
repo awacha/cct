@@ -68,7 +68,7 @@ sys.excepthook = my_excepthook
 
 mw = MainWindow()
 try:
-    mw.setHDF5File(sys.argv[1])
+    mw.onH5NameChanged(sys.argv[1])
 except IndexError:
     pass
 except OSError:

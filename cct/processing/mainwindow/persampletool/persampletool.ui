@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>421</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label_8">
+     <property name="text">
+      <string>Sample:</string>
+     </property>
+     <property name="buddy">
+      <cstring>resultsSampleSelectorComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_9">
+     <property name="text">
+      <string>Distance:</string>
+     </property>
+     <property name="buddy">
+      <cstring>resultsDistanceSelectorComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="title">
+      <string>Plot this type of results:</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_6">
+      <item row="0" column="1">
+       <widget class="QPushButton" name="plotImagePushButton">
+        <property name="text">
+         <string>Averaged image</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QPushButton" name="plotCurvesPushButton">
+        <property name="text">
+         <string>Scattering curves</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="plotCorMatTestResultsPushButton">
+        <property name="text">
+         <string>Outlier test results</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="plotCorMatPushButton">
+        <property name="text">
+         <string>Correlation matrix</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QPushButton" name="plotAnisotropyPushButton">
+        <property name="text">
+         <string>Anisotropy</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>When plotting curves:</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_11">
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="plot1dShowGoodCurvesCheckBox">
+        <property name="text">
+         <string>Show good curves</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="plot1dShowBadCurvesCheckBox">
+        <property name="text">
+         <string>Show BAD (outlier) curves</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="plot1dShowMeanCurveCheckBox">
+        <property name="text">
+         <string>Show averaged curve</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QCheckBox" name="plot1dLogarithmicXCheckBox">
+        <property name="text">
+         <string>Logarithmic X</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QCheckBox" name="plot1dLogarithmicYCheckBox">
+        <property name="text">
+         <string>Logarithmic Y</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QComboBox" name="resultsDistanceSelectorComboBox"/>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="resultsSampleSelectorComboBox"/>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox_4">
+     <property name="title">
+      <string>When plotting images:</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_10">
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="plot2dShowMaskCheckBox">
+        <property name="text">
+         <string>Show mask</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QCheckBox" name="plot2dShowCenterCheckBox">
+        <property name="text">
+         <string>Show center</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="2">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>resultsSampleSelectorComboBox</tabstop>
+  <tabstop>resultsDistanceSelectorComboBox</tabstop>
+  <tabstop>plot1dShowMeanCurveCheckBox</tabstop>
+  <tabstop>plot1dLogarithmicXCheckBox</tabstop>
+  <tabstop>plot1dShowBadCurvesCheckBox</tabstop>
+  <tabstop>plot1dLogarithmicYCheckBox</tabstop>
+  <tabstop>plot1dShowGoodCurvesCheckBox</tabstop>
+  <tabstop>plot2dShowMaskCheckBox</tabstop>
+  <tabstop>plot2dShowCenterCheckBox</tabstop>
+  <tabstop>plotCurvesPushButton</tabstop>
+  <tabstop>plotImagePushButton</tabstop>
+  <tabstop>plotCorMatTestResultsPushButton</tabstop>
+  <tabstop>plotCorMatPushButton</tabstop>
+  <tabstop>plotAnisotropyPushButton</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

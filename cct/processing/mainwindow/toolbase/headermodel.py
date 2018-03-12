@@ -10,7 +10,7 @@ from PyQt5 import QtCore
 from sastool.io.credo_cct import Header
 from sastool.misc.errorvalue import ErrorValue
 
-from ..core.utils.timeout import IdleFunction
+from ....core.utils.timeout import IdleFunction
 
 
 class HeaderModel(QtCore.QAbstractItemModel):
@@ -42,7 +42,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.endResetModel()
 
     def config(self):
-        return self._parent.config
+        return self._parent.cctConfig
 
     def cache_pathes(self):
         for attrname, subdirname in [('eval2d_pathes', 'eval2d'),
@@ -175,7 +175,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
         gc.collect()
 
     def sort(self, column: int, order: QtCore.Qt.SortOrder = ...):
-        sorteddata = sorted(self._data, key=lambda x: x[-1][column], reverse=order == QtCore.Qt.DescendingOrder)
+        print('Sorting model. Column: {}'.format(column))
+        sorteddata = sorted(self._data, key=lambda x: x[-1][column-1], reverse=order == QtCore.Qt.DescendingOrder)
         self.beginResetModel()
         self._data = sorteddata
         self.endResetModel()
@@ -188,7 +189,6 @@ class HeaderModel(QtCore.QAbstractItemModel):
 
     def netExposureTime(self):
         return float(sum([d[5] for d in self._data]))
-# fsn, title, distance, isbad, date, exptime, (visible parameters)
 
     def netGoodExposureTime(self):
         return float(sum([d[5] for d in self._data if not d[3]]))

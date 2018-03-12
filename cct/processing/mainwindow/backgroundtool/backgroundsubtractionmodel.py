@@ -1,7 +1,7 @@
 from typing import List, Any
 
 from PyQt5 import QtCore, QtWidgets, QtGui
-
+import time
 
 class BackgroundSubtractionModel(QtCore.QAbstractItemModel):
     def __init__(self, parent=None):
@@ -26,11 +26,11 @@ class BackgroundSubtractionModel(QtCore.QAbstractItemModel):
 
     def addSample(self, samplename):
         self.beginInsertRows(QtCore.QModelIndex(), len(self._samples), len(self._samples))
-        self._samples.append([samplename, None, 1, True])
+        self._samples.append([samplename, None, 1.0, True])
         self.endInsertRows()
 
     def removeRow(self, row: int, parent: QtCore.QModelIndex = ...):
-        self.beginRemoveRows(QtCore.QModelIndex(),row, row)
+        self.beginRemoveRows(QtCore.QModelIndex(), row, row)
         del self._samples[row]
         self.endRemoveRows()
 
@@ -44,9 +44,10 @@ class BackgroundSubtractionModel(QtCore.QAbstractItemModel):
 
     def flags(self, index: QtCore.QModelIndex):
         flags = QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren
+        sam = self._samples[index.row()]
         if index.column()==0:
             flags |= QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled
-        elif index.column()>0 and self._samples[index.row()][3]:
+        elif index.column()>0 and sam[3]:
             flags |= QtCore.Qt.ItemIsEnabled
         return flags
 

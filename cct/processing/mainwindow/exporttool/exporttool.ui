@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>356</width>
+    <height>497</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="6" column="0" colspan="3">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Select samples:</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_12">
+      <item row="2" column="0">
+       <widget class="QPushButton" name="sampleNameListSelectAllPushButton">
+        <property name="text">
+         <string>Select all</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QPushButton" name="sampleNameListDeselectAllPushButton">
+        <property name="text">
+         <string>Deselect all</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QListWidget" name="sampleNameListWidget">
+        <property name="selectionMode">
+         <enum>QAbstractItemView::MultiSelection</enum>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectRows</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label_11">
+     <property name="text">
+      <string>Image format:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QSpinBox" name="exportImageResolutionSpinBox">
+     <property name="suffix">
+      <string> dpi</string>
+     </property>
+     <property name="minimum">
+      <number>10</number>
+     </property>
+     <property name="maximum">
+      <number>3000</number>
+     </property>
+     <property name="value">
+      <number>200</number>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_12">
+     <property name="text">
+      <string>Image resolution:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QComboBox" name="export1DDataFormatComboBox">
+     <item>
+      <property name="text">
+       <string>ASCII (*.txt)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ASCII (*.dat)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Excel 2007- (*.xlsx)</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="label_21">
+     <property name="text">
+      <string>1D data format:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_13">
+     <property name="text">
+      <string>Image width:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_14">
+     <property name="text">
+      <string>Image height:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QDoubleSpinBox" name="exportImageHeightDoubleSpinBox">
+     <property name="maximum">
+      <double>100.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="exportImageFormatComboBox">
+     <property name="frame">
+      <bool>true</bool>
+     </property>
+     <property name="modelColumn">
+      <number>0</number>
+     </property>
+     <item>
+      <property name="text">
+       <string comment="Portable Network Graphics">png</string>
+      </property>
+      <property name="icon">
+       <iconset theme="image-png">
+        <normaloff>../</normaloff>../</iconset>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string comment="Scalable Vector Graphics">svg</string>
+      </property>
+      <property name="icon">
+       <iconset theme="svg">
+        <normaloff>../</normaloff>../</iconset>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string comment="Portable Document Format">pdf</string>
+      </property>
+      <property name="icon">
+       <iconset theme="application-pdf">
+        <normaloff>../</normaloff>../</iconset>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string comment="Joint Photographics Experts Group format">jpg</string>
+      </property>
+      <property name="icon">
+       <iconset theme="image-jpeg">
+        <normaloff>../</normaloff>../</iconset>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string comment="Encapsulated PostScript">eps</string>
+      </property>
+      <property name="icon">
+       <iconset theme="image-x-eps">
+        <normaloff>../</normaloff>../</iconset>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string comment="Tagged Image File Format">tiff</string>
+      </property>
+      <property name="icon">
+       <iconset theme="image-tiff">
+        <normaloff>../</normaloff>../</iconset>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QComboBox" name="exportImageWidthUnitsComboBox">
+     <item>
+      <property name="text">
+       <string>cm</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>inch</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_17">
+     <property name="text">
+      <string>2D data format:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="2">
+    <widget class="QComboBox" name="exportImageHeightUnitsComboBox">
+     <item>
+      <property name="text">
+       <string>cm</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>inch</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="export2DDataFormatComboBox">
+     <item>
+      <property name="text">
+       <string>Numpy</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ASCII</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Gzip'd ASCII</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Matlab</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QDoubleSpinBox" name="exportImageWidthDoubleSpinBox">
+     <property name="maximum">
+      <double>100.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="3">
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QGroupBox" name="groupBox_6">
+       <property name="title">
+        <string>Picture files:</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="QPushButton" name="exportAveragedCurvesGraphPushButton">
+          <property name="text">
+           <string>Averaged curves</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="exportAveraged2DGraphPushButton">
+          <property name="text">
+           <string>Averaged patterns</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="exportCorrelMatricesGraphPushButton">
+          <property name="text">
+           <string>Correlation matrices</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_5">
+       <property name="title">
+        <string>Data files:</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <widget class="QPushButton" name="exportAveraged2DDataPushButton">
+          <property name="text">
+           <string>Averaged patterns</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="exportAveragedCurvesDataPushButton">
+          <property name="text">
+           <string>Averaged curves</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="exportCorrelMatricesDataPushButton">
+          <property name="text">
+           <string>Correlation matrices</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="8" column="0" colspan="3">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>exportImageFormatComboBox</tabstop>
+  <tabstop>exportImageResolutionSpinBox</tabstop>
+  <tabstop>exportImageWidthDoubleSpinBox</tabstop>
+  <tabstop>exportImageWidthUnitsComboBox</tabstop>
+  <tabstop>exportImageHeightDoubleSpinBox</tabstop>
+  <tabstop>exportImageHeightUnitsComboBox</tabstop>
+  <tabstop>export2DDataFormatComboBox</tabstop>
+  <tabstop>export1DDataFormatComboBox</tabstop>
+  <tabstop>sampleNameListWidget</tabstop>
+  <tabstop>sampleNameListSelectAllPushButton</tabstop>
+  <tabstop>sampleNameListDeselectAllPushButton</tabstop>
+  <tabstop>exportAveragedCurvesGraphPushButton</tabstop>
+  <tabstop>exportAveraged2DDataPushButton</tabstop>
+  <tabstop>exportAveraged2DGraphPushButton</tabstop>
+  <tabstop>exportAveragedCurvesDataPushButton</tabstop>
+  <tabstop>exportCorrelMatricesGraphPushButton</tabstop>
+  <tabstop>exportCorrelMatricesDataPushButton</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>
