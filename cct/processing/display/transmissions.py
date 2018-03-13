@@ -46,14 +46,14 @@ class TransmissionModel(QtCore.QAbstractItemModel):
         elif index.column() == 3:  # transmission
             return transm.tostring(plusminus=' \xb1 ')
         elif index.column() == 4:  # mu
-            if transm.val > 0 and transm.val <1:
+            if transm.val > 0 and transm.val < 1:
                 return (-transm.log() / thickness).tostring(plusminus=' \xb1 ')
-            elif transm.val>=1:
+            elif transm.val >= 1:
                 return '0'
             else:
                 return '\u221e'  # infinity
         elif index.column() == 5:  # 1/mu
-            if abs(transm.val-1)<0.0001:
+            if abs(transm.val - 1) < 0.0001:
                 return '\u221e'  # infinity
             elif transm.val < 0.0001:
                 return '0'

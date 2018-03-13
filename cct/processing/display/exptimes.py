@@ -28,21 +28,21 @@ class ExpTimeModel(QtCore.QAbstractItemModel):
         return self.createIndex(row, column, None)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...):
-        return len(self._data)+1
+        return len(self._data) + 1
 
     def data(self, index: QtCore.QModelIndex, role: int = ...):
         if role != QtCore.Qt.DisplayRole:
             return None
         if index.row() == len(self._data):
-            if index.column() == 0: # sample name
+            if index.column() == 0:  # sample name
                 return '-- Total --'
-            elif index.column() == 4: # exptime
+            elif index.column() == 4:  # exptime
                 exptime = float(sum([d[2] for d in self._data]))
-                hours=math.floor(exptime/3600)
-                mins=math.floor((exptime-3600*hours)/60)
-                secs=math.floor((exptime-3600*hours-60*mins))
-                return '{:02.0f}:{:02.0f}:{:02.0f}'.format(hours,mins,secs)
-            elif index.column() == 5: # exptime pcnt
+                hours = math.floor(exptime / 3600)
+                mins = math.floor((exptime - 3600 * hours) / 60)
+                secs = math.floor((exptime - 3600 * hours - 60 * mins))
+                return '{:02.0f}:{:02.0f}:{:02.0f}'.format(hours, mins, secs)
+            elif index.column() == 5:  # exptime pcnt
                 return '100 %'
             else:
                 return ''
@@ -57,16 +57,17 @@ class ExpTimeModel(QtCore.QAbstractItemModel):
                 return '{:.2f}'.format(self._data[index.row()][2] / self._data[index.row()][3])
             elif index.column() == 4:  # exptime
                 exptime = self._data[index.row()][2]
-                hours=math.floor(exptime/3600)
-                mins=math.floor((exptime-3600*hours)/60)
-                secs=math.floor((exptime-3600*hours-60*mins))
-                return '{:02.0f}:{:02.0f}:{:02.0f}'.format(hours,mins,secs)
+                hours = math.floor(exptime / 3600)
+                mins = math.floor((exptime - 3600 * hours) / 60)
+                secs = math.floor((exptime - 3600 * hours - 60 * mins))
+                return '{:02.0f}:{:02.0f}:{:02.0f}'.format(hours, mins, secs)
             elif index.column() == 5:  # exptime pcnt
                 return '{:.2f} %'.format(100 * self._data[index.row()][2] / sum(d[2] for d in self._data))
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
-            return ['Sample', 'Distance (cm)', '# of exposures', 'Frame time (sec)', 'Live time (h:m:s)', 'Rel. live time'][
+            return \
+            ['Sample', 'Distance (cm)', '# of exposures', 'Frame time (sec)', 'Live time (h:m:s)', 'Rel. live time'][
                 section]
         return None
 

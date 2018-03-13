@@ -1,21 +1,22 @@
-from PyQt5 import QtWidgets, QtCore
-from .processingtool_ui import Ui_Form
-from ..toolbase import ToolBase
+import logging
 import queue
-import h5py
-import numpy as np
 import threading
 from typing import Iterable, List, Optional
-from ....core.utils.timeout import IdleFunction
-from ....core.processing.summarize import Summarizer
-import logging
 
-logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+import numpy as np
+from PyQt5 import QtWidgets, QtCore
+
+from .processingtool_ui import Ui_Form
+from ..toolbase import ToolBase
+from ....core.processing.summarize import Summarizer
+from ....core.utils.timeout import IdleFunction
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class ProcessingTool(ToolBase, Ui_Form):
-    processingDone=QtCore.pyqtSignal()
+    processingDone = QtCore.pyqtSignal()
 
     def setupUi(self, Form):
         super().setupUi(Form)
@@ -80,7 +81,8 @@ class ProcessingTool(ToolBase, Ui_Form):
                       fsns: Iterable[int], exppath: Iterable[str], parampath: Iterable[str], maskpath: Iterable[str],
                       outputfile: str, prefix: str, ndigits: int, errorpropagation: int, abscissaerrorpropagation: int,
                       sanitize_curves: bool, logarithmic_correlmatrix: bool, std_multiplier: int,
-                      qrange: Optional[np.ndarray], backgroundsubtraction: List, samplenamelist: List[str], corrmatoutliermethod:str):
+                      qrange: Optional[np.ndarray], backgroundsubtraction: List, samplenamelist: List[str],
+                      corrmatoutliermethod: str):
         s = Summarizer(fsns, exppath, parampath, maskpath, outputfile, prefix, ndigits, errorpropagation,
                        abscissaerrorpropagation, sanitize_curves, logarithmic_correlmatrix, std_multiplier, qrange,
                        samplenamelist, corrmatoutliermethod)
@@ -182,27 +184,28 @@ class ProcessingTool(ToolBase, Ui_Form):
                     pass
                 else:
                     assert isinstance(msg1, str)  # sample
-                    if isinstance(msg2, float): # distance
+                    if isinstance(msg2, float):  # distance
                         self.progressbar1StatusLabel.setText('{} ({:.2f} mm)'.format(msg1, msg2))
-                    elif isinstance(msg2, str): # background name
+                    elif isinstance(msg2, str):  # background name
                         self.progressbar1StatusLabel.setText('{} - {}'.format(msg1, msg2))
                     self.progressBar1.setValue(self.progressBar1.value() + 1)
         except queue.Empty:
             return True
         return True
 
-    def updateBadFSNs(self, processingfinished:bool=False):
-        newbadfsns=[]
+    def updateBadFSNs(self, processingfinished: bool = False):
+        newbadfsns = []
         for sn in self.h5GetSamples():
-#            logger.debug('updateBadFSNs: sample {}'.format(sn))
+            #            logger.debug('updateBadFSNs: sample {}'.format(sn))
             for d in self.h5GetDistances(sn):
-#                logger.debug('updateBadFSNs: dist {}'.format(d))
+                #                logger.debug('updateBadFSNs: dist {}'.format(d))
                 with self.getHDF5Group(sn, d) as grp:
                     if 'curves' not in grp:
                         continue
-#                    logger.debug('Reading curves...')
-                    newbadfsns.extend([dset.attrs['fsn'] for dset in grp['curves'].values() if dset.attrs['correlmat_bad']])
-#                    logger.debug('...Read curves.')
+                    #                    logger.debug('Reading curves...')
+                    newbadfsns.extend(
+                        [dset.attrs['fsn'] for dset in grp['curves'].values() if dset.attrs['correlmat_bad']])
+        #                    logger.debug('...Read curves.')
         if self.autoMarkBadExposuresCheckBox.isChecked():
             try:
                 self.headerModel.update_badfsns(newbadfsns)
@@ -221,7 +224,7 @@ class ProcessingTool(ToolBase, Ui_Form):
                     'No new bad exposures found',
                 )
 
-    def setH5FileName(self, h5filename:str):
+    def setH5FileName(self, h5filename: str):
         super().setH5FileName(h5filename)
         self.processPushButton.setEnabled(True)
         self.updateBadFSNs()

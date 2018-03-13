@@ -1,8 +1,9 @@
-from PyQt5 import QtWidgets, QtCore
+import h5py
+
 from .overalltool_ui import Ui_Form
 from ..toolbase import ToolBase
-import h5py
 from ...display import make_exptimes_table, make_transmission_table, plot_vacuum_and_flux
+
 
 class OverallTool(ToolBase, Ui_Form):
     def setupUi(self, Form):

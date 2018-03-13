@@ -1,8 +1,10 @@
-from PyQt5 import QtCore
-from typing import Dict, List, Optional, Any
-import numpy as np
-from sastool import ErrorValue
 import datetime
+from typing import Dict, List, Optional, Any
+
+import numpy as np
+from PyQt5 import QtCore
+from sastool import ErrorValue
+
 
 class ParamPickleModel(QtCore.QAbstractItemModel):
     def __init__(self, parent):
@@ -10,13 +12,13 @@ class ParamPickleModel(QtCore.QAbstractItemModel):
         self._indexlists = []
         self._paramdict = {}
 
-    def setParamPickle(self, param:Dict):
+    def setParamPickle(self, param: Dict):
         self.beginResetModel()
         self._indexlists = []
         self._paramdict = param
         self.endResetModel()
 
-    def _getDict(self, path:Optional[List[str]]):
+    def _getDict(self, path: Optional[List[str]]):
         if path is None:
             return self._paramdict
         dic = self._paramdict
@@ -62,21 +64,22 @@ class ParamPickleModel(QtCore.QAbstractItemModel):
             key = row
         else:
             raise TypeError(dic)
-        return self.createIndex(row, column, ip+[key])
+        return self.createIndex(row, column, ip + [key])
 
     def data(self, index: QtCore.QModelIndex, role: int = ...):
         if role == QtCore.Qt.DisplayRole:
             dic = self._getDict(index.internalPointer())
-            if index.column()==0:
+            if index.column() == 0:
                 return index.internalPointer()[-1]
-            elif index.column()==1 and isinstance(
+            elif index.column() == 1 and isinstance(
                     dic,
                     (str, int, float,
                      np.number, ErrorValue,
                      datetime.datetime, datetime.date, datetime.time, type(None))):
                 return str(dic)
             else:
-                return str(type(dic))
+                return ''
+                #return str(type(dic))
         return None
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
@@ -86,6 +89,3 @@ class ParamPickleModel(QtCore.QAbstractItemModel):
 
     def flags(self, index: QtCore.QModelIndex):
         return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
-
-
-

@@ -24,7 +24,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.fsnfirst = fsnfirst
         self.fsnlast = fsnlast
         self.badfsnsfile = badfsnsfile
-        self._data = [] # fsn, title, distance, isbad, date, exptime, (visible parameters)
+        self._data = []  # fsn, title, distance, isbad, date, exptime, (visible parameters)
         # the columns you want to display
         if not visiblecolumns:
             visiblecolumns = ['fsn', 'title', 'distance', 'date', 'temperature']
@@ -35,6 +35,12 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.mask_pathes = []
         self.cache_pathes()
         # self.reloadHeaders()
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return False
+        return (self.prefix == other.prefix) and (self.badfsnsfile == other.badfsnsfile) and (
+                    self.rootdir == other.rootdir)
 
     def setBadFSNFile(self, badfsnsfile):
         self.beginResetModel()
@@ -61,7 +67,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
         try:
             f = np.loadtxt(self.badfsnsfile).flatten().astype(int).tolist()
             if not isinstance(f, list):
-                f=list(f)
+                f = list(f)
             return list(set(f))
         except (FileNotFoundError, OSError):
             return []
@@ -73,7 +79,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
         return [f in bfs for f in fsn]
 
     def write_badfsns(self, badfsns: List[int]):
-        badfsns_to_save=[b for b in self.get_badfsns() if b<self.fsnfirst or b> self.fsnlast] # do not touch fsns outside our range
+        badfsns_to_save = [b for b in self.get_badfsns() if
+                           b < self.fsnfirst or b > self.fsnlast]  # do not touch fsns outside our range
         badfsns_to_save.append(badfsns)
         folder, file = os.path.split(self.badfsnsfile)
         os.makedirs(folder, exist_ok=True)
@@ -101,7 +108,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
             else:
                 self.beginResetModel()
                 fsns, titles, distances, exptimes, dates, visiblecolumndata = fsn
-                self._data=list(zip(fsns, titles, distances, self.is_badfsn(fsns), dates, exptimes, visiblecolumndata))
+                self._data = list(
+                    zip(fsns, titles, distances, self.is_badfsn(fsns), dates, exptimes, visiblecolumndata))
                 self.endResetModel()
                 self.fsnloaded.emit(0, 0, 0)
                 self.reloaderworker.join()
@@ -139,7 +147,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
             if index.column() == 0:
                 return ['OK', 'BAD'][self._data[index.row()][3]]
             else:
-                return self._data[index.row()][-1][index.column()-1]
+                return self._data[index.row()][-1][index.column() - 1]
         if role == QtCore.Qt.CheckStateRole and index.column() == 0:
             return (QtCore.Qt.Unchecked, QtCore.Qt.Checked)[self._data[index.row()][3]]
         return None
@@ -147,7 +155,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...):
         if role == QtCore.Qt.CheckStateRole and index.column() == 0:
             originaldata = self._data[index.row()]
-            self._data[index.row()] = originaldata[:3]+(bool(value),)+originaldata[4:]
+            self._data[index.row()] = originaldata[:3] + (bool(value),) + originaldata[4:]
             self.dataChanged.emit(self.index(index.row(), 0), self.index(index.row(), self.columnCount()),
                                   [QtCore.Qt.CheckStateRole, QtCore.Qt.DisplayRole])
             self.write_badfsns([d[0] for d in self._data if d[3]])
@@ -162,7 +170,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
     def update_badfsns(self, badfsns):
         for i, d in enumerate(self._data):
             if d[0] in badfsns:
-                self._data[i] = d[:3] + (True, ) + d[4:]
+                self._data[i] = d[:3] + (True,) + d[4:]
                 self.dataChanged.emit(self.index(i, 0), self.index(i, self.columnCount()),
                                       [QtCore.Qt.DisplayRole, QtCore.Qt.CheckStateRole])
         self.write_badfsns([d[0] for d in self._data if d[3]])
@@ -176,7 +184,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
 
     def sort(self, column: int, order: QtCore.Qt.SortOrder = ...):
         print('Sorting model. Column: {}'.format(column))
-        sorteddata = sorted(self._data, key=lambda x: x[-1][column-1], reverse=order == QtCore.Qt.DescendingOrder)
+        sorteddata = sorted(self._data, key=lambda x: x[-1][column - 1], reverse=order == QtCore.Qt.DescendingOrder)
         self.beginResetModel()
         self._data = sorteddata
         self.endResetModel()
@@ -205,7 +213,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
     def totalExperimentTime(self):
         mintime = min([d[4] for d in self._data])
         maxtime = max([d[4] for d in self._data])
-        return (maxtime-mintime).total_seconds()
+        return (maxtime - mintime).total_seconds()
+
 
 def load_header(fsn, prefix, fsndigits, path):
     #    prefix = self.config()['path']['prefixes']['crd']

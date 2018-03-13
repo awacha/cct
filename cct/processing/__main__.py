@@ -41,7 +41,7 @@ logging.root.addHandler(handler)
 # formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 # handler.setFormatter(formatter)
 # logging.root.addHandler(handler)
-logging.root.setLevel(logging.DEBUG)
+logging.root.setLevel(logging.INFO)
 ch = CollectingHandler()
 logging.root.addHandler(ch)
 

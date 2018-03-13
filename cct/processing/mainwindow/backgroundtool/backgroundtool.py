@@ -1,12 +1,14 @@
-from PyQt5 import QtWidgets, QtCore
-from .backgroundtool_ui import Ui_Form
+from PyQt5 import QtCore
+
 from .backgroundsubtractionmodel import BackgroundSubtractionModel, ComboBoxDelegate
+from .backgroundtool_ui import Ui_Form
 from ..toolbase import ToolBase, HeaderModel
+
 
 class BackgroundTool(ToolBase, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.backgroundList=BackgroundSubtractionModel()
+        self.backgroundList = BackgroundSubtractionModel()
         self.backgroundListTreeView.setModel(self.backgroundList)
         self.backgroundListDelegate = ComboBoxDelegate()
         self.backgroundListTreeView.setItemDelegateForColumn(0, self.backgroundListDelegate)
@@ -32,7 +34,7 @@ class BackgroundTool(ToolBase, Ui_Form):
         for c in range(self.backgroundList.columnCount()):
             self.backgroundListTreeView.resizeColumnToContents(c)
 
-    def setHeaderModel(self, headermodel:HeaderModel):
+    def setHeaderModel(self, headermodel: HeaderModel):
         super().setHeaderModel(headermodel)
         self.updateBackgroundList()
 

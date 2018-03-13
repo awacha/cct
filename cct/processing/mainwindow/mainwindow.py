@@ -3,7 +3,7 @@ import inspect
 import logging
 import os
 import pickle
-from typing import Iterable, Optional, Union, List, Dict
+from typing import Optional, Dict
 
 import appdirs
 import matplotlib.colors
@@ -16,26 +16,28 @@ from matplotlib.figure import Figure
 from sastool.io.credo_cct.header import Header
 from scipy.misc import imread
 
-from .headerpopup import HeaderPopup
-from .mainwindow_ui import Ui_MainWindow
-from ..display import ParamPickleModel
-from ..export_table import export_table
-from .toolbase import ToolBase, HeaderModel
-from .iotool import IoTool
 from .backgroundtool import BackgroundTool
 from .comparetool import CompareTool
 from .exporttool import ExportTool
+from .headerpopup import HeaderPopup
+from .iotool import IoTool
+from .mainwindow_ui import Ui_MainWindow
 from .overalltool import OverallTool
 from .persampletool import PerSampleTool
 from .processingtool import ProcessingTool
+from .toolbase import ToolBase, HeaderModel
+from ..display import ParamPickleModel
+from ..export_table import export_table
 from ...core.processing.summarize import Summarizer
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
-    tools:Dict[str, ToolBase]=None
-    headerModel:HeaderModel=None
+    tools: Dict[str, ToolBase] = None
+    headerModel: HeaderModel = None
+    h5FileName: str = None
 
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self, None)
@@ -79,7 +81,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             config.write(f)
         logger.info('Configuration saved to {}'.format(statefile))
 
-
     def setupUi(self, MainWindow: QtWidgets.QMainWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
         self.headersTreeView.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -90,7 +91,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         vl.addWidget(self.canvas)
         self.figuretoolbar = NavigationToolbar2QT(self.canvas, self.figureContainerWidget)
         vl.addWidget(self.figuretoolbar)
-        self._canvaskeypresshandler=self.canvas.mpl_connect('key_press_event', self.onCanvasKeyPressEvent)
+        self._canvaskeypresshandler = self.canvas.mpl_connect('key_press_event', self.onCanvasKeyPressEvent)
 
         self.headersTreeView.header().sectionClicked.connect(self.onHeaderTreeViewSortRequest)
         self.headersTreeView.setSortingEnabled(True)
@@ -102,8 +103,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.showMetaDataPushButton.clicked.connect(self.onShowMetaData)
         self.tablePlot1DPushButton.clicked.connect(self.onPlot1D)
         self.tablePlot2DPushButton.clicked.connect(self.onPlot2D)
-        self.tools={}
-        while self.toolBox.count()>0:
+        self.tools = {}
+        while self.toolBox.count() > 0:
             self.toolBox.removeItem(0)
         for label, handle, type_ in [
             ('Input/output', 'io', IoTool),
@@ -112,7 +113,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             ('Per-sample results', 'persample', PerSampleTool),
             ('Compare scattering curves', 'cmp', CompareTool),
             ('Overall quality checks', 'overall', OverallTool),
-            ('Export','export', ExportTool),]:
+            ('Export', 'export', ExportTool), ]:
             self.tools[handle] = type_(self.toolBox, handle)
             self.toolBox.addItem(self.tools[handle], label)
             self.tools[handle].setFigure(self.figure)
@@ -128,7 +129,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.tools['io'].cctConfigChanged.connect(self.onCCTConfigChanged)
         self.tools['processing'].processingDone.connect(self.onProcessingDone)
 
-    def onBusy(self, busy:bool):
+    def onBusy(self, busy: bool):
         self.setEnabled(not busy)
 
     def onProcessingDone(self):
@@ -144,16 +145,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             self.treeView.resizeColumnToContents(c)
         self.tabWidget.setCurrentWidget(self.tableContainerWidget)
 
-    def onCCTConfigChanged(self, cctConfig:Dict):
+    def onCCTConfigChanged(self, cctConfig: Dict):
         self.cctConfig = cctConfig
         for t in self.tools:
             self.tools[t].setCCTConfig(cctConfig)
 
-    def onExportFolderChanged(self, exportfolder:str):
+    def onExportFolderChanged(self, exportfolder: str):
         for t in self.tools:
             self.tools[t].setExportFolder(exportfolder)
 
-    def onNewHeaderModel(self, headerModel:HeaderModel):
+    def onNewHeaderModel(self, headerModel: HeaderModel):
         self.headerModel = headerModel
         self.headersTreeView.setSortingEnabled(False)
         self.headersTreeView.setModel(headerModel)
@@ -165,9 +166,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             self.tools[h].setHeaderModel(headerModel)
         self.statusBar.clearMessage()
 
-    def onH5NameChanged(self, h5name:str):
+    def onH5NameChanged(self, h5name: str):
         for h in self.tools:
             self.tools[h].setH5FileName(h5name)
+        self.h5FileName = h5name
         self.updateTimeLabels()
         self.statusBar.clearMessage()
 
@@ -191,7 +193,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
                 model = ParamPickleModel(self.treeView)
                 model.setParamPickle(metadata)
                 self.treeView.setModel(model)
-                #self.treeView.expandAll()
+                # self.treeView.expandAll()
                 self.tabWidget.setCurrentWidget(self.tableContainerWidget)
                 for c in range(2):
                     self.treeView.resizeColumnToContents(c)
@@ -219,7 +221,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             'MS Excel 2007-2016 files (*.xlsx, *.xlsm)')
         if not fname:
             return
-        export_table(fname, self.headermodel)
+        export_table(fname, self.headerModel)
         logger.info('Wrote file {}'.format(fname))
 
     def onExportTable(self):
@@ -231,7 +233,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             return
         export_table(fname, self.treeView.model())
         logger.info('Wrote file {}'.format(fname))
-
 
     def resizeHeaderViewColumns(self):
         for i in range(self.headerModel.columnCount()):
@@ -264,13 +265,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             (self.goodExposureTimeLabel, self.headerModel.netGoodExposureTime()),
             (self.badExposureTimeLabel, self.headerModel.netBadExposureTime()),
             (self.netExposureTimeLabel, self.headerModel.netExposureTime()),
-            (self.deadTimeLabel, self.headerModel.totalExperimentTime()-self.headerModel.netExposureTime()),
+            (self.deadTimeLabel, self.headerModel.totalExperimentTime() - self.headerModel.netExposureTime()),
         ]:
-            time_h = np.floor(timedelta/3600)
-            time_min = np.floor(timedelta-time_h*3600)/60
-            time_sec = np.floor(timedelta-time_h*3600-time_min*60)
+            time_h = np.floor(timedelta / 3600)
+            time_min = np.floor(timedelta - time_h * 3600) / 60
+            time_sec = np.floor(timedelta - time_h * 3600 - time_min * 60)
             labelwidget.setText('{:02.0f}:{:02.0f}:{:02.0f} ({:.1f}%)'.format(
-                time_h, time_min, time_sec, timedelta/totaltime*100))
+                time_h, time_min, time_sec, timedelta / totaltime * 100))
 
     def putlogo(self, figure: Optional[Figure] = None):
         if figure is None:
@@ -301,13 +302,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         for x in summarizer.load_headers():
             pass
         ex = summarizer.load_exposure(fsn)
-        self.clearFigure()
+        self.figure.clear()
         ax = self.figure.add_subplot(1, 1, 1)
         ex.radial_average().loglog(axes=ax)
         ax.set_xlabel('q (nm$^{-1}$)')
         ax.set_ylabel('Intensity (cm$^{-1}$ sr$^{-1}$)')
-        self.canvas.draw()
-        self.tabWidget.setCurrentWidget(self.figureContainerWidget)
+        self.onFigureDrawn()
 
     def onPlot2D(self):
         if self.sender() == self.plot2DPushButton:
@@ -330,11 +330,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         for x in summarizer.load_headers(logger=logger):
             pass
         ex = summarizer.load_exposure(fsn, logger=logger)
-        self.clearFigure()
+        self.figure.clear()
         ax = self.figure.add_subplot(1, 1, 1)
         ex.imshow(axes=ax, norm=matplotlib.colors.LogNorm())
         ax.set_xlabel('q (nm$^{-1}$)')
         ax.set_ylabel('q (nm$^{-1}$)')
-        self.canvas.draw()
-        self.tabWidget.setCurrentWidget(self.figureContainerWidget)
-
+        self.onFigureDrawn()

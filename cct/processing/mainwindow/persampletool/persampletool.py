@@ -1,16 +1,16 @@
-from PyQt5 import QtWidgets, QtCore
+import logging
+
+import h5py
+from PyQt5 import QtWidgets
+
 from .persampletool_ui import Ui_Form
 from ..toolbase import ToolBase
-from ....core.processing.summarize import Summarizer
+from ...display import show_cmatrix, display_outlier_test_results_graph, display_outlier_test_results, summarize_curves, \
+    show_scattering_image
 from ....qtgui.tools.anisotropy import AnisotropyEvaluator
-from ...display import show_cmatrix, display_outlier_test_results_graph, display_outlier_test_results, summarize_curves, show_scattering_image
-import h5py
 
-import logging
-import matplotlib.colors
-
-logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class PerSampleTool(ToolBase, Ui_Form):
@@ -39,13 +39,14 @@ class PerSampleTool(ToolBase, Ui_Form):
             (self.plot2dShowCenterCheckBox, 'persample', 'showcenter'),
         ]
 
-
     def onPlotAnisotropy(self):
-        a=AnisotropyEvaluator(self, credo=None)
+        a = AnisotropyEvaluator(self, credo=None)
         a.h5Selector.h5FileNameLineEdit.setText(self.h5FileName)
         a.h5Selector.reloadFile()
-        a.h5Selector.sampleNameComboBox.setCurrentIndex(a.h5Selector.sampleNameComboBox.findText(self.resultsSampleSelectorComboBox.currentText()))
-        a.h5Selector.distanceComboBox.setCurrentIndex(a.h5Selector.distanceComboBox.findText(self.resultsDistanceSelectorComboBox.currentText()))
+        a.h5Selector.sampleNameComboBox.setCurrentIndex(
+            a.h5Selector.sampleNameComboBox.findText(self.resultsSampleSelectorComboBox.currentText()))
+        a.h5Selector.distanceComboBox.setCurrentIndex(
+            a.h5Selector.distanceComboBox.findText(self.resultsDistanceSelectorComboBox.currentText()))
         a.show()
 
     @property
@@ -72,7 +73,8 @@ class PerSampleTool(ToolBase, Ui_Form):
                 return
             model = display_outlier_test_results(grp['curves'])
             display_outlier_test_results_graph(self.figure, grp['curves'], self.siblings['processing'].stdMultiplier,
-                                               ['zscore','zscore_mod','iqr'][self.siblings['processing'].corrMatMethodIdx])
+                                               ['zscore', 'zscore_mod', 'iqr'][
+                                                   self.siblings['processing'].corrMatMethodIdx])
         self.treeView.setModel(model)
         self.tableShown.emit()
 
@@ -117,7 +119,7 @@ class PerSampleTool(ToolBase, Ui_Form):
         self.plotCorMatPushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex() >= 0)
         self.plotCorMatTestResultsPushButton.setEnabled(self.resultsDistanceSelectorComboBox.currentIndex() >= 0)
 
-    def setH5FileName(self, h5filename:str):
+    def setH5FileName(self, h5filename: str):
         super().setH5FileName(h5filename)
         self.resultsSampleSelectorComboBox.clear()
         self.resultsSampleSelectorComboBox.addItems(self.h5GetSamples())

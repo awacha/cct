@@ -1,24 +1,27 @@
-from .exporttool_ui import Ui_Form
-from ..toolbase import ToolBase
-import matplotlib
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-import scipy.misc
-import os
 import gc
 import logging
+import os
+
+import matplotlib
+import numpy as np
 import openpyxl
 import openpyxl.chart
-import openpyxl.worksheet.worksheet
 import openpyxl.styles
-import scipy.io
+import openpyxl.worksheet.worksheet
 import pkg_resources
-from ...export import export2D
-from ...display import show_cmatrix, show_scattering_image
-import numpy as np
+import scipy.io
+import scipy.misc
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
 
-logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+from .exporttool_ui import Ui_Form
+from ..toolbase import ToolBase
+from ...display import show_cmatrix, show_scattering_image
+from ...export import export2D
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 class ExportTool(ToolBase, Ui_Form):
     def setupUi(self, Form):
@@ -62,18 +65,19 @@ class ExportTool(ToolBase, Ui_Form):
                     continue
                 for dist in self.h5GetDistances(sn):
                     with self.getHDF5Group(sn, dist) as grp:
-                        basename = os.path.join(self.exportFolder,'{}_{}'.format(sn, dist.replace('.', '_')))
+                        basename = os.path.join(self.exportFolder, '{}_{}'.format(sn, dist.replace('.', '_')))
                         if self.export2DDataFormatComboBox.currentText() == 'Numpy':
-                            export2D.exportNumpy(basename, grp)
+                            filelist = export2D.exportNumpy(basename, grp)
                         elif self.export2DDataFormatComboBox.currentText() == 'Matlab':
-                            export2D.exportMatlab(basename, grp)
+                            filelist = export2D.exportMatlab(basename, grp)
                         elif self.export2DDataFormatComboBox.currentText() == 'ASCII':
-                            export2D.exportAscii(basename, grp, gzip=False)
+                            filelist = export2D.exportAscii(basename, grp, gzip=False)
                         elif self.export2DDataFormatComboBox.currentText() == 'Gzip\'d ASCII':
-                            export2D.exportAscii(basename, grp, gzip=True)
+                            filelist = export2D.exportAscii(basename, grp, gzip=True)
                         else:
                             raise ValueError(
                                 'Unknown 2D file format: {}'.format(self.export2DDataFormatComboBox.currentText()))
+                    logger.info('Wrote file(s): {}'.format(', '.join([f for f in filelist])))
         finally:
             self.busy.emit(False)
 
@@ -203,7 +207,7 @@ class ExportTool(ToolBase, Ui_Form):
                             np.savetxt(f, data)
                         else:
                             f.write('# q\tIntensity\tError\n'.encode('utf-8'))
-                            np.savetxt(f, data[:,:3])
+                            np.savetxt(f, data[:, :3])
                     logger.info('Wrote file {}'.format(fn))
         finally:
             self.busy.emit(False)
@@ -262,7 +266,9 @@ class ExportTool(ToolBase, Ui_Form):
                         with self.getHDF5Group(sn, dist) as grp:
                             cmat = np.array(grp['correlmatrix'])
                     except KeyError:
-                        logger.warning('Cannot export correlation matrix for sample {} at {} mm: no correlation matrix. Possibly a subtracted measurement.'.format(sn, dist))
+                        logger.warning(
+                            'Cannot export correlation matrix for sample {} at {} mm: no correlation matrix. Possibly a subtracted measurement.'.format(
+                                sn, dist))
                         continue
                     if self.export2DDataFormatComboBox.currentText() == 'Numpy':
                         fn = os.path.join(self.exportFolder,
@@ -331,7 +337,6 @@ class ExportTool(ToolBase, Ui_Form):
             del canvas
             gc.collect()
 
-
     def onImageUnitsChanged(self):
         if self.sender() == self.exportImageWidthUnitsComboBox:
             spinbox = self.exportImageWidthDoubleSpinBox
@@ -344,17 +349,18 @@ class ExportTool(ToolBase, Ui_Form):
         elif self.sender().currentText() == 'cm':
             spinbox.setValue(spinbox.value() * 2.54)
 
-    def setH5FileName(self, h5filename:str):
+    def setH5FileName(self, h5filename: str):
         super().setH5FileName(h5filename)
         self.sampleNameListWidget.clear()
         self.sampleNameListWidget.addItems(self.h5GetSamples())
         self.sampleNameListWidget.selectAll()
 
-    def putlogo(self, figure:Figure):
-        #ToDo: this is a repeat of mainwindow.putlogo().
+    def putlogo(self, figure: Figure):
+        # ToDo: this is a repeat of mainwindow.putlogo().
         if figure is None:
             figure = self.figure
         if not hasattr(self, '_logodata'):
-            self._logodata = scipy.misc.imread(pkg_resources.resource_filename('cct', 'resource/credo_logo.png'), flatten=True)[
+            self._logodata = scipy.misc.imread(pkg_resources.resource_filename('cct', 'resource/credo_logo.png'),
+                                               flatten=True)[
                              ::4, ::4]
         figure.figimage(self._logodata, 10, 10, cmap='gray', zorder=-10)

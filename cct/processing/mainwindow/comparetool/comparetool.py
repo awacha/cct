@@ -1,8 +1,11 @@
-from .comparetool_ui import Ui_Form
-from ..toolbase import ToolBase
 import string
-from .samplescalermodel import SampleScalerModel
+
 import numpy as np
+
+from .comparetool_ui import Ui_Form
+from .samplescalermodel import SampleScalerModel
+from ..toolbase import ToolBase
+
 
 class CompareTool(ToolBase, Ui_Form):
     def setupUi(self, Form):
@@ -102,7 +105,7 @@ class CompareTool(ToolBase, Ui_Form):
     def onCmpDeselectAllSamples(self):
         self.cmpSampleModel.deselectAll()
 
-    def setH5FileName(self, h5filename:str):
+    def setH5FileName(self, h5filename: str):
         super().setH5FileName(h5filename)
         self.cmpSampleModel = SampleScalerModel(self.h5GetSamples())
         self.cmpSampleTreeView.setModel(self.cmpSampleModel)

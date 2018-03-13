@@ -11,7 +11,7 @@ def show_cmatrix(fig: Figure, grp: Group):
     except KeyError:
         return
     ax = fig.add_subplot(1, 1, 1)
-    img=ax.imshow(cmat, cmap=matplotlib.cm.coolwarm, interpolation='nearest')
+    img = ax.imshow(cmat, cmap=matplotlib.cm.coolwarm, interpolation='nearest')
     fig.colorbar(img, ax=ax)
     fsns = sorted([curvesgrp[ds].attrs['fsn'] for ds in curvesgrp.keys()])
     ax.set_xticks(list(range(len(fsns))))

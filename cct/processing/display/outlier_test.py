@@ -1,8 +1,10 @@
-import h5py
-from matplotlib.figure import Figure
-from PyQt5 import QtCore
-import numpy as np
 from typing import Optional
+
+import h5py
+import numpy as np
+from PyQt5 import QtCore
+from matplotlib.figure import Figure
+
 
 class OutlierModel(QtCore.QAbstractItemModel):
     def __init__(self, parent, group: h5py.Group):
@@ -53,16 +55,16 @@ def display_outlier_test_results(grp: h5py.Group) -> OutlierModel:
     return OutlierModel(None, grp)
 
 
-def display_outlier_test_results_graph(fig: Figure, grp: h5py.Group, factor:float, method:Optional[str]=None):
+def display_outlier_test_results_graph(fig: Figure, grp: h5py.Group, factor: float, method: Optional[str] = None):
     fig.clf()
     sortedkeys = sorted(grp.keys(), key=lambda x: int(x))
     fsns = np.array([int(fsn) for fsn in sortedkeys])
-    ax = fig.add_subplot(1,1,1)
+    ax = fig.add_subplot(1, 1, 1)
     if method is None:
         discrps = np.array([grp[fsn].attrs['correlmat_discrp'] for fsn in sortedkeys])
         bad = np.array([grp[fsn].attrs['correlmat_bad'] for fsn in sortedkeys])
-        lbound = np.nanmedian(discrps)-np.nanstd(discrps)*factor
-        ubound = np.nanmedian(discrps)+np.nanstd(discrps)*factor
+        lbound = np.nanmedian(discrps) - np.nanstd(discrps) * factor
+        ubound = np.nanmedian(discrps) + np.nanstd(discrps) * factor
         ylabel = 'Difference from the others'
     elif method == 'zscore':
         discrps = np.array([grp[fsn].attrs['correlmat_zscore'] for fsn in sortedkeys])
@@ -80,15 +82,15 @@ def display_outlier_test_results_graph(fig: Figure, grp: h5py.Group, factor:floa
         discrps = np.array([grp[fsn].attrs['correlmat_discrp'] for fsn in sortedkeys])
         bad = np.array([grp[fsn].attrs['correlmat_bad_iqr'] for fsn in sortedkeys])
         p25, p75 = np.percentile(discrps, [25, 75])
-        lbound = p25 - factor*(p75-p25)
-        ubound = p75 + factor*(p75-p25)
+        lbound = p25 - factor * (p75 - p25)
+        ubound = p75 + factor * (p75 - p25)
         ylabel = 'Difference from the others'
 
-    ax.plot(fsns[~bad], discrps[~bad],'bo')
-    ax.plot(fsns[bad],discrps[bad],'rs')
-    ax.hlines(lbound,fsns.min(), fsns.max(),'green','--')
-    ax.hlines(ubound,fsns.min(), fsns.max(),'green','--')
-    ax.fill_between([fsns.min(),fsns.max()],lbound, ubound,color='g',alpha=0.5)
+    ax.plot(fsns[~bad], discrps[~bad], 'bo')
+    ax.plot(fsns[bad], discrps[bad], 'rs')
+    ax.hlines(lbound, fsns.min(), fsns.max(), 'green', '--')
+    ax.hlines(ubound, fsns.min(), fsns.max(), 'green', '--')
+    ax.fill_between([fsns.min(), fsns.max()], lbound, ubound, color='g', alpha=0.5)
     ax.set_xlabel('File sequence number')
     ax.set_ylabel(ylabel)
     fig.canvas.draw()

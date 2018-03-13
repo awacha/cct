@@ -1,11 +1,13 @@
+import os
+import pickle
+from configparser import ConfigParser
+
+import appdirs
 from PyQt5 import QtWidgets, QtCore
+
 from .iotool_ui import Ui_Form
 from ..toolbase import ToolBase, HeaderModel
-from configparser import ConfigParser
-import os
-import appdirs
 
-import pickle
 
 class IoTool(ToolBase, Ui_Form):
     h5NameChanged = QtCore.pyqtSignal(str)
@@ -22,7 +24,8 @@ class IoTool(ToolBase, Ui_Form):
         idx = self.uiStyleComboBox.findText(currentkey)
         self.uiStyleComboBox.setCurrentIndex(idx)
         self.uiStyleComboBox.currentIndexChanged.connect(self.onUiStyleChange)
-        self.badFSNListFileNameLineEdit.setText(os.path.join(appdirs.user_state_dir('cpt', 'CREDO', roaming=True), 'badfsns'))
+        self.badFSNListFileNameLineEdit.setText(
+            os.path.normpath(os.path.join(appdirs.user_state_dir('cpt', 'CREDO', roaming=True), 'badfsns')))
         self.browseBadFSNListFileNamePushButton.clicked.connect(self.onBrowseBadFSNListFileName)
         self.browseHDFPushButton.clicked.connect(self.onBrowseSaveFile)
         self.browsePushButton.clicked.connect(self.onBrowseRootDir)
@@ -52,16 +55,24 @@ class IoTool(ToolBase, Ui_Form):
         try:
             self.busy.emit(True)
             self.statusBar.showMessage('Loading headers, please wait...')
-            self.newheadermodel = HeaderModel(
-                self,
-                self.rootdir,
-                self.cctConfig['path']['prefixes']['crd'],
-                self.firstFSNSpinBox.value(),
-                self.lastFSNSpinBox.value(),
-                self.header_columns,
-                self.badFSNListFileNameLineEdit.text()
-            )
-            self.newheadermodel.fsnloaded.connect(self.onHeaderModelFSNLoaded)
+            if ((self.headerModel is not None) and
+                    (self.headerModel.rootdir == self.rootdir) and
+                    (self.headerModel.badfsnsfile == self.badFSNListFileNameLineEdit.text()) and
+                    (self.headerModel.prefix == self.cctConfig['path']['prefixes']['crd'])):
+                self.newheadermodel = self.headerModel
+                self.newheadermodel.fsnfirst = self.firstFSNSpinBox.value()
+                self.newheadermodel.fsnlast = self.lastFSNSpinBox.value()
+            else:
+                self.newheadermodel = HeaderModel(
+                    self,
+                    self.rootdir,
+                    self.cctConfig['path']['prefixes']['crd'],
+                    self.firstFSNSpinBox.value(),
+                    self.lastFSNSpinBox.value(),
+                    self.header_columns,
+                    self.badFSNListFileNameLineEdit.text()
+                )
+                self.newheadermodel.fsnloaded.connect(self.onHeaderModelFSNLoaded)
             self.newheadermodel.reloadHeaders()
         except:
             self.busy.emit(False)
@@ -120,13 +131,13 @@ class IoTool(ToolBase, Ui_Form):
         self.setBadFSNFile(filename)
 
     def setBadFSNFile(self, filename):
-        self.badFSNListFileNameLineEdit.setText(filename)
+        self.badFSNListFileNameLineEdit.setText(os.path.normpath(filename))
         try:
             self.headermodel.setBadFSNFile(filename)
         except AttributeError:
             pass
 
-    def load_state(self, config:ConfigParser):
+    def load_state(self, config: ConfigParser):
         super().load_state(config)
         if self.rootDirLineEdit.text():
             self.setRootDir(self.rootDirLineEdit.text())
@@ -136,8 +147,9 @@ class IoTool(ToolBase, Ui_Form):
             self.header_columns = config['headerview']['fields'].split(';')
         except KeyError:
             pass
+        self.exportFolderChanged.emit(self.exportFolderLineEdit.text())
 
-    def save_state(self, config:ConfigParser):
+    def save_state(self, config: ConfigParser):
         super().save_state(config)
         config['headerview'] = {}
         config['headerview']['fields'] = ';'.join(self.header_columns)
