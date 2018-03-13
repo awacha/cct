@@ -118,6 +118,7 @@ class ProcessingTool(ToolBase, Ui_Form):
         self.processPushButton.setEnabled(True)
         self.updateBadFSNs(processingfinished=True)
         self.queue = None
+        self.processingDone.emit()
         self.busy.emit(False)
 
     def check_processing_progress(self):
