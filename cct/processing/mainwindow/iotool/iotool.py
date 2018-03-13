@@ -1,13 +1,15 @@
+import re
 import os
 import pickle
 from configparser import ConfigParser
+from typing import List, Tuple
 
 import appdirs
 from PyQt5 import QtWidgets, QtCore
 
 from .iotool_ui import Ui_Form
 from ..toolbase import ToolBase, HeaderModel
-
+from .fsnrangemodel import FSNRangeModel
 
 class IoTool(ToolBase, Ui_Form):
     h5NameChanged = QtCore.pyqtSignal(str)
@@ -41,6 +43,22 @@ class IoTool(ToolBase, Ui_Form):
             (self.firstFSNSpinBox, 'io', 'firstfsn'),
             (self.lastFSNSpinBox, 'io', 'lastfsn'),
         ]
+        self.addToListPushButton.clicked.connect(self.addFSNRange)
+        self.removeFromListPushButton.clicked.connect(self.removeFSNRange)
+        self.clearListPushButton.clicked.connect(self.clearFSNRanges)
+        self.fsnList = FSNRangeModel()
+        self.fsnListTreeView.setModel(self.fsnList)
+
+    def addFSNRange(self):
+        self.fsnList.addRange(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value())
+
+    def removeFSNRange(self):
+        while self.fsnListTreeView.selectedIndexes():
+            sel=self.fsnListTreeView.selectedIndexes()
+            self.fsnList.removeRow(sel[0].row(), QtCore.QModelIndex())
+
+    def clearFSNRanges(self):
+        self.fsnList.clear()
 
     def onUiStyleChange(self):
         QtWidgets.QApplication.instance().setStyle(self.uiStyleComboBox.currentText())
@@ -51,6 +69,9 @@ class IoTool(ToolBase, Ui_Form):
             self.exportFolderLineEdit.setText(os.path.normpath(filename))
             self.exportFolderChanged.emit(os.path.normpath(filename))
 
+    def fsnRanges(self) -> List[Tuple[int, int]]:
+        return self.fsnList.getRanges()
+
     def reloadHeaders(self):
         try:
             self.busy.emit(True)
@@ -60,15 +81,13 @@ class IoTool(ToolBase, Ui_Form):
                     (self.headerModel.badfsnsfile == self.badFSNListFileNameLineEdit.text()) and
                     (self.headerModel.prefix == self.cctConfig['path']['prefixes']['crd'])):
                 self.newheadermodel = self.headerModel
-                self.newheadermodel.fsnfirst = self.firstFSNSpinBox.value()
-                self.newheadermodel.fsnlast = self.lastFSNSpinBox.value()
+                self.newheadermodel.fsnranges = self.fsnRanges()
             else:
                 self.newheadermodel = HeaderModel(
                     self,
                     self.rootdir,
                     self.cctConfig['path']['prefixes']['crd'],
-                    self.firstFSNSpinBox.value(),
-                    self.lastFSNSpinBox.value(),
+                    self.fsnRanges(),
                     self.header_columns,
                     self.badFSNListFileNameLineEdit.text()
                 )
@@ -139,6 +158,12 @@ class IoTool(ToolBase, Ui_Form):
 
     def load_state(self, config: ConfigParser):
         super().load_state(config)
+        try:
+            self.fsnList.clear()
+            for left, right in re.findall('\(\s*(\d+),\s*(\d+)\)', config['io']['fsnranges']):
+                self.fsnList.addRange(int(left), int(right))
+        except KeyError:
+            pass
         if self.rootDirLineEdit.text():
             self.setRootDir(self.rootDirLineEdit.text())
         if self.saveHDFLineEdit.text():
@@ -149,10 +174,12 @@ class IoTool(ToolBase, Ui_Form):
             pass
         self.exportFolderChanged.emit(self.exportFolderLineEdit.text())
 
+
     def save_state(self, config: ConfigParser):
         super().save_state(config)
         config['headerview'] = {}
         config['headerview']['fields'] = ';'.join(self.header_columns)
+        config['io']['fsnranges']='['+', '.join(['({}, {})'.format(left,right) for left,right in self.fsnRanges()])  +']'
 
     def onHeaderModelFSNLoaded(self, totalcount, currentcount, thisfsn):
         if totalcount == currentcount == thisfsn == 0:

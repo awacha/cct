@@ -50,8 +50,7 @@ class ProcessingTool(ToolBase, Ui_Form):
         else:
             qrange = None
         kwargs = {
-            'fsns': [x for x in range(self.headerModel.fsnfirst, self.headerModel.fsnlast + 1) if
-                     x not in badfsns],
+            'fsns': self.headerModel.goodfsns(),
             'exppath': self.headerModel.eval2d_pathes,
             'parampath': self.headerModel.eval2d_pathes,
             'maskpath': self.headerModel.mask_pathes,
@@ -195,17 +194,21 @@ class ProcessingTool(ToolBase, Ui_Form):
 
     def updateBadFSNs(self, processingfinished: bool = False):
         newbadfsns = []
-        for sn in self.h5GetSamples():
-            #            logger.debug('updateBadFSNs: sample {}'.format(sn))
-            for d in self.h5GetDistances(sn):
-                #                logger.debug('updateBadFSNs: dist {}'.format(d))
-                with self.getHDF5Group(sn, d) as grp:
-                    if 'curves' not in grp:
-                        continue
-                    #                    logger.debug('Reading curves...')
-                    newbadfsns.extend(
-                        [dset.attrs['fsn'] for dset in grp['curves'].values() if dset.attrs['correlmat_bad']])
-        #                    logger.debug('...Read curves.')
+        try:
+            for sn in self.h5GetSamples():
+                #            logger.debug('updateBadFSNs: sample {}'.format(sn))
+                for d in self.h5GetDistances(sn):
+                    #                logger.debug('updateBadFSNs: dist {}'.format(d))
+                    with self.getHDF5Group(sn, d) as grp:
+                        if 'curves' not in grp:
+                            continue
+                        #                    logger.debug('Reading curves...')
+                        newbadfsns.extend(
+                            [dset.attrs['fsn'] for dset in grp['curves'].values() if dset.attrs['correlmat_bad']])
+            #                    logger.debug('...Read curves.')
+        except OSError:
+            # happens when the .h5 file is not present
+            pass
         if self.autoMarkBadExposuresCheckBox.isChecked():
             try:
                 self.headerModel.update_badfsns(newbadfsns)

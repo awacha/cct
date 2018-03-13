@@ -18,11 +18,10 @@ class HeaderModel(QtCore.QAbstractItemModel):
 
     fsnloaded = QtCore.pyqtSignal(int, int, int)
 
-    def __init__(self, parent, rootdir, prefix, fsnfirst, fsnlast, visiblecolumns, badfsnsfile):
+    def __init__(self, parent, rootdir, prefix, fsnranges, visiblecolumns, badfsnsfile):
         super().__init__(None)
         self.prefix = prefix
-        self.fsnfirst = fsnfirst
-        self.fsnlast = fsnlast
+        self.fsnranges = fsnranges
         self.badfsnsfile = badfsnsfile
         self._data = []  # fsn, title, distance, isbad, date, exptime, (visible parameters)
         # the columns you want to display
@@ -78,9 +77,22 @@ class HeaderModel(QtCore.QAbstractItemModel):
         bfs = self.get_badfsns()
         return [f in bfs for f in fsn]
 
+    def fsn_is_in_range(self, fsn):
+        for left, right in self.fsnranges:
+            if fsn>=left and fsn<=right:
+                return True
+        return False
+
+    def goodfsns(self):
+        lis = []
+        badfsns = self.get_badfsns()
+        for left, right in self.fsnranges:
+            lis.extend([x for x in range(left, right+1) if x not in badfsns])
+        return lis
+
     def write_badfsns(self, badfsns: List[int]):
         badfsns_to_save = [b for b in self.get_badfsns() if
-                           b < self.fsnfirst or b > self.fsnlast]  # do not touch fsns outside our range
+                           self.fsn_is_in_range(b)]  # do not touch fsns outside our range
         badfsns_to_save.extend(badfsns)
         folder, file = os.path.split(self.badfsnsfile)
         os.makedirs(folder, exist_ok=True)
@@ -91,7 +103,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
         self.reloaderworker = threading.Thread(None, loadHeaderDataWorker, args=(
             self.queue, self.config()['path']['prefixes']['crd'],
             self.config()['path']['fsndigits'],
-            self.eval2d_pathes, self.fsnfirst, self.fsnlast, self.visiblecolumns))
+            self.eval2d_pathes, self.fsnranges, self.visiblecolumns))
         self._fsns_loaded = 0
         self.reloaderworker.start()
         self._idlefcn = IdleFunction(self.checkReloaderWorker, 100)
@@ -104,7 +116,8 @@ class HeaderModel(QtCore.QAbstractItemModel):
                 break
             if isinstance(fsn, int):
                 self._fsns_loaded += 1
-                self.fsnloaded.emit(self.fsnlast - self.fsnfirst + 1, self._fsns_loaded, fsn)
+                numfsns=sum([right-left+1 for right, left in self.fsnranges])
+                self.fsnloaded.emit(numfsns, self._fsns_loaded, fsn)
             else:
                 self.beginResetModel()
                 fsns, titles, distances, exptimes, dates, visiblecolumndata = fsn
@@ -227,14 +240,17 @@ def load_header(fsn, prefix, fsndigits, path):
     raise FileNotFoundError(fsn)
 
 
-def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnfirst, fsnlast, columns):
+def loadHeaderDataWorker(queue, prefix, fsndigits, path, fsnranges, columns):
     _headers = []
     _fsns = []
     _titles = []
     _distances = []
     _exptimes = []
     _dates = []
-    for fsn in range(fsnfirst, fsnlast + 1):
+    fsns = []
+    for left, right in fsnranges:
+        fsns.extend(list(range(left, right+1)))
+    for fsn in fsns:
         try:
             h = load_header(fsn, prefix, fsndigits, path)
             hd = []
