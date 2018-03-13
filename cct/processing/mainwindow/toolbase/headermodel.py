@@ -81,7 +81,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
     def write_badfsns(self, badfsns: List[int]):
         badfsns_to_save = [b for b in self.get_badfsns() if
                            b < self.fsnfirst or b > self.fsnlast]  # do not touch fsns outside our range
-        badfsns_to_save.append(badfsns)
+        badfsns_to_save.extend(badfsns)
         folder, file = os.path.split(self.badfsnsfile)
         os.makedirs(folder, exist_ok=True)
         np.savetxt(self.badfsnsfile, badfsns_to_save, fmt='%.0f')
@@ -166,7 +166,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
         if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
             return (['Bad?'] + self.visiblecolumns)[column].capitalize()
         return None
-
+# fsn, title, distance, isbad, date, exptime, (visible parameters)
     def update_badfsns(self, badfsns):
         for i, d in enumerate(self._data):
             if d[0] in badfsns:
@@ -183,7 +183,6 @@ class HeaderModel(QtCore.QAbstractItemModel):
         gc.collect()
 
     def sort(self, column: int, order: QtCore.Qt.SortOrder = ...):
-        print('Sorting model. Column: {}'.format(column))
         sorteddata = sorted(self._data, key=lambda x: x[-1][column - 1], reverse=order == QtCore.Qt.DescendingOrder)
         self.beginResetModel()
         self._data = sorteddata
