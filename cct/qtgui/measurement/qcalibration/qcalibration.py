@@ -22,7 +22,7 @@ from ....core.services.samples import SampleStore
 from ....core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):

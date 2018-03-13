@@ -8,7 +8,7 @@ import logging
 from .device import DeviceBackend_TCP, DeviceError, UnknownVariable, Device, UnknownCommand, ReadOnlyVariable
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 # noinspection PyPep8Naming

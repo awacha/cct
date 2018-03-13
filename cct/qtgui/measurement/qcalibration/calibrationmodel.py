@@ -10,7 +10,7 @@ from sastool.misc.errorvalue import ErrorValue
 from sastool.utils2d.centering import findbeam_radialpeak
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class CalibrationModel(QtCore.QAbstractItemModel):

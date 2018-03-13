@@ -15,7 +15,7 @@ from ....core.services.samples import SampleStore
 from ....core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -60,7 +60,7 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._samplestoreconnections = [
             self.credo.services['samplestore'].connect('list-changed', self.onSampleListChanged)]
         self._filesequenceconnections = [
-            self.credo.services['filesequence'].connect('lastscan-changed', self.onLastScanChanged)]
+            self.credo.services['filesequence'].connect('nextscan-changed', self.onNextScanChanged)]
         self.onSampleListChanged(self.credo.services['samplestore'])
         self.updateCenterPushButton.setEnabled(False)
         self.updateThicknessPushButton.setEnabled(False)
@@ -90,9 +90,13 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.currentPositionLabel.setText('{:.4f} \xb1 {:.4f}'.format(pos.val, pos.err))
         self.currentThicknessLabel.setText('{:.4f} \xb1 {:.4f} cm'.format(sample.thickness.val, sample.thickness.err))
 
-    def onLastScanChanged(self, fs: FileSequence, fsn: int):
+    def onNextScanChanged(self, fs: FileSequence, fsn: int):
+        logger.debug('onNextScanChanged: fsn={}, scanfile: {}, this scanfile: {}'.format(fsn, fs.get_scanfile(), self.scanFileNameLineEdit.text()))
         if fs.get_scanfile() == self.scanFileNameLineEdit.text():
-            self.scanIndexSpinBox.setMaximum(fsn)
+            logger.debug('Updating scanIndexSpinBox maximum to {}'.format(fsn-1))
+            self.scanIndexSpinBox.setMaximum(fsn-1)
+        else:
+            logger.debug('Not updating scanIndexSpinBox')
         return False
 
     def onSampleListChanged(self, ss: SampleStore):

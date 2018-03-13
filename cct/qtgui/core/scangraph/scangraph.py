@@ -19,7 +19,7 @@ from ....core.devices import Motor
 from ....core.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
