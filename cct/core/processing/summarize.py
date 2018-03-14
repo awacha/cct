@@ -241,7 +241,7 @@ class Summarizer(object):
                          'wavelength', 'fsn', 'exposuretime', 'transmission', 'thickness', 'maskname',
                          'absintfactor', 'flux', 'date', 'distancedecrease', 'fsn_absintref',
                          'fsn_emptybeam', 'project', 'samplex', 'sampley', 'temperature', 'title', 'username',
-                         'vacuum']:
+                         'vacuum', 'startdate', 'enddate']:
                 try:
                     a = getattr(h, attr)
                 except (AttributeError, KeyError):

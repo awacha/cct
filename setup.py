@@ -3,7 +3,7 @@ import os
 import sys
 
 from Cython.Build import cythonize
-from numpy.lib import get_include
+from numpy import get_include
 from setuptools import setup, find_packages, Extension
 
 try:
@@ -71,7 +71,9 @@ setup(name='cct', author='Andras Wacha',
       entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run',
                                     'cpt = cct.processing.__main__:run',
                                     'cctmask = cct.qtgui.tools.maskeditor2:run',
-                                    'cctanisotropy = cct.qtgui.tools.anisotropy:run'],
+                                    'cctanisotropy = cct.qtgui.tools.anisotropy:run',
+                                    'cctupdatedb = cct.dbutils.updatedb:run'],
+
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",
       license="",
