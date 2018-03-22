@@ -14,7 +14,7 @@ def read_headers(path:str, config, no_load_fsns=None):
         no_load_fsns=[]
     no_load_fsns=list(no_load_fsns)
     for subdir, subdirs, files in os.walk(path):
-        for f in files:
+        for f in sorted(files):
             if not f.startswith(config['path']['prefixes']['crd']):
                 continue
             basename, extension = f.split('.',1)
@@ -34,6 +34,8 @@ def read_headers(path:str, config, no_load_fsns=None):
                     yield credo_saxsctrl.Header.new_from_file(os.path.join(subdir, f))
             elif f.endswith('.pickle') or f.endswith('.pickle.gz'):
                 yield credo_cct.Header.new_from_file(os.path.join(subdir, f))
+            else:
+                continue
             no_load_fsns.append(fsn)
     return
 
@@ -105,7 +107,7 @@ def run():
                 no_load_fsns=fsns
             for h in read_headers(rootpath, config, no_load_fsns):
                 if verbose:
-                    print('Loaded header for FSN #{}'.format(h.fsn))
+                    print('{},'.format(h.fsn), end=' ', flush=True)
                 def safe_getattr(h:Header, attr:str, type_):
                     try:
                         val = getattr(h, attr)
@@ -120,8 +122,6 @@ def run():
                 paramvalues = [safe_getattr(h, name, type_) for name, type_ in parameters]
                 if update_if_exists and paramvalues[0] in fsns:
                     c.execute('DELETE FROM {} WHERE fsn=?;'.format(tablename), (paramvalues[0],))
-                else:
-                    continue
                 c.execute('INSERT INTO {} VALUES ({});'.format(tablename, ', '.join('?'*len(parameters))), tuple(paramvalues))
             db.commit()
 
