@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 
 class CalibrationModel(QtCore.QAbstractItemModel):
-    # columns: fsn, distance, beam center X, beam center Y
+    # columns: fsn, distance, beam center X, beam center Y, exposure, list of peaks
 
     def __init__(self, pixelsize: ErrorValue, wavelength: ErrorValue, peaksidepoints=10):
         super().__init__(None)
@@ -82,7 +82,13 @@ class CalibrationModel(QtCore.QAbstractItemModel):
         return np.array([d[0] for d in self._data])
 
     def peaks(self, setindex: int) -> np.ndarray:
-        return np.array([d[6][setindex].val for d in self._data])
+        lis = []
+        for d in self._data:
+            try:
+                lis.append(d[6][setindex].val)
+            except IndexError:
+                lis.append(np.nan)
+        return np.array(lis)
 
     def shifts(self) -> np.ndarray:
         return np.array([d[3].val for d in self._data])
@@ -91,7 +97,13 @@ class CalibrationModel(QtCore.QAbstractItemModel):
         return np.array([d[3].err for d in self._data])
 
     def dpeaks(self, setindex: int) -> np.ndarray:
-        return np.array([d[6][setindex].err for d in self._data])
+        lis = []
+        for d in self._data:
+            try:
+                lis.append(d[6][setindex].err)
+            except IndexError:
+                lis.append(np.nan)
+        return np.array(lis)
 
     def beamposxs(self) -> np.ndarray:
         return np.array([d[5].header.beamcenterx.val for d in self._data])

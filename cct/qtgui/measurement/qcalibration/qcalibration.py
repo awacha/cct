@@ -231,7 +231,10 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.peaksTreeView.setModel(self.peaksModel)
         self.peaksModel.calibrationChanged.connect(self.onPeakModelCalibrationChanged)
         for pi in range(self.exposureModel.peakClassesCount()):
-            q,dist0=self.exposureModel.calibrate(pi)
+            try:
+                q,dist0=self.exposureModel.calibrate(pi)
+            except ValueError:
+                continue
             self.peaksModel.addPeak(q, dist0)
         for c in range(self.peaksModel.columnCount()):
             self.peaksTreeView.resizeColumnToContents(c)
