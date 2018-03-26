@@ -9,6 +9,8 @@ import datetime
 import argparse
 import pkg_resources
 import numpy as np
+from .sequences import findsequences
+
 try:
     import pymysql.cursors
     MYSQL_SUPPORTED=True
@@ -185,16 +187,36 @@ def run():
                 paramvalues = [safe_getattr(h, name, type_) for name, type_ in parameters]
 
                 if update_if_exists and paramvalues[0] in fsns:
-                    if MYSQL_SUPPORTED:
-                        c.execute('DELETE FROM {} WHERE fsn=%s;'.format(tablename), (paramvalues[0],))
-                    else:
-                        c.execute('DELETE FROM {} WHERE fsn=?;'.format(tablename), (paramvalues[0],))
+                    c.execute('DELETE FROM {} WHERE fsn={};'.format(tablename,int(paramvalues[0])))
                 if MYSQL_SUPPORTED:
                     paramvalues = [set_none_null(p) for p in paramvalues]
                     c.execute(insertion_query % tuple(paramvalues))
                 else:
                     c.execute(insertion_query, tuple(paramvalues))
             conn.commit()
+        # find the sequences
+        c.execute('CREATE TABLE IF NOT EXISTS sequences ('
+                  'id INT PRIMARY KEY NOT NULL,'
+                  'starttime DATE,'
+                  'endtime DATE,'
+                  'exposurecount INT,'
+                  'firstfsn INT,'
+                  'lastfsn INT,'
+                  'exptime FLOAT,'
+                  'user TEXT,'
+                  'project TEXT);')
+        for i, seq in enumerate(findsequences(c)):
+            c.execute('DELETE FROM sequences WHERE id ={:d};'.format(i))
+            if seq.user is None:
+                seq.user = 'NULL'
+            else:
+                seq.user= '"'+seq.user+'"'
+            if seq.projectid is None:
+                seq.projectid = 'NULL'
+            else:
+                seq.projectid = '"'+seq.projectid+'"'
+            query = 'INSERT INTO sequences (`id`, `starttime`, `endtime`, `exposurecount`, `firstfsn`, `lastfsn`, `exptime`, `user`, `project`) VALUES ({0:d}, "{1.start_time}", "{1.end_time}", {1.n_exposures:d}, {1.firstfsn:d}, {1.lastfsn:d}, {1.exptime:f}, {1.user}, {1.projectid});'.format(i, seq)
+            c.execute(query)
     finally:
         conn.commit()
         conn.close()
