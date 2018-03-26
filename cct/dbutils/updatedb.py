@@ -8,6 +8,12 @@ import pickle
 import datetime
 import argparse
 import pkg_resources
+import numpy as np
+try:
+    import pymysql.cursors
+    MYSQL_SUPPORTED=True
+except ImportError:
+    MYSQL_SUPPORTED=False
 
 def read_headers(path:str, config, no_load_fsns=None):
     if no_load_fsns is None:
@@ -31,27 +37,44 @@ def read_headers(path:str, config, no_load_fsns=None):
                         continue
                 else:
                     # no pickle file, load the header
-                    yield credo_saxsctrl.Header.new_from_file(os.path.join(subdir, f))
+                    try:
+                        yield credo_saxsctrl.Header.new_from_file(os.path.join(subdir, f))
+                    except:
+                        print('ERROR WHILE READING HEADER {}.'.format(os.path.join(subdir,f)))
+                        raise
             elif f.endswith('.pickle') or f.endswith('.pickle.gz'):
-                yield credo_cct.Header.new_from_file(os.path.join(subdir, f))
+                try:
+                    yield credo_cct.Header.new_from_file(os.path.join(subdir, f))
+                except:
+                    print('ERROR WHILE READING HEADER {}.'.format(os.path.join(subdir,f)))
+                    raise
             else:
                 continue
             no_load_fsns.append(fsn)
     return
 
 def run():
+    global MYSQL_SUPPORTED
     parser = argparse.ArgumentParser(description="Update the exposure database")
-    parser.add_argument('-o', '--output', dest='outputfile', default='exposurelist.db', help='Output file (a sqlite3 database)')
-    parser.add_argument('-u', '--update-existing', dest='update_if_exists', action='store_const', const=True, default=False,
+    parser.add_argument('-o', '--output', dest='outputfile', default=None, help='Output database name')
+    parser.add_argument('-f', '--force', dest='update_if_exists', action='store_const', const=True, default=False,
                         help='Update already existing lines in the database')
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_const', const=True, default=False,
                         help='Verbose operation')
+    parser.add_argument('-d', '--debug', dest='debug', action='store_const', const=True, default=False,
+                        help='Debug mode')
+    if MYSQL_SUPPORTED:
+        parser.add_argument('-s', '--server', dest='server', default=None, help='MySQL/MariaDB server host name')
+        parser.add_argument('-u', '--user', dest='username', default=None, help='MySQL/MariaDB user name')
+        parser.add_argument('-p', '--password',dest='password', default=None, help='MySQL/MariaDB password')
     parser.add_argument('--version', action='version', version='%(prog)s {}'.format(pkg_resources.get_distribution('cct').version))
     args=parser.parse_args()
 
     db_outputfile = args.outputfile
     update_if_exists = args.update_if_exists
     verbose = args.verbose
+    debug = args.debug
+
 
     try:
         with open('config/cct.pickle', 'rb') as f:
@@ -77,10 +100,25 @@ def run():
                   ('title', str), ('transmission', float), ('username', str),
                   ('vacuum', float), ('wavelength', float), ('startdate', datetime.datetime), ('enddate', datetime.datetime)]
 
-
-    with sqlite3.connect(db_outputfile) as db:
-        c=db.cursor()
-        tables=[x[0] for x in c.execute('SELECT name FROM sqlite_master WHERE type="table";').fetchall()]
+    try:
+        if args.server is not None:
+            connector = pymysql.connect
+            connector_kwargs = {'host':args.server, 'user':args.username, 'password':args.password, 'db':args.outputfile,
+                                'charset':'utf8mb4', 'cursorclass':pymysql.cursors.Cursor}
+        else:
+            raise AttributeError
+    except AttributeError:
+        connector = sqlite3.connect
+        connector_kwargs={'database':args.outputfile}
+        MYSQL_SUPPORTED=False
+    conn = connector(**connector_kwargs)
+    try:
+        c = conn.cursor()
+        if not MYSQL_SUPPORTED:
+            c.execute('SELECT name FROM sqlite_master WHERE type="table";')
+        else:
+            c.execute('SHOW TABLES;')
+        tables = [x[0] for x in c.fetchall()]
         if 'raw' not in tables:
             if verbose:
                 print('Creating table "raw"')
@@ -98,9 +136,17 @@ def run():
 
         for tablename, rootpath in [('raw', config['path']['directories']['param']),
                                     ('processed', config['path']['directories']['eval2d'])]:
+            if not MYSQL_SUPPORTED:
+                insertion_query='INSERT INTO {} VALUES ({});'.format(tablename, ', '.join('?'*len(parameters)))
+            else:
+                insertion_query='INSERT INTO `{}` ({}) VALUES ({});'.format(
+                    tablename,
+                    ', '.join(["`"+p[0]+"`" for p in parameters]),
+                    ', '.join(['%s']*len(parameters)))
             if verbose:
                 print('Filling table "{}"'.format(tablename))
-            fsns = [x[0] for x in c.execute('SELECT fsn FROM {};'.format(tablename)).fetchall()]
+            c.execute('SELECT fsn FROM {};'.format(tablename))
+            fsns = [x[0] for x in c.fetchall()]
             if update_if_exists:
                 no_load_fsns=[]
             else:
@@ -111,18 +157,46 @@ def run():
                 def safe_getattr(h:Header, attr:str, type_):
                     try:
                         val = getattr(h, attr)
-                    except (KeyError, TypeError):
+                    except KeyError:
+                        return None
+                    except (TypeError, ValueError) as exc:
+                        if type_ is float:
+                            return np.nan
                         return None
                     if isinstance(val, type_):
                         return val
                     try:
                         return type_(val)
-                    except TypeError:
+                    except (TypeError, ValueError) as exc:
+                        if type_ is float:
+                            return np.nan
                         return None
+                def set_none_null(value):
+                    if value is None:
+                        return 'NULL'
+                    elif isinstance(value, str):
+                        return '"'+value+'"'
+                    elif isinstance(value, datetime.datetime):
+                        return '"'+str(value)+'"'
+                    elif np.isnan(value):
+                        return 'NULL'
+                    else:
+                        return str(value)
                 paramvalues = [safe_getattr(h, name, type_) for name, type_ in parameters]
+
                 if update_if_exists and paramvalues[0] in fsns:
-                    c.execute('DELETE FROM {} WHERE fsn=?;'.format(tablename), (paramvalues[0],))
-                c.execute('INSERT INTO {} VALUES ({});'.format(tablename, ', '.join('?'*len(parameters))), tuple(paramvalues))
-            db.commit()
+                    if MYSQL_SUPPORTED:
+                        c.execute('DELETE FROM {} WHERE fsn=%s;'.format(tablename), (paramvalues[0],))
+                    else:
+                        c.execute('DELETE FROM {} WHERE fsn=?;'.format(tablename), (paramvalues[0],))
+                if MYSQL_SUPPORTED:
+                    paramvalues = [set_none_null(p) for p in paramvalues]
+                    c.execute(insertion_query % tuple(paramvalues))
+                else:
+                    c.execute(insertion_query, tuple(paramvalues))
+            conn.commit()
+    finally:
+        conn.commit()
+        conn.close()
 
 
