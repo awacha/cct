@@ -105,13 +105,19 @@ class ToolBase(QWidget):
         return True
 
     def h5GetSamples(self) -> List[str]:
-        with h5py.File(self.h5FileName, 'r') as f:
-            samples = list(f['Samples'].keys())
+        try:
+            with h5py.File(self.h5FileName, 'r') as f:
+                samples = list(f['Samples'].keys())
+        except OSError:
+            return []
         return list(sorted(samples))
 
     def h5GetDistances(self, samplename: str) -> List[str]:
-        with h5py.File(self.h5FileName, 'r') as f:
-            dists = list(f['Samples'][samplename].keys())
+        try:
+            with h5py.File(self.h5FileName, 'r') as f:
+                dists = list(f['Samples'][samplename].keys())
+        except OSError:
+            return []
         return list(sorted(dists))
 
     def getHDF5Group(self, sample: str, distance: Union[str, float]):
