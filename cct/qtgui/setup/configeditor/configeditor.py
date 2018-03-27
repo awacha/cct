@@ -7,7 +7,7 @@ from .configstore import ConfigStore
 from ...core.mixins import ToolWindow
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ConfigEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -93,7 +93,13 @@ class ConfigEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.model.setData(selectedindex, self.editorValue(), QtCore.Qt.EditRole)
         self.applyButton.setEnabled(False)
         self.resetButton.setEnabled(False)
-        self.treeView.selectionModel().select(selectedindex, QtCore.QItemSelectionModel.ClearAndSelect)
+        indices = [self.model.getIndexForPath(path)]
+        while indices[-1].isValid():
+            indices.append(indices[-1].parent())
+        for index in reversed(indices):
+            self.treeView.expand(index)
+        del indices
+        self.treeView.selectionModel().select(self.model.getIndexForPath(path), QtCore.QItemSelectionModel.ClearAndSelect)
 
     def onReset(self):
         return self.onSelectionChanged()

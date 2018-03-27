@@ -1,22 +1,26 @@
 import typing
+from typing import List, Any, Union
+import logging
 
 from PyQt5 import QtCore
 
 from ....core.instrument.instrument import Instrument
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class ConfigStore(QtCore.QAbstractItemModel):
     def __init__(self, credo: Instrument):
         super().__init__(None)
         self.credo = credo
-        self._paths = []
-        self._indices = {}
+        self._paths = {}
         self._credo_connection = []
         self.destroyed.connect(self.onDestroyed)
         self.credo.connect('config-changed', self.onConfigChanged)
 
     def onConfigChanged(self, credo: Instrument):
         self.beginResetModel()
+        self._paths = {}
         self.endResetModel()
 
     def onDestroyed(self):
@@ -29,15 +33,11 @@ class ConfigStore(QtCore.QAbstractItemModel):
     def rowCount(self, parent: QtCore.QModelIndex = None):
         if not isinstance(parent, QtCore.QModelIndex):
             parent = QtCore.QModelIndex()
-        if not parent.isValid():
-            # we are the root index
-            return len(self.credo.config)
+        obj = self._get_object(parent)
+        if isinstance(obj, dict):
+            return len(obj)
         else:
-            obj = self._get_object(parent)
-            if isinstance(obj, dict):
-                return len(obj)
-            else:
-                return 0
+            return 0
 
     def columnCount(self, parent: QtCore.QModelIndex = None):
         return 1
@@ -62,59 +62,51 @@ class ConfigStore(QtCore.QAbstractItemModel):
         else:
             return index.internalPointer().split(':')
 
-    def _get_object(self, index: QtCore.QModelIndex):
-        if not index.isValid():
-            return self.credo.config
+    def _get_object(self, pathorindex: Union[List[str],QtCore.QModelIndex]):
         dic = self.credo.config
-        path = index.internalPointer().split(':')
-        for p in path:
+        if isinstance(pathorindex, QtCore.QModelIndex):
+            if not pathorindex.isValid():
+                pathorindex = []
+            else:
+                pathorindex = self._get_path(pathorindex)
+        elif pathorindex is None:
+            pathorindex = []
+        for p in pathorindex:
             dic = dic[p]
         return dic
 
     def parent(self, child: QtCore.QModelIndex):
-        if not child.isValid():
+        path = self._get_path(child)
+        if len(path)<=1:
+            # child is either on the first level -> parent should be an invalid index, or is an invalid index itself
             return QtCore.QModelIndex()
-        path = child.internalPointer().split(':')
-        if not path:
-            return QtCore.QModelIndex()
-        elif not path[:-1]:
-            return QtCore.QModelIndex()
-        else:
-            dic = self.credo.config
-            for p in path[:-1]:
-                dic = dic[p]
-            row = sorted(list(dic.keys())).index(path[-1])
-            return self.createIndex(row, 0, path[:-1])
+        parentofparentobj = self._get_object(path[:-1])
+        rowindexofparent = sorted(list(parentofparentobj.keys())).index(path[-1])
+        return self.createIndex(rowindexofparent, 0, path[:-1])
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = None):
         if not isinstance(parent, QtCore.QModelIndex):
+            # a safety measure: None parent means an invalid parent
             parent = QtCore.QModelIndex()
         if not parent.isValid():
+            # if the parent is invalid: we are on the root level
             path = [sorted(list(self.credo.config.keys()))[row]]
             return self.createIndex(row, column, path)
-        else:
-            parentpath = parent.internalPointer().split(':')
-            dic = self.credo.config
-            for p in parentpath:
-                dic = dic[p]
-            path = parentpath + [sorted(list(dic.keys()))[row]]
-            return self.createIndex(row, column, path)
+        parentpath = self._get_path(parent)
+        parentobject = self._get_object(parentpath)
+        path = parentpath + [sorted(list(parentobject.keys()))[row]]
+        return self.createIndex(row, column, path)
 
     def createIndex(self, row: int, column: int, object: typing.Any = ...):
         path = ':'.join([s for s in object])
-        if path in self._indices:
-            return self._indices[path]
-        else:
-            self._indices[path] = super().createIndex(row, column, path)
-            return self._indices[path]
-
+        if path not in self._paths:
+            self._paths[path] = super().createIndex(row, column, path)
+        return self._paths[path]
     def setData(self, index: QtCore.QModelIndex, value: typing.Any, role: int = ...):
         if role in [QtCore.Qt.EditRole, QtCore.Qt.DisplayRole]:
-            dic = self.credo.config
             path = self._get_path(index)
-            for p in path[:-1]:
-                dic = dic[p]
-            dic[path[-1]] = value
+            parentobj = self._get_object(self.parent(index))
+            parentobj[path[-1]] = value
             self.credo.save_state()
             return True
         else:
@@ -140,7 +132,7 @@ class ConfigStore(QtCore.QAbstractItemModel):
             # the root index
             return QtCore.QModelIndex()
         else:
-            # first level entry
-            obj = self._get_object(self.getIndexForPath(path[:-1]))
-            row = sorted(list(obj.keys())).index(path[0])
-            return self.index(row, 0, QtCore.QModelIndex())
+            # we must have a parent object
+            parentobj = self._get_object(path[:-1])
+            row = int(sorted(list(parentobj.keys())).index(path[-1]))
+            return self.index(row, 0, self.getIndexForPath(path[:-1]))
