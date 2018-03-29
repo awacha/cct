@@ -22,7 +22,7 @@ from ....core.services.samples import SampleStore
 from ....core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -143,6 +143,9 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
 
     def onRefineBeamCenter(self):
         self.exposureModel.refineBeamCenter()
+        self.drawBeamPos()
+        self.drawPeaks()
+        self.drawCurves()
 
     def loadExposure(self, fsn: int, totalshift: ErrorValue):
         fs = self.credo.services['filesequence']
@@ -153,21 +156,45 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
             logger.debug('Skipped loading of unavailable exposure: prefix {}, fsn {}.'.format(
                 self.credo.config['path']['prefixes']['tst'], fsn
             ))
-            return
+            return None, False
         if self.overrideMaskCheckBox.isChecked():
             ex.mask = fs.get_mask(self.maskFileLineEdit.text())
-        logger.debug('Adding exposure {}'.format(fsn))
-        self.exposureModel.addExposure(fsn, ex, totalshift, True, self.peakPointsBeforeAndAfterSpinBox.value())
-        logger.debug('Added exposure {}'.format(fsn))
+        if (not self.filterSampleComboBox.count()) or self.filterSampleComboBox.currentText()==ex.header.title:
+
+            logger.debug('Adding exposure {}'.format(fsn))
+            self.exposureModel.addExposure(fsn, ex, totalshift, True, self.peakPointsBeforeAndAfterSpinBox.value(),
+                                           self.toleranceSpinBox.value(), self.peakFindThresholdDoubleSpinBox.value())
+            logger.debug('Added exposure {}'.format(fsn))
+            return ex, True
+        return ex, False
 
     def onReloadExposures(self):
         shift = ErrorValue(self.shiftValueDoubleSpinBox.value(), self.shiftErrorDoubleSpinBox.value())
         self.exposureModel.clear()
-        for i, f in enumerate(range(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value() + 1)):
-            self.loadExposure(f, i * shift)
+        sampletitles = set()
+        i=0
+        for f in range(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value() + 1):
+            ex, added = self.loadExposure(f, i * shift)
+            if ex is not None:
+                # a file has been loaded
+                sampletitles.add(ex.header.title)
+                if not self.filterSampleComboBox.count():
+                    # if the sample selector combo box is empty, add an item.
+                    self.filterSampleComboBox.addItem(ex.header.title)
+                    self.filterSampleComboBox.setCurrentIndex(0)
+                    if not added:
+                        ex, added = self.loadExposure(f, i*shift)
+            if added:
+                i+=1
         self.drawPeaks()
         self.drawCurves()
         self.drawBeamPos()
+        prevtext= self.filterSampleComboBox.currentText()
+        self.filterSampleComboBox.clear()
+        self.filterSampleComboBox.addItems(sorted(sampletitles))
+        self.filterSampleComboBox.setCurrentIndex(self.filterSampleComboBox.findText(prevtext))
+        if self.filterSampleComboBox.currentIndex()<0:
+            self.filterSampleComboBox.setCurrentIndex(0)
 
     def drawPeaks(self):
         self.figureCalibration.clear()
@@ -210,9 +237,12 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.canvasCurves.draw()
 
     def onUpdateResults(self):
-        alpha = self.exposureModel.alpha(None)
-        alphax = self.exposureModel.alphax()
-        alphay = self.exposureModel.alphay()
+        try:
+            alpha = self.exposureModel.alpha(None)
+            alphax = self.exposureModel.alphax()
+            alphay = self.exposureModel.alphay()
+        except ValueError:
+            return
         self.alphaLabel.setText('{0.val:.2f} \xb1 {0.err:.2f} mrad ({1.val:.2f} \xb1 {1.err:.2f}°)'.format(
             1000 * alpha, alpha * 180 / np.pi))
         self.alphaXLabel.setText('{0.val:.2f} \xb1 {0.err:.2f} mrad ({1.val:.2f} \xb1 {1.err:.2f}°)'.format(

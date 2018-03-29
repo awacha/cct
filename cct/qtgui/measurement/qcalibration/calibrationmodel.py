@@ -5,12 +5,12 @@ import numpy as np
 import scipy.odr
 from PyQt5 import QtCore
 from sastool.classes2 import Exposure, Curve
-from sastool.misc.basicfit import findpeak_multi, findpeak_single
+from sastool.misc.basicfit import findpeak_multi, findpeak_asymmetric
 from sastool.misc.errorvalue import ErrorValue
 from sastool.utils2d.centering import findbeam_radialpeak
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class CalibrationModel(QtCore.QAbstractItemModel):
@@ -22,6 +22,9 @@ class CalibrationModel(QtCore.QAbstractItemModel):
         self._pixelsize = pixelsize
         self._wavelength = wavelength
         self._data = []
+        self._findpeaks_npoints = 4
+        self._findpeaks_tolerance = 0
+        self._findpeaks_threshold = 0
 
     def data(self, index: QtCore.QModelIndex, role: int = ...):
         if role == QtCore.Qt.DisplayRole:
@@ -59,7 +62,7 @@ class CalibrationModel(QtCore.QAbstractItemModel):
         return 4
 
     def addExposure(self, fsn: int, exposure: Exposure, shift: ErrorValue, refinebeampos: bool = True,
-                    findpeak_npoints: int = 3):
+                    findpeak_npoints: int = 3, findpeak_tolerance: int=0, findpeak_threshold:float = 0.0):
         if refinebeampos:
             rpeak = self._getfirstpeak(exposure.radial_average(pixel=True))
             newy, newx = findbeam_radialpeak(
@@ -72,11 +75,16 @@ class CalibrationModel(QtCore.QAbstractItemModel):
             exposure.header.beamcenterx = ErrorValue(newx, 0)
             exposure.header.beamcentery = ErrorValue(newy, 0)
         self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount() + 1)
+        radavg = exposure.radial_average(pixel=True)
+        radavg /=np.nanmax(radavg.Intensity)
         self._data.append(
-            [fsn, exposure.header.beamcenterx, exposure.header.beamcentery, shift, exposure.radial_average(pixel=True),
+            [fsn, exposure.header.beamcenterx, exposure.header.beamcentery, shift, radavg,
              exposure, []])
         self.endInsertRows()
-        self.findPeaks(len(self._data) - 1, 0, findpeak_npoints)
+        self._findpeaks_npoints = findpeak_npoints
+        self._findpeaks_tolerance = findpeak_tolerance
+        self._findpeaks_threshold = findpeak_threshold
+        self.findPeaks(len(self._data) - 1, None, findpeak_npoints, findpeak_tolerance, findpeak_threshold)
 
     def fsns(self) -> np.ndarray:
         return np.array([d[0] for d in self._data])
@@ -145,24 +153,46 @@ class CalibrationModel(QtCore.QAbstractItemModel):
                                            peak + self._peaksidepoints)
             d[5].header.beamcenterx = ErrorValue(bcx, 0)
             d[5].header.beamcentery = ErrorValue(bcy, 0)
-            d[1] = bcx
-            d[2] = bcy
-            d[4] = d[5].radial_average(pixel=True)
+            d[1] = d[5].header.beamcenterx
+            d[2] = d[5].header.beamcentery
+            radavg = d[5].radial_average(pixel=True)
+            d[4] = radavg/np.nanmax(radavg.Intensity)
             self.dataChanged.emit(self.index(i, 1), self.index(i, 2), [QtCore.Qt.DisplayRole])
+            self.findPeaks(i, None, self._findpeaks_npoints)
 
     def removeRow(self, row: int, parent: QtCore.QModelIndex = ...):
         self.beginRemoveRows(QtCore.QModelIndex(), row, row)
         del self._data[row]
         self.endRemoveRows()
 
-    def findPeaks(self, row: int, setindex: typing.Optional[int] = None, Npoints: int = 4):
-        curve = self._data[row][4]
+    def findPeaks(self, row: int, setindex: typing.Optional[int] = None, Npoints: int = 4, Ntol: int=0, threshold: float=0.0):
+        curve = self._data[row][4].sanitize()
+        logger.debug('Finding peaks for row {}'.format(row))
         assert isinstance(curve, Curve)
+#        positions = [curve.q[x] for x in find_peaks_cwt(curve.Intensity, [Npoints]) if x>Npoints and x<len(curve)-Npoints]
+#        logger.debug('Found peaks using scipy.signal.find_peaks_cwt: {}'.format(positions))
+#        foundpeaks = []
+#        for posguess in positions:
+#            logger.debug('Refining peak at {}.'.format(posguess))
+#            c = curve.sanitize().trim(posguess - 3, posguess + 3)
+#            try:
+#                foundpeaks.append(findpeak_asymmetric(c.q, c.Intensity, c.Error)[0])
+#            except ValueError as ve:
+#                logger.error(ve)
+#                foundpeaks.append(ErrorValue(np.nan, np.nan))
+#        logger.debug('Refined peaks using findpeak_asymmetric: {}'.format(foundpeaks))
+#        self._data[row][6]=foundpeaks
         if row < 2:
-            self._data[row][6] = findpeak_multi(curve.q, curve.Intensity, curve.Error, Npoints, 0)[0]
+            foundpeaks = findpeak_multi(curve.q, curve.Intensity, curve.Error, Npoints, Ntol)[0]
+            for p in foundpeaks:
+                logger.debug('Peak {}: I {}.'.format(p,np.interp(float(p), curve.q, curve.Intensity)))
+            foundpeaks = [p for p in foundpeaks if np.interp(float(p), curve.q, curve.Intensity) > threshold]
+            logger.debug('Found {} peaks using the multipeak fitting.'.format(len(self._data[row][6])))
         else:
             foundpeaks = []
+            logger.debug('Looking for {} peaks.'.format(len(self._data[0][6])))
             for peakindex in range(len(self._data[0][6])):
+                logger.debug('Looking for peak #{}.'.format(peakindex))
                 shifts = []
                 peaks = []
                 for rowindex in range(row):
@@ -179,11 +209,13 @@ class CalibrationModel(QtCore.QAbstractItemModel):
                 results = np.polyfit(shifts, peaks, 1)
                 posguess = self._data[row][3].val * results[0] + results[1]
                 if posguess > curve.q.max():
+                    logger.debug('Guessed position is outside the q range.')
                     foundpeaks.append(ErrorValue(np.nan, np.nan))
                 else:
-                    c = curve.trim(posguess - 10, posguess + 10)
-                    foundpeaks.append(findpeak_single(c.q, c.Intensity, c.Error, posguess, signs=(1,))[0])
-            self._data[row][6] = foundpeaks
+                    c = curve.trim(posguess - 3, posguess + 3)
+                    foundpeaks.append(findpeak_asymmetric(c.q, c.Intensity, c.Error)[0])
+                    logger.debug('Found peak: {}'.format(foundpeaks[-1]))
+        self._data[row][6] = foundpeaks
         if setindex is not None:
             return self._data[row][6][setindex]
 
@@ -223,6 +255,7 @@ class CalibrationModel(QtCore.QAbstractItemModel):
         return self.alpha('x')
 
     def trueshifts(self):
+        return ErrorValue(self.shifts(), self.dshifts())
         return ErrorValue(self.shifts(), self.dshifts()) / self.alpha().cos()
 
     def calibrate(self, setindex: int):
