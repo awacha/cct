@@ -10,6 +10,7 @@ import argparse
 import pkg_resources
 import numpy as np
 from .sequences import findsequences
+from .samples import makesampletable
 
 try:
     import pymysql.cursors
@@ -217,6 +218,7 @@ def run():
                 seq.projectid = '"'+seq.projectid+'"'
             query = 'INSERT INTO sequences (`id`, `starttime`, `endtime`, `exposurecount`, `firstfsn`, `lastfsn`, `exptime`, `user`, `project`) VALUES ({0:d}, "{1.start_time}", "{1.end_time}", {1.n_exposures:d}, {1.firstfsn:d}, {1.lastfsn:d}, {1.exptime:f}, {1.user}, {1.projectid});'.format(i, seq)
             c.execute(query)
+        makesampletable(c)
     finally:
         conn.commit()
         conn.close()
