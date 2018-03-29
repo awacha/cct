@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1681</width>
+    <width>1835</width>
     <height>640</height>
    </rect>
   </property>
@@ -557,8 +557,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1681</width>
-     <height>30</height>
+     <width>1835</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -575,6 +575,7 @@
     <addaction name="actionSample_editor"/>
     <addaction name="actionGeometry_editor"/>
     <addaction name="actionEdit_configuration"/>
+    <addaction name="actionCalibrantsDB"/>
     <addaction name="separator"/>
     <addaction name="actionCalibration"/>
     <addaction name="separator"/>
@@ -1171,6 +1172,14 @@
    </property>
    <property name="toolTip">
     <string>Evaluate the anisotropy of scattering patterns</string>
+   </property>
+  </action>
+  <action name="actionCalibrantsDB">
+   <property name="text">
+    <string>Calibrants Database</string>
+   </property>
+   <property name="toolTip">
+    <string>Edit the calibrants database</string>
    </property>
   </action>
  </widget>

@@ -48,6 +48,7 @@ from .logviewer_text import LogViewerText
 from .collectinghandler import CollectingHandler
 from .. import dockwidgets
 from ..setup.users.cpw import ChangePasswordDialog
+from ..setup.calibrants import CalibrantsDB
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
@@ -98,6 +99,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionFirstPrinciplesCalibration: QCalibration,
             self.actionLogbook: LogBook,
             self.actionAnisotropy: AnisotropyEvaluator,
+            self.actionCalibrantsDB: CalibrantsDB,
         }
         self._dockwidgets = {}
         self.actionChange_password.triggered.connect(self.onChangePassword)
