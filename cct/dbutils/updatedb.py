@@ -196,6 +196,7 @@ def run():
                     c.execute(insertion_query, tuple(paramvalues))
             conn.commit()
         # find the sequences
+        c.execute('DROP TABLE IF EXISTS sequences;')
         c.execute('CREATE TABLE IF NOT EXISTS sequences ('
                   'id INT PRIMARY KEY NOT NULL,'
                   'starttime DATE,'
