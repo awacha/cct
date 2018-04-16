@@ -199,8 +199,8 @@ def run():
         c.execute('DROP TABLE IF EXISTS sequences;')
         c.execute('CREATE TABLE IF NOT EXISTS sequences ('
                   'id INT PRIMARY KEY NOT NULL,'
-                  'starttime DATE,'
-                  'endtime DATE,'
+                  'starttime DATETIME,'
+                  'endtime DATETIME,'
                   'exposurecount INT,'
                   'firstfsn INT,'
                   'lastfsn INT,'

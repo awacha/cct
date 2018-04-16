@@ -1,3 +1,4 @@
+import time
 import datetime
 import logging
 import traceback
@@ -101,7 +102,9 @@ class GeneralScan(Command):
                 position=self.motorpos, scanfsn=self.scanfsn)
             # don't wait for exposureanalyzer, move to the next point
             self.idx += 1
-            self.emit('progress', 'Scan running: {:d}/{:d}'.format(self.idx, self.npoints), self.idx / self.npoints)
+            elapsedtime = time.monotonic()-self._starttime
+            totaltime = self.npoints/self.idx*elapsedtime
+            self.emit('progress', 'Scan running: {:d}/{:d} (remaining time: {:.1f} s)'.format(self.idx, self.npoints, totaltime-elapsedtime), self.idx / self.npoints)
             if self.idx < self.npoints:
                 nextpos = self.start + (self.end - self.start) / (self.npoints - 1) * self.idx
                 # self.emit('message', 'Moving motor {} to {:.3f}'.format(self.motorname, nextpos))
@@ -151,6 +154,8 @@ class GeneralScan(Command):
             self.idle_return(None)
             return False
         # otherwise start the exposure
+        if self._starttime is None:
+            self._starttime = time.monotonic()
         self.fsn_being_exposed = self.services['filesequence'].get_nextfreefsn(self.prefix)
         self.file_being_exposed = self.services['filesequence'].exposurefileformat(
             self.prefix, self.fsn_being_exposed) + '.cbf'
@@ -162,6 +167,7 @@ class GeneralScan(Command):
     def execute(self):
         self.idx = 0
         self.killed = None
+        self._starttime = None
         try:
             cmdline = self.namespace['commandline']
         except KeyError:

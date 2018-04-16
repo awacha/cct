@@ -25,6 +25,7 @@ requirements:
     - appdirs
     - pillow
     - openpyxl
+    - sqlalchemy
 
   run:
     - pillow
@@ -39,6 +40,7 @@ requirements:
     - sastool >=1.0.10
     - pyqt >=5
     - openpyxl
+    - sqlalchemy
 
 about:
   home: https://github.com/awacha/cct
