@@ -10,7 +10,8 @@ build:
 
 requirements:
   build:
-    - python
+    - {{ compiler('c') }}
+    - python >=3.4
     - setuptools
     - setuptools_scm
     - numpy
