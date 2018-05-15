@@ -12,6 +12,23 @@ from ..toolbase import ToolBase, HeaderModel
 from .fsnrangemodel import FSNRangeModel
 
 class IoTool(ToolBase, Ui_Form):
+    _default_config = {
+        'path':{
+            'prefixes':{
+                'crd':'crd',
+            },
+            'directories':{
+                'mask':'mask',
+                'eval2d':'eval2d',
+                'images':'images',
+                'param':'param',
+            },
+            'fsndigits':5,
+        },
+        'datareduction':{
+            'absintrefname':'Glassy_Carbon',
+        },
+    }
     h5NameChanged = QtCore.pyqtSignal(str)
     newHeaderModel = QtCore.pyqtSignal(HeaderModel)
     exportFolderChanged = QtCore.pyqtSignal(str)
@@ -105,8 +122,9 @@ class IoTool(ToolBase, Ui_Form):
             with open(configfile, 'rb') as f:
                 self.cctConfigChanged.emit(pickle.load(f))
         except FileNotFoundError:
-            QtWidgets.QMessageBox.critical(self, 'Error while loading config file',
-                                           'Error while loading config file: {} not found.'.format(configfile))
+            QtWidgets.QMessageBox.warning(self, 'Error while loading config file',
+                                           'Error while loading config file: {} not found. Using a default config.'.format(configfile))
+            self.cctConfigChanged.emit(self._default_config)
             return False
         except pickle.PickleError:
             QtWidgets.QMessageBox.critical(self, 'Error while loading config file',

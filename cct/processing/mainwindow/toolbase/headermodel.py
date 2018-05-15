@@ -7,7 +7,8 @@ from typing import List, Any, Union, Iterable, Set
 
 import numpy as np
 from PyQt5 import QtCore
-from sastool.io.credo_cct import Header
+from sastool.io.credo_cct import Header as Header_cct
+from sastool.io.credo_saxsctrl import Header as Header_saxsctrl
 from sastool.misc.errorvalue import ErrorValue
 
 from ....core.utils.timeout import IdleFunction
@@ -231,12 +232,16 @@ class HeaderModel(QtCore.QAbstractItemModel):
 def load_header(fsn, prefix, fsndigits, path):
     #    prefix = self.config()['path']['prefixes']['crd']
     for p in path:
-        try:
-            fn = os.path.join(p, '{{}}_{{:0{:d}d}}.pickle'.format(fsndigits).format(prefix, fsn))
-            h = Header.new_from_file(fn)
-            return h
-        except FileNotFoundError:
-            continue
+        for extn, cls in [('.pickle', Header_cct),
+                          ('.pickle.gz',Header_cct),
+                          ('.param',Header_saxsctrl),
+                          ('.param.gz',Header_saxsctrl)]:
+            try:
+                fn = os.path.join(p, '{{}}_{{:0{:d}d}}{}'.format(fsndigits, extn).format(prefix, fsn))
+                h = cls.new_from_file(fn)
+                return h
+            except FileNotFoundError:
+                continue
     raise FileNotFoundError(fsn)
 
 

@@ -5,8 +5,8 @@ from typing import Iterable, List, Optional
 
 import h5py
 import numpy as np
-from sastool.classes2 import Curve
-from sastool.io.credo_cct import Header, Exposure
+from sastool.classes2 import Curve, Header, Exposure
+from sastool.io import credo_cct, credo_saxsctrl
 from sastool.misc.errorvalue import ErrorValue
 from scipy.io import loadmat
 
@@ -122,19 +122,23 @@ class Summarizer(object):
         self._headers = []
         for f in self.fsns:
             for p in self.parampath:
-                try:
-                    self._headers.append(Header.new_from_file(
-                        os.path.join(
-                            p,
-                            '{{}}_{{:0{:d}d}}.pickle'.format(self.ndigits).format(self.prefix, f))
-                    ))
-                    if yield_messages:
-                        if logger is not None:
-                            logger.debug('Header loaded for prefix {}, fsn {}'.format(self.prefix, f))
-                        yield '__header_loaded__', f
-                    break
-                except FileNotFoundError:
-                    pass
+                for extn, cls in [('.pickle', credo_cct.Header),
+                                  ('.pickle.gz',credo_cct.Header),
+                                  ('.param',credo_saxsctrl.Header),
+                                  ('.param.gz',credo_saxsctrl.Header)]:
+                    try:
+                        self._headers.append(cls.new_from_file(
+                            os.path.join(
+                                p,
+                                '{{}}_{{:0{:d}d}}{}'.format(self.ndigits, extn).format(self.prefix, f))
+                        ))
+                        if yield_messages:
+                            if logger is not None:
+                                logger.debug('Header loaded for prefix {}, fsn {}'.format(self.prefix, f))
+                            yield '__header_loaded__', f
+                        break
+                    except FileNotFoundError:
+                        pass
             else:
                 if logger is not None:
                     logger.error('No header found for prefix {}, fsn {}.'.format(self.prefix, f))
@@ -167,7 +171,7 @@ class Summarizer(object):
         mask = self.get_mask(header.maskname, logger=logger)
         for p in self.exppath:
             try:
-                ex = Exposure.new_from_file(
+                ex = credo_cct.Exposure.new_from_file(
                     os.path.join(
                         p,
                         '{{}}_{{:0{:d}d}}.npz'.format(self.ndigits).format(self.prefix, fsn)),
@@ -288,7 +292,7 @@ class Summarizer(object):
               group1d]).sanitize()
         dsavg = grp.create_dataset('curve_averaged', shape=(len(cavg), 4), dtype=np.double)
         dsavg[:, 0], dsavg[:, 1], dsavg[:, 2], dsavg[:, 3] = (cavg.q, cavg.Intensity, cavg.Error, cavg.qError)
-        radavg = Exposure(np.array(grp['image']), np.array(grp['image_uncertainty']), headers[0],
+        radavg = credo_cct.Exposure(np.array(grp['image']), np.array(grp['image_uncertainty']), headers[0],
                           np.array(grp['mask'])).radial_average(
             qrange=self.qrange, abscissa_errorpropagation=self.abscissaerrorpropagation,
             errorpropagation=self.errorpropagation).sanitize()
