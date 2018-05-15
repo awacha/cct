@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Optional
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 
@@ -24,9 +24,9 @@ class BackgroundSubtractionModel(QtCore.QAbstractItemModel):
                 self._samples[i][1] = None
         self.endResetModel()
 
-    def addSample(self, samplename):
+    def addSample(self, samplename:str, backgroundname:Optional[str]=None, factor:float=1.0):
         self.beginInsertRows(QtCore.QModelIndex(), len(self._samples), len(self._samples))
-        self._samples.append([samplename, None, 1.0, True])
+        self._samples.append([samplename, backgroundname, factor, True])
         self.endInsertRows()
 
     def removeRow(self, row: int, parent: QtCore.QModelIndex = ...):

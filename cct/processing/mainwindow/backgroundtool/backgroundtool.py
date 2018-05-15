@@ -1,9 +1,14 @@
+from configparser import ConfigParser
+import logging
+
 from PyQt5 import QtCore
 
 from .backgroundsubtractionmodel import BackgroundSubtractionModel, ComboBoxDelegate
 from .backgroundtool_ui import Ui_Form
 from ..toolbase import ToolBase, HeaderModel
 
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class BackgroundTool(ToolBase, Ui_Form):
     def setupUi(self, Form):
@@ -43,3 +48,29 @@ class BackgroundTool(ToolBase, Ui_Form):
 
     def getEnabledSampleNameList(self):
         return self.backgroundList.getEnabledSampleNameList()
+
+    def save_state(self, config: ConfigParser):
+        super().save_state(config)
+        config['background']={}
+        for i, bgl in enumerate(self.backgroundList.getBackgroundSubtractionList()):
+            sample, bgname, factor = bgl
+            config['background']['{:02d}'.format(i)] = '({}, {}, {:.8f})'.format(sample,bgname, factor)
+
+    def load_state(self, config: ConfigParser):
+        super().load_state(config)
+        if config.has_section('background'):
+            bglist=[]
+            for key in sorted(config.options('background')):
+                line = config['background'][key].strip()
+                if not line.startswith('(') and line.endswith(')'):
+                    logger.warning('Cannont load background specification from an invalid line in the config file (background section): {}'.format(line))
+                    continue
+                sample, bg, factor= line[1:-1].split(',')
+                try:
+                    factor = float(factor)
+                except ValueError:
+                    logger.warning('Invalid background scaling factor in the line: {}'.format(line))
+                bglist.append((sample, bg, factor))
+            self.backgroundList.clear()
+            for sam, bg, fac in bglist:
+                self.backgroundList.addSample(sam, bg, fac)

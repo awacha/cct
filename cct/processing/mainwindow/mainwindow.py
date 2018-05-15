@@ -26,6 +26,7 @@ from .overalltool import OverallTool
 from .persampletool import PerSampleTool
 from .processingtool import ProcessingTool
 from .toolbase import ToolBase, HeaderModel
+from .projecttool import ProjectTool
 from ..display import ParamPickleModel
 from ..export_table import export_table
 from ...core.processing.summarize import Summarizer
@@ -68,6 +69,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         self.save_state()
+        if self.tools['project'].autosaveOnExitCheckBox.isChecked():
+            self.tools['project'].saveProject()
         event.accept()
 
     def save_state(self):
@@ -107,6 +110,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         while self.toolBox.count() > 0:
             self.toolBox.removeItem(0)
         for label, handle, type_ in [
+            ('Project', 'project', ProjectTool),
             ('Input/output', 'io', IoTool),
             ('Sample selection', 'background', BackgroundTool),
             ('Processing', 'processing', ProcessingTool),
@@ -123,6 +127,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             self.tools[handle].busy.connect(self.onBusy)
             self.tools[handle].figureDrawn.connect(self.onFigureDrawn)
             self.tools[handle].tableShown.connect(self.onTableShown)
+        self.toolBox.setCurrentWidget(self.tools['io'])
         self.tools['io'].h5NameChanged.connect(self.onH5NameChanged)
         self.tools['io'].newHeaderModel.connect(self.onNewHeaderModel)
         self.tools['io'].exportFolderChanged.connect(self.onExportFolderChanged)
@@ -134,6 +139,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
 
     def onProcessingDone(self):
         self.tools['io'].h5NameChanged.emit(self.tools['io'].h5FileName)
+        if self.tools['project'].autosaveAfterProcessingCheckBox.isChecked():
+            self.tools['project'].saveProject()
 
     def onFigureDrawn(self):
         self.putlogo()
