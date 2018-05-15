@@ -124,6 +124,29 @@ class ExportTool(ToolBase, Ui_Form):
             self.onExportAveragedCurvesDataASCII(with_qerror=False, extn='dat')
         elif self.export1DDataFormatComboBox.currentText().startswith('Excel 2007-'):
             self.onExportAveragedCurvesDataXLSX()
+        elif self.export1DDataFormatComboBox.currentText().startswith('RSR (*.rsr)'):
+            self.onExportAveragedCurvesDataRSR()
+
+    def onExportAveragedCurvesDataRSR(self):
+        try:
+            self.busy.emit(True)
+            samplenames = [item.text() for item in self.sampleNameListWidget.selectedItems()]
+            for sn in self.h5GetSamples():
+                if sn not in samplenames:
+                    continue
+                for dist in self.h5GetDistances(sn):
+                    with self.getHDF5Group(sn, dist) as grp:
+                        data = np.array(grp['curve'])
+                    fn = os.path.join(
+                        self.exportFolder,
+                        '{}_{}.rsr'.format(sn, dist.replace('.', '_')))
+                    with open(fn, 'wb', newline='\r\n') as f:
+                        f.write(' TIME\n 1.0\n {:d}\n'.format(data.shape[0]))
+                        for i in range(data.shape[0]):
+                            f.write(' {:.9f} {:.9f} {:.9f} 1\n'.format(data[:,0], data[:,1], data[:,2]))
+                    logger.info('Wrote file {}'.format(fn))
+        finally:
+            self.busy.emit(False)
 
     def onExportAveragedCurvesDataXLSX(self):
         try:

@@ -91,6 +91,11 @@
      </item>
      <item>
       <property name="text">
+       <string>RSR (*.rsr)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
        <string>Excel 2007- (*.xlsx)</string>
       </property>
      </item>
