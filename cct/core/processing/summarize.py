@@ -32,6 +32,7 @@ def outliers_interquartile(data: np.array, threshold:float=1.5) -> np.ndarray:
 
 def correlmatrix(grp: h5py.Group, std_multiplier:Optional[float] = None, logarithmic: bool = True, use_python:bool=False, method='zscore'):
     sortedkeys = sorted(grp.keys(), key=lambda x: int(x))
+    badfsns = []
     t0 = time.monotonic()
     if use_python: # use the slower version implemented in pure Python
         cm = np.zeros((len(grp), len(grp)), np.double)
@@ -80,12 +81,14 @@ def correlmatrix(grp: h5py.Group, std_multiplier:Optional[float] = None, logarit
             grp[fsn].attrs['correlmat_bad'] = bad_iqr
         else:
             raise ValueError(method)
+        if grp[fsn].attrs['correlmat_bad']:
+            badfsns.append(fsn)
         grp[fsn].attrs['correlmat_zscore'] = zsc
         grp[fsn].attrs['correlmat_zscore_mod'] = zscmod
         grp[fsn].attrs['correlmat_bad_zscore'] = bad_zsc
         grp[fsn].attrs['correlmat_bad_zscore_mod'] = bad_zscmod
         grp[fsn].attrs['correlmat_bad_iqr'] = bad_iqr
-    return cm
+    return cm, badfsns
 
 class Summarizer(object):
     dist_tolerance = 0.01
@@ -306,12 +309,13 @@ class Summarizer(object):
             '/Samples/{}/{:.2f}/curve'.format(samplename, distance))
 
     def stabilityassessment(self, samplename: str, distance: float, hdf5: h5py.File):
-        cmatrix = correlmatrix(
+        cmatrix, badfsns = correlmatrix(
             hdf5.require_group('Samples/{}/{:.2f}/curves'.format(samplename, distance)),
             self.std_multiplier, self.logarithmic_correlmatrix, method=self.corrmatoutliermethod
         )
         grp = hdf5.require_group('Samples/{}/{:.2f}'.format(samplename, distance))
         grp.create_dataset('correlmatrix', data=cmatrix, shape=cmatrix.shape, dtype=cmatrix.dtype)
+        grp.create_dataset('badfsns', data=np.array(badfsns, dtype=np.int), shape=(len(badfsns),), dtype=np.int)
         hdf5['correlmatrix']['{}_{:.2f}'.format(samplename, distance)] = h5py.SoftLink(
             '/Samples/{}/{:.2f}/correlmatrix')
 

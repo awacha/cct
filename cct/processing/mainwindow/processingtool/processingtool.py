@@ -201,6 +201,10 @@ class ProcessingTool(ToolBase, Ui_Form):
                 for d in self.h5GetDistances(sn):
                     #                logger.debug('updateBadFSNs: dist {}'.format(d))
                     with self.getHDF5Group(sn, d) as grp:
+                        if 'badfsns' in grp:
+                            # this is a faster version
+                            newbadfsns.extend([int(b) for b in grp['badfsns']])
+                            continue
                         if 'curves' not in grp:
                             continue
                         #                    logger.debug('Reading curves...')
