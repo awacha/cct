@@ -140,10 +140,10 @@ class ExportTool(ToolBase, Ui_Form):
                     fn = os.path.join(
                         self.exportFolder,
                         '{}_{}.rsr'.format(sn, dist.replace('.', '_')))
-                    with open(fn, 'wb', newline='\r\n') as f:
+                    with open(fn, 'wt', newline='\r\n') as f:
                         f.write(' TIME\n 1.0\n {:d}\n'.format(data.shape[0]))
                         for i in range(data.shape[0]):
-                            f.write(' {:.9f} {:.9f} {:.9f} 1\n'.format(data[:,0], data[:,1], data[:,2]))
+                            f.write(' {:.9f} {:.9f} {:.9f} 1\n'.format(data[i,0]/10., data[i,1], data[i,2]))
                     logger.info('Wrote file {}'.format(fn))
         finally:
             self.busy.emit(False)
