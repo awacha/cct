@@ -7,14 +7,219 @@
     <x>0</x>
     <y>0</y>
     <width>357</width>
-    <height>375</height>
+    <height>377</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="8" column="0">
+   <item row="6" column="0">
+    <widget class="QLabel" name="label_15">
+     <property name="text">
+      <string>Bad FSN list:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QLineEdit" name="badFSNListFileNameLineEdit">
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="2">
+    <widget class="QPushButton" name="browseBadFSNListFileNamePushButton">
+     <property name="text">
+      <string>Browse...</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open">
+       <normaloff>../</normaloff>../</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_24">
+     <property name="text">
+      <string>UI style:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="0" colspan="3">
+    <widget class="QTreeView" name="fsnListTreeView">
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::ExtendedSelection</enum>
+     </property>
+     <property name="rootIsDecorated">
+      <bool>false</bool>
+     </property>
+     <property name="uniformRowHeights">
+      <bool>true</bool>
+     </property>
+     <property name="itemsExpandable">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Data directory:</string>
+     </property>
+     <property name="buddy">
+      <cstring>rootDirLineEdit</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="0" colspan="3">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="removeFromListPushButton">
+       <property name="text">
+        <string>Remove</string>
+       </property>
+       <property name="icon">
+        <iconset theme="list-remove">
+         <normaloff>.</normaloff>.</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="clearListPushButton">
+       <property name="text">
+        <string>Clear</string>
+       </property>
+       <property name="icon">
+        <iconset theme="edit-clear-all">
+         <normaloff>.</normaloff>.</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="reloadPushButton">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Reload</string>
+       </property>
+       <property name="icon">
+        <iconset theme="view-refresh">
+         <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="8" column="2">
+    <widget class="QPushButton" name="browseExportFolderPushButton">
+     <property name="text">
+      <string>Browse...</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-save-as">
+       <normaloff>../</normaloff>../</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="1">
+    <widget class="QSpinBox" name="lastFSNSpinBox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="maximum">
+      <number>999999</number>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QLineEdit" name="rootDirLineEdit">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1" colspan="2">
+    <widget class="QComboBox" name="uiStyleComboBox"/>
+   </item>
+   <item row="15" column="0" colspan="3">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="9" column="2" rowspan="2">
+    <widget class="QPushButton" name="addToListPushButton">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Add</string>
+     </property>
+     <property name="icon">
+      <iconset theme="list-add">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>First FSN:</string>
+     </property>
+     <property name="buddy">
+      <cstring>firstFSNSpinBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="1">
+    <widget class="QLineEdit" name="exportFolderLineEdit"/>
+   </item>
+   <item row="10" column="0">
     <widget class="QLabel" name="label_3">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -30,8 +235,12 @@
      </property>
     </widget>
    </item>
-   <item row="6" column="1">
-    <widget class="QLineEdit" name="exportFolderLineEdit"/>
+   <item row="8" column="0">
+    <widget class="QLabel" name="label_10">
+     <property name="text">
+      <string>Export folder:</string>
+     </property>
+    </widget>
    </item>
    <item row="4" column="2">
     <widget class="QPushButton" name="browsePushButton">
@@ -50,56 +259,14 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="2">
-    <widget class="QPushButton" name="browseBadFSNListFileNamePushButton">
-     <property name="text">
-      <string>Browse...</string>
-     </property>
-     <property name="icon">
-      <iconset theme="document-open">
-       <normaloff>../</normaloff>../</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="12" column="0" colspan="3">
+   <item row="14" column="0" colspan="3">
     <widget class="QProgressBar" name="ioProgressBar">
      <property name="value">
       <number>24</number>
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
-    <widget class="QLineEdit" name="badFSNListFileNameLineEdit">
-     <property name="readOnly">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="2">
-    <widget class="QPushButton" name="browseHDFPushButton">
-     <property name="text">
-      <string>Browse...</string>
-     </property>
-     <property name="icon">
-      <iconset theme="document-save-as">
-       <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="1">
-    <widget class="QLineEdit" name="rootDirLineEdit">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="readOnly">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="1">
+   <item row="9" column="1">
     <widget class="QSpinBox" name="firstFSNSpinBox">
      <property name="enabled">
       <bool>false</bool>
@@ -131,22 +298,6 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="label">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="text">
-      <string>Data directory:</string>
-     </property>
-     <property name="buddy">
-      <cstring>rootDirLineEdit</cstring>
-     </property>
-    </widget>
-   </item>
    <item row="5" column="1">
     <widget class="QLineEdit" name="saveHDFLineEdit">
      <property name="sizePolicy">
@@ -160,162 +311,14 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label_24">
-     <property name="text">
-      <string>UI style:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="2">
-    <widget class="QPushButton" name="browseExportFolderPushButton">
+   <item row="5" column="2">
+    <widget class="QPushButton" name="browseHDFPushButton">
      <property name="text">
       <string>Browse...</string>
      </property>
      <property name="icon">
       <iconset theme="document-save-as">
-       <normaloff>../</normaloff>../</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1" colspan="2">
-    <widget class="QComboBox" name="uiStyleComboBox"/>
-   </item>
-   <item row="8" column="1">
-    <widget class="QSpinBox" name="lastFSNSpinBox">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="maximum">
-      <number>999999</number>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="0">
-    <widget class="QLabel" name="label_2">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="text">
-      <string>First FSN:</string>
-     </property>
-     <property name="buddy">
-      <cstring>firstFSNSpinBox</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="label_15">
-     <property name="text">
-      <string>Bad FSN list:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="0">
-    <widget class="QLabel" name="label_10">
-     <property name="text">
-      <string>Export folder:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="13" column="0" colspan="3">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>0</width>
-       <height>0</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="7" column="2" rowspan="2">
-    <widget class="QPushButton" name="addToListPushButton">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="text">
-      <string>Add</string>
-     </property>
-     <property name="icon">
-      <iconset theme="list-add"/>
-     </property>
-    </widget>
-   </item>
-   <item row="10" column="0" colspan="3">
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QPushButton" name="removeFromListPushButton">
-       <property name="text">
-        <string>Remove</string>
-       </property>
-       <property name="icon">
-        <iconset theme="list-remove"/>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="clearListPushButton">
-       <property name="text">
-        <string>Clear</string>
-       </property>
-       <property name="icon">
-        <iconset theme="edit-clear-all"/>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="reloadPushButton">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>Reload</string>
-       </property>
-       <property name="icon">
-        <iconset theme="view-refresh">
-         <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="9" column="0" colspan="3">
-    <widget class="QTreeView" name="fsnListTreeView">
-     <property name="alternatingRowColors">
-      <bool>true</bool>
-     </property>
-     <property name="selectionMode">
-      <enum>QAbstractItemView::ExtendedSelection</enum>
-     </property>
-     <property name="rootIsDecorated">
-      <bool>false</bool>
-     </property>
-     <property name="uniformRowHeights">
-      <bool>true</bool>
-     </property>
-     <property name="itemsExpandable">
-      <bool>false</bool>
+       <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
      </property>
     </widget>
    </item>
@@ -323,12 +326,8 @@
  </widget>
  <tabstops>
   <tabstop>uiStyleComboBox</tabstop>
-  <tabstop>badFSNListFileNameLineEdit</tabstop>
-  <tabstop>browseBadFSNListFileNamePushButton</tabstop>
   <tabstop>rootDirLineEdit</tabstop>
   <tabstop>browsePushButton</tabstop>
-  <tabstop>saveHDFLineEdit</tabstop>
-  <tabstop>browseHDFPushButton</tabstop>
   <tabstop>exportFolderLineEdit</tabstop>
   <tabstop>browseExportFolderPushButton</tabstop>
   <tabstop>firstFSNSpinBox</tabstop>

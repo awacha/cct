@@ -150,7 +150,7 @@ class IoTool(ToolBase, Ui_Form):
             self, 'Save processed results to...', '',
             'HDF5 files (*.h5 *.hdf5);;All files (*)',
             'HDF5 files (*.h5 *.hdf5)')
-        if filename is None:
+        if not filename:
             return
         if not filename.endswith('.h5') and not filename.endswith('.hdf5'):
             filename = filename + '.h5'
@@ -161,7 +161,7 @@ class IoTool(ToolBase, Ui_Form):
             self, 'Select bad FSN list file...', '',
             'Text files (*.txt *.dat);;All files (*)',
             'Text files (*.txt *.dat)')
-        if filename is None:
+        if not filename:
             return
         if not filename.endswith('.txt') and not filename.endswith('.dat'):
             filename = filename + '.txt'
