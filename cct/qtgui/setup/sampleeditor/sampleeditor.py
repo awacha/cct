@@ -10,6 +10,7 @@ logger.setLevel(logging.INFO)
 from .sampleeditor_ui import Ui_Form
 from ...core.mixins import ToolWindow
 from ....core.services.samples import Sample, SampleStore
+from ....core.services.accounting import Accounting, Project
 from ....core.utils.inhibitor import Inhibitor
 
 
@@ -21,6 +22,7 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._updating_entries = Inhibitor()
         self._samplestoreconnections = []
         self._selectedsample = None
+        self._accountingconnections = []
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -34,6 +36,9 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.duplicateSamplePushButton.clicked.connect(self.onDuplicateSample)
         self._samplestoreconnections = [
             self.credo.services['samplestore'].connect('list-changed', self.onSampleListChanged)]
+        self._accountingconnections = [
+            self.credo.services['accounting'].connect('project-changed', self.onProjectListChanged),
+        ]
         self.onSelectionChanged()
         for lineedit in [self.preparedByLineEdit]:
             lineedit.textEdited.connect(self.onTextEdited)
@@ -43,9 +48,10 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
                         self.distminusValDoubleSpinBox, self.xPositionErrDoubleSpinBox, self.xPositionValDoubleSpinBox,
                         self.yPositionErrDoubleSpinBox, self.yPositionValDoubleSpinBox]:
             spinbox.valueChanged.connect(self.onDoubleSpinBoxValueChanged)
-        for combobox in [self.categoryComboBox, self.situationComboBox]:
+        for combobox in [self.categoryComboBox, self.situationComboBox, self.projectComboBox]:
             combobox.currentTextChanged.connect(self.onComboBoxChanged)
         self.calendarWidget.selectionChanged.connect(self.onCalendarChanged)
+        self.onProjectListChanged(self.credo.services['accounting'])
         self.todayPushButton.clicked.connect(self.onTodayClicked)
         self.sampleNameLineEdit.installEventFilter(self)
 
@@ -72,6 +78,22 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             return self.listWidget.selectedItems()[0].data(QtCore.Qt.DisplayRole)
         except IndexError:
             return None
+
+    def onProjectListChanged(self, accounting:Accounting):
+        current = self.projectComboBox.currentData()
+        self.projectComboBox.blockSignals(True)
+        try:
+            self.projectComboBox.clear()
+            self.projectComboBox.addItem('-- Unassigned --', userData=None)
+            for i,p in enumerate(sorted(accounting.projects, key=lambda p:p.projectid)):
+                assert isinstance(p, Project)
+                self.projectComboBox.addItem('{}: {}'.format(p.projectid, p.projectname), userData=p.projectid)
+            index=self.projectComboBox.findData(current)
+            self.projectComboBox.setCurrentIndex(index)
+        finally:
+            self.projectComboBox.blockSignals(False)
+        if index<0:
+            self.projectComboBox.setCurrentIndex(0)
 
     def onRenameSample(self):
         ss = self.credo.services['samplestore']
@@ -152,6 +174,8 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             sample.category = self.categoryComboBox.currentText()
         elif self.sender() == self.situationComboBox:
             sample.situation = self.situationComboBox.currentText()
+        elif self.sender() == self.projectComboBox:
+            sample.project = self.projectComboBox.currentData()
         else:
             assert False
         self.credo.services['samplestore'].set_sample(selectedsamplename, sample)
@@ -254,6 +278,7 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 self.descriptionPlainTextEdit.setPlainText(sample.description)
             self.categoryComboBox.setCurrentIndex(self.categoryComboBox.findText(sample.category))
             self.situationComboBox.setCurrentIndex(self.situationComboBox.findText(sample.situation))
+            self.projectComboBox.setCurrentIndex(self.projectComboBox.findData(sample.project))
             if self.preparedByLineEdit.text() != sample.preparedby:
                 self.preparedByLineEdit.setText(sample.preparedby)
             updatespinbox(self.thicknessValDoubleSpinBox, sample.thickness.val)
@@ -285,6 +310,9 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         for c in self._samplestoreconnections:
             self.credo.services['samplestore'].disconnect(c)
         self._samplestoreconnections = []
+        for c in self._accountingconnections:
+            self.credo.services['accounting'].disconnect(c)
+        self._accountingconnections = []
         super().cleanup()
 
     def selectSample(self, samplename):

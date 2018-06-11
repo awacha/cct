@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>901</width>
-    <height>592</height>
+    <height>645</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -141,8 +141,8 @@
        <enum>QFrame::Raised</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="8" column="1">
-        <widget class="QDoubleSpinBox" name="yPositionValDoubleSpinBox">
+       <item row="7" column="3">
+        <widget class="QDoubleSpinBox" name="xPositionErrDoubleSpinBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -153,31 +153,46 @@
           <number>4</number>
          </property>
          <property name="minimum">
-          <double>-999.000000000000000</double>
+          <double>0.000000000000000</double>
          </property>
          <property name="maximum">
           <double>999.000000000000000</double>
          </property>
         </widget>
        </item>
-       <item row="5" column="1" colspan="3">
-        <widget class="QLineEdit" name="preparedByLineEdit">
-         <property name="placeholderText">
-          <string>Who created this sample...</string>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="2">
-        <widget class="QLabel" name="label_13">
+       <item row="6" column="3">
+        <widget class="QDoubleSpinBox" name="thicknessErrDoubleSpinBox">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <property name="text">
-          <string>±</string>
+         <property name="decimals">
+          <number>4</number>
          </property>
+         <property name="maximum">
+          <double>999.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1" colspan="3">
+        <widget class="QComboBox" name="situationComboBox">
+         <item>
+          <property name="text">
+           <string>air</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>vacuum</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>sealed can</string>
+          </property>
+         </item>
         </widget>
        </item>
        <item row="9" column="0">
@@ -206,6 +221,46 @@
          </property>
         </widget>
        </item>
+       <item row="9" column="2">
+        <widget class="QLabel" name="label_15">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>±</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1" colspan="3">
+        <widget class="QLineEdit" name="preparedByLineEdit">
+         <property name="placeholderText">
+          <string>Who created this sample...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0">
+        <widget class="QLabel" name="label_7">
+         <property name="text">
+          <string>X motor position:</string>
+         </property>
+         <property name="buddy">
+          <cstring>xPositionValDoubleSpinBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Category:</string>
+         </property>
+         <property name="buddy">
+          <cstring>categoryComboBox</cstring>
+         </property>
+        </widget>
+       </item>
        <item row="1" column="1" colspan="3">
         <widget class="QWidget" name="widget_3" native="true">
          <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -231,50 +286,28 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="renameSamplePushButton">
+            <property name="text">
+             <string>Rename</string>
+            </property>
+           </widget>
+          </item>
          </layout>
-        </widget>
-       </item>
-       <item row="4" column="1" colspan="3">
-        <widget class="QComboBox" name="situationComboBox">
-         <item>
-          <property name="text">
-           <string>air</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>vacuum</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>inert atmosphere</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>oxidising atmosphere</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>reducing atmosphere</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>other</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>sealed can</string>
-          </property>
-         </item>
         </widget>
        </item>
        <item row="3" column="1" colspan="3">
         <widget class="QComboBox" name="categoryComboBox">
+         <item>
+          <property name="text">
+           <string>calibration sample</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>normalization sample</string>
+          </property>
+         </item>
          <item>
           <property name="text">
            <string>sample</string>
@@ -292,94 +325,13 @@
          </item>
          <item>
           <property name="text">
-           <string>sample+buffer</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>buffer</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>calibration sample</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>normalization sample</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
            <string>none</string>
           </property>
          </item>
-         <item>
-          <property name="text">
-           <string>sample environment</string>
-          </property>
-         </item>
         </widget>
        </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>Category:</string>
-         </property>
-         <property name="buddy">
-          <cstring>categoryComboBox</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="3">
-        <widget class="QDoubleSpinBox" name="thicknessErrDoubleSpinBox">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="decimals">
-          <number>4</number>
-         </property>
-         <property name="maximum">
-          <double>999.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item row="9" column="2">
-        <widget class="QLabel" name="label_15">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>±</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1" colspan="3">
-        <widget class="QPlainTextEdit" name="descriptionPlainTextEdit">
-         <property name="placeholderText">
-          <string>Describe your sample here...</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>Thickness (cm):</string>
-         </property>
-         <property name="buddy">
-          <cstring>thicknessValDoubleSpinBox</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="3">
-        <widget class="QDoubleSpinBox" name="xPositionErrDoubleSpinBox">
+       <item row="8" column="1">
+        <widget class="QDoubleSpinBox" name="yPositionValDoubleSpinBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -390,20 +342,20 @@
           <number>4</number>
          </property>
          <property name="minimum">
-          <double>0.000000000000000</double>
+          <double>-999.000000000000000</double>
          </property>
          <property name="maximum">
           <double>999.000000000000000</double>
          </property>
         </widget>
        </item>
-       <item row="7" column="0">
-        <widget class="QLabel" name="label_7">
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_6">
          <property name="text">
-          <string>X motor position:</string>
+          <string>Thickness (cm):</string>
          </property>
          <property name="buddy">
-          <cstring>xPositionValDoubleSpinBox</cstring>
+          <cstring>thicknessValDoubleSpinBox</cstring>
          </property>
         </widget>
        </item>
@@ -420,8 +372,8 @@
          </property>
         </widget>
        </item>
-       <item row="8" column="2">
-        <widget class="QLabel" name="label_14">
+       <item row="7" column="2">
+        <widget class="QLabel" name="label_13">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -430,22 +382,6 @@
          </property>
          <property name="text">
           <string>±</string>
-         </property>
-        </widget>
-       </item>
-       <item row="10" column="1">
-        <widget class="QDoubleSpinBox" name="transmissionValDoubleSpinBox">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="decimals">
-          <number>4</number>
-         </property>
-         <property name="maximum">
-          <double>1.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -491,6 +427,55 @@
          </property>
          <property name="maximum">
           <double>999.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1" colspan="3">
+        <widget class="QPlainTextEdit" name="descriptionPlainTextEdit">
+         <property name="placeholderText">
+          <string>Describe your sample here...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="2">
+        <widget class="QLabel" name="label_14">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>±</string>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="1">
+        <widget class="QDoubleSpinBox" name="transmissionValDoubleSpinBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="decimals">
+          <number>4</number>
+         </property>
+         <property name="maximum">
+          <double>1.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="13" column="1" colspan="3">
+        <widget class="QCalendarWidget" name="calendarWidget">
+         <property name="firstDayOfWeek">
+          <enum>Qt::Monday</enum>
+         </property>
+         <property name="gridVisible">
+          <bool>true</bool>
+         </property>
+         <property name="horizontalHeaderFormat">
+          <enum>QCalendarWidget::SingleLetterDayNames</enum>
          </property>
         </widget>
        </item>
@@ -624,20 +609,20 @@
          </property>
         </widget>
        </item>
-       <item row="12" column="1" colspan="3">
-        <widget class="QCalendarWidget" name="calendarWidget">
-         <property name="firstDayOfWeek">
-          <enum>Qt::Monday</enum>
+       <item row="11" column="1" colspan="3">
+        <widget class="QComboBox" name="projectComboBox"/>
+       </item>
+       <item row="11" column="0">
+        <widget class="QLabel" name="label_18">
+         <property name="text">
+          <string>Project:</string>
          </property>
-         <property name="gridVisible">
-          <bool>true</bool>
-         </property>
-         <property name="horizontalHeaderFormat">
-          <enum>QCalendarWidget::SingleLetterDayNames</enum>
+         <property name="buddy">
+          <cstring>projectComboBox</cstring>
          </property>
         </widget>
        </item>
-       <item row="12" column="0">
+       <item row="13" column="0">
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
           <widget class="QLabel" name="label_11">
@@ -653,28 +638,11 @@
           </widget>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QPushButton" name="todayPushButton">
-             <property name="text">
-              <string>Today</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          <widget class="QPushButton" name="todayPushButton">
+           <property name="text">
+            <string>Today</string>
+           </property>
+          </widget>
          </item>
          <item>
           <spacer name="verticalSpacer">
@@ -683,8 +651,8 @@
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>0</width>
-             <height>0</height>
+             <width>20</width>
+             <height>40</height>
             </size>
            </property>
           </spacer>
@@ -699,6 +667,7 @@
  </widget>
  <tabstops>
   <tabstop>sampleNameLineEdit</tabstop>
+  <tabstop>renameSamplePushButton</tabstop>
   <tabstop>descriptionPlainTextEdit</tabstop>
   <tabstop>categoryComboBox</tabstop>
   <tabstop>situationComboBox</tabstop>
@@ -713,14 +682,31 @@
   <tabstop>distminusErrDoubleSpinBox</tabstop>
   <tabstop>transmissionValDoubleSpinBox</tabstop>
   <tabstop>transmissionErrDoubleSpinBox</tabstop>
+  <tabstop>projectComboBox</tabstop>
   <tabstop>calendarWidget</tabstop>
+  <tabstop>todayPushButton</tabstop>
   <tabstop>listWidget</tabstop>
   <tabstop>addSamplePushButton</tabstop>
   <tabstop>removeSamplePushButton</tabstop>
   <tabstop>duplicateSamplePushButton</tabstop>
  </tabstops>
- <resources>
-  <include location="../../../resource/icons/icons.qrc"/>
- </resources>
- <connections/>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>sampleNameLineEdit</sender>
+   <signal>returnPressed()</signal>
+   <receiver>renameSamplePushButton</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>500</x>
+     <y>31</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>638</x>
+     <y>31</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

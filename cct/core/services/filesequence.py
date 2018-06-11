@@ -454,7 +454,9 @@ class FileSequence(Service):
             params['accounting'] = {}
             for k in config['services']['accounting']:
                 params['accounting'][k] = config['services']['accounting'][k]
-
+            if sample is not None and sample.project is not None:
+                # override the project settings in params['accounting']
+                params['accounting']['projectid'] = sample.project.projectid
         return params
 
     def get_prefixes(self):

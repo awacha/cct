@@ -34,10 +34,17 @@ class Sample(object):
     description = ''
     category = None  # a string. Can be any element of VALID_CATEGORIES
     situation = None  # a string. Can be any element of VALID_SITUATIONS
+    project = None # a string, which should correspond to a project ID, or None if unassigned
 
     @classmethod
     def fromdict(cls, dic: Dict):
         logger.debug('Sample::fromdict: {}'.format(dic))
+        try:
+            proj=dic['project']
+        except KeyError:
+            proj=None
+        if proj=='__none__':
+            proj=None
         return cls(title=dic['title'],
                    positionx=ErrorValue(
                        dic['positionx.val'], dic['positionx.err']),
@@ -54,6 +61,7 @@ class Sample(object):
                    description=dic['description'],
                    category=dic['category'],
                    situation=dic['situation'],
+                   project=proj,
                    )
 
     def todict(self) -> Dict:
@@ -72,7 +80,8 @@ class Sample(object):
                 'distminus.err': self.distminus.err,
                 'description': self.description,
                 'category': self.category,
-                'situation': self.situation}
+                'situation': self.situation,
+                'project': self.project if self.project is not None else '__none__'}
 
     def toparam(self) -> str:
         dic = self.todict()
@@ -82,7 +91,7 @@ class Sample(object):
                  thickness: Union[float, ErrorValue] = 1.0, transmission: Union[float, ErrorValue] = 1.0,
                  preparedby: str = 'Anonymous', preparetime: Optional[datetime.datetime] = None,
                  distminus: Union[float, ErrorValue] = 0.0, description: str = '', category: str = 'sample',
-                 situation: str = 'vacuum'):
+                 situation: str = 'vacuum', project: str = 'no project'):
         if isinstance(title, self.__class__):
             self.title = title.title
             self.positionx = ErrorValue(title.positionx)
@@ -95,6 +104,7 @@ class Sample(object):
             self.description = title.description
             self.category = title.category
             self.situation = title.situation
+            self.project = title.project
         else:
             self.title = title
             self.positionx = ErrorValue(positionx)
@@ -109,6 +119,7 @@ class Sample(object):
             self.distminus = ErrorValue(distminus)
             self.description = description
             self.situation = situation
+            self.project = project
         if not isinstance(self.positionx, ErrorValue):
             self.positionx = ErrorValue(self.positionx, 0)
         if not isinstance(self.positiony, ErrorValue):
