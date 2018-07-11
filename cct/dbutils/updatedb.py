@@ -100,7 +100,8 @@ def run():
                   ('maskname', str), ('pixelsizex', float), ('pixelsizey', float), ('project', str),
                   ('samplex', float), ('sampley', float), ('temperature', float), ('thickness', float),
                   ('title', str), ('transmission', float), ('username', str),
-                  ('vacuum', float), ('wavelength', float), ('startdate', datetime.datetime), ('enddate', datetime.datetime)]
+                  ('vacuum', float), ('wavelength', float), ('startdate', datetime.datetime), ('enddate', datetime.datetime),
+                  ('samplex_motor', float), ('sampley_motor', float)]
 
     try:
         if args.server is not None:

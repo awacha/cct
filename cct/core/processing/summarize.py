@@ -248,7 +248,7 @@ class Summarizer(object):
                          'wavelength', 'fsn', 'exposuretime', 'transmission', 'thickness', 'maskname',
                          'absintfactor', 'flux', 'date', 'distancedecrease', 'fsn_absintref',
                          'fsn_emptybeam', 'project', 'samplex', 'sampley', 'temperature', 'title', 'username',
-                         'vacuum', 'startdate', 'enddate']:
+                         'vacuum', 'startdate', 'enddate', 'samplex_motor', 'sampley_motor']:
                 try:
                     a = getattr(h, attr)
                 except (AttributeError, KeyError):
@@ -277,10 +277,10 @@ class Summarizer(object):
                 grp.attrs[attr] = None
         # average parameters
         for attr in ['beamcenterx', 'beamcentery', 'distance', 'pixelsizex', 'pixelsizey', 'wavelength',
-                     'transmission', 'thickness', 'absintfactor', 'flux', 'distancedecrease']:
+                     'transmission', 'thickness', 'absintfactor', 'flux', 'distancedecrease', 'samplex_motor', 'sampley_motor']:
             try:
                 grp.attrs[attr] = np.mean([group1d[dsname].attrs[attr] for dsname in group1d.keys()])
-            except KeyError:
+            except (KeyError,ValueError,TypeError):
                 pass
         # sum parameters
         for attr in ['exposuretime']:
