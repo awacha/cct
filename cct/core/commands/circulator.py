@@ -110,7 +110,7 @@ class SetTemperature(Command):
 
     name = 'settemp'
 
-    timeout = 15
+    timeout = 10
 
     required_devices = ['temperature']
 
@@ -135,6 +135,7 @@ class SetTemperature(Command):
         if variablename == 'setpoint':
             if abs(newvalue - self.target_temperature) > 0.01:
                 # we are not there yet
+                self.get_device('temperature').refresh_variable('setpoint')
                 return False
 #                try:
 #                    raise CommandError(
