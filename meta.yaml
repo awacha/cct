@@ -9,7 +9,7 @@ build:
   number: {{ GIT_DESCRIBE_NUMBER }}
 
 requirements:
-  build:
+  build: &id1
     - {{ compiler('c') }}
     - python >=3.4
     - setuptools
@@ -27,6 +27,8 @@ requirements:
     - pillow
     - openpyxl
     - sqlalchemy
+
+  host: *id1
 
   run:
     - pillow
