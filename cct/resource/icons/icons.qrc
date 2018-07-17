@@ -1,5 +1,10 @@
 <RCC>
   <qresource prefix="icons">
+    <file>snapx.svg</file>
+    <file>snapy.svg</file>
+    <file>snap.svg</file>
+    <file>lockpositions.svg</file>
+    <file>unlockpositions.svg</file>
     <file>anisotropy.svg</file>
     <file>aspect_equal.svg</file>
     <file>maskeditor.svg</file>
