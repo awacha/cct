@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from typing import Optional, Tuple
 from PyQt5 import QtWidgets, QtGui
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
@@ -87,8 +88,9 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
             assert isinstance(ss, SampleStore)
             sam=ss.get_sample(self.model.getSelected()[self._picked_index])
             assert isinstance(sam, Sample)
-            sam.positionx.val=event.xdata
-            sam.positiony.val=event.ydata
+            xsnap, ysnap = self.getSnapCoordinates(event.x, event.y)
+            sam.positionx.val=xsnap if xsnap is not None else event.xdata
+            sam.positiony.val=ysnap if ysnap is not None else event.ydata
             ss.set_sample(sam.title, sam)
 
         self._picked_index = None
@@ -99,19 +101,28 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def snapRadius(self):
         return 3
 
+    def getSnapCoordinates(self, cursorx:float, cursory:float) -> Tuple[Optional[float],Optional[float]]:
+        xdata,ydata=self._markers.get_data()
+        xdata=[x for i,x in enumerate(xdata) if i!=self._picked_index]
+        ydata=[y for i,y in enumerate(ydata) if i!=self._picked_index]
+        cdisp=self.axes.transData.transform(np.vstack((xdata,ydata)).T)
+        xsnapindex, xsnapdistance = sorted(enumerate(cdisp[:,0]),key=lambda ix:abs(ix[1]-cursorx))[0]
+        ysnapindex, ysnapdistance = sorted(enumerate(cdisp[:,1]),key=lambda iy:abs(iy[1]-cursory))[0]
+        xpos=None
+        ypos=None
+        if self.snapXToolButton.isChecked() and abs(xsnapdistance-cursorx)<self.snapRadius():
+            xpos = xdata[xsnapindex]
+        if self.snapYToolButton.isChecked() and abs(ysnapdistance-cursory)<self.snapRadius():
+            ypos = ydata[ysnapindex]
+        return xpos, ypos
+
+
     def onCanvasMotionNotify(self, event:MouseEvent):
         if not (self.enableDragSamplesToolButton.isChecked() and self._picked_index is not None):
             return
         if event.inaxes is not self.axes:
             return
         logger.debug('onCanvasMotionNotify({}, {}, {})'.format(event.xdata, event.ydata, event.button))
-        xdata,ydata=self._markers.get_data()
-        xdata=[x for i,x in enumerate(xdata) if i!=self._picked_index]
-        ydata=[y for i,y in enumerate(ydata) if i!=self._picked_index]
-        cdisp=self.axes.transData.transform(np.vstack((xdata,ydata)).T)
-        cursorpos=self.axes.transData.transform((event.xdata,event.ydata))
-        xsnap = sorted(enumerate(cdisp[:,0]),key=lambda ix:abs(ix[1]-cursorpos[0]))[0]
-        ysnap = sorted(enumerate(cdisp[:,1]),key=lambda iy:abs(iy[1]-cursorpos[1]))[0]
         if self._snapxline is not None:
             try:
                 self._snapxline.remove()
@@ -122,24 +133,23 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
                 self._snapyline.remove()
             except ValueError:
                 pass
-        if self.snapXToolButton.isChecked() and abs(xsnap[1]-cursorpos[0])<self.snapRadius():
-            assert isinstance(self.axes, Axes)
-            self._snapxline=self.axes.axvline(xdata[xsnap[0]], linestyle='--',color='black',linewidth=0.7)
-            event.xdata = xdata[xsnap[0]]
-        if self.snapYToolButton.isChecked() and abs(ysnap[1]-cursorpos[1])<self.snapRadius():
-            assert isinstance(self.axes, Axes)
-            self._snapyline=self.axes.axhline(ydata[ysnap[0]], linestyle='--',color='black',linewidth=0.7)
-            event.ydata = ydata[ysnap[0]]
-
-
+        snapx, snapy = self.getSnapCoordinates(event.x, event.y)
+        if snapx is not None:
+            self._snapxline=self.axes.axvline(snapx, linestyle='--',color='black',linewidth=0.7)
+        else:
+            snapx = event.xdata
+        if snapy is not None:
+            self._snapyline=self.axes.axhline(snapy, linestyle='--',color='black',linewidth=0.7)
+        else:
+            snapy = event.ydata
         xdata,ydata=self._markers.get_data()
-        xdata[self._picked_index]=event.xdata
-        ydata[self._picked_index]=event.ydata
+        xdata[self._picked_index]=snapx
+        ydata[self._picked_index]=snapy
         self._markers.set_data(xdata,ydata)
         if self._texts is not None:
             t=self._texts[self._picked_index]
             assert isinstance(t, Text)
-            t.set_position([event.xdata,event.ydata])
+            t.set_position([snapx,snapy])
         self.canvas.draw_idle()
 
     def loadPersistence(self):
