@@ -66,6 +66,11 @@ class CapillaryMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.updateThicknessPushButton.setEnabled(False)
         self.updateBothPushButton.setEnabled(False)
         self.sampleNameComboBox.currentIndexChanged.connect(self.onSampleChanged)
+        self.canvas.mpl_connect('resize_event', self.onCanvasResize)
+
+    def onCanvasResize(self, event):
+        self.figure.tight_layout()
+        self.canvas.draw()
 
     def onSampleChanged(self):
         if not self._updating:

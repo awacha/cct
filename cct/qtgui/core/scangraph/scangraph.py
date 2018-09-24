@@ -75,6 +75,11 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.actionShow_2D.toggled.connect(self.replot)
         self.setCursorRange()
         self.canvas.setFocus(QtCore.Qt.OtherFocusReason)
+        self.canvas.mpl_connect('resize_event', self.onCanvasResize)
+
+    def onCanvasResize(self, event):
+        self.figure.tight_layout()
+        self.canvas.draw()
 
     def onCanvasKeyPress(self, event:KeyEvent):
         logger.debug('Key pressed on canvas: {}'.format(event.key))

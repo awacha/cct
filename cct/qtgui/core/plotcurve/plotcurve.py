@@ -43,6 +43,11 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         self.clearAxesAction.setVisible(True)
         self.figureToolbar.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum)
         self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.canvas.mpl_connect('resize_event', self.onCanvasResize)
+
+    def onCanvasResize(self, event):
+        self.figure.tight_layout()
+        self.canvas.draw()
 
     def onClearAxes(self):
         self.axes.clear()

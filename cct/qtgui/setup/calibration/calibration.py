@@ -74,6 +74,11 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         assert isinstance(self.pairsTreeView, QtWidgets.QTreeView)
         self.pairsStore = PairStore()
         self.pairsTreeView.setModel(self.pairsStore)
+        self.distCalibFigureCanvas.mpl_connect('resize_event', self.onCanvasResize)
+
+    def onCanvasResize(self, event):
+        self.distCalibFigure.tight_layout()
+        self.distCalibFigureCanvas.draw()
 
     def cleanup(self):
         self.fsnSelector.close()

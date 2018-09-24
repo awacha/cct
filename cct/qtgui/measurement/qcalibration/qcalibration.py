@@ -88,6 +88,26 @@ class QCalibration(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.peaksModel=PeakModel()
         self.peaksModel.calibrationChanged.connect(self.onPeakModelCalibrationChanged)
         self.peaksTreeView.setModel(self.peaksModel)
+        self.canvasExposure.mpl_connect('resize_event', self.onCanvasExposureResize)
+        self.canvasBeamPos.mpl_connect('resize_event', self.onCanvasBeamPosResize)
+        self.canvasCurves.mpl_connect('resize_event', self.onCanvasCurvesResize)
+        self.canvasCalibration.mpl_connect('resize_event', self.onCanvasCalibrationResize)
+
+    def onCanvasCalibrationResize(self, event):
+        self.figureCalibration.tight_layout()
+        self.canvasCalibration.draw()
+
+    def onCanvasCurvesResize(self, event):
+        self.figureCurves.tight_layout()
+        self.canvasCurves.draw()
+
+    def onCanvasBeamPosResize(self, event):
+        self.figureBeamPos.tight_layout()
+        self.canvasBeamPos.draw()
+
+    def onCanvasExposureResize(self, event):
+        self.figureExposure.tight_layout()
+        self.canvasExposure.draw()
 
     def onExposureSelectionChanged(self):
         try:

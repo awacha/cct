@@ -161,6 +161,11 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self._testimage()
         self.figtoolbar.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Maximum)
         self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.canvas.mpl_connect('resize_event', self.onCanvasResize)
+
+    def onCanvasResize(self, event):
+        self.figure.tight_layout()
+        self.canvas.draw()
 
     def toolbarVisibility(self, state):
         self.toolbar.setVisible(state)
