@@ -1,48 +1,44 @@
-import re
 import os
 import pickle
+import re
 from configparser import ConfigParser
 from typing import List, Tuple
 
 import appdirs
 from PyQt5 import QtWidgets, QtCore
 
+from .fsnrangemodel import FSNRangeModel
 from .iotool_ui import Ui_Form
 from ..toolbase import ToolBase, HeaderModel
-from .fsnrangemodel import FSNRangeModel
+
 
 class IoTool(ToolBase, Ui_Form):
     _default_config = {
-        'path':{
-            'prefixes':{
-                'crd':'crd',
+        'path': {
+            'prefixes': {
+                'crd': 'crd',
             },
-            'directories':{
-                'mask':'mask',
-                'eval2d':'eval2d',
-                'images':'images',
-                'param':'param',
+            'directories': {
+                'mask': 'mask',
+                'eval2d': 'eval2d',
+                'images': 'images',
+                'param': 'param',
             },
-            'fsndigits':5,
+            'fsndigits': 5,
         },
-        'datareduction':{
-            'absintrefname':'Glassy_Carbon',
+        'datareduction': {
+            'absintrefname': 'Glassy_Carbon',
         },
     }
     h5NameChanged = QtCore.pyqtSignal(str)
     newHeaderModel = QtCore.pyqtSignal(HeaderModel)
     exportFolderChanged = QtCore.pyqtSignal(str)
     cctConfigChanged = QtCore.pyqtSignal(dict)
+    projectfilename = None
 
     def setupUi(self, Form):
         super().setupUi(Form)
         self.header_columns = HeaderModel.visiblecolumns
-        self.uiStyleComboBox.addItems(QtWidgets.QStyleFactory.keys())
-        currentkey = [k for k in QtWidgets.QStyleFactory.keys() if
-                      k.upper() == QtWidgets.QApplication.instance().style().objectName().upper()][0]
-        idx = self.uiStyleComboBox.findText(currentkey)
-        self.uiStyleComboBox.setCurrentIndex(idx)
-        self.uiStyleComboBox.currentIndexChanged.connect(self.onUiStyleChange)
         self.badFSNListFileNameLineEdit.setText(
             os.path.normpath(os.path.join(appdirs.user_state_dir('cpt', 'CREDO', roaming=True), 'badfsns')))
         self.browseBadFSNListFileNamePushButton.clicked.connect(self.onBrowseBadFSNListFileName)
@@ -52,13 +48,10 @@ class IoTool(ToolBase, Ui_Form):
         self.browseExportFolderPushButton.clicked.connect(self.onBrowseExportFolder)
         self.ioProgressBar.setVisible(False)
         self.configWidgets = [
-            (self.uiStyleComboBox, 'io', 'uistyle'),
             (self.badFSNListFileNameLineEdit, 'io', 'badfsnsfile'),
             (self.saveHDFLineEdit, 'io', 'hdf5'),
             (self.rootDirLineEdit, 'io', 'datadir'),
             (self.exportFolderLineEdit, 'export', 'folder'),
-            (self.firstFSNSpinBox, 'io', 'firstfsn'),
-            (self.lastFSNSpinBox, 'io', 'lastfsn'),
         ]
         self.addToListPushButton.clicked.connect(self.addFSNRange)
         self.removeFromListPushButton.clicked.connect(self.removeFSNRange)
@@ -67,11 +60,11 @@ class IoTool(ToolBase, Ui_Form):
         self.fsnListTreeView.setModel(self.fsnList)
 
     def addFSNRange(self):
-        self.fsnList.addRange(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value())
+        self.fsnList.addRange(0, 0)
 
     def removeFSNRange(self):
         while self.fsnListTreeView.selectedIndexes():
-            sel=self.fsnListTreeView.selectedIndexes()
+            sel = self.fsnListTreeView.selectedIndexes()
             self.fsnList.removeRow(sel[0].row(), QtCore.QModelIndex())
 
     def clearFSNRanges(self):
@@ -123,15 +116,14 @@ class IoTool(ToolBase, Ui_Form):
                 self.cctConfigChanged.emit(pickle.load(f))
         except FileNotFoundError:
             QtWidgets.QMessageBox.warning(self, 'Error while loading config file',
-                                           'Error while loading config file: {} not found. Using a default config.'.format(configfile))
+                                          'Error while loading config file: {} not found. Using a default config.'.format(
+                                              configfile))
             self.cctConfigChanged.emit(self._default_config)
             return False
         except pickle.PickleError:
             QtWidgets.QMessageBox.critical(self, 'Error while loading config file',
                                            'Error while loading config file: {} is malformed'.format(configfile))
             return False
-        self.firstFSNSpinBox.setEnabled(True)
-        self.lastFSNSpinBox.setEnabled(True)
         self.reloadPushButton.setEnabled(True)
         self.rootDirLineEdit.setText(os.path.normpath(rootdir))
         return True
@@ -191,13 +183,20 @@ class IoTool(ToolBase, Ui_Form):
         except KeyError:
             pass
         self.exportFolderChanged.emit(self.exportFolderLineEdit.text())
-
+        try:
+            self.projectfilename = config['io']['projectfilename']
+        except KeyError:
+            pass
+        if not self.projectfilename:
+            self.projectfilename = None
 
     def save_state(self, config: ConfigParser):
         super().save_state(config)
         config['headerview'] = {}
         config['headerview']['fields'] = ';'.join(self.header_columns)
-        config['io']['fsnranges']='['+', '.join(['({}, {})'.format(left,right) for left,right in self.fsnRanges()])  +']'
+        config['io']['fsnranges'] = '[' + ', '.join(
+            ['({}, {})'.format(left, right) for left, right in self.fsnRanges()]) + ']'
+        config['io']['projectfilename'] = self.projectfilename if self.projectfilename is not None else ''
 
     def onHeaderModelFSNLoaded(self, totalcount, currentcount, thisfsn):
         if totalcount == currentcount == thisfsn == 0:
@@ -212,3 +211,43 @@ class IoTool(ToolBase, Ui_Form):
                 self.ioProgressBar.setMaximum(totalcount)
                 self.ioProgressBar.setFormat('Loading headers...')
             self.ioProgressBar.setValue(currentcount)
+
+    def saveProject(self):
+        if self.projectfilename is None:
+            return
+        cp = ConfigParser()
+        for sibling in self.siblings:
+            self.siblings[sibling].save_state(cp)
+        with open(self.projectfilename, 'wt') as f:
+            cp.write(f)
+        self.updateRecents(self.projectfilename)
+
+    def updateRecents(self, projectfilename=None):
+        if projectfilename is None:
+            projectfilename = self.projectfilename
+        if not projectfilename:
+            return
+        try:
+            with open(os.path.join(appdirs.user_config_dir('cpt', 'CREDO', roaming=True), 'projecthistory'), 'rt') as f:
+                recentprojects = [l.strip() for l in f if l.strip().lower().endswith('.cpt')]
+        except FileNotFoundError:
+            recentprojects = []
+        if projectfilename not in recentprojects:
+            recentprojects.append(projectfilename)
+        with open(os.path.join(appdirs.user_config_dir('cpt', 'CREDO', roaming=True), 'projecthistory'), 'wt') as f:
+            for pf in sorted(recentprojects):
+                f.write(pf + '\n')
+
+    def loadProject(self, projectfilename: str):
+        if not projectfilename:
+            return
+        cp = ConfigParser()
+        cp.read(projectfilename)
+        for sibling in self.siblings:
+            self.siblings[sibling].load_state(cp)
+        self.projectfilename = projectfilename
+        self.projectNameLineEdit.setText(self.projectfilename)
+        self.updateRecents(self.projectfilename)
+
+    def autosaveProject(self):
+        self.saveProject()

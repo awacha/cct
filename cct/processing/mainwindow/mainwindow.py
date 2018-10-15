@@ -25,9 +25,8 @@ from .mainwindow_ui import Ui_MainWindow
 from .overalltool import OverallTool
 from .persampletool import PerSampleTool
 from .processingtool import ProcessingTool
+from .projectdialog import ProjectDialog
 from .toolbase import ToolBase, HeaderModel
-from .projecttool import ProjectTool
-from ..display import ParamPickleModel
 from ..export_table import export_table
 from ...core.processing.summarize import Summarizer
 
@@ -68,12 +67,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             t.load_state(config)
 
     def closeEvent(self, event: QtGui.QCloseEvent):
+        self.tools['io'].autosaveProject()
         self.save_state()
-        if self.tools['project'].autosaveOnExitCheckBox.isChecked():
-            self.tools['project'].saveProject()
         event.accept()
 
-    def save_state(self):
+    def save_state(self, project=None):
         configdir = appdirs.user_config_dir('cpt', 'CREDO', roaming=True)
         os.makedirs(configdir, exist_ok=True)
         statefile = os.path.join(configdir, 'cpt.ini')
@@ -110,7 +108,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         while self.toolBox.count() > 0:
             self.toolBox.removeItem(0)
         for label, handle, type_ in [
-            ('Project', 'project', ProjectTool),
             ('Input/output', 'io', IoTool),
             ('Sample selection', 'background', BackgroundTool),
             ('Processing', 'processing', ProcessingTool),
@@ -133,14 +130,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.tools['io'].exportFolderChanged.connect(self.onExportFolderChanged)
         self.tools['io'].cctConfigChanged.connect(self.onCCTConfigChanged)
         self.tools['processing'].processingDone.connect(self.onProcessingDone)
+        self.projectdialog = ProjectDialog(self)
+        self.projectdialog.projectSelected.connect(self.onProjectSelected)
+        self.projectdialog.show()
+
+    def onProjectSelected(self, projectname):
+        self.tools['io'].loadProject(projectname)
 
     def onBusy(self, busy: bool):
         self.setEnabled(not busy)
 
     def onProcessingDone(self):
         self.tools['io'].h5NameChanged.emit(self.tools['io'].h5FileName)
-        if self.tools['project'].autosaveAfterProcessingCheckBox.isChecked():
-            self.tools['project'].saveProject()
+        self.tools['io'].autosaveProject()
 
     def onFigureDrawn(self):
         self.putlogo()
