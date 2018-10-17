@@ -55,6 +55,8 @@ class ProjectDialog(QtWidgets.QWidget, Ui_Form):
         )
         if not filename:
             return
+        if not filename.endswith('.cpt'):
+            filename=filename+'.cpt'
         self.projectname = filename
         self.projectSelected.emit(filename)
         self.close()

@@ -76,8 +76,10 @@ class IoTool(ToolBase, Ui_Form):
     def onBrowseExportFolder(self):
         filename = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select the folder to output files to...')
         if filename:
-            self.exportFolderLineEdit.setText(os.path.normpath(filename))
             self.exportFolderChanged.emit(os.path.normpath(filename))
+
+    def setExportFolder(self, exportfolder: str):
+        self.exportFolderLineEdit.setText(exportfolder)
 
     def fsnRanges(self) -> List[Tuple[int, int]]:
         return self.fsnList.getRanges()
@@ -242,12 +244,24 @@ class IoTool(ToolBase, Ui_Form):
         if not projectfilename:
             return
         cp = ConfigParser()
+        if not os.path.exists(projectfilename):
+            return self.newProject(projectfilename)
         cp.read(projectfilename)
         for sibling in self.siblings:
             self.siblings[sibling].load_state(cp)
         self.projectfilename = projectfilename
         self.projectNameLineEdit.setText(self.projectfilename)
         self.updateRecents(self.projectfilename)
+
+    def newProject(self, projectfilename:str):
+        self.projectfilename = projectfilename
+        self.projectNameLineEdit.setText(self.projectfilename)
+        self.updateRecents(self.projectfilename)
+        basename=os.path.splitext(self.projectfilename)[0]
+        self.setBadFSNFile(basename+'_badfsns.txt')
+        self.setHDF5File(basename+'.h5')
+        os.makedirs(basename, exist_ok=True)
+        self.exportFolderChanged.emit(basename)
 
     def autosaveProject(self):
         self.saveProject()
