@@ -32,6 +32,7 @@ class AnsiColorFormatter(logging.Formatter):
 
 # initialize the root logger
 handler = logging.StreamHandler()
+handler.addFilter(logging.Filter('cpt'))
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
 if not sys.platform.lower().startswith('win'):
     formatter = AnsiColorFormatter(formatter)
@@ -43,6 +44,7 @@ logging.root.addHandler(handler)
 # logging.root.addHandler(handler)
 logging.root.setLevel(logging.INFO)
 ch = CollectingHandler()
+ch.addFilter(logging.Filter('cpt'))
 logging.root.addHandler(ch)
 
 logging.root.info('------------------- Program startup v{} -------------------'.format(

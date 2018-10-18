@@ -114,6 +114,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.logViewerGroupBox.setLayout(layout)
         # self.logViewer = LogViewer(self.logViewerGroupBox)
         self.logViewer = LogViewerText(self.logViewerGroupBox)
+        self.logViewer.addFilter(logging.Filter('cct'))
         layout.addWidget(self.logViewer)
         logging.root.addHandler(self.logViewer)
         for record in CollectingHandler.instance.collected:
