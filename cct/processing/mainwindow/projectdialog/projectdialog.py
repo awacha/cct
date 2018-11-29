@@ -22,7 +22,12 @@ class ProjectDialog(QtWidgets.QWidget, Ui_Form):
         self.newPushButton.clicked.connect(self.onNewProject)
         self.openPushButton.clicked.connect(self.onOpenProject)
         self.quitPushButton.clicked.connect(self.onQuit)
-        self.move(self.mainwindow.geometry().center() - self.geometry().center())
+        self.openSelectedPushButton.clicked.connect(self.onRecentSelected)
+        mainpos=self.mainwindow.pos()
+        cx=mainpos.x()+self.mainwindow.width()*0.5
+        cy=mainpos.y()+self.mainwindow.height()*0.5
+        self.adjustSize()
+        self.move(cx-self.width()*0.5, cy-self.height()*0.5)
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         if not self.projectname:
@@ -36,14 +41,18 @@ class ProjectDialog(QtWidgets.QWidget, Ui_Form):
                 for l in f:
                     l = l.strip()
                     if os.path.exists(l) and l.lower().endswith('.cpt'):
-                        print('Adding {}'.format(l))
                         self.recentsListWidget.addItem(QtWidgets.QListWidgetItem(l))
                     else:
-                        print('Not adding {}'.format(l))
+                        pass
         except FileNotFoundError:
             return
 
-    def onRecentSelected(self, item: QtWidgets.QListWidgetItem):
+    def onRecentSelected(self, item: QtWidgets.QListWidgetItem=None):
+        if not isinstance(item, QtWidgets.QListWidgetItem):
+            item = self.recentsListWidget.currentItem()
+            print(item)
+            if item is None:
+                return
         self.projectname = item.text()
         self.projectSelected.emit(item.text())
         self.close()

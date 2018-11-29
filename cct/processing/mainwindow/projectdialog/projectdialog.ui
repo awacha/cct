@@ -51,7 +51,7 @@
      <item>
       <widget class="QPushButton" name="newPushButton">
        <property name="text">
-        <string>New...</string>
+        <string>Create new project</string>
        </property>
        <property name="icon">
         <iconset theme="document-new">
@@ -60,9 +60,19 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="openSelectedPushButton">
+       <property name="text">
+        <string>Open selected project</string>
+       </property>
+       <property name="icon">
+        <iconset theme="document-open"/>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="openPushButton">
        <property name="text">
-        <string>Open...</string>
+        <string>Open an unlisted project</string>
        </property>
        <property name="icon">
         <iconset theme="document-open">
