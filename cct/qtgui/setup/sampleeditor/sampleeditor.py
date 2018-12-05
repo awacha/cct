@@ -40,7 +40,7 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.credo.services['accounting'].connect('project-changed', self.onProjectListChanged),
         ]
         self.onSelectionChanged()
-        for lineedit in [self.preparedByLineEdit]:
+        for lineedit in [self.preparedByLineEdit, self.maskOverrideLineEdit]:
             lineedit.textEdited.connect(self.onTextEdited)
         self.descriptionPlainTextEdit.textChanged.connect(self.onTextEdited)
         for spinbox in [self.transmissionErrDoubleSpinBox, self.transmissionValDoubleSpinBox,
@@ -54,6 +54,24 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.onProjectListChanged(self.credo.services['accounting'])
         self.todayPushButton.clicked.connect(self.onTodayClicked)
         self.sampleNameLineEdit.installEventFilter(self)
+        self.maskOverridePushButton.clicked.connect(self.browseForMask)
+        self.maskOverrideCheckBox.clicked.connect(self.maskOverrideChanged)
+
+    def maskOverrideChanged(self):
+        if self.maskOverrideCheckBox.isChecked():
+            self.maskOverrideLineEdit.setText(self.credo.config['geometry']['mask'])
+        else:
+            self.maskOverrideLineEdit.setText('')
+        self.maskOverrideLineEdit.textEdited.emit(self.maskOverrideLineEdit.text())
+
+    def browseForMask(self):
+        filename, filter = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Open mask file...', self.credo.config['path']['directories']['mask'], '*.mat',
+        )
+        if filename:
+            self.maskOverrideLineEdit.setText(filename)
+            self.maskOverrideCheckBox.setChecked(True)
+            self.maskOverrideLineEdit.textEdited.emit(filename)
 
     def eventFilter(self, obj:QtCore.QObject, event:QtCore.QEvent):
         if obj is self.sampleNameLineEdit and isinstance(event, QtGui.QFocusEvent):
@@ -126,6 +144,9 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             sample.preparedby = self.preparedByLineEdit.text()
         elif self.sender() == self.descriptionPlainTextEdit:
             sample.description = self.descriptionPlainTextEdit.toPlainText()
+        elif self.sender() == self.maskOverrideLineEdit:
+            sample.maskoverride = self.maskOverrideLineEdit.text() if self.maskOverrideCheckBox.isChecked() else None
+            logger.debug('Maskoverride for sample {} changed to: {}'.format(sample.title, sample.maskoverride))
         else:
             assert False
         self.credo.services['samplestore'].set_sample(selectedsamplename, sample)
@@ -176,6 +197,10 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             sample.situation = self.situationComboBox.currentText()
         elif self.sender() == self.projectComboBox:
             sample.project = self.projectComboBox.currentData()
+            if not sample.project:
+                sample.project=None
+            if self.projectComboBox.currentIndex()<0:
+                self.projectComboBox.setCurrentIndex(0)
         else:
             assert False
         self.credo.services['samplestore'].set_sample(selectedsamplename, sample)
@@ -292,6 +317,12 @@ class SampleEditor(QtWidgets.QWidget, Ui_Form, ToolWindow):
             updatespinbox(self.transmissionValDoubleSpinBox, sample.transmission.val)
             updatespinbox(self.transmissionErrDoubleSpinBox, sample.transmission.err)
             self.calendarWidget.setSelectedDate(sample.preparetime.date())
+            if sample.maskoverride is None:
+                self.maskOverrideCheckBox.setChecked(False)
+                self.maskOverrideLineEdit.setText('')
+            else:
+                self.maskOverrideCheckBox.setChecked(True)
+                self.maskOverrideLineEdit.setText(sample.maskoverride)
             self._selectedsample = sample
 
     def onSampleListChanged(self, samplestore: SampleStore):

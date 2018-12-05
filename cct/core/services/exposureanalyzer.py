@@ -139,6 +139,8 @@ class ExposureAnalyzer_Backend(object):
                 assert isinstance(message, Message)
                 if message['type'] == 'exit':
                     break  # the while True loop
+                elif message['type'] == 'invalidate_mask_cache':
+                    self.masks={}
                 elif message['type'] == 'config':
                     self.config = message['configdict']
                 elif message['type'] == 'telemetry':
@@ -147,6 +149,10 @@ class ExposureAnalyzer_Backend(object):
                     self._logger.debug(
                         'Got work: prefix = {}, fsn = {}, filename = {}'.format(message['prefix'], message['fsn'],
                                                                                 message['filename']))
+                    try:
+                        self._logger.debug('Mask is: {}'.format(message['param']['geometry']['mask']))
+                    except KeyError:
+                        self._logger.debug('Mask is not defined!')
                     cbfdata = None
                     for fn in [message['filename'], os.path.split(message['filename'])[-1]]:
                         self._logger.debug('Trying filename form: {}'.format(fn))
@@ -251,7 +257,11 @@ class ExposureAnalyzer_Backend(object):
                     else:
                         self._logger.debug('Unknown prefix, just sending back image.')
                         try:
-                            mask = self.get_mask(self.config['geometry']['mask'])
+                            maskname=message['param']['geometry']['mask']
+                        except KeyError:
+                            maskname=self.config['geometry']['mask']
+                        try:
+                            mask = self.get_mask(maskname)
                         except (IOError, OSError, IndexError) as exc:
                             # could not load a mask file
                             self.send_to_frontend('error', prefix=message['prefix'], fsn=message['fsn'], exception=exc,
@@ -624,6 +634,10 @@ class ExposureAnalyzer(Service):
             'Submitting work to exposureanalyzer. Prefix: {}, fsn: {:d}. Filename: {}'.format(prefix, fsn, filename))
 
         self.send_to_backend('analyze', prefix=prefix, fsn=fsn, filename=filename, **kwargs)
+        try:
+            logger.debug('Mask of the last exposure sent to the backend: {}'.format(kwargs['param']['geometry']['mask']))
+        except KeyError:
+            logger.debug('Last exposure did not have a param.')
         was_idle = not self.is_busy()
         if prefix not in self._working:
             self._working[prefix] = 0
@@ -656,3 +670,6 @@ class ExposureAnalyzer(Service):
         self._backendprocess.join()
         self._backendprocess = None
         self.starttime = None
+
+    def invalidate_mask_cache(self):
+        self.send_to_backend('invalidate_mask_cache')

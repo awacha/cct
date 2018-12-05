@@ -409,6 +409,11 @@ class FileSequence(Service):
         if sample is not None:
             distcalib = dist - sample.distminus
             params['sample'] = sample.todict()
+            if params['sample']['maskoverride'] not in [None, '__none__']:
+                logger.debug('Overriding mask with {}'.format(params['sample']['maskoverride']))
+                params['geometry']['mask']=params['sample']['maskoverride']
+            else:
+                logger.debug('Keeping mask as it is.')
         else:
             sampledict = self.instrument.services['samplestore'].get_samples()[0].todict()
             for v in sampledict:
@@ -592,3 +597,7 @@ class FileSequence(Service):
             raise FileSequenceError('Cannot append to scanfile: no scan running.')
         with open(self._scanfile, 'at', encoding='utf-8') as f:
             f.write(' '.join([str(c) for c in counters]) + '\n')
+
+    def invalidate_mask_cache(self):
+        self._masks={}
+        self.instrument.services['exposureanalyzer'].invalidate_mask_cache()

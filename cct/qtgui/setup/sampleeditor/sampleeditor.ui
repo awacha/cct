@@ -7,14 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>901</width>
-    <height>645</height>
+    <height>764</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Sample database</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../../resource/icons/icons.qrc">
+   <iconset>
     <normaloff>:/icons/sample.svg</normaloff>:/icons/sample.svg</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -198,7 +198,7 @@
        <item row="9" column="0">
         <widget class="QLabel" name="label_9">
          <property name="text">
-          <string>Distance decrease:</string>
+          <string>&amp;Distance decrease:</string>
          </property>
          <property name="buddy">
           <cstring>distminusValDoubleSpinBox</cstring>
@@ -244,7 +244,7 @@
        <item row="7" column="0">
         <widget class="QLabel" name="label_7">
          <property name="text">
-          <string>X motor position:</string>
+          <string>&amp;X motor position:</string>
          </property>
          <property name="buddy">
           <cstring>xPositionValDoubleSpinBox</cstring>
@@ -254,7 +254,7 @@
        <item row="3" column="0">
         <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>Category:</string>
+          <string>Cate&amp;gory:</string>
          </property>
          <property name="buddy">
           <cstring>categoryComboBox</cstring>
@@ -352,7 +352,7 @@
        <item row="6" column="0">
         <widget class="QLabel" name="label_6">
          <property name="text">
-          <string>Thickness (cm):</string>
+          <string>&amp;Thickness (cm):</string>
          </property>
          <property name="buddy">
           <cstring>thicknessValDoubleSpinBox</cstring>
@@ -514,7 +514,7 @@
        <item row="4" column="0">
         <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Situation:</string>
+          <string>Sit&amp;uation:</string>
          </property>
          <property name="buddy">
           <cstring>situationComboBox</cstring>
@@ -524,7 +524,7 @@
        <item row="1" column="0">
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>Sample name:</string>
+          <string>Sample &amp;name:</string>
          </property>
          <property name="buddy">
           <cstring>sampleNameLineEdit</cstring>
@@ -550,7 +550,7 @@
        <item row="8" column="0">
         <widget class="QLabel" name="label_8">
          <property name="text">
-          <string>Y motor position:</string>
+          <string>&amp;Y motor position:</string>
          </property>
          <property name="buddy">
           <cstring>yPositionValDoubleSpinBox</cstring>
@@ -615,7 +615,7 @@
        <item row="11" column="0">
         <widget class="QLabel" name="label_18">
          <property name="text">
-          <string>Project:</string>
+          <string>Pro&amp;ject:</string>
          </property>
          <property name="buddy">
           <cstring>projectComboBox</cstring>
@@ -656,6 +656,37 @@
             </size>
            </property>
           </spacer>
+         </item>
+        </layout>
+       </item>
+       <item row="12" column="0">
+        <widget class="QCheckBox" name="maskOverrideCheckBox">
+         <property name="text">
+          <string>Mask override:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="12" column="1" colspan="3">
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QLineEdit" name="maskOverrideLineEdit">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="maskOverridePushButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+           <property name="icon">
+            <iconset theme="document-open"/>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -705,6 +736,38 @@
     <hint type="destinationlabel">
      <x>638</x>
      <y>31</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>maskOverrideCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>maskOverrideLineEdit</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>377</x>
+     <y>527</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>619</x>
+     <y>527</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>maskOverrideCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>maskOverridePushButton</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>377</x>
+     <y>527</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>841</x>
+     <y>527</y>
     </hint>
    </hints>
   </connection>

@@ -35,6 +35,7 @@ class Sample(object):
     category = None  # a string. Can be any element of VALID_CATEGORIES
     situation = None  # a string. Can be any element of VALID_SITUATIONS
     project = None # a string, which should correspond to a project ID, or None if unassigned
+    maskoverride = None # a string, should be the path to an alternative mask. None if default mask is to be used.
 
     @classmethod
     def fromdict(cls, dic: Dict):
@@ -45,6 +46,9 @@ class Sample(object):
             proj=None
         if proj=='__none__':
             proj=None
+        maskoverride=dic.setdefault('maskoverride', '__none__')
+        if maskoverride=='__none__':
+            maskoverride=None
         return cls(title=dic['title'],
                    positionx=ErrorValue(
                        dic['positionx.val'], dic['positionx.err']),
@@ -62,6 +66,7 @@ class Sample(object):
                    category=dic['category'],
                    situation=dic['situation'],
                    project=proj,
+                   maskoverride=maskoverride
                    )
 
     def todict(self) -> Dict:
@@ -81,7 +86,8 @@ class Sample(object):
                 'description': self.description,
                 'category': self.category,
                 'situation': self.situation,
-                'project': self.project if self.project is not None else '__none__'}
+                'project': self.project if self.project is not None else '__none__',
+                'maskoverride':self.maskoverride if self.maskoverride is not None else '__none__'}
 
     def toparam(self) -> str:
         dic = self.todict()
@@ -91,7 +97,7 @@ class Sample(object):
                  thickness: Union[float, ErrorValue] = 1.0, transmission: Union[float, ErrorValue] = 1.0,
                  preparedby: str = 'Anonymous', preparetime: Optional[datetime.datetime] = None,
                  distminus: Union[float, ErrorValue] = 0.0, description: str = '', category: str = 'sample',
-                 situation: str = 'vacuum', project: str = 'no project'):
+                 situation: str = 'vacuum', project: str = None, maskoverride: str = None):
         if isinstance(title, self.__class__):
             self.title = title.title
             self.positionx = ErrorValue(title.positionx)
@@ -105,6 +111,7 @@ class Sample(object):
             self.category = title.category
             self.situation = title.situation
             self.project = title.project
+            self.maskoverride=title.maskoverride
         else:
             self.title = title
             self.positionx = ErrorValue(positionx)
@@ -120,6 +127,7 @@ class Sample(object):
             self.description = description
             self.situation = situation
             self.project = project
+            self.maskoverride=maskoverride
         if not isinstance(self.positionx, ErrorValue):
             self.positionx = ErrorValue(self.positionx, 0)
         if not isinstance(self.positiony, ErrorValue):
@@ -210,6 +218,7 @@ class SampleStore(Service):
         dic['active'] = self._active
         dic['list'] = {x.title: x.todict() for x in self._list}
         logger.debug('Saved {:d} samples.'.format(len(dic['list'])))
+        logger.debug('Saved samples are: {}'.format(dic['list']))
         return dic
 
     def add(self, sample: Sample):
@@ -281,6 +290,7 @@ class SampleStore(Service):
 
     def set_sample(self, title: str, sample: Sample):
         self._list = sorted([s for s in self._list if s.title != title] + [sample], key=lambda x: x.title)
+        logger.debug('Added sample to samplestore: {}'.format(sample.todict()))
         self.emit('list-changed')
 
     def __contains__(self, samplename: str):

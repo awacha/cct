@@ -141,6 +141,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         filename = self.windowFilePath()
         maskname = os.path.splitext(os.path.split(filename)[1])[0]
         scipy.io.savemat(filename, {maskname:self.maskMatrix}, appendmat = True)
+        self.credo.services['filesequence'].invalidate_mask_cache()
         self.setWindowModified(False)
 
     def onSaveMaskAs(self):
