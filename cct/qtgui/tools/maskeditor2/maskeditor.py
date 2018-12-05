@@ -1,19 +1,22 @@
+import os
+
+import numpy as np
+import scipy.io
 from PyQt5 import QtWidgets, QtCore
+from matplotlib.backend_bases import MouseEvent
+from matplotlib.patches import Circle
+from matplotlib.path import Path
+from matplotlib.widgets import Cursor, EllipseSelector, RectangleSelector, LassoSelector, PolygonSelector, SpanSelector
+from sastool.classes2.exposure import Exposure
+
+from .maskeditor_ui import Ui_MainWindow
+from .stack import Stack
+from ...core.fsnselector import FSNSelector
+from ...core.h5selector import H5Selector
 from ...core.mixins import ToolWindow
 from ...core.plotcurve import PlotCurve
 from ...core.plotimage import PlotImage
-from ...core.fsnselector import FSNSelector
-from ...core.h5selector import H5Selector
-from .maskeditor_ui import Ui_MainWindow
-from .stack import Stack
-from sastool.classes2.exposure import Exposure
-import scipy.io
-import numpy as np
-import os
-from matplotlib.path import Path
-from matplotlib.widgets import Cursor, EllipseSelector, RectangleSelector, LassoSelector, PolygonSelector, SpanSelector
-from matplotlib.patches import Circle
-from matplotlib.backend_bases import MouseEvent
+
 
 class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def __init__(self, *args, **kwargs):
@@ -78,6 +81,8 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         for c in self._plotimage_connection:
             self.plotimage.canvas.mpl_disconnect(c)
         self._plotimage_connection=[]
+        self.fsnSelector.close()
+        self.h5Selector.close()
         return super().cleanup()
 
     def deleteLater(self):
