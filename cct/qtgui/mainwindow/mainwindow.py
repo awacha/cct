@@ -156,6 +156,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.deviceStatusBar = DeviceStatusBar(self, self.credo)
         self.deviceStatusBarLayout.addWidget(self.deviceStatusBar)
         self.panicPushButton.clicked.connect(self.onPanic)
+        self.adjustSize()
 
     def onChangePassword(self):
         dialog = ChangePasswordDialog(self, self.credo)
