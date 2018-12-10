@@ -120,7 +120,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
     def onNewMask(self):
         if self.confirmChanges():
             self.undoStack.reset()
-            self.updateMask(np.zeros(self.plotimage.exposure().shape, np.bool))
+            self.updateMask(np.ones(self.plotimage.exposure().shape, np.bool), flagwindowmodified=True)
             self.setWindowFilePath('')
 
     def onLoadMask(self):
@@ -132,7 +132,8 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         mat=scipy.io.loadmat(filename)
         maskkey = [k for k in mat.keys() if not k.startswith('_')][0]
         self.undoStack.reset()
-        self.updateMask(mat[maskkey])
+        self.updateMask(mat[maskkey], flagwindowmodified=False)
+        self.setWindowModified(False)
         self.setWindowFilePath(filename)
 
     def onSaveMask(self):
@@ -313,10 +314,11 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.plotcurve.setYLabel('Intensity')
         self.onQRangeCursor(self.actionQ_range_cursor.isChecked())
 
-    def updateMask(self, mask:np.ndarray):
+    def updateMask(self, mask:np.ndarray, flagwindowmodified:bool=True):
         self.undoStack.push(mask)
         self.maskMatrix = mask
-        self.setWindowModified(True)
+        if flagwindowmodified:
+            self.setWindowModified(True)
 
     def onQRangeCursor(self, checked:bool):
         if checked:
@@ -365,7 +367,7 @@ class MaskEditor(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self._circles = []
         result = self.plotimage.setExposure(exposure)
         self.undoStack.reset()
-        self.updateMask(exposure.mask)
+        self.updateMask(exposure.mask, flagwindowmodified=False)
         return result
 
     def exposure(self) -> Exposure:
