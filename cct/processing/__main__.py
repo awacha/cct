@@ -78,7 +78,7 @@ except OSError:
 
 mw.setWindowTitle(mw.windowTitle() + ' v{}'.format(pkg_resources.get_distribution('cct').version))
 app.setWindowIcon(mw.windowIcon())
-mw.show()
+#mw.show()
 result = app.exec_()
 mw.deleteLater()
 logging.root.debug('QApplication exited.')

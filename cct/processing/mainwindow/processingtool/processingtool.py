@@ -193,7 +193,7 @@ class ProcessingTool(ToolBase, Ui_Form):
             return True
         return True
 
-    def updateBadFSNs(self, processingfinished: bool = False):
+    def updateBadFSNs(self, processingfinished: bool = False, markinheadermodel: bool = True):
         newbadfsns = []
         try:
             for sn in self.h5GetSamples():
@@ -214,7 +214,7 @@ class ProcessingTool(ToolBase, Ui_Form):
         except OSError:
             # happens when the .h5 file is not present
             pass
-        if self.autoMarkBadExposuresCheckBox.isChecked():
+        if (self.autoMarkBadExposuresCheckBox.isChecked()) and markinheadermodel:
             try:
                 self.headerModel.update_badfsns(newbadfsns)
             except AttributeError:
@@ -235,4 +235,4 @@ class ProcessingTool(ToolBase, Ui_Form):
     def setH5FileName(self, h5filename: str):
         super().setH5FileName(h5filename)
         self.processPushButton.setEnabled(True)
-        self.updateBadFSNs()
+        self.updateBadFSNs(markinheadermodel=False)

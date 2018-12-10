@@ -133,9 +133,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.projectdialog = ProjectDialog(self)
         self.projectdialog.projectSelected.connect(self.onProjectSelected)
         self.projectdialog.show()
+        self.hide()
 
     def onProjectSelected(self, projectname):
         self.tools['io'].loadProject(projectname)
+        self.show()
 
     def onBusy(self, busy: bool):
         self.setEnabled(not busy)

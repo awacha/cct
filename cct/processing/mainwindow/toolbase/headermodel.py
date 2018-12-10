@@ -180,6 +180,7 @@ class HeaderModel(QtCore.QAbstractItemModel):
         if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
             return (['Bad?'] + self.visiblecolumns)[column].capitalize()
         return None
+
 # fsn, title, distance, isbad, date, exptime, (visible parameters)
     def update_badfsns(self, badfsns):
         for i, d in enumerate(self._data):
