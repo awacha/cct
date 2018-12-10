@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -12,6 +13,11 @@ from multiprocessing import Queue, Process
 from queue import Empty
 
 
+def suggestPinholeSize(pc: PinholeConfiguration, pinholes:List[float]) -> float:
+    """Suggest a pinhole size for the third pinhole."""
+    return sorted([p for p in pinholes if pc.D3 < p], key=lambda x: x - pc.D3)[0]
+
+
 def worker(queue: Queue, spacers, pinholes, ls, lbs, sd, mindist_l1, mindist_l2, sealringwidth, wavelength,
            crit_sample, crit_beamstop, crit_l1, crit_l2, keep_best_n=200):
     try:
@@ -19,19 +25,23 @@ def worker(queue: Queue, spacers, pinholes, ls, lbs, sd, mindist_l1, mindist_l2,
         for phc in PinholeConfiguration.enumerate(spacers, pinholes, ls, lbs, sd, mindist_l1, mindist_l2, sealringwidth,
                                                   wavelength):
             assert isinstance(phc, PinholeConfiguration)
+            try:
+                ph3_suggestion=suggestPinholeSize(phc, pinholes)
+            except IndexError:
+                continue
+            dbs=phc.rbs_parasitic1(ph3_suggestion*0.5e-3)*2
             if phc.l1 < crit_l1:
                 #                print('L1 not OK: {} < {}'.format(phc.l1, crit_l1))
                 continue
             if phc.l2 < crit_l2:
                 #                print('L2 not OK: {} < {}'.format(phc.l2, crit_l2))
                 continue
-            if phc.Dbs < crit_beamstop[0] or phc.Dbs > crit_beamstop[1]:
+            if dbs < crit_beamstop[0] or dbs > crit_beamstop[1]:
                 #                print('BS not OK: {} not between {} and {}'.format(phc.Dbs, crit_beamstop[0], crit_beamstop[1]))
                 continue
             if phc.Dsample < crit_sample[0] or phc.Dsample > crit_sample[1]:
                 #                print('Sample not OK: {} not between {} and {}'.format(phc.Dsample, crit_sample[0], crit_sample[1]))
                 continue
-            # print('OK: {}'.format(phc))
             results.append(phc)
     finally:
         queue.put_nowait(sorted(results, key=lambda phc: -phc.intensity)[:keep_best_n])
@@ -47,12 +57,12 @@ class OptimizeGeometry(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def setupUi(self, Form):
         Ui_Form.setupUi(self, Form)
         self.progressBar.hide()
-        self.pinholeList = SimpleEditableList(self.groupBox)
+        self.pinholeList = SimpleEditableList(self.groupBox, float, lambda x:'{:.0f}'.format(x))
         self.pinholeList.setTitle('Apertures (\u03bcm):')
         l = self.groupBox.layout()
         assert isinstance(l, QtWidgets.QHBoxLayout)
         l.insertWidget(0, self.pinholeList)
-        self.spacerList = SimpleEditableList(self.groupBox)
+        self.spacerList = SimpleEditableList(self.groupBox, float, lambda x:'{:.0f}'.format(x))
         self.spacerList.setTitle('Spacers (mm):')
         l.insertWidget(0, self.spacerList)
         self.pinholeList.addItems(self.credo.config['gui']['optimizegeometry']['pinholes'])
@@ -83,6 +93,18 @@ class OptimizeGeometry(QtWidgets.QWidget, Ui_Form, ToolWindow):
             self.credo.config['gui']['optimizegeometry']['minimum_beamstop_diameter'])
         self.maxBeamStopSizeDoubleSpinBox.setValue(
             self.credo.config['gui']['optimizegeometry']['maximum_beamstop_diameter'])
+        self.pinholeList.listChanged.connect(self.onPinholeListChanged)
+        self.spacerList.listChanged.connect(self.onSpacerListChanged)
+
+    def onPinholeListChanged(self, pinholelist:List[str]):
+        lis=[float(ph) for ph in pinholelist]
+        self.credo.config['gui']['optimizegeometry']['pinholes']=sorted(lis)
+        self.credo.save_state()
+
+    def onSpacerListChanged(self, spacerlist:List[str]):
+        lis=[float(ph) for ph in spacerlist]
+        self.credo.config['gui']['optimizegeometry']['spacers']=sorted(lis)
+        self.credo.save_state()
 
     def setBusy(self):
         super().setBusy()
