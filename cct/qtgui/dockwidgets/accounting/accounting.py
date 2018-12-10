@@ -1,7 +1,7 @@
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 from PyQt5 import QtWidgets
 from .accounting_ui import Ui_DockWidget
@@ -48,36 +48,55 @@ class Accounting(QtWidgets.QDockWidget, Ui_DockWidget, ToolWindow):
         self.projectIDComboBox.setSizeAdjustPolicy(self.projectIDComboBox.AdjustToContents)
         self.projectIDComboBox.setModelColumn(0)
         self.projectIDComboBox.currentIndexChanged.connect(self.onProjectChange)
+        self.onProjectChanged(a)
         self._accountingserviceconnections = [
             a.connect('privlevel-changed', self.onPrivilegeChanged),
             a.connect('project-changed', self.onProjectChanged)
         ]
 
     def onProjectChange(self):
-        if self._updating:
-            return
+        """This is a callback emitted by the project ID combo box if the user changes the selected project.
+
+        This function must change the active project in the the accounting service
+        """
         a = self.credo.services['accounting']
         assert isinstance(a, AccountingService)
-        selectedprojectid=sorted(a.get_projectids())[self.projectIDComboBox.currentIndex()]
-        logger.debug('selectedprojectid: {}'.format(selectedprojectid))
+        selectedprojectid=self.projectIDComboBox.currentText() # this is the project ID of the selected project.
+        if not selectedprojectid:
+            # in the case of an invalid selection, do nothing
+            return
+        logger.debug('The user has selected the project with the projectid: {}'.format(selectedprojectid))
         if a.get_project().projectid == selectedprojectid:
+            # if the project is already selected, do nothing.
             return
         logger.debug('Selecting project: {}'.format(selectedprojectid))
-        with self._updating:
-            a.select_project(selectedprojectid)
+        # select the project. This in turn will emit the project-changed signal, calling self.onProjectChanged()
+        a.select_project(selectedprojectid)
 
     def onProjectChanged(self, accounting: AccountingService):
-        project = accounting.get_project()
-        logger.debug('OnProjectChanged: {}'.format(project.projectid))
+        """Callback from the accounting service: either the project list changed, or one project is modified, or another
+        project has been selected as the active one.
+
+        The task of this function is to set the UI elements (project ID combo box, project title, proposer name.
+
+        Under no condition should this result in the emission of the currentIndexChanged() signal of the project ID
+        combo box, as it will change the current project
+        """
+        project = accounting.get_project() # this is the active project
+        logger.debug('OnProjectChanged. Active project from the accounting service: {}'.format(project.projectid))
         self.proposerNameLabel.setText(project.proposer)
         self.projectTitleLabel.setText(project.projectname)
+        # now update the project ID combobox
         self.projectIDComboBox.blockSignals(True)
-#        self.projectIDComboBox.clear()
-#        self.projectIDComboBox.addItems(accounting.get_projectids())
-        self.projectIDComboBox.blockSignals(False)
-        newindex = sorted(accounting.get_projectids()).index(project.projectid)
-        logger.debug('newindex: {}'.format(newindex))
-        self.projectIDComboBox.setCurrentIndex(newindex)
+        try:
+            self.projectIDComboBox.clear()
+            self.projectIDComboBox.addItems(sorted(accounting.get_projectids()))
+            newindex = self.projectIDComboBox.findText(project.projectid)
+            logger.debug('Index of the current project ({}) in the combo box: {}'.format(project.projectid, newindex))
+            self.projectIDComboBox.setCurrentIndex(newindex)
+        finally:
+            logger.debug('Turning signals of the project ID combo box back on')
+            self.projectIDComboBox.blockSignals(False)
 
     def onPrivilegeChange(self):
         a = self.credo.services['accounting']

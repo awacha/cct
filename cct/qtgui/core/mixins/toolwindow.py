@@ -40,6 +40,7 @@ class ToolWindow(object):
 
     def savePersistence(self):
         # do not do anything by default, it is up to the subclass to redefine this.
+        # you typically want to call self.credo.savePersistence(name, dict)
         return
 
     @classmethod

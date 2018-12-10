@@ -9,7 +9,7 @@ from ....core.services.accounting import Accounting
 from ....core.utils.inhibitor import Inhibitor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
@@ -76,12 +76,15 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
         index = 0
+        projectname=None
         while True:
             index += 1
             projectname = 'Untitled {:d}'.format(index)
             if projectname not in acc.get_projectids():
-                acc.new_project(projectname, '', '')
                 break
+        acc.new_project(projectname, '', '')
+        # the previous command emits the project-changed signal.
+        self.selectProject(projectname)
 
     def onRemoveProject(self):
         acc = self.credo.services['accounting']
@@ -109,13 +112,18 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.selectProject(newname)
 
     def selectProject(self, projectid):
-        self.listWidget.findItems(projectid, QtCore.Qt.MatchExactly)[0].setSelected(True)
+        item=self.listWidget.findItems(projectid, QtCore.Qt.MatchExactly)[0]
+        item.setSelected(True)
+        self.listWidget.scrollToItem(item)
 
     def onProjectChanged(self, acc: Accounting):
+        """Callback function, called when the project list is changed: either a project is modified
+        or one is added or removed"""
         logger.debug('onProjectChanged()')
         with self._updating_ui:
             try:
-                selected = self.selectedProjectName()
+                selected = self.selectedProjectName() # try to keep the currently selected project
+                # update the project name list in the list widget
                 self.listWidget.clear()
                 self.listWidget.addItems(sorted(acc.get_projectids()))
             except IndexError:
@@ -123,6 +131,8 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         try:
             self.selectProject(selected)
         except IndexError:
+            # if the project has been removed, select the first one.
+            self.listWidget.setCurrentRow(0)
             return
 
     def selectedProjectName(self):
