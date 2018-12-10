@@ -227,7 +227,7 @@ class Accounting(Service):
         prj = Project(projectid, projectname, proposer)
         self.projects.append(prj)
         logger.debug('Added project: {}, {}, {}'.format(projectid, projectname, proposer))
-        self.select_project(projectid)
+        #self.select_project(projectid)
         return prj
 
     def select_project(self, projectid: str):

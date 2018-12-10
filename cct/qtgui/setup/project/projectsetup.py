@@ -76,12 +76,14 @@ class ProjectSetup(QtWidgets.QWidget, Ui_Form, ToolWindow):
         acc = self.credo.services['accounting']
         assert isinstance(acc, Accounting)
         index = 0
+        projectname=None
         while True:
             index += 1
             projectname = 'Untitled {:d}'.format(index)
             if projectname not in acc.get_projectids():
-                acc.new_project(projectname, '', '')
                 break
+        acc.new_project(projectname, '', '')
+        self.selectProject(projectname)
 
     def onRemoveProject(self):
         acc = self.credo.services['accounting']
