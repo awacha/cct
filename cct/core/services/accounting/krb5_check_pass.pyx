@@ -1,4 +1,4 @@
-cdef extern from "<krb5.h>":
+cdef extern from "<krb5/krb5.h>":
     ctypedef struct krb5_context:
         pass
     ctypedef struct krb5_get_init_creds_opt:
