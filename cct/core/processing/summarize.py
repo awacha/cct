@@ -12,6 +12,7 @@ from scipy.io import loadmat
 
 from .correlmatrix import correlmatrix_cython
 
+
 def zscore(data:np.ndarray) -> np.ndarray:
     return np.abs((data-np.nanmean(data))/np.nanstd(data))
 
@@ -230,7 +231,7 @@ class Summarizer(object):
                 hdf5.require_group('masks').create_dataset(ex.header.maskname, data=ex.mask)
             try:
                 grp['mask'] = h5py.SoftLink('/masks/{}'.format(ex.header.maskname))
-            except RuntimeError:
+            except (RuntimeError, OSError):
                 pass
             curve = ex.radial_average(self.qrange,
                                       abscissa_errorpropagation=self.abscissaerrorpropagation,
