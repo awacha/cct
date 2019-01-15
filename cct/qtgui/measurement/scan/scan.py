@@ -164,6 +164,7 @@ class ScanMeasurement(QtWidgets.QWidget, Ui_Form, ToolWindow):
         except AttributeError:
             pass
         self._scangraph = None
+        self.adjustSize()
 
     def onCmdFail(self, interpreter: Interpreter, cmdname: str, exception: Exception, traceback: str):
         self._failed = True
