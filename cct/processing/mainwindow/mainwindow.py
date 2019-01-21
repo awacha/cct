@@ -53,6 +53,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         self.load_state()
 
     def emit(self, record: logging.LogRecord):
+        """Emit a log record
+
+        :param record: log record
+        :type record: logging.LogRecord
+        :return: None
+        :rtype: NoneType
+        """
         msg = self.format(record)
         self.statusBar.showMessage(record.levelname + ': ' + msg)
 
@@ -68,6 +75,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
             t.load_state(config)
 
     def closeEvent(self, event: QtGui.QCloseEvent):
+        """Reply to window close: save the state and exit.
+
+        :param event: Event object from Qt
+        :type event: QtGui.QCloseEvent
+        :return: None
+        :rtype: NoneType
+        """
         self.tools['io'].autosaveProject()
         self.save_state()
         event.accept()

@@ -1,3 +1,8 @@
+"""Kerberos password checker
+
+This module contains a simple function, :function:`krb5_check_pass` for checking if a password is valid for a principal.
+"""
+
 cdef extern from "<krb5/krb5.h>":
     ctypedef struct krb5_context:
         pass
@@ -16,7 +21,17 @@ cdef extern from "<krb5/krb5.h>":
     int krb5_get_init_creds_opt_alloc(krb5_context context, krb5_get_init_creds_opt **opt)
     int krb5_get_init_creds_password(krb5_context context, krb5_creds *creds, krb5_principal client, const char *password, krb5_prompter_fct prompter, void *data, krb5_deltat start_time, const char *in_tkt_service, krb5_get_init_creds_opt *k5_gic_options)
 
-def krb5_check_pass(str username, str passwd):
+def krb5_check_pass(str username, str passwd) -> bool:
+    """Check the password of a Kerberos principal
+
+    :param username: Kerberos principal, including the realm, e.g. principal@REALM
+    :type username: string
+    :param passwd: password of the principal
+    :type passwd: string
+    :return: true if password check succeeded, otherwise False
+    :rtype: bool
+    :raises RuntimeError: in case of system errors
+    """
     cdef krb5_context kcontext;
     cdef krb5_error_code code;
     cdef krb5_principal client;
