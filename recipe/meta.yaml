@@ -14,7 +14,7 @@ requirements:
     - python >=3.5
     - setuptools
     - setuptools_scm
-    - numpy
+    - numpy {{ numpy }}
     - cython >=0.15
     - matplotlib
     - scipy
@@ -34,7 +34,7 @@ requirements:
     - pillow
     - python
     - appdirs
-    - numpy
+    - numpy {{ numpy }}
     - pymodbustcp
     - psutil
     - krb5
