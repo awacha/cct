@@ -27,6 +27,7 @@ from .persampletool import PerSampleTool
 from .processingtool import ProcessingTool
 from .projectdialog import ProjectDialog
 from .toolbase import ToolBase, HeaderModel
+from ..display import ParamPickleModel
 from ..export_table import export_table
 from ...core.processing.summarize import Summarizer
 

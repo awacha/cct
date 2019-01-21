@@ -56,6 +56,7 @@ extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
                         include_dirs=[get_include()]),
               ]
 
+print(get_include())
 #extensions=[]
 
 #update_languagespec()
