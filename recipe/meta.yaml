@@ -3,7 +3,7 @@ package:
   version: {{ GIT_DESCRIBE_TAG }}
 
 source:
-  git_url: ./
+  git_url: ../
 
 build:
   number: {{ GIT_DESCRIBE_NUMBER }}
@@ -11,7 +11,7 @@ build:
 requirements:
   build: &id1
     - {{ compiler('c') }}
-    - python >=3.4
+    - python >=3.5
     - setuptools
     - setuptools_scm
     - numpy
