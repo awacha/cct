@@ -72,13 +72,15 @@ class Interpreter(Service):
         child._parent = self
         return child
 
-    def execute_command(self, commandline, arguments=None, kwargs={}):
+    def execute_command(self, commandline, arguments=None, kwargs=None):
         """Commences the execution of a command.
 
         Inputs:
             commandline: either a string (a valid command line) or an instance of cct.core.commands.Command
             arguments: if `commandline` was a string, this argument is disregarded. Otherwise it must be an
                 ordered sequence (list or tuple) containing the arguments of the command."""
+        if kwargs is None:
+            kwargs = {}
         if self.is_busy():
             raise InterpreterError('Interpreter is busy')
         if not isinstance(commandline, str):

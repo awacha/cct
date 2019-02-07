@@ -1,6 +1,6 @@
 import logging
 
-from  PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -65,14 +65,13 @@ class SingleIdleFunction(object):
         self.function = function
         self.args = args
         self.kwargs = kwargs
-        self.timer = QTimer.singleShot(0, self.onTimeout)
+        QTimer.singleShot(0, self.onTimeout)
         logger.debug('Initialized a SingleIdleFunction')
         type(self).instances.append(self)
 
     def onTimeout(self):
         logger.debug('Timeout in a SingleIdleFunction')
         self.function(*self.args, **self.kwargs)
-        del self.timer
         del self.function
         del self.kwargs
         del self.args

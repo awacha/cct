@@ -518,7 +518,7 @@ class DeviceBackend(object):
                         self.log_formatstr.format(**self.properties) + '\n')
             except KeyError as ke:
                 if self.ready:
-                    self.logger.warn('KeyError while producing log line for {}: {}'.format(
+                    self.logger.warning('KeyError while producing log line for {}: {}'.format(
                         self.name, ke.args[0]))
 
     def queryall(self):
