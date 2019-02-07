@@ -17,6 +17,7 @@ from sastool.misc.errorvalue import ErrorValue
 from scipy.io import loadmat
 
 from .service import Service, ServiceError
+from ..services.accounting import Project
 from ..utils.callback import SignalFlags
 from ..utils.pathutils import find_in_subfolders, find_subfolders
 
@@ -461,7 +462,15 @@ class FileSequence(Service):
                 params['accounting'][k] = config['services']['accounting'][k]
             if sample is not None and sample.project is not None:
                 # override the project settings in params['accounting']
-                params['accounting']['projectid'] = sample.project.projectid
+                if isinstance(sample.project, str):
+                    prj=self.instrument.services['accounting'].get_project(sample.project)
+                elif isinstance(sample.project, Project):
+                    prj=sample.project
+                else:
+                    raise TypeError('Invalid type: {}'.format(type(sample.project)))
+                params['accounting']['projectid'] = prj.projectid
+                params['accounting']['projectname'] = prj.projectname
+                params['accounting']['proposer'] = prj.proposer
         return params
 
     def get_prefixes(self):
