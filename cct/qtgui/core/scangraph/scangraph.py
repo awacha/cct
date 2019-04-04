@@ -77,6 +77,8 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.canvas.setFocus(QtCore.Qt.OtherFocusReason)
         self.canvas.mpl_connect('resize_event', self.onCanvasResize)
 
+        self.signalsTreeView
+
     def onCanvasResize(self, event):
         self.figure.tight_layout()
         self.canvas.draw()
@@ -286,11 +288,15 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.signalsTreeView.selectionModel().currentChanged.connect(self.signalsTreeViewSelectionChanged)
         self.signalsTreeView.selectionModel().select(self.model.index(1, 0),
                                                      QtCore.QItemSelectionModel.SelectCurrent | QtCore.QItemSelectionModel.Rows)
+        for col in range(self.signalsTreeView.model().columnCount()):
+            self.signalsTreeView.resizeColumnToContents(col)
         self.setCursorRange()
         self.replot()
         self.setCurvesVisibility()
 
     def signalsTreeModelChanged(self, idxfrom: QtCore.QModelIndex, idxto: QtCore.QModelIndex):
+        for col in range(self.signalsTreeView.model().columnCount()):
+            self.signalsTreeView.resizeColumnToContents(col)
         if idxfrom.column() == 0 or idxto.column() == 0:
             self.setCurvesVisibility()
         if idxfrom.column() == 1 or idxto.column() == 1:
