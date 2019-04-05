@@ -1,12 +1,13 @@
-import numpy as np
 import logging
 from typing import Optional, Tuple
-from PyQt5 import QtWidgets, QtGui
+
+import numpy as np
+from PyQt5 import QtWidgets
 from matplotlib.axes import Axes
+from matplotlib.backend_bases import ResizeEvent, MouseEvent, PickEvent
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
-from matplotlib.backend_bases import ResizeEvent, MouseEvent, PickEvent
 from matplotlib.text import Text
 
 from .samplepositionchecker_ui import Ui_Form
@@ -36,10 +37,11 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         Ui_Form.setupUi(self, Form)
         self.model = SampleSelectorModel(self.credo)
         self.treeView.setModel(self.model)
-        self.figure = Figure()
+        self.figure = Figure(figsize=(4,4))
         self.axes = self.figure.add_subplot(1, 1, 1)
         self.canvas = FigureCanvasQTAgg(self.figure)
-        self.canvas.setMinimumSize(300, 300)
+        #self.canvas.setMinimumSize(300, 300)
+        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         self._canvas_connections=[
             self.canvas.mpl_connect('resize_event', self.onCanvasResize),
             self.canvas.mpl_connect('pick_event', self.onCanvasPick),
@@ -54,6 +56,7 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         assert isinstance(ss, SampleStore)
         self._connections = [ss.connect('list-changed', self.onSampleListChanged)]
         self.model.dataChanged.connect(self.replot)
+        self.model.modelReset.connect(self.replot)
         self.labelSizeHorizontalSlider.valueChanged.connect(self.replot)
         self.upsideDownToolButton.toggled.connect(self.replot)
         self.rightToLeftToolButton.toggled.connect(self.replot)
@@ -198,6 +201,8 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def replot(self):
         assert isinstance(self.axes, Axes)
         self.axes.clear()
+        for c in range(self.treeView.model().columnCount()):
+            self.treeView.resizeColumnToContents(c)
         try:
             xmin = self.credo.motors['Sample_X'].get_variable('softleft')
             ymin = self.credo.motors['Sample_Y'].get_variable('softleft')
