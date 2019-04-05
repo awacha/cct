@@ -18,15 +18,37 @@
     <normaloff>:/icons/scan.svg</normaloff>:/icons/scan.svg</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
+   <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QSplitter" name="splitter">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <widget class="QWidget" name="widget" native="true">
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="1" column="0">
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QTreeView" name="signalsTreeView">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="sizeAdjustPolicy">
+         <enum>QAbstractScrollArea::AdjustToContents</enum>
+        </property>
+        <property name="alternatingRowColors">
+         <bool>true</bool>
+        </property>
+        <property name="uniformRowHeights">
+         <bool>true</bool>
+        </property>
+        <property name="itemsExpandable">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
          <widget class="QPushButton" name="showAllButton">
           <property name="toolTip">
            <string>Show all signals</string>
@@ -40,7 +62,7 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
+        <item>
          <widget class="QPushButton" name="hideAllButton">
           <property name="toolTip">
            <string>Hide all signals</string>
@@ -54,112 +76,89 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0" colspan="2">
-         <widget class="QTreeView" name="signalsTreeView">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="sizeAdjustPolicy">
-           <enum>QAbstractScrollArea::AdjustToContents</enum>
-          </property>
-          <property name="alternatingRowColors">
-           <bool>true</bool>
-          </property>
-          <property name="uniformRowHeights">
-           <bool>true</bool>
-          </property>
-          <property name="itemsExpandable">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
        </layout>
-      </widget>
-      <widget class="QWidget" name="figureContainer" native="true">
-       <layout class="QVBoxLayout" name="verticalLayout_2">
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <layout class="QVBoxLayout" name="figureLayout"/>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="cursorLayout">
         <item>
-         <widget class="QWidget" name="cursorContainer" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QPushButton" name="cursorHomeButton">
-             <property name="toolTip">
-              <string>Go to the first point</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset theme="go-first">
-               <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="cursorLeftButton">
-             <property name="toolTip">
-              <string>Go to the previous point</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset theme="go-previous">
-               <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSlider" name="cursorSlider">
-             <property name="toolTip">
-              <string>Move the cursor</string>
-             </property>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="tickPosition">
-              <enum>QSlider::TicksBelow</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="cursorRightButton">
-             <property name="toolTip">
-              <string>Go to the next point</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset theme="go-next">
-               <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="cursorEndButton">
-             <property name="toolTip">
-              <string>Go to the last point</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset theme="go-last">
-               <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QPushButton" name="cursorHomeButton">
+            <property name="toolTip">
+             <string>Go to the first point</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="go-first">
+              <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="cursorLeftButton">
+            <property name="toolTip">
+             <string>Go to the previous point</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="go-previous">
+              <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSlider" name="cursorSlider">
+            <property name="toolTip">
+             <string>Move the cursor</string>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="tickPosition">
+             <enum>QSlider::TicksBelow</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="cursorRightButton">
+            <property name="toolTip">
+             <string>Go to the next point</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="go-next">
+              <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="cursorEndButton">
+            <property name="toolTip">
+             <string>Go to the last point</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="go-last">
+              <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -199,8 +198,8 @@
          </layout>
         </item>
        </layout>
-      </widget>
-     </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>

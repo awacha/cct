@@ -35,13 +35,13 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         Ui_MainWindow.setupUi(self, MainWindow)
         self.figure = Figure()
         self.canvas = FigureCanvasQTAgg(self.figure)
-        self.figureContainer.layout().insertWidget(0, self.canvas)
+        self.figureLayout.insertWidget(0, self.canvas)
         self.canvas.setSizePolicy(
             QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
-        self.figuretoolbar = NavigationToolbar2QT(self.canvas, self.figureContainer)
+        self.figuretoolbar = NavigationToolbar2QT(self.canvas, self.centralWidget())
         self.canvas.mpl_connect('key_press_event', self.onCanvasKeyPress)
         self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus)
-        self.figureContainer.layout().insertWidget(0, self.figuretoolbar)
+        self.figureLayout.insertWidget(0, self.figuretoolbar)
         self.axes = self.figure.add_subplot(1, 1, 1)
         self.axes.grid(True, which='both')
         self._curvehandles = []
@@ -239,10 +239,14 @@ class ScanGraph(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.autoscale()
         self.requestRedraw()
 
+    def updateCursorVisibility(self):
+        for widget in [self.cursorEndButton, self.cursorHomeButton, self.cursorLeftButton,
+                       self.cursorRightButton, self.cursorSlider, self.cursorPositionLabel]:
+            widget.setEnabled(self._data is not None)
+            widget.setVisible(self._data is not None)
+
     def setCursorRange(self):
-        self.cursorContainer.setEnabled(self._data is not None)
-        self.cursorContainer.setVisible(self._data is not None)
-        self.cursorPositionLabel.setVisible(self._data is not None)
+        self.updateCursorVisibility()
         if self._data is None:
             return
         self.cursorSlider.setMinimum(0)
