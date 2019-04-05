@@ -1,8 +1,8 @@
-import gc
 import logging.handlers
 import sys
 import traceback
 
+import gc
 import pkg_resources
 from PyQt5.QtWidgets import QApplication
 
@@ -55,7 +55,8 @@ logging.root.info('------------------- Program startup v{} -------------------'.
 
 app = QApplication(sys.argv)
 
-credo = Instrument(online='--online' in app.arguments()[1:])
+onlinemode = '--online' in app.arguments()[1:]
+credo = Instrument(online=onlinemode)
 
 oldexcepthook = sys.excepthook
 
@@ -74,9 +75,12 @@ def my_excepthook(type_, value, traceback_):
 sys.excepthook = my_excepthook
 
 if '--root' not in app.arguments()[1:]:
-    ld = LogInDialog(credo)
+    ld = LogInDialog(credo, onlinemode)
     if ld.exec() == ld.Rejected:
         sys.exit(1)
+    onlinemode = ld.isOnlineEnabled()
+    # override on-line mode if needed.
+    credo.online = onlinemode
 else:
     try:
         credo.services['accounting'].select_user('root')

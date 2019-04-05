@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>321</width>
-    <height>100</height>
+    <width>354</width>
+    <height>134</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -45,7 +45,14 @@
    <bool>true</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="2" column="2">
+   <item row="1" column="1">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Password:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="2">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -55,26 +62,22 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="1">
-    <widget class="QLabel" name="label_2">
+   <item row="0" column="3" rowspan="4">
+    <widget class="QLabel" name="label_3">
+     <property name="maximumSize">
+      <size>
+       <width>92</width>
+       <height>92</height>
+      </size>
+     </property>
      <property name="text">
-      <string>Password:</string>
+      <string/>
      </property>
-    </widget>
-   </item>
-   <item row="1" column="2">
-    <widget class="QLineEdit" name="passwordLineEdit">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>1</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
+     <property name="pixmap">
+      <pixmap resource="../../../resource/icons/icons.qrc">:/icons/cctlogo.svg</pixmap>
      </property>
-     <property name="toolTip">
-      <string>Password pertaining to the user name</string>
-     </property>
-     <property name="echoMode">
-      <enum>QLineEdit::Password</enum>
+     <property name="scaledContents">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -98,21 +101,31 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="3" rowspan="3">
-    <widget class="QLabel" name="label_3">
-     <property name="maximumSize">
-      <size>
-       <width>64</width>
-       <height>64</height>
-      </size>
+   <item row="1" column="2">
+    <widget class="QLineEdit" name="passwordLineEdit">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Password pertaining to the user name</string>
+     </property>
+     <property name="echoMode">
+      <enum>QLineEdit::Password</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1" colspan="2">
+    <widget class="QCheckBox" name="onlineCheckBox">
+     <property name="toolTip">
+      <string>If unchecked, no connections are made to the instrument and the configuration files will not be modified.</string>
      </property>
      <property name="text">
-      <string/>
+      <string>On-line mode</string>
      </property>
-     <property name="pixmap">
-      <pixmap resource="../../../resource/icons/icons.qrc">:/icons/cctlogo.svg</pixmap>
-     </property>
-     <property name="scaledContents">
+     <property name="checked">
       <bool>true</bool>
      </property>
     </widget>

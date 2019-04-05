@@ -89,6 +89,13 @@ class Instrument(Callbacks):
     def online(self) -> bool:
         return self._online
 
+    @online.setter
+    def online(self, onlinestatus:bool):
+        """The online property can be set before starting the instrument"""
+        if self.starttime is not None:
+            raise ValueError('Cannot change on-line status after start!')
+        self._online=onlinestatus
+
     def is_busy(self) -> bool:
         return any([s.is_busy() for s in self.services.values()])
 

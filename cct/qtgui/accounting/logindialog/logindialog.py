@@ -6,10 +6,11 @@ from .logindialog_ui import Ui_Dialog
 
 
 class LogInDialog(QtWidgets.QDialog, Ui_Dialog):
-    def __init__(self, credo):
+    def __init__(self, credo, onlinemode:bool):
         self.credo = weakref.proxy(credo)
         QtWidgets.QDialog.__init__(self, None)
         self.setupUi(self)
+        self.onlineCheckBox.setChecked(onlinemode)
 
     def setupUi(self, Dialog):
         Ui_Dialog.setupUi(self, Dialog)
@@ -31,6 +32,9 @@ class LogInDialog(QtWidgets.QDialog, Ui_Dialog):
             palette.setColor(QtGui.QPalette.Base, QtGui.QColor('red'))
             self.passwordLineEdit.setPalette(palette)
             return False
+
+    def isOnlineEnabled(self) -> bool:
+        return self.onlineCheckBox.isChecked()
 
     def reject(self):
         return super().reject()
