@@ -32,7 +32,7 @@ requirements:
 
   run:
     - pillow
-    - python {{ python }}
+    - python
     - appdirs
     - numpy {{ numpy }}
     - pymodbustcp
