@@ -153,27 +153,47 @@ class ExposureAnalyzer_Backend(object):
                         self._logger.debug('Mask is: {}'.format(message['param']['geometry']['mask']))
                     except KeyError:
                         self._logger.debug('Mask is not defined!')
+                    # try to load the CBF file.
                     cbfdata = None
-                    for fn in [message['filename'], os.path.split(message['filename'])[-1]]:
-                        self._logger.debug('Trying filename form: {}'.format(fn))
-                        for subpath in [message['prefix'], '']:
-                            try:
-                                self._logger.debug('Trying subpath {}'.format(subpath))
-                                cbfdata = readcbf(os.path.join(self.config['path']['directories']['images'],
-                                                               subpath, fn))[0]
-                                self._logger.debug('File found in subpath {}'.format(subpath))
+                    while True: # this is an infinite loop of retries, trying to counter network lag.
+                        for fn in [message['filename'], os.path.split(message['filename'])[-1]]:
+                            self._logger.debug('Trying filename form: {}'.format(fn))
+                            for subpath in [message['prefix'], '']:
+                                try:
+                                    self._logger.debug('Trying subpath {}'.format(subpath))
+                                    cbfdata = readcbf(os.path.join(self.config['path']['directories']['images'],
+                                                                   subpath, fn))[0]
+                                    self._logger.debug('File found in subpath {}'.format(subpath))
+                                    break
+                                except FileNotFoundError as fe:
+                                    cbfdata = (fe, traceback.format_exc())
+                                except Exception as ex:
+                                    self.send_to_frontend('error', exception=ex, traceback=traceback.format_exc(),
+                                                          fsn=message['fsn'], prefix=message['prefix'])
+                                    raise
+                            if isinstance(cbfdata, np.ndarray):
+                                # the file has been found, do not try to load it in a different form.
                                 break
-                            except FileNotFoundError as fe:
-                                cbfdata = (fe, traceback.format_exc())
-                            except Exception as ex:
-                                self.send_to_frontend('error', exception=ex, traceback=traceback.format_exc(),
-                                                      fsn=message['fsn'], prefix=message['prefix'])
-                                raise
                         if isinstance(cbfdata, np.ndarray):
-                            # the file has been found, do not try to load it in a different form.
+                            # the file has been found, exit the infinite loop of retries
                             break
+                        elif isinstance(cbfdata, tuple) and (isinstance(cbfdata[0], FileNotFoundError)):
+                            # could not load cbf file. See if we can retry and if yes, "continue". Else break out of
+                            # this loop.
+                            timeout = message['retry_timeout'] if 'retry_timeout' in message else 0
+                            retriesleft = message['n_retries'] if 'n_retries' in message else 0
+                            if retriesleft >0:
+                                message['n_retries'] =message['n_retries']-1
+                                self._logger.debug('Retrying loading of file {} in {} seconds. Number of tries left: {}'.format(message['filename'], timeout, retriesleft-1))
+                                time.sleep(timeout)
+                                continue # the infinte loop
+                            else:
+                                break #out of the infinite loop
+                        else:
+                            #we should not reach this
+                            assert False
+                    # if after the infinitel loop of retries, we still have not been able to load the CBF file, error out.
                     if isinstance(cbfdata, tuple) and (isinstance(cbfdata[0], FileNotFoundError)):
-                        # could not load cbf file, send a message to the frontend.
                         self._logger.error('Cannot load file: {}'.format(message['filename']))
                         self.send_to_frontend('error', exception=cbfdata[0],
                                               traceback=cbfdata[1], fsn=message['fsn'],

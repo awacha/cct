@@ -28,3 +28,6 @@ class Message(object):
     def __del__(self):
         self._dict = None
         self.__class__.instances -= 1
+
+    def __contains__(self, key):
+        return key in self._dict
