@@ -27,6 +27,7 @@ requirements:
     - pillow
     - openpyxl
     - sqlalchemy
+    - adjusttext
 
   host: *id1
 
@@ -44,6 +45,7 @@ requirements:
     - pyqt >=5
     - openpyxl
     - sqlalchemy
+    - adjusttext
 
 about:
   home: https://github.com/awacha/cct
