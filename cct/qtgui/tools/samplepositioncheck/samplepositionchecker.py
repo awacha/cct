@@ -182,7 +182,7 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def onCanvasResize(self, event:ResizeEvent):
         logger.debug('onCanvasResize()')
         self.figure.tight_layout()
-        adjustText.adjust_text(self.texts)
+        adjustText.adjust_text(self._texts)
         self.canvas.draw()
 
     def cleanup(self):
