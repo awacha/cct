@@ -10,7 +10,7 @@ import openpyxl.styles
 import openpyxl.worksheet.worksheet
 import pkg_resources
 import scipy.io
-import scipy.misc
+from imageio import imread
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
@@ -383,7 +383,7 @@ class ExportTool(ToolBase, Ui_Form):
         if figure is None:
             figure = self.figure
         if not hasattr(self, '_logodata'):
-            self._logodata = scipy.misc.imread(pkg_resources.resource_filename('cct', 'resource/credo_logo.png'),
+            self._logodata = imread(pkg_resources.resource_filename('cct', 'resource/credo_logo.png'),
                                                flatten=True)[
                              ::4, ::4]
         figure.figimage(self._logodata, 10, 10, cmap='gray', zorder=-10)

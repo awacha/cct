@@ -28,6 +28,7 @@ requirements:
     - openpyxl
     - sqlalchemy
     - adjusttext
+    - imageio
 
   host: *id1
 
@@ -46,6 +47,7 @@ requirements:
     - openpyxl
     - sqlalchemy
     - adjusttext
+    - imageio
 
 about:
   home: https://github.com/awacha/cct

@@ -10,11 +10,11 @@ import matplotlib.colors
 import numpy as np
 import pkg_resources
 from PyQt5 import QtWidgets, QtCore, QtGui
+from imageio import imread
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 from sastool.io.credo_cct.header import Header
-from scipy.misc import imread
 
 from .backgroundtool import BackgroundTool
 from .comparetool import CompareTool
