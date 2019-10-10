@@ -303,7 +303,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, logging.Handler):
         if figure is None:
             figure = self.figure
         if not hasattr(self, '_logodata'):
-            self._logodata = np.array(imread(pkg_resources.resource_filename('cct', 'resource/credo_logo.png')))[:,:,0].copy()
+            self._logodata = np.array(imread(pkg_resources.resource_filename('cct', 'resource/credo_logo.png')))[::4,::4,0].copy()
         figure.figimage(self._logodata, 10, 10, cmap='gray', zorder=-10)
 
     def onPlot1D(self):
