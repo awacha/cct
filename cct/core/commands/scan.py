@@ -1,6 +1,6 @@
-import time
 import datetime
 import logging
+import time
 import traceback
 
 from .command import Command, CommandArgumentError, CommandError, CommandKilledError
@@ -99,7 +99,7 @@ class GeneralScan(Command):
             self.motorpos = self.get_motor(self.motorname).where()
             self.services['filesequence'].new_exposure(
                 self.fsn_being_exposed, self.file_being_exposed, self.prefix, self.exposure_startdate,
-                position=self.motorpos, scanfsn=self.scanfsn)
+                position=self.motorpos, scanfsn=self.scanfsn, retry_timeout=0.1, n_retries=10)
             # don't wait for exposureanalyzer, move to the next point
             self.idx += 1
             elapsedtime = time.monotonic()-self._starttime

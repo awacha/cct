@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Tuple
 
+import adjustText
 import numpy as np
 from PyQt5 import QtWidgets
 from matplotlib.axes import Axes
@@ -28,6 +29,7 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self._picked_index = None
         self._samplepos_cache = None
         self._markers = None
+        self._texts = None
         self._snapxline = None
         self._snapyline = None
         self.setupToolWindow(credo)
@@ -153,6 +155,7 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
             t=self._texts[self._picked_index]
             assert isinstance(t, Text)
             t.set_position([snapx,snapy])
+            adjustText.adjust_text(self._texts)
         self.canvas.draw_idle()
 
     def loadPersistence(self):
@@ -179,6 +182,7 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
     def onCanvasResize(self, event:ResizeEvent):
         logger.debug('onCanvasResize()')
         self.figure.tight_layout()
+        adjustText.adjust_text(self._texts)
         self.canvas.draw()
 
     def cleanup(self):
@@ -241,4 +245,5 @@ class SamplePositionChecker(QtWidgets.QWidget, Ui_Form, ToolWindow):
         self.figure.tight_layout()
         self.axes.relim()
         self.axes.autoscale_view()
+        adjustText.adjust_text(self._texts)
         self.canvas.draw()

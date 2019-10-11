@@ -56,6 +56,8 @@ class Accounting(Service):
              'projectid': 'MachineStudies 01',
              'operator': 'CREDOoperator',
              'default_realm': 'MTATTKMFIBNO',
+             'ldap_dn':'dc=bionano,dc=aki,dc=lan,dc=ttk,dc=mta,dc=hu',
+             'ldap_uri':'ldaps://bionano-nas.aki.lan.ttk.mta.hu',
              }
 
     name = 'accounting'
@@ -69,36 +71,77 @@ class Accounting(Service):
         self.projects = []
         super().__init__(*args, **kwargs)
 
-    def authenticate(self, username, password, setuser=True):
+    def authenticate_ldap(self, username:str, password:str) -> bool:
+        try:
+            import ldap3
+            import ldap3.core.exceptions
+        except ImportError:
+            logger.info('LDAP3 package not installed, LDAP authentication disabled.')
+            return False
+        uri = self.state['ldap_uri']
+        if uri.startswith('ldaps://'):
+            host = uri[8:]
+            ssl=True
+            port=636
+        elif uri.startswith('ldap://'):
+            host = uri[7:]
+            ssl=False
+            port=389
+        else:
+            raise ValueError('Invalid LDAP URI: {}'.format(uri))
+        server = ldap3.Server(host, port=port, use_ssl=ssl,get_info=ldap3.ALL)
+        try:
+            with ldap3.Connection(server, user='uid={},ou=people,{}'.format(username, self.state['ldap_dn']),
+                                          password=password, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND):
+                logger.info('Authenticated user ' + username + ' using LDAP.')
+                return True
+        except ldap3.core.exceptions.LDAPExceptionError as exc:
+            logger.info('Failed to authenticate user ' + username + ' using LDAP: {}.'.format(str(exc)))
+            return False
+
+    def authenticate_krb5(self, username:str, password:str) -> bool:
         if '@' not in username:
             username = username + '@' + self.get_default_realm()
         try:
             if krb5_check_pass(username, password):
-                logger.info('Authenticated user ' + username + '.')
-                if username.split('@', 1)[0] not in [u.username for u in self.users]:
-                    self.add_user(username.split('@', 1)[0], 'Firstname', 'Lastname', PRIV_LAYMAN, 'nobody@example.com')
+                logger.info('Authenticated user ' + username + ' using Kerberos.')
+                return True
+            else:
+                logger.info('Failed to authenticate user ' + username + ' using Kerberos.')
+                return False
+        except RuntimeError as rte:
+            logger.error('Kerberos error: {}'.format(str(rte)))
+            return False
+
+    def authenticate_local(self, username:str, password:str) -> bool:
+        try:
+            pwhash = self.get_user(username).passwordhash
+        except KeyError:
+            logger.error('User {} is not present in the local user database.'.format(username))
+            return False
+        if self.get_user(username).passwordhash is None:
+            logger.info('Skipping local authentication for user {}: no password hash.'.format(username))
+            return False
+        if self.get_user(username).passwordhash == hashlib.sha512(password.encode('utf-8')).hexdigest():
+            logger.info('Authenticated user ' + username + ' using the local password database.')
+            return True
+        else:
+            logger.info('Failed to authenticate user {} from the local password database: invalid password.'.format(
+                username))
+            return False
+
+    def authenticate(self, username, password, setuser=True):
+        # try to authenticate the user
+        for authbackend in [self.authenticate_ldap, self.authenticate_krb5, self.authenticate_local]:
+            if authbackend(username, password):
+                # successful authentication
+                username = username.split('@',1)[0] # trim the domain part
+                if username not in [u.username for u in self.users]:
+                    self.add_user(username, 'Firstname', 'Lastname', PRIV_LAYMAN, 'nobody@example.com')
                 if setuser:
                     self.select_user(username)
                 return True
-            else:
-                raise RuntimeError('Kerberos authentication failed')
-        except RuntimeError as rte:
-            logger.info('Failed to authenticate user {} from Kerberos: {}'.format(username, str(rte.args[0])))
-            username = username.split('@')[0]
-            try:
-                if self.get_user(username).passwordhash is not None:
-                    if self.get_user(username).passwordhash == hashlib.sha512(password.encode('utf-8')).hexdigest():
-                        if setuser:
-                            self.select_user(username)
-                        logger.info('Authenticated user ' + username + ' using the local password database.')
-                        return True
-                    else:
-                        logger.info('Failed to authenticate user {} from the local password database: invalid password.'.format(username))
-                        return False
-            except KeyError:
-                logger.error('User {} not present in the user database.'.format(username))
-                return False
-            return False
+        return False
 
     def select_user(self, username: str):
         self.current_user = [u for u in self.users if u.username == username.split('@', 1)[0]][0]

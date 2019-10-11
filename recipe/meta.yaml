@@ -27,12 +27,14 @@ requirements:
     - pillow
     - openpyxl
     - sqlalchemy
+    - adjusttext
+    - imageio
 
   host: *id1
 
   run:
     - pillow
-    - python {{ python }}
+    - python
     - appdirs
     - numpy {{ numpy }}
     - pymodbustcp
@@ -44,6 +46,8 @@ requirements:
     - pyqt >=5
     - openpyxl
     - sqlalchemy
+    - adjusttext
+    - imageio
 
 about:
   home: https://github.com/awacha/cct
