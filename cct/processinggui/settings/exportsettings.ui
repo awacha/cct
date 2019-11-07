@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>439</width>
+    <height>256</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Image format:</string>
+     </property>
+     <property name="buddy">
+      <cstring>imageFormatComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="imageFormatComboBox">
+     <item>
+      <property name="text">
+       <string>eps</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>jpg</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>pdf</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>png</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>svg</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>tif</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Image resolution:</string>
+     </property>
+     <property name="buddy">
+      <cstring>imageResolutionSpinBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QSpinBox" name="imageResolutionSpinBox">
+     <property name="suffix">
+      <string> dpi</string>
+     </property>
+     <property name="minimum">
+      <number>10</number>
+     </property>
+     <property name="maximum">
+      <number>99999</number>
+     </property>
+     <property name="singleStep">
+      <number>10</number>
+     </property>
+     <property name="value">
+      <number>300</number>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>Length units:</string>
+     </property>
+     <property name="buddy">
+      <cstring>lengthUnitsComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QComboBox" name="lengthUnitsComboBox">
+     <item>
+      <property name="text">
+       <string>cm</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>mm</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>inch</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>Image width:</string>
+     </property>
+     <property name="buddy">
+      <cstring>imageWidthDoubleSpinBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QDoubleSpinBox" name="imageWidthDoubleSpinBox">
+     <property name="maximum">
+      <double>9999.000000000000000</double>
+     </property>
+     <property name="value">
+      <double>10.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Image height:</string>
+     </property>
+     <property name="buddy">
+      <cstring>imageHeightDoubleSpinBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QDoubleSpinBox" name="imageHeightDoubleSpinBox">
+     <property name="maximum">
+      <double>9999.000000000000000</double>
+     </property>
+     <property name="value">
+      <double>7.500000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="label_6">
+     <property name="text">
+      <string>1D data file format:</string>
+     </property>
+     <property name="buddy">
+      <cstring>onedimFormatComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QComboBox" name="onedimFormatComboBox">
+     <item>
+      <property name="text">
+       <string>ASCII (*.dat)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ASCII (*.txt)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>EXCEL 2007-365 (*.xlsx)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>RSR (*.rsr)</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="label_7">
+     <property name="text">
+      <string>2D data file format:</string>
+     </property>
+     <property name="buddy">
+      <cstring>twodimFormatComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QComboBox" name="twodimFormatComboBox">
+     <item>
+      <property name="text">
+       <string>ASCII (*.txt)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Gzip-ped ASCII (*.txt.gz)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Matlab(TM) (*.mat)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Numpy (*.npz)</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="2">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>502</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Images:</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="3" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Color palette:</string>
+        </property>
+        <property name="buddy">
+         <cstring>paletteComboBox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QComboBox" name="paletteComboBox"/>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Axis scales:</string>
+        </property>
+        <property name="buddy">
+         <cstring>onedimAxisScalesComboBox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QCheckBox" name="showColorBarCheckBox">
+        <property name="text">
+         <string>Show color bar</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QCheckBox" name="showCenterCheckBox">
+        <property name="text">
+         <string>Show center</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <widget class="QCheckBox" name="showMaskCheckBox">
+        <property name="text">
+         <string>Show mask</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QComboBox" name="twodimAxisScalingComboBox">
+        <item>
+         <property name="text">
+          <string>q</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>pixel</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>radius</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>Curves:</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Axis scaling:</string>
+        </property>
+        <property name="buddy">
+         <cstring>twodimAxisScalingComboBox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QCheckBox" name="showErrorBarsCheckBox">
+        <property name="text">
+         <string>Show error bars</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QCheckBox" name="showLinesCheckBox">
+        <property name="text">
+         <string>Show lines</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Symbols:</string>
+        </property>
+        <property name="buddy">
+         <cstring>onedimSymbolsComboBox</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="onedimSymbolsComboBox">
+        <item>
+         <property name="text">
+          <string>Hide</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Filled</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Empty</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="2">
+       <widget class="QCheckBox" name="showGridCheckBox">
+        <property name="text">
+         <string>Show grid</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0" colspan="2">
+       <widget class="QCheckBox" name="showLegendCheckBox">
+        <property name="text">
+         <string>Show legend</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="onedimAxisScalesComboBox">
+        <item>
+         <property name="text">
+          <string>log I vs. log q</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>I vs. log q</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>log I vs. q</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>I vs. q</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>log I vs. q^2</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>I*q^2 vs. q</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>I*q^4 vs. q</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>showMaskCheckBox</tabstop>
+  <tabstop>showCenterCheckBox</tabstop>
+  <tabstop>showColorBarCheckBox</tabstop>
+  <tabstop>paletteComboBox</tabstop>
+  <tabstop>twodimAxisScalingComboBox</tabstop>
+  <tabstop>onedimAxisScalesComboBox</tabstop>
+  <tabstop>onedimSymbolsComboBox</tabstop>
+  <tabstop>showErrorBarsCheckBox</tabstop>
+  <tabstop>showLinesCheckBox</tabstop>
+  <tabstop>showGridCheckBox</tabstop>
+  <tabstop>showLegendCheckBox</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

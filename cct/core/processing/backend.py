@@ -6,13 +6,13 @@ in a separate subprocess
 Given a list of file sequence numbers, processing means the following:
     - load the corrected (evaluated) scattering patterns and the corresponding metadata
     - calculate scattering curves
+    - statistical test for outliers
     - calculate an averaged scattering pattern
-    -
+    - calculate a single scattering pattern
+    - Write everything into a HDF5 file.
 
 """
 
-class QueueManager:
+class SAXSImageProcessor:
     def __init__(self,):
         pass
-
-    def

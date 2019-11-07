@@ -1,0 +1,2 @@
+"""Two-dimensional image plot"""
+

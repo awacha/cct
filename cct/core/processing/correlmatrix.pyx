@@ -1,15 +1,7 @@
-#cython: boundscheck=False, cdivision=True, embedsignature=True
+#cython: boundscheck=False, cdivision=True, embedsignature=True, language_level=3, initializedcheck=False
 import numpy as np
-cimport numpy as np
+from cython.parallel import prange
 from libc.math cimport log, nan, isfinite
-from cython.parallel import prange
-cimport
-numpy as np
-import numpy as np
-from cython.parallel import prange
-from libc.math cimport
-
-log, nan, isfinite
 
 np.import_array()
 

@@ -1,67 +1,80 @@
+from collections import namedtuple
 from configparser import ConfigParser
 from typing import Any
 
 from PyQt5 import QtCore
 
+ConfigItemType = namedtuple('ConfigItemType', ['type', 'default', 'description'])
+
 
 class Config(QtCore.QObject):
+    """This class represents the configuration of the SAXS data post-processing mechanism.
+
+    Main functionalities:
+        - the preferences are stored in a ConfigParser object: easy save/load
+        - each preferene item has a default value and a type: type coercion will happen
+        - distinct get and set methods for each type: int, float, bool, str
+        - whenever a preference changes, a PyQt signal will be emitted.
+
+    """
     configItemChanged = QtCore.pyqtSignal(str, str, object)
     cp:ConfigParser
     _configitems = {
         'io': {
-            'badfsnsfile': {'type': str, 'default':'badfsns.txt', },
-            'hdf5': {'type': str, 'default': 'processing.h5', },
-            'datadir': {'type': str, 'default': '', },
-            'fsnranges': {'type': list, 'default': '', },
-            'projectfilename': {'type': str, 'default': 'processing.cpt', },
+            'badfsnsfile': ConfigItemType(str, 'badfsns.txt', 'Bad FSNs file'),
+            'hdf5': ConfigItemType(str, 'processing.h5', 'Output HDF5 file'),
+            'datadir': ConfigItemType(str, '', 'Data root directory'),
+            'fsnranges': ConfigItemType(list, [], 'List of min-max FSN tuples'),
+            'projectfilename': ConfigItemType(str, 'processing.cpt', 'Project settings file'),
         },
         'export': {
-            'folder': {'type': str, 'default': 'processing', },
-            'imageformat': {'type': str, 'default': 'png', },
-            'imageheightunits': {'type': str, 'default': 'inch', },
-            'imagewidthunits': {'type': str, 'default': 'inch', },
-            'onedimformat': {'type': str, 'default': 'ASCII (*.txt)', },
-            'imagedpi': {'type': str, 'default': '300', },
-            'imageheight': {'type': str, 'default': '4.8', },
-            'imagewidth': {'type': str, 'default': '6.4', },
+            'folder': ConfigItemType(str, 'processing', 'Export folder name'),
+            'imageformat': ConfigItemType(str, 'png', 'File format for saving graphs'),
+            'imageheightunits': ConfigItemType(str, 'inch', 'Image height units (inch or cm)'),
+            'imagewidthunits': ConfigItemType(str, 'inch', 'Image width units (inch or cm)'),
+            'onedimformat': ConfigItemType(str, 'ASCII (*.txt)', 'File format for saving 1D curves'),
+            'imagedpi': ConfigItemType(str, '300', 'DPI resolution of saved graphs'),
+            'imageheight': ConfigItemType(str, '4.8', 'Image height'),
+            'imagewidth': ConfigItemType(str, '6.4', 'Image width'),
         },
         'headerview': {
-            'fields': {'type': str, 'default': 'fsn;title;distance;date;temperature', },
+            'fields': ConfigItemType(str, 'fsn;title;distance;date;temperature', 'Semicolon-separated list of header fields to show'),
         },
         'processing': {
-            'errorpropagation': {'type': str, 'default': 'Conservative', },
-            'abscissaerrorpropagation': {'type': str, 'default': 'Conservative', },
-            'std_multiplier': {'type': float, 'default': 1.5, },
-            'cmap_rad_nq': {'type':int, 'default':200, },
-            'customqmax': {'type': float, 'default': 5, },
-            'customqmin': {'type': float, 'default': 0.1, },
-            'customqcount': {'type': int, 'default': 200, },
-            'logcorrelmatrix': {'type': bool, 'default': True, },
-            'sanitizecurves': {'type': bool, 'default': True, },
-            'customqlogscale': {'type': bool, 'default': True, },
-            'customq': {'type': bool, 'default': False, },
-            'corrmatmethod': {'type': str, 'default': 'Interquartile Range', },
+            'errorpropagation': ConfigItemType(str, 'Conservative', 'Error propagation method'),
+            'abscissaerrorpropagation': ConfigItemType(str, 'Conservative', 'Abscissa error propagation method'),
+            'std_multiplier': ConfigItemType(float, 1.5, 'Multiplier for the standard deviation in the outlier tests'),
+            'cmap_rad_nq': ConfigItemType(int, 200, 'number of q-points in the radial averaging for the cormap test'),
+            'customqmax': ConfigItemType(float, 5, 'qmax for the custom q-range'),
+            'customqmin': ConfigItemType(float, 0.1, 'qmin for the custom q-range'),
+            'customqcount': ConfigItemType(int, 200, 'number of points in the custom q-range'),
+            'logcorrelmatrix': ConfigItemType(bool, True, 'the correlation matrix must be calculated from the logarithmic intensities'),
+            'sanitizecurves': ConfigItemType(bool, True, 'remove invalid points from the curves'),
+            'customqlogscale': ConfigItemType(bool, True, 'use log-spaced points in the custom q-range'),
+            'customq': ConfigItemType(bool, False, 'if the custom q-range is to be used'),
+            'outliermethod': ConfigItemType(str, 'Interquartile Range', 'Method for finding outliers'),
         },
-        'persample': {
-            'showmeancurve': {'type': bool, 'default': True, },
-            'showbadcurves': {'type': bool, 'default': True, },
-            'showgoodcurves': {'type': bool, 'default': True, },
-            'logx': {'type': bool, 'default': True, },
-            'logy': {'type': bool, 'default': True, },
-            'showmask': {'type': bool, 'default': True, },
-            'showcenter': {'type': bool, 'default': True, },
+        'persample': { # parameters for the per-sample views
+            'showmeancurve': ConfigItemType(bool, True, 'Show the average curve'),
+            'showbadcurves': ConfigItemType(bool, True, 'Show all bad curves'),
+            'showgoodcurves': ConfigItemType(bool, True, 'Show the good curves'),
+            'logx': ConfigItemType(bool, True, 'Logarithmic X scale'),
+            'logy': ConfigItemType(bool, True, 'Logarithmic Y scale'),
+            'showmask': ConfigItemType(bool, True, 'Show the mask on the 2D image'),
+            'showcenter': ConfigItemType(bool, True, 'Show the center on the 2D image'),
         },
-        'curvecmp': {
-            'legendformat': {'type': str, 'default': '{title} @{distance:.2f} mm', },
-            'plottype': {'type': str, 'default': 'log I vs. log q', },
-            'errorbars': {'type': bool, 'default': True, },
-            'legend': {'type': bool, 'default': True, },
+        'curvecmp': { # parameters for the multi-sample views
+            'legendformat': ConfigItemType(str, '{title} @{distance:.2f} mm', 'Format of the legend'),
+            'plottype': ConfigItemType(str, 'log I vs. log q', 'Plot type'),
+            'errorbars': ConfigItemType(bool, True, 'Show error bars'),
+            'legend': ConfigItemType(bool, True, 'Show the legend'),
         }
     }
 
     def __init__(self):
         super().__init__()
         self.cp=ConfigParser()
+        # initialize the configuration with the default values.
         for section in self._configitems:
             for key in self._configitems[section]:
                 type_=self._configitems[section][key]['type']
@@ -78,6 +91,9 @@ class Config(QtCore.QObject):
                     raise TypeError(type_)
 
     def load(self, filename:str):
+        """Load a configuration file. Already existing config items are either
+        updated with new values or kept if there are no corresponding items in
+        the config file."""
         self.cp.read([filename])
         for section in self.cp:
             for key in self.cp[section]:
@@ -118,4 +134,27 @@ class Config(QtCore.QObject):
     def setFloat(self, section:str, key:str, value:float):
         return self.setKey(section, key, '{:.20g}'.format(value))
 
+    def __getitem__(self, item:str) -> Any:
+        """Get the value of a configuration item"""
+        # first see if we can find the item in the description: must be unique
+        sections = [section for section in self._configitems
+                    if item in self._configitems[section]]
+        if not sections:
+            # nonexistent
+            raise ValueError('Unknown configuration item: {}'.format(item))
+        elif len(sections)>1:
+            # must be unique
+            raise ValueError('Non-unique configuration item: {}'.format(item))
+        section = sections[0]
 
+        # there must be such an item in the configparser structure.
+        if self._configitems[section][item]['type'] is int:
+            return self.getInt(section, item)
+        elif self._configitems[section][item]['type'] is str:
+            return self.getStr(section, item)
+        elif self._configitems[section][item]['type'] is float:
+            return self.getFloat(section, item)
+        elif self._configitems[section][item]['type'] is bool:
+            return self.getBool(section, item)
+        else:
+            raise ValueError('Invalid type: {}'.format(self._configitems[section][item]['type']))
