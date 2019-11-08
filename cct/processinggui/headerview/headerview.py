@@ -60,4 +60,9 @@ class HeaderView(QtWidgets.QWidget, Ui_Form):
 
     @QtCore.pyqtSlot()
     def on_showImagePushButton_clicked(self):
-        pass
+        selectedrows = self.treeView.selectionModel().selectedRows(0)
+        if not selectedrows:
+            return
+        for index in selectedrows:
+            ex = self.project.loadExposure(self.project.headerList[index.row()])
+            self.project.exposureToBeShown.emit(ex)

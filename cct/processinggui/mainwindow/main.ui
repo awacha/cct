@@ -6,12 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1313</width>
+    <height>940</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>CREDO Processing Tool v2</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../resource/icons/icons.qrc">
+    <normaloff>:/icons/cptlogo.svg</normaloff>:/icons/cptlogo.svg</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -40,7 +44,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1313</width>
      <height>30</height>
     </rect>
    </property>
@@ -226,7 +230,8 @@
   </action>
   <action name="actionClose_project">
    <property name="icon">
-    <iconset theme="window-close"/>
+    <iconset theme="window-close">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Close project</string>
@@ -237,7 +242,8 @@
   </action>
   <action name="actionSave_as">
    <property name="icon">
-    <iconset theme="document-save-as"/>
+    <iconset theme="document-save-as">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Save as...</string>
@@ -245,7 +251,8 @@
   </action>
   <action name="actionFile_list">
    <property name="icon">
-    <iconset theme="document-properties"/>
+    <iconset theme="document-properties">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>File list</string>
@@ -255,6 +262,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../resource/icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

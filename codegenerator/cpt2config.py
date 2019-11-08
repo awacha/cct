@@ -128,20 +128,25 @@ def writeCode():
                 '            self._configparser.write(f)\n'
                 '\n'
                 '    def load(self, filename: str):\n'
-                '        self._configparser.read([filename])\n'
+                '        self._configparser.read([filename])\n')
+        for section in configitems:
+            for name in configitems[section]:
+                f.write('        self.configItemChanged.emit("{}", "{}", getattr(self, "{}"))\n'.format(section, name, name))
+        f.write(
                 '\n'
                 '# Various reader/writer functions\n'
                 '    @staticmethod\n'
                 '    def _readBool(x: str) -> bool:\n'
                 '        if x.upper() in ["Y", "TRUE", "1", "YES", "+", "ON"]:\n'
                 '            return True\n'
-                '        elif x.lower() in ["N", "FALSE", "0", "NO", "-", "OFF"]:\n'
+                '        elif x.upper() in ["N", "FALSE", "0", "NO", "-", "OFF"]:\n'
                 '            return False\n'
                 '        raise ValueError(x)\n'
                 '\n'
                 '    @staticmethod\n'
                 '    def _writeBool(x: bool) -> str:\n'
-                '        return "True" if x else "False"\n'
+                '        assert isinstance(x, bool)\n'
+                '        return "True" if bool(x) else "False"\n'
                 '\n'
                 '    @staticmethod\n'
                 '    def _readFSNRanges(x: str) -> List[Tuple[int, int]]:\n'

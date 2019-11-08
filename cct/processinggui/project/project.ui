@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../../resource/icons/icons.qrc">
+    <normaloff>:/icons/project.svg</normaloff>:/icons/project.svg</iconset>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout">
@@ -164,7 +168,8 @@
         <string>Reload</string>
        </property>
        <property name="icon">
-        <iconset theme="view-refresh"/>
+        <iconset theme="view-refresh">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>
@@ -174,7 +179,8 @@
         <string>Process</string>
        </property>
        <property name="icon">
-        <iconset theme="system-run"/>
+        <iconset theme="system-run">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>
@@ -182,6 +188,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../resource/icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

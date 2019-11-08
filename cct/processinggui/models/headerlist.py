@@ -156,3 +156,6 @@ class HeaderList(QtCore.QAbstractItemModel):
         self.beginResetModel()
         self._data = headers
         self.endResetModel()
+
+    def __getitem__(self, row:int):
+        return self._data[row]

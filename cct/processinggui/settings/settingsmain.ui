@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Preferences</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../resource/icons/icons.qrc">
+    <normaloff>:/icons/editconfig.svg</normaloff>:/icons/editconfig.svg</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -62,6 +66,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../resource/icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

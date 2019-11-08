@@ -1,14 +1,17 @@
 import logging
 import os
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
+import numpy as np
 from PyQt5 import QtCore, QtWidgets, QtGui
+from sastool.io.credo_cct import Exposure, Header
 
 from .headerloader import HeaderLoader
 from .project_ui import Ui_projectWindow
 from ..config import Config
 from ..models.fsnranges import FSNRangeModel
 from ..models.headerlist import HeaderList
+from ...core.processing.loader import Loader
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -16,15 +19,19 @@ logger.setLevel(logging.DEBUG)
 class Project(QtWidgets.QWidget, Ui_projectWindow):
     config:Config = None
     idleChanged = QtCore.pyqtSignal(bool, name='idleChanged')
+    exposureToBeShown = QtCore.pyqtSignal(Exposure, name='exposureToBeShown')
     idle: bool=True
     headerLoader: HeaderLoader=Optional[None]
     headerList: HeaderList=None
+    _loader: Loader=None
 
     def __init__(self, parent:QtWidgets.QMainWindow):
         super().__init__(parent)
         self.config = Config()
         self.config.configItemChanged.connect(self.onConfigChanged)
         self.headerList = HeaderList(self.config)
+        logger.debug('Before instantiating a Loader with datadir "{}"'.format(self.config.datadir))
+        self._loader = Loader(self.config.datadir)
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -235,6 +242,9 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.fsnRangesModel.fromList(self.config.fsnranges)
 
     def onConfigChanged(self, section:str, itemname:str, newvalue: Any):
+        if itemname == 'datadir':
+            logger.debug('Root directory changed to "{}"'.format(newvalue))
+            self._loader = Loader(newvalue)
         self.setWindowModified(True)
 
     def onIdleChanged(self, isidle: bool):
@@ -243,3 +253,19 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
                        self.hdf5FileLineEdit, self.hdf5FileLineEdit, self.treeView, self.addPushButton,
                        self.removePushButton, self.reloadPushButton, self.processPushButton]:
             widget.setEnabled(isidle)
+
+    def loadHeader(self, fsn:int) -> Header:
+        return self._loader.loadHeader(fsn)
+
+    def loadMask(self, maskname:str) -> np.ndarray:
+        return self._loader.loadMask(maskname)
+
+    def loadExposure(self, fsnorheader:Union[int, Header]) -> Exposure:
+        if isinstance(fsnorheader, int):
+            return self._loader.loadExposure(fsnorheader)
+        elif isinstance(fsnorheader, Header):
+            return self._loader.loadExposure(fsnorheader.fsn)
+        else:
+            raise ValueError('Invalid type for argument `fsnorheader`: {}'.format(type(fsnorheader)))
+
+

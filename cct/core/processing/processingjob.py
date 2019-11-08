@@ -1,18 +1,17 @@
 """A class representing a processing job: for one sample and one sample-to-detector distance"""
-import itertools
 import multiprocessing
-import os
-from typing import List, Optional, Dict
+from datetime import datetime
+from typing import List, Optional
 
+import h5py
 import numpy as np
-import scipy.io
+from sastool import ErrorValue
 from sastool.classes2 import Curve
 from sastool.io.credo_cct import Header, Exposure
 
 from . import outliers
-from .config import Config
 from .correlmatrix import correlmatrix_cython
-from .h5writer import H5Writer
+from .loader import Loader
 
 
 class ProcessingError(Exception):
@@ -28,250 +27,126 @@ class Message:
         self.currentcount = currentcount
 
 
-class ProcessingJob(multiprocessing.Process):
+class ProcessingJob:
     """A separate process for processing (summarizing, azimuthally averaging, finding outliers) of a range
     of exposures belonging to the same sample, measured at the same sample-to-detector distance.
     """
-    MAXSUBDIRINDEX: int = 100
+    _errorpropagationtypes = ['Weighted', 'Average', 'Squared (Gaussian)', 'Conservative']
     headers: List[Header] = None
     curves: List[Curve] = None
+    curvesforcmap: List[Curve] = None
     exposures: List[Exposure] = None
-    _masks: Dict[str, np.ndarray] = None
+    _loader: Loader = None
+    bigmemorymode: bool = False
+    badfsns: List[int] = None
+    h5compression: Optional[str] = 'gzip'
 
-    def __init__(self, fsnlist: List[int], h5writer: H5Writer, h5path: List[str], config: Config):
+    def __init__(self, resultsqueue: multiprocessing.Queue, rootdir: str, fsnlist: List[int],
+                 h5file: str,
+                 ierrorprop: str, qerrorprop: str, outliermethod: str, outliermultiplier: float, logcmat: bool,
+                 qrange: Optional[np.ndarray], bigmemorymode: bool = False):
         super().__init__()
         self.fsnlist = fsnlist
-        self.config = config
+        self._loader = Loader(rootdir)
         self.subprocess = None
         self.starttime = None
-        self.h5path = h5path
-        self.h5writer = h5writer
-        self.resultsqueue = multiprocessing.Queue()
-        self.masks = {}
-
-    def getfilename(self, subdir, prefix, extension, fsn, fsndigits=5):
-        """Find a file from the data directory.
-
-        The cause of the problem is that there are too many exposures to be put in a single directory,
-        and it never has been standardised what to name the subdirectories. The default layout for cct is:
-
-        <rootdir>
-            images
-            eval2d
-            param
-            param_override
-            mask
-            ...
-
-        Exposure files (numbered with FSN) are stored under images, eval2d and param. Sometimes flatly
-        in a single directory but sometimes in subdirectories, such as scn0, crd, tst_1 etc. Because of the
-        large number of files, enumerating the subdirectories, especially on a network share takes too
-        much time. We therefore use a heuristic approach. Given the root directory, the subdirectory
-        (e.g. 'eval2d'), the prefix (e.g. 'crd'), the extension ('cbf') and the file sequence number, the
-        filename is constructed:  <prefix>_<fsn padded with zeros to the desired length>.<extension>.
-        The base path for the search is <rootdir>/<subdir>. Directories are searched in the following order:
-
-        1. <rootdir>/<subdir>
-        2. <rootdir>/<subdir>/<prefix>
-        3. <rootdir>/<subdir>/<prefix><index>
-        4. <rootdir>/<subdir>/<prefix>_<index>
-
-        <index> is an increasing number without padding. 0 and 1 are always checked. It is assumed that
-        subdirectories are continuous, therefore when a missing index is found, no more indices are checked.
-
-
-        :param subdir: subdirectory (e.g. 'images', 'eval2d', 'param' etc.)
-        :type subdir: str
-        :param prefix: exposure prefix (e.g. 'crd', 'tst', 'scn', 'tra')
-        :type prefix: str
-        :param extension: file extension without the dot (e.g. '.cbf', '.pickle' etc.)
-        :type extension: str
-        :param fsn: file sequence number
-        :type fsn: int
-        :param fsndigits: number of digits in the file name (defaults to 5)
-        :type fsndigits: int
-        :return: the name and path of the first found existing file
-        :rtype: str
-        :raises: FileNotFoundError if the file could not be found in any of the directories
-        """
-        rootdir = self.config.rootdir
-        basepath = os.path.join(rootdir, subdir)
-        filename = '{{}}_{{:0{}}}.{{}}'.format(fsndigits).format(prefix, fsn, extension)
-        # first try basepath / filename
-        if os.path.exists(os.path.join(basepath, filename)):
-            return os.path.join(basepath, filename)
-        # try basepath/prefix, without numbers
-        if os.path.exists(os.path.join(basepath, prefix, filename)):
-            return os.path.join(basepath, prefix, filename)
-        for subdirnamingscheme in [
-            '{}{}',  # i.e. basepath/prefix<number>
-            '{}_{}'  # i.e. basepath/prefix_<number>
-        ]:
-            for i in range(self.MAXSUBDIRINDEX):
-                currentpath = os.path.join(basepath, subdirnamingscheme.format(prefix, i))
-                if not os.path.isdir(currentpath) and i >= 1:
-                    # if basepath/prefix<number> does not exist, do not try larger numbers.
-                    # An exception is i=0, because some weird people start counting from one...
-                    break
-                if os.path.exists(os.path.join(currentpath, filename)):
-                    return os.path.join(currentpath, filename)
-        raise FileNotFoundError(filename)
-
-    def load_header(self, fsn: int) -> Header:
-        for subdir, extension in itertools.product(['eval2d'], ['pickle', 'pickle.gz']):
-            try:
-                filename = self.getfilename(subdir, 'crd', extension, fsn)
-                break
-            except FileNotFoundError:
-                continue
+        self.h5file = h5file
+        self.resultsqueue = resultsqueue
+        if ierrorprop in self._errorpropagationtypes:
+            self.ierrorprop = ierrorprop
         else:
-            raise FileNotFoundError(fsn)
-        return Header.new_from_file(filename)
+            raise ValueError('Invalid value for ierrorprop')
+        if qerrorprop in self._errorpropagationtypes:
+            self.qerrorprop = qerrorprop
+        else:
+            raise ValueError('Invalid value for qerrorprop')
+        if outliermethod in ['Z-score', 'Modified Z-score', 'Interquartile Range']:
+            self.outliermethod = outliermethod
+        else:
+            raise ValueError('Invalid value for outlier method')
+        self.outliermultiplier = outliermultiplier
+        self.logcmat = logcmat
+        self.qrange = qrange
+        self.bigmemorymode = bigmemorymode
 
-    def load_exposure(self, header: Header) -> Exposure:
-        """Load an exposure, i.e. a 2D image, and attach the mask to it."""
-        filename = self.getfilename('eval2d', 'crd', 'npz', header.fsn)
-        mask = None
-        try:
-            mask = self.masks[header.maskname]
-        except KeyError:
-            for folder, subfolders, files in os.walk(os.path.join(self.config.rootdir, 'mask')):
-                if header.maskname in files:
-                    mf = scipy.io.loadmat(os.path.join(folder, header.maskname))
-                    maskkey = [k for k in mf.keys() if not (k.startswith('_') and k.endswith('_'))][0]
-                    self.masks[header.maskname] = mf[maskkey]
-                    break
-            else:
-                raise FileNotFoundError(header.maskname)
-        return Exposure.new_from_file(filename, header, mask)
-
-    def getMask(self, maskname: str) -> np.ndarray:
-        """Get a mask matrix: either load it from a file or used a cached one."""
-        if not maskname.endswith('.mat'):
-            maskname = maskname + '.mat'
-        try:
-            return self._masks[maskname]
-        except KeyError:
-            # look for the matrix file
-            for directory, subdirs, files in os.walk(self.config.rootdir):
-                if maskname in files:
-                    mat = scipy.io.loadmat(os.path.join(directory, maskname))
-                    matrixname = [mname for mname in mat.keys() if not (mname.startswith('_') or mname.endswith('_'))][
-                        0]
-                    self._masks[maskname] = mat[matrixname]
-                    del mat
-                    return self._masks[maskname]
-            else:
-                raise FileNotFoundError('Could not find mask file: {}'.format(maskname))
-
-    def sendStatusMessage(self, message: str, total: Optional[int] = None,
-                          current: Optional[int] = None):
+    def sendProgress(self, message: str, total: Optional[int] = None,
+                     current: Optional[int] = None):
         self.resultsqueue.put(
             Message(type_='message', message=message, totalcount=total, currentcount=current))
 
-    def sendErrorMessage(self, message: str):
+    def sendError(self, message: str):
         self.resultsqueue.put(Message(type_='error', message=message))
 
     def _loadheaders(self):
         # first load all header files
         self.headers = []
-        self.sendStatusMessage('Loading headers {}/{}'.format(0, len(self.fsnlist)),
-                               total=len(self.fsnlist), current=0)
+        self.sendProgress('Loading headers {}/{}'.format(0, len(self.fsnlist)),
+                          total=len(self.fsnlist), current=0)
         for i, fsn in enumerate(self.fsnlist, start=1):
             try:
-                self.headers.append(self.load_header(fsn))
-                self.sendStatusMessage('Loading headers {}/{}'.format(i, len(self.fsnlist)),
-                                       total=len(self.fsnlist), current=i)
+                self.headers.append(self._loader.loadHeader(fsn))
+                self.sendProgress('Loading headers {}/{}'.format(i, len(self.fsnlist)),
+                                  total=len(self.fsnlist), current=i)
             except FileNotFoundError:
                 continue
         # check if all headers correspond to the same sample and distance
         if len({(h.title, h.distance) for h in self.headers}) > 1:
-            self.sendErrorMessage('There are more samples/distances!')
+            self.sendError('There are more samples/distances!')
             return
 
-    def _loadexposures(self, keepall: bool = False):
+    def _loadexposures(self):
         """Load all exposures, i.e. 2D images. Do radial averaging as well."""
         if not self.headers:
             return
         # now load all exposures
         self.exposures = []
-        curvesforcmap=[]
+        self.curvesforcmap = []
         self.curves = []
-        self.sendStatusMessage('Loading exposures {}/{}'.format(0, len(self.headers)),
-                               total=len(self.headers), current=0)
-
+        self.sendProgress('Loading exposures {}/{}'.format(0, len(self.headers)),
+                          total=len(self.headers), current=0)
+        qrange = self.qrange
         for i, h in enumerate(self.headers, start=1):
             try:
-                ex = self.load_exposure(h)
-                curvesforcmap.append(ex.radial_average(qrange=self.config.cmap_rad_nq))
-                self.curves.append(ex.radial_average())
-                if keepall:
+                ex = self._loader.loadExposure(h.fsn)
+                radavg = ex.radial_average(
+                    qrange=qrange,
+                    errorpropagation=self._errorpropagationtypes.index(self.ierrorprop),
+                    abscissa_errorpropagation=self._errorpropagationtypes.index(self.qerrorprop),
+                )
+                if qrange is None:
+                    qrange = radavg.q
+                self.curvesforcmap.append(radavg)
+                self.curves.append(radavg)
+                if self.bigmemorymode:
                     self.exposures.append(ex)
-                self.sendStatusMessage('Loading exposures {}/{}'.format(i, len(self.headers)),
-                                       total=len(self.headers), current=i)
+                self.sendProgress('Loading exposures {}/{}'.format(i, len(self.headers)),
+                                  total=len(self.headers), current=i)
             except FileNotFoundError as fnfe:
-                self.sendErrorMessage('Cannot find file: {}'.format(fnfe.args[0]))
+                self.sendError('Cannot find file: {}'.format(fnfe.args[0]))
                 return
 
     def _checkforoutliers(self):
-        pass
-
-    def run(self) -> None:
-        self._loadheaders()
-        self._loadexposures()
-        self._checkforoutliers()
-
-        # make radial averages for the correlation map tests
-        nq = self.config.getInt('processing', 'cmap_rad_nq')
-        intensities = np.empty((nq, len(headers)), dtype=np.double)
-        errors = np.empty_like(intensities)
-
-        self.sendStatusMessage('message', 'Azimuthal averaging for CMAT {}/{}'.format(0, len(headers)),
-                               total=len(headers), current=0)
-        for i, ex in enumerate(exposures):
-            rad = ex.radial_average(nq)
-            intensities[:, i] = rad.Intensity
-            errors[:, i] = rad.Error
-            self.sendStatusMessage('message', 'Azimuthal averaging for CMAT {}/{}'.format(i + 1, len(headers)),
-                                   total=len(headers), current=i + 1)
-
-        self.sendStatusMessage('message', 'Calculating correlation matrix', total=0, current=0)
-        cmat = correlmatrix_cython(intensities, errors, self.config.getBool('processing', 'logcorrelmatrix'))
+        self.sendProgress('Testing for outliers...', total=0, current=0)
+        intensities = np.vstack([c.Intensity for c in self.curvesforcmap]).T
+        errors = np.vstack([c.Error for c in self.curvesforcmap]).T
+        cmat = correlmatrix_cython(intensities, errors, self.logcmat)
         discrp = np.diagonal(cmat)
         # find outliers
-        if self.config.getStr('processing', 'corrmatmethod') in ['Interquartile Range', 'Tukey_IQR', 'Tukey', 'IQR']:
-            bad = outliers.outliers_Tukey_iqr(discrp, self.config.getFloat('processing', 'std_multiplier'))
-        elif self.config.getStr('processing', 'corrmatmethod') in ['Z-score']:
-            bad = outliers.outliers_zscore(discrp, self.config.getFloat('processing', 'std_multiplier'))
-        elif self.config.getStr('processing', 'corrmatmethod') in ['Modified Z-score', 'Iglewicz-Hoaglin']:
-            bad = outliers.outliers_zscore_mod(discrp, self.config.getFloat('processing', 'std_multiplier'))
+        if self.outliermethod in ['Interquartile Range', 'Tukey_IQR', 'Tukey', 'IQR']:
+            bad = outliers.outliers_Tukey_iqr(discrp, self.outliermultiplier)
+        elif self.outliermethod in ['Z-score']:
+            bad = outliers.outliers_zscore(discrp, self.outliermultiplier)
+        elif self.outliermethod in ['Modified Z-score', 'Iglewicz-Hoaglin']:
+            bad = outliers.outliers_zscore_mod(discrp, self.outliermultiplier)
         else:
-            self.sendStatusMessage('error', 'Invalid outlier detection mode: {}'.format(
-                self.config.getStr('processing', 'corrmatmethod')))
-            return
-        goodheaders = [h for i, h in enumerate(headers) if i not in bad]
-        goodexposures = [ex for i, ex in enumerate(exposures) if i not in bad]
+            assert False
+        self.badfsns = [h.fsn for i, h in enumerate(self.headers) if i in bad]
+        self.correlmatrix = cmat
+
+    def _summarize(self):
+        """Calculate average scattering pattern and curve"""
 
         # summarize 2D and 1D datasets
-        self.sendStatusMessage('message', 'Averaging exposures and curves 0/{}'.format(
-            len(goodheaders)), current=0, total=len(goodheaders))
-        curve = None
-        intensity2D = None
-        error2D = None
-        mask = None
-        # determine the desired q-range
-        if self.config.getBool('processing', 'customq'):
-            # custom q-range is requested
-            qmin = self.config.getFloat('processing', 'customqmin')
-            qmax = self.config.getFloat('processing', 'customqmax')
-            qcount = self.config.getInt('processing', 'customqcount')
-            if self.config.getBool('processing', 'customqlogscale'):
-                qrange = np.logspace(np.log10(qmin), np.log10(qmax), qcount)
-            else:
-                qrange = np.linspace(qmin, qmax, qcount)
-        else:
-            qrange = None
-        errorpropagationlist = ['Weighted', 'Average of errors', 'Squared (Gaussian)', 'Conservative']
         # Error propagation types: if y_i are the measured data and e_i are their uncertainties:
         #
         #  1) Weighted:
@@ -286,17 +161,232 @@ class ProcessingJob(multiprocessing.Process):
         #  4) Conservative:
         #       y = mean(y_i)
         #       e: either the Gaussian, or that from the standard deviation, take the larger one.
-        try:
-            ep = errorpropagationlist.index(self.config.getStr('processing', 'errorpropagation'))
-        except ValueError:
-            self.sendStatusMessage('error', 'Invalid error propagation type: {}'.format(
-                self.config.getStr('processing', 'errorpropagation')))
-            return
-        try:
-            aep = errorpropagationlist.index(self.config.getStr('processing', 'abscissaerrorpropagation'))
-        except ValueError:
-            self.sendStatusMessage('error', 'Invalid error propagation type for the abscissa: {}'.format(
-                self.config.getStr('processing', 'abscissaerrorpropagation')))
-            return
-        for ex in goodexposures:
-            rad = ex.radial_average(qrange, errorpropagation=ep, abscissa_errorpropagation=aep)
+
+        self.sendProgress('Averaging exposures...', current=0, total=0)
+        intensity2D = 0
+        intensity2D_squared = 0
+        error2D = 0
+        mask = None
+        # do the 2D averaging first.
+        count = 0
+        headeravg = None
+        for i, header in enumerate(self.headers):
+            self.sendProgress('Averaging exposures {}/{}...'.format(i, len(self.headers)),
+                              current=i, total=len(self.headers))
+            if header.fsn in self.badfsns:
+                continue
+            if headeravg is None:
+                headeravg = header
+            if self.exposures:
+                ex = self.exposures[i]
+            else:
+                ex = self._loader.loadExposure(header.fsn)
+            if mask is None:
+                mask = ex.mask.copy()
+            else:
+                mask = np.logical_and(ex.mask != 0, mask != 0)
+            error = ex.error
+            error[error <= 0] = np.nanmin(error[error > 0])  # remove negative and zero values: they can cause troubles
+            if self.ierrorprop == 'Weighted':
+                # Weighted error propagation, scattering patterns are considered independent samples of the same
+                # random variable
+                error2D = error2D + 1 / error ** 2
+                intensity2D = intensity2D + ex.intensity / error ** 2
+            elif self.ierrorprop == 'Average':
+                error2D = error2D + error
+                intensity2D = intensity2D + ex.intensity
+            elif self.ierrorprop == 'Squared (Gaussian)':
+                error2D = error2D + error ** 2
+                intensity2D = intensity2D + ex.intensity
+            elif self.ierrorprop == 'Conservative':
+                error2D = error2D + error ** 2
+                intensity2D = intensity2D + ex.intensity
+                intensity2D_squared = intensity2D_squared + ex.intensity ** 2
+            else:
+                assert False
+            count += 1
+        if self.ierrorprop == 'Weighted':
+            intensity2D /= error2D
+            error2D = (1 / error2D) ** 0.5
+        elif self.ierrorprop == 'Average':
+            intensity2D /= count
+            error2D /= count ** 2
+        elif self.ierrorprop == 'Squared (Gaussian)':
+            intensity2D /= count
+            error2D = error2D ** 0.5 / count
+        elif self.ierrorprop == 'Conservative':
+            error2D_countingstats = (intensity2D_squared - intensity2D ** 2 / count) / (
+                    count - 1) / count ** 0.5 if count > 1 else np.zeros_like(intensity2D)
+            error2D_propagated = error2D ** 0.5 / count
+            error2D = np.stack((error2D_countingstats, error2D_propagated)).max(axis=0)
+            intensity2D /= count
+        else:
+            assert False
+        self.averaged2D = Exposure(intensity2D, error2D, headeravg, mask)
+        self.sendProgress('Averaging curves...', total=0, current=0)
+        intensity1D = 0
+        error1D = 0
+        q1D = 0
+        qerror1D = 0
+        for h,c,i in zip(self.headers, self.curves, range(len(self.headers))):
+            self.sendProgress('Averaging curves {}/{}...', total=len(self.headers), current=i)
+            if h.fsn in self.badfsns:
+                continue
+            if self.ierrorprop == 'Weighted':
+                pass
+            elif self.ierrorprop == 'Average':
+                pass
+            elif self.ierrorprop == 'Squared (Gaussian)':
+                pass
+            elif self.ierrorprop == 'Conservative':
+                pass
+            else:
+                assert False
+            if self.qerrorprop == 'Weighted':
+                pass
+            elif self.qerrorprop == 'Average':
+                pass
+            elif self.qerrorprop == 'Squared (Gaussian)':
+                pass
+            elif self.qerrorprop == 'Conservative':
+                pass
+            else:
+                assert False
+
+        if self.ierrorprop == 'Weighted':
+            pass
+        elif self.ierrorprop == 'Average':
+            pass
+        elif self.ierrorprop == 'Squared (Gaussian)':
+            pass
+        elif self.ierrorprop == 'Conservative':
+            pass
+        else:
+            assert False
+        if self.qerrorprop == 'Weighted':
+            pass
+        elif self.qerrorprop == 'Average':
+            pass
+        elif self.qerrorprop == 'Squared (Gaussian)':
+            pass
+        elif self.qerrorprop == 'Conservative':
+            pass
+        else:
+            assert False
+        
+
+        self.averaged1D = Curve(q1D, intensity1D, error1D, qerror1D)
+        self.reintegrated1D = self.averaged2D.radial_average(
+            self.qrange, errorpropagation=self._errorpropagationtypes.index(self.ierrorprop),
+            abscissa_errorpropagation=self._errorpropagationtypes.index(self.qerrorprop)
+        )
+        # now average the headers, however fool this sounds...
+        self.averagedHeader = {}
+        for field in ['title', 'distance', 'distancedecrease', 'pixelsizex', 'pixelsizey', 'wavelength']:
+            # ensure that these fields are unique
+            avg = {getattr(h, field) for h in self.headers if h.fsn not in self.badfsns}
+            if len(avg) != 1:
+                raise ValueError(
+                    'Field {} must be unique. Found the following different values: {}'.format(', '.join(avg)))
+            self.averagedHeader[field] = avg.pop()
+        for field in ['date', 'startdate']:
+            self.averagedHeader[field] = min([getattr(h, field) for h in self.headers if h.fsn not in self.badfsns])
+        for field in ['enddate']:
+            # take the maximum of these fields
+            self.averagedHeader[field] = max([getattr(h, field) for h in self.headers if h.fsn not in self.badfsns])
+        for field in ['exposuretime', ]:
+            # take the sum of these fields
+            self.averagedHeader[field] = sum([getattr(h, field) for h in self.headers if h.fsn not in self.badfsns])
+        for field in ['absintfactor', 'beamcenterx', 'beamcentery', 'flux', 'samplex', 'sampley', 'temperature',
+                      'thickness', 'transmission', 'vacuum']:
+            # take the weighted average of these fields
+            values = [getattr(h, field) for h in self.headers if h.fsn not in self.badfsns]
+            values = [v for v in values if isinstance(v, float) or isinstance(v, ErrorValue)]
+            val = np.array([v.val if isinstance(v, ErrorValue) else v for v in values])
+            err = np.array([v.err if isinstance(v, ErrorValue) else np.nan for v in values])
+            if np.isfinite(err).sum() == 0:
+                err = np.ones_like(val)
+            else:
+                minposerr = np.nanmin(err[err > 0])
+                err[err <= 0] = minposerr
+                err[~np.isfinite(err)] = minposerr
+            self.averagedHeader[field] = ErrorValue(
+                (val / err ** 2).sum() / (1 / err ** 2).sum(),
+                1 / (1 / err ** 2).sum() ** 0.5
+            )
+        for field in ['fsn', 'fsn_absintref', 'fsn_emptybeam', 'maskname', 'project', 'username']:
+            # take the first value
+            self.averagedHeader[field] = [getattr(h, field) for h in self.headers if h.fsn not in self.badfsns][0]
+
+    def _output(self):
+        """Write results in the .h5 file."""
+        with h5py.File(self.h5file, mode='a') as h5:  # mode=='a': read/write if exists, create otherwise
+            # save all masks
+            masks = h5.require_group('masks')
+            for name, mask in self._loader.masks.items():
+                ds = masks.require_dataset(name, mask.shape, mask.dtype, exact=True)
+                ds.value = mask
+            # create Samples/<samplename>/<dist> group hierarchy if not exists
+            samples = h5.require_group('Samples')
+            samplegroup = h5['Samples'].require_group(self.headers[0].title)
+            try:
+                del samplegroup['{:.2f}'.format(self.headers[0].distance)]
+            except KeyError:
+                pass
+            distgroup = samplegroup.require_group('{:.2f}'.format(self.headers[0].distance))
+            # Set attributes of the <dist> group from the averaged header.
+            for key, value in self.averagedHeader:
+                if isinstance(value, ErrorValue):
+                    distgroup.attrs[key] = value.val
+                    distgroup.attrs[key + '.err'] = value.err
+                elif isinstance(value, datetime):
+                    distgroup.attrs[key] = str(value)
+                else:
+                    distgroup.attrs[key] = value
+            # save datasets
+            distgroup.create_dataset('image', data=self.averaged2D.intensity, compression=self.h5compression)
+            distgroup.create_dataset('image_uncertainty', data=self.averaged2D.error, compression=self.h5compression)
+            distgroup.create_dataset('correlmatrix', data=self.correlmatrix, compression=self.h5compression)
+            distgroup.create_dataset('mask', data=self.averaged2D.mask, compression=self.h5compression)
+            distgroup['badfsns'] = np.array(self.badfsns)
+            distgroup.create_dataset('curve_averaged', data=np.vstack(
+                (self.averaged1D.q, self.averaged1D.Intensity, self.averaged1D.Error, self.averaged1D.qError)).T,
+                                     compression=self.h5compression)
+            
+            distgroup.create_dataset('curve_reintegrated',
+                                     data=np.vstack((self.reintegrated1D.q, self.reintegrated1D.Intensity, 
+                                                     self.reintegrated1D.Error, self.reintegrated1D.qError)).T,
+                                     compression=self.h5compression)
+            distgroup['curve'] = h5py.SoftLink('curve_averaged')
+            # save all curves
+            try:
+                del distgroup['curves']
+            except KeyError:
+                pass
+            curvesgroup = distgroup.require_group('curves')
+            for h, c in zip(self.headers, self.curves):
+                ds = curvesgroup.create_dataset(str(h.fsn), data=np.vstack((c.q, c.Intensity, c.Error, c.qError)).T,
+                                           compression=self.h5compression)
+                for field in ['absintfactor', 'beamcenterx', 'beamcentery', 'date', 'distance', 'distancedecrease',
+                              'enddate', 'exposuretime', 'flux', 'fsn', 'fsn_absintref', 'fsn_emptybeam', 'maskname',
+                              'pixelsizex', 'pixelsizey', 'project', 'samplex', 'samplex_motor',
+                              'sampley', 'sampley_motor', 'startdate', 'temperature', 'thickness', 'title', 'transmission',
+                              'username', 'vacuum', 'wavelength']:
+                    value = getattr(h, field)
+                    if isinstance(value, datetime):
+                        ds.attrs[field] = str(value)
+                    elif isinstance(value, ErrorValue):
+                        ds.attrs[field] = value.val
+                        ds.attrs[field+'.err'] = value.val
+                    elif value is None:
+                        ds.attrs[field] = 'None'
+                    else:
+                        ds.attrs[field] = value
+                #ToDo: write correlmat_* fields
+
+    def run(self) -> None:
+        self._loadheaders()
+        self._loadexposures()
+        self._checkforoutliers()
+        self._summarize()
+        self._output()
