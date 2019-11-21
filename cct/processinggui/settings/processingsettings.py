@@ -20,6 +20,7 @@ class ProcessingSettings(QtWidgets.QWidget, Ui_Form, SettingsPage):
             (self.qmaxDoubleSpinBox, 'customqmax'),
             (self.numQRamgeSpinBox, 'customqcount'),
             (self.logQRangeCheckBox, 'customqlogscale'),
+            (self.maxJobCountSpinBox, 'maxjobs'),
            ])
 
     def setupUi(self, Form):

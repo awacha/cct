@@ -45,6 +45,7 @@ configitems = {
                              'Semicolon-separated list of header fields to show', None),
     },
     'processing': {
+        'maxjobs': ConfigItem('int', '4', 'Maximal number of concurrent processing jobs', ('1', '99999')),
         'errorpropagation': ConfigItem('str', 'Conservative', 'Error propagation method',
                                        ['Weighted', 'Average', 'Squared (Gaussian)', 'Conservative']),
         'abscissaerrorpropagation': ConfigItem('str', 'Conservative', 'Abscissa error propagation method',
@@ -74,7 +75,8 @@ configitems = {
         'showcenter': ConfigItem('bool', 'True', 'Show the center on the 2D image', None),
         'showcolorbar': ConfigItem('bool', 'True', 'Show the color bar on the 2D image', None),
         'colorpalette': ConfigItem('str', 'viridis', 'Color bar for the 2D images', None),
-        'twodimaxisvalues': ConfigItem('str', 'q', 'Values to display on the axes of 2D images', ['q', 'pixel', 'radius']),
+        'twodimaxisvalues': ConfigItem('str', 'q', 'Values to display on the axes of 2D images',
+                                       ['q', 'pixel', 'radius']),
     },
     'onedim': {  # parameters for the curve graphs
         'showmeancurve': ConfigItem('bool', 'True', 'Show the average curve', None),
@@ -82,7 +84,8 @@ configitems = {
         'showgoodcurves': ConfigItem('bool', 'True', 'Show the good curves', None),
         'showlines': ConfigItem('bool', 'True', 'Show lines in curves', None),
         'showgrid': ConfigItem('bool', 'True', 'Show grid lines in curves', None),
-        'symbolstype': ConfigItem('str', 'Filled', 'Symbol type in curves', ['Hidden', 'Filled', 'Empty']),
+        'symbolstype': ConfigItem('str', 'Filled symbols', 'Symbol type in curves',
+                                  ['No symbols', 'Filled symbols', 'Empty symbols']),
         'logx': ConfigItem('bool', 'True', 'Logarithmic X scale', None),
         'logy': ConfigItem('bool', 'True', 'Logarithmic Y scale', None),
         'legendformat': ConfigItem('str', '{title} @{distance:.2f} mm', 'Format of the legend', None),
@@ -91,6 +94,9 @@ configitems = {
                                 'I*q^2 vs. q', 'I*q^4 vs. q']),
         'showerrorbars': ConfigItem('bool', 'True', 'Show error bars', None),
         'showlegend': ConfigItem('bool', 'True', 'Show the legend', None),
+    },
+    'cmatplot': {
+        'cmatpalette': ConfigItem('str', 'coolwarm', 'Color map for the correlation matrix plots', None),
     }
 }
 
@@ -131,46 +137,47 @@ def writeCode():
                 '        self._configparser.read([filename])\n')
         for section in configitems:
             for name in configitems[section]:
-                f.write('        self.configItemChanged.emit("{}", "{}", getattr(self, "{}"))\n'.format(section, name, name))
+                f.write('        self.configItemChanged.emit("{}", "{}", getattr(self, "{}"))\n'.format(section, name,
+                                                                                                        name))
         f.write(
-                '\n'
-                '# Various reader/writer functions\n'
-                '    @staticmethod\n'
-                '    def _readBool(x: str) -> bool:\n'
-                '        if x.upper() in ["Y", "TRUE", "1", "YES", "+", "ON"]:\n'
-                '            return True\n'
-                '        elif x.upper() in ["N", "FALSE", "0", "NO", "-", "OFF"]:\n'
-                '            return False\n'
-                '        raise ValueError(x)\n'
-                '\n'
-                '    @staticmethod\n'
-                '    def _writeBool(x: bool) -> str:\n'
-                '        assert isinstance(x, bool)\n'
-                '        return "True" if bool(x) else "False"\n'
-                '\n'
-                '    @staticmethod\n'
-                '    def _readFSNRanges(x: str) -> List[Tuple[int, int]]:\n'
-                '        x = x.strip()\n'
-                '        if not (x.startswith("[") and x.endswith("]")):\n'
-                '            raise ValueError("Invalid fsn range string")\n'
-                '        x = x[1:-1].strip()\n'
-                '        ranges = []\n'
-                '        for m in re.finditer(r"\(\s*(?P<left>\d+)\s*,\s*(?P<right>\d+)\s*\)", x):\n'
-                '            ranges.append((int(m["left"]), int(m["right"])))\n'
-                '        return ranges\n'
-                '\n'
-                '    @staticmethod\n'
-                '    def _writeFSNRanges(x: List[Tuple[int, int]]) -> str:\n'
-                '        return "["+", ".join(["({:d}, {:d})".format(left, right) for left, right in x])+"]"\n'
-                '\n'
-                '    @staticmethod\n'
-                '    def _readSemicolonSepStrList(x: str) -> List[str]:\n'
-                '        return x.split(";")\n'
-                '\n'
-                '    @staticmethod\n'
-                '    def _writeSemicolonSepStrList(x: List[str]) -> str:\n'
-                '        return ";".join(x)\n'
-                )
+            '\n'
+            '# Various reader/writer functions\n'
+            '    @staticmethod\n'
+            '    def _readBool(x: str) -> bool:\n'
+            '        if x.upper() in ["Y", "TRUE", "1", "YES", "+", "ON"]:\n'
+            '            return True\n'
+            '        elif x.upper() in ["N", "FALSE", "0", "NO", "-", "OFF"]:\n'
+            '            return False\n'
+            '        raise ValueError(x)\n'
+            '\n'
+            '    @staticmethod\n'
+            '    def _writeBool(x: bool) -> str:\n'
+            '        assert isinstance(x, bool)\n'
+            '        return "True" if bool(x) else "False"\n'
+            '\n'
+            '    @staticmethod\n'
+            '    def _readFSNRanges(x: str) -> List[Tuple[int, int]]:\n'
+            '        x = x.strip()\n'
+            '        if not (x.startswith("[") and x.endswith("]")):\n'
+            '            raise ValueError("Invalid fsn range string")\n'
+            '        x = x[1:-1].strip()\n'
+            '        ranges = []\n'
+            '        for m in re.finditer(r"\(\s*(?P<left>\d+)\s*,\s*(?P<right>\d+)\s*\)", x):\n'
+            '            ranges.append((int(m["left"]), int(m["right"])))\n'
+            '        return ranges\n'
+            '\n'
+            '    @staticmethod\n'
+            '    def _writeFSNRanges(x: List[Tuple[int, int]]) -> str:\n'
+            '        return "["+", ".join(["({:d}, {:d})".format(left, right) for left, right in x])+"]"\n'
+            '\n'
+            '    @staticmethod\n'
+            '    def _readSemicolonSepStrList(x: str) -> List[str]:\n'
+            '        return x.split(";")\n'
+            '\n'
+            '    @staticmethod\n'
+            '    def _writeSemicolonSepStrList(x: List[str]) -> str:\n'
+            '        return ";".join(x)\n'
+        )
         f.write('# properties\n')
         for section in configitems:
             f.write('# Config section {}\n'.format(section))
@@ -188,13 +195,14 @@ def writeCode():
                         '    def {}(self, value: {}):\n'.format(itemname, itemtype.typehint) +
                         '        """{}"""\n'.format(item.description))
                 if item.domain is None:
-                    pass # no domain validation
+                    pass  # no domain validation
                 elif item.typename in ['int', 'float']:
                     f.write('        if (value < {0[0]}) or (value > {0[1]}):\n'.format(item.domain) +
                             '            raise ValueError("Invalid value for {}")\n'.format(itemname))
                 elif item.typename == 'str':
-                    f.write('        if value not in [{}]:\n'.format(', '.join(["\"{}\"".format(x) for x in item.domain]))+
-                            '            raise ValueError("Invalid value for {}")\n'.format(itemname))
+                    f.write(
+                        '        if value not in [{}]:\n'.format(', '.join(["\"{}\"".format(x) for x in item.domain])) +
+                        '            raise ValueError("Invalid value for {}")\n'.format(itemname))
                 f.write('        self._configparser["{}"]["{}"] = {}(value)\n'.format(section, itemname,
                                                                                       itemtype.writer) +
                         '        self.configItemChanged.emit("{}", "{}", self.{})\n'.format(section, itemname,
@@ -212,7 +220,23 @@ def writeCode():
                 item = configitems[section][itemname]
                 itemtype = configtypes[item.typename]
                 f.write('        self._configparser["{}"]["{}"] = "{}"\n'.format(section, itemname, item.default))
-
+        f.write('\n')
+        f.write('    def toDict(self):\n')
+        f.write('        return {\n')
+        for section in configitems:
+            for itemname in configitems[section]:
+                f.write('            "{}": self.{},\n'.format(itemname, itemname))
+        f.write('        }\n')
+        f.write('\n# list of acceptable values\n')
+        f.write('    def acceptableValues(self, itemname: str) -> List[str]:\n')
+        for section in configitems:
+            for itemname in configitems[section]:
+                item = configitems[section][itemname]
+                if item.typename == 'str' and item.domain is not None:
+                    f.write('        if itemname == "{}":\n'.format(itemname))
+                    f.write('            return [{}]\n'.format(', '.join(['"{}"'.format(d) for d in item.domain])))
+        f.write('        raise ValueError("Invalid item name: {}".format(itemname))\n')
+        f.write('\n')
 
 if __name__ == '__main__':
     writeCode()

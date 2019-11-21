@@ -17,7 +17,6 @@ from sastool.classes2 import Exposure
 
 from .twodim_ui import Ui_Form
 from ..config import Config
-from ..project import Project
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -29,16 +28,14 @@ class ImageView(QtWidgets.QWidget, Ui_Form):
     navigationToolbar: NavigationToolbar2QT
     axes: Axes
     config: Config
-    project: Project
     _exposure: Exposure = None
     mplimage: AxesImage = None
     mplcrosshair: Tuple[Line2D, Line2D] = None
     mplmask: AxesImage = None
     mplcolorbar: Optional[Colorbar] = None
 
-    def __init__(self, parent, project: Project, config: Config):
+    def __init__(self, parent, config: Config):
         super().__init__(parent)
-        self.project = project
         self.config = config
         self.setupUi(self)
 
@@ -106,7 +103,6 @@ class ImageView(QtWidgets.QWidget, Ui_Form):
 
     def setExposure(self, exposure: Exposure):
         self._exposure = exposure
-        self.setWindowTitle(str(exposure))
         self._draw()
 
     def exposure(self) -> Exposure:

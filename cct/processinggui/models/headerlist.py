@@ -9,8 +9,9 @@ from sastool.classes2 import Header
 
 from ..config import Config
 
-logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 class HeaderList(QtCore.QAbstractItemModel):
     """A simple flat (non-hierarchical) model for storing metadata of exposures
@@ -18,17 +19,17 @@ class HeaderList(QtCore.QAbstractItemModel):
     The first column is always the file sequence number. Further columns can be
     selected.
     """
-    allColumns = {'fsn'             : 'FSN', 'title': 'Sample', 'energy': 'Energy', 'wavelength': 'Wavelength',
-                   'distance'        : 'S-D dist.', 'temperature': 'Temperature', 'beamcenterx': 'Beam X',
-                   'beamcentery'     : 'Beam Y', 'pixelsizex': 'Pixel size X', 'pixelsizey': 'Pixel size Y',
-                   'exposuretime'    : 'Exposure time',
-                   'startdate'       : 'Start date', 'enddate': 'End date', 'date': 'Date', 'maskname': 'Mask name',
-                   'vacuum'          : 'Vacuum',
-                   'transmission'    : 'Transmission', 'flux': 'Flux', 'thickness': 'Thickness',
-                   'distancedecrease': 'Dist.decr.',
-                   'samplex'         : 'Sample X', 'sampley': 'Sample Y', 'username': 'User name', 'project': 'Project',
-                   'fsn_emptybeam'   : 'FSN empty',
-                   'fsn_absintref'   : 'FSN absintref', 'absintfactor': 'Abs.int.factor'}
+    allColumns = {'fsn': 'FSN', 'title': 'Sample', 'energy': 'Energy', 'wavelength': 'Wavelength',
+                  'distance': 'S-D dist.', 'temperature': 'Temperature', 'beamcenterx': 'Beam X',
+                  'beamcentery': 'Beam Y', 'pixelsizex': 'Pixel size X', 'pixelsizey': 'Pixel size Y',
+                  'exposuretime': 'Exposure time',
+                  'startdate': 'Start date', 'enddate': 'End date', 'date': 'Date', 'maskname': 'Mask name',
+                  'vacuum': 'Vacuum',
+                  'transmission': 'Transmission', 'flux': 'Flux', 'thickness': 'Thickness',
+                  'distancedecrease': 'Dist.decr.',
+                  'samplex': 'Sample X', 'sampley': 'Sample Y', 'username': 'User name', 'project': 'Project',
+                  'fsn_emptybeam': 'FSN empty',
+                  'fsn_absintref': 'FSN absintref', 'absintfactor': 'Abs.int.factor'}
 
     _data: typing.List[Header]
     _columnnames: typing.List[str] = ['fsn', 'title', 'distance', 'startdate', 'flux', 'vacuum']  # fill this
@@ -38,20 +39,27 @@ class HeaderList(QtCore.QAbstractItemModel):
     def __init__(self, config: Config):
         super().__init__()
         self._data = []
-        self._badfsns:List[int] = []
+        self._badfsns: typing.List[int] = []
         self._config = config
+        self.readBadFSNs()
+        self.updateColumnChoices(self._config.fields)
+        self._config.configItemChanged.connect(self.onConfigItemChanged)
+
+    def onConfigItemChanged(self, sectionname: str, itemname: str, newvalue: typing.Any):
+        logger.debug(
+            'ConfigItemChanged signal caught in header list. Item name: {}. Value: {}'.format(itemname, newvalue))
+        if itemname == 'fields':
+            self.updateColumnChoices(newvalue)
+        elif itemname == 'badfsnsfile':
+            self.readBadFSNs()
+
+    def readBadFSNs(self):
         try:
             # noinspection PyTypeChecker
             self._badfsns = np.loadtxt(self._config.badfsnsfile, dtype=np.int).flatten().tolist()
         except OSError:
             self._badfsns = []
-        self.updateColumnChoices(self._config.fields)
-        self._config.configItemChanged.connect(self.onConfigItemChanged)
 
-    def onConfigItemChanged(self, sectionname:str, itemname:str, newvalue:typing.Any):
-        logger.debug('ConfigItemChanged signal caught in header list. Item name: {}. Value: {}'.format(itemname, newvalue))
-        if itemname == 'fields':
-            self.updateColumnChoices(newvalue)
 
     def updateColumnChoices(self, columns: typing.List[str]):
         """Update the displayed columns in this model.
@@ -152,10 +160,25 @@ class HeaderList(QtCore.QAbstractItemModel):
         # noinspection PyTypeChecker
         np.savetxt(self._config.badfsnsfile, self._badfsns, fmt='%.0f')
 
-    def replaceAllHeaders(self, headers:typing.List[Header]):
+    def replaceAllHeaders(self, headers: typing.List[Header]):
         self.beginResetModel()
         self._data = headers
         self.endResetModel()
 
-    def __getitem__(self, row:int):
+    def __getitem__(self, row: int):
         return self._data[row]
+
+    @property
+    def badfsns(self) -> typing.List[int]:
+        return self._badfsns
+
+    def addBadFSNs(self, badfsns:typing.List[int]):
+        self._badfsns = sorted(self._badfsns + list(badfsns))
+        self.writeBadFSNs()
+        self.dataChanged.emit(self.index(0,0), self.index(self.rowCount(), self.columnCount()))
+
+    def samples(self) -> typing.Set[str]:
+        return {h.title for h in self._data}
+
+    def distances(self, sample:str) -> typing.Set[float]:
+        return {h.distance.val for h in self._data if h.title == sample}

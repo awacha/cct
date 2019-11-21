@@ -6,6 +6,10 @@ import numpy as np
 import scipy.stats.distributions
 
 
+def zscore(data:np.ndarray) -> np.ndarray:
+    """Calculate the Z-score, defined as Z_i = (Y_i - mean(Y)) / stddev(Y)"""
+    return (data - np.nanmean(data)) / np.nanstd(data, ddof=1)
+
 def outliers_zscore(data:np.ndarray, threshold:float=3) -> np.ndarray:
     """Find outliers based on the Z-score
 
@@ -22,6 +26,10 @@ def outliers_zscore(data:np.ndarray, threshold:float=3) -> np.ndarray:
     """
     zscore = (data-np.nanmean(data))/np.nanstd(data, ddof=1)
     return np.arange(data.size)[np.abs(zscore)>threshold]
+
+def zscore_mod(data:np.ndarray) -> np.ndarray:
+    median_abs_dev = np.nanmedian(np.abs(data - np.nanmedian(data)))
+    return 0.6745 * (data - np.nanmedian(data)) / median_abs_dev
 
 def outliers_zscore_mod(data:np.ndarray, threshold:float=3.5) -> np.ndarray:
     """Find outliers based on the modified Z-score proposed by Iglewicz and Hoaglin

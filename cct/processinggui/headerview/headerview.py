@@ -1,25 +1,28 @@
 import logging
+from time import monotonic
 
 from PyQt5 import QtCore, QtWidgets
 
 from .columnselector import ColumnSelectorDialog
 from .headerview_ui import Ui_Form
 from ..config import Config
+from ..graphing import ImageView, CurveView
+from ..models import model2xlsx
 from ..project import Project
 
-logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 class HeaderView(QtWidgets.QWidget, Ui_Form):
-    config:Config=None
-    project:Project=None
-    columnSelectorDialog:ColumnSelectorDialog=None
+    config: Config = None
+    project: Project = None
+    columnSelectorDialog: ColumnSelectorDialog = None
 
-
-    def __init__(self, parent: QtWidgets.QWidget, project:Project, config:Config):
+    def __init__(self, parent: QtWidgets.QWidget, project: Project, config: Config):
         super().__init__(parent)
-        self.config=config
-        self.project=project
+        self.config = config
+        self.project = project
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -48,7 +51,14 @@ class HeaderView(QtWidgets.QWidget, Ui_Form):
 
     @QtCore.pyqtSlot()
     def on_exportTablePushButton_clicked(self):
-        pass
+        filename, filter = QtWidgets.QFileDialog.getSaveFileName(self, 'Save table to XLSX...', '',
+                                                                 'Excel 2007- worksheets (*.xlsx);;All files (*)',
+                                                                 'Excel 2007- worksheets (*.xlsx)')
+        if not filename:
+            return
+        if not filename.upper().endswith('.XLSX'):
+            filename = filename + '.xlsx'
+        model2xlsx(filename, 'Exposure list', self.project.headerList)
 
     @QtCore.pyqtSlot()
     def on_reloadHeadersPushButton_clicked(self):
@@ -56,7 +66,18 @@ class HeaderView(QtWidgets.QWidget, Ui_Form):
 
     @QtCore.pyqtSlot()
     def on_showCurvePushButton_clicked(self):
-        pass
+        selectedrows = self.treeView.selectionModel().selectedRows(0)
+        if not selectedrows:
+            return
+        cv = CurveView(None, self.project)
+        for index in selectedrows:
+            ex = self.project.loadExposure(self.project.headerList[index.row()])
+            fsn = ex.header.fsn
+            curve = ex.radial_average()
+            cv.addCurve(curve, label='#{0.fsn} ({0.title} @ {0.distance:.2f})'.format(ex.header))
+        cv.replot()
+        cv.setWindowTitle('Scattering curves')
+        self.project.subwindowOpenRequest.emit('curveview_{}'.format(monotonic()), cv)
 
     @QtCore.pyqtSlot()
     def on_showImagePushButton_clicked(self):
@@ -65,4 +86,7 @@ class HeaderView(QtWidgets.QWidget, Ui_Form):
             return
         for index in selectedrows:
             ex = self.project.loadExposure(self.project.headerList[index.row()])
-            self.project.exposureToBeShown.emit(ex)
+            iv = ImageView(None, self.project.config)
+            iv.setExposure(ex)
+            iv.setWindowTitle('FSN {0.fsn}: {0.title} @ {0.distance:.2f}'.format(ex.header))
+            self.project.subwindowOpenRequest.emit('imageview_{}'.format(monotonic()), iv)

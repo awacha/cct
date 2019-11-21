@@ -10,6 +10,7 @@ from .mainwindow import Main
 
 
 handler = logging.StreamHandler()
+logging.root.addFilter(logging.Filter('cct'))
 handler.addFilter(logging.Filter('cct'))
 logging.root.addHandler(handler)
 formatter = logging.Formatter(fmt='{levelname}:{name}:{lineno}({funcName}):{message}', style='{')

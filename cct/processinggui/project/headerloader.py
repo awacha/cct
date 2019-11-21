@@ -9,7 +9,7 @@ from PyQt5 import QtCore
 from sastool.io.credo_cct import Header
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 def loadHeader(fsn:int, dirs:Sequence[str], headerfileformat:str) -> Tuple[int, Optional[Header]]:
     for d in dirs:
@@ -23,7 +23,6 @@ class HeaderLoader(QtCore.QObject):
     TIMERINTERVAL: int=100 # milliseconds
     pool: Optional[Pool]
     outstanding: List[AsyncResult]
-    timer: QtCore.QTimer
     fsns: Sequence[int]
     dirs: Sequence[str]
     headerfileformat: str
@@ -36,7 +35,6 @@ class HeaderLoader(QtCore.QObject):
         super().__init__()
         self.pool=None # do not create a pool yet
         self.outstanding = []
-        self.timer = QtCore.QTimer(self)
         self.fsns=fsns
         self.dirs=dirs
         self.headerfileformat=headerfileformat

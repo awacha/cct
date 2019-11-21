@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>838</width>
+    <height>569</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Results</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Select entries:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="selectAllSamplesToolButton">
+       <property name="text">
+        <string>All</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="selectNoSamplesToolButton">
+       <property name="text">
+        <string>None</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Select matching samples:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="sampleNameRegexLineEdit">
+       <property name="placeholderText">
+        <string>Regular expression...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="selectRegexToolButton">
+       <property name="text">
+        <string>Select</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="deselectRegexToolButton">
+       <property name="text">
+        <string>Deselect</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QTreeView" name="treeView">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>1</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="horizontalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::ExtendedSelection</enum>
+     </property>
+     <property name="rootIsDecorated">
+      <bool>false</bool>
+     </property>
+     <property name="uniformRowHeights">
+      <bool>true</bool>
+     </property>
+     <property name="itemsExpandable">
+      <bool>false</bool>
+     </property>
+     <property name="sortingEnabled">
+      <bool>true</bool>
+     </property>
+     <property name="allColumnsShowFocus">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="perSampleTab">
+      <attribute name="title">
+       <string>Per-sample</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="1">
+        <widget class="QPushButton" name="perSampleImagePushButton">
+         <property name="text">
+          <string>Image</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../resource/icons/icons.qrc">
+           <normaloff>:/icons/exposureviewer.svg</normaloff>:/icons/exposureviewer.svg</iconset>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QPushButton" name="perSampleCorrelationMatrixPushButton">
+         <property name="text">
+          <string>Corr.matrix</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QPushButton" name="perSampleCurvesPushButton">
+         <property name="text">
+          <string>Curves</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QPushButton" name="perSampleOutlierTestPushButton">
+         <property name="text">
+          <string>Outlier test</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="4">
+        <widget class="QPushButton" name="perSampleAnisotropyPushButton">
+         <property name="text">
+          <string>Anisotropy</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../resource/icons/icons.qrc">
+           <normaloff>:/icons/anisotropy.svg</normaloff>:/icons/anisotropy.svg</iconset>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="overallTab">
+      <attribute name="title">
+       <string>Overall</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0">
+        <widget class="QPushButton" name="overallCurvesPushButton">
+         <property name="text">
+          <string>Curves</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="overallTransmissionPushButton">
+         <property name="text">
+          <string>Transmission</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../resource/icons/icons.qrc">
+           <normaloff>:/icons/transmission.svg</normaloff>:/icons/transmission.svg</iconset>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QPushButton" name="overallExposureTimePushButton">
+         <property name="text">
+          <string>Exposure time</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QPushButton" name="overallVacuumFluxPushButton">
+         <property name="text">
+          <string>Vacuum &amp;&amp; flux</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>selectAllSamplesToolButton</tabstop>
+  <tabstop>selectNoSamplesToolButton</tabstop>
+  <tabstop>sampleNameRegexLineEdit</tabstop>
+  <tabstop>selectRegexToolButton</tabstop>
+  <tabstop>treeView</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>perSampleCurvesPushButton</tabstop>
+  <tabstop>perSampleImagePushButton</tabstop>
+  <tabstop>perSampleCorrelationMatrixPushButton</tabstop>
+  <tabstop>perSampleOutlierTestPushButton</tabstop>
+  <tabstop>perSampleAnisotropyPushButton</tabstop>
+  <tabstop>overallCurvesPushButton</tabstop>
+  <tabstop>overallTransmissionPushButton</tabstop>
+  <tabstop>overallExposureTimePushButton</tabstop>
+  <tabstop>overallVacuumFluxPushButton</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../../resource/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>

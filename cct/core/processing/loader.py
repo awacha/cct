@@ -7,7 +7,7 @@ from sastool.io.credo_cct import Header, Exposure
 from scipy.io import loadmat
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Loader:

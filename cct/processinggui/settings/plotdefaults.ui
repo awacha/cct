@@ -130,17 +130,17 @@
        <widget class="QComboBox" name="onedimSymbolsComboBox">
         <item>
          <property name="text">
-          <string>Hide</string>
+          <string>No symbols</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>Filled</string>
+          <string>Filled symbols</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>Empty</string>
+          <string>Empty symbols</string>
          </property>
         </item>
        </widget>

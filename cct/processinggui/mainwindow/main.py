@@ -1,18 +1,15 @@
 import logging
-from time import monotonic
 from typing import List
 
 from PyQt5 import QtCore, QtWidgets, QtGui
-from sastool.classes2 import Exposure
 
 from .main_ui import Ui_MainWindow
-from ..graphing import ImageView
 from ..headerview import HeaderView
 from ..project import Project
 from ..settings import SettingsWindow
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class Main(QtWidgets.QMainWindow, Ui_MainWindow):
     _actionsNeedingAnOpenProject: List[QtWidgets.QAction]
@@ -57,7 +54,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.project = Project(self)
         logger.debug('Created a new project')
         self.project.idleChanged.connect(self.onProjectIdleChanged)
-        self.project.exposureToBeShown.connect(self.onExposureToBeShown)
+        self.project.subwindowOpenRequest.connect(self._addNewSubWindow)
         logger.debug('idleChanged signal connected.')
         self._addNewSubWindow('project', self.project)
         for a in self._actionsNeedingAnOpenProject:
@@ -175,7 +172,3 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_actionProcess_triggered(self):
         self.project.process()
 
-    def onExposureToBeShown(self, exposure:Exposure):
-        iv = ImageView(self, self.project, self.project.config)
-        iv.setExposure(exposure)
-        self._addNewSubWindow('imageview_{}'.format(monotonic()), iv)
