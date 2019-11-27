@@ -1,5 +1,5 @@
 import logging
-from typing import Union, Optional, Sequence
+from typing import Union, Optional, Sequence, Tuple
 
 import matplotlib.cm
 import numpy as np
@@ -21,15 +21,18 @@ class CorrMatView(QtWidgets.QWidget, Ui_Form):
     figure: Figure = None
     canvas: FigureCanvasQTAgg = None
     toolbar: NavigationToolbar2QT = None
+    _figsize: Tuple[float, float] = None
 
-    def __init__(self, parent: QtWidgets.QWidget = None, project: "Project" = None):
+    def __init__(self, parent: QtWidgets.QWidget = None, project: "Project" = None,
+                 figsize: Tuple[float, float] = (4, 4)):
         super().__init__(parent)
+        self._figsize = figsize
         self.project = project
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.figure = Figure(figsize=(4, 4), constrained_layout=True)
+        self.figure = Figure(figsize=self._figsize, constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.toolbar = NavigationToolbar2QT(self.canvas, self)
         self.figureVerticalLayout.addWidget(self.toolbar)
@@ -134,3 +137,15 @@ class CorrMatView(QtWidgets.QWidget, Ui_Form):
         except OSError:
             return
         self.replot()
+
+    def savefig(self, filename: str, **kwargs):
+        self.canvas.draw()
+        self.figure.savefig(
+            filename,
+            # format=None  # infer the format from the file name
+            transparent=True,  # all patches will be transparent, instead of opaque white
+            optimize=True,  # optimize JPEG file, ignore for other file types
+            progressive=True,  # progressive JPEG, ignore for other file types
+            quality=95,  # JPEG quality, ignore for other file types
+            **kwargs
+        )

@@ -33,15 +33,17 @@ class ImageView(QtWidgets.QWidget, Ui_Form):
     mplcrosshair: Tuple[Line2D, Line2D] = None
     mplmask: AxesImage = None
     mplcolorbar: Optional[Colorbar] = None
+    _figsize: Tuple[float, float] = None
 
-    def __init__(self, parent, config: Config):
+    def __init__(self, parent, config: Config, figsize: Tuple[float, float] = (6, 6)):
         super().__init__(parent)
+        self._figsize = figsize
         self.config = config
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.figure = Figure(figsize=(6, 6), constrained_layout=True)
+        self.figure = Figure(figsize=self._figsize, constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.navigationToolbar = NavigationToolbar2QT(self.canvas, self)
         self.figureVerticalLayout.addWidget(self.navigationToolbar)
@@ -187,3 +189,15 @@ class ImageView(QtWidgets.QWidget, Ui_Form):
         self.canvas.draw_idle()
         self.navigationToolbar.update()
         # ToDo: draw logo as well.
+
+    def savefig(self, filename: str, **kwargs):
+        self.canvas.draw()
+        self.figure.savefig(
+            filename,
+            # format=None  # infer the format from the file name
+            transparent=True,  # all patches will be transparent, instead of opaque white
+            optimize=True,  # optimize JPEG file, ignore for other file types
+            progressive=True,  # progressive JPEG, ignore for other file types
+            quality=95,  # JPEG quality, ignore for other file types
+            **kwargs
+        )

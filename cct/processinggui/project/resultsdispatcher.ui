@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>838</width>
-    <height>569</height>
+    <width>1028</width>
+    <height>595</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -41,6 +41,9 @@
       <widget class="QLabel" name="label_2">
        <property name="text">
         <string>Select matching samples:</string>
+       </property>
+       <property name="buddy">
+        <cstring>sampleNameRegexLineEdit</cstring>
        </property>
       </widget>
      </item>
@@ -104,92 +107,427 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
-     <widget class="QWidget" name="perSampleTab">
+     <widget class="QWidget" name="analyzeTab">
       <attribute name="title">
-       <string>Per-sample</string>
+       <string>Analyze</string>
       </attribute>
-      <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="1">
-        <widget class="QPushButton" name="perSampleImagePushButton">
-         <property name="text">
-          <string>Image</string>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>Per-sample</string>
          </property>
-         <property name="icon">
-          <iconset resource="../../resource/icons/icons.qrc">
-           <normaloff>:/icons/exposureviewer.svg</normaloff>:/icons/exposureviewer.svg</iconset>
-         </property>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="2">
+           <widget class="QPushButton" name="perSampleCorrelationMatrixPushButton">
+            <property name="text">
+             <string>Corr.matrix</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <widget class="QPushButton" name="perSampleAnisotropyPushButton">
+            <property name="text">
+             <string>Anisotropy</string>
+            </property>
+            <property name="icon">
+             <iconset resource="../../resource/icons/icons.qrc">
+              <normaloff>:/icons/anisotropy.svg</normaloff>:/icons/anisotropy.svg</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="perSampleImagePushButton">
+            <property name="text">
+             <string>Image</string>
+            </property>
+            <property name="icon">
+             <iconset resource="../../resource/icons/icons.qrc">
+              <normaloff>:/icons/exposureviewer.svg</normaloff>:/icons/exposureviewer.svg</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QPushButton" name="perSampleCurvesPushButton">
+            <property name="text">
+             <string>Curves</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QPushButton" name="perSampleOutlierTestPushButton">
+            <property name="text">
+             <string>Outlier test</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="5">
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </widget>
        </item>
-       <item row="0" column="2">
-        <widget class="QPushButton" name="perSampleCorrelationMatrixPushButton">
-         <property name="text">
-          <string>Corr.matrix</string>
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>Overall</string>
          </property>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="1">
+           <widget class="QPushButton" name="overallTransmissionPushButton">
+            <property name="text">
+             <string>Transmission</string>
+            </property>
+            <property name="icon">
+             <iconset resource="../../resource/icons/icons.qrc">
+              <normaloff>:/icons/transmission.svg</normaloff>:/icons/transmission.svg</iconset>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QPushButton" name="overallCurvesPushButton">
+            <property name="text">
+             <string>Curves</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="overallExposureTimePushButton">
+            <property name="text">
+             <string>Exposure time</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QPushButton" name="overallVacuumFluxPushButton">
+            <property name="text">
+             <string>Vacuum &amp;&amp; flux</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QPushButton" name="perSampleCurvesPushButton">
-         <property name="text">
-          <string>Curves</string>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
          </property>
-        </widget>
-       </item>
-       <item row="0" column="3">
-        <widget class="QPushButton" name="perSampleOutlierTestPushButton">
-         <property name="text">
-          <string>Outlier test</string>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>0</height>
+          </size>
          </property>
-        </widget>
-       </item>
-       <item row="0" column="4">
-        <widget class="QPushButton" name="perSampleAnisotropyPushButton">
-         <property name="text">
-          <string>Anisotropy</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../../resource/icons/icons.qrc">
-           <normaloff>:/icons/anisotropy.svg</normaloff>:/icons/anisotropy.svg</iconset>
-         </property>
-        </widget>
+        </spacer>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="overallTab">
+     <widget class="QWidget" name="exportTab">
       <attribute name="title">
-       <string>Overall</string>
+       <string>Export</string>
       </attribute>
-      <layout class="QGridLayout" name="gridLayout">
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>Curves:</string>
+         </property>
+         <property name="buddy">
+          <cstring>curveFileFormatComboBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1" colspan="4">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLineEdit" name="exportDirLineEdit"/>
+         </item>
+         <item>
+          <widget class="QToolButton" name="exportDirToolButton">
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+           <property name="icon">
+            <iconset theme="document-open">
+             <normaloff>.</normaloff>.</iconset>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item row="5" column="0" colspan="4">
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="2" column="3">
+        <widget class="QPushButton" name="exportPatternsGraphPushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Export graph</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="3">
+        <widget class="QPushButton" name="exportCorrelMatricesGraphPushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Export graph</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QComboBox" name="curveFileFormatComboBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QPushButton" name="exportPatternsPushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Export data</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="2">
+        <widget class="QPushButton" name="exportCorrelMatricesPushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Export data</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="patternFileFormatComboBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0">
-        <widget class="QPushButton" name="overallCurvesPushButton">
+        <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>Curves</string>
+          <string>Target directory:</string>
+         </property>
+         <property name="buddy">
+          <cstring>exportDirLineEdit</cstring>
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QPushButton" name="overallTransmissionPushButton">
-         <property name="text">
-          <string>Transmission</string>
+       <item row="1" column="3">
+        <widget class="QPushButton" name="exportCurvesGraphPushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
-         <property name="icon">
-          <iconset resource="../../resource/icons/icons.qrc">
-           <normaloff>:/icons/transmission.svg</normaloff>:/icons/transmission.svg</iconset>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
-        <widget class="QPushButton" name="overallExposureTimePushButton">
          <property name="text">
-          <string>Exposure time</string>
+          <string>Export graph</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="3">
-        <widget class="QPushButton" name="overallVacuumFluxPushButton">
+       <item row="0" column="5" rowspan="6">
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>Graph settings</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Resolution:</string>
+            </property>
+            <property name="buddy">
+             <cstring>graphResolutionSpinBox</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="graphResolutionSpinBox">
+            <property name="suffix">
+             <string> dpi</string>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>999999</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="graphFormatComboBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Format:</string>
+            </property>
+            <property name="buddy">
+             <cstring>graphFormatComboBox</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Width:</string>
+            </property>
+            <property name="buddy">
+             <cstring>graphWidthDoubleSpinBox</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Height:</string>
+            </property>
+            <property name="buddy">
+             <cstring>graphHeightDoubleSpinBox</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QDoubleSpinBox" name="graphWidthDoubleSpinBox">
+            <property name="maximum">
+             <double>999999.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QDoubleSpinBox" name="graphHeightDoubleSpinBox">
+            <property name="maximum">
+             <double>999999.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>Vacuum &amp;&amp; flux</string>
+          <string>Patterns:</string>
+         </property>
+         <property name="buddy">
+          <cstring>patternFileFormatComboBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QComboBox" name="cmatFileFormatComboBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QPushButton" name="exportCurvesPushButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Export data</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>Correl. matrices:</string>
+         </property>
+         <property name="buddy">
+          <cstring>cmatFileFormatComboBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="4">
+        <widget class="QProgressBar" name="exportProgressBar">
+         <property name="value">
+          <number>24</number>
          </property>
         </widget>
        </item>
@@ -204,6 +542,7 @@
   <tabstop>selectNoSamplesToolButton</tabstop>
   <tabstop>sampleNameRegexLineEdit</tabstop>
   <tabstop>selectRegexToolButton</tabstop>
+  <tabstop>deselectRegexToolButton</tabstop>
   <tabstop>treeView</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>perSampleCurvesPushButton</tabstop>
@@ -215,6 +554,21 @@
   <tabstop>overallTransmissionPushButton</tabstop>
   <tabstop>overallExposureTimePushButton</tabstop>
   <tabstop>overallVacuumFluxPushButton</tabstop>
+  <tabstop>exportDirLineEdit</tabstop>
+  <tabstop>exportDirToolButton</tabstop>
+  <tabstop>curveFileFormatComboBox</tabstop>
+  <tabstop>exportCurvesPushButton</tabstop>
+  <tabstop>exportCurvesGraphPushButton</tabstop>
+  <tabstop>patternFileFormatComboBox</tabstop>
+  <tabstop>exportPatternsPushButton</tabstop>
+  <tabstop>exportPatternsGraphPushButton</tabstop>
+  <tabstop>cmatFileFormatComboBox</tabstop>
+  <tabstop>exportCorrelMatricesPushButton</tabstop>
+  <tabstop>exportCorrelMatricesGraphPushButton</tabstop>
+  <tabstop>graphResolutionSpinBox</tabstop>
+  <tabstop>graphFormatComboBox</tabstop>
+  <tabstop>graphWidthDoubleSpinBox</tabstop>
+  <tabstop>graphHeightDoubleSpinBox</tabstop>
  </tabstops>
  <resources>
   <include location="../../resource/icons/icons.qrc"/>

@@ -10,7 +10,7 @@ class ProgressBarDelegate(QtWidgets.QStyledItemDelegate):
     def paint(self, painter:QtGui.QPainter, option:QtWidgets.QStyleOptionViewItem, index:QtCore.QModelIndex):
         data = index.data(QtCore.Qt.UserRole)
         assert isinstance(data, JobRecord)
-        if data.running:
+        if data.isRunning:
             pbaroption = QtWidgets.QStyleOptionProgressBar()
             pbaroption.state = QtWidgets.QStyle.State_Enabled
             pbaroption.direction = QtWidgets.QApplication.layoutDirection()

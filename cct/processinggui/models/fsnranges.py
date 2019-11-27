@@ -82,7 +82,7 @@ class FSNRangeModel(QtCore.QAbstractItemModel):
         self.endRemoveRows()
         return True
 
-    def add(self, fsnmin:int, fsnmax:int):
+    def add(self, fsnmin:int=0, fsnmax:int=0):
         # edit this to your needs
         self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount() + 1)
         self._data.append((fsnmin, fsnmax))

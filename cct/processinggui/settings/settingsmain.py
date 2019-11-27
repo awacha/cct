@@ -59,3 +59,4 @@ class SettingsWindow(QtWidgets.QWidget, Ui_Form):
                 event.accept()
             elif result == QtWidgets.QMessageBox.Cancel:
                 event.ignore()
+        self.parent().close()

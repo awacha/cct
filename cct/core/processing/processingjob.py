@@ -12,22 +12,13 @@ from sastool.classes2 import Curve
 from sastool.io.credo_cct import Header, Exposure
 
 from . import outliers
+from .backgroundprocedure import BackgroundProcedure, Results, ProcessingError, UserStopException
 from .correlmatrix import correlmatrix_cython
 from .loader import Loader
 from .matrixaverager import MatrixAverager
 
 
-class ProcessingError(Exception):
-    """Exception raised during the processing. Accepts a single string argument."""
-    pass
-
-
-class UserStopException(ProcessingError):
-    pass
-
-
-class ProcessingJobResults:
-    time_total: float = 0
+class ProcessingJobResults(Results):
     time_loadheaders: float = 0
     time_loadexposures: float = 0
     time_outlierdetection: float = 0
@@ -39,35 +30,9 @@ class ProcessingJobResults:
     time_output_waitforlock: float = 0
     time_output_write: float = 0
     badfsns: List[int] = None
-    success: bool = False
-    status: str = ''
 
 
-class Message:
-    type_: str
-    message: str
-    sender: Any = None
-    totalcount: Optional[int] = None
-    currentcount: Optional[int] = None
-    traceback: Optional[str] = None
-
-    def __init__(self, sender: Any, type_: str, message: str, totalcount: int = None, currentcount: int = None,
-                 traceback: Optional[str] = None):
-        self.type_ = type_
-        self.sender = sender
-        self.message = message
-        self.totalcount = totalcount
-        self.currentcount = currentcount
-        self.traceback = traceback
-
-    def __str__(self) -> str:
-        return 'Message(sender={}, type={}, totalcount={}, currentcount={}, message={}'.format(self.sender, self.type_,
-                                                                                               self.totalcount,
-                                                                                               self.currentcount,
-                                                                                               self.message)
-
-
-class ProcessingJob:
+class ProcessingJob(BackgroundProcedure):
     """A separate process for processing (summarizing, azimuthally averaging, finding outliers) of a range
     of exposures belonging to the same sample, measured at the same sample-to-detector distance.
     """
@@ -81,23 +46,15 @@ class ProcessingJob:
     bigmemorymode: bool = False
     badfsns: List[int] = None
     initialBadfsns: List[int] = None
-    h5compression: Optional[str] = 'gzip'
-    killSwitch: multiprocessing.Event = None
-    h5WriterLock: multiprocessing.Lock = None
-    jobid: Any = None
-    result: ProcessingJobResults = None
 
-    def __init__(self, jobid: Any, h5writerLock: multiprocessing.Lock, killswitch: multiprocessing.Event,
-                 resultsqueue: multiprocessing.Queue, rootdir: str,
-                 fsnlist: List[int], badfsns: List[int], h5file: str,
+    def __init__(self, jobid: Any, h5writerLock: multiprocessing.synchronize.Lock, killswitch: multiprocessing.Event,
+                 resultsqueue: multiprocessing.Queue, h5file:str, rootdir: str,
+                 fsnlist: List[int], badfsns: List[int],
                  ierrorprop: str, qerrorprop: str, outliermethod: str, outliermultiplier: float, logcmat: bool,
                  qrange: Optional[np.ndarray], bigmemorymode: bool = False):
-        self.jobid = jobid
+        super().__init__(jobid, h5writerLock, killswitch, resultsqueue, h5file)
         self.fsnlist = fsnlist
         self._loader = Loader(rootdir)
-        self.h5file = h5file
-        self.resultsqueue = resultsqueue
-        self.killSwitch = killswitch
         self.initialBadfsns = badfsns
         self.badfsns = list(self.initialBadfsns)  # make a copy: we will modify this.
         if ierrorprop in self._errorpropagationtypes:
@@ -116,18 +73,7 @@ class ProcessingJob:
         self.logcmat = logcmat
         self.qrange = qrange
         self.bigmemorymode = bigmemorymode
-        self.h5WriterLock = h5writerLock
         self.result = ProcessingJobResults()
-
-    def sendProgress(self, message: str, total: Optional[int] = None,
-                     current: Optional[int] = None):
-        self.resultsqueue.put(
-            Message(sender=self.jobid, type_='progress', message=message, totalcount=total, currentcount=current))
-        if self.killSwitch.is_set():
-            raise UserStopException('Stopping on user request.')
-
-    def sendError(self, message: str, traceback: Optional[str] = None):
-        self.resultsqueue.put(Message(sender=self.jobid, type_='error', message=message, traceback=traceback))
 
     def _loadheaders(self):
         # first load all header files
@@ -425,7 +371,7 @@ class ProcessingJob:
         if duplicate:
             raise ValueError('Duplicate FSN(s) {}'.format(', '.join([str(f) for f in duplicate])))
 
-    def run(self) -> None:
+    def _execute(self):
         try:
             t0 = time.monotonic()
             self._loadheaders()

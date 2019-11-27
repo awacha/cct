@@ -55,7 +55,7 @@ class ResultsModel(QtCore.QAbstractItemModel):
                         # ToDo: temperature
                         g = f['Samples'][samplename][dist]
                         header = Header.new_from_group(g)
-                        self._data.append(Result(header.title, header.distance, header.temperature, len(g['curves']),
+                        self._data.append(Result(header.title, header.distance, header.temperature, len(g['curves']) if 'curves' in g else None,
                                                  header.sample_category, header.exposuretime))
         except OSError:
             self._data = []
@@ -84,7 +84,7 @@ class ResultsModel(QtCore.QAbstractItemModel):
                 return '{:.2f}'.format(float(self._data[index.row()].temperature)) \
                     if self._data[index.row()].temperature is not None else '--'
             elif index.column() == 3:
-                return self._data[index.row()].exposurecount
+                return self._data[index.row()].exposurecount if self._data[index.row()].exposurecount is not None else '--'
             elif index.column() == 4:
                 t = float(self._data[index.row()].totaltime)
                 hours = int(t // 3600)

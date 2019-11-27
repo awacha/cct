@@ -1,6 +1,6 @@
 from PyQt5 import QtCore, QtWidgets
 
-from ..models.subtraction import Subtraction
+from .subtractor import SubtractionJobRecord
 
 
 class SubtractionMethodComboBoxDelegate(QtWidgets.QStyledItemDelegate):
@@ -10,7 +10,7 @@ class SubtractionMethodComboBoxDelegate(QtWidgets.QStyledItemDelegate):
     def createEditor(self, parent: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
                      index: QtCore.QModelIndex) -> QtWidgets.QWidget:
         sub = index.model()[index]
-        assert isinstance(sub, Subtraction)
+        assert isinstance(sub, SubtractionJobRecord)
         editor = QtWidgets.QComboBox(parent)
         editor.addItems(sub.ValidMethods)
         editor.setCurrentIndex(0)

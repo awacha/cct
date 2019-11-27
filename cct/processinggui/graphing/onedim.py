@@ -20,16 +20,19 @@ class CurveView(QtWidgets.QWidget, Ui_Form):
     canvas: FigureCanvasQTAgg
     navigationToolbar: NavigationToolbar2QT
     MARKERS: str = 'ovsp*D^h<H>x+d1234'
+    _figsize: Tuple[float, float] = None
 
-    def __init__(self, parent: QtWidgets.QWidget = None, project: "Project" = None):
+    def __init__(self, parent: QtWidgets.QWidget = None, project: "Project" = None,
+                 figsize: Tuple[float, float] = (6, 6)):
         super().__init__(parent)
+        self._figsize = figsize
         self.curves = []
         self.project = project
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.figure = Figure(figsize=(6, 6), constrained_layout=True)
+        self.figure = Figure(figsize=self._figsize, constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.navigationToolbar = NavigationToolbar2QT(self.canvas, self)
         self.axes = self.figure.add_subplot(1, 1, 1)
@@ -189,3 +192,15 @@ class CurveView(QtWidgets.QWidget, Ui_Form):
                     curve = None
                 newCurveList.append((curve, kwargs, tracking))
         self.replot()
+
+    def savefig(self, filename: str, **kwargs):
+        self.canvas.draw()
+        self.figure.savefig(
+            filename,
+            # format=None  # infer the format from the file name
+            transparent=True,  # all patches will be transparent, instead of opaque white
+            optimize=True,  # optimize JPEG file, ignore for other file types
+            progressive=True,  # progressive JPEG, ignore for other file types
+            quality=95,  # JPEG quality, ignore for other file types
+            **kwargs
+        )

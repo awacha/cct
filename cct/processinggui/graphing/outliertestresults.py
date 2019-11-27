@@ -9,8 +9,9 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanva
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
-from . import ImageView, CurveView
+from .onedim import CurveView
 from .outliertestresults_ui import Ui_Form
+from .twodim import ImageView
 from ..models.outliers import OutlierTestResults
 
 

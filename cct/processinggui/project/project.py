@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import os
 from typing import Optional, Any, Union, List
 
@@ -12,6 +13,9 @@ from .processor import Processor
 from .progressbardelegate import ProgressBarDelegate
 from .project_ui import Ui_projectWindow
 from .resultsdispatcher import ResultsDispatcher
+from .samplenamecomboboxdelegate import SampleNameComboBoxDelegate
+from .submethodcomboboxdelegate import SubtractionMethodComboBoxDelegate
+from .subtractionparameterdelegate import SubtractionParameterDelegate
 from .subtractor import Subtractor
 from ..config import Config
 from ..models.fsnranges import FSNRangeModel
@@ -19,7 +23,7 @@ from ..models.headerlist import HeaderList
 from ...core.processing.loader import Loader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Project(QtWidgets.QWidget, Ui_projectWindow):
@@ -27,28 +31,37 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
     idleChanged = QtCore.pyqtSignal(bool, name='idleChanged')
     newResultsAvailable = QtCore.pyqtSignal()  # emitted when the processing is ready or a new .h5 file is selected
     subwindowOpenRequest = QtCore.pyqtSignal(str, QtWidgets.QWidget, name='subwindowOpenRequest')
-    idle: bool = True
     headerLoader: HeaderLoader = Optional[None]
     headerList: HeaderList = None
     _loader: Loader = None
     _processor: Processor = None
     _subtractor: Subtractor = None
     h5reader: H5Reader = None
+    multiprocessingmanager: multiprocessing.managers.SyncManager = None
+    h5Lock: multiprocessing.synchronize.Lock = None
 
     def __init__(self, parent: QtWidgets.QMainWindow):
         super().__init__(parent)
+        self.multiprocessingmanager = multiprocessing.Manager()
         self.config = Config()
+        self.manager = multiprocessing.Manager()
+        self.h5Lock = multiprocessing.Manager().Lock()
         self.config.configItemChanged.connect(self.onConfigChanged)
         self.headerList = HeaderList(self.config)
-        logger.debug('Before instantiating a Loader with datadir "{}"'.format(self.config.datadir))
+        self.headerLoader = HeaderLoader([], [os.path.join(self.config.datadir, 'eval2d')],
+                                         'crd_{:05d}.pickle')
         self._loader = Loader(self.config.datadir)
-        self._processor = Processor(self.config, self)
-        self._subtractor = Subtractor(None, self)
+        self._processor = Processor(self)
+        self._subtractor = Subtractor(self)
+        self._samplenameDelegate = SampleNameComboBoxDelegate()
+        self._submethodDelegate = SubtractionMethodComboBoxDelegate()
+        self._subparDelegate = SubtractionParameterDelegate()
+        self._resultsdispatcher = ResultsDispatcher(self, self.config, self)
+        self.fsnRangesModel = FSNRangeModel()
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.fsnRangesModel = FSNRangeModel()
         self.fsnListTreeView.setModel(self.fsnRangesModel)
         self.setWindowTitle('*Untitled*')
         self.progressBar.hide()
@@ -57,26 +70,38 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.idleChanged.connect(self.onIdleChanged)
         self._processor.dataChanged.connect(self.resizeProcessingTreeViewColumns)
         self._processor.modelReset.connect(self.resizeProcessingTreeViewColumns)
-        self._resultsdispatcher = ResultsDispatcher(self, self.config, self)
+        self._processor.finished.connect(self.onProcessingFinished)
         self._resultsdispatcher.subwindowOpenRequest.connect(self.subwindowOpenRequest)
-        self.tabWidget.insertTab(1, self._subtractor, 'Background subtraction')
         self.tabWidget.addTab(self._resultsdispatcher, 'Results')
+        self.subtractionTreeView.setModel(self._subtractor)
+        self._subtractor.dataChanged.connect(self.resizeSubtractingTreeViewColumns)
+        self._subtractor.modelReset.connect(self.resizeSubtractingTreeViewColumns)
+        self._subtractor.rowsInserted.connect(self.resizeSubtractingTreeViewColumns)
+        self._subtractor.rowsRemoved.connect(self.resizeSubtractingTreeViewColumns)
+        self._subtractor.finished.connect(self.onSubtractFinished)
+        self.subtractionTreeView.setItemDelegateForColumn(1, self._samplenameDelegate)
+        self.subtractionTreeView.setItemDelegateForColumn(2, self._submethodDelegate)
+        self.subtractionTreeView.setItemDelegateForColumn(3, self._subparDelegate)
+        self.executeSubtractionPushButton.clicked.connect(self.subtract)
+        self.reloadPushButton.clicked.connect(self.reloadHeaders)
+        self.processPushButton.clicked.connect(self.process)
+        self.addPushButton.clicked.connect(self.fsnRangesModel.add)
+        self.headerLoader.finished.connect(self.onHeaderLoadingFinished)
+        self.headerLoader.progress.connect(self.onHeaderLoadingProgress)
 
     def resizeProcessingTreeViewColumns(self):
         for i in range(self._processor.columnCount()):
             self.processingTreeView.resizeColumnToContents(i)
 
+    def resizeSubtractingTreeViewColumns(self):
+        for i in range(self._subtractor.columnCount()):
+            self.subtractionTreeView.resizeColumnToContents(i)
+
     def closeEvent(self, event: QtGui.QCloseEvent):
-        logger.debug('Project window received a closeEvent.')
         if not self.confirmSave():
-            logger.debug('Ignoring closeEvent')
             event.ignore()
         else:
-            logger.debug('Accepting closeEvent')
             event.accept()
-
-    #            self.destroy()
-    #            self.deleteLater()
 
     def confirmSave(self):
         """Ask the user if she wants to save the changes.
@@ -98,10 +123,6 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         else:
             assert result == QtWidgets.QMessageBox.No
             return True
-
-    @QtCore.pyqtSlot()
-    def on_addPushButton_clicked(self):
-        self.fsnRangesModel.add(0, 0)
 
     @QtCore.pyqtSlot()
     def on_removePushButton_clicked(self):
@@ -193,35 +214,37 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.window().setWindowFilePath(filename)
         self.setWindowModified(False)
 
-    def setIdle(self, idle: bool):
-        self.idle = idle
-        self.idleChanged.emit(self.idle)
+#### Methods for header list reloading in the background
 
     def _startReload(self):
+        """Initialize the UI before reloading"""
+        logger.debug('Starting header reload')
+        fsns = self.fsnRangesModel.fsns()
+        if len(fsns) == 0:
+            return
         if not self.idle:
             raise RuntimeError('Reload process is already running')
-        self.setIdle(False)
         self.progressBar.show()
         self.progressBar.setMinimum(0)
         self.progressBar.setMaximum(0)
         self.progressBar.setFormat('Loading headers...')
+        self.headerLoader.setPath([os.path.join(self.config.datadir, 'eval2d')])
+        self.headerLoader.setFSNs(fsns)
+        self.headerLoader.submit()
         self.reloadPushButton.setText('Stop')
         self.reloadPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
         self.reloadPushButton.setEnabled(True)
-        self.headerLoader = HeaderLoader(self.fsnRangesModel.fsns(), [os.path.join(self.config.datadir, 'eval2d')],
-                                         'crd_{:05d}.pickle')
-        self.headerLoader.finished.connect(self.onHeaderLoadingFinished)
-        self.headerLoader.progress.connect(self.onHeaderLoadingProgress)
-        self.headerLoader.submit()
+        assert not self.idle
+        self.idleChanged.emit(self.idle)
 
     def _finishReload(self):
         """Clean up the GUI after the reloading process finished."""
-        if self.idle:
-            raise RuntimeError('Reload process is not running')
+        if not self.headerLoader.idle:
+            raise ValueError('Header loader process is not idle')
         self.progressBar.hide()
         self.reloadPushButton.setText('Reload')
         self.reloadPushButton.setIcon(QtGui.QIcon.fromTheme('view-refresh'))
-        self.setIdle(True)
+        self.idleChanged.emit(self.idle)  # note that it is not sure that we are idle
 
     def reloadHeaders(self):
         if self.reloadPushButton.text() == 'Stop':
@@ -230,13 +253,10 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
             self._startReload()
 
     def onHeaderLoadingFinished(self):
-        assert self.headerLoader is not None
-        assert self.headerLoader is not None
+        """This is called by the header loader if it has finished."""
         self.headerList.replaceAllHeaders(self.headerLoader.headers())
-        self._processor.setHeaders(self.headerLoader.headers())  # ToDo: badfsns!
+        self._processor.setHeaders(self.headerLoader.headers())
         self._subtractor.updateList()
-        self.headerLoader.deleteLater()
-        self.headerLoader = None
         self._finishReload()
 
     def onHeaderLoadingProgress(self, total: int, done: int):
@@ -245,25 +265,23 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.progressBar.setValue(done)
         self.progressBar.setFormat('Loading headers {}/{}...'.format(done, total))
 
+################ Methods for the processing task ######################
+
     def _startProcess(self):
-        if self._processor.isBusy():
-            raise RuntimeError('Cannot start processing: the data processing engine is busy.')
         if not self.idle:
             raise RuntimeError('Cannot start processing: not in idle state.')
-        self.setIdle(False)
+        self.tabWidget.setCurrentWidget(self.processingTab)
         self.processPushButton.setText('Stop')
         self.processPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
-        self.processPushButton.setEnabled(True)
-        self._processor.finished.connect(self.onProcessingFinished)
         self._processor.start()
-
-    def _stopProcess(self):
-        self._processor.stop()
+        assert not self.idle
+        self.idleChanged.emit(self.idle)
+        self.processPushButton.setEnabled(True)
 
     def onProcessingFinished(self):
         """Clean up the GUI after the reloading process finished."""
-        if self.idle:
-            raise RuntimeError('Processing is not running')
+        if self._processor.isBusy():
+            raise RuntimeError('Processing is still running')
         self.processPushButton.setText('Process')
         self.processPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
         self.newResultsAvailable.emit()
@@ -278,21 +296,51 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
                 self, 'Processing finished',
                 'Processing finished. No new bad fsns found.'
             )
-        self.setIdle(True)
+        if self.subtractionAutoExecCheckBox.isChecked():
+            self.tabWidget.setCurrentWidget(self.subtractionTab)
+            self.subtract()
+        else:
+            self.idleChanged.emit(self.idle)
 
     def process(self):
         if self.processPushButton.text() == 'Process':
             self._startProcess()
         else:
-            self._stopProcess()
+            self._processor.stop()
 
-    @QtCore.pyqtSlot()
-    def on_reloadPushButton_clicked(self):
-        self.reloadHeaders()
+######################## Methods for the "subtraction" background task #########################x
 
-    @QtCore.pyqtSlot()
-    def on_processPushButton_clicked(self):
-        self.process()
+    def _startSubtract(self):
+        if not self.idle:
+            raise RuntimeError('Cannot start subtract: not in idle state.')
+        self.tabWidget.setCurrentWidget(self.subtractionTab)
+        self.executeSubtractionPushButton.setText('Stop')
+        self.executeSubtractionPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
+        self._subtractor.start()
+        self.idleChanged.emit(False)  # although if no background samples have been selected...
+        self.executeSubtractionPushButton.setEnabled(True)
+
+    def _finishSubtract(self):
+        pass
+
+    def onSubtractFinished(self):
+        """Clean up the GUI after the subtraction process finished."""
+        if self._subtractor.isBusy():
+            raise RuntimeError('Background subtraction is still running')
+        self.executeSubtractionPushButton.setText('Execute')
+        self.executeSubtractionPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
+        self.newResultsAvailable.emit()
+        self._resultsdispatcher.reloadResults()
+        self.idleChanged.emit(self.idle)
+
+    def subtract(self):
+        # run the subtraction routine
+        if self.executeSubtractionPushButton.text() == 'Execute':
+            self._startSubtract()
+        else:
+            self._subtractor.stop()
+
+########################### Configuration I/O ################################x
 
     def toConfig(self):
         self.config.datadir = self.rootDirLineEdit.text()
@@ -308,10 +356,10 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
 
     def onConfigChanged(self, section: str, itemname: str, newvalue: Any):
         if itemname == 'datadir':
-            logger.debug('Root directory changed to "{}"'.format(newvalue))
+            self.headerLoader.setPath([os.path.join(newvalue, 'eval2d')])
             self._loader = Loader(newvalue)
         elif itemname == 'hdf5':
-            self.h5reader = H5Reader(newvalue)
+            self.h5reader = H5Reader(newvalue, self.h5Lock)
             self.newResultsAvailable.emit()
         self.setWindowModified(True)
 
@@ -343,3 +391,10 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
 
     def addBadFSNs(self, badfsns:List[int]):
         return self.headerList.addBadFSNs(badfsns)
+
+    @property
+    def idle(self) -> bool:
+        logger.debug('headerloader idle: {}'.format(self.headerLoader.idle))
+        logger.debug('processor idle: {}'.format(not self._processor.isBusy()))
+        logger.debug('subtractor idle: {}'.format(not self._subtractor.isBusy()))
+        return self.headerLoader.idle and (not self._processor.isBusy()) and (not self._subtractor.isBusy())
