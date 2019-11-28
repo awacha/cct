@@ -12,7 +12,8 @@ from scipy.io import savemat
 
 from .resultsdispatcher_ui import Ui_Form
 from ..config import Config
-from ..graphing import ImageView, CurveView, CorrMatView, VacuumFluxViewer, OutlierViewer, ExposureTimeReport
+from ..graphing import ImageView, CurveView, CorrMatView, VacuumFluxViewer, OutlierViewer, ExposureTimeReport, \
+    TransmissionList
 from ..models.results import ResultsModel
 from ...qtgui.tools.anisotropy import AnisotropyEvaluator
 
@@ -80,7 +81,7 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
         self.exportCorrelMatricesPushButton.clicked.connect(self.exportCorrelMatrices)
         self.exportDirToolButton.clicked.connect(self.browseExportFolder)
         self.exportDirLineEdit.textChanged.connect(self.exportFolderChanged)
-        self.exportDirLineEdit.textEdited.connect(self.exportFolderEditingFinished)
+        self.exportDirLineEdit.editingFinished.connect(self.exportFolderEditingFinished)
         self.graphResolutionSpinBox.setValue(self.config.imagedpi)
         self.graphHeightDoubleSpinBox.setValue(self.config.imagewidth / toinchfactor[self.config.imagewidthunits])
         self.graphWidthDoubleSpinBox.setValue(self.config.imageheight / toinchfactor[self.config.imageheightunits])
@@ -92,6 +93,8 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
         self.exportCurvesGraphPushButton.clicked.connect(self.exportCurvesGraph)
         self.exportPatternsGraphPushButton.clicked.connect(self.exportPatternsGraph)
         self.exportProgressBar.setVisible(False)
+        self.treeView.selectionModel().selectionChanged.connect(self.updateCommandWidgetsSensitivity)
+        self.updateCommandWidgetsSensitivity()
         self.resizeTreeViewColumns()
 
     def onRegexInvalid(self):
@@ -103,6 +106,21 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
 
     def selectNoSamples(self):
         self.treeView.clearSelection()
+
+    def updateCommandWidgetsSensitivity(self):
+        selectedCount = self.countSelectedResults()
+        hasexportDir = os.path.isdir(self.exportDirLineEdit.text())
+        for widget in [self.perSampleAnisotropyPushButton, self.perSampleOutlierTestPushButton,
+                       self.perSampleCorrelationMatrixPushButton, self.perSampleCurvesPushButton,
+                       self.perSampleImagePushButton, self.overallVacuumFluxPushButton,
+                       self.overallTransmissionPushButton, self.overallExposureTimePushButton,
+                       self.overallCurvesPushButton]:
+            # these widgets need only selected samples
+            widget.setEnabled(selectedCount>0)
+        for widget in [self.exportCurvesGraphPushButton, self.exportPatternsGraphPushButton, self.exportCorrelMatricesGraphPushButton,
+                       self.exportCurvesPushButton, self.exportPatternsPushButton, self.exportCorrelMatricesPushButton]:
+            # these widgets need selected samples AND a valid output dir
+            widget.setEnabled((selectedCount>0) and hasexportDir)
 
     def selectRegex(self):
         try:
@@ -146,7 +164,11 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
         self.subwindowOpenRequest.emit('exptimereport_{}'.format(monotonic()), etr)
 
     def onOverallTransmission(self):
-        pass
+        tv = TransmissionList(None, self.project)
+        for samplename, distance in self.selectedResults():
+            tv.addSampleAndDist(samplename, distance, updatelist=False)
+        tv.updateList()
+        self.subwindowOpenRequest.emit('transmission_{}'.format(monotonic()), tv)
 
     def onOverallVacuumFlux(self):
         vf = VacuumFluxViewer(None, self.project)
@@ -178,6 +200,8 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
             self.updateImageWidthUnits()
         elif itemname == 'imageheightunits':
             self.updateImageHeightUnits()
+        elif itemname == 'folder':
+            self.exportDirLineEdit.setText(newvalue)
 
     def updateImageWidthUnits(self):
         prevunits = self.graphWidthDoubleSpinBox.suffix().strip()
@@ -329,11 +353,14 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
                                        '{}_{:.2f}.pdh'.format(samplename, float(distance))), 'wt') as f:
                     f.write('{} @ {:.2f}\n'.format(samplename, float(distance)))
                     f.write('SAXS\n')
-                    f.write('{:>9d} {:>9d} {:>9d} {:>9d} {:>9d} {:>9d} {:>9d} {:>9d}\n'.format(len(curve), 0, 0, 0, 0, 0, 0, 0))
-                    f.write('{:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E}\n'.format(0,0,0,1,0))
-                    f.write('{:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E}\n'.format(0,0,0,0,0))
+                    f.write(
+                        '{:>9d} {:>9d} {:>9d} {:>9d} {:>9d} {:>9d} {:>9d} {:>9d}\n'.format(len(curve), 0, 0, 0, 0, 0, 0,
+                                                                                           0))
+                    f.write('{:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E}\n'.format(0, 0, 0, 1, 0))
+                    f.write('{:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E}\n'.format(0, 0, 0, 0, 0))
                     for i in range(len(curve)):
-                        f.write('{:>14.6E} {:>14.6E} {:>14.6E}\n'.format(curve.q[i]/10, curve.Intensity[i], curve.Error[i]))
+                        f.write('{:>14.6E} {:>14.6E} {:>14.6E}\n'.format(curve.q[i] / 10, curve.Intensity[i],
+                                                                         curve.Error[i]))
         elif self.curveFileFormatComboBox.currentText() == 'Excel 2007- (*.xlsx)':
             wb = openpyxl.Workbook()
             ws_main = wb.active
@@ -442,15 +469,15 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
         if not folder:
             return
         self.exportDirLineEdit.setText(folder)
+        self.exportFolderEditingFinished()
 
     def exportFolderChanged(self):
         logger.debug('Export folder changed to: {}'.format(self.exportDirLineEdit.text()))
-        if not os.path.exists(self.exportDirLineEdit.text()):
-            #ToDo: set red background if the path does not exist.
-            pass
+        self.updateCommandWidgetsSensitivity()
 
     def exportFolderEditingFinished(self):
         logger.debug('Export folder edited to: {}'.format(self.exportDirLineEdit.text()))
+        self.updateCommandWidgetsSensitivity()
         self.project.config.folder = self.exportDirLineEdit.text()
 
     def exportCurvesGraph(self):
@@ -533,4 +560,3 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
             self.exportProgressBar.setFormat(message)
         QtWidgets.QApplication.instance().processEvents()
         QtWidgets.QApplication.instance().sendPostedEvents()
-

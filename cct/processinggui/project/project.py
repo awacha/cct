@@ -181,6 +181,7 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
             return self.saveAs()
         assert self.window().windowFilePath()
         self.toConfig()
+        self.config.projectfilename = self.window().windowFilePath()
         self.config.save(self.window().windowFilePath())
         self.setWindowModified(False)
         return True
@@ -209,7 +210,9 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
             if not filename:
                 return False
         self.config.load(filename)
+        logger.debug('Config just loaded from file "{}". "folder" config item is: {}'.format(filename, self.config.folder))
         self.fromConfig()
+        self.config.projectfilename = filename
         self.setWindowTitle(os.path.split(filename)[-1])
         self.window().setWindowFilePath(filename)
         self.setWindowModified(False)
@@ -319,9 +322,6 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self._subtractor.start()
         self.idleChanged.emit(False)  # although if no background samples have been selected...
         self.executeSubtractionPushButton.setEnabled(True)
-
-    def _finishSubtract(self):
-        pass
 
     def onSubtractFinished(self):
         """Clean up the GUI after the subtraction process finished."""
