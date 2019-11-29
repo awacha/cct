@@ -6,12 +6,15 @@ from Cython.Build import cythonize
 from numpy import get_include
 from setuptools import setup, find_packages, Extension
 
+import codegenerator
+
 try:
     from PyQt5.uic import compileUi
 except ImportError:
     def compileUi(*args):
         pass
 
+codegenerator.writeCode()
 rcc_output = os.path.join('cct', 'resource', 'icons_rc.py')
 rcc_input = os.path.join('cct', 'resource', 'icons', 'icons.qrc')
 os.system('pyrcc5 {} -o {}'.format(rcc_input, rcc_output))
