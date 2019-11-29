@@ -3,7 +3,6 @@ import numpy as np
 from cython.parallel import prange
 from libc.math cimport log, nan, isfinite
 
-np.import_array()
 
 def correlmatrix_cython(double[:,:] intensities not None, double[:,:] errors not None, bint logarithmic=False):
     """Calculate the correlation matrix of scattering curves
