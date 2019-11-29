@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>cpt2logo.svg</file>
     <file>snapx.svg</file>
     <file>snapy.svg</file>
     <file>snap.svg</file>
