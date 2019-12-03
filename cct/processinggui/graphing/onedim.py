@@ -10,7 +10,7 @@ from sastool.classes2 import Curve
 from .onedim_ui import Ui_Form
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class CurveView(QtWidgets.QWidget, Ui_Form):
@@ -179,19 +179,23 @@ class CurveView(QtWidgets.QWidget, Ui_Form):
         self.plotTypeComboBox.setCurrentIndex(self.plotTypeComboBox.findText(self.project.config.plottype))
 
     def updateTrackedCurves(self):
+        logger.debug('Updating tracked curves')
         if self.project is None:
             return
         newCurveList = []
         for curve, kwargs, tracking in self.curves:
             if tracking is None:
                 newCurveList.append((curve, kwargs, tracking))
+                logger.debug('Not updated curve: not tracked')
             else:
                 try:
                     curve = self.project.h5reader.averagedCurve(*tracking)
                 except OSError:
                     curve = None
+                logger.debug('Updated tracked curve for {}'.format(tracking))
                 newCurveList.append((curve, kwargs, tracking))
         self.replot()
+        logger.debug('Done with updating tracked curves and replotting')
 
     def savefig(self, filename: str, **kwargs):
         self.canvas.draw()
