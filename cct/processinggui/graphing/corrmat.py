@@ -1,5 +1,5 @@
 import logging
-from typing import Union, Optional, Sequence, Tuple
+from typing import Union, Tuple
 
 import matplotlib.cm
 import numpy as np
@@ -43,27 +43,30 @@ class CorrMatView(QtWidgets.QWidget, Ui_Form):
         if self.paletteComboBox.currentIndex() < 0:
             self.paletteComboBox.setCurrentIndex(0)
         self.project.newResultsAvailable.connect(self.onUpdateResults)
+        self.paletteComboBox.currentIndexChanged.connect(self.onPaletteComboBoxChanged)
+        self.sampleNameComboBox.currentIndexChanged.connect(self.onSampleNameComboBoxChanged)
+        self.distanceComboBox.currentIndexChanged.connect(self.onDistanceComboBoxChanged)
 
-    def setCorrMat(self, corrmat: np.ndarray, fsns: Sequence[int], samplename: Optional[str] = None,
-                   distance: Optional[Union[str, float]] = None):
-        logger.debug('setCorrMat')
-        self.cmat = corrmat
-        self.sampleNameComboBox.setEnabled((samplename is not None) and (distance is not None))
-        self.distanceComboBox.setEnabled((samplename is not None) and (distance is not None))
-        self.sampleNameComboBox.setVisible((samplename is not None) and (distance is not None))
-        self.distanceComboBox.setVisible((samplename is not None) and (distance is not None))
+    def setSampleAndDistance(self, samplename: str, distance: Union[str, float]):
+        logger.debug('Setting sample name to {}, distance to {}'.format(samplename, distance))
         if self.project is not None:
             self.onUpdateResults()
-        if samplename is not None:
-            self.sampleNameComboBox.blockSignals(True)
-            self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(samplename))
-            self.sampleNameComboBox.blockSignals(False)
-        if distance is not None:
-            targetdist = distance if isinstance(distance, str) else '{:.2f}'.format(distance)
-            self.distanceComboBox.blockSignals(True)
-            self.distanceComboBox.setCurrentIndex(self.distanceComboBox.findText(targetdist))
-            self.distanceComboBox.blockSignals(False)
-        self.fsns = np.array(fsns)
+        logger.debug(
+            'After onUpdateResults, sample name is at {}, distance at {}'.format(self.sampleNameComboBox.currentText(),
+                                                                                 self.distanceComboBox.currentText()))
+        self.sampleNameComboBox.blockSignals(True)
+        self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(samplename))
+        self.sampleNameComboBox.blockSignals(False)
+        assert self.sampleNameComboBox.currentIndex() >= 0
+        targetdist = distance if isinstance(distance, str) else '{:.2f}'.format(distance)
+        self.distanceComboBox.blockSignals(True)
+        self.distanceComboBox.setCurrentIndex(self.distanceComboBox.findText(targetdist))
+        self.distanceComboBox.blockSignals(False)
+        assert self.distanceComboBox.currentIndex() >= 0
+        self.onDistanceComboBoxChanged()  # ensure that the correlation matrix is reloaded
+        logger.debug('Sample name changed to {}, distance to {}'.format(self.sampleNameComboBox.currentText(),
+                                                                        self.distanceComboBox.currentText()))
+        logger.debug('Running replot')
         self.replot()
 
     def onUpdateResults(self):
@@ -82,7 +85,7 @@ class CorrMatView(QtWidgets.QWidget, Ui_Form):
             self.sampleNameComboBox.blockSignals(False)
         logger.debug('Setting sample index to {}'.format(target))
         self.sampleNameComboBox.setCurrentIndex(target)
-        self.on_sampleNameComboBox_currentIndexChanged(self.sampleNameComboBox.currentText())
+        self.onSampleNameComboBoxChanged()
 
     def replot(self):
         logger.debug('replot')
@@ -93,8 +96,12 @@ class CorrMatView(QtWidgets.QWidget, Ui_Form):
         self.figure.clear()
         self.axes = self.figure.add_subplot(1, 1, 1)
         self.axes.clear()
-        img = self.axes.imshow(self.cmat, aspect='equal', interpolation='nearest',
-                               cmap=self.paletteComboBox.currentText())
+        self.axes.set_adjustable('box')
+        self.axes.set_aspect(1.0)
+        img = self.axes.imshow(self.cmat, interpolation='nearest',
+                               cmap=self.paletteComboBox.currentText(),
+                               extent=[-0.5, self.cmat.shape[1]-0.5, -0.5, self.cmat.shape[0]-0.5])
+        logger.debug('CMAT shape: {}'.format(self.cmat.shape))
         self.axes.xaxis.set_ticks(np.arange(self.cmat.shape[1]))
         self.axes.yaxis.set_ticks(np.arange(self.cmat.shape[0]))
         self.axes.xaxis.set_ticklabels([str(f) for f in self.fsns], rotation=90)
@@ -105,11 +112,11 @@ class CorrMatView(QtWidgets.QWidget, Ui_Form):
             self.setWindowTitle('Correlation matrix: {} @{}'.format(self.sampleNameComboBox.currentText(),
                                                                     self.distanceComboBox.currentText()))
 
-    def on_paletteComboBox_currentTextChanged(self, currentText: str):
+    def onPaletteComboBoxChanged(self):
         self.replot()
 
-    def on_sampleNameComboBox_currentIndexChanged(self, currentIndex: int):
-        logger.debug('Sample name changed')
+    def onSampleNameComboBoxChanged(self):
+        logger.debug('Sample name changed to {}'.format(self.sampleNameComboBox.currentText()))
         if self.distanceComboBox.currentIndex() < 0:
             currentdist = None
         else:
@@ -124,16 +131,19 @@ class CorrMatView(QtWidgets.QWidget, Ui_Form):
         finally:
             self.distanceComboBox.blockSignals(False)
         self.distanceComboBox.setCurrentIndex(self.distanceComboBox.findText(targetdist))
-        self.on_distanceComboBox_currentTextChanged(self.distanceComboBox.currentText())
+        self.onDistanceComboBoxChanged()
 
-    def on_distanceComboBox_currentTextChanged(self, currentText: str):
-        logger.debug('Distance changed')
+    def onDistanceComboBoxChanged(self):
+        logger.debug('Distance changed to {}'.format(self.distanceComboBox.currentText()))
         try:
             self.cmat = self.project.h5reader.getCorrMat(self.sampleNameComboBox.currentText(),
                                                          self.distanceComboBox.currentText())
             self.fsns = np.array(sorted(list(
                 self.project.h5reader.getCurveParameter(self.sampleNameComboBox.currentText(),
                                                         self.distanceComboBox.currentText(), 'fsn').keys())))
+            logger.debug('Got cmat and fsns from sample {}, distance {}'.format(self.sampleNameComboBox.currentText(),
+                                                                                self.distanceComboBox.currentText()))
+            logger.debug('cmat shape: {}. FSNS length: {}'.format(self.cmat.shape, len(self.fsns)))
         except OSError:
             return
         self.replot()

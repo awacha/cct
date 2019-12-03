@@ -182,3 +182,8 @@ class HeaderList(QtCore.QAbstractItemModel):
 
     def distances(self, sample:str) -> typing.Set[float]:
         return {h.distance.val for h in self._data if h.title == sample}
+
+    def __contains__(self, item: typing.Tuple[str, typing.Union[float, str]]) -> bool:
+        title = item[0]
+        distance = item[1] if isinstance(item[1], str) else '{:.2f}'.format(item[1])
+        return len({h for h in self._data if (h.title == title) and ('{:.2f}'.format(h.distance.val)==distance)}) > 0

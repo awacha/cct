@@ -109,18 +109,23 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
 
     def updateCommandWidgetsSensitivity(self):
         selectedCount = self.countSelectedResults()
+        notSubtractedSelectedCount = self.countSelectedResults(subtractedtoo=False)
         hasexportDir = os.path.isdir(self.exportDirLineEdit.text())
-        for widget in [self.perSampleAnisotropyPushButton, self.perSampleOutlierTestPushButton,
-                       self.perSampleCorrelationMatrixPushButton, self.perSampleCurvesPushButton,
-                       self.perSampleImagePushButton, self.overallVacuumFluxPushButton,
-                       self.overallTransmissionPushButton, self.overallExposureTimePushButton,
+        for widget in [self.perSampleAnisotropyPushButton,
+                       self.perSampleImagePushButton,
                        self.overallCurvesPushButton]:
             # these widgets need only selected samples
-            widget.setEnabled(selectedCount>0)
-        for widget in [self.exportCurvesGraphPushButton, self.exportPatternsGraphPushButton, self.exportCorrelMatricesGraphPushButton,
+            widget.setEnabled(selectedCount > 0)
+        for widget in [self.exportCurvesGraphPushButton, self.exportPatternsGraphPushButton,
+                       self.exportCorrelMatricesGraphPushButton,
                        self.exportCurvesPushButton, self.exportPatternsPushButton, self.exportCorrelMatricesPushButton]:
             # these widgets need selected samples AND a valid output dir
-            widget.setEnabled((selectedCount>0) and hasexportDir)
+            widget.setEnabled((selectedCount > 0) and hasexportDir)
+        for widget in [self.perSampleOutlierTestPushButton, self.perSampleCorrelationMatrixPushButton,
+                       self.perSampleCurvesPushButton, self.overallVacuumFluxPushButton,
+                       self.overallExposureTimePushButton, self.overallTransmissionPushButton]:
+            # these widgets need selected samples which are not subtracted samples
+            widget.setEnabled(notSubtractedSelectedCount > 0)
 
     def selectRegex(self):
         try:
@@ -143,7 +148,7 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
                                                       QtCore.QItemSelectionModel.Deselect | QtCore.QItemSelectionModel.Rows)
 
     def onOverallCurves(self):
-        cv = CurveView()
+        cv = CurveView(None, self.project)
         for sample, distance in self.selectedResults():
             logger.debug('Adding curve to overall curve comparison: {}, {}'.format(sample, distance))
             curve = self.project.h5reader.averagedCurve(sample, distance)
@@ -222,8 +227,9 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
             yield (self.model[idx.row()].samplename, float(self.model[idx.row()].distance))
         return
 
-    def countSelectedResults(self) -> int:
-        return len(self.treeView.selectionModel().selectedRows(0))
+    def countSelectedResults(self, subtractedtoo: bool = True) -> int:
+        return len([index for index in self.treeView.selectionModel().selectedRows(0)
+                    if subtractedtoo or (self.model[index.row()].samplecategory != 'subtracted')])
 
     def onPerSampleImage(self):
         for samplename, distance in self.selectedResults():
@@ -256,13 +262,13 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
             except KeyError:
                 continue
             cmatview = CorrMatView(None, self.project)
-            cmatview.setCorrMat(cmat, fsns, samplename, distance)
+            cmatview.setSampleAndDistance(samplename, distance)
             self.subwindowOpenRequest.emit('cmat_{}_{}_{}'.format(samplename, distance, monotonic()), cmatview)
 
     def onPerSampleOutlierTest(self):
         for samplename, distance in self.selectedResults():
             try:
-                cmat = self.project.h5reader.getCorrMat(samplename, distance)
+                self.project.h5reader.getCorrMat(samplename, distance)
             except KeyError:
                 continue
             ov = OutlierViewer(None, self.project)
@@ -293,7 +299,8 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
                         f.write('# {} : {}\n'.format(key, dic[key]))
                     f.write('# Columns:\n')
                     f.write(
-                        '#  q [1/nm],  Intensity [1/cm * 1/sr], Propagated uncertainty of the intensity [1/cm * 1/sr], Propagated uncertainty of q [1/nm]\n')
+                        '#  q [1/nm],  Intensity [1/cm * 1/sr], '
+                        'Propagated uncertainty of the intensity [1/cm * 1/sr], Propagated uncertainty of q [1/nm]\n')
                     np.savetxt(f, np.vstack((curve.q, curve.Intensity, curve.Error, curve.qError)).T)
         elif self.curveFileFormatComboBox.currentText() == 'ASCII (*.dat)':
             for i, (samplename, distance) in enumerate(self.selectedResults()):
@@ -309,7 +316,8 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
                         f.write('# {} : {}\n'.format(key, dic[key]))
                     f.write('# Columns:\n')
                     f.write(
-                        '#  q [1/nm],  Intensity [1/cm * 1/sr], Propagated uncertainty of the intensity [1/cm * 1/sr]\n')
+                        '#  q [1/nm],  Intensity [1/cm * 1/sr], '
+                        'Propagated uncertainty of the intensity [1/cm * 1/sr]\n')
                     np.savetxt(f, np.vstack((curve.q, curve.Intensity, curve.Error)).T)
         elif self.curveFileFormatComboBox.currentText() == 'ATSAS (*.dat)':
             for i, (samplename, distance) in enumerate(self.selectedResults()):
@@ -339,9 +347,9 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
                     f.write(' TIME\n')
                     f.write(' 1.0\n')
                     f.write(' {}\n'.format(len(curve)))
-                    for i in range(len(curve)):
+                    for j in range(len(curve)):
                         f.write(
-                            ' {:.9f} {:.9f} {:.9f} 1\n'.format(curve.q[i] / 10., curve.Intensity[i], curve.Error[i]))
+                            ' {:.9f} {:.9f} {:.9f} 1\n'.format(curve.q[j] / 10., curve.Intensity[j], curve.Error[j]))
         elif self.curveFileFormatComboBox.currentText() == 'PDH (*.pdh)':
             for i, (samplename, distance) in enumerate(self.selectedResults()):
                 self.exportProgress(i)
@@ -358,9 +366,9 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
                                                                                            0))
                     f.write('{:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E}\n'.format(0, 0, 0, 1, 0))
                     f.write('{:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E} {:>14.6E}\n'.format(0, 0, 0, 0, 0))
-                    for i in range(len(curve)):
-                        f.write('{:>14.6E} {:>14.6E} {:>14.6E}\n'.format(curve.q[i] / 10, curve.Intensity[i],
-                                                                         curve.Error[i]))
+                    for j in range(len(curve)):
+                        f.write('{:>14.6E} {:>14.6E} {:>14.6E}\n'.format(curve.q[j] / 10, curve.Intensity[j],
+                                                                         curve.Error[j]))
         elif self.curveFileFormatComboBox.currentText() == 'Excel 2007- (*.xlsx)':
             wb = openpyxl.Workbook()
             ws_main = wb.active
@@ -385,11 +393,11 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
                 ws.cell(row=2, column=2, value='1/cm * 1/sr')
                 ws.cell(row=2, column=3, value='1/cm * 1/sr')
                 ws.cell(row=2, column=4, value='1/nm')
-                for i in range(len(curve)):
-                    ws.cell(row=3 + i, column=1, value=curve.q[i])
-                    ws.cell(row=3 + i, column=2, value=curve.Intensity[i])
-                    ws.cell(row=3 + i, column=3, value=curve.Error[i])
-                    ws.cell(row=3 + i, column=4, value=curve.qError[i])
+                for j in range(len(curve)):
+                    ws.cell(row=3 + j, column=1, value=curve.q[j])
+                    ws.cell(row=3 + j, column=2, value=curve.Intensity[j])
+                    ws.cell(row=3 + j, column=3, value=curve.Error[j])
+                    ws.cell(row=3 + j, column=4, value=curve.qError[j])
                 for row in range(1, 3 + len(curve) + 1):
                     for column in range(1, 5):
                         ws_main.cell(row=row + 1, column=4 * sheetindex + column, value='={}!{}{}'.format(
@@ -528,11 +536,10 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
         for i, (sample, distance) in enumerate(self.selectedResults()):
             self.exportProgress(i)
             try:
-                cmat = self.project.h5reader.getCorrMat(sample, distance)
-                fsns = fsns = sorted(list(self.project.h5reader.getCurveParameter(sample, distance, 'fsn').keys()))
+                self.project.h5reader.getCorrMat(sample, distance)
             except KeyError:
                 continue
-            cv.setCorrMat(cmat, fsns, sample, distance)
+            cv.setSampleAndDistance(sample, distance)
             cv.savefig(os.path.join(self.exportDirLineEdit.text(), 'corrmat_{}_{:.2f}.{}'.format(
                 sample, float(distance),
                 self.graphFormatComboBox.currentText())))

@@ -168,7 +168,23 @@ class Subtractor(BackgroundRunner):
         pass # ToDo
     
     def updateList(self):
-        """Update the list with new sample names"""
-        for sn in sorted(self.project.headerList.samples()):
+        """Update the list with new sample names and remove invalid ones."""
+        samplenames = sorted(self.project.headerList.samples())
+
+        # add missing samples
+        for sn in samplenames:
             if sn not in self:
                 self.add(sn)
+        # remove invalid samples
+        for invalidjob in [j for j in self._jobs if j.samplename not in samplenames]:
+            rowindex = self._jobs.index(invalidjob)
+            self.beginRemoveRows(QtCore.QModelIndex(), rowindex, rowindex)
+            self._jobs.remove(invalidjob)
+            self.endRemoveRows()
+        # set background name to None where the original background name is now invalid
+        for invalidbg in [j for j in self._jobs if j.backgroundname not in samplenames]:
+            rowindex = self._jobs.index(invalidbg)
+            invalidbg.backgroundname=None
+            self.dataChanged.emit(self.index(rowindex, 0), self.index(rowindex, self.columnCount()))
+
+

@@ -88,6 +88,23 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.addPushButton.clicked.connect(self.fsnRangesModel.add)
         self.headerLoader.finished.connect(self.onHeaderLoadingFinished)
         self.headerLoader.progress.connect(self.onHeaderLoadingProgress)
+        self.removePushButton.clicked.connect(self.onRemovePushButtonClicked)
+        self.rootDirToolButton.clicked.connect(self.onRootDirToolButtonClicked)
+        self.hdf5FileToolButton.clicked.connect(self.onHdf5FileToolButtonClicked)
+        self.badFSNsToolButton.clicked.connect(self.onBadFSNsToolButtonClicked)
+        self.rootDirLineEdit.editingFinished.connect(self.onRootDirLineEditChanged)
+        self.hdf5FileLineEdit.editingFinished.connect(self.onHdf5FileLineEditChanged)
+        self.badFSNsLineEdit.editingFinished.connect(self.onBadFSNsLineEditChanged)
+
+    def setWindowModified(self, a0: bool) -> None:
+        windowtitle = self.windowTitle()
+        if windowtitle.startswith('*'):
+            windowtitle = windowtitle[1:].strip()
+        if a0:
+            self.setWindowTitle('* '+windowtitle)
+        else:
+            self.setWindowTitle(windowtitle)
+        return super().setWindowModified(a0)
 
     def resizeProcessingTreeViewColumns(self):
         for i in range(self._processor.columnCount()):
@@ -124,21 +141,21 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
             assert result == QtWidgets.QMessageBox.No
             return True
 
-    @QtCore.pyqtSlot()
-    def on_removePushButton_clicked(self):
+    def onRemovePushButtonClicked(self):
         try:
             self.fsRangesModel.removeRow(self.fsnListTreeView.selectionModel().selectedRows(0)[0].row())
         except IndexError:
             return
 
-    @QtCore.pyqtSlot()
-    def on_rootDirToolButton_clicked(self):
+    def onRootDirToolButtonClicked(self):
         dirname = QtWidgets.QFileDialog.getExistingDirectory(
             self, 'Select a CCT root directory', '')
+        if not dirname:
+            return
         self.rootDirLineEdit.setText(dirname)
+        self.rootDirLineEdit.editingFinished.emit()
 
-    @QtCore.pyqtSlot()
-    def on_badFSNsToolButton_clicked(self):
+    def onBadFSNsToolButtonClicked(self):
         filename, filter = QtWidgets.QFileDialog.getSaveFileName(
             self, "Select file to write bad FSNs in...",
             '', 'ASCII text files (*.txt);;All files (*)', 'ASCII text files (*.txt)'
@@ -148,9 +165,9 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         if not filename.upper().endswith('.TXT'):
             filename += '.txt'
         self.badFSNsLineEdit.setText(filename)
+        self.badFSNsLineEdit.editingFinished.emit()
 
-    @QtCore.pyqtSlot()
-    def on_hdf5FileToolButton_clicked(self):
+    def onHdf5FileToolButtonClicked(self):
         filename, filter = QtWidgets.QFileDialog.getSaveFileName(
             self, "Select file to write results in...",
             '', 'Hierachical Data Format v5 (*.h5);;All files (*)', 'Hierarchical Data Format v5 (*.h5)'
@@ -160,21 +177,19 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         if not filename.upper().endswith('.H5'):
             filename += '.h5'
         self.hdf5FileLineEdit.setText(filename)
+        self.hdf5FileLineEdit.editingFinished.emit()
 
-    @QtCore.pyqtSlot()
-    def on_rootDirLineEdit_textChanged(self):
+    def onRootDirLineEditChanged(self):
         self.config.datadir = self.rootDirLineEdit.text()
         self.setWindowModified(True)
 
-    @QtCore.pyqtSlot()
-    def on_badFSNsLineEdit_textChanged(self):
+    def onBadFSNsLineEditChanged(self):
         self.config.badfsnsfile = self.badFSNsLineEdit.text()
         self.setWindowModified(True)
 
-    @QtCore.pyqtSlot()
-    def on_hdf5FileLineEdit_textChanged(self):
+    def onHdf5FileLineEditChanged(self):
         self.config.hdf5 = self.hdf5FileLineEdit.text()
-        self.setWindowModified()
+        self.setWindowModified(True)
 
     def save(self) -> bool:
         if not self.window().windowFilePath():
@@ -303,6 +318,7 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
             self.tabWidget.setCurrentWidget(self.subtractionTab)
             self.subtract()
         else:
+            self.tabWidget.setCurrentWidget(self._resultsdispatcher)
             self.idleChanged.emit(self.idle)
 
     def process(self):
@@ -331,6 +347,7 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.executeSubtractionPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
         self.newResultsAvailable.emit()
         self._resultsdispatcher.reloadResults()
+        self.tabWidget.setCurrentWidget(self._resultsdispatcher)
         self.idleChanged.emit(self.idle)
 
     def subtract(self):
@@ -355,6 +372,7 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.fsnRangesModel.fromList(self.config.fsnranges)
 
     def onConfigChanged(self, section: str, itemname: str, newvalue: Any):
+        logger.debug('Config item (section {}, name {}) changed to {}'.format(section, itemname, newvalue))
         if itemname == 'datadir':
             self.headerLoader.setPath([os.path.join(newvalue, 'eval2d')])
             self._loader = Loader(newvalue)
