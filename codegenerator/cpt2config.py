@@ -113,6 +113,7 @@ def writeCode():
                 'import datetime\n'
                 'import appdirs\n'
                 'import re\n'
+                'import os\n'
                 '\n\n'
                 'class Config(QtCore.QObject):\n'
                 '    """This class represents the configuration of the SAXS data post-processing mechanism.\n\n'
