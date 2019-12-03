@@ -44,6 +44,7 @@ class CurveView(QtWidgets.QWidget, Ui_Form):
 
     def addCurve(self, curve: Curve, track: Optional[Tuple[str, Union[str, float]]] = None, **kwargs):
         assert isinstance(curve, Curve)
+        curve = curve.sanitize()
         self.curves.append((curve, kwargs, track))
         logger.debug('Curve elements types: q: {}, Intensity: {}, Error: {}, qError: {}'.format(type(curve.q),
                                                                                                 type(curve.Intensity),
@@ -156,7 +157,7 @@ class CurveView(QtWidgets.QWidget, Ui_Form):
         else:
             raise ValueError(self.plotTypeComboBox.currentText())
 
-        leg = self.axes.legend(loc='best', ncol=5, fontsize='x-small')
+        leg = self.axes.legend(loc='best', ncol=2, fontsize='x-small')
         leg.set_visible(self.showLegendToolButton.isChecked())
 
         if self.showGridToolButton.isChecked():
@@ -194,6 +195,7 @@ class CurveView(QtWidgets.QWidget, Ui_Form):
                     curve = None
                 logger.debug('Updated tracked curve for {}'.format(tracking))
                 newCurveList.append((curve, kwargs, tracking))
+        self.curves = newCurveList
         self.replot()
         logger.debug('Done with updating tracked curves and replotting')
 
