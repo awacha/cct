@@ -1,8 +1,9 @@
 """A class representing a processing job: for one sample and one sample-to-detector distance"""
-import multiprocessing
 import time
 import traceback
 from datetime import datetime
+from multiprocessing.queues import Queue
+from multiprocessing.synchronize import Lock, Event
 from typing import List, Optional, Any
 
 import h5py
@@ -47,8 +48,8 @@ class ProcessingJob(BackgroundProcedure):
     badfsns: List[int] = None
     initialBadfsns: List[int] = None
 
-    def __init__(self, jobid: Any, h5writerLock: multiprocessing.synchronize.Lock, killswitch: multiprocessing.Event,
-                 resultsqueue: multiprocessing.Queue, h5file:str, rootdir: str,
+    def __init__(self, jobid: Any, h5writerLock: Lock, killswitch: Event,
+                 resultsqueue: Queue, h5file:str, rootdir: str,
                  fsnlist: List[int], badfsns: List[int],
                  ierrorprop: str, qerrorprop: str, outliermethod: str, outliermultiplier: float, logcmat: bool,
                  qrange: Optional[np.ndarray], bigmemorymode: bool = False):
