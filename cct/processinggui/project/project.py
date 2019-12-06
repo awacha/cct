@@ -156,7 +156,7 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.rootDirLineEdit.editingFinished.emit()
 
     def onBadFSNsToolButtonClicked(self):
-        filename, filter = QtWidgets.QFileDialog.getSaveFileName(
+        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(
             self, "Select file to write bad FSNs in...",
             '', 'ASCII text files (*.txt);;All files (*)', 'ASCII text files (*.txt)'
         )
@@ -168,7 +168,7 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.badFSNsLineEdit.editingFinished.emit()
 
     def onHdf5FileToolButtonClicked(self):
-        filename, filter = QtWidgets.QFileDialog.getSaveFileName(
+        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(
             self, "Select file to write results in...",
             '', 'Hierachical Data Format v5 (*.h5);;All files (*)', 'Hierarchical Data Format v5 (*.h5)'
         )
@@ -195,10 +195,12 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         if not self.window().windowFilePath():
             return self.saveAs()
         assert self.window().windowFilePath()
+        logger.debug('Saving project to file {}'.format(self.window().windowFilePath()))
         self.toConfig()
         self.config.projectfilename = self.window().windowFilePath()
         self.config.save(self.window().windowFilePath())
         self.setWindowModified(False)
+        self.parent().window().saveRecentProjectList()
         return True
 
     def saveAs(self, filename: Optional[str] = None) -> bool:
@@ -231,6 +233,7 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.setWindowTitle(os.path.split(filename)[-1])
         self.window().setWindowFilePath(filename)
         self.setWindowModified(False)
+        self.parent().window().saveRecentProjectList()
 
 #### Methods for header list reloading in the background
 
@@ -416,3 +419,9 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         logger.debug('processor idle: {}'.format(not self._processor.isBusy()))
         logger.debug('subtractor idle: {}'.format(not self._subtractor.isBusy()))
         return self.headerLoader.idle and (not self._processor.isBusy()) and (not self._subtractor.isBusy())
+
+    def windowFilePath(self) -> str:
+        return self.window().windowFilePath()
+
+    def setWindowFilePath(self, filePath: str) -> None:
+        self.window().setWindowFilePath(filePath)

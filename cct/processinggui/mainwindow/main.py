@@ -1,6 +1,8 @@
 import logging
+import os
 from typing import List
 
+import appdirs
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 from .main_ui import Ui_MainWindow
@@ -9,7 +11,7 @@ from ..project import Project
 from ..settings import SettingsWindow
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class Main(QtWidgets.QMainWindow, Ui_MainWindow):
     _actionsNeedingAnOpenProject: List[QtWidgets.QAction]
@@ -21,19 +23,27 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def setupUi(self, Form):
         super().setupUi(Form)
+        self.recentMenu = QtWidgets.QMenu('Recent projects', self.menubar)
+        self.actionRecent_projects.setMenu(self.recentMenu)
+        self.actionClose_project.triggered.connect(self.closeProject)
+        self.actionFile_list.triggered.connect(self.openFileList)
+        self.actionNew_project.triggered.connect(self.createNewProject)
+        self.actionPreferences.triggered.connect(self.openPreferences)
+        self.actionOpen_project.triggered.connect(self.openProject)
+        self.actionSave.triggered.connect(self.save)
+        self.actionSave_as.triggered.connect(self.saveAs)
+        self.actionQuit.triggered.connect(self.close)
+        self.actionProcess.triggered.connect(self.startStopProcessing)
+        self.actionReload_headers.triggered.connect(self.startStopReloadHeaders)
         self._actionsNeedingAnOpenProject = [
             self.actionClose_project, self.actionPreferences, self.actionProcess, self.actionReload_headers,
             self.actionSave, self.actionSave_as, self.actionFile_list]
         for a in self._actionsNeedingAnOpenProject:
             a.setEnabled(False)
         self.actionNew_project.trigger()
+        self.loadRecentProjectList()
 
-    @QtCore.pyqtSlot()
-    def on_actionQuit_triggered(self):
-        self.close()
-
-    @QtCore.pyqtSlot()
-    def on_actionFile_list_triggered(self):
+    def openFileList(self):
         try:
             sw = self._getSubWindow('headerview')
         except IndexError:
@@ -42,13 +52,12 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             sw = self._getSubWindow('headerview')
         sw.show()
 
-    @QtCore.pyqtSlot()
-    def on_actionNew_project_triggered(self):
+    def createNewProject(self) -> bool:
         # first try to close the current project
         logger.debug('Creating a new project')
         if not self.closeProject():
             # could not close the project
-            return
+            return False
         logger.debug('The old project is now closed')
         assert self.project is None
         self.project = Project(self)
@@ -60,22 +69,19 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         for a in self._actionsNeedingAnOpenProject:
             a.setEnabled(True)
         logger.debug('NEW PROJECT CREATED.')
+        return True
 
-    @QtCore.pyqtSlot()
-    def on_actionSave_triggered(self):
+    def save(self):
         self.project.save()
 
-    @QtCore.pyqtSlot()
-    def on_actionOpen_project_triggered(self):
-        self.on_actionNew_project_triggered()
-        self.project.open()
+    def openProject(self):
+        if self.createNewProject():
+            self.project.open()
 
-    @QtCore.pyqtSlot()
-    def on_actionSave_as_triggered(self):
+    def saveAs(self):
         self.project.saveAs()
 
-    @QtCore.pyqtSlot()
-    def on_actionPreferences_triggered(self):
+    def openPreferences(self):
         try:
             subwindow = self._getSubWindow('settings')
         except IndexError:
@@ -83,10 +89,6 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             self._addNewSubWindow('settings', sw)
             subwindow = self._getSubWindow('settings')
         subwindow.show()
-
-    @QtCore.pyqtSlot()
-    def on_actionClose_project_triggered(self):
-        self.closeProject()
 
     def closeProject(self) -> bool:
         logger.debug('Closing the current project')
@@ -144,6 +146,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         logger.debug('Widget {} destroyed'.format(widget.objectName()))
         logger.debug('Subwindows alive: {}'.format([sw.objectName() for sw in self.mdiArea.subWindowList()]))
         if widget.objectName() == 'projectWindow':
+            # note that `widget` is not the corresponding MdiSubWindow but the project itself
             logger.debug('Deleting all subwindows')
             for subwindow in self.mdiArea.subWindowList():
                 subwindow.close()
@@ -165,10 +168,59 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             widget.setEnabled(idle)
 
     @QtCore.pyqtSlot()
-    def on_actionReload_headers_triggered(self):
+    def startStopReloadHeaders(self):
         self.project.reloadHeaders()
 
     @QtCore.pyqtSlot()
-    def on_actionProcess_triggered(self):
+    def startStopProcessing(self):
         self.project.process()
+
+    def loadRecentProjectList(self):
+        logger.debug('Loading recent projects')
+        configdir = appdirs.user_config_dir("cpt", "CREDO", roaming=True)
+        self.recentMenu.clear()
+        try:
+            with open(os.path.join(configdir, 'projecthistory2'), 'rt') as f:
+                for filename in f:
+                    filename = filename.strip()
+                    if os.path.isfile(filename):
+                        logger.debug('File {} found, adding it to the recent list'.format(filename))
+                        action = self.recentMenu.addAction(os.path.split(filename)[-1], self.openRecentProject)
+                        action.setToolTip(filename)
+                        action.setStatusTip('Open project from {}'.format(filename))
+                    else:
+                        logger.debug('File "{}" not found, not adding it to the recent list'.format(filename))
+        except FileNotFoundError:
+            logger.debug('Recent list file does not exist.')
+
+    def openRecentProject(self):
+        action = self.sender()
+        assert isinstance(action, QtWidgets.QAction)
+        filename = action.toolTip()
+        if self.createNewProject():
+            self.project.open(filename)
+
+    def saveRecentProjectList(self):
+        """Save the list of recent projects, by prepending the currently opened project"""
+        logger.debug('Saving list of recent projects')
+        if not self.project.windowFilePath():
+            logger.debug('Not saving list of recent projects: this project does not yet have a filename')
+            # the currently opened project has not yet been saved to a file.
+            return
+        # read the recent project list.
+        configdir = appdirs.user_config_dir("cpt", "CREDO", roaming=True)
+        try:
+            with open(os.path.join(configdir, 'projecthistory2'), 'rt') as f:
+                recentprojects = [filename.strip() for filename in f]
+        except FileNotFoundError:
+            # no file
+            recentprojects = []
+        # ensure that the current project file is at the top of the list
+        recentprojects = [self.project.windowFilePath()] + [r for r in recentprojects if r != self.project.windowFilePath()]
+        # write the file
+        with open(os.path.join(configdir, 'projecthistory2'), 'wt') as f:
+            for filename in recentprojects:
+                logger.debug('Writing recent file {} to list file.'.format(filename))
+                f.write(filename+'\n')
+        self.loadRecentProjectList()
 

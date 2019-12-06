@@ -66,8 +66,6 @@
     <property name="title">
      <string>&amp;Window</string>
     </property>
-    <addaction name="actionPreferences"/>
-    <addaction name="actionFile_list"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menu_Window"/>
