@@ -69,6 +69,7 @@ configitems = {
         'autoq': ConfigItem('bool', 'True', 'if q-range is to be auto-determined', None),
         'outliermethod': ConfigItem('str', 'Interquartile Range', 'Method for finding outliers',
                                     ['Z-score', 'Modified Z-score', 'Interquartile Range']),
+        'subtraction': ConfigItem('str', '', 'Information on subtraction', None),
     },
     'twodim': {  # parameters for the 2D images
         'showmask': ConfigItem('bool', 'True', 'Show the mask on the 2D image', None),
