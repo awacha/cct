@@ -58,7 +58,7 @@ class BackgroundRunner(QtCore.QAbstractItemModel):
     """
 
     timerInterval: int = 200  # milliseconds, calling the check
-    maxReadMsgCount: int = 1  # read at most this many messages from the message queue, do not hog the main loop
+    maxReadMsgCount: int = 100  # read at most this many messages from the message queue, do not hog the main loop
     TEMPERATURETOLERANCE: float = 0.5  # ToDo: make this a config item
     _pool: Optional[Pool]
     _columnnames: List[str]
