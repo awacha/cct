@@ -100,7 +100,7 @@ class CorrMatView(QtWidgets.QWidget, Ui_Form):
         self.axes.set_aspect(1.0)
         img = self.axes.imshow(self.cmat, interpolation='nearest',
                                cmap=self.paletteComboBox.currentText(),
-                               extent=[-0.5, self.cmat.shape[1]-0.5, -0.5, self.cmat.shape[0]-0.5])
+                               extent=[-0.5, self.cmat.shape[1]-0.5, self.cmat.shape[0]-0.5, -0.5], origin='upper')
         logger.debug('CMAT shape: {}'.format(self.cmat.shape))
         self.axes.xaxis.set_ticks(np.arange(self.cmat.shape[1]))
         self.axes.yaxis.set_ticks(np.arange(self.cmat.shape[0]))
