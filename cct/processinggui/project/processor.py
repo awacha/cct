@@ -150,6 +150,6 @@ class Processor(BackgroundRunner):
     def newBadFSNs(self) -> List[int]:
         ret = []
         for j in self._jobs:
-            if j.lastProcessingResult.success:
+            if (j.lastProcessingResult is not None) and j.lastProcessingResult.success:
                 ret.extend(j.lastProcessingResult.badfsns)
         return ret
