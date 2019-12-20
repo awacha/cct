@@ -296,7 +296,7 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.processPushButton.setText('Stop')
         self.processPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
         self._processor.start()
-        assert not self.idle
+        #assert not self.idle
         self.idleChanged.emit(self.idle)
         self.processPushButton.setEnabled(True)
 
