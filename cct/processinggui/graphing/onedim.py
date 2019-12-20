@@ -146,7 +146,7 @@ class CurveView(QtWidgets.QWidget, Ui_Form):
             self.axes.set_xscale('linear')
             self.axes.set_yscale('linear')
         elif self.plotTypeComboBox.currentText() == 'log I vs. q^2':  # Guinier plot
-            self.axes.set_xscale('function', functions=(lambda q: q ** 2, lambda q2: q2 ** 0.5))
+            self.axes.set_xscale('guinierq')
             self.axes.set_yscale('log')
         elif self.plotTypeComboBox.currentText() == 'I*q^2 vs. q':  # Kratky plot
             self.axes.set_xscale('linear')
