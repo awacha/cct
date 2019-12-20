@@ -82,6 +82,7 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         self.subtractionTreeView.setItemDelegateForColumn(1, self._samplenameDelegate)
         self.subtractionTreeView.setItemDelegateForColumn(2, self._submethodDelegate)
         self.subtractionTreeView.setItemDelegateForColumn(3, self._subparDelegate)
+        self.subtractionTreeView.setItemDelegateForColumn(4, ProgressBarDelegate())
         self.executeSubtractionPushButton.clicked.connect(self.subtract)
         self.reloadPushButton.clicked.connect(self.reloadHeaders)
         self.processPushButton.clicked.connect(self.process)
