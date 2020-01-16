@@ -9,7 +9,7 @@ from sastool.classes2 import Exposure
 from sastool.misc.basicfit import findpeak_asymmetric
 from sastool.misc.easylsq import nonlinear_odr
 from sastool.misc.errorvalue import ErrorValue
-from sastool.utils2d import centering
+from sastool.utils2d import centering2
 
 from .calibration_ui import Ui_MainWindow
 from .pairstore import PairStore
@@ -22,6 +22,17 @@ from ....core.utils.inhibitor import Inhibitor
 
 
 class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
+    fsnSelector: FSNSelector
+    plotImage: PlotImage
+    plotCurve: PlotCurve
+    distCalibFigure: Figure
+    distCalibFigureCanvas: FigureCanvasQTAgg
+    distCalibFigureToolbar: NavigationToolbar2QT
+    distCalibAxes: Axes
+    pairsStore: PairStore
+    cursor: Cursor
+    centeringState: centering2.Centering = None
+
     def __init__(self, *args, **kwargs):
         credo = kwargs.pop('credo')
         QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
@@ -48,9 +59,10 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         self.distCalibFigureToolbar = NavigationToolbar2QT(self.distCalibFigureCanvas, self.tabDistance)
         self.tabDistance.layout().addWidget(self.distCalibFigureToolbar)
         self.distCalibAxes = self.distCalibFigure.add_subplot(1, 1, 1)
-        self.centeringMethodComboBox.addItems(
-            ['Gravity', 'Peak amplitude', 'Peak width', 'Power-law', 'Manual (click)'])
-        self.centeringMethodComboBox.setCurrentIndex(1)
+        self.centeringMethodComboBox.addItems(sorted(centering2.Centering.algorithmname.values()) + ['Manual (click)'])
+        self.centeringMethodComboBox.setCurrentIndex(0)
+        self.centeringMethodComboBox.currentIndexChanged.connect(self.onCenteringMethodChanged)
+        self.onCenteringMethodChanged()
         self.centeringPushButton.clicked.connect(self.onCenteringRequested)
         self.plotImage.setOnlyAbsPixel()
         self.beamXDoubleSpinBox.valueChanged.connect(self.onDoubleSpinBoxValueChanged)
@@ -216,6 +228,9 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
                                 color='blue', ls='-', marker='.')
         self.plotCurve.setXLabel('Pixel coordinate')
         self.plotCurve.setYLabel('Total counts')
+        mask = np.logical_and(exposure.mask!=0, np.isfinite(exposure.intensity)).astype(np.uint8)
+        self.centeringState = centering2.Centering(exposure.intensity, mask,
+                                                   [exposure.header.beamcentery.val, exposure.header.beamcenterx.val])
         with self._updating_ui:
             self.beamXDoubleSpinBox.setValue(exposure.header.beamcenterx.val)
             self.beamXErrDoubleSpinBox.setValue(exposure.header.beamcenterx.err)
@@ -236,37 +251,45 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
 
     def onCenteringRequested(self):
         exposure = self.plotImage.exposure()
-        if self.centeringMethodComboBox.currentText() == 'Gravity':
-            posy, posx = centering.findbeam_gravity(exposure.intensity, exposure.mask)
-            self.newBeamPosFound(posx, posy)
-        elif self.centeringMethodComboBox.currentText() == 'Peak amplitude':
-            xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
-            posy, posx = centering.findbeam_radialpeak(exposure.intensity,
-                                                       [exposure.header.beamcentery, exposure.header.beamcenterx],
-                                                       exposure.mask, xmin, xmax, drive_by='amplitude')
-            #            posy, posx = centering.findbeam_radialpeakheight(exposure.intensity,
-            #                                                             [exposure.header.beamcentery,
-            #                                                              exposure.header.beamcenterx],
-            #                                                             exposure.mask, xmin, xmax)
-            self.newBeamPosFound(posx, posy)
-        elif self.centeringMethodComboBox.currentText() == 'Peak width':
-            xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
-            posy, posx = centering.findbeam_radialpeak(exposure.intensity,
-                                                       [exposure.header.beamcentery, exposure.header.beamcenterx],
-                                                       exposure.mask, xmin, xmax, drive_by='hwhm')
-            self.newBeamPosFound(posx, posy)
-        elif self.centeringMethodComboBox.currentText() == 'Power-law':
-            xmin, xmax, ymin, ymax = self.plotCurve.getZoomRange()
-            posy, posx = centering.findbeam_powerlaw(exposure.intensity,
-                                                     [exposure.header.beamcentery, exposure.header.beamcenterx],
-                                                     exposure.mask, xmin, xmax, drive_by='amplitude')
-            self.newBeamPosFound(posx, posy)
-        elif self.centeringMethodComboBox.currentText() == 'Manual (click)':
+        if self.centeringMethodComboBox.currentText() == 'Manual (click)':
+            # this algorithm is implemented here.
             self.tabWidget.setCurrentWidget(self.tab2D)
             self.cursor = Cursor(self.plotImage.axes, zorder=100)
             self.cursor.connect_event('button_press_event', self.onCursorPressed)
         else:
-            assert False
+            # all other methods are implemented in sastool.
+            method = [k for k, v in centering2.Centering.algorithmname.items() if
+                      v == self.centeringMethodComboBox.currentText()][0]
+            try:
+                xmin1d, xmax1d, ymin1d, ymax1d = self.plotCurve.getZoomRange()
+                if method == 'coi':
+                    # center of gravity needs an area of the 2D image.
+                    colmin, colmax, rowmin, rowmax = self.plotImage.axes.axis()
+                    posy, posx = self.centeringState.findcenter('coi', min(rowmin, rowmax), max(rowmin, rowmax),
+                                                                min(colmin, colmax), max(colmin, colmax))
+                elif method == 'slices':
+                    posy, posx = self.centeringState.findcenter('slices', xmin1d, xmax1d)
+                elif method == 'azimuthal':
+                    posy, posx = self.centeringState.findcenter('azimuthal', xmin1d, xmax1d)
+                elif method == 'azimuthal_fold':
+                    posy, posx = self.centeringState.findcenter('azimuthal_fold', xmin1d, xmax1d)
+                elif method == 'peak_amplitude':
+                    posy, posx = self.centeringState.findcenter('peak_amplitude', xmin1d, xmax1d)
+                elif method == 'peak_width':
+                    posy, posx = self.centeringState.findcenter('peak_width', xmin1d, xmax1d)
+                elif method == 'powerlaw':
+                    posy, posx = self.centeringState.findcenter('powerlaw', xmin1d, xmax1d)
+                else:
+                    raise ValueError('Invalid centering algorithm: {}'.format(method))
+                if not self.centeringState.lastresults.success:
+                    QtWidgets.QMessageBox.warning(
+                        self, 'Warning',
+                        'Centering might not have been successful\nMessage: {}\nStatus: {}'.format(
+                            self.centeringState.lastresults.message,
+                            self.centeringState.lastresults.status))
+                self.newBeamPosFound(posx, posy)
+            except Exception as exc:
+                QtWidgets.QMessageBox.critical(self, 'Error while centering', exc.args[0])
 
     def onCursorPressed(self, event: MouseEvent):
         if not ((event.inaxes is self.plotImage.axes) and (event.button == 1)):
@@ -280,3 +303,13 @@ class Calibration(QtWidgets.QMainWindow, Ui_MainWindow, ToolWindow):
         del self.cursor
         self.plotImage.canvas.draw()
         self.newBeamPosFound(event.xdata, event.ydata)
+
+    def onCenteringMethodChanged(self):
+        if self.centeringMethodComboBox.currentText() == 'Manual (click)':
+            self.centeringDescriptionTextBrowser.setText(
+                'After clicking the "Find center" button, select the desired beam center on the 2D image with the blue '
+                'crosshair cursor, then press the left mouse button.')
+        else:
+            method = [k for k, v in centering2.Centering.algorithmname.items() if
+                      v == self.centeringMethodComboBox.currentText()][0]
+            self.centeringDescriptionTextBrowser.setText(centering2.Centering.algorithmdescription[method])

@@ -74,8 +74,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>365</width>
-            <height>440</height>
+            <width>380</width>
+            <height>490</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -93,8 +93,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>365</width>
-            <height>440</height>
+            <width>380</width>
+            <height>490</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -130,7 +130,24 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="0" colspan="2">
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Description:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="2">
+            <widget class="QTextBrowser" name="centeringDescriptionTextBrowser">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>1</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0" colspan="2">
             <widget class="QPushButton" name="centeringPushButton">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -147,6 +164,19 @@
              </property>
             </widget>
            </item>
+           <item row="6" column="0" colspan="2">
+            <spacer name="verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>0</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
           </layout>
          </widget>
          <widget class="QWidget" name="distancePage">
@@ -154,8 +184,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>365</width>
-            <height>440</height>
+            <width>309</width>
+            <height>262</height>
            </rect>
           </property>
           <property name="sizePolicy">
