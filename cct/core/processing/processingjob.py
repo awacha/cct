@@ -268,6 +268,7 @@ class ProcessingJob(BackgroundProcedure):
             t1 = time.monotonic()
             self.sendProgress('Writing HDF5 file...')
             with h5py.File(self.h5file, mode='a') as h5:  # mode=='a': read/write if exists, create otherwise
+#                h5.swmr_mode = True
                 # save all masks
                 masks = h5.require_group('masks')
                 for name, mask in self._loader.masks.items():

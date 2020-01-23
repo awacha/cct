@@ -47,7 +47,7 @@ class ResultsDispatcher(QtWidgets.QWidget, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.model = ResultsModel(self.config.hdf5)
+        self.model = ResultsModel(self.config.hdf5, self.project.h5Lock)
         self.treeView.setModel(self.model)
         self.model.modelReset.connect(self.resizeTreeViewColumns)
         self.model.dataChanged.connect(self.resizeTreeViewColumns)

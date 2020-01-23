@@ -1,4 +1,5 @@
 import logging
+import multiprocessing.synchronize
 from typing import Optional, Any, List
 
 import h5py
@@ -30,14 +31,16 @@ class Result:
 class ResultsModel(QtCore.QAbstractItemModel):
     _columnnames = ['Sample', 'Distance', 'Temperature', '#Exposures', 'Total time', 'Category']
     _h5filename: str
+    _h5lock: multiprocessing.synchronize.Lock
     _data: List[Result]
     _lastsortcolumn: int = None
     _lastsortorder: QtCore.Qt.SortOrder = None
 
-    def __init__(self, h5filename: str):
+    def __init__(self, h5filename: str, h5Lock: multiprocessing.synchronize.Lock):
         super().__init__()
         self._h5filename = h5filename
         self._data = None
+        self._h5lock = h5Lock
         self.reload()
 
     def setH5FileName(self, h5filename: str):
@@ -49,15 +52,19 @@ class ResultsModel(QtCore.QAbstractItemModel):
         self.beginResetModel()
         self._data = []
         try:
-            with h5py.File(self._h5filename, 'r', swmr=True) as f:
-                for samplename in f['Samples']:
-                    for dist in f['Samples'][samplename]:
-                        # ToDo: temperature
-                        g = f['Samples'][samplename][dist]
-                        header = Header.new_from_group(g)
-                        self._data.append(Result(header.title, header.distance, header.temperature, len(g['curves']) if 'curves' in g else None,
-                                                 header.sample_category, header.exposuretime))
-        except OSError:
+            logger.debug('Waiting for h5 lock...')
+            with self._h5lock:
+                logger.debug('Opening H5 file')
+                with h5py.File(self._h5filename, 'r') as f:
+                    for samplename in f['Samples']:
+                        for dist in f['Samples'][samplename]:
+                            # ToDo: temperature
+                            g = f['Samples'][samplename][dist]
+                            header = Header.new_from_group(g)
+                            self._data.append(Result(header.title, header.distance, header.temperature, len(g['curves']) if 'curves' in g else None,
+                                                     header.sample_category, header.exposuretime))
+        except OSError as ose:
+            logger.debug('Cannot open H5 file: {}'.format(ose.args[0]))
             self._data = []
         finally:
             self.endResetModel()

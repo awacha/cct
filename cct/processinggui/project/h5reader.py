@@ -9,7 +9,7 @@ from sastool.classes2 import Curve
 from sastool.io.credo_cpth5 import Exposure
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class LockedHDF5File:
@@ -45,25 +45,25 @@ class H5Reader:
 
     def samples(self) -> List[str]:
         try:
-            with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+            with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
                 return list(f['Samples'].keys())
         except OSError:
             return []
 
     def distanceKeys(self, sample: str) -> List[str]:
         try:
-            with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+            with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
                 return list(f['Samples'][sample].keys())
         except OSError:
             return []
 
     def averagedImage(self, sample: str, distance: Union[float, str]) -> Exposure:
-        with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+        with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
             return Exposure.new_from_group(
                 f['Samples'][sample]['{:.2f}'.format(distance) if isinstance(distance, float) else distance])
 
     def averagedCurve(self, sample: str, distance: Union[float, str]) -> Curve:
-        with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+        with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
             group = f['Samples'][sample]['{:.2f}'.format(distance) if isinstance(distance, float) else distance]
             return Curve(np.array(group['curve'][:, 0]),
                          np.array(group['curve'][:, 1]),
@@ -71,13 +71,13 @@ class H5Reader:
                          np.array(group['curve'][:, 3]))
 
     def averagedHeaderDict(self, sample: str, distance: Union[float, str]) -> Dict[str, Any]:
-        with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+        with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
             group = f['Samples'][sample]['{:.2f}'.format(distance) if isinstance(distance, float) else distance]
             return dict(**group.attrs)
 
     def allCurves(self, sample: str, distance: Union[float, str]) -> Dict[int, Curve]:
         dic = {}
-        with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+        with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
             group = f['Samples'][sample]['{:.2f}'.format(distance) if isinstance(distance, float) else distance][
                 'curves']
             for fsn in group:
@@ -90,7 +90,7 @@ class H5Reader:
 
     def badFSNs(self, sample: str, distance: Union[float, str]) -> List[int]:
         lis = []
-        with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+        with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
             group = f['Samples'][sample]['{:.2f}'.format(distance) if isinstance(distance, float) else distance][
                 'curves']
             for fsn in group:
@@ -100,7 +100,7 @@ class H5Reader:
 
     def getCurveParameter(self, sample: str, distance: Union[float, str], parname: str) -> Dict[int, Any]:
         dic = {}
-        with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+        with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
             group = f['Samples'][sample]['{:.2f}'.format(distance) if isinstance(distance, float) else distance][
                 'curves']
             for fsn in group:
@@ -108,12 +108,12 @@ class H5Reader:
         return dic
 
     def getCorrMat(self, sample: str, distance: Union[float, str]) -> np.ndarray:
-        with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+        with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
             group = f['Samples'][sample]['{:.2f}'.format(distance) if isinstance(distance, float) else distance]
             return np.array(group['correlmatrix'])
 
     def getCurve(self, sample: str, distance: Union[float, str], fsn: int) -> Curve:
-        with LockedHDF5File(self.h5lock, self.h5filename, 'r', swmr=True) as f:
+        with LockedHDF5File(self.h5lock, self.h5filename, 'r') as f:
             group = f['Samples'][sample]['{:.2f}'.format(distance) if isinstance(distance, float) else distance][
                 'curves']
             fsn = str(fsn)
