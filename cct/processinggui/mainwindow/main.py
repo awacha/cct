@@ -11,7 +11,7 @@ from ..project import Project
 from ..settings import SettingsWindow
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class Main(QtWidgets.QMainWindow, Ui_MainWindow):
     _actionsNeedingAnOpenProject: List[QtWidgets.QAction]
@@ -178,6 +178,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
     def loadRecentProjectList(self):
         logger.debug('Loading recent projects')
         configdir = appdirs.user_config_dir("cpt", "CREDO", roaming=True)
+        os.makedirs(configdir, exist_ok=True)
         self.recentMenu.clear()
         try:
             with open(os.path.join(configdir, 'projecthistory2'), 'rt') as f:
@@ -209,6 +210,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         # read the recent project list.
         configdir = appdirs.user_config_dir("cpt", "CREDO", roaming=True)
+        os.makedirs(configdir, exist_ok=True)
         try:
             with open(os.path.join(configdir, 'projecthistory2'), 'rt') as f:
                 recentprojects = [filename.strip() for filename in f]
