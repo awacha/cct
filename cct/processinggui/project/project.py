@@ -119,7 +119,16 @@ class Project(QtWidgets.QWidget, Ui_projectWindow):
         if not self.confirmSave():
             event.ignore()
         else:
+            self.finalize()
             event.accept()
+
+    def finalize(self):
+        logger.debug('Finalizing project.')
+        logger.debug('Finalizing _processor')
+        self._processor.finalize()
+        logger.debug('Finalizing _subtractor')
+        self._subtractor.finalize()
+        logger.debug('Finalized project.')
 
     def confirmSave(self):
         """Ask the user if she wants to save the changes.

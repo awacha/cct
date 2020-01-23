@@ -30,6 +30,7 @@ class ProcessingJobRecord(JobRecord):
         self.fsns = list(fsns)
 
     def submit(self, jobid: int, pool: Pool, project: "Project"):
+        super().submit(jobid, pool, project)
         if project.config.autoq:
             if project.config.customqlogscale:
                 qrange = np.logspace(np.log10(project.config.customqmin), np.log10(project.config.customqmax),
@@ -63,6 +64,7 @@ class ProcessingJobRecord(JobRecord):
         self.asyncresult = None
         if self.lastProcessingResult.success:
             project.addBadFSNs(self.lastProcessingResult.badfsns)
+        super().reap(project)
 
 
 class Processor(BackgroundRunner):

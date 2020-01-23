@@ -62,6 +62,7 @@ class SubtractionJobRecord(JobRecord):
             raise ValueError('Invalid scaling method: {}'.format(self._scalingmethod))
 
     def submit(self, jobid: int, pool: Pool, project: "Project"):
+        super().submit(jobid, pool, project)
         if self.backgroundname is None:
             return
         self.asyncresult = pool.apply_async(
@@ -81,6 +82,7 @@ class SubtractionJobRecord(JobRecord):
         self.lastProcessingResult = self.asyncresult.get()
         self.statusmessage = 'Finished in {:.2f} seconds.'.format(self.lastProcessingResult.time_total)
         self.asyncresult = None
+        super().reap(project)
 
     def __repr__(self) -> str:
         if self.scalingmethod == 'None':

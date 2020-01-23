@@ -24,10 +24,12 @@ class JobRecord:
     killswitch: Event = None
     messageQueue: Queue = None
     lastProcessingResult = None
+    lockManager: Manager
 
     def __init__(self, lockmanager: Manager):
+        self.lockManager = lockmanager
         self.killswitch = lockmanager.Event()
-        self.messageQueue = lockmanager.Queue()
+        self.messageQueue = lockmanager.JoinableQueue()
 
     @property
     def isRunning(self) -> bool:
@@ -45,10 +47,13 @@ class JobRecord:
         return self.asyncresult is None
 
     def submit(self, jobid: int, pool:Pool, project: "Project"):
-        raise NotImplementedError
+        self.messageQueue = self.lockManager.JoinableQueue()
+        self.killswitch.clear()
 
     def reap(self, project:"Project"):
-        raise NotImplementedError
+        #self.messageQueue.close() # do not do this, this is not a true JoinableQueue but an AutoProxy to it.
+        self.messageQueue = None
+        self.killswitch.clear()
 
 class BackgroundRunner(QtCore.QAbstractItemModel):
     """A front-end and scheduler for background data processing jobs.
@@ -77,15 +82,20 @@ class BackgroundRunner(QtCore.QAbstractItemModel):
         self._startPool()
 
     def _startPool(self):
+        logger.debug('Starting background pool')
         self._pool = Pool(min(self.project.config.maxjobs, cpu_count()))
         self._recreateJobs()
 
     def _stopPool(self, terminate: bool = False):
+        logger.debug('Stopping background pool')
         if terminate:
             self._pool.terminate()
+            logger.debug('Terminated background pool')
         else:
             self._pool.close()
+            logger.debug('Closed background pool')
         self._pool.join()
+        logger.debug('Joined background pool')
 
     def isBusy(self) -> bool:
         return bool([j for j in self._jobs if j.isRunning])
@@ -163,12 +173,14 @@ class BackgroundRunner(QtCore.QAbstractItemModel):
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         # check for messages in the message queue
+        logger.debug('Entering timerEvent handler')
         t0 = time.monotonic()
         for i in range(self.maxReadMsgCount):  # do not hog the main loop
             messagesread = False
             for row, j in enumerate(self._runningjobs):
                 try:
                     message = j.messageQueue.get_nowait()
+                    j.messageQueue.task_done()
                     messagesread = True
                 except queue.Empty:
                     # there are no messages waiting.
@@ -192,6 +204,7 @@ class BackgroundRunner(QtCore.QAbstractItemModel):
                 self._runningjobs.remove(j)
         if not self._runningjobs:
             # all jobs are finished: stop the timer and notify about the finish. The pool is kept running.
+            logger.debug('Killing timerEvent handler.')
             self.killTimer(self._timerid)
             self.finished.emit()
         # emit an all-over dataChanged signal to keep all progress bars scrolling
@@ -203,3 +216,6 @@ class BackgroundRunner(QtCore.QAbstractItemModel):
         if item == 'maxjobs':
             self._stopPool()
             self._startPool()
+
+    def finalize(self):
+        self._stopPool()
