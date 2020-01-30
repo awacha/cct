@@ -1,5 +1,6 @@
 import datetime
 import gc
+import logging
 
 import matplotlib.cm
 import matplotlib.colors
@@ -13,6 +14,9 @@ from matplotlib.figure import Figure
 from sastool.classes2 import Exposure
 
 from .plotimage_ui import Ui_Form
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 def get_colormaps():
@@ -36,26 +40,34 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
 
     @classmethod
     def get_lastinstance(cls):
+        logger.debug('Getting last instance of PlotImage')
         if not cls.lastinstances:
             return cls()
         else:
             obj = cls.lastinstances[-1]
             try:
                 assert isinstance(obj, cls)
+                logger.debug('About to get window title')
                 obj.windowTitle()
+                logger.debug('Got windowTitle -> object is still alive')
                 return obj
             except RuntimeError:
+                logger.debug('Failed getting windowTitle -> underlying C/C++ object has been deleted.')
                 # wrapped C/C++ object of type PlotImage has been deleted
                 cls.lastinstances.remove(obj)
                 # try again
+                logger.debug('Trying again.')
                 return cls.get_lastinstance()
 
     def closeEvent(self, event: QtGui.QCloseEvent):
+        logger.debug('Closing a PlotImage.')
         try:
             type(self).lastinstances.remove(self)
         except ValueError:
             pass
+        logger.debug('Removed ourselves from the last instances list')
         event.accept()
+        logger.debug('Close event accepted.')
 
     def _testimage(self):
         header = sastool.io.credo_cct.Header(
