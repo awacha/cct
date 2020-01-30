@@ -45,7 +45,7 @@ class SubtractingJob(BackgroundProcedure):
             with self.h5WriterLock:
                 self.sendProgress('Loading exposures')
                 with h5py.File(self.h5file, 'r+') as f:
-#                    f.swmr_mode = True
+                    #                    f.swmr_mode = True
                     sampledistancekeys = list(f['Samples'][self.samplename].keys())
                     backgrounddistancekeys = list(f['Samples'][self.backgroundname].keys())
                     for dist in sorted(sampledistancekeys):
@@ -163,10 +163,11 @@ class SubtractingJob(BackgroundProcedure):
                             raise ProcessingError(
                                 'Shape mismatch between {} and {} (distance {})'.format(self.samplename,
                                                                                         self.backgroundname, dist))
-                        if np.nanmax(np.abs(curvesample[:, 0] - curvebg[:, 0])) > 0.001:
+                        qmaxmismatch = np.nanmax(np.abs(curvesample[:, 0] - curvebg[:, 0]))
+                        if qmaxmismatch > 0.001:
                             raise ProcessingError(
-                                'Q-range mismatch between {} and {} (distance {})'.format(self.samplename,
-                                                                                          self.backgroundname, dist))
+                                'Q-range mismatch between {} and {} (distance {}; max. mismatch: {})'.format(
+                                    self.samplename, self.backgroundname, dist, qmaxmismatch))
                         g.create_dataset('curve_averaged', curvesample.shape, compression=self.h5compression,
                                          dtype=curvesample.dtype)
                         g['curve_averaged'][:, 0] = 0.5 * (curvesample[:, 0] + curvebg[:, 0])
