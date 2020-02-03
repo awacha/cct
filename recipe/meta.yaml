@@ -42,7 +42,7 @@ requirements:
     - krb5
     - scipy
     - matplotlib
-    - sastool >=1.1.5
+    - sastool >=1.2.3
     - pyqt >=5
     - openpyxl
     - sqlalchemy

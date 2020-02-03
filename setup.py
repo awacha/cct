@@ -2,11 +2,10 @@
 import os
 import sys
 
+import codegenerator
 from Cython.Build import cythonize
 from numpy import get_include
 from setuptools import setup, find_packages, Extension
-
-import codegenerator
 
 try:
     from PyQt5.uic import compileUi
@@ -72,7 +71,7 @@ setup(name='cct', author='Andras Wacha',
       setup_requires=['setuptools_scm'],
       #      cmdclass = {'build_ext': build_ext},
       ext_modules=cythonize(extensions),
-      install_requires=['appdirs', 'numpy>=1.4.1', 'scipy>=1.0.0', 'matplotlib>=3.0.0', 'sastool>=1.2.3',
+      install_requires=['appdirs', 'numpy>=1.15.0', 'scipy>=1.0.0', 'matplotlib>=3.0.0', 'sastool>=1.2.3',
                         'pymodbustcp>=0.0.13', 'psutil>=4.1.0', 'h5py', 'pillow', 'openpyxl', 'sqlalchemy',
                         'adjusttext', 'imageio'],
       entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run',
