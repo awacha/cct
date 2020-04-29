@@ -67,6 +67,7 @@ configitems = {
         'sanitizecurves': ConfigItem('bool', 'True', 'remove invalid points from the curves', None),
         'customqlogscale': ConfigItem('bool', 'True', 'use log-spaced points in the custom q-range', None),
         'autoq': ConfigItem('bool', 'True', 'if q-range is to be auto-determined', None),
+        'customq': ConfigItem('bool', 'False', 'if q-range is given by hand', None),
         'outliermethod': ConfigItem('str', 'Interquartile Range', 'Method for finding outliers',
                                     ['Z-score', 'Modified Z-score', 'Interquartile Range']),
         'subtraction': ConfigItem('str', '', 'Information on subtraction', None),

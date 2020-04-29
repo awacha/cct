@@ -15,7 +15,7 @@ class ProcessingSettings(QtWidgets.QWidget, Ui_Form, SettingsPage):
             (self.outlierSearchMethodComboBox, 'outliermethod'),
             (self.outlierSearchMultiplierDoubleSpinBox, 'std_multiplier'),
             (self.logarithmicCorrelMatrixCheckBox, 'logcorrelmatrix'),
-            (self.autoQRangeCheckBox, 'autoq'),
+            (self.customQRangeCheckBox, 'customq'),
             (self.qminDoubleSpinBox, 'customqmin'),
             (self.qmaxDoubleSpinBox, 'customqmax'),
             (self.numQRamgeSpinBox, 'customqcount'),

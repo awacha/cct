@@ -144,9 +144,9 @@
      </property>
      <layout class="QFormLayout" name="formLayout_3">
       <item row="0" column="0" colspan="2">
-       <widget class="QCheckBox" name="autoQRangeCheckBox">
+       <widget class="QCheckBox" name="customQRangeCheckBox">
         <property name="text">
-         <string>Auto-determine from geometry</string>
+         <string>Custom q-scale</string>
         </property>
        </widget>
       </item>
@@ -179,13 +179,31 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="qminDoubleSpinBox"/>
+       <widget class="QDoubleSpinBox" name="qminDoubleSpinBox">
+        <property name="decimals">
+         <number>4</number>
+        </property>
+        <property name="maximum">
+         <double>9999.999900000000707</double>
+        </property>
+       </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QDoubleSpinBox" name="qmaxDoubleSpinBox"/>
+       <widget class="QDoubleSpinBox" name="qmaxDoubleSpinBox">
+        <property name="decimals">
+         <number>4</number>
+        </property>
+        <property name="maximum">
+         <double>9999.999900000000707</double>
+        </property>
+       </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QSpinBox" name="numQRamgeSpinBox"/>
+       <widget class="QSpinBox" name="numQRamgeSpinBox">
+        <property name="maximum">
+         <number>99999999</number>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -229,10 +247,10 @@
  <resources/>
  <connections>
   <connection>
-   <sender>autoQRangeCheckBox</sender>
+   <sender>customQRangeCheckBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>qminDoubleSpinBox</receiver>
-   <slot>setDisabled(bool)</slot>
+   <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>82</x>
@@ -245,10 +263,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>autoQRangeCheckBox</sender>
+   <sender>customQRangeCheckBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>qmaxDoubleSpinBox</receiver>
-   <slot>setDisabled(bool)</slot>
+   <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>43</x>
@@ -261,10 +279,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>autoQRangeCheckBox</sender>
+   <sender>customQRangeCheckBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>numQRamgeSpinBox</receiver>
-   <slot>setDisabled(bool)</slot>
+   <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>64</x>
@@ -277,10 +295,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>autoQRangeCheckBox</sender>
+   <sender>customQRangeCheckBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>logQRangeCheckBox</receiver>
-   <slot>setDisabled(bool)</slot>
+   <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>28</x>

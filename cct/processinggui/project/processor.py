@@ -31,7 +31,7 @@ class ProcessingJobRecord(JobRecord):
 
     def submit(self, jobid: int, pool: Pool, project: "Project"):
         super().submit(jobid, pool, project)
-        if project.config.autoq:
+        if project.config.customq:
             if project.config.customqlogscale:
                 qrange = np.logspace(np.log10(project.config.customqmin), np.log10(project.config.customqmax),
                                      project.config.customqcount)
