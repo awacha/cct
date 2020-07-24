@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>640</width>
+    <height>304</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>X-ray source</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../resource/icons/icons.qrc">
+    <normaloff>:/icons/xraysource.svg</normaloff>:/icons/xraysource.svg</iconset>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Status</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="1">
+       <widget class="QLabel" name="statusLabel">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLCDNumber" name="voltageLcdNumber">
+        <property name="digitCount">
+         <number>7</number>
+        </property>
+        <property name="value" stdset="0">
+         <double>45.500000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Current (mA):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLCDNumber" name="currentLcdNumber">
+        <property name="digitCount">
+         <number>7</number>
+        </property>
+        <property name="value" stdset="0">
+         <double>20.300000000000001</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Voltage (kV):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Status:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Power (W):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLCDNumber" name="powerLcdNumber">
+        <property name="digitCount">
+         <number>7</number>
+        </property>
+        <property name="value" stdset="0">
+         <double>30.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>Tube uptime (h):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLCDNumber" name="uptimeLcdNumber">
+        <property name="digitCount">
+         <number>7</number>
+        </property>
+        <property name="value" stdset="0">
+         <double>245.530000000000001</double>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Tube temperature (°C):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLCDNumber" name="temperatureLcdNumber">
+        <property name="digitCount">
+         <number>7</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>Flags</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="4" column="0">
+       <widget class="QLabel" name="shutterLightsFlag">
+        <property name="text">
+         <string>Shutter lights</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="remoteControlFlag">
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Remote control</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="waterCoolingFlag">
+        <property name="text">
+         <string>Water cooling</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="overriddenFlag">
+        <property name="text">
+         <string>Overridden</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLabel" name="opticsVacuumFlag">
+        <property name="text">
+         <string>Optics vacuum</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="interlockFlag">
+        <property name="text">
+         <string>Interlock</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="warmupFlag">
+        <property name="text">
+         <string>Warm-up needed</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLabel" name="tubePositionFlag">
+        <property name="text">
+         <string>Tube position</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="shutterMechanicsFlag">
+        <property name="text">
+         <string>Shutter mechanism</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QLabel" name="tubeTemperatureFlag">
+        <property name="text">
+         <string>Tube temperature</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="shutterStateFlag">
+        <property name="text">
+         <string>Shutter open</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="xraysOnFlag">
+        <property name="text">
+         <string>X-rays on</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="interlockRelayFlag">
+        <property name="text">
+         <string>Interlock relay</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QLabel" name="doorSensorFlag">
+        <property name="text">
+         <string>Door sensor</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QLabel" name="filamentFlag">
+        <property name="text">
+         <string>Filament</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="1">
+       <widget class="QLabel" name="canRampUpFlag">
+        <property name="text">
+         <string>Can ramp-up</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0">
+       <widget class="QLabel" name="sensor1Flag">
+        <property name="text">
+         <string>Sensor #1</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="1">
+       <widget class="QLabel" name="sensor2Flag">
+        <property name="text">
+         <string>Sensor #2</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="faultsFlag">
+        <property name="text">
+         <string>Faults</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="xrayLightsFlag">
+        <property name="text">
+         <string>X-ray lights</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="widget" native="true">
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QPushButton" name="resetFaultsPushButton">
+        <property name="text">
+         <string>Reset faults</string>
+        </property>
+        <property name="icon">
+         <iconset theme="view-refresh">
+          <normaloff>.</normaloff>.</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="xraysOnPushButton">
+        <property name="text">
+         <string>X-rays On</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../../../resource/icons/icons.qrc">
+          <normaloff>:/icons/radiation.svg</normaloff>:/icons/radiation.svg</iconset>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="warmUpPushButton">
+        <property name="text">
+         <string>Warm up</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="shutterPushButton">
+        <property name="text">
+         <string>Shutter</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../../../resource/icons/icons.qrc">
+          <normaloff>:/icons/beamshutter.svg</normaloff>:/icons/beamshutter.svg</iconset>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="powerOffPushButton">
+        <property name="text">
+         <string>Power off</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="standbyPushButton">
+        <property name="text">
+         <string>Standby</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../../../resource/icons/icons.qrc">
+          <normaloff>:/icons/standby.svg</normaloff>:/icons/standby.svg</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="fullPowerPushButton">
+        <property name="text">
+         <string>Full power</string>
+        </property>
+        <property name="icon">
+         <iconset resource="../../../resource/icons/icons.qrc">
+          <normaloff>:/icons/fullpower.svg</normaloff>:/icons/fullpower.svg</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../../../resource/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>
