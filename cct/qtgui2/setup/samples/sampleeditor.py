@@ -52,6 +52,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             lockbutton = widgets[-1]
             assert isinstance(lockbutton, QtWidgets.QToolButton)
             lockbutton.toggled.connect(self.onLockButtonToggled)
+            lockbutton.setIcon(QtGui.QIcon.fromTheme('unlock'))
             if (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QLineEdit):
                 widgets[0].editingFinished.connect(self.onLineEditEditingFinished)
             elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QPlainTextEdit):
@@ -70,11 +71,13 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.maskOverridePushButton.clicked.connect(self.browseMask)
         self.todayPushButton.clicked.connect(self.setToday)
         self.resizeTreeViewColumns()
-        self._sampleeditordelegate= SampleEditorDelegate(self.treeView)
+        self._sampleeditordelegate = SampleEditorDelegate(self.treeView)
         self.treeView.setItemDelegate(self._sampleeditordelegate)
         self.addSamplePushButton.clicked.connect(self.addSample)
         self.removeSamplePushButton.clicked.connect(self.removeSample)
         self.duplicateSamplePushButton.clicked.connect(self.duplicateSample)
+        self.removeSamplePushButton.setEnabled(False)
+        self.duplicateSamplePushButton.setEnabled(False)
 
     def addSample(self):
         samplename = self.instrument.samplestore.addSample('Untitled')
@@ -105,7 +108,11 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.preparationDateDateEdit.setDate(QtCore.QDate.currentDate())
 
     def browseMask(self):
-        pass
+        maskfile, filter_ = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Select mask file', '', 'Mask files (*.mat; *.npy);;All files (*)', 'Mask files (*.mat; *.npy)')
+        if not maskfile:
+            return
+        self.maskOverrideLineEdit.setText(maskfile)
 
     def changeSample(self, attribute: str, newvalue: Any):
         logger.debug(f'changeSample: {attribute}, {newvalue}')
@@ -125,7 +132,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 QtCore.QItemSelectionModel.Rows)
             focusedwidget.setFocus()
 
-    def attributeForWidget(self, widget: Optional[QtWidgets.QWidget]=None):
+    def attributeForWidget(self, widget: Optional[QtWidgets.QWidget] = None):
         if widget is None:
             widget = self.sender()
         assert isinstance(widget, QtWidgets.QWidget)
@@ -164,7 +171,8 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             logger.debug('Not setting duplicate title.')
             if self.currentSample().title != text:
                 # re-set the title editor
-                QtWidgets.QMessageBox.warning(self, 'Duplicate title', f'Another sample with title {text} already exists.')
+                QtWidgets.QMessageBox.warning(self, 'Duplicate title',
+                                              f'Another sample with title {text} already exists.')
                 self.sender().setText(self.currentSample().title)
         else:
             self.changeSample(attr, text)
@@ -177,6 +185,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         attrname = [a for a, ws in self._sampleproperty2widgets.items() if lockbutton.objectName() in ws][0]
         currentsample = self.currentSample()
         setattr(currentsample, attrname, LockState.LOCKED if state else LockState.UNLOCKED)
+        self.removeSamplePushButton.setEnabled(not currentsample.isLocked('title'))
         self.instrument.samplestore.updateSample(currentsample.title, currentsample)
         self.treeView.selectionModel().setCurrentIndex(
             self.instrument.samplestore.findSample(currentsample.title),
@@ -192,10 +201,14 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def currentSampleSelected(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
         logger.debug('currentSampleSelected')
         if not current.isValid():
+            self.removeSamplePushButton.setEnabled(False)
+            self.duplicateSamplePushButton.setEnabled(False)
             self.frame.setEnabled(False)
             return
+        self.duplicateSamplePushButton.setEnabled(True)
         self.frame.setEnabled(True)
         sample = self.instrument.samplestore[current.row()]
+        self.removeSamplePushButton.setEnabled(not sample.isLocked('title'))
         for attribute, widgetnames in self._sampleproperty2widgets.items():
             widgets = [getattr(self, wn) for wn in widgetnames]
             for w in widgets:
@@ -229,6 +242,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 else:
                     assert False
                 widgets[-1].setChecked(sample.isLocked(attribute))
+                widgets[-1].setIcon(QtGui.QIcon.fromTheme('lock' if sample.isLocked(attribute) else 'unlock'))
             finally:
                 for w in widgets:
                     w.blockSignals(False)

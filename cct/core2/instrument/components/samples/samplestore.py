@@ -5,6 +5,7 @@ from typing import List, Any, Optional, Union
 
 from PyQt5 import QtCore, QtGui
 
+from .descriptors import LockState
 from .sample import Sample
 from ..component import Component
 
@@ -162,21 +163,27 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             i = 0
             while f'{title}_copy{i}' in self:
                 i += 1
+            dupname = f'{title}_copy{i}'
+        assert isinstance(dupname, str)
         if dupname in self:
             raise ValueError('Sample name already exists.')
+        logger.warning(dupname)
         comesbefore = [i for (i, sam) in enumerate(self._samples) if sam.title.upper() < dupname.upper()]
         row = max(comesbefore + [-1]) + 1
         self.beginInsertRows(QtCore.QModelIndex(), row, row + 1)
-        cpy = Sample(self[title])
+        cpy = copy.copy(self[title])
+        cpy.title = LockState.UNLOCKED
         cpy.title = dupname
-        self._samples.append(cpy)
+        self._samples.insert(row, cpy)
         self.endInsertRows()
         self.sampleListChanged.emit()
         self.saveToConfig()
-        return title
+        return dupname
 
     def removeSample(self, title: str):
         idx = self._samples.index(self[title])
+        if self._samples[idx].isLocked('title'):
+            raise ValueError('Cannot delete protected sample.')
         self.beginRemoveRows(QtCore.QModelIndex(), idx, idx)
         del self._samples[idx]
         self.endRemoveRows()
