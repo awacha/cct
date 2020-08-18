@@ -3,6 +3,7 @@ import logging
 from PyQt5 import QtCore
 
 from .components.beamstop import BeamStop
+from .components.calibrants.calibrants import CalibrantStore
 from .components.devicemanager import DeviceManager
 from .components.geometry.geometry import Geometry
 from .components.interpreter import Interpreter
@@ -24,6 +25,7 @@ class Instrument(QtCore.QObject):
     motors: Motors
     devicemanager: DeviceManager
     geometry: Geometry
+    calibrants: CalibrantStore
     stopping: bool = False
     running: bool = False
     shutdown = QtCore.pyqtSignal()
@@ -45,6 +47,7 @@ class Instrument(QtCore.QObject):
         self.beamstop = BeamStop(config=self.config, instrument=self)
         self.devicemanager.stopped.connect(self.onDeviceManagerStopped)
         self.geometry = Geometry(config=self.config, instrument=self)
+        self.calibrants = CalibrantStore(config=self.config, instrument=self)
 
     #        self.start()
 

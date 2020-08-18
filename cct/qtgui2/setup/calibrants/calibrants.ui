@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>803</width>
+    <height>478</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Calibrant Database</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../resource/icons/icons.qrc">
+    <normaloff>:/icons/calibration.svg</normaloff>:/icons/calibration.svg</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QTreeView" name="calibrantsTreeView">
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="uniformRowHeights">
+        <bool>true</bool>
+       </property>
+       <property name="allColumnsShowFocus">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QToolButton" name="addCalibrantToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Add</string>
+         </property>
+         <property name="icon">
+          <iconset theme="list-add"/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="removeCalibrantToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Remove</string>
+         </property>
+         <property name="icon">
+          <iconset theme="list-remove"/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="browseDataFileToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Find data file</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-open"/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="editPeaksToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Peaks...</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-edit"/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>calibrantsTreeView</tabstop>
+  <tabstop>addCalibrantToolButton</tabstop>
+  <tabstop>removeCalibrantToolButton</tabstop>
+  <tabstop>browseDataFileToolButton</tabstop>
+  <tabstop>editPeaksToolButton</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../../../resource/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>
