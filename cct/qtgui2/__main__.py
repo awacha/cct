@@ -14,6 +14,8 @@ logging.root.setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+logging.getLogger('matplotlib').setLevel(logging.INFO)
+#logging.getLogger('matplotlib.font_manager').setLevel(logging.INFO)
 handler = colorlog.StreamHandler()
 handler.setFormatter(colorlog.ColoredFormatter(
     '%(log_color)s%(asctime)s %(levelname)s:%(name)s:%(message)s'
@@ -28,11 +30,12 @@ def excepthook(exctype, exc, tb):
 
 @click.command()
 @click.option('--config', default='config/cct.pickle', help='Config file')
-def main(config:str):
+@click.option('--online', default=False, help='Connect to devices', type=bool, is_flag=True)
+def main(config:str, online: bool):
     sys.excepthook = excepthook
     app = QtWidgets.QApplication(sys.argv)
     logger.debug('Instantiating Instrument()')
-    instrument = Instrument(configfile=config)
+    instrument = Instrument(configfile=config, online=online)
     mw = MainWindow(instrument=instrument)
     mw.show()
     instrument.start()
