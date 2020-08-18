@@ -4,6 +4,7 @@ from PyQt5 import QtCore
 
 from .components.beamstop import BeamStop
 from .components.devicemanager import DeviceManager
+from .components.geometry.geometry import Geometry
 from .components.interpreter import Interpreter
 from .components.io import IO
 from .components.motors import Motors
@@ -22,12 +23,16 @@ class Instrument(QtCore.QObject):
     samplestore: SampleStore
     motors: Motors
     devicemanager: DeviceManager
-    stopping: bool=False
-    running: bool=False
+    geometry: Geometry
+    stopping: bool = False
+    running: bool = False
     shutdown = QtCore.pyqtSignal()
+    online: bool = False
 
-    def __init__(self, configfile: str):
+    def __init__(self, configfile: str, online: bool):
         super().__init__()
+        self.online = online
+        logger.info(f'Running {"on-line" if online else "off-line"}')
         self.config = Config(autosave=True)
         self.createDefaultConfig()
         logger.debug(f'Using config file {configfile}')
@@ -39,13 +44,15 @@ class Instrument(QtCore.QObject):
         self.interpreter = Interpreter(config=self.config, instrument=self)
         self.beamstop = BeamStop(config=self.config, instrument=self)
         self.devicemanager.stopped.connect(self.onDeviceManagerStopped)
+        self.geometry = Geometry(config=self.config, instrument=self)
 
     #        self.start()
 
     def start(self):
         logger.info('Starting Instrument')
         self.running = True
-        self.devicemanager.connectDevices()
+        if self.online:
+            self.devicemanager.connectDevices()
 
     def stop(self):
         logger.info('Stopping Instrument')
@@ -90,3 +97,13 @@ class Instrument(QtCore.QObject):
 
         }
         self.config['motors'] = {}
+        self.config['geometry'] = {
+            'choices': {
+                'spacers': [],
+                'flightpipes': [],
+                'beamstops': [],
+                'pinholes': {1: [], 2: [], 3: []}},
+            'dist_source_ph1': 0,
+            'dist_ph3_sample': 0,
+            'dist_det_beamstop': 0,
+        }

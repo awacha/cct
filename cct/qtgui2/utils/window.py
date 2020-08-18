@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Any, Set
+from typing import List, Optional, Any, Set, Tuple
 
 from ...core2.devices.device.frontend import DeviceFrontend
 from ...core2.instrument.components.motors import Motor
@@ -47,6 +47,7 @@ class WindowRequiresDevices:
             m.moving.connect(self.onMotorMoving)
             m.variableChanged.connect(self.onVariableChanged)
         logger.debug(f'Connected {len(motors)} motors')
+        self.instrument.config.changed.connect(self.onConfigChanged)
 
     @classmethod
     def canOpen(cls, instrument: Instrument) -> bool:
@@ -117,4 +118,7 @@ class WindowRequiresDevices:
         pass
 
     def onMotorPositionChanged(self, newposition: float):
+        pass
+
+    def onConfigChanged(self, path: Tuple[str, ...], newvalue: Any):
         pass

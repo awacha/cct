@@ -6,13 +6,14 @@ from ...config import Config
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 class Component:
     """Logical component of an instrument"""
     config: Config
     instrument: "Instrument"
 
     def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PyQt5/multiinheritance.html
-#        super().__init__(**kwargs)
+        #        super().__init__(**kwargs)
         logger.debug('Initializing a component')
         self.config = kwargs['config']
         self.config.changed.connect(self.onConfigChanged)

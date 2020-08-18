@@ -8,6 +8,7 @@ from .logviewer_text import LogViewerText
 from .mainwindow_ui import Ui_MainWindow
 from ..devices.genix.genix import GeniXTool
 from ..devices.motors.motorview import MotorView
+from ..setup.geometry.geometry import GeometryEditor
 from ..setup.samples.sampleeditor import SampleEditor
 from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.instrument import Instrument
@@ -24,6 +25,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionX_ray_source': GeniXTool,
         'actionMotors': MotorView,
         'actionSample_editor': SampleEditor,
+        'actionGeometry_editor': GeometryEditor,
     }
     _windows: Dict[str, QtWidgets.QWidget]
 
