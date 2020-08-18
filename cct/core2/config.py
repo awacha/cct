@@ -23,35 +23,46 @@ class Config(QtCore.QObject):
 
     """
 
+
     changed = QtCore.pyqtSignal(object, object)
     autosave: bool=False
     filename: Optional[str] = None
     _data: Dict[str, Any]
+    _autosaveinhibited: bool = False
+    _modificationcount: int = 0
 
     def __init__(self, dicorfile: Union[None, Dict[str, Any], str] = None, autosave: bool=False):
         super().__init__()
+        logger.debug('Created a Config instance.')
         self._data = {}
         if dicorfile is None:
             pass
         elif isinstance(dicorfile, dict):
-            self.fromDict({} if dicorfile is None else dicorfile.copy())
+            self.__setstate__({} if dicorfile is None else dicorfile.copy())
         elif isinstance(dicorfile, str):
             self.load(dicorfile)
         self.autosave = autosave
         self.changed.connect(self.onChanged)
 
     def onChanged(self, path: Tuple[str, ...], value: Any):
-        if self.autosave and (self.filename is not None):
+        if self.autosave and (self.filename is not None) and (not self._autosaveinhibited):
             self.save(self.filename)
 
-    def __setitem__(self, key: str, value: Any):
+    def __setitem__(self, key: Union[str, Tuple[str]], value: Any):
         logger.debug(f'Config.__setitem__({key})')
+        if isinstance(key, tuple) and len(key) > 1:
+            subconfig = self._data[key[0]]
+            assert isinstance(subconfig, Config)
+            return subconfig.__setitem__(key[1:], value)
+        elif isinstance(key, tuple) and len(key) == 1:
+            key = key[0]
+        elif isinstance(key, tuple) and len(key) == 0:
+            raise ValueError('Empty tuples cannot be Config keys!')
         if not isinstance(value, dict):
             if key not in self._data:
                 logger.debug('   creating a non-dict item.')
                 self._data[key] = value
                 self.changed.emit((key,), value)
-                return
             else:
                 # key already present, see if they are different
                 if self._data[key] != value:
@@ -75,6 +86,7 @@ class Config(QtCore.QObject):
             else:
                 # setting the same config: do nothing.
                 pass
+        self._modificationcount += 1
 
     def __delitem__(self, key: Union[str, Tuple[str, ...]]):
         logger.debug(f'Deleting key {key}')
@@ -88,9 +100,12 @@ class Config(QtCore.QObject):
         if isinstance(dic._data[key[-1]], Config):
             dic._data[key[-1]].changed.disconnect(self._subConfigChanged)
         del dic._data[key[-1]]
+        self._modificationcount += 1
 
     def __getitem__(self, item: Union[str, Tuple[str, ...]]):
         if isinstance(item, str):
+            return self._data[item]
+        elif isinstance(item, int):
             return self._data[item]
         else:
             dic = self
@@ -98,11 +113,12 @@ class Config(QtCore.QObject):
                 dic = dic[key]
             return dic
 
-    def asdict(self) -> Dict[str, Any]:
+    def __getstate__(self) -> Dict[str, Any]:
         dic = {}
         for k in self:
+            logger.debug(f'In __getstate__: {k}. Keys in self: {list(self.keys())}')
             if isinstance(self[k], Config):
-                dic[k] = self[k].asdict()
+                dic[k] = self[k].__getstate__()
             else:
                 dic[k] = self[k]
         return dic
@@ -127,6 +143,7 @@ class Config(QtCore.QObject):
         else:
             # extend the path with the key and re-emit the signal.
             self.changed.emit((key,) + path, newvalue)
+            self._modificationcount += 1
 
     def update(self, other: Union["Config", Dict]):
         for key in other:
@@ -145,20 +162,22 @@ class Config(QtCore.QObject):
             return item[-1] in dic
 
     def load(self, picklefile: PathLike):
-        #logger.debug(f'Loading configuration from {picklefile}')
+        logger.debug(f'Loading configuration from {picklefile}')
         with open(picklefile, 'rb') as f:
             data = pickle.load(f)
-        self.fromDict(data)
+        logger.debug('Loaded a pickle file')
+        self.__setstate__(data)
         logger.info(f'Loaded configuration from {picklefile}')
         self.filename = picklefile
 
     def save(self, picklefile: PathLike):
         #logger.debug(f'Saving configuration to {picklefile}')
         with open(picklefile, 'wb') as f:
-            pickle.dump(self.asdict(), f)
+            pickle.dump(self.__getstate__(), f)
         logger.info(f'Saved configuration to {picklefile}')
 
-    def fromDict(self, dic: Dict[str, Any]):
+    def __setstate__(self, dic: Dict[str, Any]):
+        logger.debug('Loading config from a dictionary')
         self._data = dic
         for key in self._data:
             # convert dictionaries to `Config` instances and connect to their changed signals.
@@ -166,6 +185,27 @@ class Config(QtCore.QObject):
                 self._data[key] = Config(self._data[key])
                 self._data[key].changed.connect(self._subConfigChanged)
 
-    def __str__(self):
-        return str(self.asdict())
+    asdict = __getstate__
 
+    def __str__(self):
+        return str(self.__getstate__())
+
+    def inhibitAutoSave(self):
+        self._autosaveinhibited = True
+        self._modificationcount = 0
+
+    def enableAutoSave(self):
+        if self._autosaveinhibited and self._modificationcount and (self.filename is not None):
+            self.save(self.filename)
+        self._autosaveinhibited = False
+        self._modificationcount = 0
+
+    def __len__(self):
+        return len(self._data)
+
+    def setdefault(self, key: str, value: Any) -> Any:
+        try:
+            return self._data[key]
+        except KeyError:
+            self[key]=value
+            return self[key]
