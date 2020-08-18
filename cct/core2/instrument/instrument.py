@@ -17,6 +17,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class Instrument(QtCore.QObject):
+    _singleton_instance: "Instrument" = None
     config: Config
     io: IO
     beamstop: BeamStop
@@ -30,6 +31,12 @@ class Instrument(QtCore.QObject):
     running: bool = False
     shutdown = QtCore.pyqtSignal()
     online: bool = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._singleton_instance is not None:
+            raise RuntimeError('Cannot instantiate more than one Instrument instance.')
+        cls._singleton_instance = cls(*args, **kwargs)
+        return cls
 
     def __init__(self, configfile: str, online: bool):
         super().__init__()
@@ -110,3 +117,7 @@ class Instrument(QtCore.QObject):
             'dist_ph3_sample': 0,
             'dist_det_beamstop': 0,
         }
+
+    @classmethod
+    def instance(cls) -> "Instrument":
+        return cls._singleton_instance
