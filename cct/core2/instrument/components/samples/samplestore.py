@@ -130,6 +130,10 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
 
     def saveToConfig(self):
         self.config.blockSignals(True)
+        if 'samplestore' not in self.config['services']:
+            self.config['services']['samplestore'] = {}
+        if 'list' not in self.config['services']['samplestore']:
+            self.config['services']['samplestore']['list'] = {}
         for sample in self._samples:
             self.config['services']['samplestore']['list'][sample.title] = sample.todict()
         sampletitles = [s.title for s in self._samples]
