@@ -9,7 +9,7 @@ from PyQt5 import QtCore
 PathLike = Union[os.PathLike, str, pathlib.Path]
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Config(QtCore.QObject):
@@ -33,14 +33,13 @@ class Config(QtCore.QObject):
 
     def __init__(self, dicorfile: Union[None, Dict[str, Any], str] = None, autosave: bool=False):
         super().__init__()
-        logger.debug('Created a Config instance.')
         self._data = {}
         if dicorfile is None:
             pass
         elif isinstance(dicorfile, dict):
             self.__setstate__({} if dicorfile is None else dicorfile.copy())
         elif isinstance(dicorfile, str):
-            self.load(dicorfile)
+            self.load(dicorfile, update=False)
         self.autosave = autosave
         self.changed.connect(self.onChanged)
 
@@ -49,7 +48,6 @@ class Config(QtCore.QObject):
             self.save(self.filename)
 
     def __setitem__(self, key: Union[str, Tuple[str]], value: Any):
-        logger.debug(f'Config.__setitem__({key})')
         if isinstance(key, tuple) and len(key) > 1:
             subconfig = self._data[key[0]]
             assert isinstance(subconfig, Config)
@@ -60,28 +58,24 @@ class Config(QtCore.QObject):
             raise ValueError('Empty tuples cannot be Config keys!')
         if not isinstance(value, dict):
             if key not in self._data:
-                logger.debug('   creating a non-dict item.')
                 self._data[key] = value
                 self.changed.emit((key,), value)
             else:
                 # key already present, see if they are different
                 if self._data[key] != value:
-                    logger.debug('   updating a non-dict item.')
                     self._data[key] = value
                     # value changed, emit the signal
                     self.changed.emit((key, ), value)
                 else:
-                    logger.debug('   not updating an unchanged non-dict item.')
+                    pass
         else:
             # convert it to a Config instance
             cnf = Config(value)
             if (key not in self._data) or (not isinstance(self._data[key], Config)):
-                logger.debug('   creating a config item')
                 self._data[key] = cnf
                 self._data[key].changed.connect(self._subConfigChanged)
                 self.changed.emit((key,), cnf)
             elif cnf is not self._data[key]:
-                logger.debug('   updating an existing config item')
                 self._data[key].update(cnf)
             else:
                 # setting the same config: do nothing.
@@ -116,7 +110,7 @@ class Config(QtCore.QObject):
     def __getstate__(self) -> Dict[str, Any]:
         dic = {}
         for k in self:
-            logger.debug(f'In __getstate__: {k}. Keys in self: {list(self.keys())}')
+#            logger.debug(f'In __getstate__: {k}. Keys in self: {list(self.keys())}')
             if isinstance(self[k], Config):
                 dic[k] = self[k].__getstate__()
             else:
@@ -147,7 +141,17 @@ class Config(QtCore.QObject):
 
     def update(self, other: Union["Config", Dict]):
         for key in other:
-            self[key] = other[key]
+            logger.debug(f'Updating {key=}')
+            if isinstance(other[key], Config) or isinstance(other[key], dict):
+                if (key in self) and isinstance(self[key], Config):
+                    logger.debug(f'Key {key} is a Config')
+                    self[key].update(other[key])
+                else:
+                    logger.debug(f'scalar -> dict of key {key}')
+                    self[key] = other[key]
+            else:
+                logger.debug(f'simple update of key {key}')
+                self[key] = other[key]
 
     def __iter__(self):
         return self._data.__iter__()
@@ -161,12 +165,17 @@ class Config(QtCore.QObject):
                 dic = dic[key]
             return item[-1] in dic
 
-    def load(self, picklefile: PathLike):
-        logger.debug(f'Loading configuration from {picklefile}')
-        with open(picklefile, 'rb') as f:
-            data = pickle.load(f)
-        logger.debug('Loaded a pickle file')
-        self.__setstate__(data)
+    def load(self, picklefile: PathLike, update: bool=True):
+        if not update:
+            logger.debug(f'Loading configuration from {picklefile}')
+            with open(picklefile, 'rb') as f:
+                data = pickle.load(f)
+            logger.debug('Loaded a pickle file')
+            self.__setstate__(data)
+        else:
+            logger.debug(f'Loading configuration with update')
+            other = Config(picklefile)
+            self.update(other)
         logger.info(f'Loaded configuration from {picklefile}')
         self.filename = picklefile
 
@@ -177,7 +186,6 @@ class Config(QtCore.QObject):
         logger.info(f'Saved configuration to {picklefile}')
 
     def __setstate__(self, dic: Dict[str, Any]):
-        logger.debug('Loading config from a dictionary')
         self._data = dic
         for key in self._data:
             # convert dictionaries to `Config` instances and connect to their changed signals.
@@ -189,6 +197,9 @@ class Config(QtCore.QObject):
 
     def __str__(self):
         return str(self.__getstate__())
+
+    def __repr__(self):
+        return repr(self.__getstate__())
 
     def inhibitAutoSave(self):
         self._autosaveinhibited = True
