@@ -77,6 +77,7 @@ class Instrument(QtCore.QObject):
             'directories': {
                 'log': 'log',
                 'images': 'images',
+                'images_local': 'images_local',
                 'param': 'param',
                 'config': 'config',
                 'mask': 'mask',
@@ -113,6 +114,7 @@ class Instrument(QtCore.QObject):
             'dist_ph3_sample': 0,
             'dist_det_beamstop': 0,
         }
+        self.config['calibrants'] = {},
 
     @classmethod
     def instance(cls) -> "Instrument":
