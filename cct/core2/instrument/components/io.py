@@ -3,7 +3,7 @@ import os
 import pathlib
 import re
 import time
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, Optional, List, Iterator
 
 import numpy as np
 from PyQt5 import QtCore
@@ -13,7 +13,7 @@ from scipy.io import loadmat
 from .component import Component
 
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.DEBUG)
 
 class IO(QtCore.QObject, Component):
     """I/O subsystem of the instrument, responsible for reading and writing files and maintaining the file sequence.
@@ -56,7 +56,7 @@ class IO(QtCore.QObject, Component):
         logger.info('Reindexing already present exposures...')
         t0 = time.monotonic()
         for subdir, extension in [
-            ('images', 'cbf'), ('param', 'param'), ('param_override', 'param'),
+            ('images', 'cbf'), ('images_local', 'cbf'), ('param', 'param'), ('param_override', 'param'),
             ('eval2d', 'npz'), ('eval1d', 'txt')]:
             # find all subdirectories in `directory`, including `directory`
             # itself
@@ -143,12 +143,19 @@ class IO(QtCore.QObject, Component):
         """Get the known file sequence prefixes"""
         return list(self._lastfsn.keys())
 
+    def iterfilename(self, subdir, prefix, fsn, extension) -> Iterator[str]:
+        filename = f'{prefix}_{fsn:0{self.config["path"]["fsndigits"]}d}{extension}'
+        yield os.path.join(subdir, prefix, filename)
+        yield os.path.join(subdir, filename)
+        yield os.path.join(subdir, f'{prefix}{fsn//10000}', filename)
+        yield os.path.join(subdir, f'{prefix}_{fsn//10000}')
+
     ### Loading exposures, headers, masks
 
     def formatFileName(self, prefix: str, fsn: int, extn: str = '') -> str:
         return f'{prefix}_{fsn:0{self.config["path"]["fsndigits"]}d}{extn}'
 
-    def loadExposure(self, prefix: str, fsn: int, raw: bool = True) -> Exposure:
+    def loadExposure(self, prefix: str, fsn: int, raw: bool = True, check_local: bool = False) -> Exposure:
         """Load an exposure
 
         :param prefix: file sequence prefix
@@ -164,9 +171,20 @@ class IO(QtCore.QObject, Component):
         expfilename = self.formatFileName(prefix, fsn, '.cbf' if raw else '.npz')
         header = self.loadHeader(prefix, fsn, raw)
         mask = self.loadMask(header.maskname)
-        for folder, dirs, files in os.walk(str(self.getSubDir('images' if raw else 'eval2d'))):
-            if expfilename in files:
-                return Exposure.new_from_file(os.path.join(folder, expfilename), header, mask)
+        if raw and check_local:
+            subdirs = ['images_local', 'images']
+        elif raw and not check_local:
+            subdirs = ['images']
+        elif not raw:
+            subdirs = ['eval2d']
+        else:
+            assert False
+        for subdir in subdirs:
+            for filename in self.iterfilename(str(self.getSubDir(subdir)), prefix, fsn, '.cbf' if raw else '.npz'):
+                try:
+                    return Exposure.new_from_file(filename, header, mask)
+                except FileNotFoundError:
+                    pass
         raise FileNotFoundError(expfilename)
 
     def loadHeader(self, prefix: str, fsn: int, raw: bool = True) -> Header:
@@ -182,12 +200,14 @@ class IO(QtCore.QObject, Component):
         :rtype: Header
         :raises FileNotFoundError: if the file could not be found
         """
-        filename = self.formatFileName(prefix, fsn, '.pickle')
         for subdir in ['param_override', 'param'] if raw else ['eval2d']:
-            for folder, dirs, files in os.walk(str(self.getSubDir(subdir))):
-                if filename in files:
-                    return Header.new_from_file(os.path.join(folder, filename))
-        raise FileNotFoundError(filename)
+            for filename in self.iterfilename(str(self.getSubDir(subdir)), prefix, fsn, '.pickle'):
+                logger.debug(f'Trying path {filename}')
+                try:
+                    return Header.new_from_file(filename)
+                except FileNotFoundError:
+                    pass
+        raise FileNotFoundError(self.formatFileName(prefix, fsn, '.pickle'))
 
     def loadMask(self, maskname: str) -> np.array:
         """Load a mask
@@ -216,6 +236,7 @@ class IO(QtCore.QObject, Component):
                 else:
                     # no extension matched, continue with the next subfolder
                     continue
+                logger.debug(f'Mask file for name {maskname} loaded from {maskfile}')
                 # we have a mask file loaded.
                 break
             else:
@@ -228,6 +249,7 @@ class IO(QtCore.QObject, Component):
             if maskfile.stat().st_mtime > mtime:
                 # the file has changed, reload
                 self._masks[maskname] = (maskfile, self._loadmask(maskfile), maskfile.stat().st_mtime)
+        return self._masks[maskname][1]
 
     @staticmethod
     def _loadmask(filename: os.PathLike) -> np.ndarray:
@@ -288,4 +310,3 @@ class IO(QtCore.QObject, Component):
             self.reindexScanfile()
         elif path[:2] == ('path', 'directories'):
             self.reindex()
-
