@@ -32,13 +32,10 @@ class Instrument(QtCore.QObject):
     shutdown = QtCore.pyqtSignal()
     online: bool = False
 
-    def __new__(cls, *args, **kwargs):
-        if cls._singleton_instance is not None:
-            raise RuntimeError('Cannot instantiate more than one Instrument instance.')
-        cls._singleton_instance = cls(*args, **kwargs)
-        return cls
-
     def __init__(self, configfile: str, online: bool):
+        if type(self)._singleton_instance is not None:
+            raise RuntimeError('Only one instance can exist from Instrument.')
+        type(self)._singleton_instance = self
         super().__init__()
         self.online = online
         logger.info(f'Running {"on-line" if online else "off-line"}')
@@ -104,7 +101,6 @@ class Instrument(QtCore.QObject):
         self.config['beamstop'] = {'in': (0.0, 0.0), 'out': (0.0, 0.0), 'motorx': 'BeamStop_X', 'motory': 'BeamStop_Y'}
         self.config['services'] = {
             'samplestore': {'list': {}, 'active': None, 'motorx': 'Sample_X', 'motory': 'Sample_Y'}
-
         }
         self.config['motors'] = {}
         self.config['geometry'] = {
