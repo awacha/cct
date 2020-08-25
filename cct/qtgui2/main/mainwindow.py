@@ -9,8 +9,10 @@ from .mainwindow_ui import Ui_MainWindow
 from ..devices.genix.genix import GeniXTool
 from ..devices.motors.motorview import MotorView
 from ..setup.calibrants.calibrants import Calibrants
+from ..setup.calibration.calibration import Calibration
 from ..setup.geometry.geometry import GeometryEditor
 from ..setup.samples.sampleeditor import SampleEditor
+from ..tools.samplepositionchecker import SamplePositionChecker
 from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.instrument import Instrument
 
@@ -28,6 +30,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionSample_editor': SampleEditor,
         'actionGeometry_editor': GeometryEditor,
         'actionCalibrantsDB': Calibrants,
+        'actionCalibration': Calibration,
+        'actionSamplePositionChecker': SamplePositionChecker,
     }
     _windows: Dict[str, QtWidgets.QWidget]
 

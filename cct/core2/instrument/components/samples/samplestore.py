@@ -1,13 +1,14 @@
 import copy
 import datetime
 import logging
-from typing import List, Any, Optional, Union
+from typing import List, Any, Optional, Union, Iterable
 
 from PyQt5 import QtCore, QtGui
 
 from .descriptors import LockState
 from .sample import Sample
 from ..component import Component
+from ..motors import Motor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -18,15 +19,15 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     _currentsample: Optional[str]
     singleColumnMode: bool = True
     _columns = [('title', 'Title'),
-               ('positionx', 'X position'),
-               ('positiony', 'Y position'),
-               ('distminus', 'Dist. decr.'),
-               ('thickness', 'Thickness (cm)'),
-               ('transmission', 'Transmission'),
-               ('preparedby', 'Prepared by'),
-               ('preparetime', 'Preparation date'),
-               ('category', 'Category'),
-               ('situation', 'Situation')]
+                ('positionx', 'X position'),
+                ('positiony', 'Y position'),
+                ('distminus', 'Dist. decr.'),
+                ('thickness', 'Thickness (cm)'),
+                ('transmission', 'Transmission'),
+                ('preparedby', 'Prepared by'),
+                ('preparetime', 'Preparation date'),
+                ('category', 'Category'),
+                ('situation', 'Situation')]
 
     sampleListChanged = QtCore.pyqtSignal()
     currentSampleChanged = QtCore.pyqtSignal(str)
@@ -125,7 +126,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         self._samples = []
         for sample in self.config['services']['samplestore']['list']:
             self._samples.append(Sample.fromdict(self.config['services']['samplestore']['list'][sample].asdict()))
-        self._samples = sorted(self._samples, key = lambda s:s.title.upper())
+        self._samples = sorted(self._samples, key=lambda s: s.title.upper())
         self.endResetModel()
 
     def saveToConfig(self):
@@ -218,13 +219,13 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         else:
             raise ValueError(f'Unknown sample "{title}"')
 
-    def updateSample(self, title: str,  sample: Sample):
+    def updateSample(self, title: str, sample: Sample):
         logger.debug(f'Updating sample {title} with sample {sample.title}')
         row = [i for i, s in enumerate(self._samples) if s.title == title][0]
         self.beginRemoveRows(QtCore.QModelIndex(), row, row)
         del self._samples[row]
         self.endRemoveRows()
-        row = max([i for i, s in enumerate(self._samples) if s.title.upper() < sample.title.upper()]+[-1]) +1
+        row = max([i for i, s in enumerate(self._samples) if s.title.upper() < sample.title.upper()] + [-1]) + 1
         self.beginInsertRows(QtCore.QModelIndex(), row, row)
         self._samples.insert(row, copy.copy(sample))
         self.endInsertRows()
@@ -235,3 +236,19 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     def findSample(self, title: str) -> QtCore.QModelIndex:
         row = [i for i, s in enumerate(self._samples) if s.title == title][0]
         return self.index(row, 0, QtCore.QModelIndex())
+
+    def __iter__(self) -> Iterable[Sample]:
+        for sample in self._samples:
+            yield sample
+
+    def xmotor(self) -> Motor:
+        return self.instrument.motors[self.config['services']['samplestore']['motorx']]
+
+    def ymotor(self) -> Motor:
+        return self.instrument.motors[self.config['services']['samplestore']['motory']]
+
+    def xmotorname(self) -> str:
+        return self.config['services']['samplestore']['motorx']
+
+    def ymotorname(self) -> str:
+        return self.config['services']['samplestore']['motory']
