@@ -17,3 +17,4 @@ cct.lang
 conda_build.sh
 /cct/processinggui/config.py
 /cct/core2/algorithms/radavg.c
+/cct/core2/algorithms/cbfdecompress.c
