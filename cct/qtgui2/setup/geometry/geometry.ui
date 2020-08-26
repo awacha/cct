@@ -1207,7 +1207,7 @@ p, li { white-space: pre-wrap; }
        <item>
         <widget class="QTabWidget" name="tabWidget_2">
          <property name="tabPosition">
-          <enum>QTabWidget::East</enum>
+          <enum>QTabWidget::South</enum>
          </property>
          <property name="currentIndex">
           <number>0</number>

@@ -10,6 +10,7 @@ from .components.interpreter import Interpreter
 from .components.io import IO
 from .components.motors import Motors
 from .components.samples import SampleStore
+from .components.scan import ScanStore
 from ..config import Config
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ class Instrument(QtCore.QObject):
     devicemanager: DeviceManager
     geometry: Geometry
     calibrants: CalibrantStore
+    scan: ScanStore
     stopping: bool = False
     running: bool = False
     shutdown = QtCore.pyqtSignal()
@@ -52,6 +54,7 @@ class Instrument(QtCore.QObject):
         self.devicemanager.stopped.connect(self.onDeviceManagerStopped)
         self.geometry = Geometry(config=self.config, instrument=self)
         self.calibrants = CalibrantStore(config=self.config, instrument=self)
+        self.scan = ScanStore(config=self.config, instrument=self)
 
     #        self.start()
 

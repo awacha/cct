@@ -7,13 +7,15 @@ from typing import Dict, Tuple, Optional, List, Iterator
 
 import numpy as np
 from PyQt5 import QtCore
-from sastool.io.credo_cct import Exposure, Header
 from scipy.io import loadmat
 
 from .component import Component
+from ...algorithms.readcbf import readcbf
+from ...dataclasses import Exposure, Header
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class IO(QtCore.QObject, Component):
     """I/O subsystem of the instrument, responsible for reading and writing files and maintaining the file sequence.
@@ -24,21 +26,16 @@ class IO(QtCore.QObject, Component):
     _masks: Dict[str, Tuple[pathlib.Path, np.ndarray, float]]
     _nextfsn: Dict[str, int]
     _lastfsn: Dict[str, Optional[int]]
-    _lastscan: Optional[int] = None
-    _nextscan: int = 0
+
 
     nextFSNChanged = QtCore.pyqtSignal(str, int)
     lastFSNChanged = QtCore.pyqtSignal(str, int)
-    nextscanchanged = QtCore.pyqtSignal(int)
-    lastscanchanged = QtCore.pyqtSignal(int)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._masks = {}
         self._lastfsn = {}
         self._nextfsn = {}
-        self._lastscan = None
-        self._nextscan = 0
         self.reindex()
 
     def getSubDir(self, subdir: str) -> pathlib.Path:
@@ -182,7 +179,17 @@ class IO(QtCore.QObject, Component):
         for subdir in subdirs:
             for filename in self.iterfilename(str(self.getSubDir(subdir)), prefix, fsn, '.cbf' if raw else '.npz'):
                 try:
-                    return Exposure.new_from_file(filename, header, mask)
+                    if filename.lower().endswith('.cbf'):
+                        intensity = readcbf(filename)
+                        uncertainty = intensity**0.5
+                        uncertainty[intensity<=0] = 1
+                    elif filename.lower().endswith('.npz'):
+                        data = np.load(filename)
+                        intensity = data['Intensity']
+                        uncertainty = data['Uncertainty']
+                    else:
+                        assert False
+                    return Exposure(intensity, header, uncertainty, mask)
                 except FileNotFoundError:
                     pass
         raise FileNotFoundError(expfilename)
@@ -204,7 +211,7 @@ class IO(QtCore.QObject, Component):
             for filename in self.iterfilename(str(self.getSubDir(subdir)), prefix, fsn, '.pickle'):
                 logger.debug(f'Trying path {filename}')
                 try:
-                    return Header.new_from_file(filename)
+                    return Header(filename=filename)
                 except FileNotFoundError:
                     pass
         raise FileNotFoundError(self.formatFileName(prefix, fsn, '.pickle'))

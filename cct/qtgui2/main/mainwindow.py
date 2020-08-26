@@ -8,6 +8,7 @@ from .logviewer_text import LogViewerText
 from .mainwindow_ui import Ui_MainWindow
 from ..devices.genix.genix import GeniXTool
 from ..devices.motors.motorview import MotorView
+from ..listing.scanview import ScanViewer
 from ..setup.calibrants.calibrants import Calibrants
 from ..setup.calibration.calibration import Calibration
 from ..setup.geometry.geometry import GeometryEditor
@@ -32,6 +33,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionCalibrantsDB': Calibrants,
         'actionCalibration': Calibration,
         'actionSamplePositionChecker': SamplePositionChecker,
+        'actionView_scans': ScanViewer,
     }
     _windows: Dict[str, QtWidgets.QWidget]
 

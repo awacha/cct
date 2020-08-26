@@ -1,1 +1,1 @@
-from . import samples, beamstop, component, devicemanager, interpreter, io, motors, geometry, calibrants
+from . import samples, beamstop, component, devicemanager, interpreter, io, motors, geometry, calibrants, scan
