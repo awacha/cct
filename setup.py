@@ -2,10 +2,11 @@
 import os
 import sys
 
-import codegenerator
 from Cython.Build import cythonize
 from numpy import get_include
 from setuptools import setup, find_packages, Extension
+
+import codegenerator
 
 try:
     from PyQt5.uic import compileUi
@@ -56,6 +57,12 @@ extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
                         include_dirs=[get_include()], libraries=krb5_libs),
               Extension("cct.core.processing.correlmatrix",
                         [os.path.join("cct", "core", "processing", "correlmatrix.pyx")],
+                        include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.radavg",
+                        [os.path.join("cct", "core2", "algorithms", "radavg.pyx")],
+                        include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.cbfdecompress",
+                        [os.path.join("cct", "core2", "algorithms", "cbfdecompress.pyx")],
                         include_dirs=[get_include()]),
               ]
 
