@@ -35,8 +35,6 @@ def autoq(uint8_t[:,:] mask, double wavelength, double distance, double pixelsiz
                 r2min = r2
     qmin = 4 * M_PI * sin(0.5 * atan(sqrt(r2min)*pixelsize/distance))/wavelength
     qmax = 4 * M_PI * sin(0.5 * atan(sqrt(r2max)*pixelsize/distance))/wavelength
-    print('Minimum radius: ', sqrt(r2min))
-    print('Maximum radius: ', sqrt(r2max))
     if N <= 0:
         N = <Py_ssize_t>(r2max**0.5 - r2min**0.5)+1
 
@@ -112,7 +110,7 @@ def radavg(double[:,:] data, double[:,:] error, uint8_t[:,:] mask,
     cdef:
         double[:] Intensity, Intensity2, Error, q, q2, qError, qmax, pixel
         uint32_t[:] Area
-        Py_ssize_t irow, icolumn, ibin
+        Py_ssize_t irow, icolumn, ibin=0
         double currentq, pixelradius2, tgtwotheta2, qfac, row, col, sinth
         double currentq_unc, pixelradius_unc2, tgtwotheta_unc2, qfac_unc2, row_unc2, col_unc2, sinth_unc2
         double dist_relunc2, pixelsize_relunc2
@@ -178,6 +176,7 @@ def radavg(double[:,:] data, double[:,:] error, uint8_t[:,:] mask,
             if currentq > qmax[len(qbincenters)-1]:
                 # overflow
                 continue
+            ibin = 0
             for ibin in range(len(qbincenters)):
                 if qmax[ibin] > currentq:
                     # this pixel belongs to the current q-bin
