@@ -12,9 +12,9 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.figure import Figure
 from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
-from sastool.classes2 import Exposure
 
 from .plotimage_ui import Ui_Form
+from ...core2.dataclasses import Exposure
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -173,6 +173,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
                 alpha=1.0,
                 origin='upper',
                 extent=extent,
+                picker=True,
             )
         else:
             self._imghandle.set_data(self.matrix)
@@ -244,9 +245,9 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
     def setExposure(self, exposure: Exposure):
         self.matrix = exposure.intensity
         self.mask = exposure.mask == 0
-        self.wavelength = float(exposure.header.wavelength)
-        self.pixelsize = float(exposure.header.pixelsizex)
-        self.beamx = float(exposure.header.beamcenterx)
-        self.beamy = float(exposure.header.beamcentery)
-        self.distance = float(exposure.header.distance)
+        self.wavelength = float(exposure.header.wavelength[0])
+        self.pixelsize = float(exposure.header.pixelsize[0])
+        self.beamx = float(exposure.header.beamposcol[0])
+        self.beamy = float(exposure.header.beamposrow[0])
+        self.distance = float(exposure.header.distance[0])
         self.replot()
