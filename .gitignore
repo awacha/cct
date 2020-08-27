@@ -18,3 +18,8 @@ conda_build.sh
 /cct/processinggui/config.py
 /cct/core2/algorithms/radavg.c
 /cct/core2/algorithms/cbfdecompress.c
+/cct/core2/algorithms/centering/momentofinertia.c
+/config/
+/debug.log
+/test.log
+/scratch/.ipynb_checkpoints/
