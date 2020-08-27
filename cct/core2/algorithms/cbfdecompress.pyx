@@ -4,8 +4,9 @@ ctypedef np.uint8_t uint8_t
 ctypedef np.int32_t int32_t
 ctypedef np.int8_t int8_t
 ctypedef np.int16_t int16_t
+ctypedef np.double_t double_t
 
-def cbfdecompress(const uint8_t [:] inarray, int32_t[:] outarray):
+def cbfdecompress(const uint8_t [:] inarray, double_t[:] outarray):
     """Citation from http://www.bernstein-plus-sons.com/software/CBF/doc/CBFLIB.html#3.3
 
         The "byte_offset" compression algorithm is the following:
@@ -49,7 +50,7 @@ def cbfdecompress(const uint8_t [:] inarray, int32_t[:] outarray):
     """
     cdef:
         Py_ssize_t nbytes = inarray.size, iin = 0, iout = 0, nout = outarray.size
-        int32_t lastvalue = 0
+        double lastvalue = 0
 
     while iin < nbytes:
         if inarray[iin] != 0x80:

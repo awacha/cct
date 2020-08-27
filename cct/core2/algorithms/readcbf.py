@@ -29,6 +29,6 @@ def readcbf(filename: str):
     with open(filename, 'rb') as f:
         data = f.read()
         data = np.frombuffer(data[data.find(b'\x0c\x1a\x04\xd5') + 4:], np.uint8)
-        output = np.empty(dim1 * dim2, order='C', dtype=np.int32)
+        output = np.empty(dim1 * dim2, order='C', dtype=np.double)
         cbfdecompress(data, output)
     return output.reshape(dim2, dim1)
