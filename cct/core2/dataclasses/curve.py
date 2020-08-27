@@ -10,27 +10,27 @@ class Curve:
         pass
 
     @property
-    def q(self):
+    def q(self) -> np.ndarray:
         return self._data[:, 0]
 
     @property
-    def intensity(self):
+    def intensity(self) -> np.ndarray:
         return self._data[:, 1]
 
     @property
-    def uncertainty(self):
+    def uncertainty(self) -> np.ndarray:
         return self._data[:, 2]
 
     @property
-    def quncertainty(self):
+    def quncertainty(self) -> np.ndarray:
         return self._data[:, 3]
 
     @property
-    def binarea(self):
+    def binarea(self) -> np.ndarray:
         return self._data[:, 4]
 
     @property
-    def pixel(self):
+    def pixel(self) -> np.ndarray:
         return self._data[:, 5]
 
     @classmethod
@@ -71,10 +71,23 @@ class Curve:
             raise ValueError('All vectors must have the same length.')
         self = cls()
         self._data = np.empty((len(q), 6))
-        self._data[:,0] = q
-        self._data[:,1] = intensity
-        self._data[:,2] = uncertainty if uncertainty is not None else np.nan
+        self._data[:, 0] = q
+        self._data[:, 1] = intensity
+        self._data[:, 2] = uncertainty if uncertainty is not None else np.nan
         self._data[:, 3] = quncertainty if quncertainty is not None else np.nan
         self._data[:, 4] = binarea if binarea is not None else np.nan
-        self._data[:,5] = pixel if pixel is not None else np.nan
+        self._data[:, 5] = pixel if pixel is not None else np.nan
         return self
+
+    def trim(self, left: float = -np.inf, right: float = np.inf, bottom=-np.inf, top=np.inf, bypixel: bool = False):
+        if bypixel:
+            xtrimidx = np.logical_and(self._data[:, 5] <= right, self._data[:, 5] >= left)
+        else:
+            xtrimidx = np.logical_and(self._data[:, 0] <= right, self._data[:, 0] >= left)
+        ytrimidx = np.logical_and(self._data[:, 1] <= top, self._data[:, 1] >= bottom)
+        curve = Curve()
+        curve._data = self._data[np.logical_and(xtrimidx, ytrimidx)]
+        return curve
+
+    def __len__(self) -> int:
+        return self._data.shape[0]

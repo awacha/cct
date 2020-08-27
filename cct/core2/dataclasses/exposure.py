@@ -36,7 +36,7 @@ class Exposure:
         self.uncertainty = uncertainty
         self.header = header
 
-    def radial_average(self, qbincenters: Optional[Union[np.ndarray, int]],
+    def radial_average(self, qbincenters: Optional[Union[np.ndarray, int]] = None,
                        errorprop: ErrorPropagationType = ErrorPropagationType.SquaredOrRMS,
                        qerrorprop: ErrorPropagationType = ErrorPropagationType.SquaredOrRMS) -> Curve:
         if (qbincenters is None) or isinstance(qbincenters, int):
