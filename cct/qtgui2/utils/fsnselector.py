@@ -20,6 +20,14 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
         self.comboBox.setCurrentIndex(0)
         self.onPrefixChanged()
         self.spinBox.valueChanged.connect(self.onFSNSelected)
+        self.firstToolButton.clicked.connect(self.gotoFirst)
+        self.lastToolButton.clicked.connect(self.gotoLast)
+
+    def gotoFirst(self):
+        self.spinBox.setValue(self.spinBox.minimum())
+
+    def gotoLast(self):
+        self.spinBox.setValue(self.spinBox.maximum())
 
     def onPrefixChanged(self):
         prefix = self.comboBox.currentText()
