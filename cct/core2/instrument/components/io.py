@@ -167,7 +167,10 @@ class IO(QtCore.QObject, Component):
         """
         expfilename = self.formatFileName(prefix, fsn, '.cbf' if raw else '.npz')
         header = self.loadHeader(prefix, fsn, raw)
-        mask = self.loadMask(header.maskname)
+        try:
+            mask = self.loadMask(header.maskname)
+        except FileNotFoundError:
+            mask = self.loadMask(os.path.split(header.maskname)[-1])
         if raw and check_local:
             subdirs = ['images_local', 'images']
         elif raw and not check_local:
