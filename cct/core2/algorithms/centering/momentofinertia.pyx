@@ -1,15 +1,8 @@
 # cython: cdivision=True, wraparound=False, boundscheck=False, language_level=3, embedsignature=True
-import numpy as np
-cimport numpy as np
+from numpy cimport uint8_t
 from libc.math cimport isfinite
-cimport
-numpy as np
-import numpy as np
-from libc.math cimport
 
-isfinite
-
-def _momentofinertia(double [:, :] matrix, np.uint8_t [:,:] mask, double beamrow, double beamcol, double rmin, double rmax):
+def _momentofinertia(double [:, :] matrix, uint8_t [:,:] mask, double beamrow, double beamcol, double rmin, double rmax):
     cdef:
         Py_ssize_t irow, icol
         double moment= 0.0
