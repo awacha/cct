@@ -19,7 +19,6 @@ class HeaderParameter:
 
     def __set__(self, instance, value):
         for path, val in zip(self.paths, value):
-            logger.debug(f'Setting {path=} to {val=}')
             dic = instance._data
             assert isinstance(dic, dict)
             for pcomponent in path[:-1]:

@@ -55,18 +55,18 @@ class Curve:
         if not all([
             q.ndim == 1,
             intensity.ndim == 1,
-            (uncertainty.ndim == 1) or uncertainty is None,
-            (quncertainty.ndim == 1) or quncertainty is None,
-            (binarea.ndim == 1) or binarea is None,
-            (pixel.ndim == 1) or pixel is None
+            (uncertainty is None) or (uncertainty.ndim == 1),
+            (quncertainty is None) or (quncertainty.ndim == 1),
+            (binarea is None) or (binarea.ndim == 1),
+            (pixel is None) or (pixel.ndim == 1)
         ]):
             raise ValueError('Supplied arrays must be one-dimensional.')
         if not all([
             len(intensity) == len(q),
-            (len(uncertainty) == len(q)) or uncertainty is None,
-            (len(quncertainty) == len(q)) or quncertainty is None,
-            (len(binarea) == len(q)) or binarea is None,
-            (len(pixel) == len(q)) or pixel is None
+            (uncertainty is None) or (len(uncertainty) == len(q)),
+            (quncertainty is None) or (len(quncertainty) == len(q)),
+            (binarea is None) or (len(binarea) == len(q)),
+            (pixel is None) or (len(pixel) == len(q))
         ]):
             raise ValueError('All vectors must have the same length.')
         self = cls()
