@@ -1,8 +1,14 @@
 import logging
+import re
 from typing import Optional, Tuple
 
-from PyQt5 import QtWidgets
+import numpy as np
+import scipy.odr
+from PyQt5 import QtWidgets, QtCore
+from matplotlib.axes import Axes
 from matplotlib.backend_bases import PickEvent
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
+from matplotlib.figure import Figure
 from matplotlib.widgets import Cursor
 
 from .calibration_ui import Ui_MainWindow
@@ -11,7 +17,9 @@ from ...utils.plotcurve import PlotCurve
 from ...utils.plotimage import PlotImage
 from ...utils.window import WindowRequiresDevices
 from ....core2.algorithms.centering import findbeam, centeringalgorithms
+from ....core2.algorithms.peakfit import fitpeak, PeakType
 from ....core2.dataclasses import Exposure, Curve
+from ....core2.instrument.components.calibrants.q import QCalibrant
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -24,6 +32,11 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
     exposure: Optional[Exposure] = None
     curve: Optional[Curve] = None
     manualcursor: Optional[Cursor] = None
+    axes: Axes
+    figure: Figure
+    figtoolbar: NavigationToolbar2QT
+    canvas: FigureCanvasQTAgg
+    sd: Tuple[float, float] = (0, 0)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -47,6 +60,213 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.manualCenteringPushButton.clicked.connect(self.manualCentering)
         self.plotimage.canvas.mpl_connect('pick_event', self.on2DPick)
         self.plotimage.axes.set_picker(True)
+        self.instrument.calibrants.calibrantListChanged.connect(self.populateCalibrants)
+        self.populateCalibrants()
+        self.calibrantComboBox.currentIndexChanged.connect(self.calibrantChanged)
+        self.peakComboBox.currentIndexChanged.connect(self.onCalibrantPeakSelected)
+        self.fitGaussPushButton.clicked.connect(self.fitPeak)
+        self.fitLorentzPushButton.clicked.connect(self.fitPeak)
+        self.addPairToolButton.clicked.connect(self.addPair)
+        self.removePairToolButton.clicked.connect(self.removePair)
+        self.figure = Figure(constrained_layout=True)
+        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.axes = self.figure.add_subplot(self.figure.add_gridspec(1, 1)[:, :])
+        self.figtoolbar = NavigationToolbar2QT(self.canvas, self)
+        self.tabDistance.setLayout(QtWidgets.QVBoxLayout())
+        self.tabDistance.layout().addWidget(self.figtoolbar)
+        self.tabDistance.layout().addWidget(self.canvas)
+        self.saveSDDistToolButton.clicked.connect(self.saveParameter)
+        self.saveBeamXToolButton.clicked.connect(self.saveParameter)
+        self.saveBeamYToolButton.clicked.connect(self.saveParameter)
+        self.beamXDoubleSpinBox.valueChanged.connect(self.beamPosUIEdit)
+
+        self.canvas.draw_idle()
+
+    def beamPosUIEdit(self, value: float):
+        if self.exposure is None:
+            return
+        beamrow = self.exposure.header.beamposrow
+        beamcol = self.exposure.header.beamposcol
+        if self.sender() is self.beamXDoubleSpinBox:
+            beamcol = (value, beamcol[1])
+        elif self.sender() is self.beamYDoubleSpinBox:
+            beamrow = (value, beamrow[1])
+        elif self.sender() is self.beamXErrDoubleSpinBox:
+            beamcol = (beamcol[0], value)
+        elif self.sender() is self.beamYErrDoubleSpinBox:
+            beamrow = (beamrow[0], value)
+        else:
+            assert False
+        self.updateBeamPosition(beamrow, beamcol)
+
+    def saveParameter(self):
+        if self.sender() is self.saveSDDistToolButton:
+            self.instrument.geometry.currentpreset.sd = self.sd
+            logger.info(f'Updated sample-to-detector distance to {self.sd[0]:.5f} \xb1 {self.sd[1]:.5f} mm')
+        elif self.sender() == self.saveBeamXToolButton:
+            self.instrument.geometry.currentpreset.beamposy = self.exposure.header.beamposcol
+            logger.info(f'Updated beam column (X) coordinate to {self.exposure.header.beamposcol[0]:.5f} \xb1 {self.exposure.header.beamposcol[1]:.5f} pixel')
+        elif self.sender() == self.saveBeamYToolButton:
+            self.instrument.geometry.currentpreset.beamposx = self.exposure.header.beamposrow
+            logger.info(f'Updated beam row (Y) coordinate to {self.exposure.header.beamposrow[0]:.5f} \xb1 {self.exposure.header.beamposrow[1]:.5f} pixel')
+        else:
+            assert False
+        self.sender().setEnabled(False)
+
+    def addPair(self):
+        twi = QtWidgets.QTreeWidgetItem()
+        pixval = self.uncalibratedValDoubleSpinBox.value()
+        pixunc = self.uncalibratedErrDoubleSpinBox.value()
+        qval = self.calibratedValDoubleSpinBox.value()
+        qunc = self.calibratedErrDoubleSpinBox.value()
+        twi.setData(0, QtCore.Qt.DisplayRole, f'{pixval:.4f} \xb1 {pixunc:.4f}')
+        twi.setData(0, QtCore.Qt.UserRole, (pixval, pixunc))
+        twi.setData(1, QtCore.Qt.DisplayRole, f'{qval:.4f} \xb1 {qunc:.4f}')
+        twi.setData(1, QtCore.Qt.UserRole, (qval, qunc))
+        self.pairsTreeWidget.addTopLevelItem(twi)
+        self.pairsTreeWidget.resizeColumnToContents(0)
+        self.pairsTreeWidget.resizeColumnToContents(1)
+        self.calibrate()
+
+    def removePair(self):
+        for item in self.pairsTreeWidget.selectedItems():
+            self.pairsTreeWidget.takeTopLevelItem(self.pairsTreeWidget.indexOfTopLevelItem(item))
+        self.calibrate()
+
+    def plotCalibrationLine(self):
+        pixval, pixunc, qval, qunc, wavelength, pixelsize = self.calibrationDataset()
+        self.axes.clear()
+        if pixval.size == 0:
+            self.canvas.draw_idle()
+            return
+        l = self.axes.errorbar(pixval, qval, qunc, pixunc, '.')
+        self.axes.errorbar([0], [0], [0], [0], '.', color=l[0].get_color())
+        pix = np.linspace(0, pixval.max(), 100)
+        q = 4 * np.pi * np.sin(0.5 * np.arctan((pix * pixelsize[0]) / self.sdDistDoubleSpinBox.value())) / wavelength[0]
+        self.axes.plot(pix, q, 'r-')
+        self.axes.set_xlabel('Distance from origin (pixel)')
+        self.axes.set_ylabel('$q$ (nm$^{-1}$)')
+        self.axes.grid(True, which='both')
+        self.canvas.draw_idle()
+
+    def calibrationDataset(self):
+        pixval = np.array([self.pairsTreeWidget.topLevelItem(i).data(0, QtCore.Qt.UserRole)[0] for i in
+                           range(self.pairsTreeWidget.topLevelItemCount())])
+        pixunc = np.array([self.pairsTreeWidget.topLevelItem(i).data(0, QtCore.Qt.UserRole)[1] for i in
+                           range(self.pairsTreeWidget.topLevelItemCount())])
+        qval = np.array([self.pairsTreeWidget.topLevelItem(i).data(1, QtCore.Qt.UserRole)[0] for i in
+                         range(self.pairsTreeWidget.topLevelItemCount())])
+        qunc = np.array([self.pairsTreeWidget.topLevelItem(i).data(1, QtCore.Qt.UserRole)[1] for i in
+                         range(self.pairsTreeWidget.topLevelItemCount())])
+        wavelength = self.instrument.geometry.currentpreset.wavelength
+        pixelsize = self.exposure.header.pixelsize
+        return pixval, pixunc, qval, qunc, wavelength, pixelsize
+
+    def calibrate(self):
+        pixval, pixunc, qval, qunc, wavelength, pixelsize = self.calibrationDataset()
+        if pixval.size == 0:
+            return
+        ql_div_4pi = (  # q * wavelength / (4pi)
+            qval * wavelength[0] / 4 / np.pi,
+            ((qval * wavelength[1]) ** 2 + (qunc * wavelength[0]) ** 2) ** 0.5 / 4 / np.pi
+        )
+        logger.debug(f'{ql_div_4pi=}')
+        asinx2_ql_div_4pi = (
+            np.arcsin(ql_div_4pi[0]) * 2,
+            2 / (1 - ql_div_4pi[0] ** 2) ** 0.5 * ql_div_4pi[1],
+        )
+        logger.debug(f'{asinx2_ql_div_4pi=}')
+        tg_2asin_ql_div_4pi = (
+            np.tan(asinx2_ql_div_4pi[0]),
+            (1 + np.tan(asinx2_ql_div_4pi[0]) ** 2) * asinx2_ql_div_4pi[1]
+        )
+        logger.debug(f'{tg_2asin_ql_div_4pi=}')
+        tg_2asin_ql_div_4pi_div_pixsize = (
+            tg_2asin_ql_div_4pi[0] / pixelsize[0],
+            (((tg_2asin_ql_div_4pi[0] * pixelsize[1]) / pixelsize[0] ** 2) ** 2 + (
+                    tg_2asin_ql_div_4pi[1] / pixelsize[0]) ** 2) ** 0.5
+        )
+        logger.debug(f'{tg_2asin_ql_div_4pi_div_pixsize=}')
+        if len(pixval) == 1:
+            # no fitting, just calculate L directly: L = pixel / (tan(2*asin(q*lambda/4pi)) / pixsize)
+            L = (
+                pixval[0] / tg_2asin_ql_div_4pi_div_pixsize[0][0],
+                ((pixunc[0] / tg_2asin_ql_div_4pi_div_pixsize[0][0]) ** 2 +
+                 (pixval[0] * tg_2asin_ql_div_4pi_div_pixsize[1][0] / tg_2asin_ql_div_4pi_div_pixsize[0][
+                     0] ** 2) ** 2) ** 0.5
+            )
+        else:
+            # fitting:    pixel = L * tan(2*asin(q*lambda/4pi))
+            data = scipy.odr.RealData(x=tg_2asin_ql_div_4pi_div_pixsize[0], sx=tg_2asin_ql_div_4pi_div_pixsize[1],
+                                      y=pixval, sy=pixunc)
+            logger.debug(f'{data.x=}, {data.y=}, {data.sx=}, {data.sy=}')
+            model = scipy.odr.Model(lambda L, x: L * x)
+            odr = scipy.odr.ODR(data, model, [1.0])
+            result = odr.run()
+            L = result.beta[0], result.sd_beta[0]
+        logger.debug(f'{L=}')
+        self.sdDistDoubleSpinBox.setValue(L[0])
+        self.sdDistErrDoubleSpinBox.setValue(L[1])
+        self.saveSDDistToolButton.setEnabled(True)
+        self.sd = L
+        self.plotCalibrationLine()
+
+    def fitPeak(self):
+        if self.curve is None:
+            return
+        xmin, xmax, ymin, ymax = self.plotcurve.getRange()
+        curve = self.curve.trim(xmin, xmax, ymin, ymax, bypixel=True)
+        try:
+            parameters, covariance, peakfcn = fitpeak(
+                curve.pixel, curve.intensity, dx=None, dy=None,
+                peaktype=PeakType.Lorentzian if self.sender() == self.fitLorentzPushButton else PeakType.Gaussian)
+        except Exception as exc:
+            QtWidgets.QMessageBox.critical(self, 'Error while fitting', f'An error happened while fitting: {exc}.\n'
+                                           'Please select a different algorithm, a different range in the curve or '
+                                           'select an approximate beam position manually and start over.')
+            return
+        x = np.linspace(curve.pixel.min(), curve.pixel.max(), 100)
+        fitcurve = Curve.fromVectors(q=np.interp(x, curve.pixel, curve.q), intensity=peakfcn(x), pixel=x)
+        self.plotcurve.addCurve(fitcurve, color='r', lw=1, ls='-', marker='')
+        self.plotcurve.replot()
+        self.uncalibratedValDoubleSpinBox.setValue(parameters[1])
+        self.uncalibratedErrDoubleSpinBox.setValue(covariance[1, 1] ** 0.5)
+
+    def calibrantChanged(self):
+        if self.calibrantComboBox.currentIndex() < 0:
+            return
+        calibrant = \
+            [c for c in self.instrument.calibrants.qcalibrants() if c.name == self.calibrantComboBox.currentText()][0]
+        assert isinstance(calibrant, QCalibrant)
+        self.peakComboBox.clear()
+        self.peakComboBox.addItems([name for name, val, unc in calibrant.peaks])
+        self.peakComboBox.setCurrentIndex(0)
+
+    def onCalibrantPeakSelected(self):
+        if self.calibrantComboBox.currentIndex() < 0:
+            return
+        calibrant = \
+            [c for c in self.instrument.calibrants.qcalibrants() if c.name == self.calibrantComboBox.currentText()][0]
+        assert isinstance(calibrant, QCalibrant)
+        if self.peakComboBox.currentIndex() < 0:
+            return
+        val, unc = [(val, unc) for name, val, unc in calibrant.peaks if name == self.peakComboBox.currentText()][0]
+        self.calibratedValDoubleSpinBox.setValue(val)
+        self.calibratedErrDoubleSpinBox.setValue(unc)
+
+    def populateCalibrants(self):
+        self.calibrantComboBox.clear()
+        self.calibrantComboBox.addItems(sorted([c.name for c in self.instrument.calibrants.qcalibrants()]))
+        self.selectCalibrantForExposure()
+
+    def selectCalibrantForExposure(self):
+        if self.exposure is None:
+            return
+        names = [c.name for c in self.instrument.calibrants.qcalibrants() if
+                 re.match(c.regex, self.exposure.header.title) is not None]
+        if names:
+            self.calibrantComboBox.setCurrentIndex(self.calibrantComboBox.findText(names[0]))
+            self.calibrantChanged()
 
     def on2DPick(self, event: PickEvent):
         if self.manualcursor is not None:
@@ -67,12 +287,17 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.curve = self.exposure.radial_average()
         self.plotcurve.addCurve(self.curve)
         self.plotcurve.setPixelMode(True)
+        for spinbox in [self.beamXDoubleSpinBox, self.beamYDoubleSpinBox, self.beamXErrDoubleSpinBox, self.beamYErrDoubleSpinBox]:
+            spinbox.blockSignals(True)
         self.beamXDoubleSpinBox.setValue(self.exposure.header.beamposcol[0])
         self.beamXErrDoubleSpinBox.setValue(self.exposure.header.beamposcol[1])
         self.beamYDoubleSpinBox.setValue(self.exposure.header.beamposrow[0])
         self.beamYErrDoubleSpinBox.setValue(self.exposure.header.beamposrow[1])
+        for spinbox in [self.beamXDoubleSpinBox, self.beamYDoubleSpinBox, self.beamXErrDoubleSpinBox, self.beamYErrDoubleSpinBox]:
+            spinbox.blockSignals(False)
         self.saveBeamXToolButton.setEnabled(False)
         self.saveBeamYToolButton.setEnabled(False)
+        self.selectCalibrantForExposure()
 
     def findCenter(self):
         xmin, xmax, ymin, ymax = self.plotcurve.getRange()
@@ -85,7 +310,8 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         rmax = curve.pixel.max()
         logger.debug(f'{rmin=}, {rmax=}')
         algorithm = centeringalgorithms[self.centeringMethodComboBox.currentText()]
-        self.updateBeamPosition(*findbeam(algorithm, self.exposure, rmin, rmax, 0, 0))
+        self.updateBeamPosition(
+            *findbeam(algorithm, self.exposure, rmin, rmax, 0, 0, eps=self.finiteDifferenceDeltaDoubleSpinBox.value()))
 
     def updateBeamPosition(self, row: Tuple[float, float], col: Tuple[float, float]):
         self.exposure.header.beamposrow = row
@@ -94,8 +320,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.saveBeamXToolButton.setEnabled(True)
         self.saveBeamYToolButton.setEnabled(True)
 
-
     def manualCentering(self):
         if self.manualcursor is not None:
             return
-        self.manualcursor=Cursor(self.plotimage.axes, horizOn=True, vertOn=True, useblit=False, color='red', lw='1')
+        self.manualcursor = Cursor(self.plotimage.axes, horizOn=True, vertOn=True, useblit=False, color='red', lw='1')

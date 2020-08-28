@@ -13,6 +13,7 @@ from ..component import Component
 
 class CalibrantStore(QtCore.QAbstractItemModel, Component):
     _calibrants: List[Calibrant]
+    calibrantListChanged = QtCore.pyqtSignal()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -114,6 +115,7 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
                 return False
         self.dataChanged.emit(index, index)
         self.saveToConfig()
+        self.calibrantListChanged.emit()
         return True
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
@@ -158,6 +160,7 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
             self._calibrants.append(calibrant)
         self._calibrants.sort(key=lambda c: c.name)
         self.endResetModel()
+        self.calibrantListChanged.emit()
 
     def saveToConfig(self):
         self.config.inhibitAutoSave()
@@ -179,6 +182,7 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
         self._calibrants.sort(key=lambda c: c.name)
         self.endResetModel()
         self.saveToConfig()
+        self.calibrantListChanged.emit()
 
     def addIntensityCalibrant(self):
         i = 0
@@ -189,6 +193,7 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
         self._calibrants.sort(key=lambda c: c.name)
         self.endResetModel()
         self.saveToConfig()
+        self.calibrantListChanged.emit()
 
     def removeCalibrant(self, name: str):
         calibrant = [c for c in self._calibrants if c.name == name][0]
@@ -201,3 +206,4 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
         self._calibrants.remove(calibrant)
         self.endRemoveRows()
         self.saveToConfig()
+        self.calibrantListChanged.emit()

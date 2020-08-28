@@ -87,19 +87,23 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
             else:
                 # do nothing
                 pass
-            if self.showLinesToolButton.isChecked():
+            if 'ls' in kwargs:
+                # normalize: ls and linestyle are synonyms
+                kwargs['linestyle'] = kwargs['ls']
+                del kwargs['ls']
+            if self.showLinesToolButton.isChecked() and ('linestyle' not in kwargs):
                 # force drawing a line
                 kwargs.setdefault('linestyle', '-')
                 if not kwargs['linestyle']:
                     # if it is an empty string (as given by the user)
                     kwargs['linestyle'] = '-'
-            else:
+            elif 'linestyle' not in kwargs:
                 # hide the line
                 kwargs['linestyle'] = ''
-            if self.symbolsTypeComboBox.currentText() == 'No symbols':
+            if (self.symbolsTypeComboBox.currentText() == 'No symbols') and ('marker' not in kwargs):
                 # force hiding symbols
                 kwargs['marker'] = ''
-            else:
+            elif 'marker' not in kwargs:
                 # force drawing a symbol
                 kwargs.setdefault('marker', self.MARKERS[i % len(self.MARKERS)])
                 if not kwargs['marker']:

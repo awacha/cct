@@ -4,7 +4,7 @@ from .calibrant import Calibrant
 
 
 class QCalibrant(Calibrant):
-    peaks: List[Tuple[str, float, float]]
+    peaks: List[Tuple[str, float, float]]  # name, value, uncertainty
 
     def __init__(self, name: str):
         super().__init__(name)

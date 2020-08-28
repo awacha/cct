@@ -43,8 +43,18 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_5">
-             <item>
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="0" column="1">
+              <widget class="QComboBox" name="centeringMethodComboBox">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
               <widget class="QLabel" name="label_7">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
@@ -57,13 +67,32 @@
                </property>
               </widget>
              </item>
-             <item>
-              <widget class="QComboBox" name="centeringMethodComboBox">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_10">
+               <property name="text">
+                <string>Delta:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QDoubleSpinBox" name="finiteDifferenceDeltaDoubleSpinBox">
+               <property name="toolTip">
+                <string>Step size for estimating the jacobian in the minimization procedure</string>
+               </property>
+               <property name="suffix">
+                <string> pixels</string>
+               </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="minimum">
+                <double>0.001000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.010000000000000</double>
+               </property>
+               <property name="value">
+                <double>0.010000000000000</double>
                </property>
               </widget>
              </item>
@@ -379,7 +408,7 @@
               </layout>
              </item>
              <item>
-              <widget class="QTreeView" name="pairsTreeView">
+              <widget class="QTreeWidget" name="pairsTreeWidget">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
                  <horstretch>0</horstretch>
@@ -390,7 +419,7 @@
                 <bool>true</bool>
                </property>
                <property name="selectionMode">
-                <enum>QAbstractItemView::SingleSelection</enum>
+                <enum>QAbstractItemView::ExtendedSelection</enum>
                </property>
                <property name="uniformRowHeights">
                 <bool>true</bool>
@@ -401,6 +430,16 @@
                <property name="expandsOnDoubleClick">
                 <bool>false</bool>
                </property>
+               <column>
+                <property name="text">
+                 <string>Pixel</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>q</string>
+                </property>
+               </column>
               </widget>
              </item>
             </layout>
@@ -710,7 +749,6 @@
   </widget>
  </widget>
  <tabstops>
-  <tabstop>centeringMethodComboBox</tabstop>
   <tabstop>uncalibratedValDoubleSpinBox</tabstop>
   <tabstop>uncalibratedErrDoubleSpinBox</tabstop>
   <tabstop>fitLorentzPushButton</tabstop>
@@ -721,7 +759,7 @@
   <tabstop>calibratedErrDoubleSpinBox</tabstop>
   <tabstop>addPairToolButton</tabstop>
   <tabstop>removePairToolButton</tabstop>
-  <tabstop>pairsTreeView</tabstop>
+  <tabstop>pairsTreeWidget</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>beamXDoubleSpinBox</tabstop>
   <tabstop>beamXErrDoubleSpinBox</tabstop>

@@ -32,7 +32,7 @@ def findbeam_crude(targetfunc, exposure, rmin, rmax, d=30, N=10) -> Tuple[float,
     return bestposition
 
 
-def findbeam(algorithm, exposure, rmin, rmax, dcrude=30, Ncrude=10):
+def findbeam(algorithm, exposure, rmin, rmax, dcrude=30, Ncrude=10, eps=0.01):
     if dcrude > 0 and Ncrude > 2:
         crudeposition = findbeam_crude(algorithm, exposure, rmin, rmax, dcrude, Ncrude)
     else:
@@ -42,7 +42,9 @@ def findbeam(algorithm, exposure, rmin, rmax, dcrude=30, Ncrude=10):
         np.array(crudeposition),
         args=(exposure.intensity, exposure.mask, rmin, rmax),
         method='L-BFGS-B',
-        options={'ftol': 1e7 * np.finfo(float).eps},
+        options={'ftol': 1e7 * np.finfo(float).eps,
+                 'eps': eps,  # finite step size for approximating the jacobian
+                 },
     )
     ftol = 1e7 * np.finfo(float).eps  # L-BFGS-B default factr value is 1e7
     covar = max(1, np.abs(result.fun)) * ftol * result.hess_inv.todense()
