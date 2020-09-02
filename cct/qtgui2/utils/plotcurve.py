@@ -191,3 +191,6 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
 
     def getRange(self) -> Tuple[float, float, float, float]:
         return self.axes.axis()
+
+    def setShowErrorBars(self, show: bool):
+        self.showErrorBarsToolButton.setChecked(show)
