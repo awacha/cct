@@ -67,6 +67,9 @@ extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
               Extension("cct.core2.algorithms.centering.momentofinertia",
                         [os.path.join("cct", "core2", "algorithms", "centering", "momentofinertia.pyx")],
                         include_dirs=[get_include()]),
+              Extension("cct.qtgui2.tools.maskeditor.maskoperations",
+                        [os.path.join("cct", "qtgui2", "tools", "maskeditor", "maskoperations.pyx")],
+                        include_dirs=[get_include()]),
               ]
 
 print(get_include())

@@ -5,6 +5,7 @@ import re
 import time
 from typing import Dict, Tuple, Optional, List, Iterator
 
+import h5py
 import numpy as np
 from PyQt5 import QtCore
 from scipy.io import loadmat
@@ -197,6 +198,42 @@ class IO(QtCore.QObject, Component):
                     pass
         raise FileNotFoundError(expfilename)
 
+    @staticmethod
+    def loadH5(h5file: str, samplename: str, distkey: str) -> Exposure:
+        with h5py.File(h5file, 'r', swmr=True) as h5:
+            grp = h5['Samples'][samplename][distkey]
+            assert isinstance(grp, h5py.Group)
+            header = Header(datadict={})
+            header.beamposrow=(grp.attrs['beamcentery'], grp.attrs['beamcentery.err'])
+            header.beamposcol=(grp.attrs['beamcenterx'], grp.attrs['beamcenterx.err'])
+            header.flux = (grp.attrs['flux'], grp.attrs['flux.err'])
+            header.samplex = (grp.attrs['samplex'], grp.attrs['samplex.err'])
+            header.sampley = (grp.attrs['sampley'], grp.attrs['sampley.err'])
+            header.temperature = (grp.attrs['temperature'], grp.attrs['temperature.err'])
+            header.thickness = (grp.attrs['thickness'], grp.attrs['thickness.err'])
+            header.transmission = (grp.attrs['transmission'], grp.attrs['transmission.err'])
+            header.vacuum = (grp.attrs['vacuum'], grp.attrs['vacuum.err'])
+            header.fsn = grp.attrs['fsn']
+            header.fsn_absintref = grp.attrs['fsn_absintref']
+            header.fsn_emptybeam = grp.attrs['fsn_emptybeam']
+            header.maskname = grp.attrs['maskname']
+            header.project = grp.attrs['project']
+            header.username = grp.attrs['username']
+            header.title = grp.attrs['title']
+            header.distance = (grp.attrs['distance'], list(grp['curves'].values())[0].attrs['distance.err'])
+            header.distancedecreaase = (grp.attrs['distancedecrease'], list(grp['curves'].values())[0].attrs['distancedecrease.err'])
+            header.pixelsize = (grp.attrs['pixelsizex'], list(grp['curves'].values())[0].attrs['pixelsizex.err'])
+            header.wavelength = (grp.attrs['wavelength'], list(grp['curves'].values())[0].attrs['wavelength.err'])
+            header.sample_category = grp.attrs['sample_category']
+            header.startdate = grp.attrs['startdate']
+            header.enddate = grp.attrs['enddate']
+            header.exposuretime = (grp.attrs['exposuretime'], grp.attrs['exposuretime.err'])
+            header.absintfactor = (grp.attrs['absintfactor'], grp.attrs['absintfactor.err'])
+            intensity = np.array(grp['image'], dtype=np.double)
+            uncertainty = np.array(grp['image_uncertainty'], dtype=np.double)
+            mask = np.array(grp['mask'], dtype=np.uint8)
+            return Exposure(intensity, header, uncertainty, mask)
+
     def loadHeader(self, prefix: str, fsn: int, raw: bool = True) -> Header:
         """Load a metadata file (.pickle)
 
@@ -260,6 +297,9 @@ class IO(QtCore.QObject, Component):
                 # the file has changed, reload
                 self._masks[maskname] = (maskfile, self._loadmask(maskfile), maskfile.stat().st_mtime)
         return self._masks[maskname][1]
+
+    def invalidateMaskCache(self):
+        self._masks = {}
 
     @staticmethod
     def _loadmask(filename: os.PathLike) -> np.ndarray:
