@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>282</width>
+    <width>314</width>
     <height>34</height>
    </rect>
   </property>
@@ -90,6 +90,22 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QToolButton" name="reloadToolButton">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Reload</string>
+     </property>
+     <property name="icon">
+      <iconset theme="view-refresh"/>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

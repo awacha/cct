@@ -1,6 +1,9 @@
+from typing import Optional
+
 from PyQt5 import QtWidgets, QtCore
 
 from .fsnselector_ui import Ui_Form
+from ...core2.dataclasses import Exposure
 from ...core2.instrument.instrument import Instrument
 
 
@@ -22,6 +25,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
         self.spinBox.valueChanged.connect(self.onFSNSelected)
         self.firstToolButton.clicked.connect(self.gotoFirst)
         self.lastToolButton.clicked.connect(self.gotoLast)
+        self.reloadToolButton.clicked.connect(self.onFSNSelected)
 
     def gotoFirst(self):
         self.spinBox.setValue(self.spinBox.minimum())
@@ -31,11 +35,19 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
 
     def onPrefixChanged(self):
         prefix = self.comboBox.currentText()
-        self.spinBox.setRange(0,Instrument.instance().io.lastfsn(prefix))
+        self.spinBox.setRange(0, Instrument.instance().io.lastfsn(prefix))
 
-    def onNextFSNChanged(self, prefix:str, fsn:int):
+    def onNextFSNChanged(self, prefix: str, fsn: int):
         if prefix == self.comboBox.currentText():
             self.spinBox.setRange(0, fsn)
 
-    def onFSNSelected(self, value):
-        self.fsnSelected.emit(self.comboBox.currentText(), value)
+    def onFSNSelected(self, value: Optional[int] = None):
+        if self.comboBox.currentIndex() < 0:
+            return
+        self.fsnSelected.emit(
+            self.comboBox.currentText(),
+            value if value is not None else self.spinBox.value())
+
+    def loadExposure(self, raw: bool = True) -> Exposure:
+        return Instrument.instance().io.loadExposure(
+            self.comboBox.currentText(), self.spinBox.value(), raw, check_local=True)
