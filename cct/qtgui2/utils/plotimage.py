@@ -251,3 +251,18 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.beamy = float(exposure.header.beamposrow[0])
         self.distance = float(exposure.header.distance[0])
         self.replot()
+
+    def setPixelOnly(self, pixelonly: bool):
+        self.axesComboBox.setEnabled(not pixelonly)
+        self.axesComboBox.setVisible(not pixelonly)
+        self.axesComboBox.setCurrentIndex(0)
+
+    def setMask(self, mask: np.ndarray):
+        if not mask.shape == self.mask.shape:
+            raise ValueError('Mask shape mismatch')
+        self.mask = mask
+        extent, center = self._get_extent()
+        self._maskhandle.set_data(mask == 0)
+        self._maskhandle.set_extent(extent)
+        self._maskhandle.changed()
+        self.canvas.draw_idle()

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>714</width>
-    <height>54</height>
+    <width>641</width>
+    <height>34</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -20,6 +20,18 @@
    <string notr="true">Detector image</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
@@ -133,12 +145,6 @@
         <iconset resource="../../resource/icons/icons.qrc">
          <normaloff>:/icons/flipmask.svg</normaloff>:/icons/flipmask.svg</iconset>
        </property>
-       <property name="iconSize">
-        <size>
-         <width>24</width>
-         <height>24</height>
-        </size>
-       </property>
        <property name="checkable">
         <bool>true</bool>
        </property>
@@ -158,12 +164,6 @@
        <property name="icon">
         <iconset resource="../../resource/icons/icons.qrc">
          <normaloff>:/icons/pixelhunt.svg</normaloff>:/icons/pixelhunt.svg</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>24</width>
-         <height>24</height>
-        </size>
        </property>
        <property name="checkable">
         <bool>true</bool>
@@ -185,12 +185,6 @@
         <iconset resource="../../resource/icons/icons.qrc">
          <normaloff>:/icons/colorbar.svg</normaloff>:/icons/colorbar.svg</iconset>
        </property>
-       <property name="iconSize">
-        <size>
-         <width>24</width>
-         <height>24</height>
-        </size>
-       </property>
        <property name="checkable">
         <bool>true</bool>
        </property>
@@ -210,12 +204,6 @@
        <property name="icon">
         <iconset resource="../../resource/icons/icons.qrc">
          <normaloff>:/icons/aspect_equal.svg</normaloff>:/icons/aspect_equal.svg</iconset>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>24</width>
-         <height>24</height>
-        </size>
        </property>
        <property name="checkable">
         <bool>true</bool>
