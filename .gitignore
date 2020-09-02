@@ -23,3 +23,4 @@ conda_build.sh
 /debug.log
 /test.log
 /scratch/.ipynb_checkpoints/
+/cct/qtgui2/tools/maskeditor/maskoperations.c

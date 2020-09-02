@@ -16,6 +16,7 @@ from ..setup.samples.sampleeditor import SampleEditor
 from ..tools.samplepositionchecker import SamplePositionChecker
 from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.instrument import Instrument
+from ..tools.maskeditor.maskeditor import MaskEditor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -34,6 +35,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionCalibration': Calibration,
         'actionSamplePositionChecker': SamplePositionChecker,
         'actionView_scans': ScanViewer,
+        'actionMask_editor': MaskEditor,
     }
     _windows: Dict[str, QtWidgets.QWidget]
 
