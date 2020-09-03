@@ -12,6 +12,7 @@ from .components.motors import Motors
 from .components.samples import SampleStore
 from .components.scan import ScanStore
 from .components.auth import UserManager
+from .components.projects import ProjectManager
 from ..config import Config
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class Instrument(QtCore.QObject):
     calibrants: CalibrantStore
     scan: ScanStore
     auth: UserManager
+    projects: ProjectManager
     stopping: bool = False
     running: bool = False
     shutdown = QtCore.pyqtSignal()
@@ -57,6 +59,7 @@ class Instrument(QtCore.QObject):
         self.calibrants = CalibrantStore(config=self.config, instrument=self)
         self.scan = ScanStore(config=self.config, instrument=self)
         self.auth = UserManager(config=self.config, instrument=self)
+        self.projects = ProjectManager(config=self.config, instrument=self)
 
     #        self.start()
 
