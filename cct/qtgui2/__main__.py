@@ -8,6 +8,7 @@ from PyQt5 import QtWidgets
 
 from cct.core2.instrument.instrument import Instrument
 from cct.qtgui2.main.mainwindow import MainWindow
+from cct.qtgui2.main.logindialog import LoginDialog
 
 # logging.basicConfig()
 logging.root.setLevel(logging.DEBUG)
@@ -31,11 +32,27 @@ def excepthook(exctype, exc, tb):
 @click.command()
 @click.option('--config', default='config/cct.pickle', help='Config file')
 @click.option('--online', default=False, help='Connect to devices', type=bool, is_flag=True)
-def main(config:str, online: bool):
+@click.option('--root', default=False, help='Skip login', type=bool, is_flag=True)
+def main(config:str, online: bool, root: bool):
     sys.excepthook = excepthook
     app = QtWidgets.QApplication(sys.argv)
     logger.debug('Instantiating Instrument()')
-    instrument = Instrument(configfile=config, online=online)
+    instrument = Instrument(configfile=config)
+    if not root:
+        logindialog = LoginDialog()
+        logindialog.setOffline(not online)
+        logindialog.show()
+        result = app.exec_()
+        if not instrument.auth.isAuthenticated():
+            logindialog.deleteLater()
+            instrument.deleteLater()
+            app.deleteLater()
+            sys.exit(result)
+        online = not logindialog.isOffline()
+        logindialog.deleteLater()
+        instrument.setOnline(online)
+    else:
+        instrument.auth.setRoot()
     mw = MainWindow(instrument=instrument)
     mw.show()
     instrument.start()

@@ -11,6 +11,7 @@ from .components.io import IO
 from .components.motors import Motors
 from .components.samples import SampleStore
 from .components.scan import ScanStore
+from .components.auth import UserManager
 from ..config import Config
 
 logger = logging.getLogger(__name__)
@@ -29,18 +30,18 @@ class Instrument(QtCore.QObject):
     geometry: Geometry
     calibrants: CalibrantStore
     scan: ScanStore
+    auth: UserManager
     stopping: bool = False
     running: bool = False
     shutdown = QtCore.pyqtSignal()
     online: bool = False
 
-    def __init__(self, configfile: str, online: bool):
+    def __init__(self, configfile: str):
         if type(self)._singleton_instance is not None:
             raise RuntimeError('Only one instance can exist from Instrument.')
         type(self)._singleton_instance = self
         super().__init__()
-        self.online = online
-        logger.info(f'Running {"on-line" if online else "off-line"}')
+        self.online = False
         self.config = Config(autosave=True)
         self.createDefaultConfig()
         logger.debug(f'Using config file {configfile}')
@@ -55,8 +56,13 @@ class Instrument(QtCore.QObject):
         self.geometry = Geometry(config=self.config, instrument=self)
         self.calibrants = CalibrantStore(config=self.config, instrument=self)
         self.scan = ScanStore(config=self.config, instrument=self)
+        self.auth = UserManager(config=self.config, instrument=self)
 
     #        self.start()
+
+    def setOnline(self, online: bool):
+        self.online = online
+        logger.info(f'Running {"on-line" if online else "off-line"}')
 
     def start(self):
         logger.info('Starting Instrument')

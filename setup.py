@@ -70,6 +70,9 @@ extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
               Extension("cct.qtgui2.tools.maskeditor.maskoperations",
                         [os.path.join("cct", "qtgui2", "tools", "maskeditor", "maskoperations.pyx")],
                         include_dirs=[get_include()]),
+              Extension("cct.core2.instrument.components.auth.user",
+                        [os.path.join("cct", "core2", "instrument", "components", "auth", "user.pyx")],
+                        include_dirs=[get_include()], libraries=krb5_libs),
               ]
 
 print(get_include())

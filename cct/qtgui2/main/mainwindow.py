@@ -17,6 +17,8 @@ from ..tools.samplepositionchecker import SamplePositionChecker
 from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.instrument import Instrument
 from ..tools.maskeditor.maskeditor import MaskEditor
+from ..setup.usermanager.usermanager import UserManager
+from ..setup.usermanager.passwordchange import PasswordChange
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -36,6 +38,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionSamplePositionChecker': SamplePositionChecker,
         'actionView_scans': ScanViewer,
         'actionMask_editor': MaskEditor,
+        'actionUser_management': UserManager,
+        'actionChange_password': PasswordChange,
     }
     _windows: Dict[str, QtWidgets.QWidget]
 
