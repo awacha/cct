@@ -252,3 +252,6 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
 
     def ymotorname(self) -> str:
         return self.config['services']['samplestore']['motory']
+
+    def currentSample(self) -> Sample:
+        return self[self._currentsample]

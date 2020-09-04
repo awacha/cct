@@ -154,3 +154,15 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return ['Index', 'Date', 'Motor', 'From', 'To', 'Length', 'Comment'][section]
+
+    def lastscan(self) -> int:
+        return self._lastscan
+
+    def nextscan(self) -> int:
+        return self._nextscan
+
+    def firstscan(self) -> int:
+        return min(self._scans)
+
+    def __getitem__(self, item) -> Scan:
+        return self._scans[item]

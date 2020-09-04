@@ -23,6 +23,7 @@ from ..setup.usermanager.usermanager import UserManager
 from ..setup.usermanager.passwordchange import PasswordChange
 from ..setup.projectmanager.projectmanager import ProjectManager
 from ..utils.plotimage import PlotImage
+from ..tools.capillarysizer import CapillarySizer
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -46,6 +47,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionUser_management': UserManager,
         'actionChange_password': PasswordChange,
         'actionProject_management': ProjectManager,
+        'actionCapillary_sizing': CapillarySizer,
     }
     _windows: Dict[str, QtWidgets.QWidget]
 
