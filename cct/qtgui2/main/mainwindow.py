@@ -1,5 +1,6 @@
 import logging
 from typing import Dict
+import pkg_resources
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
@@ -69,6 +70,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             action = getattr(self, actionname)
             assert isinstance(action, QtWidgets.QAction)
             action.triggered.connect(self.onActionTriggered)
+        self.setWindowTitle(f'Credo Control Tool v{pkg_resources.get_distribution("cct").version} User: {self.instrument.auth.username()}')
 
     def onActionTriggered(self, toggled: bool):
         action = self.sender()

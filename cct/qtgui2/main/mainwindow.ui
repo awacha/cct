@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1835</width>
-    <height>640</height>
+    <width>876</width>
+    <height>938</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -71,7 +71,7 @@
       </widget>
       <widget class="QWidget" name="patternTab">
        <attribute name="title">
-        <string>Last image</string>
+        <string>Detector image</string>
        </attribute>
       </widget>
      </widget>
@@ -205,7 +205,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1835</width>
+     <width>876</width>
      <height>30</height>
     </rect>
    </property>
