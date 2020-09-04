@@ -26,10 +26,12 @@ class WindowRequiresDevices:
         instrument = kwargs['instrument']
         assert isinstance(instrument, Instrument)
         self.instrument = instrument
+        self.mainwindow = kwargs['mainwindow']
         devices = {d for d in instrument.devicemanager.devices.values()
                    if (d.name in (self.required_devicenames if self.required_devicenames is not None else []))
                    or (d.devicetype in (self.required_devicetypes if self.required_devicetypes is not None else []))}
-        motors = {m for m in instrument.motors.motors if m.name in self.required_motors} if self.required_motors else set()
+        motors = {m for m in instrument.motors.motors if
+                  m.name in self.required_motors} if self.required_motors else set()
         self._required_devices = set()
         for d in devices:
             logger.debug(f'Connecting device {d.name}')
@@ -40,12 +42,7 @@ class WindowRequiresDevices:
         logger.debug('Connecting motors')
         for m in motors:
             assert isinstance(m, Motor)
-            logger.debug(f'Connecting motor {m.name}')
-            m.started.connect(self.onMotorStarted)
-            m.stopped.connect(self.onMotorStopped)
-            m.positionChanged.connect(self.onMotorPositionChanged)
-            m.moving.connect(self.onMotorMoving)
-            m.variableChanged.connect(self.onVariableChanged)
+            self.connectMotor(m)
         logger.debug(f'Connected {len(motors)} motors')
         self.instrument.config.changed.connect(self.onConfigChanged)
 
@@ -77,6 +74,21 @@ class WindowRequiresDevices:
         device.commandResult.disconnect(self.onCommandResult)
         device.variableChanged.disconnect(self.onVariableChanged)
         device.allVariablesReady.disconnect(self.onAllVariablesReady)
+
+    def connectMotor(self, motor: Motor):
+        logger.debug(f'Connecting motor {motor.name}')
+        motor.started.connect(self.onMotorStarted)
+        motor.stopped.connect(self.onMotorStopped)
+        motor.positionChanged.connect(self.onMotorPositionChanged)
+        motor.moving.connect(self.onMotorMoving)
+        motor.variableChanged.connect(self.onVariableChanged)
+
+    def disconnectMotor(self, motor: Motor):
+        motor.started.disconnect(self.onMotorStarted)
+        motor.stopped.disconnect(self.onMotorStopped)
+        motor.positionChanged.disconnect(self.onMotorPositionChanged)
+        motor.moving.disconnect(self.onMotorMoving)
+        motor.variableChanged.disconnect(self.onVariableChanged)
 
     def _checkRequirements(self):
         satisfied = self.canOpen(self.instrument)

@@ -84,15 +84,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         except KeyError:
             assert issubclass(windowclass, WindowRequiresDevices)
             assert issubclass(windowclass, QtWidgets.QWidget)
-            if windowclass.canOpen(self.instrument):
-                w = windowclass(parent=None, instrument=self.instrument)
-                w.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
-                w.destroyed.connect(self.onWindowDestroyed)
-                w.setObjectName(windowclass.__name__)
-                self._windows[windowclass.__name__] = w
-                w.show()
-                w.raise_()
-                w.setFocus()
+            self.addSubWindow(windowclass)
+
+    def addSubWindow(self, windowclass):
+        if windowclass.canOpen(self.instrument):
+            w = windowclass(parent=None, instrument=self.instrument, mainwindow=self)
+            w.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+            w.destroyed.connect(self.onWindowDestroyed)
+            w.setObjectName(windowclass.__name__)
+            self._windows[windowclass.__name__] = w
+            w.show()
+            w.raise_()
+            w.setFocus()
+            return w
+        return None
 
     def onWindowDestroyed(self, window: QtWidgets.QWidget):
         logger.debug(f'Window with object name {window.objectName()} destroyed.')
