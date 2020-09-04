@@ -1,6 +1,7 @@
 import logging
 from typing import Dict
 import pkg_resources
+import time
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
@@ -89,15 +90,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         except KeyError:
             assert issubclass(windowclass, WindowRequiresDevices)
             assert issubclass(windowclass, QtWidgets.QWidget)
-            self.addSubWindow(windowclass)
+            self.addSubWindow(windowclass, singleton=True)
 
-    def addSubWindow(self, windowclass):
+    def addSubWindow(self, windowclass, singleton: bool=True):
         if windowclass.canOpen(self.instrument):
+            if singleton and windowclass.__name__ in self._windows:
+                raise ValueError(f'Window class {windowclass} has already an active instance.')
+            if not singleton:
+                objectname = windowclass.__name__+str(time.monotonic())
+            else:
+                objectname = windowclass.__name__
             w = windowclass(parent=None, instrument=self.instrument, mainwindow=self)
             w.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
             w.destroyed.connect(self.onWindowDestroyed)
-            w.setObjectName(windowclass.__name__)
-            self._windows[windowclass.__name__] = w
+            w.setObjectName(objectname)
+            self._windows[objectname] = w
             w.show()
             w.raise_()
             w.setFocus()
