@@ -131,7 +131,9 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         scan = self._scans[list(self._scans.keys())[index.row()]]
-        if role == QtCore.Qt.ToolTipRole:
+        if role == QtCore.Qt.UserRole:
+            return scan
+        elif role == QtCore.Qt.ToolTipRole:
             return scan.command
         elif role == QtCore.Qt.DisplayRole:
             if index.column() == 0:
