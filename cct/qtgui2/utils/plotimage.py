@@ -160,9 +160,10 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             assert False
         return extent, center
 
-    def replot(self):
+    def replot(self, keepzoom: bool=False):
         extent, center = self._get_extent()
         # now plot the matrix
+        axlimits = self.axes.axis()
         if self._imghandle is None:
             self._imghandle = self.axes.imshow(
                 self.matrix,
@@ -240,9 +241,11 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             self.axes.set_ylabel('$q$ (nm$^{-1}$)')
         else:
             assert False
+        if keepzoom:
+            self.axes.axis(axlimits)
         self.canvas.draw_idle()
 
-    def setExposure(self, exposure: Exposure):
+    def setExposure(self, exposure: Exposure, keepzoom: bool=False):
         self.matrix = exposure.intensity
         self.mask = exposure.mask == 0
         self.wavelength = float(exposure.header.wavelength[0])
@@ -250,7 +253,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.beamx = float(exposure.header.beamposcol[0])
         self.beamy = float(exposure.header.beamposrow[0])
         self.distance = float(exposure.header.distance[0])
-        self.replot()
+        self.replot(keepzoom)
 
     def setPixelOnly(self, pixelonly: bool):
         self.axesComboBox.setEnabled(not pixelonly)
