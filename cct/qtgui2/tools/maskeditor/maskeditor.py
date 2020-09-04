@@ -85,7 +85,7 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.onUndoStackPointerChanged()  # update the enabled state of the undo buttons
         self._pixelhuntcursor = Cursor(self.plotimage.axes, color='white', lw=1, linestyle=':', zorder=100)
         self._pixelhuntcursor.set_active(False)
-        self.plotcurve.setShowErrors(False)
+        self.plotcurve.setShowErrorBars(False)
 
     def on2DCanvasButtonPress(self, event: MouseEvent) -> bool:
         """Handle button presses on the canvas in pixel selection mode."""
