@@ -21,6 +21,7 @@ from ..tools.maskeditor.maskeditor import MaskEditor
 from ..setup.usermanager.usermanager import UserManager
 from ..setup.usermanager.passwordchange import PasswordChange
 from ..setup.projectmanager.projectmanager import ProjectManager
+from ..utils.plotimage import PlotImage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -29,6 +30,7 @@ logger.setLevel(logging.DEBUG)
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     logViewer: LogViewerText
     instrument: Instrument
+    plotimage: PlotImage
 
     _action2windowclass = {
         'actionX_ray_source': GeniXTool,
@@ -66,6 +68,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         rootlogger.addHandler(self.logViewer)
         self.actionQuit.triggered.connect(self.close)
         self.progressBar.setVisible(False)
+        self.plotimage = PlotImage(self.patternTab)
+        self.patternTab.setLayout(QtWidgets.QVBoxLayout())
+        self.patternTab.layout().addWidget(self.plotimage)
         for actionname, windowclass in self._action2windowclass.items():
             action = getattr(self, actionname)
             assert isinstance(action, QtWidgets.QAction)
