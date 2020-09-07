@@ -92,9 +92,14 @@ class Accounting(Service):
         server = ldap3.Server(host, port=port, use_ssl=ssl,get_info=ldap3.ALL)
         try:
             with ldap3.Connection(server, user='uid={},ou=people,{}'.format(username, self.state['ldap_dn']),
-                                          password=password, auto_bind=ldap3.AUTO_BIND_TLS_BEFORE_BIND):
-                logger.info('Authenticated user ' + username + ' using LDAP.')
-                return True
+                                          password=password, auto_bind=ldap3.AUTO_BIND_NONE) as conn:
+                try:
+                    conn.start_tls()
+                except:
+                    pass
+                if conn.bind():
+                    logger.info('Authenticated user ' + username + ' using LDAP.')
+                    return True
         except ldap3.core.exceptions.LDAPExceptionError as exc:
             logger.info('Failed to authenticate user ' + username + ' using LDAP: {}.'.format(str(exc)))
             return False
