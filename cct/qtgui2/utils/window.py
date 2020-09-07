@@ -10,6 +10,10 @@ logger.setLevel(logging.DEBUG)
 
 
 class WindowRequiresDevices:
+    """Convenience mixin class for UI windows
+
+
+    """
     required_devicenames: Optional[List[str]] = None
     required_devicetypes: Optional[List[str]] = None
     required_motors: Optional[List[str]] = None
@@ -23,28 +27,27 @@ class WindowRequiresDevices:
         logger.debug(f'required device names: {self.required_devicenames}')
         logger.debug(f'required device types: {self.required_devicetypes}')
         logger.debug(f'required motors: {self.required_motors}')
-        instrument = kwargs['instrument']
-        assert isinstance(instrument, Instrument)
-        self.instrument = instrument
+        self.instrument = kwargs['instrument']
+        assert isinstance(self.instrument, Instrument)
         self.mainwindow = kwargs['mainwindow']
-        devices = {d for d in instrument.devicemanager.devices.values()
+        devices = {d for d in self.instrument.devicemanager.devices.values()
                    if (d.name in (self.required_devicenames if self.required_devicenames is not None else []))
                    or (d.devicetype in (self.required_devicetypes if self.required_devicetypes is not None else []))}
-        motors = {m for m in instrument.motors.motors if
+        motors = {m for m in self.instrument.motors.motors if
                   m.name in self.required_motors} if self.required_motors else set()
         self._required_devices = set()
         for d in devices:
             logger.debug(f'Connecting device {d.name}')
             self._connectDevice(d)
-        if devices:
-            instrument.devicemanager.deviceDisconnected.connect(self.onDeviceDisconnected)
-            instrument.devicemanager.deviceConnected.connect(self.onDeviceConnected)
+        self.instrument.devicemanager.deviceDisconnected.connect(self.onDeviceDisconnected)
+        self.instrument.devicemanager.deviceConnected.connect(self.onDeviceConnected)
         logger.debug('Connecting motors')
         for m in motors:
             assert isinstance(m, Motor)
             self.connectMotor(m)
         logger.debug(f'Connected {len(motors)} motors')
         self.instrument.config.changed.connect(self.onConfigChanged)
+        self.instrument.auth.currentUserChanged.connect(self.onUserOrPrivilegesChanged)
 
     @classmethod
     def canOpen(cls, instrument: Instrument) -> bool:
@@ -133,4 +136,7 @@ class WindowRequiresDevices:
         pass
 
     def onConfigChanged(self, path: Tuple[str, ...], newvalue: Any):
+        pass
+
+    def onUserOrPrivilegesChanged(self, username: str):
         pass

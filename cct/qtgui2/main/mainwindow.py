@@ -24,6 +24,7 @@ from ..setup.usermanager.passwordchange import PasswordChange
 from ..setup.projectmanager.projectmanager import ProjectManager
 from ..utils.plotimage import PlotImage
 from ..tools.capillarysizer import CapillarySizer
+from ..devices.connectioneditor.connectioneditor import ConnectionEditor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -48,6 +49,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionChange_password': PasswordChange,
         'actionProject_management': ProjectManager,
         'actionCapillary_sizing': CapillarySizer,
+        'actionDevice_connections': ConnectionEditor,
     }
     _windows: Dict[str, QtWidgets.QWidget]
 

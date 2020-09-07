@@ -92,7 +92,10 @@ class Config(QtCore.QObject):
             dic = dic[k]
         assert isinstance(dic, Config)
         if isinstance(dic._data[key[-1]], Config):
-            dic._data[key[-1]].changed.disconnect(self._subConfigChanged)
+            try:
+                dic._data[key[-1]].changed.disconnect(self._subConfigChanged)
+            except TypeError:
+                pass
         del dic._data[key[-1]]
         self._modificationcount += 1
 
