@@ -25,6 +25,7 @@ from ..setup.projectmanager.projectmanager import ProjectManager
 from ..utils.plotimage import PlotImage
 from ..tools.capillarysizer import CapillarySizer
 from ..devices.connectioneditor.connectioneditor import ConnectionEditor
+from .indicators.lastfsn import LastFSNIndicator
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -34,6 +35,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     logViewer: LogViewerText
     instrument: Instrument
     plotimage: PlotImage
+    lastfsnindicator: LastFSNIndicator
 
     _action2windowclass = {
         'actionX_ray_source': GeniXTool,
@@ -81,6 +83,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             assert isinstance(action, QtWidgets.QAction)
             action.triggered.connect(self.onActionTriggered)
         self.setWindowTitle(f'Credo Control Tool v{pkg_resources.get_distribution("cct").version} User: {self.instrument.auth.username()}')
+        self.lastfsnindicator = LastFSNIndicator(parent=self.centralwidget)
+        self.indicatorHorizontalLayout.addWidget(self.lastfsnindicator)
+        self.indicatorHorizontalLayout.addStretch(1)
 
     def onActionTriggered(self, toggled: bool):
         action = self.sender()
