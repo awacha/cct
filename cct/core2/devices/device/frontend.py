@@ -136,12 +136,14 @@ class DeviceFrontend(QtCore.QObject):
             except Exception as exc:
                 self._logger.critical(f'Exception while emitting the telemetry signal of device {self.name}: {exc}')
         elif message.command == 'commanderror':
+            self.onCommandResult(False, message['commandname'], message['errormessage'])
             try:
                 self.commandResult.emit(False, message['commandname'], message['errormessage'])
             except Exception as exc:
                 self._logger.critical(f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
             self._logger.error(f'Error while executing command {message["commandname"]} on device {self.name}: {message["errormessage"]}')
         elif message.command == 'commandfinished':
+            self.onCommandResult(False, message['commandname'], message['result'])
             try:
                 self.commandResult.emit(True, message['commandname'], message['result'])
             except Exception as exc:
@@ -227,3 +229,6 @@ class DeviceFrontend(QtCore.QObject):
         :raises IndexError: if the variable does not exist
         """
         return [v for v in self._variables if v.name == name][0]
+
+    def onCommandResult(self, commandname: str, success: bool, result: str):
+        pass
