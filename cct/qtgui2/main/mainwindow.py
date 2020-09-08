@@ -131,6 +131,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             for name in self._windows:
                 self._windows[name].close()
             logger.debug('All windows closed, accepting close event.')
+            self.instrument.config.save()
             event.accept()
         elif not self.instrument.stopping:
             logger.debug('Instrument is running.')

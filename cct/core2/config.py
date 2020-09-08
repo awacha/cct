@@ -23,7 +23,6 @@ class Config(QtCore.QObject):
 
     """
 
-
     changed = QtCore.pyqtSignal(object, object)
     autosave: bool=False
     filename: Optional[str] = None
@@ -169,6 +168,7 @@ class Config(QtCore.QObject):
             return item[-1] in dic
 
     def load(self, picklefile: PathLike, update: bool=True):
+        self.filename = picklefile
         if not update:
             logger.debug(f'Loading configuration from {picklefile}')
             with open(picklefile, 'rb') as f:
@@ -180,10 +180,13 @@ class Config(QtCore.QObject):
             other = Config(picklefile)
             self.update(other)
         logger.info(f'Loaded configuration from {picklefile}')
-        self.filename = picklefile
 
-    def save(self, picklefile: PathLike):
+    def save(self, picklefile: Optional[PathLike] = None):
+        if picklefile is None:
+            picklefile = self.filename
         #logger.debug(f'Saving configuration to {picklefile}')
+        dirs, filename = os.path.split(picklefile)
+        os.makedirs(dirs, exist_ok=True)
         with open(picklefile, 'wb') as f:
             pickle.dump(self.__getstate__(), f)
         logger.info(f'Saved configuration to {picklefile}')
