@@ -118,13 +118,18 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
             self.disconnectDevice(name)
 
     def disconnectDevice(self, devicename: str):
+        if not self.instrument.auth.hasPrivilege(Privilege.ConnectDevices):
+            raise RuntimeError('Insufficient privileges to connect devices')
         self.devices[devicename].stopbackend()
 
     def connectDevice(self, devicename: str):
+        if not self.instrument.auth.hasPrivilege(Privilege.ConnectDevices):
+            raise RuntimeError('Insufficient privileges to connect devices')
         classinfo = [dc for dc in self._deviceclasses if dc.devicename == devicename][0]
         cls = self.getDriverClass(classinfo.deviceclassname)
         assert issubclass(cls, DeviceFrontend)
-        device = cls(classinfo.devicename, classinfo.host, classinfo.port)
+        logger.info(f'Connecting to device {devicename}. Driver class is {str(cls)}.')
+        device = cls(name=classinfo.devicename, host=classinfo.host, port=classinfo.port)
         device.connectionEnded.connect(self.onConnectionEnded)
         device.panic.connect(self.onPanic)
         device.error.connect(self.onError)
@@ -132,7 +137,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         logger.info(f'Connected to device {device.name}')
         self.deviceConnected.emit(classinfo.devicename)
         row = [i for i, dc in enumerate(self._deviceclasses) if dc.devicename == devicename][0]
-        self.dataChanged(self.index(row, 0), self.index(row, 0), [QtCore.Qt.DecorationRole])
+        self.dataChanged.emit(self.index(row, 0), self.index(row, 0), [QtCore.Qt.DecorationRole])
 
     def onConnectionEnded(self, expected: bool):
         device = self.sender()
