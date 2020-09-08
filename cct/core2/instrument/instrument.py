@@ -47,7 +47,11 @@ class Instrument(QtCore.QObject):
         self.config = Config(autosave=True)
         self.createDefaultConfig()
         logger.debug(f'Using config file {configfile}')
-        self.config.load(configfile)
+        try:
+            self.config.load(configfile)
+        except FileNotFoundError:
+            logger.warning(f'Config file {configfile} does not exist.')
+            pass
         self.io = IO(config=self.config, instrument=self)
         self.samplestore = SampleStore(config=self.config, instrument=self)
         self.devicemanager = DeviceManager(config=self.config, instrument=self)
@@ -126,7 +130,7 @@ class Instrument(QtCore.QObject):
             'dist_ph3_sample': 0,
             'dist_det_beamstop': 0,
         }
-        self.config['calibrants'] = {},
+        self.config['calibrants'] = {}
 
     @classmethod
     def instance(cls) -> "Instrument":

@@ -1,6 +1,7 @@
 import datetime
 import re
 from typing import List, Any
+import logging
 
 import dateutil.parser
 from PyQt5 import QtCore
@@ -9,6 +10,9 @@ from .calibrant import Calibrant
 from .intensity import IntensityCalibrant
 from .q import QCalibrant
 from ..component import Component
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class CalibrantStore(QtCore.QAbstractItemModel, Component):
@@ -135,29 +139,30 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
     def loadFromConfig(self):
         self.beginResetModel()
         self._calibrants = []
-        for calibrantname in self.config['calibrants']:
-            conf = self.config['calibrants'][calibrantname].asdict()
-            if all([(isinstance(v, dict) and ('val' in v) and ('err' in v)) for k, v in conf.items()]):
-                # this is an old-style q-calibrant
-                calibrant = QCalibrant(calibrantname)
-                calibrant.__setstate__({'name': calibrantname,
-                                        'description': '',
-                                        'regex': '^' + calibrantname + '$',
-                                        'calibrationdate': str(datetime.datetime.now()),
-                                        'peaks': [
-                                            (peakname, conf[peakname]['val'], conf[peakname]['err'])
-                                            for peakname in sorted(conf)
-                                        ]
-                                        })
-            elif 'peaks' in conf:
-                calibrant = QCalibrant(calibrantname)
-                calibrant.__setstate__(conf)
-            elif 'datafile' in conf:
-                calibrant = IntensityCalibrant(calibrantname)
-                calibrant.__setstate__(conf)
-            else:
-                assert False
-            self._calibrants.append(calibrant)
+        if 'calibrants' in self.config:
+            for calibrantname in self.config['calibrants']:
+                conf = self.config['calibrants'][calibrantname].asdict()
+                if all([(isinstance(v, dict) and ('val' in v) and ('err' in v)) for k, v in conf.items()]):
+                    # this is an old-style q-calibrant
+                    calibrant = QCalibrant(calibrantname)
+                    calibrant.__setstate__({'name': calibrantname,
+                                            'description': '',
+                                            'regex': '^' + calibrantname + '$',
+                                            'calibrationdate': str(datetime.datetime.now()),
+                                            'peaks': [
+                                                (peakname, conf[peakname]['val'], conf[peakname]['err'])
+                                                for peakname in sorted(conf)
+                                            ]
+                                            })
+                elif 'peaks' in conf:
+                    calibrant = QCalibrant(calibrantname)
+                    calibrant.__setstate__(conf)
+                elif 'datafile' in conf:
+                    calibrant = IntensityCalibrant(calibrantname)
+                    calibrant.__setstate__(conf)
+                else:
+                    assert False
+                self._calibrants.append(calibrant)
         self._calibrants.sort(key=lambda c: c.name)
         self.endResetModel()
         self.calibrantListChanged.emit()

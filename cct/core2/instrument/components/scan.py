@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import time
 from typing import Dict, Optional, Any, Sequence
 
 from PyQt5 import QtCore
@@ -34,7 +35,13 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         self.reindex()
 
     def newScanFile(self, filename: str):
-        pass
+        with open(filename, 'wt') as f:
+            f.write(f'#F {os.path.abspath(filename)}\n')
+            f.write(f'#E {time.time()}\n')
+            f.write(f'#D {datetime.datetime.now()}\n')
+            f.write('#C CREDO scan file')
+            f.write('#O0 '+ '  '.join([m.name for m in self.instrument.motors])+'\n')
+            f.write('\n\n')
 
     def startNewScan(self, command: str, motorname: str, counters: Sequence[str], maxcounts: int, comment: str,
                      countingtime: float) -> int:
@@ -97,8 +104,9 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
 
     def reindex(self):
         self.beginResetModel()
+        os.makedirs(self.config['path']['directories']['scan'], exist_ok=True)
+        self._scans = {}
         try:
-            self._scans = {}
             with open(os.path.join(self.config['path']['directories']['scan'],
                                    self.config['scan']['scanfile']), 'rb') as f:
                 while True:
@@ -109,6 +117,10 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
                         break
             self._lastscan = max(self._scans.keys()) if self._scans else None
             self._nextscan = self._lastscan + 1 if self._lastscan is not None else 0
+        except FileNotFoundError:
+            # we need to create a new scan file
+            self.newScanFile(os.path.join(self.config['path']['directories']['scan'],
+                                          self.config['scan']['scanfile']))
         finally:
             self.endResetModel()
         self.lastscanchanged.emit(self._lastscan)
@@ -166,3 +178,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
 
     def __getitem__(self, item) -> Scan:
         return self._scans[item]
+
+    def loadFromConfig(self):
+        if 'scan' not in self.config:
+            self.config['scan'] = {'mask': None, 'mask_total': None, 'scanfile':'credoscan.spec'}
