@@ -98,7 +98,7 @@ class GeometryPreset(QtCore.QObject):
         self.pinhole2 = pinhole2
         self.pinhole3 = pinhole3
         self.beamstop = beamstop
-        self.flightpipes = flightpipes
+        self.flightpipes = flightpipes if flightpipes is not None else []
         self.sd = sd
         self.beamposx = beamposx
         self.beamposy = beamposy
