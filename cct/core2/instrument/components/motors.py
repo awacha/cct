@@ -1,5 +1,5 @@
 import logging
-from typing import Iterator, Any, List
+from typing import Iterator, Any, List, Dict
 
 from PyQt5 import QtCore, QtGui
 
@@ -235,3 +235,6 @@ class Motors(QtCore.QAbstractItemModel, Component):
 
     def __contains__(self, item) -> bool:
         return item in self.motors
+
+    def getHeaderEntry(self) -> Dict[str, float]:
+        return {m.name: m.where() for m in self.motors}

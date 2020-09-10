@@ -74,6 +74,8 @@ class GeometryPreset(QtCore.QObject):
                                             lambda self: self._getproperty_config('lastflightpipetodetector', 0.0))
     wavelength = pyqtProperty(tuple, lambda self: (self.config['geometry'].setdefault('wavelength', 1.0),
                                                    self.config['geometry'].setdefault('wavelength.err', 0.0)))
+    pixelsize = pyqtProperty(tuple, lambda self: (self.config['geometry'].setdefault('pixelsize', 1.0),
+                                                  self.config['geometry'].setdefault('pixelsize.err', 0.0002)))
 
     def __init__(self,
                  config: Config,
@@ -108,7 +110,9 @@ class GeometryPreset(QtCore.QObject):
 
         Positions are calculated from the 1st pinhole.
         """
-        if position < 0:
+        if self.l1 == 0 or self.l2 == 0:
+            return np.nan
+        elif position < 0:
             # before pinhole #1
             return np.inf
         elif (position > self.l1 + self.l2 + self.ph3tosample + self.sd[0] - self.beamstoptodetector) and (
@@ -143,7 +147,10 @@ class GeometryPreset(QtCore.QObject):
 
     @property
     def intensity(self) -> float:
-        return self.pinhole1 ** 2 * self.pinhole2 ** 2 / self.l1 ** 2
+        try:
+            return self.pinhole1 ** 2 * self.pinhole2 ** 2 / self.l1 ** 2
+        except ZeroDivisionError:
+            return np.nan
 
     @property
     def dsample(self) -> float:
@@ -179,8 +186,11 @@ class GeometryPreset(QtCore.QObject):
                                              withparasitic=True) if not self.is_beamstop_large_enough_parasitic else 0
         direct_ring_diameter = self.dbeam(self.l1 + self.l2 + self.ph3tosample + self.sd[0],
                                           withparasitic=False) if not self.is_beamstop_large_enough_direct else 0
-        beamstop_shadow_diameter = (self.beamstop + self.dsample) * self.sd[0] / (
-                self.sd[0] - self.beamstoptodetector) - self.dsample
+        try:
+            beamstop_shadow_diameter = (self.beamstop + self.dsample) * self.sd[0] / (
+                    self.sd[0] - self.beamstoptodetector) - self.dsample
+        except ZeroDivisionError:
+            beamstop_shadow_diameter = np.nan
         return max(parasitic_ring_diameter, direct_ring_diameter, beamstop_shadow_diameter) * 0.5
 
     def toDict(self) -> Dict[str, Any]:
@@ -200,8 +210,42 @@ class GeometryPreset(QtCore.QObject):
 
     @property
     def qmin(self) -> float:
-        return 4 * np.pi * np.sin(0.5 * np.arctan(self.rmindetector / self.sd[0])) / self.wavelength[0]
+        try:
+            return 4 * np.pi * np.sin(0.5 * np.arctan(self.rmindetector / self.sd[0])) / self.wavelength[0]
+        except ZeroDivisionError:
+            return np.nan
 
     @property
     def Rgmax(self) -> float:
-        return 1 / self.qmin
+        try:
+            return 1 / self.qmin
+        except ZeroDivisionError:
+            return np.nan
+
+    def getHeaderEntry(self) -> Dict[str, Any]:
+        return {
+            'dist_sample_det': self.sd[0],
+            'dist_sample_det.err': self.sd[1],
+            'dist_source_ph1': self.sourcetoph1,
+            'dist_ph1_ph2': self.l1,
+            'dist_ph2_ph3': self.l2,
+            'dist_ph3_sample': self.ph3tosample,
+            'dist_det_beamstop': self.beamstoptodetector,
+            'pinhole_1': self.pinhole1,
+            'pinhole_2': self.pinhole2,
+            'pinhole_3': self.pinhole3,
+            'description': self.description,
+            'beamstop': self.beamstop,
+            'wavelength': self.wavelength[0],
+            'wavelength.err': self.wavelength[1],
+            'beamposx': self.beamposx[0],
+            'beamposy': self.beamposy[0],
+            'beamposx.err': self.beamposx[1],
+            'beamposy.err': self.beamposy[1],
+            'mask': self.mask,
+            'dist_sample_det.val': self.sd[0],
+            'pixelsize': self.pixelsize[0],
+            'pixelsize.err': self.pixelsize[1],
+            'truedistance': self.sd[0],  # should be overridden when information on the sample is ready
+            'truedistance.err': self.sd[1],  # should be overridden when information on the sample is ready
+        }  # other fields: truedistance, truedistance.err

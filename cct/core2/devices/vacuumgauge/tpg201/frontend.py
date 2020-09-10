@@ -6,3 +6,6 @@ class TPG201(DeviceFrontend):
     devicetype = 'vacuumgauge'
     devicename = 'TPG201'
     backendclass = TPG201Backend
+
+    def pressure(self) -> float:
+        return self['pressure']

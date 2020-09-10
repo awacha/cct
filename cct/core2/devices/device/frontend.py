@@ -1,7 +1,7 @@
 import logging
 import queue
 from multiprocessing import Queue, Process
-from typing import Any, Type, List, Iterator, Dict
+from typing import Any, Type, List, Iterator, Dict, Optional
 
 from PyQt5 import QtCore
 
@@ -11,7 +11,7 @@ from .telemetry import TelemetryInformation
 from .variable import Variable
 
 
-class DeviceFrontend(QtCore.QObject):
+class DeviceFrontend(QtCore.QAbstractItemModel):
     """A base class for devices. This is the front-end part, running in the main process, communicating with the
     backend"""
 
@@ -19,6 +19,8 @@ class DeviceFrontend(QtCore.QObject):
     devicetype: str = 'unknown'  # source, detector, motorcontroller, thermostat, vacuumgauge etc.
     devicename: str  # unique identifier of the device make/model
     backendclass: Type[DeviceBackend]
+
+    currentMessage: Optional[Message] = None
 
     # do not touch these attributes in subclasses
     _variables: List[Variable] = None
@@ -85,6 +87,7 @@ class DeviceFrontend(QtCore.QObject):
         self._backend.start()
         self._logger = logging.getLogger(f'{__name__}:{self.name}')
         self._backendlogger = logging.getLogger(f'{__name__}:{self.name}:backend')
+        self._backendlogger.setLevel(logging.DEBUG)
 #        self._logger.debug('Started backend process. Waiting for variable list...')
         # now wait for the variables:
         while True:
@@ -107,56 +110,58 @@ class DeviceFrontend(QtCore.QObject):
 
         """
         try:
-            message = self._queue_from_backend.get_nowait()
-            assert isinstance(message, Message)
+            self.currentMessage = self._queue_from_backend.get_nowait()
         except queue.Empty:
             return
-        if message.command == 'variableChanged':
-            var = self.getVariable(message['name'])
-            var.update(message.kwargs['value'])
-            self.onVariableChanged(var.name, var.value, var.previousvalue)
-            try:
-                self.variableChanged.emit(var.name, var.value, var.previousvalue)
-            except Exception as exc:
-                self._logger.critical(
-                    f'Exception while emitting the variableChanged signal of device {self.name}: {exc}')
-            if (not self._ready) and all([v.timestamp is not None for v in self._variables]):
-                self._ready = True
+        try:
+            if self.currentMessage.command == 'variableChanged':
+                var = self.getVariable(self.currentMessage['name'])
+                var.update(self.currentMessage.kwargs['value'])
+                self.onVariableChanged(var.name, var.value, var.previousvalue)
                 try:
-                    self.allVariablesReady.emit()
+                    self.variableChanged.emit(var.name, var.value, var.previousvalue)
                 except Exception as exc:
                     self._logger.critical(
-                        f'Exception while emitting the allVariablesReady signal of device {self.name}: {exc}')
-        elif message.command == 'log':
-            self._backendlogger.log(message['level'], message['logmessage'])
-        elif message.command == 'telemetry':
-            try:
-                #print(message['telemetry'], flush=True)
-                self.telemetry.emit(message['telemetry'])
-            except Exception as exc:
-                self._logger.critical(f'Exception while emitting the telemetry signal of device {self.name}: {exc}')
-        elif message.command == 'commanderror':
-            self.onCommandResult(False, message['commandname'], message['errormessage'])
-            try:
-                self.commandResult.emit(False, message['commandname'], message['errormessage'])
-            except Exception as exc:
-                self._logger.critical(f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
-            self._logger.error(f'Error while executing command {message["commandname"]} on device {self.name}: {message["errormessage"]}')
-        elif message.command == 'commandfinished':
-            self.onCommandResult(False, message['commandname'], message['result'])
-            try:
-                self.commandResult.emit(True, message['commandname'], message['result'])
-            except Exception as exc:
-                self._logger.critical(f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
-            self._logger.debug(f'Command {message["commandname"]} finished successfully on device {self.name}. Result: {message["result"]}')
-        elif message.command == 'end':
-            self._backend.join()
-            self.killTimer(self._timerid)
-            try:
-                self.connectionEnded.emit(message['expected'])
-            except Exception as exc:
-                self._logger.critical(
-                    f'Exception while emitting the connectionEnded signal of device {self.name}: {exc}')
+                        f'Exception while emitting the variableChanged signal of device {self.name}: {exc}')
+                if (not self._ready) and all([v.timestamp is not None for v in self._variables]):
+                    self._ready = True
+                    try:
+                        self.allVariablesReady.emit()
+                    except Exception as exc:
+                        self._logger.critical(
+                            f'Exception while emitting the allVariablesReady signal of device {self.name}: {exc}')
+            elif self.currentMessage.command == 'log':
+                self._backendlogger.log(self.currentMessage['level'], self.currentMessage['logmessage'])
+            elif self.currentMessage.command == 'telemetry':
+                try:
+                    #print(self.currentMessage['telemetry'], flush=True)
+                    self.telemetry.emit(self.currentMessage['telemetry'])
+                except Exception as exc:
+                    self._logger.critical(f'Exception while emitting the telemetry signal of device {self.name}: {exc}')
+            elif self.currentMessage.command == 'commanderror':
+                self.onCommandResult(False, self.currentMessage['commandname'], self.currentMessage['errormessage'])
+                try:
+                    self.commandResult.emit(False, self.currentMessage['commandname'], self.currentMessage['errormessage'])
+                except Exception as exc:
+                    self._logger.critical(f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
+                self._logger.error(f'Error while executing command {self.currentMessage["commandname"]} on device {self.name}: {self.currentMessage["errormessage"]}')
+            elif self.currentMessage.command == 'commandfinished':
+                self.onCommandResult(False, self.currentMessage['commandname'], self.currentMessage['result'])
+                try:
+                    self.commandResult.emit(True, self.currentMessage['commandname'], self.currentMessage['result'])
+                except Exception as exc:
+                    self._logger.critical(f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
+                self._logger.debug(f'Command {self.currentMessage["commandname"]} finished successfully on device {self.name}. Result: {self.currentMessage["result"]}')
+            elif self.currentMessage.command == 'end':
+                self._backend.join()
+                self.killTimer(self._timerid)
+                try:
+                    self.connectionEnded.emit(self.currentMessage['expected'])
+                except Exception as exc:
+                    self._logger.critical(
+                        f'Exception while emitting the connectionEnded signal of device {self.name}: {exc}')
+        finally:
+            self.currentMessage = None
 
     @property
     def ready(self) -> bool:
@@ -208,7 +213,11 @@ class DeviceFrontend(QtCore.QObject):
 
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
         """This method is called before the variableChanged signal is emitted."""
-        pass
+        row = [i for i, v in enumerate(self._variables) if v.name == variablename][0]
+        self.dataChanged.emit(
+            self.index(row, 0, QtCore.QModelIndex()),
+            self.index(row, self.columnCount(), QtCore.QModelIndex()),
+        )
 
     @classmethod
     def subclasses(cls) -> Iterator[Type["DeviceFrontend"]]:
@@ -232,3 +241,34 @@ class DeviceFrontend(QtCore.QObject):
 
     def onCommandResult(self, commandname: str, success: bool, result: str):
         pass
+
+    def toDict(self) -> Dict[str, Any]:
+        return {v.name:v.value for v in self._variables}
+
+    def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
+        return 2
+
+    def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
+        return len(self._variables)
+
+    def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
+        return self.createIndex(row, column, None)
+
+    def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
+        return QtCore.QModelIndex()
+
+    def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
+        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+            return ['Name', 'Value'][section]
+
+    def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
+        variable = self._variables[index.row()]
+        if role == QtCore.Qt.DisplayRole:
+            if index.column() == 0:
+                return variable.name
+            elif index.column() == 1:
+                return str(variable.value)
+        return None
+
+    def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
+        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled

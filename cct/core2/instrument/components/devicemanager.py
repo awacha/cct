@@ -1,6 +1,6 @@
 import logging
 from collections import namedtuple
-from typing import Dict, List, Any, Type
+from typing import Dict, List, Any, Type, Iterator
 
 from PyQt5 import QtCore, QtGui
 
@@ -125,6 +125,8 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
     def connectDevice(self, devicename: str):
         if not self.instrument.auth.hasPrivilege(Privilege.ConnectDevices):
             raise RuntimeError('Insufficient privileges to connect devices')
+        if not self.instrument.online:
+            raise RuntimeError('Cannot connect devices in offline mode.')
         classinfo = [dc for dc in self._deviceclasses if dc.devicename == devicename][0]
         cls = self.getDriverClass(classinfo.deviceclassname)
         assert issubclass(cls, DeviceFrontend)
@@ -161,6 +163,13 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
     def onPanic(self):
         pass
 
+    def devicenames(self) -> List[str]:
+        return list(self.devices.keys())
+
+    def __iter__(self) -> Iterator[DeviceFrontend]:
+        for dev in self.devices.values():
+            yield dev
+
     def __getitem__(self, item: str) -> DeviceFrontend:
         return self.devices[item]
 
@@ -169,6 +178,12 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
 
     def source(self) -> DeviceFrontend:
         return [d for d in self.devices.values() if d.devicetype == 'source'][0]
+
+    def vacuum(self) -> DeviceFrontend:
+        return [d for d in self.devices.values() if d.devicetype == 'vacuumgauge'][0]
+
+    def temperature(self) -> DeviceFrontend:
+        return [d for d in self.devices.values() if d.devicetype == 'thermostat'][0]
 
     def addDevice(self, devicename: str, classname: str, host: str, port: int):
         if not self.instrument.auth.hasPrivilege(Privilege.DeviceConfiguration):

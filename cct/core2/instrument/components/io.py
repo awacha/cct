@@ -103,13 +103,14 @@ class IO(QtCore.QObject, Component):
             self._lastscan = maxscan
             self._nextscan = maxscan + 1
 
-    def nextfsn(self, prefix: str, checkout: bool = True) -> int:
+    def nextfsn(self, prefix: str, checkout: int=0) -> int:
         """Get the next file sequence number from the desired sequence
 
         :param prefix: file sequence prefix
         :type prefix: str
-        :param checkout: if True, reserve this FSN, i.e. an exposure is about to be started.
-        :type checkout: bool
+        :param checkout: if nonzero, reserve this FSN, and the next `checkout-1` FSNs i.e. an exposure is about to be
+                         started.
+        :type checkout: int
         :return: the file sequence number
         :rtype: int
         """
@@ -197,6 +198,27 @@ class IO(QtCore.QObject, Component):
                 except FileNotFoundError:
                     pass
         raise FileNotFoundError(expfilename)
+
+    def loadCBF(self, prefix: str, fsn: int, check_local: bool = False) -> np.ndarray:
+        """Load a CBF file
+
+        :param prefix: file sequence prefix
+        :type prefix: str
+        :param fsn: file sequence index
+        :type fsn: int
+        :return: the exposure
+        :rtype: Exposure
+        :raises FileNotFoundError: if the file could not be found
+        """
+        expfilename = self.formatFileName(prefix, fsn, '.cbf')
+        for subdir in ['images_local', 'images'] if check_local else ['images']:
+            for filename in self.iterfilename(str(self.getSubDir(subdir)), prefix, fsn, '.cbf'):
+                try:
+                    return readcbf(filename)
+                except FileNotFoundError:
+                    pass
+        raise FileNotFoundError(expfilename)
+
 
     @staticmethod
     def loadH5(h5file: str, samplename: str, distkey: str) -> Exposure:

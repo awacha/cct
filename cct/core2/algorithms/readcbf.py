@@ -3,7 +3,7 @@ import numpy as np
 from .cbfdecompress import cbfdecompress
 
 
-def readcbf(filename: str):
+def readcbf(filename: str) -> np.ndarray:
     with open(filename, 'rb') as f:
         dim1 = None
         dim2 = None

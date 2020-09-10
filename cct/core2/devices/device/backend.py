@@ -121,10 +121,8 @@ class DeviceBackend:
     telemetryInformation: Optional[TelemetryInformation] = None
     variablesready: bool = False
     autoqueryenabled: asyncio.Event = None
-    logger: logging.Logger
 
     def __init__(self, inqueue: Queue, outqueue: Queue, host: str, port: int, **kwargs):
-        self.logger = logging.getLogger(__name__)
         self.inqueue = inqueue
         self.outqueue = outqueue
         self.variables = [Variable(vi.name, vi.timeout) for vi in self.varinfo]
@@ -336,14 +334,16 @@ class DeviceBackend:
             else:
                 # if we have a message in the output buffer, put it back
                 #                self.warning(f'Putting back {message}')
-                self.outbuffer.put_nowait((priority - 1, (message, nreplies, puttime)))
+                self.outbuffer.put_nowait((priority, (message, nreplies, puttime)))
             if (self.lastsendtime is None) or (self.lastrecvtime > self.lastsendtime):
                 #                self.debug('False alarm in replytimeouttask')
                 return True
             #            self.warning(f'Reply timeout #{self.messageretries+1} / {self.messagemaxretries}')
+            self.warning('Reply timeout')
             if self.messageretries >= self.messagemaxretries:
                 raise RuntimeError('Reached maximal number of send retries')
             self.messageretries += 1
+            self.warning(f'Retrying sending of message {self.lastmessage[0]=}, {self.lastmessage[1]=}')
             await self._dosend(self.lastmessage[0], self.lastmessage[1])
         #        self.debug('Sender done.')
         return True
@@ -357,7 +357,6 @@ class DeviceBackend:
             self.telemetryInformation.messagessent += 1
         self.lastmessage = message, nreplies
         self.cleartosend.clear()
-        #        self.debug(f'Sending message {message}.')
         await self.streamwriter.drain()
 
     #        self.debug(f'Message {message} sent')
@@ -539,7 +538,7 @@ class DeviceBackend:
 
         This method should not be overridden in subclasses.
         """
-        self.outbuffer.put_nowait((100, (message, numreplies, time.monotonic())))
+        self.outbuffer.put_nowait((time.monotonic(), (message, numreplies, time.monotonic())))
 
     #        self.debug(f'Enqueued message {message}, num replies {numreplies}')
     #        self.debug(f'Output buffer length after enqueueing message: {self.outbuffer.qsize()}')
@@ -605,8 +604,7 @@ class DeviceBackend:
 
     @final
     def debug(self, message: str):
-        if self.logger.level <= logging.DEBUG:
-            return self.log(logging.DEBUG, message)
+        return self.log(logging.DEBUG, message)
 
     @final
     def warning(self, message: str):

@@ -29,14 +29,18 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
                 ('category', 'Category'),
                 ('situation', 'Situation')]
 
+    _xmotorname: str
+    _ymotorname: str
     sampleListChanged = QtCore.pyqtSignal()
     currentSampleChanged = QtCore.pyqtSignal(str)
+    movingToSample = QtCore.pyqtSignal(str, str, float, float, float)  # sample, motor name, motor position, start position, end position
+    movingFinished = QtCore.pyqtSignal(str, bool)  # sample, success
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._samples = []
         self._currentsample = None
-        self.loadFromConfig()
+        #self.loadFromConfig()
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return len(self._samples)
@@ -128,6 +132,8 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             self._samples.append(Sample.fromdict(self.config['services']['samplestore']['list'][sample].asdict()))
         self._samples = sorted(self._samples, key=lambda s: s.title.upper())
         self.endResetModel()
+        self._xmotorname = self.config['services']['samplestore']['motorx']
+        self._ymotorname = self.config['services']['samplestore']['motory']
 
     def saveToConfig(self):
         self.config.blockSignals(True)
@@ -242,16 +248,52 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             yield sample
 
     def xmotor(self) -> Motor:
-        return self.instrument.motors[self.config['services']['samplestore']['motorx']]
+        return self.instrument.motors[self._xmotorname]
 
     def ymotor(self) -> Motor:
-        return self.instrument.motors[self.config['services']['samplestore']['motory']]
+        return self.instrument.motors[self._ymotorname]
 
     def xmotorname(self) -> str:
-        return self.config['services']['samplestore']['motorx']
+        return self._xmotorname
 
     def ymotorname(self) -> str:
-        return self.config['services']['samplestore']['motory']
+        return self._ymotorname
 
-    def currentSample(self) -> Sample:
+    def currentSample(self) -> Optional[Sample]:
+        if self._currentsample is None:
+            return None
         return self[self._currentsample]
+
+    def moveToSample(self, samplename: str):
+        if self.xmotor().moving or self.ymotor().moving:
+            raise RuntimeError('Cannot move sample: motors are not idle.')
+        sample = [s for s in self._samples if s.title == samplename][0]
+        self._currentsample = samplename
+        self.xmotor().started.connect(self.onMotorStarted)
+        self.xmotor().stopped.connect(self.onMotorStopped)
+        self.xmotor().moving.connect(self.onMotorMoving)
+        self.xmotor().moveTo(sample.positionx[0])
+
+    def onMotorMoving(self, current:float, start:float, end:float):
+        self.movingToSample.emit(self._currentsample, self.sender().name, current, start, end)
+
+    def onMotorStarted(self, start: float):
+        pass
+
+    def onMotorStopped(self, success: bool, end: float):
+        self.sender().started.disconnect(self.onMotorStarted)
+        self.sender().stopped.disconnect(self.onMotorStopped)
+        self.sender().moving.disconnect(self.onMotorMoving)
+        if not success:
+            self.movingFinished.emit(False, self._currentsample)
+        if self.sender() is self.xmotor():
+            self.ymotor().started.connect(self.onMotorStarted)
+            self.ymotor().stopped.connect(self.onMotorStopped)
+            self.ymotor().moving.connect(self.onMotorMoving)
+            self.ymotor().moveTo(self.currentSample().positiony[0])
+        elif self.sender() is self.ymotor():
+            self.movingFinished.emit(True, self._currentsample)
+
+    def stopMotors(self):
+        self.xmotor().stop()
+        self.ymotor().stop()

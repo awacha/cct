@@ -6,3 +6,6 @@ class HaakePhoenix(DeviceFrontend):
     backendclass = HaakePhoenixBackend
     devicename = 'HaakePhoenix'
     devicetype = 'thermostat'
+
+    def temperature(self) -> float:
+        return self['temperature']

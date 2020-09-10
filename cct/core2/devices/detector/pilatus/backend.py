@@ -62,10 +62,8 @@ class PilatusBackend(DeviceBackend):
         if variablename == 'threshold':
             self.enqueueHardwareMessage(b'SetThreshold\r')
         elif variablename == 'telemetry_date':
-#            self.debug('Querying telemetry')
             self.enqueueHardwareMessage(b'Telemetry\r')
         elif variablename == 'temperature':
-#            self.debug('Querying temperature')
             self.enqueueHardwareMessage(b'THread\r')
         elif variablename == 'nimages':
             self.enqueueHardwareMessage(b'NImages\r')
@@ -84,7 +82,6 @@ class PilatusBackend(DeviceBackend):
         elif variablename == 'tau':
             self.enqueueHardwareMessage(b'tau\r')
         elif variablename == 'diskfree':
-#            self.debug('Querying diskfree')
             self.enqueueHardwareMessage(b'df\r')
         elif variablename == 'version':
             self.enqueueHardwareMessage(b'version\r')
@@ -180,10 +177,11 @@ class PilatusBackend(DeviceBackend):
                 self.updateVariable('lastcompletedimage', lines[11].strip())
                 self.updateVariable('shutterstate', lines[12].split(':')[1].strip())
         elif idnum == 5:  # df
-#            self.debug('Got diskfree result')
             self.updateVariable('diskfree', int(remainder))
         elif idnum == 7:  # end of single exposure
             self.updateVariable('lastcompletedimage', remainder)
+            self.updateVariable('__status__', self.Status.Idle)
+            self.updateVariable('__auxstatus__', '')
             self.enableAutoQuery()
         elif idnum == 10:  # image path
             self.updateVariable('imgpath', remainder)
@@ -232,7 +230,7 @@ class PilatusBackend(DeviceBackend):
             elif (m := re.match(r'^Rate correction is off, cutoff = (?P<cutoff>\d+) counts$', remainder)) is not None:
                 self.updateVariable('tau', 0.0)
                 self.updateVariable('cutoff', int(m['cutoff']))
-            elif (remainder == '/tmp/setthreshold.cmd'):
+            elif remainder == '/tmp/setthreshold.cmd':
                 # end of trimming
                 self.enableAutoQuery()
                 self.updateVariable('__status__', self.Status.Idle)
@@ -251,7 +249,6 @@ class PilatusBackend(DeviceBackend):
         elif (idnum == 16) and remainder.startswith('PID = '):  # ShowPID
             self.updateVariable('pid', int(remainder.split('=')[1]))
         elif idnum == 18:
-#            self.debug('Got telemetry result')
             # telemetry
             lines = [l.strip() for l in remainder.split('\n')]
             if not (lines[0].startswith('=== Telemetry at ')
@@ -267,7 +264,6 @@ class PilatusBackend(DeviceBackend):
                 self.updateVariable(
                     'telemetry_date',
                     dateutil.parser.parse(lines[0].replace('=== Telemetry at ', '').replace(' ===', '')))
-#                self.debug(f'Updated telemetry_date. Lastquery is: {self.getVariable("telemetry_date").lastquery}')
                 self.updateVariable(
                     'wpix', int(lines[1].split(':')[1].split('(')[0].strip()))
                 self.updateVariable(
@@ -296,7 +292,6 @@ class PilatusBackend(DeviceBackend):
         elif (idnum == 24) and (remainder.startswith('Code release:')):
             self.updateVariable('version', remainder.split(':', 1)[1].strip())
         elif idnum == 215:  # THread, i.e. temperature & humidity information
-#            self.debug('Got humidity result')
             temp = []
             hum = []
             for line in remainder.split('\n'):
@@ -309,7 +304,6 @@ class PilatusBackend(DeviceBackend):
                     hum.append(humidity)
             self.updateVariable('temperature', tuple(temp))
             self.updateVariable('humidity', tuple(hum))
-#            self.debug(f'Humidity updated. Lastquery is {self.getVariable("humidity").lastquery}')
         else:
             self.error(f'Invalid message received from detector: {message}. Last sent message: {sentmessage}')
 
@@ -322,6 +316,7 @@ class PilatusBackend(DeviceBackend):
             self.commandFinished(name, 'Started trimming')
         elif name == 'expose':
             relimgpath, firstfilename, exptime, nimages, delay = args
+            self.debug(f'Starting exposure {relimgpath=}, {firstfilename=}, {exptime=}, {nimages=}, {delay=}')
             if exptime < 1e-7 or exptime > 1e6:
                 self.commandError(name, 'Invalid value for exposure time')
                 return
@@ -337,7 +332,7 @@ class PilatusBackend(DeviceBackend):
             self.enqueueHardwareMessage(f'exptime {exptime}\r'.encode('ascii'))
             fulltime = nimages * exptime + (nimages - 1) * delay
             self.disableAutoQuery()
-            self.enqueueHardwareMessage(f'Exposure {firstfilename}\r'.encode('ascii'))
+            self.enqueueHardwareMessage(f'Exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
             self.updateVariable('__status__', self.Status.Exposing if nimages == 1 else self.Status.ExposingMulti)
             self.commandFinished(name, 'Started exposure')
         elif name == 'stopexposure':

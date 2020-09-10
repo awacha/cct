@@ -71,7 +71,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
             while f'{name}{i}' in self.config['geometry']['presets']:
                 i += 1
             name = f'{name}{i}'
-        self.config['geometry']['presets'][name] = GeometryPreset(self.config)
+        self.config['geometry']['presets'][name] = GeometryPreset(self.config).toDict()
         logger.info(f'Added a new geometry preset {name}')
 
     def removePreset(self, name: str):

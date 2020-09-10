@@ -13,6 +13,7 @@ from .components.samples import SampleStore
 from .components.scan import ScanStore
 from .components.auth import UserManager
 from .components.projects import ProjectManager
+from .components.expose.expose import Exposer
 from ..config import Config
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ class Instrument(QtCore.QObject):
     scan: ScanStore
     auth: UserManager
     projects: ProjectManager
+    exposer: Exposer
     stopping: bool = False
     running: bool = False
     shutdown = QtCore.pyqtSignal()
@@ -64,8 +66,7 @@ class Instrument(QtCore.QObject):
         self.scan = ScanStore(config=self.config, instrument=self)
         self.auth = UserManager(config=self.config, instrument=self)
         self.projects = ProjectManager(config=self.config, instrument=self)
-
-    #        self.start()
+        self.exposer = Exposer(config=self.config, instrument=self)
 
     def setOnline(self, online: bool):
         self.online = online
