@@ -43,17 +43,13 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         self.endResetModel()
 
     def saveToConfig(self):
-        self.config.inhibitAutoSave()
-        try:
-            self.config['connections'] = {dc.devicename: {
-                'classname': dc.deviceclassname, 'name': dc.devicename, 'host': dc.host, 'port': dc.port}
-                for dc in self._deviceclasses}
-            removeddevices = [d for d in self.config['connections'] if
-                              d not in {dc.devicename for dc in self._deviceclasses}]
-            for dn in removeddevices:
-                del self.config['connections'][dn]
-        finally:
-            self.config.enableAutoSave()
+        self.config['connections'] = {dc.devicename: {
+            'classname': dc.deviceclassname, 'name': dc.devicename, 'host': dc.host, 'port': dc.port}
+            for dc in self._deviceclasses}
+        removeddevices = [d for d in self.config['connections'] if
+                          d not in {dc.devicename for dc in self._deviceclasses}]
+        for dn in removeddevices:
+            del self.config['connections'][dn]
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return len(self._deviceclasses)

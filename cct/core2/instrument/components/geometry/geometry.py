@@ -46,14 +46,12 @@ class Geometry(QtCore.QAbstractItemModel, Component):
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         oldname = sorted(self.config['geometry']['presets'].keys())[index.row()]
-        self.config.inhibitAutoSave()
+        if oldname == value:
+            return False
         self.beginResetModel()
-        try:
-            data = self.config['geometry']['presets'][oldname]
-            self.config['geometry']['presets'][str(value)] = data
-            del self.config['geometry']['presets'][oldname]
-        finally:
-            self.config.enableAutoSave()
+        data = self.config['geometry']['presets'][oldname]
+        self.config['geometry']['presets'][str(value)] = data.asdict()
+        del self.config['geometry']['presets'][oldname]
         self.endResetModel()
         return True
 
@@ -71,11 +69,15 @@ class Geometry(QtCore.QAbstractItemModel, Component):
             while f'{name}{i}' in self.config['geometry']['presets']:
                 i += 1
             name = f'{name}{i}'
+        self.beginResetModel()
         self.config['geometry']['presets'][name] = GeometryPreset(self.config).toDict()
+        self.endResetModel()
         logger.info(f'Added a new geometry preset {name}')
 
     def removePreset(self, name: str):
+        self.beginResetModel()
         del self.config['geometry']['presets'][name]
+        self.endResetModel()
         logger.info(f'Removed geometry preset {name}.')
 
     def onConfigChanged(self, path, value):
@@ -109,25 +111,21 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         self.currentPresetChanged.emit(propertyname, newvalue)
 
     def saveToConfig(self):
-        self.config.inhibitAutoSave()
-        try:
-            self.config['geometry']['l1_elements'] = tuple(self.currentpreset.l1_elements)
-            self.config['geometry']['l2_elements'] = tuple(self.currentpreset.l2_elements)
-            self.config['geometry']['flightpipes'] = tuple(self.currentpreset.flightpipes)
-            self.config['geometry']['pinhole_1'] = self.currentpreset.pinhole1
-            self.config['geometry']['pinhole_2'] = self.currentpreset.pinhole2
-            self.config['geometry']['pinhole_3'] = self.currentpreset.pinhole3
-            self.config['geometry']['beamstop'] = self.currentpreset.beamstop
-            self.config['geometry']['dist_sample_det'] = self.currentpreset.sd[0]
-            self.config['geometry']['dist_sample_det.err'] = self.currentpreset.sd[1]
-            self.config['geometry']['beamposx'] = self.currentpreset.beamposx[0]
-            self.config['geometry']['beamposx.err'] = self.currentpreset.beamposx[1]
-            self.config['geometry']['beamposy'] = self.currentpreset.beamposy[0]
-            self.config['geometry']['beamposy.err'] = self.currentpreset.beamposy[1]
-            self.config['geometry']['mask'] = self.currentpreset.mask
-            self.config['geometry']['description'] = self.currentpreset.description
-        finally:
-            self.config.enableAutoSave()
+        self.config['geometry']['l1_elements'] = tuple(self.currentpreset.l1_elements)
+        self.config['geometry']['l2_elements'] = tuple(self.currentpreset.l2_elements)
+        self.config['geometry']['flightpipes'] = tuple(self.currentpreset.flightpipes)
+        self.config['geometry']['pinhole_1'] = self.currentpreset.pinhole1
+        self.config['geometry']['pinhole_2'] = self.currentpreset.pinhole2
+        self.config['geometry']['pinhole_3'] = self.currentpreset.pinhole3
+        self.config['geometry']['beamstop'] = self.currentpreset.beamstop
+        self.config['geometry']['dist_sample_det'] = self.currentpreset.sd[0]
+        self.config['geometry']['dist_sample_det.err'] = self.currentpreset.sd[1]
+        self.config['geometry']['beamposx'] = self.currentpreset.beamposx[0]
+        self.config['geometry']['beamposx.err'] = self.currentpreset.beamposx[1]
+        self.config['geometry']['beamposy'] = self.currentpreset.beamposy[0]
+        self.config['geometry']['beamposy.err'] = self.currentpreset.beamposy[1]
+        self.config['geometry']['mask'] = self.currentpreset.mask
+        self.config['geometry']['description'] = self.currentpreset.description
 
     def setCurrentPreset(self, preset: GeometryPreset):
         if self.currentpreset is not None:

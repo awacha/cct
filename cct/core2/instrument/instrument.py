@@ -46,7 +46,7 @@ class Instrument(QtCore.QObject):
         type(self)._singleton_instance = self
         super().__init__()
         self.online = False
-        self.config = Config(autosave=True)
+        self.config = Config()
         self.createDefaultConfig()
         logger.debug(f'Using config file {configfile}')
         try:

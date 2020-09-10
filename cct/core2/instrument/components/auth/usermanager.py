@@ -194,15 +194,11 @@ class UserManager(QtCore.QAbstractItemModel, Component):
             self.endResetModel()
 
     def saveToConfig(self):
-        self.config.inhibitAutoSave()
-        try:
-            self.config['auth'] = {}
-            self.config['auth']['users'] = {user.username: user.__getstate__() for user in self._users}
-            removedusers = [k for k in self.config['auth']['users'] if k not in self]
-            for uname in removedusers:
-                del self.config['auth']['users'][uname]
-        finally:
-            self.config.enableAutoSave()
+        self.config['auth'] = {}
+        self.config['auth']['users'] = {user.username: user.__getstate__() for user in self._users}
+        removedusers = [k for k in self.config['auth']['users'] if k not in self]
+        for uname in removedusers:
+            del self.config['auth']['users'][uname]
 
     def isAuthenticated(self) -> bool:
         return self._currentuser is not None

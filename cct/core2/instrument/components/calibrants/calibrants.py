@@ -168,15 +168,11 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
         self.calibrantListChanged.emit()
 
     def saveToConfig(self):
-        self.config.inhibitAutoSave()
-        try:
-            for c in self._calibrants:
-                self.config['calibrants'][c.name] = c.__getstate__()
-            missing = [k for k in self.config['calibrants'] if k not in [c.name for c in self._calibrants]]
-            for k in missing:
-                del self.config['calibrants'][k]
-        finally:
-            self.config.enableAutoSave()
+        for c in self._calibrants:
+            self.config['calibrants'][c.name] = c.__getstate__()
+        missing = [k for k in self.config['calibrants'] if k not in [c.name for c in self._calibrants]]
+        for k in missing:
+            del self.config['calibrants'][k]
 
     def addQCalibrant(self):
         i = 0

@@ -24,13 +24,13 @@ class Config(QtCore.QObject):
     """
 
     changed = QtCore.pyqtSignal(object, object)
-    autosave: bool=False
     filename: Optional[str] = None
     _data: Dict[str, Any]
-    _autosaveinhibited: bool = False
     _modificationcount: int = 0
+    _autosavetimeout: float = 0.1
+    _autosavetimer: Optional[int] = None
 
-    def __init__(self, dicorfile: Union[None, Dict[str, Any], str] = None, autosave: bool=False):
+    def __init__(self, dicorfile: Union[None, Dict[str, Any], str] = None):
         super().__init__()
         self._data = {}
         if dicorfile is None:
@@ -39,12 +39,22 @@ class Config(QtCore.QObject):
             self.__setstate__({} if dicorfile is None else dicorfile.copy())
         elif isinstance(dicorfile, str):
             self.load(dicorfile, update=False)
-        self.autosave = autosave
         self.changed.connect(self.onChanged)
 
-    def onChanged(self, path: Tuple[str, ...], value: Any):
-        if self.autosave and (self.filename is not None) and (not self._autosaveinhibited):
+    def autosave(self):
+        if self.filename is not None:
+            if self._autosavetimer is not None:
+                self.killTimer(self._autosavetimer)
+            self._autosavetimer = self.startTimer(self._autosavetimeout)
+
+    def timerEvent(self, timerEvent: QtCore.QTimerEvent) -> None:
+        if timerEvent.timerId() == self._autosavetimer:
+            # do autosave
+            self.killTimer(timerEvent.timerId())
             self.save(self.filename)
+
+    def onChanged(self, path: Tuple[str, ...], value: Any):
+        self.autosave()
 
     def __setitem__(self, key: Union[str, Tuple[str]], value: Any):
         if isinstance(key, tuple) and len(key) > 1:
@@ -79,7 +89,7 @@ class Config(QtCore.QObject):
             else:
                 # setting the same config: do nothing.
                 pass
-        self._modificationcount += 1
+        self.autosave()
 
     def __delitem__(self, key: Union[str, Tuple[str, ...]]):
         logger.debug(f'Deleting key {key}')
@@ -96,7 +106,7 @@ class Config(QtCore.QObject):
             except TypeError:
                 pass
         del dic._data[key[-1]]
-        self._modificationcount += 1
+        self.autosave()
 
     def __getitem__(self, item: Union[str, Tuple[str, ...]]):
         if isinstance(item, str):
@@ -139,7 +149,7 @@ class Config(QtCore.QObject):
         else:
             # extend the path with the key and re-emit the signal.
             self.changed.emit((key,) + path, newvalue)
-            self._modificationcount += 1
+        self.autosave()
 
     def update(self, other: Union["Config", Dict]):
         for key in other:
@@ -154,6 +164,7 @@ class Config(QtCore.QObject):
             else:
                 logger.debug(f'simple update of key {key}')
                 self[key] = other[key]
+        self.autosave()
 
     def __iter__(self):
         return self._data.__iter__()
@@ -207,16 +218,6 @@ class Config(QtCore.QObject):
     def __repr__(self):
         return repr(self.__getstate__())
 
-    def inhibitAutoSave(self):
-        self._autosaveinhibited = True
-        self._modificationcount = 0
-
-    def enableAutoSave(self):
-        if self._autosaveinhibited and self._modificationcount and (self.filename is not None):
-            self.save(self.filename)
-        self._autosaveinhibited = False
-        self._modificationcount = 0
-
     def __len__(self):
         return len(self._data)
 
@@ -225,4 +226,5 @@ class Config(QtCore.QObject):
             return self._data[key]
         except KeyError:
             self[key]=value
+            self.autosave()
             return self[key]

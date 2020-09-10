@@ -307,23 +307,19 @@ class GeometryChoices(QtCore.QAbstractItemModel):
         self.endResetModel()
 
     def saveToConfig(self):
-        self.config.inhibitAutoSave()
-        try:
-            if 'geometry' not in self.config:
-                self.config['geometry'] = {}
-            if 'choices' not in self.config:
-                self.config['geometry']['choices'] = {}
-            for listname in ['pinholes', 'spacers', 'flightpipes', 'beamstops']:
-                try:
-                    del self.config['geometry']['choices'][listname]
-                except KeyError:
-                    pass
-            self.config['geometry']['choices']['pinholes'] = {1: self.pinhole1, 2: self.pinhole2, 3: self.pinhole3}
-            self.config['geometry']['choices']['spacers'] = self.spacers
-            self.config['geometry']['choices']['flightpipes'] = self.flightpipes
-            self.config['geometry']['choices']['beamstops'] = self.beamstop
-        finally:
-            self.config.enableAutoSave()
+        if 'geometry' not in self.config:
+            self.config['geometry'] = {}
+        if 'choices' not in self.config:
+            self.config['geometry']['choices'] = {}
+        for listname in ['pinholes', 'spacers', 'flightpipes', 'beamstops']:
+            try:
+                del self.config['geometry']['choices'][listname]
+            except KeyError:
+                pass
+        self.config['geometry']['choices']['pinholes'] = {1: self.pinhole1, 2: self.pinhole2, 3: self.pinhole3}
+        self.config['geometry']['choices']['spacers'] = self.spacers
+        self.config['geometry']['choices']['flightpipes'] = self.flightpipes
+        self.config['geometry']['choices']['beamstops'] = self.beamstop
 
     def removeRow(self, row: int, parent: QtCore.QModelIndex = ...) -> bool:
         if not parent.isValid():
