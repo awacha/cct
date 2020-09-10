@@ -216,6 +216,8 @@ class HaakePhoenixBackend(DeviceBackend):
             self.commandFinished(name, 'Starting circulation')
         elif name == 'stop':
             self.enqueueHardwareMessage(b'W TS 0\r')
+            self.queryVariable('cooling_on')
+            self.queryVariable('pump_power')
             self.commandFinished(name, 'Stopping circulation')
         elif name == 'alarm':
             self.enqueueHardwareMessage(b'W AL\r')
@@ -230,14 +232,17 @@ class HaakePhoenixBackend(DeviceBackend):
             else:
                 self.enqueueHardwareMessage(f'W SW {value:.2f}\r'.encode('ascii'))
                 self.commandFinished(name, f'Setting set point to {value:.2f}°C')
+            self.queryVariable('setpoint')
         elif name == 'highlimit':
             value = args[0]
             self.enqueueHardwareMessage(f'W HL {value:.2f}\r'.encode('ascii'))
             self.commandFinished(name, f'Setting high limit to {value:.2f}°C')
+            self.queryVariable('highlimit')
         elif name == 'lowlimit':
             value = args[0]
             self.enqueueHardwareMessage(f'W LL {value:.2f}\r'.encode('ascii'))
             self.commandFinished(name, f'Setting low limit to {value:.2f}°C')
+            self.queryVariable('lowlimit')
         elif name == 'external_control':
             self.enqueueHardwareMessage(b'OUT MODE 2 1\r' if args[0] else b'OUT MODE 2 0\r')
             self.commandFinished(name, f'Switching to {"external" if args[0] else "internal"} control')

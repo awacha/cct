@@ -28,6 +28,7 @@ from ..devices.connectioneditor.connectioneditor import ConnectionEditor
 from .indicators.lastfsn import LastFSNIndicator
 from ..measurement.simpleexposure.simpleexposure import SimpleExposure
 from ..devices.pilatus.pilatus import PilatusDetector
+from ..devices.haakephoenix.haakephoenix import HaakePhoenixDevice
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -56,6 +57,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionDevice_connections': ConnectionEditor,
         'actionSingle_exposure': SimpleExposure,
         'actionDetector': PilatusDetector,
+        'actionTemperature_stage': HaakePhoenixDevice,
     }
     _windows: Dict[str, QtWidgets.QWidget]
 
