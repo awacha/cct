@@ -165,7 +165,11 @@ class DeviceBackend:
         self.autoqueryenabled = asyncio.Event()
         self.autoqueryenabled.set()
         self.wakeautoquery = asyncio.Event()
-        self.streamreader, self.streamwriter = await asyncio.open_connection(self.host, self.port)
+        try:
+            self.streamreader, self.streamwriter = await asyncio.open_connection(self.host, self.port)
+        except Exception as exc:
+            self.error(f'Connection error to device: {repr(exc)}')
+            self.messageToFrontend('end', expected=False)
         name2coro = {'processFrontendMessages': self.processFrontendMessages,
                      'hardwareSender': self.hardwareSender,
                      'hardwareReceiver': self.hardwareReceiver,
