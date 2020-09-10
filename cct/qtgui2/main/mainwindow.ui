@@ -35,6 +35,9 @@
      <number>0</number>
     </property>
     <item>
+     <layout class="QHBoxLayout" name="indicatorHorizontalLayout"/>
+    </item>
+    <item>
      <layout class="QHBoxLayout" name="deviceStatusBarLayout">
       <item>
        <spacer name="horizontalSpacer">
@@ -50,9 +53,6 @@
        </spacer>
       </item>
      </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="indicatorHorizontalLayout"/>
     </item>
     <item>
      <widget class="QTabWidget" name="tabWidget">
@@ -208,7 +208,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1761</width>
+     <width>876</width>
      <height>30</height>
     </rect>
    </property>

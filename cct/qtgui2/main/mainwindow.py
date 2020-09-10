@@ -26,6 +26,8 @@ from ..utils.plotimage import PlotImage
 from ..tools.capillarysizer import CapillarySizer
 from ..devices.connectioneditor.connectioneditor import ConnectionEditor
 from .indicators.lastfsn import LastFSNIndicator
+from ..measurement.simpleexposure.simpleexposure import SimpleExposure
+from ..devices.pilatus.pilatus import PilatusDetector
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -52,6 +54,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionProject_management': ProjectManager,
         'actionCapillary_sizing': CapillarySizer,
         'actionDevice_connections': ConnectionEditor,
+        'actionSingle_exposure': SimpleExposure,
+        'actionDetector': PilatusDetector,
     }
     _windows: Dict[str, QtWidgets.QWidget]
 
