@@ -21,7 +21,7 @@
    <item row="0" column="0">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="basicsTab">
       <attribute name="title">
@@ -30,51 +30,55 @@
       <layout class="QHBoxLayout" name="horizontalLayout_13">
        <item>
         <layout class="QGridLayout" name="gridLayout_3">
-         <item row="4" column="0">
-          <widget class="QLabel" name="label_6">
+         <item row="4" column="1">
+          <widget class="QDoubleSpinBox" name="lbsDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
+           <property name="suffix">
+            <string> mm</string>
+           </property>
+           <property name="maximum">
+            <double>1000.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_4">
            <property name="text">
             <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Beamstop front to detector:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole to sample:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="buddy">
-            <cstring>lbsDoubleSpinBox</cstring>
+            <cstring>lsDoubleSpinBox</cstring>
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_35">
-           <property name="text">
-            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole to 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; flight pipe:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <item row="2" column="1">
+          <widget class="QDoubleSpinBox" name="lfpDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
-           <property name="buddy">
-            <cstring>lfpDoubleSpinBox</cstring>
+           <property name="keyboardTracking">
+            <bool>false</bool>
            </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QLabel" name="label_15">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;X-ray wavelength:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <property name="suffix">
+            <string> mm</string>
            </property>
-           <property name="buddy">
-            <cstring>wavelengthValDoubleSpinBox</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="QLabel" name="label_12">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pixel size:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="buddy">
-            <cstring>PixelSizeDoubleSpinBox</cstring>
+           <property name="maximum">
+            <double>1000.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -94,24 +98,42 @@ p, li { white-space: pre-wrap; }
            </property>
           </widget>
          </item>
-         <item row="9" column="1">
-          <widget class="QDoubleSpinBox" name="L2WithoutSpacersDoubleSpinBox">
-           <property name="keyboardTracking">
-            <bool>false</bool>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_12">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pixel size:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
-           <property name="suffix">
-            <string> mm</string>
-           </property>
-           <property name="decimals">
-            <number>4</number>
-           </property>
-           <property name="maximum">
-            <double>10000.000000000000000</double>
+           <property name="buddy">
+            <cstring>pixelSizeValDoubleSpinBox</cstring>
            </property>
           </widget>
          </item>
-         <item row="5" column="1">
-          <widget class="QDoubleSpinBox" name="PixelSizeDoubleSpinBox">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Source to 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="buddy">
+            <cstring>l0DoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_36">
+           <property name="text">
+            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Last flight pipe end to detector:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="buddy">
+            <cstring>lfpDoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QDoubleSpinBox" name="lfp2detDoubleSpinBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -124,21 +146,18 @@ p, li { white-space: pre-wrap; }
            <property name="suffix">
             <string> mm</string>
            </property>
-           <property name="decimals">
-            <number>4</number>
-           </property>
            <property name="maximum">
-            <double>10.000000000000000</double>
+            <double>1000.000000000000000</double>
            </property>
           </widget>
          </item>
-         <item row="9" column="0">
-          <widget class="QLabel" name="label_21">
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_15">
            <property name="text">
-            <string>L2 without spacers:</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;X-ray wavelength:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="buddy">
-            <cstring>L2WithoutSpacersDoubleSpinBox</cstring>
+            <cstring>wavelengthValDoubleSpinBox</cstring>
            </property>
           </widget>
          </item>
@@ -161,48 +180,34 @@ p, li { white-space: pre-wrap; }
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QDoubleSpinBox" name="l0DoubleSpinBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
+         <item row="9" column="1">
+          <widget class="QDoubleSpinBox" name="L2WithoutSpacersDoubleSpinBox">
            <property name="keyboardTracking">
             <bool>false</bool>
            </property>
            <property name="suffix">
             <string> mm</string>
            </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
            <property name="maximum">
             <double>10000.000000000000000</double>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole to sample:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <item row="11" column="0" colspan="2">
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
            </property>
-           <property name="buddy">
-            <cstring>lsDoubleSpinBox</cstring>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
            </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Source to 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="buddy">
-            <cstring>l0DoubleSpinBox</cstring>
-           </property>
-          </widget>
+          </spacer>
          </item>
          <item row="6" column="1">
           <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -269,6 +274,30 @@ p, li { white-space: pre-wrap; }
            </property>
           </widget>
          </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Beamstop front to detector:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="buddy">
+            <cstring>lbsDoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_19">
+           <property name="text">
+            <string>ISO KF spacer width:</string>
+           </property>
+           <property name="buddy">
+            <cstring>sealingRingWidthDoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
          <item row="7" column="1">
           <widget class="QDoubleSpinBox" name="sealingRingWidthDoubleSpinBox">
            <property name="keyboardTracking">
@@ -282,8 +311,8 @@ p, li { white-space: pre-wrap; }
            </property>
           </widget>
          </item>
-         <item row="4" column="1">
-          <widget class="QDoubleSpinBox" name="lbsDoubleSpinBox">
+         <item row="0" column="1">
+          <widget class="QDoubleSpinBox" name="l0DoubleSpinBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -297,84 +326,88 @@ p, li { white-space: pre-wrap; }
             <string> mm</string>
            </property>
            <property name="maximum">
-            <double>1000.000000000000000</double>
+            <double>10000.000000000000000</double>
            </property>
           </widget>
          </item>
-         <item row="10" column="0" colspan="2">
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item row="7" column="0">
-          <widget class="QLabel" name="label_19">
-           <property name="text">
-            <string>ISO KF spacer width:</string>
-           </property>
-           <property name="buddy">
-            <cstring>sealingRingWidthDoubleSpinBox</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QDoubleSpinBox" name="lfpDoubleSpinBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="keyboardTracking">
-            <bool>false</bool>
-           </property>
-           <property name="suffix">
-            <string> mm</string>
-           </property>
-           <property name="maximum">
-            <double>1000.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_36">
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_35">
            <property name="text">
             <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Last flight pipe end to detector:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole to 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; flight pipe:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="buddy">
             <cstring>lfpDoubleSpinBox</cstring>
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
-          <widget class="QDoubleSpinBox" name="lfp2detDoubleSpinBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+         <item row="9" column="0">
+          <widget class="QLabel" name="label_21">
+           <property name="text">
+            <string>L2 without spacers:</string>
            </property>
-           <property name="keyboardTracking">
-            <bool>false</bool>
-           </property>
-           <property name="suffix">
-            <string> mm</string>
-           </property>
-           <property name="maximum">
-            <double>1000.000000000000000</double>
+           <property name="buddy">
+            <cstring>L2WithoutSpacersDoubleSpinBox</cstring>
            </property>
           </widget>
+         </item>
+         <item row="5" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_15">
+           <item>
+            <widget class="QDoubleSpinBox" name="pixelSizeValDoubleSpinBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="keyboardTracking">
+              <bool>false</bool>
+             </property>
+             <property name="suffix">
+              <string> mm</string>
+             </property>
+             <property name="decimals">
+              <number>4</number>
+             </property>
+             <property name="maximum">
+              <double>10.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_42">
+             <property name="text">
+              <string notr="true">±</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="pixelSizeErrDoubleSpinBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="keyboardTracking">
+              <bool>false</bool>
+             </property>
+             <property name="suffix">
+              <string> mm</string>
+             </property>
+             <property name="decimals">
+              <number>4</number>
+             </property>
+             <property name="maximum">
+              <double>10.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
@@ -429,37 +462,13 @@ p, li { white-space: pre-wrap; }
       <layout class="QHBoxLayout" name="horizontalLayout_6">
        <item>
         <layout class="QGridLayout" name="gridLayout">
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_3">
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_39">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;nd&lt;/span&gt; pinhole to 3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;2&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>Flight pipes:</string>
            </property>
            <property name="buddy">
-            <cstring>l2EditToolButton</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole to 2&lt;span style=&quot; vertical-align:super;&quot;&gt;nd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;1&lt;/span&gt;): &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="buddy">
-            <cstring>l1EditToolButton</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="8" column="0">
-          <widget class="QLabel" name="label_13">
-           <property name="text">
-            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Horizontal beam position:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="buddy">
-            <cstring>beamPosXValDoubleSpinBox</cstring>
+            <cstring>flightpipesToolButton</cstring>
            </property>
           </widget>
          </item>
@@ -470,52 +479,6 @@ p, li { white-space: pre-wrap; }
            </property>
            <property name="buddy">
             <cstring>maskFileNameLineEdit</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="label_10">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Diameter of the 3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;3&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="buddy">
-            <cstring>D3DoubleSpinBox</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="9" column="0">
-          <widget class="QLabel" name="label_24">
-           <property name="text">
-            <string>Vertical beam position:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
-          <widget class="QDoubleSpinBox" name="DBSDoubleSpinBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="keyboardTracking">
-            <bool>false</bool>
-           </property>
-           <property name="suffix">
-            <string> mm</string>
-           </property>
-           <property name="maximum">
-            <double>100.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="0">
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sample to detector (&lt;span style=&quot; font-style:italic;&quot;&gt;sd&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="buddy">
-            <cstring>sdValDoubleSpinBox</cstring>
            </property>
           </widget>
          </item>
@@ -541,27 +504,185 @@ p, li { white-space: pre-wrap; }
            </item>
           </layout>
          </item>
-         <item row="0" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_10">
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sample to detector (&lt;span style=&quot; font-style:italic;&quot;&gt;sd&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="buddy">
+            <cstring>sdValDoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
-            <widget class="QLabel" name="l1Label">
-             <property name="text">
-              <string/>
+            <widget class="QDoubleSpinBox" name="beamPosXValDoubleSpinBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="keyboardTracking">
+              <bool>false</bool>
+             </property>
+             <property name="suffix">
+              <string> pixel</string>
+             </property>
+             <property name="decimals">
+              <number>4</number>
+             </property>
+             <property name="minimum">
+              <double>-9999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>9999.000000000000000</double>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QToolButton" name="l1EditToolButton">
+            <widget class="QLabel" name="label_25">
              <property name="text">
-              <string>Modify</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;±&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
-             <property name="icon">
-              <iconset theme="document-edit">
-               <normaloff>.</normaloff>.</iconset>
+             <property name="buddy">
+              <cstring>beamPosXErrDoubleSpinBox</cstring>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="beamPosXErrDoubleSpinBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="keyboardTracking">
+              <bool>false</bool>
+             </property>
+             <property name="suffix">
+              <string> pixel</string>
+             </property>
+             <property name="decimals">
+              <number>4</number>
+             </property>
+             <property name="minimum">
+              <double>0.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>9999.000000000000000</double>
              </property>
             </widget>
            </item>
           </layout>
+         </item>
+         <item row="9" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_12">
+           <item>
+            <widget class="QDoubleSpinBox" name="beamPosYValDoubleSpinBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="keyboardTracking">
+              <bool>false</bool>
+             </property>
+             <property name="suffix">
+              <string> pixel</string>
+             </property>
+             <property name="decimals">
+              <number>4</number>
+             </property>
+             <property name="minimum">
+              <double>-9999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>9999.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_26">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;±&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="buddy">
+              <cstring>beamPosYErrDoubleSpinBox</cstring>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="beamPosYErrDoubleSpinBox">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="keyboardTracking">
+              <bool>false</bool>
+             </property>
+             <property name="suffix">
+              <string> pixel</string>
+             </property>
+             <property name="decimals">
+              <number>4</number>
+             </property>
+             <property name="minimum">
+              <double>0.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>9999.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="3" column="1">
+          <widget class="QDoubleSpinBox" name="D2DoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
+           <property name="suffix">
+            <string> μm</string>
+           </property>
+           <property name="decimals">
+            <number>0</number>
+           </property>
+           <property name="maximum">
+            <double>10000.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Diameter of the 3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;3&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="buddy">
+            <cstring>D3DoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="12" column="0">
+          <widget class="QLabel" name="label_23">
+           <property name="text">
+            <string>Description:</string>
+           </property>
+           <property name="buddy">
+            <cstring>descriptionPlainTextEdit</cstring>
+           </property>
+          </widget>
          </item>
          <item row="7" column="1">
           <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -592,6 +713,9 @@ p, li { white-space: pre-wrap; }
              <property name="text">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;±&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
+             <property name="buddy">
+              <cstring>sdErrDoubleSpinBox</cstring>
+             </property>
             </widget>
            </item>
            <item>
@@ -618,15 +742,41 @@ p, li { white-space: pre-wrap; }
            </item>
           </layout>
          </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_8">
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_13">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Diameter of the 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;1&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Horizontal beam position:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="buddy">
-            <cstring>D1DoubleSpinBox</cstring>
+            <cstring>beamPosXValDoubleSpinBox</cstring>
            </property>
           </widget>
+         </item>
+         <item row="6" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_8">
+           <item>
+            <widget class="QLabel" name="flightpipesLabel">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="flightpipesToolButton">
+             <property name="text">
+              <string>Modify</string>
+             </property>
+             <property name="icon">
+              <iconset theme="document-edit">
+               <normaloff>.</normaloff>.</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item row="4" column="1">
           <widget class="QDoubleSpinBox" name="D3DoubleSpinBox">
@@ -650,15 +800,27 @@ p, li { white-space: pre-wrap; }
            </property>
           </widget>
          </item>
-         <item row="12" column="0">
-          <widget class="QLabel" name="label_23">
-           <property name="text">
-            <string>Description:</string>
-           </property>
-           <property name="buddy">
-            <cstring>descriptionPlainTextEdit</cstring>
-           </property>
-          </widget>
+         <item row="0" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_10">
+           <item>
+            <widget class="QLabel" name="l1Label">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="l1EditToolButton">
+             <property name="text">
+              <string>Modify</string>
+             </property>
+             <property name="icon">
+              <iconset theme="document-edit">
+               <normaloff>.</normaloff>.</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item row="3" column="0">
           <widget class="QLabel" name="label_9">
@@ -670,8 +832,28 @@ p, li { white-space: pre-wrap; }
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
-          <widget class="QDoubleSpinBox" name="D2DoubleSpinBox">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole to 2&lt;span style=&quot; vertical-align:super;&quot;&gt;nd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;1&lt;/span&gt;): &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="buddy">
+            <cstring>l1EditToolButton</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Beamstop diameter (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;bs&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="buddy">
+            <cstring>DBSDoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QDoubleSpinBox" name="D1DoubleSpinBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -714,28 +896,8 @@ p, li { white-space: pre-wrap; }
            </item>
           </layout>
          </item>
-         <item row="12" column="1">
-          <widget class="QPlainTextEdit" name="descriptionPlainTextEdit">
-           <property name="backgroundVisible">
-            <bool>false</bool>
-           </property>
-           <property name="placeholderText">
-            <string>Describe your setup here...</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="QLabel" name="label_11">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Beamstop diameter (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;bs&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="buddy">
-            <cstring>DBSDoubleSpinBox</cstring>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QDoubleSpinBox" name="D1DoubleSpinBox">
+         <item row="5" column="1">
+          <widget class="QDoubleSpinBox" name="DBSDoubleSpinBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -746,165 +908,52 @@ p, li { white-space: pre-wrap; }
             <bool>false</bool>
            </property>
            <property name="suffix">
-            <string> μm</string>
-           </property>
-           <property name="decimals">
-            <number>0</number>
+            <string> mm</string>
            </property>
            <property name="maximum">
-            <double>10000.000000000000000</double>
+            <double>100.000000000000000</double>
            </property>
           </widget>
          </item>
-         <item row="9" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_12">
-           <item>
-            <widget class="QDoubleSpinBox" name="beamPosYValDoubleSpinBox">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="keyboardTracking">
-              <bool>false</bool>
-             </property>
-             <property name="suffix">
-              <string> pixel</string>
-             </property>
-             <property name="decimals">
-              <number>4</number>
-             </property>
-             <property name="minimum">
-              <double>-9999.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>9999.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_26">
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;±&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="beamPosYErrDoubleSpinBox">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="keyboardTracking">
-              <bool>false</bool>
-             </property>
-             <property name="suffix">
-              <string> pixel</string>
-             </property>
-             <property name="decimals">
-              <number>4</number>
-             </property>
-             <property name="minimum">
-              <double>0.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>9999.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="8" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QDoubleSpinBox" name="beamPosXValDoubleSpinBox">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="keyboardTracking">
-              <bool>false</bool>
-             </property>
-             <property name="suffix">
-              <string> pixel</string>
-             </property>
-             <property name="decimals">
-              <number>4</number>
-             </property>
-             <property name="minimum">
-              <double>-9999.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>9999.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_25">
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;±&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="beamPosXErrDoubleSpinBox">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="keyboardTracking">
-              <bool>false</bool>
-             </property>
-             <property name="suffix">
-              <string> pixel</string>
-             </property>
-             <property name="decimals">
-              <number>4</number>
-             </property>
-             <property name="minimum">
-              <double>0.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>9999.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="6" column="0">
-          <widget class="QLabel" name="label_39">
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_3">
            <property name="text">
-            <string>Flight pipes:</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;2&lt;span style=&quot; vertical-align:super;&quot;&gt;nd&lt;/span&gt; pinhole to 3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;l&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;2&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="buddy">
+            <cstring>l2EditToolButton</cstring>
            </property>
           </widget>
          </item>
-         <item row="6" column="1">
-          <layout class="QHBoxLayout" name="horizontalLayout_8">
-           <item>
-            <widget class="QLabel" name="flightpipesLabel">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="flightpipesToolButton">
-             <property name="text">
-              <string>Modify</string>
-             </property>
-             <property name="icon">
-              <iconset theme="document-edit"/>
-             </property>
-            </widget>
-           </item>
-          </layout>
+         <item row="9" column="0">
+          <widget class="QLabel" name="label_24">
+           <property name="text">
+            <string>Vertical beam position:</string>
+           </property>
+           <property name="buddy">
+            <cstring>beamPosYValDoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Diameter of the 1&lt;span style=&quot; vertical-align:super;&quot;&gt;st&lt;/span&gt; pinhole (&lt;span style=&quot; font-style:italic;&quot;&gt;d&lt;/span&gt;&lt;span style=&quot; font-style:italic; vertical-align:sub;&quot;&gt;1&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="buddy">
+            <cstring>D1DoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="12" column="1">
+          <widget class="QPlainTextEdit" name="descriptionPlainTextEdit">
+           <property name="backgroundVisible">
+            <bool>false</bool>
+           </property>
+           <property name="placeholderText">
+            <string>Describe your setup here...</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -1339,7 +1388,8 @@ p, li { white-space: pre-wrap; }
   <tabstop>lfpDoubleSpinBox</tabstop>
   <tabstop>lfp2detDoubleSpinBox</tabstop>
   <tabstop>lbsDoubleSpinBox</tabstop>
-  <tabstop>PixelSizeDoubleSpinBox</tabstop>
+  <tabstop>pixelSizeValDoubleSpinBox</tabstop>
+  <tabstop>pixelSizeErrDoubleSpinBox</tabstop>
   <tabstop>wavelengthValDoubleSpinBox</tabstop>
   <tabstop>wavelengthErrDoubleSpinBox</tabstop>
   <tabstop>sealingRingWidthDoubleSpinBox</tabstop>
@@ -1357,7 +1407,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>flightpipesToolButton</tabstop>
   <tabstop>sdValDoubleSpinBox</tabstop>
   <tabstop>sdErrDoubleSpinBox</tabstop>
-  <tabstop>presetsListView</tabstop>
   <tabstop>beamPosXValDoubleSpinBox</tabstop>
   <tabstop>beamPosXErrDoubleSpinBox</tabstop>
   <tabstop>beamPosYValDoubleSpinBox</tabstop>
@@ -1365,6 +1414,7 @@ p, li { white-space: pre-wrap; }
   <tabstop>maskFileNameLineEdit</tabstop>
   <tabstop>browseMaskPushButton</tabstop>
   <tabstop>descriptionPlainTextEdit</tabstop>
+  <tabstop>presetsListView</tabstop>
   <tabstop>savePresetToolButton</tabstop>
   <tabstop>loadPresetToolButton</tabstop>
   <tabstop>addPresetToolButton</tabstop>
@@ -1374,6 +1424,8 @@ p, li { white-space: pre-wrap; }
   <tabstop>maxCameraLengthDoubleSpinBox</tabstop>
   <tabstop>optQMinDoubleSpinBox</tabstop>
   <tabstop>maxSampleSizeDoubleSpinBox</tabstop>
+  <tabstop>tabWidget_2</tabstop>
+  <tabstop>optimizationTreeView</tabstop>
   <tabstop>optimizePushButton</tabstop>
   <tabstop>copyToClipboardPushButton</tabstop>
   <tabstop>updateSetupParametersPushButton</tabstop>
