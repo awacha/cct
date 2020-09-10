@@ -41,18 +41,27 @@ def main(config:str, online: bool, root: bool):
     if not root:
         logindialog = LoginDialog()
         logindialog.setOffline(not online)
-        logindialog.show()
-        result = app.exec_()
-        if not instrument.auth.isAuthenticated():
-            logindialog.deleteLater()
-            instrument.deleteLater()
-            app.deleteLater()
-            sys.exit(result)
+        while True:
+            logger.debug('Starting new logindialog iteration')
+            result = logindialog.exec()
+            if result == QtWidgets.QDialog.Accepted:
+                if logindialog.authenticate():
+                    logger.debug('Successful authentication')
+                    break
+                else:
+                    logger.debug('Failed authentication')
+                    continue
+            else:
+                logger.debug('Cancelled, exiting')
+                logindialog.deleteLater()
+                instrument.deleteLater()
+                app.deleteLater()
+                sys.exit()
         online = not logindialog.isOffline()
         logindialog.deleteLater()
-        instrument.setOnline(online)
     else:
         instrument.auth.setRoot()
+    instrument.setOnline(online)
     mw = MainWindow(instrument=instrument)
     mw.show()
     instrument.start()

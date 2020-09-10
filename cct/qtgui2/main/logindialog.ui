@@ -1,24 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
-  <property name="windowModality">
-   <enum>Qt::ApplicationModal</enum>
-  </property>
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>369</width>
-    <height>156</height>
+    <width>340</width>
+    <height>154</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Log in to CCT</string>
-  </property>
-  <property name="windowIcon">
-   <iconset resource="../../resource/icons/icons.qrc">
-    <normaloff>:/icons/cct4logo.svg</normaloff>:/icons/cct4logo.svg</iconset>
+   <string>Dialog</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -105,71 +98,51 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="loginPushButton">
-       <property name="text">
-        <string>Log in</string>
-       </property>
-       <property name="icon">
-        <iconset theme="user-info">
-         <normaloff>.</normaloff>.</iconset>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="quitPushButton">
-       <property name="text">
-        <string>Quit</string>
-       </property>
-       <property name="icon">
-        <iconset theme="application-exit">
-         <normaloff>.</normaloff>.</iconset>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>userNameLineEdit</tabstop>
-  <tabstop>passwordLineEdit</tabstop>
-  <tabstop>offlineCheckBox</tabstop>
-  <tabstop>loginPushButton</tabstop>
-  <tabstop>quitPushButton</tabstop>
- </tabstops>
  <resources>
   <include location="../../resource/icons/icons.qrc"/>
-  <include location="../../resource/icons/icons.qrc"/>
+  <include location="../../../../../../../resource/icons/icons.qrc"/>
  </resources>
  <connections>
   <connection>
-   <sender>passwordLineEdit</sender>
-   <signal>returnPressed()</signal>
-   <receiver>loginPushButton</receiver>
-   <slot>click()</slot>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>147</x>
-     <y>65</y>
+     <x>248</x>
+     <y>254</y>
     </hint>
     <hint type="destinationlabel">
-     <x>226</x>
-     <y>133</y>
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>Dialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
     </hint>
    </hints>
   </connection>
