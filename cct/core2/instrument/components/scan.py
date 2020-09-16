@@ -32,7 +32,10 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         self._lastscan = None
         self._nextscan = 0
         self._scanning = None
+
+    def startComponent(self):
         self.reindex()
+        super().startComponent()
 
     def newScanFile(self, filename: str):
         with open(filename, 'wt') as f:

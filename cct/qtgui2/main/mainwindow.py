@@ -5,6 +5,7 @@ import time
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
+from .scripting import Scripting
 from .devicestatus import DeviceStatus
 from .logviewer_text import LogViewerText
 from .mainwindow_ui import Ui_MainWindow
@@ -39,6 +40,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     instrument: Instrument
     plotimage: PlotImage
     lastfsnindicator: LastFSNIndicator
+    scripting: Scripting
 
     _action2windowclass = {
         'actionX_ray_source': GeniXTool,
@@ -65,8 +67,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         super().__init__(kwargs['parent'] if 'parent' in kwargs else None)
         self.instrument = kwargs['instrument']
         self.instrument.shutdown.connect(self.close)
-        self.instrument.interpreter.started.connect(self.onInterpreterStarted)
-        self.instrument.interpreter.finished.connect(self.onInterpreterFinished)
+        self.instrument.interpreter.scriptstarted.connect(self.onInterpreterStarted)
+        self.instrument.interpreter.scriptfinished.connect(self.onInterpreterFinished)
         self.instrument.interpreter.progress.connect(self.onInterpreterProgress)
         self.instrument.interpreter.message.connect(self.onInterpreterMessage)
         self.instrument.devicemanager.deviceConnected.connect(self.onDeviceConnected)
@@ -92,6 +94,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lastfsnindicator = LastFSNIndicator(parent=self.centralwidget)
         self.indicatorHorizontalLayout.addWidget(self.lastfsnindicator)
         self.indicatorHorizontalLayout.addStretch(1)
+        self.scripting = Scripting(mainwindow=self, instrument=self.instrument)
+        self.scriptingTab.setLayout(QtWidgets.QVBoxLayout())
+        self.scriptingTab.layout().addWidget(self.scripting)
 
     def onActionTriggered(self, toggled: bool):
         action = self.sender()
@@ -150,7 +155,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.instrument.stop()
         logger.debug('Exiting closeEvent')
 
-    def onInterpreterFinished(self):
+    def onInterpreterFinished(self, success: bool, message: str):
         self.commandLineEdit.setEnabled(True)
         self.progressBar.setVisible(False)
         self.executePushButton.setEnabled(True)

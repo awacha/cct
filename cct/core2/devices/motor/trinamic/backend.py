@@ -126,6 +126,8 @@ class TrinamicMotorControllerBackend(DeviceBackend):
         self.converters = [
             UnitConverter(self.topRMScurrent, self.full_step_size, self.clock_frequency) for i in
             range(self.Naxes)]
+        # only check for the sanity of the position file, we will load the actual positions and limits after all
+        # variables have been read.
         posinfo = self.readMotorPosFile()
         if len(posinfo) != self.Naxes:
             raise ValueError(f'Number of positions read from file {self.positionfile} ({len(posinfo)} is not the same '
@@ -307,7 +309,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     f'{varbasename}${axis}',
                     self.converters[axis].position2phys(
                         self[f'{varbasename}:raw${axis}']))
-            except IndexError:
+            except (KeyError, IndexError):
                 pass
         for varbasename in self.current_variables:
             try:
@@ -315,7 +317,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     f'{varbasename}${axis}',
                     self.converters[axis].current2phys(
                         self[f'{varbasename}:raw${axis}']))
-            except IndexError:
+            except (KeyError, IndexError):
                 pass
         for varbasename in self.speed_variables:
             try:
@@ -323,7 +325,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     f'{varbasename}${axis}',
                     self.converters[axis].speed2phys(
                         self[f'{varbasename}:raw${axis}']))
-            except IndexError:
+            except (KeyError, IndexError):
                 pass
         for varbasename in self.acceleration_variables:
             try:
@@ -331,8 +333,20 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     f'{varbasename}${axis}',
                     self.converters[axis].accel2phys(
                         self[f'{varbasename}:raw${axis}']))
-            except IndexError:
+            except (KeyError, IndexError):
                 pass
+
+    def setMotorPosition(self, axis: int, newposition: float):
+        self.enqueueHardwareMessage(
+            TMCLPack(Instructions.SetAxisParameter, AxisParameters.RampMode, axis, 2))
+        rawposition = self.converters[axis].position2raw(newposition)
+        self.enqueueHardwareMessage(
+            TMCLPack(Instructions.SetAxisParameter, AxisParameters.ActualPosition, axis, rawposition))
+        self.enqueueHardwareMessage(
+            TMCLPack(Instructions.SetAxisParameter, AxisParameters.TargetPosition, axis, rawposition))
+        self.wakeautoquery.set()
+        self.queryVariable(f'actualposition${axis}')
+        self.queryVariable(f'targetposition${axis}')
 
     def issueCommand(self, name: str, args: Sequence[Any]):
         if name == 'moveto':
@@ -360,16 +374,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
             if motorindex < 0 or motorindex >= self.Naxes:
                 self.commandError(name, f'Invalid motor index: {motorindex}')
             else:
-                self.enqueueHardwareMessage(
-                    TMCLPack(Instructions.SetAxisParameter, AxisParameters.RampMode, motorindex, 2))
-                rawposition = self.converters[motorindex].position2raw(position)
-                self.enqueueHardwareMessage(
-                    TMCLPack(Instructions.SetAxisParameter, AxisParameters.ActualPosition, motorindex, rawposition))
-                self.enqueueHardwareMessage(
-                    TMCLPack(Instructions.SetAxisParameter, AxisParameters.TargetPosition, motorindex, rawposition))
-                self.wakeautoquery.set()
-                self.queryVariable(f'actualposition${motorindex}')
-                self.queryVariable(f'targetposition${motorindex}')
+                self.setMotorPosition(motorindex, position)
                 self.commandFinished(name, f"Position of motor #{motorindex} set to {position}")
         elif name == 'setlimits':
             # Set software limits: left and right
@@ -391,23 +396,29 @@ class TrinamicMotorControllerBackend(DeviceBackend):
         # 1: 12.1435937500000009 (-18.0000000000000000, 17.0000000000000000)
         # 2: 34.5499218750000026 (0.0000000000000000, 73.0000000000000000)
         motorpos = dict(zip(range(self.Naxes), itertools.repeat((0.0, (0.0, 0.0)))))
-        with open(self.positionfile) as f:
-            for iline, line in enumerate(f, start=1):
-                m = re.match(
-                    r'^\s*(?P<axis>\d+):'
-                    r'\s*(?P<position>[+-]?\d+\.\d+)\s+'
-                    r'\((?P<softleft>[+-]?\d+\.\d+)\s*,\s*(?P<softright>[+-]?\d+\.\d+)\s*\)\s*$', line.strip())
-                if not m:
-                    self.warning(
-                        f'Cannot interpret line {iline} in motor position file {self.positionfile}: {line.strip()}')
-                axis = int(m['axis'])
-                position = float(m['position'])
-                softleft = float(m['softleft'])
-                softright = float(m['softright'])
-                if axis < 0 or axis >= self.Naxes:
-                    continue
-                motorpos[axis] = (position, (softleft, softright))
-        return motorpos
+        try:
+            with open(self.positionfile) as f:
+                for iline, line in enumerate(f, start=1):
+                    m = re.match(
+                        r'^\s*(?P<axis>\d+):'
+                        r'\s*(?P<position>[+-]?\d+\.\d+)\s+'
+                        r'\((?P<softleft>[+-]?\d+\.\d+)\s*,\s*(?P<softright>[+-]?\d+\.\d+)\s*\)\s*$', line.strip())
+                    if not m:
+                        self.warning(
+                            f'Cannot interpret line {iline} in motor position file {self.positionfile}: {line.strip()}')
+                    axis = int(m['axis'])
+                    position = float(m['position'])
+                    softleft = float(m['softleft'])
+                    softright = float(m['softright'])
+                    if axis < 0 or axis >= self.Naxes:
+                        continue
+                    motorpos[axis] = (position, (softleft, softright))
+            return motorpos
+        except FileNotFoundError:
+            self.warning(f'Motor position file {self.positionfile} does not exist.')
+            for axis in motorpos:
+                motorpos[axis] = (None, (0.0, 0.0))
+            return motorpos
 
     def writeMotorPosFile(self):
         with open(self.positionfile, 'wt') as f:
@@ -576,6 +587,16 @@ class TrinamicMotorControllerBackend(DeviceBackend):
         return True
 
     def onVariablesReady(self):
+        self.debug('Calibrating motor positions')
+        positions = self.readMotorPosFile()
+        for axis in positions:
+            position, (softleft, softright) = positions[axis]
+            if position is not None:
+                self.setMotorPosition(axis, position)
+            if softleft is not None:
+                self.updateVariable(f'softleft${axis}', softleft)
+            if softright is not None:
+                self.updateVariable(f'softright${axis}', softright)
         self.updateVariable('__status__', self.Status.Idle)
         self.updateVariable('__auxstatus__', '')
 

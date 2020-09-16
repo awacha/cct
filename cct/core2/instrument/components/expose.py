@@ -4,17 +4,18 @@ import logging
 import os
 import pickle
 import time
+import multiprocessing
 from typing import Dict, Optional, Any, List
 
 from PyQt5 import QtCore
 import numpy as np
 
-from ..component import Component
-from ..devicemanager import DeviceManager
-from ..io import IO
-from ....dataclasses import Header, Exposure
-from ....devices.detector.pilatus.backend import PilatusBackend
-from ....devices.detector.pilatus.frontend import PilatusDetector
+from core2.instrument.components.component import Component
+from core2.instrument.components.devicemanager import DeviceManager
+from core2.instrument.components.io import IO
+from core2.dataclasses import Header, Exposure
+from core2.devices.detector.pilatus.backend import PilatusBackend
+from core2.devices.detector.pilatus.frontend import PilatusDetector
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -102,6 +103,9 @@ class Exposer(QtCore.QObject, Component):
     lastheaderdata: Dict[str, Any]
     progressinterval: float = 0.5
     progresstimer: Optional[int] = None
+    datareductionpipeline: multiprocessing.Process = None
+    datareduction_commandqueue: multiprocessing.Queue = None
+    datareduction_resultqueue: multiprocessing.Queue = None
 
     def __init__(self, **kwargs):
         self.waittimers = {}
@@ -200,7 +204,10 @@ class Exposer(QtCore.QObject, Component):
             uncertainty = image ** 0.5
             uncertainty[image <= 0] = 1
             # emit the raw image.
-            self.imageReceived.emit(Exposure(image, header, uncertainty, mask))
+            exposure = Exposure(image, header, uncertainty, mask)
+            if expdata.prefix == self.config['path']['prefixes']['crd']:
+                self.instrument.datareduction.submit(exposure)
+            self.imageReceived.emit(exposure)
             logger.debug(f'Image received for {expdata.prefix=}, {expdata.fsn=}')
             # remove the timer
             del self.waittimers[timerEvent.timerId()]
@@ -246,6 +253,7 @@ class Exposer(QtCore.QObject, Component):
                     self.instrument.io.formatFileName(prefix, fsn, '.pickle'))),
             'exposure': {
                 'fsn': fsn,
+                'prefix': prefix,
                 'exptime': exptime,
                 'monitor': exptime,
                 'startdate': datetime.datetime.fromtimestamp(time.time() - time.monotonic() + starttime),
@@ -266,12 +274,12 @@ class Exposer(QtCore.QObject, Component):
         try:
             vac = self.instrument.devicemanager.vacuum()
             data['environment']['vacuum_pressure'] = vac.pressure()
-        except IndexError:
+        except KeyError:
             pass
         try:
             temp = self.instrument.devicemanager.temperature()
             data['environment']['temperature'] = temp.temperature()
-        except IndexError:
+        except KeyError:
             pass
         # adjust truedistance
         if sample is not None:

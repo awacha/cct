@@ -321,6 +321,6 @@ class GeniXBackend(DeviceBackend):
                 self.updateVariable('__status__', self.Status.off)
             else:
                 self.updateVariable('__status__', self.Status.unknown)
-        except IndexError:
+        except KeyError:
             # this can happen when not all variables have been queried yet
             pass

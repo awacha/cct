@@ -61,7 +61,7 @@ class HaakePhoenixBackend(DeviceBackend):
                     self.enqueueHardwareMessage(b'R FB\r')
                 else:
                     self.updateVariable('fuzzycontrol', 'not supported')
-            except IndexError:
+            except KeyError:
                 self.getVariable('fuzzycontrol').lastquery = None
         elif variablename == 'fuzzystatus':
             try:
@@ -69,7 +69,7 @@ class HaakePhoenixBackend(DeviceBackend):
                     self.enqueueHardwareMessage(b'R FE\r')
                 else:
                     self.updateVariable('fuzzystatus', False)
-            except IndexError:
+            except KeyError:
                 self.getVariable('fuzzystatus').lastquery = None
         elif variablename == 'temperature_internal':
             self.enqueueHardwareMessage(b'R T1\r')
@@ -126,12 +126,12 @@ class HaakePhoenixBackend(DeviceBackend):
                 if message[3] == b'1'[0]:
                     try:
                         self.updateVariable('temperature', self['temperature_external'])
-                    except IndexError:
+                    except KeyError:
                         pass
                 else:
                     try:
                         self.updateVariable('temperature', self['temperature_internal'])
-                    except IndexError:
+                    except KeyError:
                         pass
             self.updateVariable('main_relay_missing_error', message[4] == b'1'[0])
             self.updateVariable('overtemperature_error', message[5] == b'1'[0])
@@ -153,7 +153,7 @@ class HaakePhoenixBackend(DeviceBackend):
                 if not self['control_external']:
                     if self.updateVariable('temperature', float(message[2:-1])):
                         self.updateVariable('__auxstatus__', f'{float(message[2:-1]):.2f}°C')
-            except IndexError:
+            except KeyError:
                 pass
         elif message.startswith(b'T3'):
             self.updateVariable('temperature_external', float(message[2:-1]))
@@ -161,7 +161,7 @@ class HaakePhoenixBackend(DeviceBackend):
                 if self['control_external']:
                     if self.updateVariable('temperature', float(message[2:-1])):
                         self.updateVariable('__auxstatus__', f'{float(message[2:-1]):.2f}°C')
-            except IndexError:
+            except KeyError:
                 pass
         elif message.startswith(b'SW'):
             self.updateVariable('setpoint', float(message[2:-1]))

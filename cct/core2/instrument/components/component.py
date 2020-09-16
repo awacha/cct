@@ -1,6 +1,8 @@
 import logging
 import weakref
 
+from PyQt5.QtCore import pyqtSignal
+
 from ...config import Config
 
 logger = logging.getLogger(__name__)
@@ -11,6 +13,10 @@ class Component:
     """Logical component of an instrument"""
     config: Config
     instrument: "Instrument"
+    started= pyqtSignal()
+    stopped = pyqtSignal()
+    stopping: bool = False
+    __running: bool = False
 
     def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PyQt5/multiinheritance.html
         #        super().__init__(**kwargs)
@@ -30,3 +36,15 @@ class Component:
 
     def loadFromConfig(self):
         pass
+
+    def startComponent(self):
+        self.__running = True
+        self.started.emit()
+
+    def stopComponent(self):
+        self.stopping = True
+        self.__running = False
+        self.stopped.emit()
+
+    def running(self) -> bool:
+        return self.__running

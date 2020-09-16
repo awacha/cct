@@ -6,7 +6,7 @@ from typing import List, Any, Optional, Union, Iterable
 from PyQt5 import QtCore, QtGui
 
 from .descriptors import LockState
-from .sample import Sample
+from ....dataclasses.sample import Sample
 from ..component import Component
 from ..motors import Motor
 
@@ -214,7 +214,10 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
 
     def __getitem__(self, item: Union[str, int]) -> Sample:
         if isinstance(item, str):
-            return copy.copy([s for s in self._samples if s.title == item][0])
+            try:
+                return copy.copy([s for s in self._samples if s.title == item][0])
+            except IndexError:
+                raise KeyError(item)
         else:
             return copy.copy(self._samples[item])
 

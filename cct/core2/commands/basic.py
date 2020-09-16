@@ -1,9 +1,14 @@
 """Simple commands"""
+import logging
 import time
 
 from PyQt5 import QtCore
+from typing import Any
 
 from .command import Command
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class Sleep(Command):
@@ -12,7 +17,7 @@ class Sleep(Command):
     starttime: float = None
 
     def initialize(self, interval: float):
-        if interval < 1:
+        if interval < 60:
             self.timerinterval = 0.1
         else:
             self.timerinterval = 0.5
@@ -24,7 +29,7 @@ class Sleep(Command):
         if t >= self.sleeptime:
             self.finish(t)
         else:
-            self.progress.emit(f'Sleeping for {self.sleeptime:.3g} seconds', (t / self.sleeptime) * 1000, 1000)
+            self.progress.emit(f'Sleeping for {self.sleeptime:.3f} seconds, {self.sleeptime-t:.1f} seconds remaining', (t / self.sleeptime) * 1000, 1000)
 
 
 class Comment(Command):
@@ -72,3 +77,6 @@ class End(Command):
 class Label(Command):
     name = 'label'
     timerinterval = 0
+
+    def parseArguments(self) -> Any:
+        return None

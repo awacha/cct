@@ -1,5 +1,5 @@
 import enum
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 import numpy as np
 
@@ -64,3 +64,44 @@ class Exposure:
 
     def __sub__(self, other):
         pass
+
+    @property
+    def size(self) -> int:
+        return self.intensity.size
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        return self.intensity.shape
+
+    def radius_pixel(self) -> Tuple[np.ndarray, np.ndarray]:
+        row = np.arange(self.intensity.shape[0])[:, np.newaxis] - self.header.beamposrow[0]
+        drow = self.header.beamposrow[1]
+        col = np.arange(self.intensity.shape[1])[np.newaxis, :] - self.header.beamposcol[0]
+        dcol = self.header.beamposcol[1]
+        radius = (row ** 2 + col ** 2) ** 0.5
+        dradius = (row ** 2 * drow ** 2 + col ** 2 * dcol ** 2) ** 0.5 / radius
+        return radius, dradius
+
+    def radius_distance(self) -> Tuple[np.ndarray, np.ndarray]:
+        r, dr = self.radius_pixel()
+        return (r * self.header.pixelsize[0],
+                (dr ** 2 * self.header.pixelsize[0] ** 2 + r ** 2 * self.header.pixelsize[1] ** 2) ** 0.5)
+
+    def twotheta(self) -> Tuple[np.ndarray, np.ndarray]:
+        r, dr = self.radius_distance()
+        tan2th = (
+            r / self.header.distance[0],
+            (r ** 2 * self.header.distance[1] ** 2 / self.header.distance[0] ** 4 + dr ** 2 / self.header.distance[
+                0] ** 2) ** 0.5
+        )
+        return (np.arctan(tan2th[0]),
+                np.abs(tan2th[1] / (1 + tan2th[0] ** 2)))
+
+    def q(self) -> Tuple[np.ndarray, np.ndarray]:
+        tth, dtth = self.twotheta()
+        th, dth = 0.5 * tth, 0.5 * dtth
+        sinth = np.sin(th), np.abs(dth * np.cos(th))
+        return (4 * np.pi * sinth[0] / self.header.wavelength[0],
+                4 * np.pi * (
+                            sinth[1] ** 2 / self.header.wavelength[0] + sinth[0] ** 2 * self.header.wavelength[1] ** 2 /
+                            self.header.wavelength[0] ** 4) ** 0.5)

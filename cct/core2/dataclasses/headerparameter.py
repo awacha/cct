@@ -75,6 +75,17 @@ class IntHeaderParameter(HeaderParameter):
         super().__set__(instance, [int(value)])
 
 
+class FloatHeaderParameter(HeaderParameter):
+    def __init__(self, path: Tuple[str, ...]):
+        super().__init__(path)
+
+    def __get__(self, instance, owner) -> float:
+        return float(super().__get__(instance, owner)[0])
+
+    def __set__(self, instance, value: float):
+        super().__set__(instance, [float(value)])
+
+
 class DateTimeHeaderParameter(HeaderParameter):
     def __init__(self, path: Tuple[str, ...]):
         super().__init__(path)

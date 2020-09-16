@@ -1,7 +1,9 @@
 import logging
+from typing import Dict
 
 from PyQt5 import QtCore
 
+from .components.component import Component
 from .components.beamstop import BeamStop
 from .components.calibrants.calibrants import CalibrantStore
 from .components.devicemanager import DeviceManager
@@ -13,7 +15,8 @@ from .components.samples import SampleStore
 from .components.scan import ScanStore
 from .components.auth import UserManager
 from .components.projects import ProjectManager
-from .components.expose.expose import Exposer
+from .components.expose import Exposer
+from .components.datareduction.datareduction import DataReduction
 from ..config import Config
 
 logger = logging.getLogger(__name__)
@@ -39,6 +42,7 @@ class Instrument(QtCore.QObject):
     running: bool = False
     shutdown = QtCore.pyqtSignal()
     online: bool = False
+    components: Dict[str, Component] = None
 
     def __init__(self, configfile: str):
         if type(self)._singleton_instance is not None:
@@ -54,19 +58,41 @@ class Instrument(QtCore.QObject):
         except FileNotFoundError:
             logger.warning(f'Config file {configfile} does not exist.')
             pass
-        self.io = IO(config=self.config, instrument=self)
-        self.samplestore = SampleStore(config=self.config, instrument=self)
-        self.devicemanager = DeviceManager(config=self.config, instrument=self)
-        self.motors = Motors(config=self.config, instrument=self)
-        self.interpreter = Interpreter(config=self.config, instrument=self)
-        self.beamstop = BeamStop(config=self.config, instrument=self)
-        self.devicemanager.stopped.connect(self.onDeviceManagerStopped)
-        self.geometry = Geometry(config=self.config, instrument=self)
-        self.calibrants = CalibrantStore(config=self.config, instrument=self)
-        self.scan = ScanStore(config=self.config, instrument=self)
-        self.auth = UserManager(config=self.config, instrument=self)
-        self.projects = ProjectManager(config=self.config, instrument=self)
-        self.exposer = Exposer(config=self.config, instrument=self)
+
+        # initializing components
+        self.components = {}
+        for componentname, componentclass in [
+            ('io', IO),
+            ('samplestore', SampleStore),
+            ('devicemanager', DeviceManager),
+            ('motors', Motors),
+            ('interpreter', Interpreter),
+            ('beamstop', BeamStop),
+            ('geometry', Geometry),
+            ('calibrants', CalibrantStore),
+            ('scan', ScanStore),
+            ('auth', UserManager),
+            ('projects', ProjectManager),
+            ('exposer', Exposer),
+            ('datareduction', DataReduction),
+        ]:
+            comp = componentclass(config=self.config, instrument=self)
+            setattr(self, componentname, comp)
+            self.components[componentname] = comp
+            comp.started.connect(self.onComponentStarted)
+            comp.stopped.connect(self.onComponentStopped)
+
+    def onComponentStarted(self):
+        if all([c.running() for n, c in self.components.items()]):
+            logger.info('All components are up and running.')
+
+    def onComponentStopped(self):
+        logger.debug(f'Currently running components: {", ".join(c for c in self.components if self.components[c].running())}')
+        if all([not c.running() for n, c in self.components.items()]):
+            self.running = False
+            self.stopping = False
+            logger.debug('Emitting instrument shutdown signal.')
+            self.shutdown.emit()
 
     def setOnline(self, online: bool):
         self.online = online
@@ -75,19 +101,17 @@ class Instrument(QtCore.QObject):
     def start(self):
         logger.info('Starting Instrument')
         self.running = True
-        if self.online:
-            self.devicemanager.connectDevices()
+        for component in self.components:
+            logger.info(f'Starting component {component}')
+            self.components[component].startComponent()
 
     def stop(self):
         logger.info('Stopping Instrument')
         self.stopping = True
+        for component in reversed(self.components):
+            logger.info(f'Stopping component {component}')
+            self.components[component].stopComponent()
         self.devicemanager.disconnectDevices()
-
-    def onDeviceManagerStopped(self):
-        self.running = False
-        self.stopping = False
-        logger.debug('Emitting instrument shutdown signal.')
-        self.shutdown.emit()
 
     def createDefaultConfig(self):
         self.config['path'] = {

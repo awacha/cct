@@ -176,13 +176,17 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         :return: the value of the variable
         :rtype: any
         :raises DeviceError: if the variable has not been updated yet
+        :raises KeyError: if the variable does not exist.
         """
         var = [v for v in self._variables if v.name == item][0]
         if var.timestamp is None:
 #            self._logger.debug('Available variables: \n'+'\n'.join(sorted([f'    {v.name}' for v in self._variables if v.timestamp is not None])))
 #            self._logger.debug('Not available variables: \n'+'\n'.join(sorted([f'    {v.name}' for v in self._variables if v.timestamp is None])))
             raise self.DeviceError(f'Variable {var.name} of device {self.name} has not been updated yet.')
-        return [v.value for v in self._variables if v.name == item][0]
+        try:
+            return [v.value for v in self._variables if v.name == item][0]
+        except IndexError:
+            raise KeyError(item)
 
     def issueCommand(self, command: str, *args):
         """Issue a command to the device.

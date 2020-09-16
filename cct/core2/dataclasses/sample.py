@@ -5,7 +5,7 @@ from typing import Dict, Union, Optional, Tuple, SupportsFloat
 
 import dateutil.parser
 
-from .descriptors import LockableFloat, LockableString, LockableOptionalString, LockableDate, LockableEnum, LockState
+from core2.instrument.components.samples.descriptors import LockableFloat, LockableString, LockableOptionalString, LockableDate, LockableEnum, LockState
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -20,6 +20,12 @@ class Sample(object):
         Sample = 'sample'
         Sample_and_can = 'sample+can'
         Can = 'can'
+        Sample_and_buffer = 'sample+buffer'
+        Buffer = 'buffer'
+        Simulated_data = 'simulated data'
+        Sample_environment = 'sample environment'
+        Empty_beam = 'Empty beam'
+        Dark = 'Dark'
         None_ = 'none'
 
     class Situations(enum.Enum):

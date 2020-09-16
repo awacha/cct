@@ -28,7 +28,6 @@ class IO(QtCore.QObject, Component):
     _nextfsn: Dict[str, int]
     _lastfsn: Dict[str, Optional[int]]
 
-
     nextFSNChanged = QtCore.pyqtSignal(str, int)
     lastFSNChanged = QtCore.pyqtSignal(str, int)
 
@@ -37,7 +36,10 @@ class IO(QtCore.QObject, Component):
         self._masks = {}
         self._lastfsn = {}
         self._nextfsn = {}
+
+    def startComponent(self):
         self.reindex()
+        super().startComponent()
 
     def getSubDir(self, subdir: str) -> pathlib.Path:
         return pathlib.Path.cwd() / self.config['path']['directories'][subdir]

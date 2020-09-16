@@ -60,7 +60,7 @@
        <enum>QTabWidget::South</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="logTab">
        <attribute name="title">
@@ -75,6 +75,11 @@
       <widget class="QWidget" name="patternTab">
        <attribute name="title">
         <string>Detector image</string>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="scriptingTab">
+       <attribute name="title">
+        <string>Scripting</string>
        </attribute>
       </widget>
      </widget>

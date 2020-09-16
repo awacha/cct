@@ -1,6 +1,10 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Type
+import logging
 
 from PyQt5 import QtCore
+
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class Command(QtCore.QObject):
@@ -65,10 +69,11 @@ class Command(QtCore.QObject):
     def __init__(self, instrument, namespace: Dict[str, Any], arguments: str):
         super().__init__()
         self.namespace = namespace
-        self.arguments = list(arguments)
+        self.arguments = arguments
         self.instrument = instrument
 
     def execute(self):
+#        logger.debug(f'Executing command {self.name}')
         if self._timer is not None:
             raise self.CommandException('Already running.')
         self.initialize(self.parseArguments())
@@ -82,25 +87,37 @@ class Command(QtCore.QObject):
         pass
 
     def jump(self, label: str, gosub: bool = False):
+        logger.debug(f'Jumping to label {label} from command {self.name}. {gosub=}')
         if self._timer is not None:
             self.killTimer(self._timer)
             self._timer = None
         self.goto.emit(label, gosub)
 
     def fail(self, message: str):
+        logger.debug(f'Failing command {self.name}')
         if self._timer is not None:
             self.killTimer(self._timer)
             self._timer = None
         self.failed.emit(message)
 
     def finish(self, returnvalue: Any):
+        logger.debug(f'Finishing command {self.name}')
         if self._timer is not None:
             self.killTimer(self._timer)
             self._timer = None
         self.finished.emit(returnvalue)
 
     def parseArguments(self) -> Any:
+        logger.debug(f'Parsing arguments: {self.arguments=}')
         return eval(self.arguments)
 
     def stop(self):
         self.fail('Stopping command on user request')
+
+    @classmethod
+    def subclasses(cls) -> List[Type["Command"]]:
+        lis = []
+        for c in cls.__subclasses__():
+            lis.append(c)
+            lis.extend(c.subclasses())
+        return lis

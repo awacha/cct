@@ -91,3 +91,23 @@ class Curve:
 
     def __len__(self) -> int:
         return self._data.shape[0]
+
+    def sanitize(self) -> "Curve":
+        idx = np.logical_and(np.isfinite(self.q), np.isfinite(self.intensity))
+        idx = np.logical_and(idx, self.q > 0)
+        for vector in [self.uncertainty, self.quncertainty, self.pixel]:
+            if np.isfinite(vector).sum() > 0:
+                idx = np.logical_and(
+                    idx,
+                    np.logical_and(
+                        np.isfinite(vector),
+                        vector >= 0
+                    ))
+        if np.isfinite(self.binarea).sum() > 0:
+            idx = np.logical_and(
+                idx,
+                np.logical_and(
+                    np.isfinite(self.binarea),
+                    self.binarea > 0
+                ))
+        return Curve.fromArray(self._data[idx, :])

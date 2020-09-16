@@ -20,8 +20,6 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
     _deviceclasses: List[DeviceClassDataTuple]
     deviceDisconnected = QtCore.pyqtSignal(str, bool)
     deviceConnected = QtCore.pyqtSignal(str)
-    stopping: bool = False
-    stopped = QtCore.pyqtSignal()
 
     def __init__(self, **kwargs):
         self.devices = {}
@@ -206,3 +204,12 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
 
     def isConnected(self, devicename: str) -> bool:
         return devicename in self.devices
+
+    def startComponent(self):
+        if self.instrument.online:
+            self.connectDevices()
+        self.started.emit()
+
+    def stopComponent(self):
+        self.stopping = True
+        self.disconnectDevices()

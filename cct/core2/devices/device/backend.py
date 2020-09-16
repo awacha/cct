@@ -176,30 +176,33 @@ class DeviceBackend:
                      'autoquerier': self.autoquerier,
                      'telemetry': self.telemetry}
         pending = {asyncio.create_task(value(), name=key) for key, value in name2coro.items()}
-        while True:
-            done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
-            for donetask in done:
-                if self.telemetryInformation is not None:
-                    if donetask.get_name() not in self.telemetryInformation.coro_wakes:
-                        self.telemetryInformation.coro_wakes[donetask.get_name()] = 0
-                    self.telemetryInformation.coro_wakes[donetask.get_name()] += 1
+        try:
+            while True:
+                done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+                for donetask in done:
+                    if self.telemetryInformation is not None:
+                        if donetask.get_name() not in self.telemetryInformation.coro_wakes:
+                            self.telemetryInformation.coro_wakes[donetask.get_name()] = 0
+                        self.telemetryInformation.coro_wakes[donetask.get_name()] += 1
 
-                if (not self.stopevent.is_set()) and (donetask.result()):
-                    # each task returns True if it wants to be re-scheduled and False if not.
-                    pending.add(asyncio.create_task(name2coro[donetask.get_name()](), name=donetask.get_name()))
-                exc = donetask.exception()
-                if exc:
-                    try:
-                        raise exc
-                    except Exception as exc:
-                        self.error(f'Exception occurred in the back-end thread: {traceback.format_exc()}')
-                        for task in pending:
-                            task.cancel()
-                        pending = []
-                        break
-            if not pending:
-                break
-        await self.disconnectFromHardware()
+                    if (not self.stopevent.is_set()) and (donetask.result()):
+                        # each task returns True if it wants to be re-scheduled and False if not.
+                        pending.add(asyncio.create_task(name2coro[donetask.get_name()](), name=donetask.get_name()))
+                    exc = donetask.exception()
+                    if exc:
+                        try:
+                            raise exc
+                        except Exception as exc:
+                            self.error(f'Exception occurred in the back-end thread: {traceback.format_exc()}')
+                            for task in pending:
+                                task.cancel()
+                            pending = []
+                            break
+                if not pending:
+                    break
+            await self.disconnectFromHardware()
+        except Exception as exc:
+            self.error(f'Exception occurred in the back-end thread: {repr(exc)}\n{traceback.format_exc()}')
         self.messageToFrontend('end', expected=self.stopevent.is_set())
 
     @final
@@ -582,12 +585,12 @@ class DeviceBackend:
         :type varname: str
         :return: the corresponding variable
         :rtype: Variable
-        :raises IndexError: if not found
+        :raises KeyError: if not found
         """
         try:
             return [v for v in self.variables if v.name == varname][0]
         except IndexError:
-            raise IndexError(f'Variable {varname} does not exist')
+            raise KeyError(f'Variable {varname} does not exist')
 
     @final
     def __getitem__(self, item: str) -> Any:
@@ -597,9 +600,12 @@ class DeviceBackend:
         :type item: str
         :return: the current value of the variable
         :rtype: any
-        :raises IndexError: if not found or if the variable has not yet been queried.
+        :raises KeyError: if not found or if the variable has not yet been queried.
         """
-        return [v.value for v in self.variables if v.name == item and v.hasValidValue()][0]
+        try:
+            return [v.value for v in self.variables if v.name == item and v.hasValidValue()][0]
+        except IndexError:
+            raise KeyError(item)
 
     ### Logging
     @final
