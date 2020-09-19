@@ -1,38 +1,42 @@
 import logging
-from typing import Dict
-import pkg_resources
 import time
+from typing import Dict
 
+import pkg_resources
 from PyQt5 import QtWidgets, QtGui, QtCore
 
-from .scripting import Scripting
 from .devicestatus import DeviceStatus
+from .indicators.accounting import AccountingIndicator
+from .indicators.beamstop import BeamstopIndicator
+from .indicators.lastfsn import LastFSNIndicator
+from .indicators.shutter import ShutterIndicator
 from .logviewer_text import LogViewerText
 from .mainwindow_ui import Ui_MainWindow
+from .scripting import Scripting
+from ..devices.connectioneditor.connectioneditor import ConnectionEditor
 from ..devices.genix.genix import GeniXTool
+from ..devices.haakephoenix.haakephoenix import HaakePhoenixDevice
 from ..devices.motors.motorview import MotorView
+from ..devices.pilatus.pilatus import PilatusDetector
+from ..listing.headerview import HeaderView
 from ..listing.scanview import ScanViewer
+from ..measurement.simpleexposure.simpleexposure import SimpleExposure
 from ..setup.calibrants.calibrants import Calibrants
 from ..setup.calibration.calibration import Calibration
 from ..setup.geometry.geometry import GeometryEditor
+from ..setup.projectmanager.projectmanager import ProjectManager
 from ..setup.samples.sampleeditor import SampleEditor
+from ..setup.usermanager.passwordchange import PasswordChange
+from ..setup.usermanager.usermanager import UserManager
+from ..tools.capillarysizer import CapillarySizer
+from ..tools.maskeditor.maskeditor import MaskEditor
 from ..tools.samplepositionchecker import SamplePositionChecker
+from ..utils.plotimage import PlotImage
 from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.instrument import Instrument
-from ..tools.maskeditor.maskeditor import MaskEditor
-from ..setup.usermanager.usermanager import UserManager
-from ..setup.usermanager.passwordchange import PasswordChange
-from ..setup.projectmanager.projectmanager import ProjectManager
-from ..utils.plotimage import PlotImage
-from ..tools.capillarysizer import CapillarySizer
-from ..devices.connectioneditor.connectioneditor import ConnectionEditor
-from .indicators.lastfsn import LastFSNIndicator
-from ..measurement.simpleexposure.simpleexposure import SimpleExposure
-from ..devices.pilatus.pilatus import PilatusDetector
-from ..devices.haakephoenix.haakephoenix import HaakePhoenixDevice
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -40,6 +44,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     instrument: Instrument
     plotimage: PlotImage
     lastfsnindicator: LastFSNIndicator
+    accountingindicator: AccountingIndicator
+    beamstopindicator: BeamstopIndicator
+    shutterindicator: ShutterIndicator
     scripting: Scripting
 
     _action2windowclass = {
@@ -60,6 +67,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionSingle_exposure': SimpleExposure,
         'actionDetector': PilatusDetector,
         'actionTemperature_stage': HaakePhoenixDevice,
+        'actionView_images_and_curves': HeaderView,
+        'actionData_reduction': HeaderView,
+
     }
     _windows: Dict[str, QtWidgets.QWidget]
 
@@ -90,9 +100,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             action = getattr(self, actionname)
             assert isinstance(action, QtWidgets.QAction)
             action.triggered.connect(self.onActionTriggered)
-        self.setWindowTitle(f'Credo Control Tool v{pkg_resources.get_distribution("cct").version} User: {self.instrument.auth.username()}')
+        self.setWindowTitle(
+            f'Credo Control Tool v{pkg_resources.get_distribution("cct").version} User: {self.instrument.auth.username()}')
+        self.accountingindicator = AccountingIndicator(parent=self.centralwidget)
+        self.indicatorHorizontalLayout.addWidget(self.accountingindicator)
         self.lastfsnindicator = LastFSNIndicator(parent=self.centralwidget)
         self.indicatorHorizontalLayout.addWidget(self.lastfsnindicator)
+        self.beamstopindicator = BeamstopIndicator(parent=self.centralwidget)
+        self.indicatorHorizontalLayout.addWidget(self.beamstopindicator)
+        self.shutterindicator = ShutterIndicator(parent=self.centralwidget)
+        self.indicatorHorizontalLayout.addWidget(self.shutterindicator)
         self.indicatorHorizontalLayout.addStretch(1)
         self.scripting = Scripting(mainwindow=self, instrument=self.instrument)
         self.scriptingTab.setLayout(QtWidgets.QVBoxLayout())
@@ -112,12 +129,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             assert issubclass(windowclass, QtWidgets.QWidget)
             self.addSubWindow(windowclass, singleton=True)
 
-    def addSubWindow(self, windowclass, singleton: bool=True):
+    def addSubWindow(self, windowclass, singleton: bool = True):
         if windowclass.canOpen(self.instrument):
             if singleton and windowclass.__name__ in self._windows:
                 raise ValueError(f'Window class {windowclass} has already an active instance.')
             if not singleton:
-                objectname = windowclass.__name__+str(time.monotonic())
+                objectname = windowclass.__name__ + str(time.monotonic())
             else:
                 objectname = windowclass.__name__
             w = windowclass(parent=None, instrument=self.instrument, mainwindow=self)

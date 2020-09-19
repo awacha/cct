@@ -11,9 +11,7 @@ class LastFSNIndicator(QtWidgets.QFrame, Ui_Frame):
 
     def setupUi(self, Frame):
         super().setupUi(Frame)
-        self.prefixComboBox.clear()
-        self.prefixComboBox.addItems(sorted(Instrument.instance().io.prefixes))
-        self.prefixComboBox.setCurrentIndex(0)
+        self.populatePrefixComboBox()
         Instrument.instance().io.nextFSNChanged.connect(self.onNextFSNChanged)
         Instrument.instance().io.lastFSNChanged.connect(self.onLastFSNChanged)
         Instrument.instance().scan.nextscanchanged.connect(self.onNextScanChanged)
@@ -23,15 +21,28 @@ class LastFSNIndicator(QtWidgets.QFrame, Ui_Frame):
         self.prefixComboBox.currentIndexChanged.connect(self.prefixSelected)
         self.prefixSelected()
 
+    def populatePrefixComboBox(self):
+        self.prefixComboBox.blockSignals(True)
+        current = self.prefixComboBox.currentText()
+        self.prefixComboBox.clear()
+        self.prefixComboBox.addItems(sorted(Instrument.instance().io.prefixes))
+        self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText(current))
+        self.prefixComboBox.blockSignals(False)
+        self.prefixSelected()
+
     def prefixSelected(self):
+        if self.prefixComboBox.currentIndex() < 0:
+            return
         self.nextFSNLabel.setText(str(Instrument.instance().io.nextfsn(self.prefixComboBox.currentText(), 0)))
         self.lastFSNLabel.setText(str(Instrument.instance().io.lastfsn(self.prefixComboBox.currentText())))
 
     def onNextFSNChanged(self, prefix, nextfsn):
+        self.populatePrefixComboBox()
         if prefix == self.prefixComboBox.currentText():
             self.nextFSNLabel.setText(str(nextfsn))
 
     def onLastFSNChanged(self, prefix, lastfsn):
+        self.populatePrefixComboBox()
         if prefix == self.prefixComboBox.currentText():
             self.nextFSNLabel.setText(str(lastfsn))
 

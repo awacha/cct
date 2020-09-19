@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>139</width>
-    <height>66</height>
+    <width>249</width>
+    <height>80</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,59 +32,63 @@
    <property name="spacing">
     <number>3</number>
    </property>
-   <item row="3" column="1">
-    <widget class="QLabel" name="lastFSNLabel">
-     <property name="text">
-      <string/>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="projectIDComboBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLabel" name="lastScanLabel">
-     <property name="text">
-      <string/>
+     <property name="minimumSize">
+      <size>
+       <width>200</width>
+       <height>0</height>
+      </size>
      </property>
-    </widget>
-   </item>
-   <item row="1" column="2">
-    <widget class="QLabel" name="nextScanLabel">
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="2">
-    <widget class="QLabel" name="nextFSNLabel">
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QComboBox" name="prefixComboBox">
      <property name="frame">
       <bool>false</bool>
      </property>
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Scans:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>Last</string>
+      <string>Title:</string>
      </property>
     </widget>
    </item>
-   <item row="0" column="2">
-    <widget class="QLabel" name="label_3">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
      <property name="text">
-      <string>Next</string>
+      <string>Project:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>Proposer:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="titleLineEdit">
+     <property name="frame">
+      <bool>false</bool>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="proposerLineEdit">
+     <property name="frame">
+      <bool>false</bool>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
