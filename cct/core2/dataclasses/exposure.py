@@ -56,15 +56,6 @@ class Exposure:
         )
         return Curve.fromVectors(q, intensity, uncertainty, quncertainty, binarea, pixel)
 
-    def __iadd__(self, other):
-        pass
-
-    def __add__(self, other):
-        pass
-
-    def __sub__(self, other):
-        pass
-
     @property
     def size(self) -> int:
         return self.intensity.size
@@ -105,3 +96,6 @@ class Exposure:
                 4 * np.pi * (
                             sinth[1] ** 2 / self.header.wavelength[0] + sinth[0] ** 2 * self.header.wavelength[1] ** 2 /
                             self.header.wavelength[0] ** 4) ** 0.5)
+
+    def save(self, filename: str):
+        np.savez_compressed(filename, Intensity=self.intensity, Error=self.uncertainty, mask=self.mask)
