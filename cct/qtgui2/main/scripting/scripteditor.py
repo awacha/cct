@@ -18,7 +18,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         self.blockCountChanged.connect(self.updateLineNumbersBarAreaWidth)
         self.updateRequest.connect(self.updateLineNumbersBar)
         self.cursorPositionChanged.connect(self.highlightCurrentLine)
-
+        self.document().setDefaultFont(QtGui.QFont('monospace', 12))
         self.updateLineNumbersBarAreaWidth(0)
         self.highlightCurrentLine()
 

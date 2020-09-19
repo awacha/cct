@@ -8,6 +8,7 @@ from .script import ScriptUI
 from .scripting_ui import Ui_Form
 from ....core2.instrument.components.interpreter import ParsingError
 from ....core2.instrument.instrument import Instrument
+from ....core2.commands import Command
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -50,6 +51,11 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         self.instrument.interpreter.flags.flagChanged.connect(self.onFlagChanged)
         self.instrument.interpreter.flags.flagRemoved.connect(self.onFlagRemoved)
         self.flagsHorizontalLayout.addStretch(1)
+        self.listWidget.clear()
+        for command in sorted([c for c in Command.subclasses() if isinstance(c.name, str)], key=lambda c:c.name):
+            item = QtWidgets.QListWidgetItem(command.name)
+            item.setToolTip(command.helptext())
+            self.listWidget.addItem(item)
 
     def onNewFlag(self, flagname: str, flagstate: bool):
         child = self.findChild(QtWidgets.QToolButton, f'flag_{flagname}_ToolButton')

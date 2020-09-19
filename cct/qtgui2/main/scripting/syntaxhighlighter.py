@@ -14,7 +14,7 @@ class ScriptSyntaxHighlighter(QtGui.QSyntaxHighlighter):
         f = QtGui.QTextCharFormat()
         f.setFontWeight(QtGui.QFont.Bold)
         f.setForeground(QtCore.Qt.darkMagenta)
-        self.formats.append(([re.compile(r'\b' + c.name + r'\b') for c in Command.subclasses()], f))
+        self.formats.append(([re.compile(r'\b' + c.name + r'\b') for c in Command.subclasses() if isinstance(c.name, str)], f))
         f = QtGui.QTextCharFormat()
         f.setForeground(QtCore.Qt.lightGray)
         self.formats.append(([re.compile('#.*$')], f))
