@@ -1,27 +1,35 @@
 import datetime
-from typing import List, Tuple, Union, Optional
+from typing import List, Tuple, Union, Optional, Any
+import itertools
 
 import dateutil.parser
 
 
 class HeaderParameter:
-    paths = List[Tuple[str, ...]]
+    paths: List[Tuple[str, ...]]
+    defaultvalue: Optional[Tuple[Any, ...]] = None
 
-    def __init__(self, *paths: Optional[Tuple[str, ...]]):
+    def __init__(self, *paths: Optional[Tuple[str, ...]], default:Optional[Tuple[Any,...]]=None):
         self.paths = list(paths)
+        self.defaultvalue = default
 
     def __get__(self, instance, objtype):
         lis = []
-        for path in self.paths:
+        for path, default in zip(self.paths, itertools.repeat(None) if self.defaultvalue is None else self.defaultvalue):
             if path is None:
                 lis.append(None)
                 continue
             dic = instance._data
             assert isinstance(dic, dict)
-            for pcomponent in path:
-                dic = dic[pcomponent]
-            lis.append(dic)
-        return lis
+            try:
+                for pcomponent in path:
+                    dic = dic[pcomponent]
+                lis.append(dic)
+            except KeyError:
+                if self.defaultvalue is None:
+                    raise
+                lis.append(default)
+        return tuple(lis)
 
     def __set__(self, instance, value):
         for path, val in zip(self.paths, value):
@@ -42,8 +50,8 @@ class HeaderParameter:
 
 
 class StringHeaderParameter(HeaderParameter):
-    def __init__(self, path: Tuple[str, ...]):
-        super().__init__(path)
+    def __init__(self, path: Tuple[str, ...], default: Optional[Any]=None):
+        super().__init__(path, default=(default,))
 
     def __get__(self, instance, owner) -> str:
         return str(super().__get__(instance, owner)[0])
@@ -54,8 +62,8 @@ class StringHeaderParameter(HeaderParameter):
 
 
 class ValueAndUncertaintyHeaderParameter(HeaderParameter):
-    def __init__(self, pathvalue: Optional[Tuple[str, ...]], pathuncertainty: Optional[Tuple[str, ...]]):
-        super().__init__(pathvalue, pathuncertainty)
+    def __init__(self, pathvalue: Optional[Tuple[str, ...]], pathuncertainty: Optional[Tuple[str, ...]], default: Optional[Tuple[Any,Any]]=None):
+        super().__init__(pathvalue, pathuncertainty, default=default)
 
     def __get__(self, instance, owner) -> Tuple[float, Optional[float]]:
         return tuple([float(x) for x in super().__get__(instance, owner)])
@@ -65,8 +73,8 @@ class ValueAndUncertaintyHeaderParameter(HeaderParameter):
 
 
 class IntHeaderParameter(HeaderParameter):
-    def __init__(self, path: Tuple[str, ...]):
-        super().__init__(path)
+    def __init__(self, path: Tuple[str, ...], default: Optional[Any]=None):
+        super().__init__(path, default=(default,))
 
     def __get__(self, instance, owner) -> int:
         return int(super().__get__(instance, owner)[0])
@@ -76,8 +84,8 @@ class IntHeaderParameter(HeaderParameter):
 
 
 class FloatHeaderParameter(HeaderParameter):
-    def __init__(self, path: Tuple[str, ...]):
-        super().__init__(path)
+    def __init__(self, path: Tuple[str, ...], default: Optional[Any]=None):
+        super().__init__(path, default=(default,))
 
     def __get__(self, instance, owner) -> float:
         return float(super().__get__(instance, owner)[0])
@@ -87,8 +95,8 @@ class FloatHeaderParameter(HeaderParameter):
 
 
 class DateTimeHeaderParameter(HeaderParameter):
-    def __init__(self, path: Tuple[str, ...]):
-        super().__init__(path)
+    def __init__(self, path: Tuple[str, ...], default: Optional[Any]=None):
+        super().__init__(path, default=(default,))
 
     def __get__(self, instance, owner) -> datetime.datetime:
         val = super().__get__(instance, owner)[0]

@@ -18,8 +18,8 @@ class Header:
     flux = ValueAndUncertaintyHeaderParameter(('datareduction', 'flux'), ('datareduction', 'flux.err'))
     samplex = ValueAndUncertaintyHeaderParameter(('sample', 'positionx.val'), ('sample', 'positionx.err'))
     sampley = ValueAndUncertaintyHeaderParameter(('sample', 'positiony.val'), ('sample', 'positiony.err'))
-    temperature = ValueAndUncertaintyHeaderParameter(('environment', 'temperature'), None)
-    vacuum = ValueAndUncertaintyHeaderParameter(('environment', 'vacuum_pressure'), None)
+    temperature = ValueAndUncertaintyHeaderParameter(('environment', 'temperature'), ('environment', 'temperature.err'), (None, 0.0))
+    vacuum = ValueAndUncertaintyHeaderParameter(('environment', 'vacuum_pressure'), ('environment', 'vacuum_pressure.err'), (None, 0.0))
     fsn_absintref = IntHeaderParameter(('datareduction', 'absintrefFSN'))
     fsn_emptybeam = IntHeaderParameter(('datareduction', 'emptybeamFSN'))
     fsn_dark = IntHeaderParameter(('datareduction', 'darkFSN'))
@@ -31,7 +31,7 @@ class Header:
     startdate = DateTimeHeaderParameter(('exposure', 'startdate'))
     enddate = DateTimeHeaderParameter(('exposure', 'enddate'))
     date = enddate
-    exposuretime = ValueAndUncertaintyHeaderParameter(('exposure', 'exptime'), None)
+    exposuretime = ValueAndUncertaintyHeaderParameter(('exposure', 'exptime'), ('exposure', 'exptime.err'), (None, 0.0))
     absintfactor = ValueAndUncertaintyHeaderParameter(('datareduction', 'absintfactor'),
                                                       ('datareduction', 'absintfactor.err'))
     absintdof = IntHeaderParameter(('datareduction', 'absintdof'))
@@ -39,7 +39,7 @@ class Header:
     absintqmin = FloatHeaderParameter(('datareduction', 'absintqmin'))
     absintqmax = FloatHeaderParameter(('datareduction', 'absintqmax'))
 
-    prefix = StringHeaderParameter(('exposure', 'prefix'))
+    prefix = StringHeaderParameter(('exposure', 'prefix'), default='crd')
     title = StringHeaderParameter(('sample', 'title'))
     fsn = IntHeaderParameter(('exposure', 'fsn'))
     maskname = StringHeaderParameter(('geometry', 'mask'))
