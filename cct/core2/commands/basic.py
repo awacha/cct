@@ -3,9 +3,10 @@ import logging
 import time
 
 from PyQt5 import QtCore
-from typing import Any
+from typing import Any, Tuple, Optional
 
-from .command import Command
+from .command import Command, InstantCommand, JumpCommand
+from .commandargument import IntArgument, FloatArgument, StringArgument, AnyArgument
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -13,6 +14,8 @@ logger.setLevel(logging.DEBUG)
 
 class Sleep(Command):
     name = 'sleep'
+    description = 'Wait for a given time'
+    arguments = [FloatArgument('delay', 'Delay time in seconds')]
     sleeptime: float = None
     starttime: float = None
 
@@ -32,51 +35,152 @@ class Sleep(Command):
             self.progress.emit(f'Sleeping for {self.sleeptime:.3f} seconds, {self.sleeptime-t:.1f} seconds remaining', (t / self.sleeptime) * 1000, 1000)
 
 
-class Comment(Command):
+class Comment(InstantCommand):
     name = 'comment'
-    timerinterval = 0
+    description = ''
+    arguments = []
+
+    def run(self, *args) -> Any:
+        return self.namespace['_']
 
 
-class Goto(Command):
+class Goto(JumpCommand):
     name = 'goto'
-    timerinterval = 0
-    targetlabel: str = ''
+    description = 'Unconditional jump to a given label'
+    arguments = [StringArgument('label', 'Label name')]
 
-    def initialize(self, label: str):
-        self.targetlabel = label
+    def run(self, targetlabel: str) -> Any:
+        if not isinstance(targetlabel, str):
+            raise ValueError('Invalid arguments to command "goto": requires a label name and nothing more.')
+        return targetlabel, False
 
-    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
-        self.jump(self.targetlabel, False)
 
-
-class Gosub(Command):
+class Gosub(JumpCommand):
     name = 'gosub'
-    timerinterval = 0
-    targetlabel: str = ''
+    description = 'Unconditional jump to a label with the possibility of returning later'
+    arguments = [StringArgument('label', 'Label name')]
 
-    def initialize(self, label: str):
-        self.targetlabel = label
+    def run(self, targetlabel: str) -> Any:
+        if not isinstance(targetlabel, str):
+            raise ValueError('Invalid arguments to command "gosub": requires a label name and nothing more.')
+        return targetlabel, True
 
-    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
-        self.jump(self.targetlabel, True)
 
-
-class Return(Command):
+class Return(JumpCommand):
     name = 'return'
-    timerinterval = 0
+    description = 'Return to the place of a previous "gosub"'
+    arguments = []
 
-    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
-        self.jump('', False)
+    def run(self) -> Any:
+        return '', False
 
 
-class End(Command):
+class GoOnFlag(JumpCommand):
+    name = 'goonflag'
+    description = 'Conditional jump to a label when a flag is set.'
+    arguments = [StringArgument('label', 'Label name'),
+                 StringArgument('flag', 'Flag name')]
+
+    def run(self, label:str, flag:str) -> Tuple[Optional[str], bool]:
+        if self.instrument.interpreter.flags[flag]:
+            return label, False
+        else:
+            return None, False
+
+
+class GoSubOnFlag(JumpCommand):
+    name = 'gosubonflag'
+    description = 'Conditional jump to a label when a flag is set with the possibility of returning later.'
+    arguments = [StringArgument('label', 'Label name'),
+                 StringArgument('flag', 'Flag name')]
+
+    def run(self, label:str, flag:str) -> Tuple[Optional[str], bool]:
+        if self.instrument.interpreter.flags[flag]:
+            return label, True
+        else:
+            return None, False
+
+
+class End(InstantCommand):
     name = 'end'
-    timerinterval = 0
+    description = 'End the script'
+    arguments = []
+
+    def run(self, *args: Any) -> Any:
+        raise StopIteration()
 
 
-class Label(Command):
+class Label(InstantCommand):
     name = 'label'
-    timerinterval = 0
+    description = ''
+    arguments = []
 
     def parseArguments(self) -> Any:
         return None
+
+    def run(self, *args: Any) -> Any:
+        return None
+
+
+class Help(InstantCommand):
+    name = 'help'
+    description = 'Get help on a command'
+    arguments = [StringArgument('command', 'Name of the command')]
+
+    def run(self, commandname: str) -> Any:
+        try:
+            command = [ c for c in Command.subclasses() if c.name == commandname][0]
+        except IndexError:
+            self.fail(f'Unknown command {commandname}.')
+        self.message.emit(f'Help on command {commandname}:\n{command.helptext()}')
+        return command.helptext()
+
+
+class What(InstantCommand):
+    name = 'what'
+    description =  'Get a list of variables defined in the current namespace'
+    arguments = []
+
+    def run(self, *args: Any) -> Any:
+        self.message.emit(', '.join(sorted(self.namespace.keys())))
+        return sorted(self.namespace.keys())
+
+
+class Echo(InstantCommand):
+    name = 'echo'
+    description = 'Echo back the arguments'
+    arguments = []
+
+    def run(self, *args: Any) -> Any:
+        self.message.emit(', '.join([str(a) for a in args]))
+        return True
+
+
+class Print(InstantCommand):
+    name = 'print'
+    description = 'Print the arguments'
+    arguments = []
+
+    def run(self, *args: Any) -> Any:
+        self.message.emit(' '.join([str(a) for a in args]))
+        return True
+
+
+class Set(InstantCommand):
+    name = 'set'
+    description = 'Set the value of a script variable'
+    arguments = [StringArgument('variable', 'Name of the variable'),
+                 AnyArgument('expression', 'Value of the variable')]
+
+    def run(self, variable: str, value: Any) -> Any:
+        self.namespace[variable] = value
+
+
+class SaveConfig(InstantCommand):
+    name = 'saveconfig'
+    description = 'Save the configuration to disk'
+    arguments = []
+
+    def run(self, *args: Any) -> Any:
+        self.instrument.config.save()
+        return True

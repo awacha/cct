@@ -1,25 +1,31 @@
-from .command import Command
+from typing import Any
+
+from .command import Command, InstantCommand
+from .commandargument import StringArgument
 
 
-class NewFlag(Command):
+class NewFlag(InstantCommand):
     name = 'newflag'
-    timerinterval = 0
+    description = 'Create a new flag'
+    arguments = [StringArgument('flag', 'Name of the flag')]
 
-    def initialize(self, arguments: str):
+    def run(self, arguments: Any) -> Any:
         self.instrument.interpreter.flags.addFlag(arguments, False)
 
 
 class SetFlag(Command):
     name = 'setflag'
-    timerinterval = 0
+    description = 'Set a flag to True'
+    arguments = [StringArgument('flag', 'Name of the flag')]
 
-    def initialize(self, arguments: str):
+    def run(self, arguments: Any) -> Any:
         self.instrument.interpreter.flags.setFlag(arguments, True)
 
 
 class ClearFlag(Command):
     name = 'clearflag'
-    timerinterval = 0
+    description = 'Clear the flag (set it to False)'
+    arguments = [StringArgument('flag', 'Name of the flag')]
 
-    def initialize(self, arguments: str):
+    def run(self, arguments: Any) -> Any:
         self.instrument.interpreter.flags.setFlag(arguments, False)

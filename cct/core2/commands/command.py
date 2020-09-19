@@ -1,7 +1,9 @@
-from typing import Optional, Dict, Any, List, Type
+from typing import Optional, Dict, Any, List, Type, final, Tuple
 import logging
 
 from PyQt5 import QtCore
+
+from .commandargument import CommandArgument
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -56,12 +58,15 @@ class Command(QtCore.QObject):
     timerinterval: float = 0.1
     _timer: Optional[int] = None
     namespace: Dict[str, Any] = None
-    arguments: Any = None
+    arguments: List[CommandArgument]
+    argumentstring: str
+    description: str
     failed = QtCore.pyqtSignal(str)
     finished = QtCore.pyqtSignal(object)
     progress = QtCore.pyqtSignal(str, int, int)
     message = QtCore.pyqtSignal(str)
     goto = QtCore.pyqtSignal(str, bool)
+    parsed_arguments: Tuple[Any]
 
     class CommandException(Exception):
         pass
@@ -69,23 +74,25 @@ class Command(QtCore.QObject):
     def __init__(self, instrument, namespace: Dict[str, Any], arguments: str):
         super().__init__()
         self.namespace = namespace
-        self.arguments = arguments
         self.instrument = instrument
+        self.argumentstring = arguments
 
+    @final
     def execute(self):
 #        logger.debug(f'Executing command {self.name}')
         if self._timer is not None:
             raise self.CommandException('Already running.')
-        self.initialize(self.parseArguments())
+        self.initialize(*self.parseArguments())
         if self.timerinterval is not None:
             self._timer = self.startTimer(int(self.timerinterval * 1000))
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         self.finish(self.namespace['_'])
 
-    def initialize(self, arguments: Any):
+    def initialize(self, *args: Any):
         pass
 
+    @final
     def jump(self, label: str, gosub: bool = False):
         logger.debug(f'Jumping to label {label} from command {self.name}. {gosub=}')
         if self._timer is not None:
@@ -93,6 +100,7 @@ class Command(QtCore.QObject):
             self._timer = None
         self.goto.emit(label, gosub)
 
+    @final
     def fail(self, message: str):
         logger.debug(f'Failing command {self.name}')
         if self._timer is not None:
@@ -100,6 +108,7 @@ class Command(QtCore.QObject):
             self._timer = None
         self.failed.emit(message)
 
+    @final
     def finish(self, returnvalue: Any):
         logger.debug(f'Finishing command {self.name}')
         if self._timer is not None:
@@ -108,16 +117,73 @@ class Command(QtCore.QObject):
         self.finished.emit(returnvalue)
 
     def parseArguments(self) -> Any:
-        logger.debug(f'Parsing arguments: {self.arguments=}')
-        return eval(self.arguments)
+        logger.debug(f'Parsing arguments: {self.argumentstring=}')
+        args = eval(self.argumentstring)
+        if args is None:
+            args = ()
+        elif not isinstance(args, tuple):
+            # happens in the case of a single argument
+            args = (args,)
+        self.parsed_arguments = args
+        return args
 
     def stop(self):
         self.fail('Stopping command on user request')
 
     @classmethod
+    @final
     def subclasses(cls) -> List[Type["Command"]]:
         lis = []
         for c in cls.__subclasses__():
             lis.append(c)
             lis.extend(c.subclasses())
         return lis
+
+    @classmethod
+    def helptext(cls) -> str:
+        s = cls.description+'\n\n'
+        s += f'Invocation:\n    {cls.name}'
+        if cls.arguments:
+            s += '(' + ', '.join([a.name for a in cls.arguments]) + ')\n\nArguments:\n'
+            s += '\n'.join([f'    {a.name}: {a.description}' for a in cls.arguments])
+        s += '\n'
+        return s
+
+
+class InstantCommand(Command):
+    parsed_arguments: Any
+    timerinterval = 0
+
+    @final
+    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
+        try:
+            result = self.run(*self.parsed_arguments)
+            self.finish(result)
+        except Exception as exc:
+            self.fail(str(exc))
+
+    def run(self, *args: Any) -> Any:
+        raise NotImplementedError
+
+    @final
+    def stop(self):
+        pass
+
+
+class JumpCommand(Command):
+    parsed_arguments: Any
+    timerinterval = 0
+
+    @final
+    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
+        try:
+            label, isgosub = self.run(self.parsed_arguments)
+            if label is not None:
+                self.jump(label, isgosub)
+            else:
+                self.finish(self.namespace['_'])
+        except Exception as exc:
+            self.fail(str(exc))
+
+    def run(self, *args: Any) -> Tuple[str, bool]:
+        raise NotImplementedError

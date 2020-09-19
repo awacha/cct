@@ -1,11 +1,14 @@
 from typing import Any
 
 from .command import Command
+from .commandargument import StringChoicesArgument
 
 
 class BeamStop(Command):
     name = 'beamstop'
     timerinterval = None
+    description = 'Move the beam-stop'
+    arguments = [StringChoicesArgument('state', 'The requested state of the beam-stop', ['in', 'out', 'IN', 'OUT'])]
 
     def initialize(self, arguments: Any):
         if arguments[0] not in ['in', 'out']:
