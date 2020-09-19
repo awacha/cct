@@ -1,10 +1,12 @@
 """Data reduction pipeline for SAXS exposures"""
 import logging
 import multiprocessing
+import pickle
 import re
 import traceback
 from typing import Optional, Dict, Any
 import os
+import queue
 
 import numpy as np
 import scipy.odr
@@ -12,6 +14,7 @@ import scipy.odr
 from ....algorithms.geometrycorrections import angledependentabsorption, angledependentairtransmission, solidangle
 from ....config import Config
 from ....dataclasses import Exposure, Sample
+from ..io import IO
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -28,23 +31,32 @@ class DataReductionPipeLine:
     commandqueue: Optional[multiprocessing.Queue] = None
     resultqueue: Optional[multiprocessing.Queue] = None
     config: Dict[str, Any]
+    io: IO
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
+        self.io = IO(config=self.config, instrument=None)
 
     @classmethod
-    def run_in_background(cls, config: Config, commandqueue: multiprocessing.Queue, resultqueue: multiprocessing.Queue):
+    def run_in_background(cls, config: Config, commandqueue: multiprocessing.Queue, resultqueue: multiprocessing.Queue, stopevent: Optional[multiprocessing.Event] = None):
         obj = cls(config=config)
         obj.commandqueue = commandqueue
         obj.resultqueue = resultqueue
         while True:
+            if (stopevent is not None) and (stopevent.is_set()):
+                break
             cmd, arg = commandqueue.get()
             if cmd == 'end':
                 obj.debug('Ending')
                 break
             elif cmd == 'process':
                 try:
-                    exposure = obj.process(arg)
+                    if isinstance(arg, Exposure):
+                        obj.debug('Processing exposure')
+                        exposure = obj.process(arg)
+                    else:
+                        obj.debug(f'Processing exposure {arg[0]=}, {arg[1]=}')
+                        exposure = obj.process(obj.loadExposure(arg[0], arg[1]))
                     obj.resultqueue.put_nowait(('result', exposure))
                 except ProcessingError as pe:
                     obj.error(pe.args[0])
@@ -55,15 +67,36 @@ class DataReductionPipeLine:
                 obj.debug('Config updated.')
             else:
                 obj.error(f'Unknown command: {cmd}')
+        obj.debug('Emptying command queue')
+        while True:
+            try:
+                commandqueue.get_nowait()
+            except queue.Empty:
+                break
         obj.debug('Finishing background thread.')
+
         obj.resultqueue.put_nowait(('finished', None))
 
-    def process(self, exposure: Exposure):
-        for operation in [self.sanitize_data, self.normalize_by_monitor, self.subtract_dark_backgrouund,
+    def process(self, exposure: Exposure) -> Exposure:
+        for operation in [self.sanitize_data, self.normalize_by_monitor, self.subtract_dark_background,
                           self.normalize_by_transmission, self.subtract_empty_background, self.correct_geometry,
                           self.divide_by_thickness, self.absolute_intensity_scaling]:
-            exposure = operation(exposure)
-        exposure.save(os.path.join(self.config['path']['directories']['eval2d'], exposure.header.prefix))
+            try:
+                exposure = operation(exposure)
+            except StopIteration as si:
+                exposure = si.args[0]
+                break
+        os.makedirs(self.config['path']['directories']['eval2d'], exist_ok=True)
+        exposure.save(
+            os.path.join(
+                self.config['path']['directories']['eval2d'],
+                f'{exposure.header.prefix}_{exposure.header.fsn:0{self.config["path"]["fsndigits"]}d}.npz'))
+        with open(
+                os.path.join(
+                    self.config['path']['directories']['eval2d'],
+                    f'{exposure.header.prefix}_{exposure.header.fsn:0{self.config["path"]["fsndigits"]}d}.pickle'),
+                'wb') as f:
+            pickle.dump(exposure.header, f)
         return exposure
 
     def sanitize_data(self, exposure: Exposure) -> Exposure:
@@ -82,13 +115,14 @@ class DataReductionPipeLine:
             # this is a dark current measurement
             self.dark = exposure
             self.dark.header.fsn_dark = self.dark.header.fsn
-            self.dark.header.dark_cps = exposure.intensity[exposure.mask].mean(), exposure.uncertainty[exposure.mask]
+            self.dark.header.dark_cps = exposure.intensity[exposure.mask].mean(), exposure.uncertainty[exposure.mask].std()
+            logger.debug(str(self.dark.header))
             self.info(
                 f'FSN #{self.dark.header.fsn} is a dark background measurement. '
                 f'Level: {self.dark.header.dark_cps[0]:g} \xb1 {self.dark.header.dark_cps[1]:g} cps per pixel '
                 f'(overall {self.dark.header.dark_cps[0]:g} cps)'
             )
-            raise StopIteration()
+            raise StopIteration(exposure)
         else:
             if self.dark is None:
                 raise ProcessingError(
@@ -114,6 +148,7 @@ class DataReductionPipeLine:
             f'FSN #{exposure.header.fsn} has been normalized by transmission '
             f'{exposure.header.transmission[0]:g} \xb1 {exposure.header.transmission[1]:g}.'
         )
+        return exposure
 
     def subtract_empty_background(self, exposure: Exposure) -> Exposure:
         if (exposure.header.sample().category == Sample.Categories.Empty_beam) or (
@@ -121,7 +156,7 @@ class DataReductionPipeLine:
             # this is an empty beam measurement.
             self.emptybeam = exposure
             self.info(f'FSN #{exposure.header.fsn} is an empty beam measurement.')
-            raise StopIteration()
+            raise StopIteration(exposure)
         elif self.emptybeam is None:
             raise ProcessingError(
                 'Empty-beam measurement not encountered yet, cannot correct for instrumental background.')
@@ -139,7 +174,7 @@ class DataReductionPipeLine:
                              exposure.header.pixelsize[0], exposure.header.pixelsize[1])
         asa, dasa = angledependentabsorption(twotheta[0], twotheta[1], exposure.header.transmission[0],
                                              exposure.header.transmission[1])
-        aaa, daaa = angledependentairtransmission(twotheta[0], twotheta[1], exposure.header.vacuum,
+        aaa, daaa = angledependentairtransmission(twotheta[0], twotheta[1], exposure.header.vacuum[0],
                                                   exposure.header.distance[0],
                                                   exposure.header.distance[1])  # ToDo: mu_air non-default value
         exposure.uncertainty = (exposure.uncertainty ** 2 * sa ** 2 + exposure.intensity ** 2 * dsa ** 2) ** 0.5
@@ -164,7 +199,8 @@ class DataReductionPipeLine:
         return exposure
 
     def absolute_intensity_scaling(self, exposure: Exposure) -> Exposure:
-        if exposure.header.sample().category == Sample.Categories.NormalizationSample:
+        if exposure.header.sample().category in [Sample.Categories.NormalizationSample, Sample.Categories.Calibrant]:
+            self.debug('This is a calibration sample')
             # find corresponding reference
             if 'calibrants' not in self.config:
                 raise ProcessingError('No calibrants found in config.')
@@ -173,13 +209,12 @@ class DataReductionPipeLine:
                             if ('datafile' in self.config['calibrants'][cname])
                             and re.match(self.config['calibrants'][cname]['regex'], exposure.header.title)
                             ]
-                if not matching:
-                    raise ProcessingError('No calibrant information found for sample {}')
-                elif len(matching) > 1:
+                self.debug(f'Matched calibrants: {", ".join(matching)}')
+                if len(matching) > 1:
                     raise ProcessingError(
                         f'Sample name {exposure.header.title} is matched by more than one calibrants: '
                         f'{", ".join(matching)}')
-                else:
+                elif len(matching) == 1:
                     datafile = self.config['calibrants'][matching[0]]['datafile']
                     calibdata = np.loadtxt(datafile)
                     rad = exposure.radial_average(calibdata[:, 0]).sanitize()
@@ -210,7 +245,11 @@ class DataReductionPipeLine:
                              f'points). Reduced chi2: {chi2_red:g} (DoF: {dof}')
                     self.info(f'FSN #{exposure.header.fsn}: estimated beam flux {exposure.header.flux[0]:g} \xb1 '
                              f'{exposure.header.flux[1]} photons*eta/sec')
-        elif self.absintref is None:
+                    return exposure
+                else:
+                    assert not matching
+                    # no matching reference data, treat this sample as a normal sample.
+        if self.absintref is None:
             raise ProcessingError('No absolute intensity reference measurement encountered up to now, cannot scale into'
                                   'absolute intensity units.')
         else:
@@ -220,11 +259,13 @@ class DataReductionPipeLine:
             exposure.header.fsn_absintref = self.absintref.header.fsn
             exposure.header.absintqmax = self.absintref.header.absintqmax
             exposure.header.absintqmin = self.absintref.header.absintqmin
+            exposure.header.flux = self.absintref.header.flux
             exposure.uncertainty = (exposure.uncertainty ** 2 * exposure.header.absintfactor[
                 0] ** 2 + exposure.intensity ** 2 * exposure.header.absintfactor[1] ** 2) ** 0.5
             exposure.intensity = exposure.intensity * exposure.header.absintfactor[0]
             self.info(
                 f'FSN #{exposure.header.fsn} has been calibrated into absolute units using exposure #{exposure.header.fsn_absintref}. Absolute intensity factor: {exposure.header.absintfactor[0]:g} \xb1 {exposure.header.absintfactor[1]:g}, estimated beam flux {exposure.header.flux[0]:g} \xb1 {exposure.header.flux[1]:g}')
+        return exposure
 
     @staticmethod
     def get_statistics(exposure: Exposure) -> Dict[str, float]:
@@ -253,3 +294,7 @@ class DataReductionPipeLine:
         
     def info(self, message: str):
         self.log(logging.INFO, message)
+
+    def loadExposure(self, prefix: str, fsn: int) -> Exposure:
+        self.debug(f'Loading exposure {prefix=}, {fsn=}')
+        return self.io.loadExposure(prefix, fsn, raw=True, check_local=True)
