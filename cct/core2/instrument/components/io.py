@@ -2,7 +2,6 @@ import logging
 import os
 import pathlib
 import re
-import time
 from typing import Dict, Tuple, Optional, List, Iterator
 
 import h5py
@@ -54,58 +53,40 @@ class IO(QtCore.QObject, Component):
         """
         # check raw detector images
         logger.info('Reindexing already present exposures...')
-        t0 = time.monotonic()
         for subdir, extension in [
-            ('images', 'cbf'), ('images_local', 'cbf'), ('param', 'param'), ('param_override', 'param'),
+            ('images', 'cbf'), ('images_local', 'cbf'), ('param', 'pickle'), ('param_override', 'pickle'),
             ('eval2d', 'npz'), ('eval1d', 'txt')]:
             # find all subdirectories in `directory`, including `directory`
             # itself
             directory = self.getSubDir(subdir)
-            logger.debug(f'Looking in directory {directory}')
             filename_regex = re.compile(rf'^(?P<prefix>\w+)_(?P<fsn>\d+)\.{extension}$')
             for folder, subdirs, files in os.walk(str(directory)):
                 # find all files
                 matchlist = [m for m in [filename_regex.match(f) for f in files] if m is not None]
                 # find all file prefixes, like 'crd', 'tst', 'tra', 'scn', etc.
-                for prefix in {m.group('prefix') for m in matchlist}:
-                    logger.debug(f'Treating prefix {prefix}')
+                prefixes = {m.group('prefix') for m in matchlist}
+                for prefix in prefixes:
                     if prefix not in self._lastfsn:
-                        logger.debug(f'New prefix: {prefix}.')
                         self._lastfsn[prefix] = None
                     # find the highest available FSN of the current prefix in
                     # this directory
                     maxfsn = max([int(m.group('fsn')) for m in matchlist if m.group('prefix') == prefix])
-                    logger.debug(f'Maxfsn for prefix {prefix} in directory {directory}: {maxfsn}')
                     if self._lastfsn[prefix] is None or (maxfsn > self._lastfsn[prefix]):
                         self._lastfsn[prefix] = maxfsn
 
         # add known prefixes to self._lastfsn if they were not yet added.
         for prefix in self.config['path']['prefixes'].values():
             if prefix not in self._lastfsn:
-                logger.debug(f'Adding not found prefix to _lastfsn: {prefix}')
                 self._lastfsn[prefix] = None
+            else:
+                self.lastFSNChanged.emit(prefix, self._lastfsn[prefix])
 
         # update self._nextfsn
         for prefix in self._lastfsn:
             self._nextfsn[prefix] = self._lastfsn[prefix] + 1 if self._lastfsn[prefix] is not None else 0
+            self.nextFSNChanged.emit(prefix, self._nextfsn[prefix])
 
-        # reload scan file table of contents.
-
-    def reindexScanfile(self):
-        with open(os.path.join(self.config['path']['directories']['scan'],
-                               self.config['scan']['scanfile']), 'rt') as f:
-            maxscan = -np.inf
-            for line in f:
-                lss = line.strip().split()
-                if not lss:
-                    continue
-                if lss[0] == '#S':
-                    if int(lss[1]) > maxscan:
-                        maxscan = int(lss[1])
-            self._lastscan = maxscan
-            self._nextscan = maxscan + 1
-
-    def nextfsn(self, prefix: str, checkout: int=0) -> int:
+    def nextfsn(self, prefix: str, checkout: int = 0) -> int:
         """Get the next file sequence number from the desired sequence
 
         :param prefix: file sequence prefix
@@ -148,8 +129,8 @@ class IO(QtCore.QObject, Component):
         filename = f'{prefix}_{fsn:0{self.config["path"]["fsndigits"]}d}{extension}'
         yield os.path.join(subdir, prefix, filename)
         yield os.path.join(subdir, filename)
-        yield os.path.join(subdir, f'{prefix}{fsn//10000}', filename)
-        yield os.path.join(subdir, f'{prefix}_{fsn//10000}')
+        yield os.path.join(subdir, f'{prefix}{fsn // 10000}', filename)
+        yield os.path.join(subdir, f'{prefix}_{fsn // 10000}')
 
     ### Loading exposures, headers, masks
 
@@ -188,8 +169,8 @@ class IO(QtCore.QObject, Component):
                 try:
                     if filename.lower().endswith('.cbf'):
                         intensity = readcbf(filename)
-                        uncertainty = intensity**0.5
-                        uncertainty[intensity<=0] = 1
+                        uncertainty = intensity ** 0.5
+                        uncertainty[intensity <= 0] = 1
                     elif filename.lower().endswith('.npz'):
                         data = np.load(filename)
                         intensity = data['Intensity']
@@ -221,16 +202,18 @@ class IO(QtCore.QObject, Component):
                     pass
         raise FileNotFoundError(expfilename)
 
-
     @staticmethod
     def loadH5(h5file: str, samplename: str, distkey: str) -> Exposure:
         with h5py.File(h5file, 'r', swmr=True) as h5:
             grp = h5['Samples'][samplename][distkey]
             assert isinstance(grp, h5py.Group)
             header = Header(datadict={})
-            header.beamposrow=(grp.attrs['beamcentery'], grp.attrs['beamcentery.err'])
-            header.beamposcol=(grp.attrs['beamcenterx'], grp.attrs['beamcenterx.err'])
-            header.flux = (grp.attrs['flux'], grp.attrs['flux.err'])
+            header.beamposrow = (grp.attrs['beamcentery'], grp.attrs['beamcentery.err'])
+            header.beamposcol = (grp.attrs['beamcenterx'], grp.attrs['beamcenterx.err'])
+            try:
+                header.flux = (grp.attrs['flux'], grp.attrs['flux.err'])
+            except KeyError:
+                header.flux = (0.0, 0.0)
             header.samplex = (grp.attrs['samplex'], grp.attrs['samplex.err'])
             header.sampley = (grp.attrs['sampley'], grp.attrs['sampley.err'])
             header.temperature = (grp.attrs['temperature'], grp.attrs['temperature.err'])
@@ -245,7 +228,8 @@ class IO(QtCore.QObject, Component):
             header.username = grp.attrs['username']
             header.title = grp.attrs['title']
             header.distance = (grp.attrs['distance'], list(grp['curves'].values())[0].attrs['distance.err'])
-            header.distancedecreaase = (grp.attrs['distancedecrease'], list(grp['curves'].values())[0].attrs['distancedecrease.err'])
+            header.distancedecreaase = (
+            grp.attrs['distancedecrease'], list(grp['curves'].values())[0].attrs['distancedecrease.err'])
             header.pixelsize = (grp.attrs['pixelsizex'], list(grp['curves'].values())[0].attrs['pixelsizex.err'])
             header.wavelength = (grp.attrs['wavelength'], list(grp['curves'].values())[0].attrs['wavelength.err'])
             header.sample_category = grp.attrs['sample_category']
