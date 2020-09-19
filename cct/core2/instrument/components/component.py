@@ -22,8 +22,12 @@ class Component:
         #        super().__init__(**kwargs)
         logger.debug('Initializing a component')
         self.config = kwargs['config']
-        self.config.changed.connect(self.onConfigChanged)
-        self.instrument = weakref.proxy(kwargs['instrument'])
+        if isinstance(self.config, Config):
+            self.config.changed.connect(self.onConfigChanged)
+        if kwargs['instrument'] is not None:
+            self.instrument = weakref.proxy(kwargs['instrument'])
+        else:
+            self.instrument = None
         logger.debug('Loading component state from the config')
         self.loadFromConfig()
         logger.debug('Initialized the component')
