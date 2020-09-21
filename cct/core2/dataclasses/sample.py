@@ -5,7 +5,7 @@ from typing import Dict, Union, Optional, Tuple, SupportsFloat
 
 import dateutil.parser
 
-from core2.instrument.components.samples.descriptors import LockableFloat, LockableString, LockableOptionalString, LockableDate, LockableEnum, LockState
+from .descriptors import LockableFloat, LockableString, LockableOptionalString, LockableDate, LockableEnum, LockState
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

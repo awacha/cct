@@ -5,7 +5,7 @@ from typing import List, Any, Optional, Union, Iterable
 
 from PyQt5 import QtCore, QtGui
 
-from .descriptors import LockState
+from ....dataclasses.descriptors import LockState
 from ....dataclasses.sample import Sample
 from ..component import Component
 from ..motors import Motor

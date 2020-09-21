@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from .delegates import SampleEditorDelegate
 from .sampleeditor_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
-from core2.dataclasses.sample import Sample, LockState
+from ....core2.dataclasses.sample import Sample, LockState
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

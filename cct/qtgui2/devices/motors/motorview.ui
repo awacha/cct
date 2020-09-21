@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>998</width>
-    <height>497</height>
+    <height>464</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,77 +19,125 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QGroupBox" name="groupBox">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>1</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="title">
-      <string>Motor parameters</string>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <property name="spacing">
-       <number>0</number>
-      </property>
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-      <item>
-       <widget class="QTreeView" name="treeView">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::CustomContextMenu</enum>
-        </property>
-        <property name="verticalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="horizontalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="sizeAdjustPolicy">
-         <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
-        </property>
-        <property name="showDropIndicator" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="alternatingRowColors">
-         <bool>true</bool>
-        </property>
-        <property name="rootIsDecorated">
-         <bool>false</bool>
-        </property>
-        <property name="uniformRowHeights">
-         <bool>true</bool>
-        </property>
-        <property name="itemsExpandable">
-         <bool>false</bool>
-        </property>
-        <property name="allColumnsShowFocus">
-         <bool>true</bool>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QTreeView" name="treeView">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
+       <property name="verticalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
+       <property name="sizeAdjustPolicy">
+        <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+       </property>
+       <property name="showDropIndicator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="rootIsDecorated">
+        <bool>false</bool>
+       </property>
+       <property name="uniformRowHeights">
+        <bool>true</bool>
+       </property>
+       <property name="itemsExpandable">
+        <bool>false</bool>
+       </property>
+       <property name="allColumnsShowFocus">
+        <bool>true</bool>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QToolButton" name="addMotorToolButton">
+         <property name="toolTip">
+          <string>Add a new motor</string>
+         </property>
+         <property name="text">
+          <string>Add motor</string>
+         </property>
+         <property name="icon">
+          <iconset theme="list-add"/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="removeMotorToolButton">
+         <property name="toolTip">
+          <string>Remove the current motor</string>
+         </property>
+         <property name="text">
+          <string>Remove motor</string>
+         </property>
+         <property name="icon">
+          <iconset theme="list-remove"/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="calibrateMotorToolButton">
+         <property name="toolTip">
+          <string>Set motor position and limits</string>
+         </property>
+         <property name="text">
+          <string>Calibrate</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/motorcalibration.svg</normaloff>:/icons/motorcalibration.svg</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="autoAdjustMotorToolButton">
+         <property name="contextMenuPolicy">
+          <enum>Qt::NoContextMenu</enum>
+         </property>
+         <property name="toolTip">
+          <string>Auto-adjust the motor, i.e. search for the zero position</string>
+         </property>
+         <property name="text">
+          <string>Auto-adjust motor</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/motorconfig.svg</normaloff>:/icons/motorconfig.svg</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+    </layout>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
@@ -310,9 +358,26 @@
  </widget>
  <tabstops>
   <tabstop>treeView</tabstop>
+  <tabstop>addMotorToolButton</tabstop>
+  <tabstop>removeMotorToolButton</tabstop>
+  <tabstop>calibrateMotorToolButton</tabstop>
+  <tabstop>autoAdjustMotorToolButton</tabstop>
   <tabstop>motorNameComboBox</tabstop>
   <tabstop>relativeMovementCheckBox</tabstop>
   <tabstop>motorTargetDoubleSpinBox</tabstop>
+  <tabstop>moveMotorPushButton</tabstop>
+  <tabstop>sampleNameComboBox</tabstop>
+  <tabstop>movetoSamplePushButton</tabstop>
+  <tabstop>movetoSampleXPushButton</tabstop>
+  <tabstop>movetoSampleYPushButton</tabstop>
+  <tabstop>beamStopInXDoubleSpinBox</tabstop>
+  <tabstop>beamStopInYDoubleSpinBox</tabstop>
+  <tabstop>calibrateBeamStopInPushButton</tabstop>
+  <tabstop>moveBeamStopInPushButton</tabstop>
+  <tabstop>beamStopOutXDoubleSpinBox</tabstop>
+  <tabstop>beamStopOutYDoubleSpinBox</tabstop>
+  <tabstop>calibrateBeamStopOutPushButton</tabstop>
+  <tabstop>moveBeamStopOutPushButton</tabstop>
  </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>

@@ -247,6 +247,7 @@ class DeviceBackend:
         while True:
             try:
                 message = self.inqueue.get_nowait()
+                #self.inqueue.task_done()
             except queue.Empty:
                 await asyncio.sleep(0.1)
                 return True
@@ -294,6 +295,7 @@ class DeviceBackend:
                 result = await self.outbuffer.get()
                 #                self.debug(f'Got result from outbuffer after {time.monotonic() - t0} seconds: {result}')
                 #                self.info(f'Outbuffer length is now: {self.outbuffer.qsize()}')
+                self.outbuffer.task_done()
                 return result
             except asyncio.exceptions.CancelledError:
                 #                self.warning(f'Wait for outbuffer cancelled after {time.monotonic() - t0} seconds.')

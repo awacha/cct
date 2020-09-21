@@ -1,18 +1,37 @@
 from PyQt5 import QtCore
 
+import enum
+
 import logging
 from typing import Iterator, Any
 
 from ....devices.motor.generic.frontend import MotorController
+from ..auth.privilege import Privilege
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+class MotorRole(enum.Enum):
+    Sample = 'sample'
+    BeamStop = 'beamstop'
+    Pinhole = 'pinhole'
+    Other = 'other'
+
+
+class MotorDirection(enum.Enum):
+    X = 'x'
+    Y = 'y'
+    Z = 'z'
+    Other = 'other'
 
 
 class Motor(QtCore.QObject):
     controllername: str
     axis: int
     name: str
+    role: MotorRole = MotorRole.Other
+    direction: MotorDirection = MotorDirection.Other
 
     started = QtCore.pyqtSignal(float)  # emitted when a move is started. Argument: start position
     stopped = QtCore.pyqtSignal(bool, float)  # emitted when a move is finished. Arguments: success, end position
@@ -51,6 +70,12 @@ class Motor(QtCore.QObject):
 
     def isMoving(self) -> bool:
         return self.controller[f'moving${self.axis}']
+
+    def setPosition(self, newposition: float):
+        return self.controller.setPosition(self.axis, newposition)
+
+    def setLimits(self, left: float, right: float):
+        return self.controller.setLimits(self.axis, left, right)
 
     def where(self) -> float:
         return self.controller[f'actualposition${self.axis}']

@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict
+from typing import Dict, Optional
 
 import pkg_resources
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -34,6 +34,7 @@ from ..tools.samplepositionchecker import SamplePositionChecker
 from ..utils.plotimage import PlotImage
 from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.instrument import Instrument
+from ...core2.instrument.components.interpreter import ParsingError
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -114,6 +115,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.scripting = Scripting(mainwindow=self, instrument=self.instrument)
         self.scriptingTab.setLayout(QtWidgets.QVBoxLayout())
         self.scriptingTab.layout().addWidget(self.scripting)
+        self.executePushButton.clicked.connect(self.onExecutePushed)
 
     def onActionTriggered(self, toggled: bool):
         action = self.sender()
@@ -129,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             assert issubclass(windowclass, QtWidgets.QWidget)
             self.addSubWindow(windowclass, singleton=True)
 
-    def addSubWindow(self, windowclass, singleton: bool = True):
+    def addSubWindow(self, windowclass, singleton: bool = True) -> Optional[WindowRequiresDevices]:
         if windowclass.canOpen(self.instrument):
             if singleton and windowclass.__name__ in self._windows:
                 raise ValueError(f'Window class {windowclass} has already an active instance.')
@@ -193,3 +195,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def onDeviceConnected(self, device: str):
         ds = DeviceStatus(device=self.instrument.devicemanager[device])
         self.deviceStatusBarLayout.insertWidget(self.deviceStatusBarLayout.count() - 1, ds)
+
+    def onExecutePushed(self):
+        if self.executePushButton.text() == 'Stop':
+            self.instrument.interpreter.stop()
+        else:
+            try:
+                self.instrument.interpreter.parseScript(self.commandLineEdit.text())
+            except ParsingError:
+                pal = self.commandLineEdit.palette()
+                pal.setColor(pal.Window, QtCore.Qt.red)
+                self.commandLineEdit.setPalette(pal)
+                return

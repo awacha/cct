@@ -68,7 +68,7 @@ class TelemetryInformation:
                 '\n'.join([f'      {key}: {value}' for key, value in self.coro_wakes.items()]) + '\n' +
                 f'   outdated queries:\n' +
                 '\n'.join([f'      {key}: {value}' for key, value in self.outdatedqueries.items()]) + '\n' +
-                f'   last send time - last recv time: {(self.lastsendtime - self.lastrecvtime) if self.lastsendtime is not None else None}'
+                f'   last send time - last recv time: {(self.lastsendtime - self.lastrecvtime) if (self.lastsendtime is not None) and (self.lastrecvtime is not None) else None}'
                 )
 
     def duration(self) -> float:

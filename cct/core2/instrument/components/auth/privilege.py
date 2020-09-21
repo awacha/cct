@@ -12,3 +12,4 @@ class Privilege(enum.Enum):
     DeviceConfiguration = 'DC'
     UserManagement = 'UM'
     SuperUser = 'SU'
+    MotorConfiguration = 'ME'

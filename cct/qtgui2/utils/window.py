@@ -48,6 +48,8 @@ class WindowRequiresDevices:
         logger.debug(f'Connected {len(motors)} motors')
         self.instrument.config.changed.connect(self.onConfigChanged)
         self.instrument.auth.currentUserChanged.connect(self.onUserOrPrivilegesChanged)
+        self.instrument.motors.newMotor.connect(self.onNewMotor)
+        self.instrument.motors.motorRemoved.connect(self.onMotorRemoved)
 
     @classmethod
     def canOpen(cls, instrument: Instrument) -> bool:
@@ -140,3 +142,9 @@ class WindowRequiresDevices:
 
     def onUserOrPrivilegesChanged(self, username: str):
         pass
+
+    def onNewMotor(self, motorname: str):
+        self._checkRequirements()
+
+    def onMotorRemoved(self, motorname: str):
+        self._checkRequirements()

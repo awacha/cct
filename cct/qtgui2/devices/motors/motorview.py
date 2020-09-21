@@ -4,14 +4,21 @@ from typing import Optional
 from PyQt5 import QtWidgets, QtGui
 
 from .motorview_ui import Ui_Form
+from .addmotordialog import AddMotorDialog
+from .motorcalibration import MotorCalibrationDialog
 from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.components.motors import Motor
+from ....core2.instrument.components.auth.privilege import Privilege
+from .autoadjust import AutoAdjustMotor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+    addMotorDialog: Optional[AddMotorDialog] = None
+    motorCalibrationDialog: Optional[MotorCalibrationDialog] = None
+
     def __init__(self, **kwargs):
         self.required_motors = [m.name for m in kwargs['instrument'].motors.motors]
         super().__init__(**kwargs)
@@ -26,6 +33,73 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.motorNameComboBox.addItems([m.name for m in self.instrument.motors.motors])
         self.motorNameComboBox.setCurrentIndex(0)
         self.moveMotorPushButton.clicked.connect(self.onMoveMotorClicked)
+        self.addMotorToolButton.clicked.connect(self.addMotor)
+        self.removeMotorToolButton.clicked.connect(self.removeMotor)
+        self.calibrateMotorToolButton.clicked.connect(self.calibrateMotor)
+        self.autoAdjustMotorToolButton.clicked.connect(self.autoAdjustMotor)
+
+    def addMotor(self):
+        if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
+            QtWidgets.QMessageBox.critical(self, 'Insufficient privileges', 'Insufficient privileges to add a motor.')
+            return
+        self.addMotorDialog = AddMotorDialog(parent=self)
+        self.addMotorDialog.finished.connect(self.onAddMotorDialogFinished)
+        self.addMotorDialog.show()
+
+    def onAddMotorDialogFinished(self, accepted: bool):
+        if accepted:
+            self.instrument.motors.addMotor(
+                self.addMotorDialog.motorName(),
+                self.addMotorDialog.controllerName(),
+                self.addMotorDialog.axis(),
+                self.addMotorDialog.leftlimit(),
+                self.addMotorDialog.rightlimit(),
+                self.addMotorDialog.position()
+            )
+        self.addMotorDialog.finished.disconnect(self.onAddMotorDialogFinished)
+        self.addMotorDialog.close()
+        self.addMotorDialog.deleteLater()
+        self.addMotorDialog = None
+
+    def removeMotor(self):
+        index = self.treeView.selectionModel().currentIndex()
+        if not index.isValid():
+            return
+        if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
+            QtWidgets.QMessageBox.critical(self, 'Insufficient privileges', 'Cannot remove motor: not enough privileges.')
+            return
+        self.instrument.motors.removeMotor(self.instrument.motors[index.row()].name)
+
+    def calibrateMotor(self):
+        if not self.instrument.auth.hasPrivilege(Privilege.MotorCalibration):
+            QtWidgets.QMessageBox.critical(
+                self, "Insufficient privileges", "Cannot calibrate motor: insufficient privileges")
+            return
+        self.motorCalibrationDialog = MotorCalibrationDialog(
+            parent=self,
+            motorname=self.instrument.motors[self.treeView.selectionModel().currentIndex().row()].name)
+        self.motorCalibrationDialog.finished.connect(self.onMotorCalibrationDialogFinished)
+        self.motorCalibrationDialog.show()
+
+    def onMotorCalibrationDialogFinished(self, accepted: bool):
+        if accepted:
+            motor = self.instrument.motors[self.motorCalibrationDialog.motorname]
+            motor.setLimits(self.motorCalibrationDialog.leftLimit(), self.motorCalibrationDialog.rightLimit())
+            motor.setPosition(self.motorCalibrationDialog.position())
+        self.motorCalibrationDialog.close()
+        self.motorCalibrationDialog.deleteLater()
+        self.motorCalibrationDialog = None
+
+    def autoAdjustMotor(self):
+        if not self.treeView.selectionModel().currentIndex().isValid():
+            return
+        if not self.instrument.auth.hasPrivilege(Privilege.MotorCalibration):
+            QtWidgets.QMessageBox.critical(self, 'Insufficient privileges to calibrate motors.')
+            return
+        win = self.mainwindow.addSubWindow(AutoAdjustMotor, singleton=False)
+        if win is None:
+            return
+        win.setMotor(self.instrument.motors[self.treeView.selectionModel().currentIndex().row()].name)
 
     def onRelativeCheckBoxToggled(self, toggled: Optional[bool] = None):
         if self.motorNameComboBox.currentIndex() < 0:

@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>pinhole.svg</file>
     <file>cct4logo.svg</file>
     <file>cpt2logo.svg</file>
     <file>snapx.svg</file>

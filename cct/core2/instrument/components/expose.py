@@ -10,12 +10,12 @@ from typing import Dict, Optional, Any, List
 from PyQt5 import QtCore
 import numpy as np
 
-from core2.instrument.components.component import Component
-from core2.instrument.components.devicemanager import DeviceManager
-from core2.instrument.components.io import IO
-from core2.dataclasses import Header, Exposure
-from core2.devices.detector.pilatus.backend import PilatusBackend
-from core2.devices.detector.pilatus.frontend import PilatusDetector
+from .component import Component
+from .devicemanager import DeviceManager
+from .io import IO
+from ...dataclasses import Header, Exposure
+from ...devices.detector.pilatus.backend import PilatusBackend
+from ...devices.detector.pilatus.frontend import PilatusDetector
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

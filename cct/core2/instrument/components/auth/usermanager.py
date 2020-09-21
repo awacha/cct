@@ -175,7 +175,7 @@ class UserManager(QtCore.QAbstractItemModel, Component):
                         ('PINHOLE', Privilege.MovePinholes),
                         ('MANAGE_PROJECTS', Privilege.ProjectManagement),
                         ('CALIBRATE_MOTORS', Privilege.MotorCalibration),
-                        # ('CONFIGURE_MOTORS', None),
+                        ('CONFIGURE_MOTORS', Privilege.MotorConfiguration),
                         ('CONFIGURE_DEVICES', Privilege.DeviceConfiguration),
                         ('MANAGE_USERS', Privilege.UserManagement),
                         ('SUPERUSER', Privilege.SuperUser)

@@ -7,6 +7,7 @@ from PyQt5 import QtCore, QtGui
 from .auth.privilege import Privilege
 from .component import Component
 from ...devices.device.frontend import DeviceFrontend
+from ...devices.motor.generic.frontend import MotorController
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -178,6 +179,9 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
 
     def temperature(self) -> DeviceFrontend:
         return [d for d in self.devices.values() if d.devicetype == 'thermostat'][0]
+
+    def motorcontrollers(self) -> List[MotorController]:
+        return [d for d in self.devices.values() if d.devicetype == 'motorcontroller']
 
     def addDevice(self, devicename: str, classname: str, host: str, port: int):
         if not self.instrument.auth.hasPrivilege(Privilege.DeviceConfiguration):

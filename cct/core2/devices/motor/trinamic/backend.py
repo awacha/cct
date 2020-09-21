@@ -1,4 +1,5 @@
 import itertools
+import os
 import re
 import time
 from math import inf
@@ -37,6 +38,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
     clock_frequency: int
     full_step_size: float
     positionfile: str
+    positionfileread: bool = False
 
     per_controller_variables = ['firmwareversion']
     position_variables = ['targetposition', 'actualposition']
@@ -244,6 +246,12 @@ class TrinamicMotorControllerBackend(DeviceBackend):
             elif axisparameter == AxisParameters.ActualPosition:
                 self.updateVariable(f'actualposition:raw${axis}', value)
                 self.updateVariable(f'actualposition${axis}', self.converters[axis].position2phys(value))
+                if axis not in self.motionstatus:
+                    # motor not moving
+                    try:
+                        self.writeMotorPosFile()
+                    except KeyError as ke:
+                        self.debug(f'Cannot (yet?) write motor position file. Changed variable: actualposition${axis}. Missing parameter: {ke.args[0]}')
             elif axisparameter == AxisParameters.TargetSpeed:
                 self.updateVariable(f'targetspeed:raw${axis}', value)
                 self.updateVariable(f'targetspeed${axis}', self.converters[axis].speed2phys(value))
@@ -386,6 +394,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
             else:
                 self.updateVariable(f'softleft${motorindex}', left)
                 self.updateVariable(f'softright${motorindex}', right)
+                self.writeMotorPosFile()
                 self.commandFinished(name, f'Set limits for motor #{motorindex}')
         else:
             self.commandError(name, 'Unknown command')
@@ -413,20 +422,26 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     if axis < 0 or axis >= self.Naxes:
                         continue
                     motorpos[axis] = (position, (softleft, softright))
+                self.positionfileread = True
             return motorpos
         except FileNotFoundError:
             self.warning(f'Motor position file {self.positionfile} does not exist.')
+            self.positionfileread = True
             for axis in motorpos:
                 motorpos[axis] = (None, (0.0, 0.0))
             return motorpos
 
     def writeMotorPosFile(self):
+        os.makedirs(os.path.split(self.positionfile)[0], exist_ok=True)
+        if not self.positionfileread:
+            self.warning('Not writing motor position file: not yet read.')
         with open(self.positionfile, 'wt') as f:
             for axis in range(self.Naxes):
                 pos = self.converters[axis].position2phys(self[f'actualposition${axis}'])
                 f.write(f'{axis}: {pos:.16f} '
                         f'({self[f"softleft${axis}"]:.16f}, '
                         f'{self[f"softright${axis}"]:.16f})\n')
+        self.debug(f'Motor position file {self.positionfile} written.')
 
     def startMoving(self, axis: int, position: float, relative: bool = False):
         if axis in self.motionstatus:
@@ -510,6 +525,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
         self.updateVariable('__auxstatus__', ', '.join([str(i) for i in sorted(self.motionstatus)]))
         self.updateVariable(f'lastmovewassuccessful${axis}', successful)
         self.updateVariable(f'moving${axis}', False)
+        self.writeMotorPosFile()
 
     def checkMotion(self, axis: int) -> bool:
         """Check if a motor is (still) moving and act if it has stopped.
@@ -597,6 +613,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 self.updateVariable(f'softleft${axis}', softleft)
             if softright is not None:
                 self.updateVariable(f'softright${axis}', softright)
+        self.writeMotorPosFile()
         self.updateVariable('__status__', self.Status.Idle)
         self.updateVariable('__auxstatus__', '')
 

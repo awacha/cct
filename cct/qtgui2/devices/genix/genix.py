@@ -54,7 +54,6 @@ class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         super().setupUi(Form)
         device = self.instrument.devicemanager['genix']
         for variable in self._var2widget:
-            logger.debug(f'getting variable: {variable}')
             self.onVariableChanged(variable, device[variable], None)
         self.onVariableChanged('__status__', device['__status__'], None)
         self.onVariableChanged('__auxstatus__', device['__auxstatus__'], None)
@@ -68,7 +67,6 @@ class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name in self._var2widget:
             widget = getattr(self, self._var2widget[name])
-            logger.debug(f'Variable:  {name}. Widget name: {self._var2widget[name]}. Widget type: {type(widget)}')
             if isinstance(widget, QtWidgets.QLabel) and self._var2widget[name].endswith('Flag'):
                 pal = widget.palette()
                 if name in ['remote_mode', 'xrays', 'interlock']:
