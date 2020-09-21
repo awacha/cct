@@ -32,7 +32,7 @@ class GeniX(DeviceFrontend):
         return self['power_status']
 
     def powerDown(self):
-        self.issueCommand('power_down')
+        self.issueCommand('poweroff')
 
     def standby(self):
         self.issueCommand('standby')
