@@ -220,6 +220,8 @@ class Motors(QtCore.QAbstractItemModel, Component):
         if (position < softleft) or (position > softright):
             raise ValueError(f'Position must be between the limits.')
         self._addmotor(motorname, controllername, axis)
+        self[motorname].setLimits(softleft, softright)
+        self[motorname].setPosition(position)
 
     def removeMotor(self, motorname: str):
         if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
