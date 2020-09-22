@@ -1,2 +1,2 @@
-from .motor import Motor
+from .motor import Motor, MotorRole, MotorDirection
 from .motors import Motors

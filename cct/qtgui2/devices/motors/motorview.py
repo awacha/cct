@@ -37,6 +37,20 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.removeMotorToolButton.clicked.connect(self.removeMotor)
         self.calibrateMotorToolButton.clicked.connect(self.calibrateMotor)
         self.autoAdjustMotorToolButton.clicked.connect(self.autoAdjustMotor)
+        self.beamStopInXDoubleSpinBox.setValue(self.instrument.beamstop.inPosition()[0])
+        self.beamStopInYDoubleSpinBox.setValue(self.instrument.beamstop.inPosition()[1])
+        self.beamStopOutXDoubleSpinBox.setValue(self.instrument.beamstop.outPosition()[0])
+        self.beamStopOutYDoubleSpinBox.setValue(self.instrument.beamstop.outPosition()[1])
+        self.calibrateBeamStopInPushButton.clicked.connect(self.calibrateBeamStopIn)
+        self.calibrateBeamStopOutPushButton.clicked.connect(self.calibrateBeamStopOut)
+        self.moveBeamStopInPushButton.clicked.connect(self.instrument.beamstop.moveIn)
+        self.moveBeamStopOutPushButton.clicked.connect(self.instrument.beamstop.moveOut)
+
+    def calibrateBeamStopIn(self):
+        pass
+
+    def calibrateBeamStopOut(self):
+        pass
 
     def addMotor(self):
         if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):

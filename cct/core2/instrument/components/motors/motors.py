@@ -31,6 +31,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
                 if motor.controller.name == name:
                     idx = self.motors.index(motor)
                     self.beginRemoveRows(QtCore.QModelIndex(), idx, idx)
+                    self.motorRemoved.emit(motor.name)
                     motor.deleteLater()
                     self.motors.remove(motor)
                     self.endRemoveRows()
@@ -137,16 +138,19 @@ class Motors(QtCore.QAbstractItemModel, Component):
         motor.variableChanged.connect(self.onMotorVariableChanged)
         self.endInsertRows()
         self.newMotor.emit(motorname)
-        self.config['motors'][motorname] = {'controller':devicename, 'axis': motorindex, 'name': motorname,
+        self.config['motors'][motorname] = {'controller':devicename, 'index': motorindex, 'name': motorname,
                                             'role': motor.role.value, 'direction': motor.direction.value}
 
-
     def onDeviceConnected(self, name: str):
+        logger.debug(f'Device {name} connected, trying to load motors ')
         device = self.instrument.devicemanager.devices[name]
         if device.devicetype == 'motorcontroller':
             assert isinstance(device, MotorController)
+            logger.debug(f'Device {name} is a motor controller')
             for key in self.config['motors']:
+                logger.debug(f'Checking motor {key}')
                 if self.config['motors'][key]['controller'] == name:
+                    logger.debug(f'Motor {key} belongs to device {name}, creating this motor.')
                     motorname = self.config['motors'][key]['name']
                     motorindex = self.config['motors'][key]['index']
                     direction = self.config['motors'][key].setdefault('direction', None)

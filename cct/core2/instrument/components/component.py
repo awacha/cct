@@ -19,8 +19,6 @@ class Component:
     __running: bool = False
 
     def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PyQt5/multiinheritance.html
-        #        super().__init__(**kwargs)
-        logger.debug('Initializing a component')
         self.config = kwargs['config']
         if isinstance(self.config, Config):
             self.config.changed.connect(self.onConfigChanged)
@@ -28,9 +26,7 @@ class Component:
             self.instrument = weakref.proxy(kwargs['instrument'])
         else:
             self.instrument = None
-        logger.debug('Loading component state from the config')
         self.loadFromConfig()
-        logger.debug('Initialized the component')
 
     def onConfigChanged(self, path, value):
         pass

@@ -1,10 +1,14 @@
 import enum
 from typing import Optional
+import logging
 
 from PyQt5 import QtWidgets, QtGui
 from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.components.motors.motor import Motor
 from .autoadjust_ui import Ui_Form
+
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class AdjustingState(enum.Enum):
@@ -55,6 +59,8 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.motorNameComboBox.currentIndexChanged.connect(self.onMotorChanged)
         self.motorNameComboBox.addItems(sorted([m.name for m in self.instrument.motors]))
         self.startPushButton.clicked.connect(self.onStartClicked)
+        self.progressBar.setVisible(False)
+        self.resize(self.minimumSize())
 
     def motor(self) -> Motor:
         return self.instrument.motors[self.motorname]
@@ -78,6 +84,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.oldposition = self.motor().where()
             self.motor().setPosition(self.motor()['softright'])
             self.state = AdjustingState.WaitForInitialSetPositionResult
+            logger.debug('Autoadjust #1: setting motor position to right')
             self.startPushButton.setText('Stop')
             self.startPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
         elif self.startPushButton.text() == 'Stop':
@@ -86,13 +93,17 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def onMotorChanged(self):
         if self.motorname is not None:
-            self.disconnectMotor(self.instrument.motors[self.motorname])
+            try:
+                self.disconnectMotor(self.instrument.motors[self.motorname])
+            except TypeError:
+                pass
         self.motorname = None if self.motorNameComboBox.currentIndex() < 0 else self.motorNameComboBox.currentText()
         self.connectMotor(self.instrument.motors[self.motorname])
 
     def onMotorPositionChanged(self, newposition: float):
         if (self.state == AdjustingState.WaitForInitialSetPositionResult) and \
                 (newposition == self.motor()['softright']):
+            logger.debug('AutoAdjust #1 acknowledged. Now moving left.')
             self.state = AdjustingState.MovingLeft
             self.motor().moveTo(self.motor()['softleft'])
         elif (self.state == AdjustingState.WaitForFinalSetPositionResult) and \
@@ -100,9 +111,10 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.state = AdjustingState.MovingRight
             self.delta = (self.motor()['softright'] - self.leftposition - self.bufferDistanceDoubleSpinBox.value() + \
                           self.motor()['softleft'] - self.oldposition)
-            self.motor().moveTo(self.oldposition + delta)
+            self.motor().moveTo(self.oldposition + self.delta)
 
     def onMotorMoving(self, position: float, startposition: float, endposition: float):
+        logger.debug(f'onMotorMoving({position}, {startposition}, {endposition}); state={self.state.value}')
         if self.state in [AdjustingState.MovingLeft, AdjustingState.MovingRight, AdjustingState.MoveByBufferDistance]:
             self.progressBar.setVisible(True)
             self.progressBar.setRange(0, 1000)
@@ -116,21 +128,26 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.finalize()
             return
         elif self.state == AdjustingState.MovingLeft:
-            if success or (motor.where() == endposition) or (not motor['leftswitchstatus']):
-                QtWidgets.QMessageBox.critical(self, 'Error', 'Left position not reached.')
+            if success or (not motor['leftswitchstatus']):
+                QtWidgets.QMessageBox.critical(self, 'Error', 'Left switch not hit.')
                 self.finalize()
                 return
             # stopped on left limit switch
+            logger.debug(f'Stopped on left limit switch at position {motor.where()}')
             self.state = AdjustingState.MoveByBufferDistance
             self.leftposition = motor.where()
+            logger.debug(f'Moving right by bufferdistance {self.bufferDistanceDoubleSpinBox.value()}')
             motor.moveRel(self.bufferDistanceDoubleSpinBox.value())
+            logger.debug(f'Moverel issued.')
         elif self.state == AdjustingState.MoveByBufferDistance:
             if not success:
                 QtWidgets.QMessageBox.critical(
                     self, 'Error', f'Cannot move right by buffer distance {self.bufferDistanceDoubleSpinBox.value()}')
                 self.finalize()
                 return
+            logger.debug('Moving by buffer distance done.')
             motor.setPosition(motor['softleft'])
+            self.state = AdjustingState.WaitForFinalSetPositionResult
         elif self.state == AdjustingState.MovingRight:
             if not success:
                 QtWidgets.QMessageBox.critical(self, 'Error', f'Cannot reach original position.')
@@ -148,5 +165,6 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.delta = None
         for widget in [self.bufferDistanceDoubleSpinBox, self.motorNameComboBox]:
             widget.setEnabled(True)
+        self.progressBar.setVisible(False)
         self.startPushButton.setText('Start')
         self.startPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))

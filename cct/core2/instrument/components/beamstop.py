@@ -1,28 +1,30 @@
 import logging
-from typing import Optional
+from typing import Optional, Tuple
+import enum
 
 from PyQt5 import QtCore
 
 from .component import Component
-from .motors import Motor
+from .motors import Motor, MotorRole, MotorDirection
+from ...devices.device.frontend import DeviceFrontend
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 class BeamStop(QtCore.QObject, Component):
-    class States:
+    class States(enum.Enum):
         In = 'in'
         Out = 'out'
         Undefined = 'undefined'
         Moving = 'moving'
 
     stateChanged = QtCore.pyqtSignal(str)
-    _movetarget: Optional[str]
+    _movetarget: Optional[States]
     _movephase: Optional[str]
-    state = States.Undefined
-    motorx: Optional[Motor] = None
-    motory: Optional[Motor] = None
+    state:States = States.Undefined
+    xmotorname: Optional[str] = None
+    ymotorname: Optional[str] = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -31,15 +33,62 @@ class BeamStop(QtCore.QObject, Component):
         logger.debug(str(self.__dict__.keys()))
         self.instrument.motors.newMotor.connect(self.onNewMotorConnected)
 
-    def onNewMotorConnected(self):
+    def onMotorDestroyed(self):
+        motor = self.sender()
+        assert isinstance(motor, Motor)
+        if motor.name == self.xmotorname:
+            self.xmotorname = None
+        elif motor.name == self.ymotorname:
+            self.ymotorname = None
+        self.state = self.States.Undefined
+        self.stateChanged.emit(self.state.value)
+        return
+
+    def _disconnectMotor(self, motor:Motor):
+        motor.started.disconnect(self.onMotorStarted)
+        motor.stopped.disconnect(self.onMotorStopped)
+        motor.positionChanged.disconnect(self.onMotorPositionChanged)
+        motor.destroyed.disconnect(self.onMotorDestroyed)
+
+    def _connectMotor(self, motor:Motor):
+        motor.started.connect(self.onMotorStarted)
+        motor.stopped.connect(self.onMotorStopped)
+        motor.positionChanged.connect(self.onMotorPositionChanged)
+        motor.destroyed.connect(self.onMotorDestroyed)
+
+    def reConnectMotors(self):
+        if (self.xmotorname is not None) and (self.instrument.motors.beamstop_x.name != self.xmotorname):
+            # motor has changed, disconnect the previous motor
+            motor = self.instrument.motors[self.xmotorname]
+            self._disconnectMotor(self.instrument.motors[self.xmotorname])
+            self.xmotorname = None
+        if (self.ymotorname is not None) and (self.instrument.motors.beamstop_y.name != self.ymotorname):
+            # motor has changed, disconnect the previous motor
+            motor = self.instrument.motors[self.ymotorname]
+            self._disconnectMotor(self.instrument.motors[self.ymotorname])
+            self.ymotorname = None
+        if self.xmotorname is None:
+            try:
+                self.xmotorname = self.instrument.motors.beamstop_x.name
+                self._connectMotor(self.instrument.motors.beamstop_x)
+            except KeyError:
+                self.xmotorname = None
+        if self.ymotorname is None:
+            try:
+                self.ymotorname = self.instrument.motors.beamstop_y.name
+                self._connectMotor(self.instrument.motors.beamstop_y)
+            except KeyError:
+                self.ymotorname = None
+
+    def onNewMotorConnected(self, motorname: str):
         self.reConnectMotors()
 
     def moveOut(self):
-        self._movetarget = 'out'
+        self._movetarget = self.States.Out
         self.motorx.moveTo(self.config['beamstop']['out'][0])
 
     def moveIn(self):
-        self._movetarget = 'in'
+        self._movetarget = self.States.In
         self.motorx.moveTo(self.config['beamstop']['in'][0])
 
     def calibrateIn(self, posx: float, posy: float):
@@ -70,7 +119,7 @@ class BeamStop(QtCore.QObject, Component):
             else:
                 self.state = self.States.Undefined
         if self.state != oldstate:
-            self.stateChanged.emit(self.state)
+            self.stateChanged.emit(self.state.value)
         return self.state
 
     def onMotorStarted(self, startposition: float):
@@ -78,72 +127,59 @@ class BeamStop(QtCore.QObject, Component):
 
     def onMotorStopped(self, success: bool, endposition: float):
         self.checkState()
+        motor = self.sender()
+        assert isinstance(motor, Motor)
         if self._movetarget is not None:
-            if self.sender() == self.motorx:
+            if (motor.role == MotorRole.BeamStop) and (motor.direction == MotorDirection.X):
                 # movement of X motor is done, start with Y
                 if success:
                     self.motory.moveTo(self.config['beamstop'][self._movetarget][1])
                 else:
                     # not successful, break moving
+                    logger.error('Error while moving beam-stop: target not reached.')
                     self._movetarget = None
-            elif self.sender() == self.motory:
+            elif (motor.role == MotorRole.BeamStop) and (motor.direction == MotorDirection.Y):
                 # moving the Y motor finished
                 self._movetarget = None
         if self.stopping and (not self.motorx.isMoving()) and (not self.motory.isMoving()):
             self.stopComponent()
 
     def onMotorPositionChanged(self, actualposition: float):
-        self.checkState()
-
-    def loadFromConfig(self):
-        if 'motorx' not in self.config['beamstop']:
-            self.config['beamstop']['motorx'] = 'BeamStop_X'
-        if 'motory' not in self.config['beamstop']:
-            self.config['beamstop']['motory'] = 'BeamStop_Y'
+        try:
+            self.checkState()
+        except DeviceFrontend.DeviceError:
+            # can happen at the very beginning
+            pass
 
     def motorsAvailable(self) -> bool:
-        return (self.motorx is not None) and (self.motory is not None)
-
-    def reConnectMotors(self):
-        xname = self.config['beamstop']['motorx']
-        yname = self.config['beamstop']['motory']
-        for direction, newname in [('x', xname), ('y', yname)]:
-            motor = self.motorx if direction == 'x' else self.motory
-            if (motor is not None) and (motor.name == newname):
-                # already connected, no change needed
-                continue
-            elif motor is not None:
-                # disconnect the previous motor
-                motor.started.disconnect(self.onMotorStarted)
-                motor.stopped.disconnect(self.onMotorStopped)
-                motor.positionChanged.disconnect(self.onMotorPositionChanged)
-            try:
-                motor = self.instrument.motors[newname]
-            except KeyError:
-                motor = None
-            if motor is not None:
-                motor.started.connect(self.onMotorStarted)
-                motor.stopped.connect(self.onMotorStopped)
-                motor.positionChanged.connect(self.onMotorPositionChanged)
-            setattr(self, 'motorx' if direction == 'x' else 'motory', motor)
+        return (self.xmotorname is not None) and (self.ymotorname is not None)
 
     def disconnectMotors(self):
-        for motor in [self.motorx, self.motory]:
-            if motor is None:
-                continue
-            motor.started.disconnect(self.onMotorStarted)
-            motor.stopped.disconnect(self.onMotorStopped)
-            motor.positionChanged.disconnect(self.onMotorPositionChanged)
-        self.motorx = self.motory = None
+        for motorname in [self.xmotorname, self.ymotorname]:
+            try:
+                motor = self.instrument.motors[motorname]
+            except KeyError:
+                pass
+            self._disconnectMotor(motor)
 
     def startComponent(self):
         self.reConnectMotors()
         super().startComponent()
 
-    def onConfigChanged(self, path, value):
-        if (path == ('beamstop', 'motory')) or (path == ('beamstop', 'motorx')):
-            self.reConnectMotors()
-
     def stopComponent(self):
         self.disconnectMotors()
         super().stopComponent()
+
+    @property
+    def motorx(self) -> Motor:
+        return self.instrument.motors.beamstop_x
+
+    @property
+    def motory(self) -> Motor:
+        return self.instrument.motors.beamstop_y
+
+    def inPosition(self) -> Tuple[float, float]:
+        return self.config['beamstop']['in']
+
+    def outPosition(self) -> Tuple[float, float]:
+        return self.config['beamstop']['out']

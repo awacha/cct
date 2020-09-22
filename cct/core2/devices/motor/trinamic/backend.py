@@ -437,7 +437,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
             self.warning('Not writing motor position file: not yet read.')
         with open(self.positionfile, 'wt') as f:
             for axis in range(self.Naxes):
-                pos = self.converters[axis].position2phys(self[f'actualposition${axis}'])
+                pos = self.converters[axis].position2phys(self[f'actualposition:raw${axis}'])
                 f.write(f'{axis}: {pos:.16f} '
                         f'({self[f"softleft${axis}"]:.16f}, '
                         f'{self[f"softright${axis}"]:.16f})\n')

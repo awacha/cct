@@ -26,7 +26,11 @@
     </widget>
    </item>
    <item row="1" column="1">
-    <widget class="QDoubleSpinBox" name="bufferDistanceDoubleSpinBox"/>
+    <widget class="QDoubleSpinBox" name="bufferDistanceDoubleSpinBox">
+     <property name="value">
+      <double>0.100000000000000</double>
+     </property>
+    </widget>
    </item>
    <item row="2" column="0" colspan="2">
     <widget class="QProgressBar" name="progressBar">
@@ -69,7 +73,8 @@
         <string>Start</string>
        </property>
        <property name="icon">
-        <iconset theme="system-run"/>
+        <iconset theme="system-run">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>

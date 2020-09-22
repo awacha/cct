@@ -9,7 +9,7 @@ from PyQt5 import QtCore
 PathLike = Union[os.PathLike, str, pathlib.Path]
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Config(QtCore.QObject):
