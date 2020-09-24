@@ -73,6 +73,9 @@ extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
               Extension("cct.core2.instrument.components.auth.user",
                         [os.path.join("cct", "core2", "instrument", "components", "auth", "user.pyx")],
                         include_dirs=[get_include()], libraries=krb5_libs),
+              Extension("cct.core2.algorithms.beamweighting",
+                        [os.path.join("cct","core2", "algorithms", "beamweighting.pyx")],
+                        include_dirs=[get_include()]),
               ]
 
 print(get_include())

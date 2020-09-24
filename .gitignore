@@ -24,3 +24,4 @@ conda_build.sh
 /test.log
 /scratch/.ipynb_checkpoints/
 /cct/qtgui2/tools/maskeditor/maskoperations.c
+/cct/core2/algorithms/beamweighting.c

@@ -38,7 +38,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
     clock_frequency: int
     full_step_size: float
     positionfile: str
-    positionfileread: bool = False
+    calibratedmotorsfrompositionfile: bool = False
 
     per_controller_variables = ['firmwareversion']
     position_variables = ['targetposition', 'actualposition']
@@ -370,7 +370,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
             if motorindex < 0 or motorindex >= self.Naxes:
                 self.commandError(name, f'Invalid motor index: {motorindex}')
             else:
-                self.enqueueHardwareMessage(TMCLPack(Instructions.Stop, 0, motorindex, 0))
+                self.enqueueHardwareMessage(TMCLPack(Instructions.Stop, 0, motorindex, 0), urgencymodifier=-10.0)
                 self.commandFinished(name, f'Stopping motor #{motorindex}')
                 if motorindex in self.motionstatus:
                     # note that stopping a motor should always work, even in the case of internal inconsistency
@@ -422,19 +422,20 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     if axis < 0 or axis >= self.Naxes:
                         continue
                     motorpos[axis] = (position, (softleft, softright))
-                self.positionfileread = True
+            self.debug(f'Read positions from position file: {motorpos}')
             return motorpos
         except FileNotFoundError:
             self.warning(f'Motor position file {self.positionfile} does not exist.')
-            self.positionfileread = True
             for axis in motorpos:
                 motorpos[axis] = (None, (0.0, 0.0))
+            self.debug(f'Initializing motor positions because of a missing position file: {motorpos}')
             return motorpos
 
     def writeMotorPosFile(self):
         os.makedirs(os.path.split(self.positionfile)[0], exist_ok=True)
-        if not self.positionfileread:
+        if not self.calibratedmotorsfrompositionfile:
             self.warning('Not writing motor position file: not yet read.')
+            return
         with open(self.positionfile, 'wt') as f:
             for axis in range(self.Naxes):
                 pos = self.converters[axis].position2phys(self[f'actualposition:raw${axis}'])
@@ -503,10 +504,10 @@ class TrinamicMotorControllerBackend(DeviceBackend):
         self.enqueueHardwareMessage(
             TMCLPack(cmdnum=Instructions.MoveTo, typenum=1 if relative else 0, motor_or_bank=axis,
                      value=rawtargetposition))
+        self.motionstatus[axis].cmdenqueuetime = time.monotonic()
         # self.debug('Enqueued moveto message')
         # some variables are not queried by default. Query these once.
         self.queryVariable(f'targetposition${axis}')
-        self.motionstatus[axis].cmdenqueuetime = time.monotonic()
         self.updateVariable(f'movestartposition${axis}', actualposition)
         self.updateVariable('__status__', self.Status.Moving)
         self.updateVariable('__auxstatus__', ', '.join([str(i) for i in sorted(self.motionstatus)]))
@@ -613,6 +614,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 self.updateVariable(f'softleft${axis}', softleft)
             if softright is not None:
                 self.updateVariable(f'softright${axis}', softright)
+        self.calibratedmotorsfrompositionfile = True
         self.writeMotorPosFile()
         self.updateVariable('__status__', self.Status.Idle)
         self.updateVariable('__auxstatus__', '')

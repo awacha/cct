@@ -40,7 +40,7 @@ class Scan:
         return self._data.dtype.names[0]
 
     def __getitem__(self, item):
-        return self._data[item]
+        return self._data[:self._nextpoint][item]
 
     def __setitem__(self, item, value):
         self._data[item] = value
@@ -108,3 +108,6 @@ class Scan:
 
     def maxpoints(self) -> int:
         return self._data.size
+
+    def truncate(self):
+        self._nextpoint = self._data.size

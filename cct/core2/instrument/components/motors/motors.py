@@ -147,7 +147,12 @@ class Motors(QtCore.QAbstractItemModel, Component):
         if device.devicetype == 'motorcontroller':
             assert isinstance(device, MotorController)
             logger.debug(f'Device {name} is a motor controller')
-            for key in self.config['motors']:
+            motorkeys = list(self.config['motors'])
+            for key in motorkeys:
+                if self.config['motors'][key]['name'] != key:
+                    # old motor entry, remove it
+                    del self.config['motors'][key]
+                    continue
                 logger.debug(f'Checking motor {key}')
                 if self.config['motors'][key]['controller'] == name:
                     logger.debug(f'Motor {key} belongs to device {name}, creating this motor.')

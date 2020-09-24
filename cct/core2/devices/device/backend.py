@@ -115,6 +115,7 @@ class DeviceBackend:
     messagereplytimeout: float = 1
     messageretries: int = 0
     messagemaxretries: int = 10
+    outstandingqueryfailtimeout: float=5
 
     lastmessage: Optional[Tuple[bytes, int]] = None
     telemetryPeriod: float = 5.0  # telemetry period in seconds
@@ -206,6 +207,12 @@ class DeviceBackend:
         self.messageToFrontend('end', expected=self.stopevent.is_set())
 
     @final
+    async def ensureready(self) -> bool:
+        await asyncio.sleep(self.readytimeout)
+        if self.variablesready:
+            return self.variablesready
+
+    @final
     async def telemetry(self) -> bool:
         """Collect telemetry"""
         #        self.debug('Telemetry task started.')
@@ -226,6 +233,9 @@ class DeviceBackend:
             self.telemetryInformation.lastsendtime = self.lastsendtime
             self.telemetryInformation.lastrecvtime = self.lastrecvtime
             self.messageToFrontend('telemetry', telemetry=self.telemetryInformation)
+            for timeout in self.telemetryInformation.outdatedqueries.values():
+                if timeout > self.outstandingqueryfailtimeout:
+                    raise RuntimeError('Outstanding query fail timeout reached.')
             del self.telemetryInformation
             self.telemetryInformation = None
         gc.collect()
@@ -499,14 +509,14 @@ class DeviceBackend:
     ### Tools for subclasses to use
     @final
     def disableAutoQuery(self):
-        self.warning('Disabling autoquery')
+        self.debug('Disabling autoquery')
         self.autoqueryenabled.clear()
         for v in self.variables:
             v.lastquery = None
 
     @final
     def enableAutoQuery(self):
-        self.warning('Enabling autoquery')
+        self.debug('Enabling autoquery')
         self.autoqueryenabled.set()
 
     @final
@@ -542,12 +552,12 @@ class DeviceBackend:
             self._query(var.name)
 
     @final
-    def enqueueHardwareMessage(self, message: bytes, numreplies: int = 1):
+    def enqueueHardwareMessage(self, message: bytes, numreplies: int = 1, urgencymodifier: float=0.0):
         """Put a new message to the outbound queue to the hardware.
 
         This method should not be overridden in subclasses.
         """
-        self.outbuffer.put_nowait((time.monotonic(), (message, numreplies, time.monotonic())))
+        self.outbuffer.put_nowait((time.monotonic(), (message, numreplies, time.monotonic()-urgencymodifier)))
 
     #        self.debug(f'Enqueued message {message}, num replies {numreplies}')
     #        self.debug(f'Output buffer length after enqueueing message: {self.outbuffer.qsize()}')

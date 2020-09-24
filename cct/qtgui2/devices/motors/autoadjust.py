@@ -94,11 +94,11 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onMotorChanged(self):
         if self.motorname is not None:
             try:
-                self.disconnectMotor(self.instrument.motors[self.motorname])
+                self._disconnectMotor(self.instrument.motors[self.motorname])
             except TypeError:
                 pass
         self.motorname = None if self.motorNameComboBox.currentIndex() < 0 else self.motorNameComboBox.currentText()
-        self.connectMotor(self.instrument.motors[self.motorname])
+        self._connectMotor(self.instrument.motors[self.motorname])
 
     def onMotorPositionChanged(self, newposition: float):
         if (self.state == AdjustingState.WaitForInitialSetPositionResult) and \
@@ -168,3 +168,4 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setVisible(False)
         self.startPushButton.setText('Start')
         self.startPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
+        self.resize(self.minimumSize())

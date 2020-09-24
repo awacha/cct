@@ -1,13 +1,16 @@
 import datetime
 import logging
+import multiprocessing.pool
 import os
 import time
 from typing import Dict, Optional, Any, Sequence
 
 from PyQt5 import QtCore
 
-from .component import Component
-from ...dataclasses import Scan
+from .recorder import ScanRecorder
+from ..component import Component
+from ..motors import Motor
+from ....dataclasses import Scan
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,17 +24,17 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
     _nextscan: int = 0
     nextscanchanged = QtCore.pyqtSignal(int)
     lastscanchanged = QtCore.pyqtSignal(int)
-    _scanning: Optional[int] = None
     scanstarted = QtCore.pyqtSignal(int, int)
     scanpointreceived = QtCore.pyqtSignal(int, int, int, tuple)
-    scanfinished = QtCore.pyqtSignal(int)
+    scanprogress = QtCore.pyqtSignal(float, float, float, str)
+    scanfinished = QtCore.pyqtSignal(bool, int)
+    scanrecorder: Optional[ScanRecorder] = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._scans = {}
         self._lastscan = None
         self._nextscan = 0
-        self._scanning = None
 
     def startComponent(self):
         self.reindex()
@@ -43,14 +46,50 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
             f.write(f'#E {time.time()}\n')
             f.write(f'#D {datetime.datetime.now()}\n')
             f.write('#C CREDO scan file')
-            f.write('#O0 '+ '  '.join([m.name for m in self.instrument.motors])+'\n')
+            f.write('#O0 ' + '  '.join([m.name for m in self.instrument.motors]) + '\n')
             f.write('\n\n')
 
-    def startNewScan(self, command: str, motorname: str, counters: Sequence[str], maxcounts: int, comment: str,
-                     countingtime: float) -> int:
+    def startScan(self, motorname: str, rangemin: float, rangemax: float, steps: int, relative: bool,
+                  countingtime: float, comment: str, movemotorback: bool = True, shutter: bool = True):
+        if self.scanrecorder is not None:
+            raise RuntimeError('Cannot start scan: already running')
+        try:
+            motor = self.instrument.motors[motorname]
+        except KeyError:
+            raise RuntimeError(f'Invalid motor {motorname}')
+        assert isinstance(motor, Motor)
+
+        scan = self.writeNewScanEntry(
+            f'{"scanrel" if relative else "scan"}("{motorname}", {rangemin:g}, {rangemax:g}, {steps:d}, '
+            f'{countingtime:g}, "{comment}")',
+            motorname, steps, countingtime, comment)
+        where = motor.where()
+        self.scanrecorder = ScanRecorder(
+            scan.index, (rangemin - where) if relative else rangemin, (rangemax - where) if relative else rangemax,
+            steps, countingtime, motor, self.instrument, movemotorback, shutter
+        )
+        self.scanrecorder.finished.connect(self.onScanFinished)
+        self.scanrecorder.scanpoint.connect(self.addScanLine)
+        self.scanrecorder.progress.connect(self.onScanProgress)
+        self.scanrecorder.start()
+        self.scanstarted.emit(self.scanrecorder.scanindex, steps)
+
+    def onScanProgress(self, start:float, end:float, current:float, message:str):
+        self.scanprogress.emit(start, end, current, message)
+
+    def stopScan(self):
+        if self.scanrecorder is None:
+            raise RuntimeError('No scan to stop')
+        self.scanrecorder.stop()
+
+    def writeNewScanEntry(self, command: str, motorname: str, maxcounts: int,
+                          countingtime: float, comment: str) -> Scan:
         assert self._nextscan not in self._scans
+        counters = ['FSN', 'total_sum', 'sum', 'total_max', 'max', 'total_beamx', 'beamx', 'total_beamy', 'beamy',
+                    'total_sigmax', 'sigmax', 'total_sigmay', 'sigmay', 'total_sigma', 'sigma']
         self.beginInsertRows(QtCore.QModelIndex(), len(self._scans), len(self._scans))
-        self._scans[self._nextscan] = Scan(motorname, counters, maxcounts, self._nextscan, datetime.datetime.now(),
+        scanindex = self._nextscan
+        self._scans[scanindex] = Scan(motorname, counters, maxcounts, scanindex, datetime.datetime.now(),
                                            comment, command, countingtime)
         self.endInsertRows()
         with open(self.scanfile(), 'at') as f:
@@ -67,35 +106,33 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
                     f.write(f'#P{i} ' + ' '.join([str(mp) for mp in motorpos[i * 8:i * 8 + 8]]) + '\n')
 
             f.write(f'#N {maxcounts}\n')
-            f.write(f'#L ' + '  '.join([motorname] + list(counters)) + '\n')
+            f.write(f'#L ' + '  '.join([motorname] + counters) + '\n')
             # header ready.
-        self._scanning = self._nextscan
+        scanindex = self._nextscan
         self._nextscan += 1
         self.nextscanchanged.emit(self._nextscan)
-        self.scanstarted.emit(self._scanning, maxcounts)
+        return self._scans[scanindex]
 
     def addScanLine(self, readings: Sequence[float]):
-        if self._scanning is None:
+        if self.scanrecorder is None:
             raise RuntimeError('No scan running')
-        scan = self._scans[self._scanning]
+        scan = self._scans[self.scanrecorder.scanindex]
         if len(readings) != len(scan.columnnames):
-            raise ValueError('Reading count mismatch.')
+            raise ValueError(f'Reading count mismatch. {len(readings)=}, {len(scan.columnnames)=}, {scan.columnnames=}')
         scan.append(tuple(readings))
         with open(self.scanfile(), 'at') as f:
             f.write(' '.join([str(x) for x in readings]) + '\n')
-        self.scanpointreceived.emit(self._scanning, len(scan) - 1, scan.maxpoints(), tuple(readings))
+        self.scanpointreceived.emit(self.scanrecorder.scanindex, len(scan) - 1, scan.maxpoints(), tuple(readings))
         self.dataChanged.emit(self.index(list(self._scans.keys()).index(scan.index), 5),
                               self.index(list(self._scans.keys()).index(scan.index), 5))
-        if scan.finished():
-            self.finishScan()
 
-    def finishScan(self):
-        if self._scanning is None:
-            raise ValueError('No running scan')
+    def onScanFinished(self, success: bool, message: str):
         with open(self.scanfile(), 'at') as f:
             f.write('\n')
-        self.scanfinished.emit(self._scanning)
-        self._scanning = None
+        self.lastscanchanged.emit(self.scanrecorder.scanindex)
+        self.scanfinished.emit(success, self.scanrecorder.scanindex)
+        self.scanrecorder.deleteLater()
+        self.scanrecorder = None
 
     def scanfile(self) -> str:
         return os.path.join(self.config['path']['directories']['scan'],
@@ -126,7 +163,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
                                           self.config['scan']['scanfile']))
         finally:
             self.endResetModel()
-        self.lastscanchanged.emit(self._lastscan)
+        self.lastscanchanged.emit(self._lastscan if self._lastscan is not None else -1)
         self.nextscanchanged.emit(self._nextscan)
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
@@ -158,9 +195,15 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
             elif index.column() == 2:
                 return scan.motorname
             elif index.column() == 3:
-                return str(scan[scan.motorname][0])
+                try:
+                    return str(scan[scan.motorname][0])
+                except IndexError:
+                    return '--'
             elif index.column() == 4:
-                return str(scan[scan.motorname][-1])
+                try:
+                    return str(scan[scan.motorname][-1])
+                except IndexError:
+                    return '--'
             elif index.column() == 5:
                 return len(scan)
             elif index.column() == 6:
@@ -170,7 +213,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             return ['Index', 'Date', 'Motor', 'From', 'To', 'Length', 'Comment'][section]
 
-    def lastscan(self) -> int:
+    def lastscan(self) -> Optional[int]:
         return self._lastscan
 
     def nextscan(self) -> int:
@@ -184,4 +227,4 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
 
     def loadFromConfig(self):
         if 'scan' not in self.config:
-            self.config['scan'] = {'mask': None, 'mask_total': None, 'scanfile':'credoscan.spec'}
+            self.config['scan'] = {'mask': None, 'mask_total': None, 'scanfile': 'credoscan.spec'}

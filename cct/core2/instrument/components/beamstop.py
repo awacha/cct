@@ -133,7 +133,7 @@ class BeamStop(QtCore.QObject, Component):
             if (motor.role == MotorRole.BeamStop) and (motor.direction == MotorDirection.X):
                 # movement of X motor is done, start with Y
                 if success:
-                    self.motory.moveTo(self.config['beamstop'][self._movetarget][1])
+                    self.motory.moveTo(self.config['beamstop'][self._movetarget.value][1])
                 else:
                     # not successful, break moving
                     logger.error('Error while moving beam-stop: target not reached.')

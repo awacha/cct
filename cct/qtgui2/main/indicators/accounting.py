@@ -1,9 +1,10 @@
 from PyQt5 import QtWidgets, QtCore
 from .accounting_ui import Ui_Frame
 from ....core2.instrument.instrument import Instrument
+from ...utils.window import WindowRequiresDevices
 
 
-class AccountingIndicator(QtWidgets.QFrame, Ui_Frame):
+class AccountingIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
@@ -28,6 +29,7 @@ class AccountingIndicator(QtWidgets.QFrame, Ui_Frame):
         self.projectIDComboBox.setView(view)
         self.projectIDComboBox.currentIndexChanged.connect(self.onProjectChanged)
         self.projectIDComboBox.setCurrentIndex(self.projectIDComboBox.findText(Instrument.instance().projects.projectID()))
+        self.onProjectChanged()
 
     def onProjectChanged(self):
         Instrument.instance().projects.setProject(self.projectIDComboBox.currentText())

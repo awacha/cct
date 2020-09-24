@@ -17,7 +17,7 @@ from ..devices.connectioneditor.connectioneditor import ConnectionEditor
 from ..devices.genix.genix import GeniXTool
 from ..devices.haakephoenix.haakephoenix import HaakePhoenixDevice
 from ..devices.motors.motorview import MotorView
-from ..devices.pilatus.pilatus import PilatusDetector
+from ..devices.pilatus.pilatus import PilatusDetectorUI
 from ..listing.headerview import HeaderView
 from ..listing.scanview import ScanViewer
 from ..measurement.simpleexposure.simpleexposure import SimpleExposure
@@ -35,6 +35,7 @@ from ..utils.plotimage import PlotImage
 from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.instrument import Instrument
 from ...core2.instrument.components.interpreter import ParsingError
+from ..measurement.scan.scan import ScanMeasurement
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -66,10 +67,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionCapillary_sizing': CapillarySizer,
         'actionDevice_connections': ConnectionEditor,
         'actionSingle_exposure': SimpleExposure,
-        'actionDetector': PilatusDetector,
+        'actionDetector': PilatusDetectorUI,
         'actionTemperature_stage': HaakePhoenixDevice,
         'actionView_images_and_curves': HeaderView,
         'actionData_reduction': HeaderView,
+        'actionScan': ScanMeasurement,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]
@@ -103,13 +105,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             action.triggered.connect(self.onActionTriggered)
         self.setWindowTitle(
             f'Credo Control Tool v{pkg_resources.get_distribution("cct").version} User: {self.instrument.auth.username()}')
-        self.accountingindicator = AccountingIndicator(parent=self.centralwidget)
+        self.accountingindicator = AccountingIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.accountingindicator)
-        self.lastfsnindicator = LastFSNIndicator(parent=self.centralwidget)
+        self.lastfsnindicator = LastFSNIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.lastfsnindicator)
-        self.beamstopindicator = BeamstopIndicator(parent=self.centralwidget)
+        self.beamstopindicator = BeamstopIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.beamstopindicator)
-        self.shutterindicator = ShutterIndicator(parent=self.centralwidget)
+        self.shutterindicator = ShutterIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.shutterindicator)
         self.indicatorHorizontalLayout.addStretch(1)
         self.scripting = Scripting(mainwindow=self, instrument=self.instrument)

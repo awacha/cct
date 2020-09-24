@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from PyQt5 import QtCore
 
@@ -48,3 +49,16 @@ class GeniX(DeviceFrontend):
 
     def xraysOn(self):
         self.issueCommand('xrays', True)
+
+    def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
+        if variablename == '__status__':
+            if (newvalue == GeniXBackend.Status.off) and (previousvalue == GeniXBackend.Status.warmup):
+                logger.debug('Warm-up finished. Going to standby mode.')
+                self.standby()
+        if variablename == 'shutter':
+            self.shutter.emit(bool(newvalue))
+
+    def onCommandResult(self, commandname: str, success: bool, result: str):
+        super().onCommandResult(commandname, success, result)
+        if commandname == 'shutter' and not success:
+            self.shutter.emit(self['shutter'])

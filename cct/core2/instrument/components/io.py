@@ -277,8 +277,10 @@ class IO(QtCore.QObject, Component):
         :rtype: np.ndarray (2 dimensions, dtype np.uint8)
         """
         mask = None
+        maskname = os.path.split(maskname)[-1]
         if maskname not in self._masks:
             for folder, dirnames, filenames in os.walk(str(self.getSubDir('mask'))):
+                logger.debug(f'Looking for mask {maskname=} in folder {folder=}')
                 for extn in ['', '.npy', '.mat']:
                     if maskname + extn in filenames:
                         maskfile = pathlib.Path(folder, maskname + extn)

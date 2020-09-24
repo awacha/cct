@@ -18,9 +18,9 @@ logger.setLevel(logging.DEBUG)
 class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     addMotorDialog: Optional[AddMotorDialog] = None
     motorCalibrationDialog: Optional[MotorCalibrationDialog] = None
+    required_motors = ['*']
 
     def __init__(self, **kwargs):
-        self.required_motors = [m.name for m in kwargs['instrument'].motors.motors]
         super().__init__(**kwargs)
         self.setupUi(self)
 
@@ -45,12 +45,48 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.calibrateBeamStopOutPushButton.clicked.connect(self.calibrateBeamStopOut)
         self.moveBeamStopInPushButton.clicked.connect(self.instrument.beamstop.moveIn)
         self.moveBeamStopOutPushButton.clicked.connect(self.instrument.beamstop.moveOut)
+        self.beamStopOutYDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
+        self.beamStopOutXDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
+        self.beamStopInYDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
+        self.beamStopInXDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
+
+    def onBeamStopCoordinateSpinBoxChanged(self):
+        if self.sender() is self.beamStopInXDoubleSpinBox:
+            inpos = self.instrument.beamstop.inPosition()
+            self.instrument.beamstop.calibrateIn(self.sender().value(), inpos[1])
+        elif self.sender() is self.beamStopInYDoubleSpinBox:
+            inpos = self.instrument.beamstop.inPosition()
+            self.instrument.beamstop.calibrateIn(inpos[0], self.sender().value())
+        elif self.sender() is self.beamStopOutXDoubleSpinBox:
+            outpos = self.instrument.beamstop.outPosition()
+            self.instrument.beamstop.calibrateOut(self.sender().value(), outpos[1])
+        elif self.sender() is self.beamStopOutYDoubleSpinBox:
+            outpos = self.instrument.beamstop.outPosition()
+            self.instrument.beamstop.calibrateOut(outpos[0], self.sender().value())
+
+    def _calibrateBeamstop(self, out:bool=False):
+        posx, posy = self.instrument.motors.beamstop_x.where(), self.instrument.motors.beamstop_y.where()
+        if QtWidgets.QMessageBox.question(
+                self, 'Confirm beamstop calibration',
+                f'Do you really want to calibrate the beamstop {"out" if out else "in"} position '
+                f'to ({posx:.4f}, {posy:.4f})?'):
+            widgets = [self.beamStopOutXDoubleSpinBox, self.beamStopOutYDoubleSpinBox] if out else [self.beamStopInXDoubleSpinBox, self.beamStopInYDoubleSpinBox]
+            for w in widgets:
+                w.blockSignals(True)
+            widgets[0].setValue(posx)
+            widgets[1].setValue(posy)
+            if out:
+                self.instrument.beamstop.calibrateOut(posx, posy)
+            else:
+                self.instrument.beamstop.calibrateIn(posx, posy)
+            for w in widgets:
+                w.blockSignals(False)
 
     def calibrateBeamStopIn(self):
-        pass
+        self._calibrateBeamstop(False)
 
     def calibrateBeamStopOut(self):
-        pass
+        self._calibrateBeamstop(True)
 
     def addMotor(self):
         if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
@@ -132,8 +168,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.motorTargetDoubleSpinBox.setValue(actualposition)
 
     def onMotorNameChanged(self, currentindex: int):
-        motor = self.instrument.motors[self.motorNameComboBox.currentText()]
-        self.onRelativeCheckBoxToggled()
+        self.onRelativeCheckBoxToggled()  # this ensures setting the target spinbox limits and value.
 
     def onMotorStarted(self, startposition: float):
         motor = self.sender()

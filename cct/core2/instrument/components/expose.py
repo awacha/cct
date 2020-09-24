@@ -38,8 +38,9 @@ class ExposureData:
     expdelay: float  # delay between exposures
     imagetimeout: float = 2  # timeout for waiting for the image.
     index: int  # 0-based index of this image in a multiple exposure sequence
+    maskoverride: Optional[str] = None
 
-    def __init__(self, prefix: str, fsn: int, index: int, exptime: float, expdelay: float, cmdissuetime: float):
+    def __init__(self, prefix: str, fsn: int, index: int, exptime: float, expdelay: float, cmdissuetime: float, maskoverride: Optional[str]=None):
         self.prefix = prefix
         self.fsn = fsn
         self.index = index
@@ -47,6 +48,7 @@ class ExposureData:
         self.expdelay = expdelay
         self.exptime = exptime
         self.command_issue_time = cmdissuetime
+        self.maskoverride = maskoverride
 
     def isTimedOut(self) -> bool:
         return time.monotonic() > self.endtime + self.imagetimeout
@@ -106,6 +108,7 @@ class Exposer(QtCore.QObject, Component):
     datareductionpipeline: multiprocessing.Process = None
     datareduction_commandqueue: multiprocessing.Queue = None
     datareduction_resultqueue: multiprocessing.Queue = None
+    maskoverride: Optional[str] = None
 
     def __init__(self, **kwargs):
         self.waittimers = {}
@@ -133,7 +136,7 @@ class Exposer(QtCore.QObject, Component):
         self.detector.variableChanged.disconnect(self.onDetectorVariableChanged)
         self.detector = None
 
-    def startExposure(self, prefix: str, exposuretime: float, imagecount: int = 1, delay: float = 0.003):
+    def startExposure(self, prefix: str, exposuretime: float, imagecount: int = 1, delay: float = 0.003, maskoverride: Optional[str]=None):
         """prepare the detector for an exposure. Also prepare timers for waiting for images."""
         if self.detector is None:
             self._connectDetector()
@@ -158,7 +161,7 @@ class Exposer(QtCore.QObject, Component):
         for i in range(imagecount):
             # do not initialize the timers yet.
             self.pendingtimers.append(ExposureData(
-                prefix, i + nextfsn, i, exposuretime, delay, cmdissuetime))
+                prefix, i + nextfsn, i, exposuretime, delay, cmdissuetime, maskoverride))
 
     def _currentlyExposedImage(self) -> Optional[ExposureData]:
         try:
@@ -195,7 +198,7 @@ class Exposer(QtCore.QObject, Component):
                 return
         else:
             # we have the image. Construct a header and load the required mask.
-            header = self.createHeader(expdata.prefix, expdata.fsn, expdata.exptime, expdata.starttime)
+            header = self.createHeader(expdata.prefix, expdata.fsn, expdata.exptime, expdata.starttime, expdata.maskoverride)
             try:
                 mask = self.instrument.io.loadMask(header.maskname)
             except FileNotFoundError:
@@ -243,7 +246,7 @@ class Exposer(QtCore.QObject, Component):
     def stopExposure(self):
         self.instrument.devicemanager.detector().stopexposure()
 
-    def createHeader(self, prefix: str, fsn: int, exptime: float, starttime: float) -> Header:
+    def createHeader(self, prefix: str, fsn: int, exptime: float, starttime: float, maskoverride: Optional[str]) -> Header:
         sample = self.instrument.samplestore.currentSample()
         data = {
             'fsn': fsn,
@@ -274,12 +277,12 @@ class Exposer(QtCore.QObject, Component):
         try:
             vac = self.instrument.devicemanager.vacuum()
             data['environment']['vacuum_pressure'] = vac.pressure()
-        except KeyError:
+        except (KeyError, IndexError):
             pass
         try:
             temp = self.instrument.devicemanager.temperature()
             data['environment']['temperature'] = temp.temperature()
-        except KeyError:
+        except (KeyError, IndexError):
             pass
         # adjust truedistance
         if sample is not None:
@@ -290,7 +293,8 @@ class Exposer(QtCore.QObject, Component):
         os.makedirs(folder, exist_ok=True)
         with open(data['filename'], 'wb') as f:
             pickle.dump(data, f)
-        # check if we have a mask
+        if maskoverride is not None:
+            data['geometry']['mask'] = maskoverride
         return Header(datadict=data)
 
     def onCommandResult(self, success: bool, commandname: str, result: str):

@@ -133,7 +133,7 @@ class Motor(QtCore.QObject):
             actpos = self.controller.getVariable(f'actualposition${self.axis}')
             startpos = self.controller.getVariable(f'movestartposition${self.axis}')
             endpos = self.controller.getVariable(f'targetposition${self.axis}')
-            if all([x.timestamp > moving.timestamp for x in [actpos, startpos, endpos]]):
+            if actpos.timestamp > moving.timestamp:
                 # if all variables are more recent than the start of the motion:
                 self.moving.emit(actpos.value, startpos.value, endpos.value)
 

@@ -118,6 +118,7 @@ class PilatusBackend(DeviceBackend):
             idnum = b'15'
             status = b'OK'
             remainder = message
+            self.messagereplytimeout = 1
         elif message.count(b' ') == 1:
             # empty message, e.g. b'15 OK'
             idnum, status = message.split(b' ')
@@ -139,6 +140,7 @@ class PilatusBackend(DeviceBackend):
                     # this was a user break, we need to re-trim the detector
                     self.enqueueHardwareMessage(
                         f'SetThreshold {self["gain"]}G {self["threshold"]:.0f}\r'.encode('ascii'))
+                    self.messagereplytimeout = 60
                     self.updateVariable('__status__', self.Status.Trimming)
                 else:
                     self.updateVariable('__status__', self.Status.Idle)
@@ -192,7 +194,7 @@ class PilatusBackend(DeviceBackend):
             if (m := re.match(
                     r'Settings: (?P<gain>.+) gain; threshold: (?P<threshold>\d+) eV; '
                     r'vcmp: (?P<vcmp>[+-]?\d+\.\d+) V\n Trim file:\n\s*(?P<trimfile>.+)\s*', remainder)) is not None:
-                self.updateVariable('gain', m['gain'])
+                self.updateVariable('gain', m['gain']+'G')
                 self.updateVariable('threshold', float(m['threshold']))
                 self.updateVariable('vcmp', float(m['vcmp']))
                 self.updateVariable('trimfile', m['trimfile'])
@@ -312,6 +314,7 @@ class PilatusBackend(DeviceBackend):
             threshold, gain = args
             self.disableAutoQuery()
             self.enqueueHardwareMessage(f'SetThreshold {gain} {threshold:f}\r'.encode("ascii"))
+            self.messagereplytimeout = 60
             self.updateVariable('__status__', self.Status.Trimming)
             self.commandFinished(name, 'Started trimming')
         elif name == 'expose':
