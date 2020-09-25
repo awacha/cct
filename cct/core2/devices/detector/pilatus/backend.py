@@ -244,8 +244,21 @@ class PilatusBackend(DeviceBackend):
                 self.updateVariable('exptime', float(m['exptime']))
                 self.updateVariable('starttime', dateutil.parser.parse(m['date']))
             elif not remainder:
-                # this can also happen, i.e. just a simpe '15 OK'. E.g. by "resetcam" or "imgmode x"
-                pass
+                # this can also happen, i.e. just a simple '15 OK'. E.g. by "resetcam" or "imgmode x"
+                self.warning(f'15 OK received. Sentmessage: {sentmessage}')
+                if sentmessage == b'resetcam\r':
+                    if self['__status__'] == self.Status.Stopping:
+                        # this was a user break, we need to re-trim the detector
+                        self.enqueueHardwareMessage(
+                            f'SetThreshold {self["gain"]}G {self["threshold"]:.0f}\r'.encode('ascii'))
+                        self.messagereplytimeout = 60
+                        self.updateVariable('__status__', self.Status.Trimming)
+                    else:
+                        # other reason of break.
+                        self.updateVariable('__status__', self.Status.Idle)
+                        self.updateVariable('__auxstatus__', '')
+                        self.error(f'Error in exposure: {remainder}')
+                        self.enableAutoQuery()
             else:
                 self.error(f'Unknown message received from the detector: {message}')
         elif (idnum == 16) and remainder.startswith('PID = '):  # ShowPID
@@ -340,14 +353,35 @@ class PilatusBackend(DeviceBackend):
             self.commandFinished(name, 'Started exposure')
         elif name == 'stopexposure':
             if self['__status__'] == self.Status.Exposing:
-                # single exposure, do a "resetcam", then trim again
-                self.updateVariable('__status__', self.Status.Stopping)
+                # single exposure, do a "resetcam", then trim again.
+                # A dirty trick is involved here. By default, the communicator process refuses to send a message until
+                # a reply is received. Thus until the reply for "Exposure" is received, we cannot send the "resetcam"
+                # command to stop the exposure. We will therefore assume that we got a reply to "Exposure" which will
+                # make us able to send another message.
+
+                # but first we ascertain if the last command was really the Exposure command.
+                assert self.lastmessage[0].startswith(b'Exposure ')
+                # no messages should be pending.
+                assert self.outbuffer.qsize() == 0
                 self.enqueueHardwareMessage(b'resetcam\r')
-                self.commandFinished(name, 'Stopping exposure')
-            elif self['__status__'] == self.Status.ExposingMulti:
+                self.lastmessage = None
+                self.cleartosend.set()
                 self.updateVariable('__status__', self.Status.Stopping)
-                self.enqueueHardwareMessage(b'K\r')
-                self.commandFinished(name, 'Stopping exposure')
+                self.commandFinished(name, 'Stopping a single exposure')
+            elif self['__status__'] == self.Status.ExposingMulti:
+                # we do the same trick as above, only we have to issue the "K" command.
+                assert self.lastmessage[0].startswith(b'Exposure ')
+                assert self.outbuffer.qsize() == 0
+                # the command "K" by itself does not elicit a reply, but the multiple exposure does. Since we clear all
+                # traces of the last 'Exposure' command by resetting `self.lastmessage`, the reply from the detector
+                # will be attibuted by us to the "K" command, hence "numreplies=1".
+                self.enqueueHardwareMessage(b'K\r', numreplies=1)
+                self.lastmessage = None
+                self.cleartosend.set()
+                self.updateVariable('__status__', self.Status.Stopping)
+                self.commandFinished(name, 'Stopping a multiple exposure sequence')
+            elif self['__status__'] == self.Status.Stopping:
+                self.commandError(name, 'Already stopping...')
             else:
                 self.commandError(name, 'No ongoing exposure')
         else:

@@ -234,7 +234,7 @@ class DeviceBackend:
             self.telemetryInformation.lastrecvtime = self.lastrecvtime
             self.messageToFrontend('telemetry', telemetry=self.telemetryInformation)
             for timeout in self.telemetryInformation.outdatedqueries.values():
-                if timeout > self.outstandingqueryfailtimeout:
+                if (timeout > self.outstandingqueryfailtimeout) and (self.autoqueryenabled.is_set()):
                     raise RuntimeError('Outstanding query fail timeout reached.')
             del self.telemetryInformation
             self.telemetryInformation = None
@@ -269,6 +269,7 @@ class DeviceBackend:
                     self.stopevent.set()
                     return False
 
+    @final
     async def hardwareSender(self) -> bool:
         """Try to send outstanding messages to the hardware.
 
@@ -280,8 +281,7 @@ class DeviceBackend:
         # 3) the reply timeout is elapsed: we need to re-send the message
         # 4) stop is requested by the front-end
 
-        # Check if the remote end has disconnected.
-        #        self.debug('HardwareSender running')
+        # Check if the remote end has disconnected. We get the notification from hardwareReceiver.
         remotedisconnectedtask = asyncio.create_task(self.remotedisconnected.wait(), name='remotedisconnected')
 
         # check if the reply timeout has elapsed after the last send and we did not get a reply.
@@ -329,14 +329,8 @@ class DeviceBackend:
         done, pending = await asyncio.wait(
             tasks,
             return_when=asyncio.FIRST_COMPLETED)
-        #        self.debug(f'Sender awoke after {time.monotonic() - t0} seconds. Done: {[t.get_name() for t in done]}')
-        #        self.debug(f'Outbuffer length after sleep: {self.outbuffer.qsize()}')
-        #        self.debug(f'outbuffertask done: {outbuffertask.done()}')
-        #        self.debug(f'cansendtask done: {cansendtask.done()}')
-        #        self.debug(f'cleartosendtask done: {cleartosendtask.done()}')
         for t in [cansendtask, remotedisconnectedtask, stoptask, outbuffertask, cleartosendtask]:
             if not t.done():
-                #                self.debug(f'Canceling task {t.get_name()}')
                 t.cancel()
         if (remotedisconnectedtask in done) or (stoptask in done):
             # either it is our time to disconnect or the other side won't send anything more to us
@@ -345,7 +339,6 @@ class DeviceBackend:
             priority, (message, nreplies, puttime) = outbuffertask.result()
             await self._dosend(message, nreplies)
         elif (replytimeouttask is not None) and (replytimeouttask.done()):
-            #            self.debug('Getting result of outbuffertask')
             try:
                 priority, (message, nreplies, puttime) = outbuffertask.result()
             except asyncio.exceptions.InvalidStateError:
@@ -399,9 +392,7 @@ class DeviceBackend:
             return False
         if readtask in done:
             recv = readtask.result()
-            #            self.debug(f'Got message: {recv}')
             self.lastrecvtime = time.monotonic()
-            #            self.lastsendtime = None
             self.messageretries = 0
             self.inbuffer += recv
             messages, remaining = self._cutmessages(self.inbuffer)
@@ -517,6 +508,8 @@ class DeviceBackend:
     @final
     def enableAutoQuery(self):
         self.debug('Enabling autoquery')
+        for v in self.variables:
+            v.lastquery = None
         self.autoqueryenabled.set()
 
     @final

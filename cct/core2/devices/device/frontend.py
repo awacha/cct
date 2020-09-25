@@ -243,7 +243,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         """
         return [v for v in self._variables if v.name == name][0]
 
-    def onCommandResult(self, commandname: str, success: bool, result: str):
+    def onCommandResult(self, success: bool, commandname: str, result: str):
         pass
 
     def toDict(self) -> Dict[str, Any]:
