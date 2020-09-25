@@ -29,16 +29,15 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
                 ('category', 'Category'),
                 ('situation', 'Situation')]
 
-    _xmotorname: str
-    _ymotorname: str
+    _movesampledirection: str='both'
     sampleListChanged = QtCore.pyqtSignal()
     currentSampleChanged = QtCore.pyqtSignal(str)
     movingToSample = QtCore.pyqtSignal(str, str, float, float, float)  # sample, motor name, motor position, start position, end position
-    movingFinished = QtCore.pyqtSignal(str, bool)  # sample, success
+    movingFinished = QtCore.pyqtSignal(bool, str)  # success, sample
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         self._samples = []
+        super().__init__(**kwargs)
         self._currentsample = None
         #self.loadFromConfig()
 
@@ -103,6 +102,10 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         attribute = self._columns[index.column()][0]
         sample = self[index.row()]
         if attribute == 'title':
+            if value in self:
+                # this title already exists: either it is the sample to be changed (in this case no change needed) or
+                # another sample (in this case the change must not be done).
+                return False
             oldtitle = sample.title
             sample.title = value
             self.updateSample(oldtitle, sample)
@@ -132,8 +135,6 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             self._samples.append(Sample.fromdict(self.config['services']['samplestore']['list'][sample].asdict()))
         self._samples = sorted(self._samples, key=lambda s: s.title.upper())
         self.endResetModel()
-        self._xmotorname = self.config['services']['samplestore']['motorx']
-        self._ymotorname = self.config['services']['samplestore']['motory']
 
     def saveToConfig(self):
         self.config.blockSignals(True)
@@ -240,6 +241,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         self.endInsertRows()
         self.dataChanged.emit(self.index(row, 0, QtCore.QModelIndex()),
                               self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
+        self.sampleListChanged.emit()
         self.saveToConfig()
 
     def findSample(self, title: str) -> QtCore.QModelIndex:
@@ -251,31 +253,49 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             yield sample
 
     def xmotor(self) -> Motor:
-        return self.instrument.motors[self._xmotorname]
+        return self.instrument.motors.sample_x
 
     def ymotor(self) -> Motor:
-        return self.instrument.motors[self._ymotorname]
+        return self.instrument.motors.sample_y
 
     def xmotorname(self) -> str:
-        return self._xmotorname
+        return self.instrument.motors.sample_x.name
 
     def ymotorname(self) -> str:
-        return self._ymotorname
+        return self.instrument.motors.sample_y.name
 
     def currentSample(self) -> Optional[Sample]:
         if self._currentsample is None:
             return None
         return self[self._currentsample]
 
-    def moveToSample(self, samplename: str):
-        if self.xmotor().moving or self.ymotor().moving:
+    def moveToSample(self, samplename: str, direction='both'):
+        if self.xmotor().isMoving() or self.ymotor().isMoving():
             raise RuntimeError('Cannot move sample: motors are not idle.')
         sample = [s for s in self._samples if s.title == samplename][0]
         self._currentsample = samplename
-        self.xmotor().started.connect(self.onMotorStarted)
-        self.xmotor().stopped.connect(self.onMotorStopped)
-        self.xmotor().moving.connect(self.onMotorMoving)
-        self.xmotor().moveTo(sample.positionx[0])
+        self._connectSampleMotors()
+        self._movesampledirection = direction
+        try:
+            if direction in  ['both', 'x']:
+                self.xmotor().moveTo(sample.positionx[0])
+            else:
+                self.ymotor().moveTo(sample.positiony[0])
+        except:
+            self._disconnectSampleMotors()
+            self.movingFinished.emit(False, self._currentsample)
+
+    def _connectSampleMotors(self):
+        for motor in [self.xmotor(), self.ymotor()]:
+            motor.started.connect(self.onMotorStarted)
+            motor.stopped.connect(self.onMotorStopped)
+            motor.moving.connect(self.onMotorMoving)
+
+    def _disconnectSampleMotors(self):
+        for motor in [self.xmotor(), self.ymotor()]:
+            motor.started.disconnect(self.onMotorStarted)
+            motor.stopped.disconnect(self.onMotorStopped)
+            motor.moving.disconnect(self.onMotorMoving)
 
     def onMotorMoving(self, current:float, start:float, end:float):
         self.movingToSample.emit(self._currentsample, self.sender().name, current, start, end)
@@ -284,18 +304,21 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         pass
 
     def onMotorStopped(self, success: bool, end: float):
-        self.sender().started.disconnect(self.onMotorStarted)
-        self.sender().stopped.disconnect(self.onMotorStopped)
-        self.sender().moving.disconnect(self.onMotorMoving)
         if not success:
+            self._disconnectSampleMotors()
             self.movingFinished.emit(False, self._currentsample)
-        if self.sender() is self.xmotor():
-            self.ymotor().started.connect(self.onMotorStarted)
-            self.ymotor().stopped.connect(self.onMotorStopped)
-            self.ymotor().moving.connect(self.onMotorMoving)
-            self.ymotor().moveTo(self.currentSample().positiony[0])
-        elif self.sender() is self.ymotor():
+        if (self.sender() is self.xmotor()) and (self._movesampledirection == 'both'):
+            try:
+                self.ymotor().moveTo(self.currentSample().positiony[0])
+            except Exception:
+                self._disconnectSampleMotors()
+                self.movingFinished.emit(False, self._currentsample)
+                raise
+        elif (self.sender() is self.ymotor()) or (self._movesampledirection == 'x'):
+            self._disconnectSampleMotors()
             self.movingFinished.emit(True, self._currentsample)
+        else:
+            assert False
 
     def stopMotors(self):
         self.xmotor().stop()
