@@ -16,6 +16,7 @@ class GeniX(DeviceFrontend):
     backendclass = GeniXBackend
 
     shutter = QtCore.pyqtSignal(bool)
+    powerStateChanged = QtCore.pyqtSignal(str)
 
     def moveShutter(self, requestedstate: bool):
         logger.info(f'{"Opening" if requestedstate else "Closing"} shutter')
@@ -30,7 +31,7 @@ class GeniX(DeviceFrontend):
         self.issueCommand('stop_warmup')
 
     def powerStatus(self) -> str:
-        return self['power_status']
+        return self['__status__']
 
     def powerDown(self):
         self.issueCommand('poweroff')
@@ -55,10 +56,11 @@ class GeniX(DeviceFrontend):
             if (newvalue == GeniXBackend.Status.off) and (previousvalue == GeniXBackend.Status.warmup):
                 logger.debug('Warm-up finished. Going to standby mode.')
                 self.standby()
-        if variablename == 'shutter':
+            self.powerStateChanged.emit(newvalue)
+        elif variablename == 'shutter':
             self.shutter.emit(bool(newvalue))
 
-    def onCommandResult(self, commandname: str, success: bool, result: str):
-        super().onCommandResult(commandname, success, result)
+    def onCommandResult(self, success: bool, commandname: str, result: str):
+        super().onCommandResult(success, commandname, result)
         if commandname == 'shutter' and not success:
             self.shutter.emit(self['shutter'])
