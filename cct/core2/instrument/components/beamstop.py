@@ -156,6 +156,8 @@ class BeamStop(QtCore.QObject, Component):
 
     def disconnectMotors(self):
         for motorname in [self.xmotorname, self.ymotorname]:
+            if motorname is None:
+                continue
             try:
                 motor = self.instrument.motors[motorname]
             except KeyError:
