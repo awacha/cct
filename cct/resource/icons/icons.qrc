@@ -1,5 +1,9 @@
 <RCC>
   <qresource prefix="icons">
+    <file>wristwatch.svg</file>
+    <file>start.svg</file>
+    <file>stop.svg</file>
+    <file>saxscurve.svg</file>
     <file>beamstop-moving.svg</file>
     <file>pinhole.svg</file>
     <file>cct4logo.svg</file>
