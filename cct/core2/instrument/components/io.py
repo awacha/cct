@@ -17,6 +17,23 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+def mywalkdir(root: str):
+    """A faster version of os.walk().
+
+    Caveat: directory entries containing '.' are assumed to be files!
+    """
+    try:
+        filelist = os.listdir(root)
+    except FileNotFoundError:
+        return
+    possibledirs = [f for f in filelist if ('.' not in f)]
+    dirs = [d for d in possibledirs if os.path.isdir(os.path.join(root, d))]
+    files = [f for f in filelist if f not in dirs]
+    yield root, dirs, files
+    for dir_ in dirs:
+        yield from mywalkdir(os.path.join(root, dir_))
+
+
 class IO(QtCore.QObject, Component):
     """I/O subsystem of the instrument, responsible for reading and writing files and maintaining the file sequence.
 
@@ -60,7 +77,7 @@ class IO(QtCore.QObject, Component):
             # itself
             directory = self.getSubDir(subdir)
             filename_regex = re.compile(rf'^(?P<prefix>\w+)_(?P<fsn>\d+)\.{extension}$')
-            for folder, subdirs, files in os.walk(str(directory)):
+            for folder, subdirs, files in mywalkdir(str(directory)):
                 # find all files
                 matchlist = [m for m in [filename_regex.match(f) for f in files] if m is not None]
                 # find all file prefixes, like 'crd', 'tst', 'tra', 'scn', etc.
