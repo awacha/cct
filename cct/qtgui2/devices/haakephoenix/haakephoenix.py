@@ -121,7 +121,7 @@ class HaakePhoenixDevice(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.startStopPushButton.setText('Stop' if newvalue == HaakePhoenixBackend.Status.Running else 'Start')
             self.startStopPushButton.setIcon(
                 QtGui.QIcon(QtGui.QPixmap(
-                    ':/icons/stop.svg' if newvalue == HaakePhoenixBackend.Status.Running else ':/icons/start.svg'))
+                    ':/icons/stop.svg' if newvalue == HaakePhoenixBackend.Status.Running else ':/icons/start.svg')))
             self.statusLabel.setText(newvalue)
 
     def device(self) -> HaakePhoenix:
