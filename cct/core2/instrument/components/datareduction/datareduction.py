@@ -20,7 +20,7 @@ class DataReduction(QtCore.QObject, Component):
     backend: Optional[multiprocessing.Process] = None
     queuetobackend: multiprocessing.Queue = None
     queuefrombackend: multiprocessing.Queue = None
-    datareductionresult: QtCore.pyqtSignal(object)
+    datareductionresult= QtCore.pyqtSignal(object)
     submitted: int = 0
     timerinterval: float = 0.1
     timer: Optional[int] = None

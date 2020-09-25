@@ -64,7 +64,7 @@ class DataReductionPipeLine:
                     obj.error(repr(exc) + '\n' + traceback.format_exc())
             elif cmd == 'config':
                 obj.config = arg
-                obj.debug('Config updated.')
+                #obj.debug('Config updated.')
             else:
                 obj.error(f'Unknown command: {cmd}')
         obj.debug('Emptying command queue')
