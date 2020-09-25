@@ -130,8 +130,10 @@ class Exposer(QtCore.QObject, Component):
     def _disconnectDetector(self):
         """Disconnect signal handlers from the Detector instance"""
         if self.isExposing():
-            self.cleanupExposure()
-            self.exposureFailed.emit()
+            for timer in self.waittimers:
+                self.killTimer(timer)
+            self.waittimers = {}
+            self.exposureFinished.emit(False)
         self.detector.connectionEnded.disconnect(self.onDetectorDisconnected)
         self.detector.variableChanged.disconnect(self.onDetectorVariableChanged)
         self.detector = None
@@ -171,10 +173,8 @@ class Exposer(QtCore.QObject, Component):
 
     def timerEvent(self, timerEvent: QtCore.QTimerEvent) -> None:
         if timerEvent.timerId() == self.progresstimer:
-            logger.debug('progress timer')
             expdata = self._currentlyExposedImage()
             if expdata is not None:
-                logger.debug(f'Currently exposed image: {expdata.prefix=}, {expdata.fsn=}')
                 self.exposureProgress.emit(
                     expdata.prefix, expdata.fsn, time.monotonic(), expdata.starttime, expdata.endtime)
             return
@@ -183,7 +183,6 @@ class Exposer(QtCore.QObject, Component):
         expdata = self.waittimers[timerEvent.timerId()]
         # see if the file is available
         try:
-            logger.debug(f'Checking for image {expdata.prefix=}, {expdata.fsn=}')
             image = self.instrument.io.loadCBF(expdata.prefix, expdata.fsn, check_local=False)
         except FileNotFoundError:
             if expdata.isTimedOut():
@@ -236,7 +235,7 @@ class Exposer(QtCore.QObject, Component):
             elif (self.state == ExposerState.Stopping) and (value in [PilatusBackend.Status.Idle]):
                 # this means that an user stop request has been fulfilled.
                 self.state = ExposerState.Idle
-                self.exposureFailed.emit()
+                self.exposureFinished.emit(False)
                 self.killTimer(self.progresstimer)
                 self.progresstimer = None
 
@@ -264,7 +263,7 @@ class Exposer(QtCore.QObject, Component):
                 'enddate': datetime.datetime.now(),
             },
             'geometry': self.instrument.geometry.currentpreset.getHeaderEntry(),
-            'sample': sample.toDict() if sample is not None else {},
+            'sample': sample.todict() if sample is not None else {},
             'motors': self.instrument.motors.getHeaderEntry(),
             'devices': {dev.devicename: dev.toDict() for dev in self.instrument.devicemanager},
             'environment': {},
