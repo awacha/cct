@@ -148,19 +148,22 @@ class Motors(QtCore.QAbstractItemModel, Component):
             assert isinstance(device, MotorController)
             logger.debug(f'Device {name} is a motor controller')
             motorkeys = list(self.config['motors'])
-            for key in motorkeys:
-                if self.config['motors'][key]['name'] != key:
-                    # old motor entry, remove it
-                    del self.config['motors'][key]
+            motorkeys_newstyle = [k for k in motorkeys if self.config['motors'][k]['name'] == k]
+            motorkeys_oldstyle = [k for k in motorkeys if k not in motorkeys_newstyle]
+            for key in motorkeys_newstyle + motorkeys_oldstyle:
+                if self.config['motors'][key]['controller'] != name:
                     continue
-                logger.debug(f'Checking motor {key}')
-                if self.config['motors'][key]['controller'] == name:
-                    logger.debug(f'Motor {key} belongs to device {name}, creating this motor.')
-                    motorname = self.config['motors'][key]['name']
-                    motorindex = self.config['motors'][key]['index']
-                    direction = self.config['motors'][key].setdefault('direction', None)
-                    role = self.config['motors'][key].setdefault('role', None)
-                    self._addmotor(motorname, name, motorindex, role= None if role is None else MotorRole(role), direction=None if direction is None else MotorDirection(direction))
+                if self.config['motors'][key]['name'] in self:
+                    logger.debug(f'Motor {self.config["motors"][key]["name"]} with {key=} already exists, not adding')
+                    del self.config['motors'][key]
+                    logger.debug(f'Deleted motor information {key=} from the config.')
+                    continue
+                logger.debug(f'Motor {key} belongs to device {name}, creating this motor.')
+                motorname = self.config['motors'][key]['name']
+                motorindex = self.config['motors'][key]['index']
+                direction = self.config['motors'][key].setdefault('direction', None)
+                role = self.config['motors'][key].setdefault('role', None)
+                self._addmotor(motorname, name, motorindex, role= None if role is None else MotorRole(role), direction=None if direction is None else MotorDirection(direction))
 
     def __getitem__(self, item: Union[str,int]) -> Motor:
         if isinstance(item, str):
