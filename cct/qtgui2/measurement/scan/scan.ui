@@ -258,8 +258,8 @@
         <string>Start</string>
        </property>
        <property name="icon">
-        <iconset theme="system-run">
-         <normaloff>.</normaloff>.</iconset>
+        <iconset resource="../../../resource/icons/icons.qrc">
+         <normaloff>:/icons/start.svg</normaloff>:/icons/start.svg</iconset>
        </property>
       </widget>
      </item>

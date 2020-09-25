@@ -147,7 +147,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.maxCameraLengthDoubleSpinBox.value())
         self.progressBar.setVisible(True)
         self.optimizePushButton.setText('Stop')
-        self.optimizePushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
+        self.optimizePushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/stop.svg")))
 
     def onOptimizationGeometryFound(self, preset: GeometryPreset):
         self._optpresets.addPreset(preset)
@@ -177,7 +177,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         logger.debug('Redrawing...')
         self.canvas.draw_idle()
         self.optimizePushButton.setText('Find optimum')
-        self.optimizePushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
+        self.optimizePushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/start.svg")))
 
     def onGeometryChanged(self, propertyname: Optional[str] = None, value: Any = None):
         logger.debug(f'Geometry changed. {propertyname=}, {value=}')

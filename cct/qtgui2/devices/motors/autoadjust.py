@@ -59,7 +59,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.motorNameComboBox.currentIndexChanged.connect(self.onMotorChanged)
         self.motorNameComboBox.addItems(sorted([m.name for m in self.instrument.motors]))
         self.startPushButton.clicked.connect(self.onStartClicked)
-        self.progressBar.setVisible(False)
+        self.progressBar.hide()
         self.resize(self.minimumSize())
 
     def motor(self) -> Motor:
@@ -86,7 +86,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.state = AdjustingState.WaitForInitialSetPositionResult
             logger.debug('Autoadjust #1: setting motor position to right')
             self.startPushButton.setText('Stop')
-            self.startPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
+            self.startPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/stop.svg")))
         elif self.startPushButton.text() == 'Stop':
             self.state = AdjustingState.Stopping
             self.motor().stop()
@@ -114,7 +114,6 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.motor().moveTo(self.oldposition + self.delta)
 
     def onMotorMoving(self, position: float, startposition: float, endposition: float):
-        logger.debug(f'onMotorMoving({position}, {startposition}, {endposition}); state={self.state.value}')
         if self.state in [AdjustingState.MovingLeft, AdjustingState.MovingRight, AdjustingState.MoveByBufferDistance]:
             self.progressBar.setVisible(True)
             self.progressBar.setRange(0, 1000)
@@ -165,7 +164,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.delta = None
         for widget in [self.bufferDistanceDoubleSpinBox, self.motorNameComboBox]:
             widget.setEnabled(True)
-        self.progressBar.setVisible(False)
+        self.progressBar.hide()
         self.startPushButton.setText('Start')
-        self.startPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
+        self.startPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
         self.resize(self.minimumSize())

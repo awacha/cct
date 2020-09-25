@@ -74,7 +74,8 @@
           <string>Add motor</string>
          </property>
          <property name="icon">
-          <iconset theme="list-add"/>
+          <iconset theme="list-add">
+           <normaloff>.</normaloff>.</iconset>
          </property>
         </widget>
        </item>
@@ -87,7 +88,8 @@
           <string>Remove motor</string>
          </property>
          <property name="icon">
-          <iconset theme="list-remove"/>
+          <iconset theme="list-remove">
+           <normaloff>.</normaloff>.</iconset>
          </property>
         </widget>
        </item>
@@ -194,29 +196,40 @@
         <string>Sample</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="1">
-         <widget class="QPushButton" name="movetoSamplePushButton">
-          <property name="text">
-           <string>Move to...</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="0">
          <widget class="QComboBox" name="sampleNameComboBox"/>
         </item>
-        <item row="1" column="0">
-         <widget class="QPushButton" name="movetoSampleXPushButton">
-          <property name="text">
-           <string>Move X...</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QPushButton" name="movetoSampleYPushButton">
-          <property name="text">
-           <string>Move Y...</string>
-          </property>
-         </widget>
+        <item row="2" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Move:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="movetoSampleXToolButton">
+            <property name="text">
+             <string>X</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="movetoSampleYToolButton">
+            <property name="text">
+             <string>Y</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="movetoSampleToolButton">
+            <property name="text">
+             <string>X &amp;&amp; Y</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -367,9 +380,6 @@
   <tabstop>motorTargetDoubleSpinBox</tabstop>
   <tabstop>moveMotorPushButton</tabstop>
   <tabstop>sampleNameComboBox</tabstop>
-  <tabstop>movetoSamplePushButton</tabstop>
-  <tabstop>movetoSampleXPushButton</tabstop>
-  <tabstop>movetoSampleYPushButton</tabstop>
   <tabstop>beamStopInXDoubleSpinBox</tabstop>
   <tabstop>beamStopInYDoubleSpinBox</tabstop>
   <tabstop>calibrateBeamStopInPushButton</tabstop>

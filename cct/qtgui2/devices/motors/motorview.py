@@ -49,6 +49,39 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.beamStopOutXDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
         self.beamStopInYDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
         self.beamStopInXDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
+        self.instrument.samplestore.sampleListChanged.connect(self.repopulateSampleList)
+        self.movetoSampleToolButton.clicked.connect(self.moveToSample)
+        self.movetoSampleXToolButton.clicked.connect(self.moveToSample)
+        self.movetoSampleYToolButton.clicked.connect(self.moveToSample)
+        self.repopulateSampleList()
+
+    def moveToSample(self):
+        if self.sampleNameComboBox.currentIndex() < 0:
+            return
+        for widget in [self.movetoSampleXToolButton, self.movetoSampleYToolButton, self.movetoSampleToolButton, self.sampleNameComboBox]:
+            widget.setEnabled(False)
+        self.instrument.samplestore.movingFinished.connect(self.onMovingToSampleFinished)
+        if self.sender() is self.movetoSampleXToolButton:
+            self.instrument.samplestore.moveToSample(self.sampleNameComboBox.currentText(), direction='x')
+        elif self.sender() is self.movetoSampleYToolButton:
+            self.instrument.samplestore.moveToSample(self.sampleNameComboBox.currentText(), direction='y')
+        elif self.sender() is self.movetoSampleToolButton:
+            self.instrument.samplestore.moveToSample(self.sampleNameComboBox.currentText(), direction='both')
+        logger.debug('Moving to sample started.')
+
+    def onMovingToSampleFinished(self, success:bool, samplename: str):
+        for widget in [self.movetoSampleXToolButton, self.movetoSampleYToolButton, self.movetoSampleToolButton, self.sampleNameComboBox]:
+            widget.setEnabled(True)
+        self.instrument.samplestore.movingFinished.disconnect(self.onMovingToSampleFinished)
+        logger.debug('Moving to sample finished')
+
+    def repopulateSampleList(self):
+        previous = self.sampleNameComboBox.currentText()
+        self.sampleNameComboBox.blockSignals(True)
+        self.sampleNameComboBox.clear()
+        self.sampleNameComboBox.addItems(sorted([sample.title for sample in self.instrument.samplestore]))
+        self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(previous))
+        self.sampleNameComboBox.blockSignals(False)
 
     def onBeamStopCoordinateSpinBoxChanged(self):
         if self.sender() is self.beamStopInXDoubleSpinBox:
@@ -176,7 +209,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         logger.debug(f'Motor {motor.name} started')
         if motor.name == self.motorNameComboBox.currentText():
             self.moveMotorPushButton.setText('Stop')
-            self.moveMotorPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
+            self.moveMotorPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/stop.svg")))
             self.motorNameComboBox.setEnabled(False)
             self.motorTargetDoubleSpinBox.setEnabled(False)
             self.relativeMovementCheckBox.setEnabled(False)
@@ -193,7 +226,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         logger.debug(f'Motor {motor.name} stopped')
         if motor.name == self.motorNameComboBox.currentText():
             self.moveMotorPushButton.setText('Move')
-            self.moveMotorPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
+            self.moveMotorPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
             self.motorNameComboBox.setEnabled(True)
             self.motorTargetDoubleSpinBox.setEnabled(True)
             self.relativeMovementCheckBox.setEnabled(True)

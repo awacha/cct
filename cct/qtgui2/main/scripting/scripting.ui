@@ -165,8 +165,8 @@
         <string>Start</string>
        </property>
        <property name="icon">
-        <iconset theme="media-playback-start">
-         <normaloff>.</normaloff>.</iconset>
+        <iconset resource="../../../resource/icons/icons.qrc">
+         <normaloff>:/icons/start.svg</normaloff>:/icons/start.svg</iconset>
        </property>
       </widget>
      </item>

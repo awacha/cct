@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>916</width>
+    <width>1111</width>
     <height>938</height>
    </rect>
   </property>
@@ -213,7 +213,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>916</width>
+     <width>1111</width>
      <height>30</height>
     </rect>
    </property>
@@ -243,20 +243,9 @@
     <property name="title">
      <string>&amp;Devices</string>
     </property>
-    <widget class="QMenu" name="menuMotors">
-     <property name="title">
-      <string>&amp;Motors</string>
-     </property>
-     <property name="icon">
-      <iconset resource="../../resource/icons/icons.qrc">
-       <normaloff>:/icons/motor.svg</normaloff>:/icons/motor.svg</iconset>
-     </property>
-     <addaction name="actionMotors"/>
-     <addaction name="actionCalibrateMotors"/>
-    </widget>
     <addaction name="actionX_ray_source"/>
     <addaction name="actionDetector"/>
-    <addaction name="menuMotors"/>
+    <addaction name="actionMotors"/>
     <addaction name="actionVacuum_gauge"/>
     <addaction name="actionTemperature_stage"/>
     <addaction name="separator"/>
@@ -281,10 +270,8 @@
     <addaction name="actionView_scans"/>
     <addaction name="actionAnisotropy"/>
     <addaction name="actionCapillary_sizing"/>
-    <addaction name="actionData_reduction"/>
     <addaction name="separator"/>
     <addaction name="actionResource_consumption"/>
-    <addaction name="actionOptimize_geometry"/>
     <addaction name="actionSamplePositionChecker"/>
     <addaction name="actionLogbook"/>
    </widget>
@@ -296,19 +283,8 @@
     <addaction name="actionAbout_Qt"/>
     <addaction name="actionCommands"/>
    </widget>
-   <widget class="QMenu" name="menu_View">
-    <property name="title">
-     <string>&amp;View</string>
-    </property>
-    <addaction name="actionAccounting"/>
-    <addaction name="actionShutter"/>
-    <addaction name="actionBeamstop"/>
-    <addaction name="actionFSN_counters"/>
-    <addaction name="actionResource_usage"/>
-   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Setup"/>
-   <addaction name="menu_View"/>
    <addaction name="menu_Devices"/>
    <addaction name="menu_Measurement"/>
    <addaction name="menu_Tools"/>
@@ -486,7 +462,7 @@
      <normaloff>:/icons/motor.svg</normaloff>:/icons/motor.svg</iconset>
    </property>
    <property name="text">
-    <string>&amp;Overview</string>
+    <string>&amp;Motors</string>
    </property>
    <property name="toolTip">
     <string>Control the motors</string>
@@ -680,62 +656,6 @@
     <string>Help on the script commands</string>
    </property>
   </action>
-  <action name="actionAccounting">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Accounting</string>
-   </property>
-   <property name="toolTip">
-    <string>Open accounting dockwidget</string>
-   </property>
-  </action>
-  <action name="actionShutter">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Shutter</string>
-   </property>
-   <property name="toolTip">
-    <string>Show the shutter control dockwidget</string>
-   </property>
-  </action>
-  <action name="actionFSN_counters">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;FSN counters</string>
-   </property>
-   <property name="toolTip">
-    <string>Show file sequence numbers</string>
-   </property>
-  </action>
-  <action name="actionResource_usage">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Resource usage</string>
-   </property>
-   <property name="toolTip">
-    <string>Show resource usage dockwidget</string>
-   </property>
-  </action>
   <action name="actionAbout_Qt">
    <property name="icon">
     <iconset theme="help-about">
@@ -746,32 +666,6 @@
    </property>
    <property name="toolTip">
     <string>About Qt</string>
-   </property>
-  </action>
-  <action name="actionCalibrateMotors">
-   <property name="icon">
-    <iconset resource="../../resource/icons/icons.qrc">
-     <normaloff>:/icons/motorcalibration.svg</normaloff>:/icons/motorcalibration.svg</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Calibrate</string>
-   </property>
-   <property name="toolTip">
-    <string>Calibrate motors</string>
-   </property>
-  </action>
-  <action name="actionBeamstop">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Beamstop</string>
-   </property>
-   <property name="toolTip">
-    <string>Show the beamstop control dockwidget</string>
    </property>
   </action>
   <action name="actionSamplePositionChecker">

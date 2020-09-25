@@ -143,7 +143,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.setBusy()
         self.startStopPushButton.setEnabled(True)
         self.startStopPushButton.setText('Stop')
-        self.startStopPushButton.setIcon(QtGui.QIcon.fromTheme('process-stop'))
+        self.startStopPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/stop.svg")))
         self.scangraph = None
         self.progressBar.show()
         self.progressBar.setRange(0, 0)
@@ -157,7 +157,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             widget.setEnabled(True)
         self.startStopPushButton.setEnabled(True)
         self.startStopPushButton.setText('Start')
-        self.startStopPushButton.setIcon(QtGui.QIcon.fromTheme('system-run'))
+        self.startStopPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/start.svg")))
         self.scangraph.setRecording(False)
         self.scangraph = None
         self.progressBar.hide()

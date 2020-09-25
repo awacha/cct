@@ -173,7 +173,7 @@
          <string>Firmware version</string>
         </property>
         <property name="text">
-         <string>TextLabel</string>
+         <string/>
         </property>
        </widget>
       </item>
@@ -461,8 +461,8 @@
             <string>Start</string>
            </property>
            <property name="icon">
-            <iconset theme="system-run">
-             <normaloff>../../../qtgui/devices/circulator</normaloff>../../../qtgui/devices/circulator</iconset>
+            <iconset resource="../../../resource/icons/icons.qrc">
+             <normaloff>:/icons/start.svg</normaloff>:/icons/start.svg</iconset>
            </property>
           </widget>
          </item>
@@ -473,6 +473,10 @@
            </property>
            <property name="text">
             <string>Set RTC</string>
+           </property>
+           <property name="icon">
+            <iconset resource="../../../resource/icons/icons.qrc">
+             <normaloff>:/icons/wristwatch.svg</normaloff>:/icons/wristwatch.svg</iconset>
            </property>
           </widget>
          </item>
