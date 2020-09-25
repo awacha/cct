@@ -22,7 +22,7 @@ class GeniXBackend(DeviceBackend):
                DeviceBackend.VariableInfo('ht', dependsfrom=['power']),
                DeviceBackend.VariableInfo('current', dependsfrom=['power']),
                DeviceBackend.VariableInfo('tubetime', timeout=1, dependsfrom=['tube_temperature']),
-               DeviceBackend.VariableInfo('statusbits', timeout=0.7),
+               DeviceBackend.VariableInfo('statusbits', timeout=0.5),
                DeviceBackend.VariableInfo('shutter', dependsfrom=['statusbits']),
                DeviceBackend.VariableInfo('remote_mode', dependsfrom=['statusbits']),
                DeviceBackend.VariableInfo('xrays', dependsfrom=['statusbits']),
