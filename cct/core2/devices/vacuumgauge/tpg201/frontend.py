@@ -1,11 +1,7 @@
 from .backend import TPG201Backend
-from ...device.frontend import DeviceFrontend
+from ..generic import VacuumGauge
 
 
-class TPG201(DeviceFrontend):
-    devicetype = 'vacuumgauge'
+class TPG201(VacuumGauge):
     devicename = 'TPG201'
     backendclass = TPG201Backend
-
-    def pressure(self) -> float:
-        return self['pressure']

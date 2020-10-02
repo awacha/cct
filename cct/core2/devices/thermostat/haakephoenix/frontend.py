@@ -1,13 +1,18 @@
+import datetime
+from typing import Any
+
+from PyQt5 import QtCore
+
 from .backend import HaakePhoenixBackend
 from ...device.frontend import DeviceFrontend
-
-import datetime
 
 
 class HaakePhoenix(DeviceFrontend):
     backendclass = HaakePhoenixBackend
     devicename = 'HaakePhoenix'
     devicetype = 'thermostat'
+    temperatureChanged = QtCore.pyqtSignal(float)
+    startStop = QtCore.pyqtSignal(bool)
 
     def temperature(self) -> float:
         return self['temperature']
@@ -45,4 +50,13 @@ class HaakePhoenix(DeviceFrontend):
     def isRunning(self) -> bool:
         return self['__status__'] == HaakePhoenixBackend.Status.Running
 
-
+    def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
+        if variablename == '__status__':
+            if newvalue == HaakePhoenixBackend.Status.Running:
+                self.startStop.emit(True)
+            elif newvalue == HaakePhoenixBackend.Status.Stopped:
+                self.startStop.emit(False)
+            else:
+                pass
+        elif variablename == 'temperature':
+            self.temperatureChanged.emit(float(newvalue))
