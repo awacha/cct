@@ -18,13 +18,17 @@ class BeamStop(QtCore.QObject, Component):
         Out = 'out'
         Undefined = 'undefined'
         Moving = 'moving'
+        Error = 'error'
 
     stateChanged = QtCore.pyqtSignal(str)
+    movingFinished = QtCore.pyqtSignal(bool)
+    movingProgress = QtCore.pyqtSignal(str, float, float, float)
     _movetarget: Optional[States]
     _movephase: Optional[str]
     state:States = States.Undefined
     xmotorname: Optional[str] = None
     ymotorname: Optional[str] = None
+    motionstoprequested: bool=False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -47,12 +51,14 @@ class BeamStop(QtCore.QObject, Component):
     def _disconnectMotor(self, motor:Motor):
         motor.started.disconnect(self.onMotorStarted)
         motor.stopped.disconnect(self.onMotorStopped)
+        motor.moving.disconnect(self.onMotorMoving)
         motor.positionChanged.disconnect(self.onMotorPositionChanged)
         motor.destroyed.disconnect(self.onMotorDestroyed)
 
     def _connectMotor(self, motor:Motor):
         motor.started.connect(self.onMotorStarted)
         motor.stopped.connect(self.onMotorStopped)
+        motor.moving.connect(self.onMotorMoving)
         motor.positionChanged.connect(self.onMotorPositionChanged)
         motor.destroyed.connect(self.onMotorDestroyed)
 
@@ -85,10 +91,12 @@ class BeamStop(QtCore.QObject, Component):
 
     def moveOut(self):
         self._movetarget = self.States.Out
+        self.motionstoprequested = False
         self.motorx.moveTo(self.config['beamstop']['out'][0])
 
     def moveIn(self):
         self._movetarget = self.States.In
+        self.motionstoprequested = False
         self.motorx.moveTo(self.config['beamstop']['in'][0])
 
     def calibrateIn(self, posx: float, posy: float):
@@ -101,7 +109,7 @@ class BeamStop(QtCore.QObject, Component):
         logger.info(f'Beamstop OUT position changed to {posx:.4f}, {posy:.4f}')
         self.checkState()
 
-    def checkState(self) -> str:
+    def checkState(self) -> States:
         oldstate = self.state
         if not self.motorsAvailable():
             self.state = self.States.Undefined
@@ -122,6 +130,11 @@ class BeamStop(QtCore.QObject, Component):
             self.stateChanged.emit(self.state.value)
         return self.state
 
+    def onMotorMoving(self, current: float, start: float, end: float):
+        if self.state == self.States.Moving:
+            self.movingProgress.emit(
+                f'Moving beamstop {self._movetarget.value}, moving motor {self.sender().name}', start, end, current)
+
     def onMotorStarted(self, startposition: float):
         self.checkState()
 
@@ -130,17 +143,21 @@ class BeamStop(QtCore.QObject, Component):
         motor = self.sender()
         assert isinstance(motor, Motor)
         if self._movetarget is not None:
-            if (motor.role == MotorRole.BeamStop) and (motor.direction == MotorDirection.X):
+            if self.motionstoprequested:
+                self.movingFinished.emit(False)
+            elif (motor.role == MotorRole.BeamStop) and (motor.direction == MotorDirection.X):
                 # movement of X motor is done, start with Y
                 if success:
                     self.motory.moveTo(self.config['beamstop'][self._movetarget.value][1])
                 else:
                     # not successful, break moving
                     logger.error('Error while moving beam-stop: target not reached.')
+                    self.movingFinished.emit(False)
                     self._movetarget = None
             elif (motor.role == MotorRole.BeamStop) and (motor.direction == MotorDirection.Y):
                 # moving the Y motor finished
                 self._movetarget = None
+                self.movingFinished.emit(True)
         if self.stopping and (not self.motorx.isMoving()) and (not self.motory.isMoving()):
             self.stopComponent()
 
@@ -153,6 +170,11 @@ class BeamStop(QtCore.QObject, Component):
 
     def motorsAvailable(self) -> bool:
         return (self.xmotorname is not None) and (self.ymotorname is not None)
+
+    def stopMoving(self):
+        if self._movetarget is not None:
+            self.motory.stop()
+            self.motorx.stop()
 
     def disconnectMotors(self):
         for motorname in [self.xmotorname, self.ymotorname]:
