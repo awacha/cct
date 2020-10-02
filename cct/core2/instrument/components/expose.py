@@ -1,14 +1,14 @@
 import datetime
 import enum
 import logging
+import multiprocessing
 import os
 import pickle
 import time
-import multiprocessing
 from typing import Dict, Optional, Any, List
 
-from PyQt5 import QtCore
 import numpy as np
+from PyQt5 import QtCore
 
 from .component import Component
 from .devicemanager import DeviceManager
@@ -40,7 +40,8 @@ class ExposureData:
     index: int  # 0-based index of this image in a multiple exposure sequence
     maskoverride: Optional[str] = None
 
-    def __init__(self, prefix: str, fsn: int, index: int, exptime: float, expdelay: float, cmdissuetime: float, maskoverride: Optional[str]=None):
+    def __init__(self, prefix: str, fsn: int, index: int, exptime: float, expdelay: float, cmdissuetime: float,
+                 maskoverride: Optional[str] = None):
         self.prefix = prefix
         self.fsn = fsn
         self.index = index
@@ -138,7 +139,8 @@ class Exposer(QtCore.QObject, Component):
         self.detector.variableChanged.disconnect(self.onDetectorVariableChanged)
         self.detector = None
 
-    def startExposure(self, prefix: str, exposuretime: float, imagecount: int = 1, delay: float = 0.003, maskoverride: Optional[str]=None):
+    def startExposure(self, prefix: str, exposuretime: float, imagecount: int = 1, delay: float = 0.003,
+                      maskoverride: Optional[str] = None, movetosample: Optional[str] = None, shutter: bool=False):
         """prepare the detector for an exposure. Also prepare timers for waiting for images."""
         if self.detector is None:
             self._connectDetector()
@@ -197,7 +199,8 @@ class Exposer(QtCore.QObject, Component):
                 return
         else:
             # we have the image. Construct a header and load the required mask.
-            header = self.createHeader(expdata.prefix, expdata.fsn, expdata.exptime, expdata.starttime, expdata.maskoverride)
+            header = self.createHeader(expdata.prefix, expdata.fsn, expdata.exptime, expdata.starttime,
+                                       expdata.maskoverride)
             try:
                 mask = self.instrument.io.loadMask(header.maskname)
             except FileNotFoundError:
@@ -245,7 +248,8 @@ class Exposer(QtCore.QObject, Component):
     def stopExposure(self):
         self.instrument.devicemanager.detector().stopexposure()
 
-    def createHeader(self, prefix: str, fsn: int, exptime: float, starttime: float, maskoverride: Optional[str]) -> Header:
+    def createHeader(self, prefix: str, fsn: int, exptime: float, starttime: float,
+                     maskoverride: Optional[str]) -> Header:
         sample = self.instrument.samplestore.currentSample()
         data = {
             'fsn': fsn,
