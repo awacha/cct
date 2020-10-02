@@ -1,40 +1,51 @@
 from typing import Any
+from PyQt5 import QtCore
 
 from .command import Command
 from .commandargument import StringChoicesArgument
+from ..instrument.components.beamstop import BeamStop
 
 
-class BeamStop(Command):
+class BeamStopCommand(Command):
     name = 'beamstop'
     timerinterval = None
     description = 'Move the beam-stop'
     arguments = [StringChoicesArgument('state', 'The requested state of the beam-stop', ['in', 'out', 'IN', 'OUT'])]
+    requestedstate: bool=None
 
-    def initialize(self, arguments: Any):
-        if arguments[0] not in ['in', 'out']:
+    def initialize(self, requestedstate: str):
+        if requestedstate.lower() not in ['in', 'out']:
             raise self.CommandException('Argument must be either "in" or "out".')
-        for motor in [self.instrument.beamstop.motorx(), self.instrument.beamstop.motory()]:
-            motor.moving.connect(self.onMotorMotion)
+        if requestedstate.lower() == 'in':
+            self.requestedstate = True
+        elif requestedstate.lower() == 'out':
+            self.requestedstate = False
+        else:
+            raise self.CommandException(
+                f'Invalid argument to command beamstop: {requestedstate}. Must be either "in" or "out".')
         self.instrument.beamstop.stateChanged.connect(self.onBeamstopStateChanged)
-        if arguments[0].lower() == 'in':
+        self.instrument.beamstop.movingFinished.connect(self.onBeamstopMovingFinished)
+        if self.requestedstate:
             self.instrument.beamstop.moveIn()
         else:
             self.instrument.beamstop.moveOut()
 
-    def onMotorMotion(self, actualposition: float, startposition: float, endposition: float):
-        self.progress.emit(f'Moving motor {self.sender().name}, now at {actualposition:.4f}',
-                           int((actualposition - startposition) / (endposition - startposition) * 1000), 1000)
+    def onBeamstopMovingFinished(self, success: bool):
+        self.disconnectSignals()
+        if success:
+            self.finish(self.requestedstate)
+        else:
+            self.fail('Moving the beam-stop failed.')
 
-    def onBeamstopStateChanged(self, newstate: str):
-        if newstate == self.arguments[0]:
-            self.finish(self.arguments[0])
+    def onBeamstopMovingProgress(self, message: str, start: float, end: float, current: float):
+        self.progress.emit(message, int(1000*(current-start)/(end-start)), 1000)
 
     def stop(self):
-        self.instrument.beamstop.motorx().stop()
-        self.instrument.beamstop.motory().stop()
-        self.fail('Stopping command on user request')
+        self.instrument.beamstop.stopMoving()
+        self.message.emit('Stopping command on user request')
 
     def disconnectSignals(self):
         self.instrument.beamstop.stateChanged.disconnect(self.onBeamstopStateChanged)
-        for motor in [self.instrument.beamstop.motorx(), self.instrument.beamstop.motory()]:
-            motor.moving.disconnect(self.onMotorMotion)
+        self.instrument.beamstop.movingFinished.disconnect(self.onBeamstopMovingFinished)
+        self.instrument.beamstop.movingProgress.disconnect(self.onBeamstopMovingProgress)
+

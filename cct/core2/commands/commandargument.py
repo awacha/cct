@@ -14,6 +14,10 @@ class CommandArgument:
     def validate(self, argument: Any):
         raise NotImplementedError
 
+    def __str__(self):
+        return f'{self.name}: {self.description}' + (
+            f' (default: {self.defaultvalue}' if self.defaultvalue is not None else '')
+
 
 class StringArgument(CommandArgument):
     def validate(self, string: Any) -> str:
@@ -32,13 +36,18 @@ class FloatArgument(CommandArgument):
 
 class StringChoicesArgument(CommandArgument):
     choices: List[str]
+    casesensitive: bool
 
-    def __init__(self, name: str, description: str, choices: Sequence[str], defaultvalue: Optional[Any] = None):
+    def __init__(self, name: str, description: str, choices: Sequence[str], defaultvalue: Optional[Any] = None,
+                 casesensitive: bool = False):
         super().__init__(name, description, defaultvalue)
+        if not casesensitive:
+            choices = [c.lower() for c in choices]
+        self.casesensitive = casesensitive
         self.choices = list(choices)
 
     def validate(self, argument: Any) -> str:
-        if str(argument) in self.choices:
+        if (str(argument) if self.casesensitive else str(argument).lower()) in self.choices:
             return str(argument)
         else:
             raise ValueError(f'Invalid value: {argument}: not among the permissible choices')

@@ -63,10 +63,11 @@ class Command(QtCore.QObject):
     description: str
     failed = QtCore.pyqtSignal(str)
     finished = QtCore.pyqtSignal(object)
-    progress = QtCore.pyqtSignal(str, int, int)
+    progress = QtCore.pyqtSignal(str, int, int)  # message, current, total
     message = QtCore.pyqtSignal(str)
     goto = QtCore.pyqtSignal(str, bool)
     parsed_arguments: Tuple[Any]
+    _finished: bool = False
 
     class CommandException(Exception):
         pass
@@ -80,9 +81,12 @@ class Command(QtCore.QObject):
     @final
     def execute(self):
 #        logger.debug(f'Executing command {self.name}')
+        self._finished = False
         if self._timer is not None:
             raise self.CommandException('Already running.')
         self.initialize(*self.parseArguments())
+        if self._finished: # the job is already done in the initialize() method, no need to set up a timer
+            return
         if self.timerinterval is not None:
             self._timer = self.startTimer(int(self.timerinterval * 1000))
 
@@ -98,6 +102,7 @@ class Command(QtCore.QObject):
         if self._timer is not None:
             self.killTimer(self._timer)
             self._timer = None
+        self._finished = True
         self.goto.emit(label, gosub)
 
     @final
@@ -106,6 +111,7 @@ class Command(QtCore.QObject):
         if self._timer is not None:
             self.killTimer(self._timer)
             self._timer = None
+        self._finished = True
         self.failed.emit(message)
 
     @final
@@ -114,6 +120,7 @@ class Command(QtCore.QObject):
         if self._timer is not None:
             self.killTimer(self._timer)
             self._timer = None
+        self._finished = True
         self.finished.emit(returnvalue)
 
     def parseArguments(self) -> Any:
@@ -143,9 +150,11 @@ class Command(QtCore.QObject):
     def helptext(cls) -> str:
         s = cls.description+'\n\n'
         s += f'Invocation:\n    {cls.name}'
+        if ... in cls.arguments[:-1]:
+            raise TypeError('Argument specification "..." can only be the last one in a command\'s argument list.')
         if cls.arguments:
-            s += '(' + ', '.join([a.name for a in cls.arguments]) + ')\n\nArguments:\n'
-            s += '\n'.join([f'    {a.name}: {a.description}' for a in cls.arguments])
+            s += '(' + ', '.join(['...' if a is ... else a.name for a in cls.arguments]) + ')\n\nArguments:\n'
+            s += '\n'.join([f'    {a}' for a in cls.arguments if a is not ...])
         s += '\n'
         return s
 
