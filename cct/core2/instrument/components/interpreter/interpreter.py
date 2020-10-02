@@ -106,16 +106,27 @@ class Interpreter(QtCore.QObject, Component):
             self.pointer = linenumbers[0]
             self.advanceToNextCommand()
 
+    def _connectCommand(self, command: Command):
+        assert isinstance(command, Command)
+        command.goto.connect(self.commandJumped)
+        command.failed.connect(self.commandFailed)
+        command.finished.connect(self.commandFinished)
+        command.message.connect(self.commandMessage)
+        command.progress.connect(self.commandProgress)
+
+    def _disconnectCommand(self, command: Command):
+        assert isinstance(command, Command)
+        command.goto.disconnect(self.commandJumped)
+        command.failed.disconnect(self.commandFailed)
+        command.finished.disconnect(self.commandFinished)
+        command.message.disconnect(self.commandMessage)
+        command.progress.disconnect(self.commandProgress)
+
     def advanceToNextCommand(self):
         finishedcommand = self.sender()
         logger.debug(f'Finishedcommand: {finishedcommand.objectName()}')
         if isinstance(finishedcommand, Command):
-            assert isinstance(finishedcommand, Command)
-            finishedcommand.goto.disconnect(self.commandJumped)
-            finishedcommand.failed.disconnect(self.commandFailed)
-            finishedcommand.finished.disconnect(self.commandFinished)
-            finishedcommand.message.disconnect(self.commandMessage)
-            finishedcommand.progress.disconnect(self.commandProgress)
+            self._disconnectCommand(finishedcommand)
         self.pointer += 1
         if self.pointer >= len(self.script):
             # we reached the end of the script
@@ -128,13 +139,13 @@ class Interpreter(QtCore.QObject, Component):
                 self.finish()
                 return
             self.advance.emit(self.pointer)
-            command.goto.connect(self.commandJumped)
-            command.failed.connect(self.commandFailed)
-            command.finished.connect(self.commandFinished)
-            command.message.connect(self.commandMessage)
-            command.progress.connect(self.commandProgress)
+            self._connectCommand(command)
             logger.debug('Executing command.')
-            command.execute()
+            try:
+                command.execute()
+            except Exception as exc:
+                self._disconnectCommand(command)
+                self.fail(str(exc))
 
     def commandProgress(self, message: str, current: int, total: int):
         self.progress.emit(message, current, total)
