@@ -96,11 +96,11 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
 
     def onScriptStarted(self):
         self.startStopToolButton.setText('Stop')
-        self.startStopToolButton.setIcon(QtGui.QIcon.fromTheme('media-playback-stop'))
+        self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
 
     def onScriptFinished(self, success: bool, message: str):
         self.startStopToolButton.setText('Start')
-        self.startStopToolButton.setIcon(QtGui.QIcon.fromTheme('media-playback-start'))
+        self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
         if not success:
             QtWidgets.QMessageBox.critical(self, 'Script failed', f'Script failed with message: {message}')
         sui = self.runningScript()

@@ -37,6 +37,12 @@
         <iconset theme="document-new">
          <normaloff>.</normaloff>.</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
      <item>
@@ -47,6 +53,12 @@
        <property name="icon">
         <iconset resource="../../../resource/icons/icons.qrc">
          <normaloff>:/icons/scriptwizard.svg</normaloff>:/icons/scriptwizard.svg</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -59,6 +71,12 @@
         <iconset theme="document-open">
          <normaloff>.</normaloff>.</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
      <item>
@@ -70,6 +88,12 @@
         <iconset theme="document-save">
          <normaloff>.</normaloff>.</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
      <item>
@@ -80,6 +104,12 @@
        <property name="icon">
         <iconset theme="document-save-as">
          <normaloff>.</normaloff>.</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -99,6 +129,12 @@
         <iconset theme="edit-undo">
          <normaloff>.</normaloff>.</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
      <item>
@@ -109,6 +145,12 @@
        <property name="icon">
         <iconset theme="edit-redo">
          <normaloff>.</normaloff>.</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -128,6 +170,12 @@
         <iconset theme="edit-cut">
          <normaloff>.</normaloff>.</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
      <item>
@@ -139,6 +187,12 @@
         <iconset theme="edit-copy">
          <normaloff>.</normaloff>.</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
      <item>
@@ -149,6 +203,12 @@
        <property name="icon">
         <iconset theme="edit-paste">
          <normaloff>.</normaloff>.</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -168,6 +228,12 @@
         <iconset resource="../../../resource/icons/icons.qrc">
          <normaloff>:/icons/start.svg</normaloff>:/icons/start.svg</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
      <item>
@@ -178,6 +244,12 @@
        <property name="icon">
         <iconset theme="media-playback-pause">
          <normaloff>.</normaloff>.</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
        </property>
       </widget>
      </item>

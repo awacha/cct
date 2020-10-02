@@ -48,6 +48,12 @@
         <iconset theme="list-add">
          <normaloff>.</normaloff>.</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
      <item>
@@ -58,6 +64,12 @@
        <property name="icon">
         <iconset theme="list-remove">
          <normaloff>.</normaloff>.</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -70,6 +82,12 @@
         <iconset theme="network-wired">
          <normaloff>.</normaloff>.</iconset>
        </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
       </widget>
      </item>
      <item>
@@ -80,6 +98,12 @@
        <property name="icon">
         <iconset theme="network-wired-disconnected">
          <normaloff>.</normaloff>.</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
        </property>
       </widget>
      </item>

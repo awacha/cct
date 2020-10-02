@@ -37,6 +37,12 @@
           <iconset theme="document-new">
            <normaloff>.</normaloff>.</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
         </widget>
        </item>
        <item>
@@ -53,6 +59,12 @@
          <property name="icon">
           <iconset theme="document-open">
            <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -71,6 +83,12 @@
           <iconset theme="document-save">
            <normaloff>.</normaloff>.</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
         </widget>
        </item>
        <item>
@@ -87,6 +105,12 @@
          <property name="icon">
           <iconset theme="document-save-as">
            <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -116,6 +140,12 @@
           <iconset theme="edit-undo">
            <normaloff>.</normaloff>.</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
         </widget>
        </item>
        <item>
@@ -132,6 +162,12 @@
          <property name="icon">
           <iconset theme="edit-redo">
            <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -158,6 +194,12 @@
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/mask.svg</normaloff>:/icons/mask.svg</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
          <property name="checkable">
           <bool>true</bool>
          </property>
@@ -181,6 +223,12 @@
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/unmask.svg</normaloff>:/icons/unmask.svg</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
          <property name="checkable">
           <bool>true</bool>
          </property>
@@ -200,6 +248,12 @@
          <property name="icon">
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/flipmask.svg</normaloff>:/icons/flipmask.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -232,6 +286,12 @@
           <iconset theme="edit-find">
            <normaloff>.</normaloff>.</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
          <property name="checkable">
           <bool>true</bool>
          </property>
@@ -258,6 +318,12 @@
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/selectrectangle.svg</normaloff>:/icons/selectrectangle.svg</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
          <property name="checkable">
           <bool>true</bool>
          </property>
@@ -280,6 +346,12 @@
          <property name="icon">
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/selectcircle.svg</normaloff>:/icons/selectcircle.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -304,6 +376,12 @@
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/selectpolygon.svg</normaloff>:/icons/selectpolygon.svg</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
          <property name="checkable">
           <bool>true</bool>
          </property>
@@ -327,6 +405,12 @@
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/selectlasso.svg</normaloff>:/icons/selectlasso.svg</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
          <property name="checkable">
           <bool>true</bool>
          </property>
@@ -349,6 +433,12 @@
          <property name="icon">
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/pixelhunt.svg</normaloff>:/icons/pixelhunt.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
          </property>
          <property name="checkable">
           <bool>true</bool>
