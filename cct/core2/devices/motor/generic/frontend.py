@@ -31,16 +31,16 @@ class MotorController(DeviceFrontend):
         self.issueCommand('moveto', motor, position)
 
     def moveRel(self, motor: int, position: float):
-        logger.debug(f'Moving motor {motor} relatively by {position}')
+#        logger.debug(f'Moving motor {motor} relatively by {position}')
         if (self[f'actualposition${motor}'] + position < self[f'softleft${motor}']) or \
                 (self[f'actualposition${motor}'] + position > self[f'softright${motor}']):
-            logger.debug('Position outside limits!')
+            #logger.debug('Position outside limits!')
             raise self.DeviceError(f'Cannot move motor {motor}: position outside limits.')
         if self[f'moving${motor}']:
-            logger.debug('Motor is moving!')
+            #logger.debug('Motor is moving!')
             raise self.DeviceError(f'Cannot move motor {motor}: already in motion.')
         self.issueCommand('moverel', motor, position)
-        logger.debug(f'Moverel issued successfully')
+        #logger.debug(f'Moverel issued successfully')
 
     def stopMotor(self, motor: int):
         self.issueCommand('stop', motor)
@@ -55,6 +55,7 @@ class MotorController(DeviceFrontend):
         return self[f'softleft${motor}'], self[f'softright${motor}']
 
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
+        super().onVariableChanged(variablename, newvalue, previousvalue)
         varbasename = variablename.split('$')[0]
         if varbasename == 'moving':
             axis = int(variablename.split('$')[-1])

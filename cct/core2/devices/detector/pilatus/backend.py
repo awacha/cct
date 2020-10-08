@@ -332,7 +332,7 @@ class PilatusBackend(DeviceBackend):
             self.commandFinished(name, 'Started trimming')
         elif name == 'expose':
             relimgpath, firstfilename, exptime, nimages, delay = args
-            self.debug(f'Starting exposure {relimgpath=}, {firstfilename=}, {exptime=}, {nimages=}, {delay=}')
+            #self.debug(f'Starting exposure {relimgpath=}, {firstfilename=}, {exptime=}, {nimages=}, {delay=}')
             if exptime < 1e-7 or exptime > 1e6:
                 self.commandError(name, 'Invalid value for exposure time')
                 return

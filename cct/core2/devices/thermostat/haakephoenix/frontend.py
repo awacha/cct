@@ -51,6 +51,7 @@ class HaakePhoenix(DeviceFrontend):
         return self['__status__'] == HaakePhoenixBackend.Status.Running
 
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
+        super().onVariableChanged(variablename, newvalue, previousvalue)
         if variablename == '__status__':
             if newvalue == HaakePhoenixBackend.Status.Running:
                 self.startStop.emit(True)

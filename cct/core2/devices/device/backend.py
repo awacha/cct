@@ -500,14 +500,14 @@ class DeviceBackend:
     ### Tools for subclasses to use
     @final
     def disableAutoQuery(self):
-        self.debug('Disabling autoquery')
+        #self.debug('Disabling autoquery')
         self.autoqueryenabled.clear()
         for v in self.variables:
             v.lastquery = None
 
     @final
     def enableAutoQuery(self):
-        self.debug('Enabling autoquery')
+        #self.debug('Enabling autoquery')
         for v in self.variables:
             v.lastquery = None
         self.autoqueryenabled.set()

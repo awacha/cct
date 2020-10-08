@@ -11,7 +11,7 @@ from ....algorithms.beamweighting import beamweights
 from ....dataclasses import Scan, Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ScanRecorder(QtCore.QObject):
@@ -196,7 +196,7 @@ class ScanRecorder(QtCore.QObject):
             else:
                 # opening the shutter failed
                 logger.error('Cannot open shutter')
-                self.errormessage='Cannot open shutter.'
+                self.errormessage = 'Cannot open shutter.'
                 self.moveMotorBack()
         elif self.state == self.State.ClosingShutter:
             if not state:
@@ -213,7 +213,7 @@ class ScanRecorder(QtCore.QObject):
             logger.warning(f'Shutter {"opened" if state else "closed"} during the scan measurement.')
 
     def onMotorStopped(self, success: bool, endposition: float):
-        logger.debug(f'Motor stopped. {success=}, {endposition=}')
+        logger.debug(f'Motor stopped. {success=}, {endposition=}, {self.state=}')
         if not success:
             self.errormessage = f'Positioning error in scan {self.scanindex} at point {self.scanpoint} in state {self.state.value}'
             logger.error(self.errormessage)

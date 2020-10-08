@@ -18,7 +18,7 @@ from ...devices.detector.pilatus.backend import PilatusBackend
 from ...devices.detector.pilatus.frontend import PilatusDetector
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ExposerState(enum.Enum):
@@ -201,6 +201,7 @@ class Exposer(QtCore.QObject, Component):
             # we have the image. Construct a header and load the required mask.
             header = self.createHeader(expdata.prefix, expdata.fsn, expdata.exptime, expdata.starttime,
                                        expdata.maskoverride)
+            self.instrument.io.imageReceived(expdata.prefix, expdata.fsn)
             try:
                 mask = self.instrument.io.loadMask(header.maskname)
             except FileNotFoundError:

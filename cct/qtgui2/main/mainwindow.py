@@ -36,6 +36,7 @@ from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.instrument import Instrument
 from ...core2.instrument.components.interpreter import ParsingError
 from ..measurement.scan.scan import ScanMeasurement
+from ..measurement.transmission import TransmissionUi
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -72,6 +73,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionView_images_and_curves': HeaderView,
         'actionData_reduction': HeaderView,
         'actionScan': ScanMeasurement,
+        'actionTransmission': TransmissionUi,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]

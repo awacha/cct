@@ -1,9 +1,10 @@
 import enum
 import logging
-from typing import List, Tuple, Any, Optional
+import pickle
+from typing import List, Tuple, Any, Optional, Iterable
 
 import numpy as np
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 
 from .beamstop import BeamStop
 from .component import Component
@@ -13,7 +14,7 @@ from ...dataclasses import Sample, Exposure
 from ...devices.xraysource.genix.frontend import GeniX, GeniXBackend
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class TransmissionData:
@@ -46,7 +47,7 @@ class TransmissionData:
         empty = (empty[0] - dark[0]), (empty[1] ** 2 + dark[1] ** 2) ** 0.5
         sample = (sample[0] - dark[0]), (sample[1] ** 2 + dark[1] ** 2) ** 0.5
         return sample[0] / empty[0], (
-                    sample[1] ** 2 / dark[0] ** 2 + dark[1] ** 2 * sample[0] ** 2 / dark[0] ** 4) ** 0.5
+                sample[1] ** 2 / dark[0] ** 2 + dark[1] ** 2 * sample[0] ** 2 / dark[0] ** 4) ** 0.5
 
     def dark(self) -> Optional[Tuple[float, float]]:
         if not self.darkcounts:
@@ -120,12 +121,18 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
     delaytime: float
     nimages: int
     waitingforimages: Optional[int] = None
-    progress = QtCore.pyqtSignal(float, float, float, str)
+    progress = QtCore.pyqtSignal(float, float, float, str)  # minimum, maximum, current, message
+    sampleStarted = QtCore.pyqtSignal(str, int, int)  # sample name, index, number of samples
     finished = QtCore.pyqtSignal(bool, str)
+    started = QtCore.pyqtSignal()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data = []
+
+    def setStatus(self, status: TransmissionMeasurementStatus):
+        logger.debug(f'Transmission status: {status}')
+        self.status = status
 
     def startComponent(self):
         self.instrument.samplestore.sampleListChanged.connect(self.onSampleListChanged)
@@ -156,6 +163,11 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         data = self._data[index.row()]
         if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
             return data.samplename
+        elif (index.column() == 0) and (role == QtCore.Qt.DecorationRole):
+            return QtGui.QIcon.fromTheme(
+                'media-playback-start') if index.row() == self.currentlymeasuredsample else None
+        elif role == QtCore.Qt.BackgroundColorRole:
+            return QtGui.QColor(QtCore.Qt.green) if index.row() == self.currentlymeasuredsample else None
         elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
             value = data.dark()
             return '--' if value is None else f'{value[0]} \xb1 {value[1]}'
@@ -176,8 +188,8 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             sample = self.instrument.samplestore[data.samplename]
             assert isinstance(sample, Sample)
             mu = mud[0] / sample.thickness[0], (
-                        mud[1] ** 2 / sample.thickness[0] ** 2 + mud[0] ** 2 * sample.thickness[1] ** 2 /
-                        sample.thickness[0] ** 4) ** 0.5
+                    mud[1] ** 2 / sample.thickness[0] ** 2 + mud[0] ** 2 * sample.thickness[1] ** 2 /
+                    sample.thickness[0] ** 4) ** 0.5
             return f'{mu[0]:.4f} \xb1 {mu[1]:.4f}'
         elif (index.column() == 6) and (role == QtCore.Qt.DisplayRole):
             transm = data.transmission()
@@ -187,8 +199,8 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             sample = self.instrument.samplestore[data.samplename]
             assert isinstance(sample, Sample)
             invmu = sample.thickness[0] / mud[0], (
-                        sample.thickness[1] ** 2 / mud[0] ** 2 + sample.thickness[0] ** 2 * mud[1] ** 2 / mud[
-                    0] ** 4) ** 0.5
+                    sample.thickness[1] ** 2 / mud[0] ** 2 + sample.thickness[0] ** 2 * mud[1] ** 2 / mud[
+                0] ** 4) ** 0.5
             return f'{invmu[0]:.4f} \xb1 {invmu[1]:.4f}'
         elif (index.column() == 1) and (role == QtCore.Qt.ToolTipRole):
             if not data.darkcounts:
@@ -213,7 +225,66 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         return self.createIndex(row, column, None)
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        if self.status == TransmissionMeasurementStatus.Idle:
+            if index.isValid():
+                return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            else:
+                return QtCore.Qt.ItemIsDropEnabled | QtCore.Qt.ItemIsEnabled
+        else:
+            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+
+    def removeRows(self, row: int, count: int, parent: QtCore.QModelIndex = ...) -> bool:
+        self.beginRemoveRows(parent, row, row+count)
+        self._data = self._data[:row] + self._data[row+count:]
+        self.endRemoveRows()
+        return True
+
+    def removeRow(self, row: int, parent: QtCore.QModelIndex = ...) -> bool:
+        return self.removeRows(row, 1, parent)
+
+    def supportedDropActions(self) -> QtCore.Qt.DropAction:
+        return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
+
+    def supportedDragActions(self) -> QtCore.Qt.DropAction:
+        return QtCore.Qt.MoveAction
+
+    def mimeTypes(self) -> List[str]:
+        return ['application/x-cctsamplelist', 'application/x-ccttransmissiondata']
+
+    def mimeData(self, indexes: Iterable[QtCore.QModelIndex]) -> QtCore.QMimeData:
+        md = QtCore.QMimeData()
+        samplenames = [self._data[index.row()].samplename for index in indexes]
+        samples = [s for s in self.instrument.samplestore if s.title in samplenames]
+        md.setData('application/x-cctsamplelist', pickle.dumps(samples))
+        td = [self._data[index.row()] for index in indexes]
+        md.setData('application/x-ccttransmissiondata', pickle.dumps(td))
+        return md
+
+    def dropMimeData(self, data: QtCore.QMimeData, action: QtCore.Qt.DropAction, row: int, column: int,
+                     parent: QtCore.QModelIndex) -> bool:
+        if action != QtCore.Qt.CopyAction:
+            pass
+        if parent.isValid():
+            row = parent.row()
+        logger.debug(f'dropping MIME data to {row=}, {column=}, {parent=}, {action=}')
+        if row < 0:
+            row = self.rowCount(QtCore.QModelIndex())
+        if data.hasFormat('application/x-ccttransmissiondata'):
+            tdata: List[TransmissionData] = pickle.load(data.data('application/x-ccttransmissiondata'))
+            if not tdata:
+                return False
+            self.beginInsertRows(QtCore.QModelIndex(), row, row+len(tdata)-1)
+            self._data = self._data[:row] + tdata + self._data[row:]
+            self.endInsertRows()
+        elif data.hasFormat('application/x-cctsamplelist'):
+            samples: List[Sample] = pickle.loads(data.data('application/x-cctsamplelist'))
+            samples = [s for s in samples if s.title not in [d.samplename for d in self._data]]
+            if not samples:
+                return False
+            self.beginInsertRows(QtCore.QModelIndex(), row, row + len(samples) - 1)
+            self._data = self._data[:row] + [TransmissionData(s.title) for s in samples] + self._data[row:]
+            self.endInsertRows()
+        return True
 
     # Add, remove, clear transmission tasks...
 
@@ -222,9 +293,8 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             raise RuntimeError('Cannot add sample: currently measuring transmission')
         if samplename in [data.samplename for data in self._data]:
             raise RuntimeError(f'Cannot add duplicate sample "{samplename}"')
-        row = max([i for i, data in enumerate(self._data) if data.samplename < samplename], -1)
-        self.beginInsertRows(QtCore.QModelIndex(), row, row)
-        self._data.insert(row, TransmissionData(samplename))
+        self.beginInsertRows(QtCore.QModelIndex(), len(self._data), len(self._data))
+        self._data.append(TransmissionData(samplename))
         self.endInsertRows()
 
     def removeSample(self, samplename: str):
@@ -336,12 +406,66 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         if self.lazymode:
             self.orderSamplesForLeastMovement()
         self.endResetModel()
+        self.started.emit()
         self.closeShutter()
+
+    def stopMeasurement(self):
+        if self.status == TransmissionMeasurementStatus.ExposingDark:
+            self.exposer.stopExposure()
+        elif self.status == TransmissionMeasurementStatus.ExposingEmpty:
+            self.exposer.stopExposure()
+        elif self.status == TransmissionMeasurementStatus.ExposingSample:
+            self.exposer.stopExposure()
+        elif self.status == TransmissionMeasurementStatus.MovingToSample:
+            self.samplestore.stopMotors()
+        elif self.status == TransmissionMeasurementStatus.Idle:
+            return
+        elif self.status == TransmissionMeasurementStatus.MovingToEmpty:
+            self.samplestore.stopMotors()
+        elif self.status == TransmissionMeasurementStatus.BeamstopOut:
+            self.beamstop.stopMoving()
+        elif self.status == TransmissionMeasurementStatus.BeamstopIn:
+            self.beamstop.stopMoving()
+        elif self.status == TransmissionMeasurementStatus.CloseShutter:
+            pass
+        elif self.status == TransmissionMeasurementStatus.OpenShutter:
+            pass
+        elif self.status == TransmissionMeasurementStatus.XraysToStandby:
+            pass
+        else:
+            pass
+        self.setStatus(TransmissionMeasurementStatus.Stopping)
 
     # various tasks: opening/closing shutter, X-ray source to standby mode, beamstop out/in, exposing etc.
 
+    def finishIfUserStop(self) -> bool:
+        if self.status == TransmissionMeasurementStatus.Stopping:
+            try:
+                self._disconnectSource()
+            except TypeError:
+                pass
+            try:
+                self._disconnectSampleStore()
+            except TypeError:
+                pass
+            try:
+                self._disconnectBeamStop()
+            except TypeError:
+                pass
+            try:
+                self._disconnectExposer()
+            except TypeError:
+                pass
+            logger.error('Transmission measurement stopped on user request')
+            self.finish(False, 'Transmission measurement stopped on user request')
+            return True
+        else:
+            return False
+
     def closeShutter(self):
-        self.status = TransmissionMeasurementStatus.CloseShutter
+        if self.finishIfUserStop():
+            return
+        self.setStatus(TransmissionMeasurementStatus.CloseShutter)
         if not self.source['shutter']:
             self.onShutter(False)
         else:
@@ -351,10 +475,12 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                 self.progress.emit(0, 0, 0, 'Closing beam shutter')
             except Exception as exc:
                 self._disconnectSource()
-                self.finished.emit(False, str(exc))
+                self.finish(False, str(exc))
 
     def openShutter(self):
-        self.status = TransmissionMeasurementStatus.OpenShutter
+        if self.finishIfUserStop():
+            return
+        self.setStatus(TransmissionMeasurementStatus.OpenShutter)
         if self.source['shutter']:
             self.onShutter(True)
         else:
@@ -364,23 +490,27 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                 self.progress.emit(0, 0, 0, 'Opening beam shutter')
             except Exception as exc:
                 self._disconnectSource()
-                self.finished.emit(False, str(exc))
+                self.finish(False, str(exc))
 
     def xraysToStandby(self):
-        self.status = TransmissionMeasurementStatus.XraysToStandby
+        if self.finishIfUserStop():
+            return
+        self.setStatus(TransmissionMeasurementStatus.XraysToStandby)
         if self.source['__status__'] == GeniXBackend.Status.standby:
             self.onXraySourcePowerStateChanged(GeniXBackend.Status.standby)
         else:
             self._connectSource()
             try:
                 self.source.standby()
-                self.progress.emit(0, 0, 0, 'Setting X-ray source to standby mode')
+                self.progress.emit(0, 0, 0, 'Putting X-ray source to standby mode')
             except Exception as exc:
                 self._disconnectSource()
-                self.finished.emit(False, str(exc))
+                self.finish(False, str(exc))
 
     def beamstopOut(self):
-        self.status = TransmissionMeasurementStatus.BeamstopOut
+        if self.finishIfUserStop():
+            return
+        self.setStatus(TransmissionMeasurementStatus.BeamstopOut)
         if self.beamstop.checkState() == self.beamstop.States.Out:
             self.onBeamStopStateChanged(self.beamstop.States.Out.value)
         else:
@@ -390,10 +520,12 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                 self.progress.emit(0, 0, 0, 'Moving beamstop out')
             except Exception as exc:
                 self._disconnectSource()
-                self.finished.emit(False, str(exc))
+                self.finish(False, str(exc))
 
     def beamstopIn(self):
-        self.status = TransmissionMeasurementStatus.BeamstopIn
+        if self.finishIfUserStop():
+            return
+        self.setStatus(TransmissionMeasurementStatus.BeamstopIn)
         if self.beamstop.checkState() == self.beamstop.States.In:
             self.onBeamStopStateChanged(self.beamstop.States.In.value)
         else:
@@ -403,53 +535,79 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                 self.progress.emit(0, 0, 0, 'Moving beamstop in')
             except Exception as exc:
                 self._disconnectSource()
-                self.finished.emit(False, str(exc))
+                self.finish(False, str(exc))
 
     def moveSample(self):
+        if self.finishIfUserStop():
+            return
         samplename = self._data[self.currentlymeasuredsample].samplename
         self._connectSampleStore()
         try:
             self.samplestore.moveToSample(samplename)
-            self.status = TransmissionMeasurementStatus.MovingToSample
+            self.samplestore.setCurrentSample(samplename)
+            self.setStatus(TransmissionMeasurementStatus.MovingToSample)
         except Exception as exc:
             self._disconnectSampleStore()
-            self.finished.emit(False, str(exc))
+            self.finish(False, str(exc))
 
     def moveEmpty(self):
+        if self.finishIfUserStop():
+            return
         self._connectSampleStore()
         try:
             self.samplestore.moveToSample(self.emptysample)
-            self.status = TransmissionMeasurementStatus.MovingToEmpty
+            self.setStatus(TransmissionMeasurementStatus.MovingToEmpty)
         except Exception as exc:
             self._disconnectSampleStore()
-            self.finished.emit(False, str(exc))
+            self.finish(False, str(exc))
 
     def expose(self):
+        if self.finishIfUserStop():
+            return
         self._connectExposer()
         try:
             if self._data[self.currentlymeasuredsample].dark() is None:
                 # expose dark
-                self.status = TransmissionMeasurementStatus.ExposingDark
+                logger.debug('Exposing dark')
+                self.setStatus(TransmissionMeasurementStatus.ExposingDark)
             elif self._data[self.currentlymeasuredsample].empty() is None:
                 # expose empty
-                self.status = TransmissionMeasurementStatus.ExposingEmpty
+                logger.debug('Exposing empty')
+                self.setStatus(TransmissionMeasurementStatus.ExposingEmpty)
             else:
                 assert self._data[self.currentlymeasuredsample].sample() is None
                 # expose sample
-                self.status = TransmissionMeasurementStatus.ExposingSample
+                logger.debug('Exposing sample')
+                self.setStatus(TransmissionMeasurementStatus.ExposingSample)
             self.waitingforimages = self.nimages
             self.instrument.exposer.startExposure(self.config['path']['prefixes']['tra'],
                                                   exposuretime=self.countingtime,
                                                   delay=self.delaytime, imagecount=self.nimages)
         except Exception as exc:
             self._disconnectExposer()
-            self.finished.emit(False, str(exc))
+            self.finish(False, str(exc))
+
+    def finish(self, success: bool, message: str):
+        self.setStatus(TransmissionMeasurementStatus.Idle)
+        self.currentlymeasuredsample = None
+        self.dataChanged.emit(
+            self.index(0, 0, QtCore.QModelIndex()),
+            self.index(self.rowCount(QtCore.QModelIndex()),
+                       self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
+        self._disconnectExposer()
+        self._disconnectSource()
+        self._disconnectBeamStop()
+        self._disconnectSampleStore()
+        self.finished.emit(success, message)
 
     # slots for checking the outcome of the above commands
 
     def onShutter(self, shutterstate: bool):
+        if self.finishIfUserStop():
+            return
         if (self.status == TransmissionMeasurementStatus.CloseShutter) and (not shutterstate):
             # shutter closed successfully
+            self._disconnectSource()
             if self.currentlymeasuredsample is None:
                 # we are in the initialization phase, X-ray source must be turned to standby mode
                 self.xraysToStandby()
@@ -477,12 +635,22 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                         logger.error(f'Cannot set transmission of sample {sample.title}: {str(ve)}')
                     self.samplestore.updateSample(sample.title, sample)
                     # go to the next sample
-                    if self.currentlymeasuredsample >= len(self._data):
+                    if self.currentlymeasuredsample >= (len(self._data) - 1):
                         # no more samples to measure
+                        self.currentlymeasuredsample = None
+                        self.dataChanged.emit(self.index(self.rowCount(QtCore.QModelIndex()), 0, QtCore.QModelIndex()),
+                                              self.index(self.rowCount(QtCore.QModelIndex()),
+                                                         self.columnCount(QtCore.QModelIndex()),
+                                                         QtCore.QModelIndex()))
                         self.beamstopIn()
                     else:
                         # advance to the next sample
                         self.currentlymeasuredsample += 1
+                        self.dataChanged.emit(self.index(self.currentlymeasuredsample - 1, 0, QtCore.QModelIndex()),
+                                              self.index(self.currentlymeasuredsample,
+                                                         self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
+                        self.sampleStarted.emit(self._data[self.currentlymeasuredsample].samplename,
+                                                self.currentlymeasuredsample, len(self._data))
                         # expose dark
                         if self._data[self.currentlymeasuredsample].dark() is None:
                             self.expose()
@@ -496,6 +664,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                             self.moveSample()
         elif (self.status == TransmissionMeasurementStatus.OpenShutter) and shutterstate:
             # shutter opened successfully, start the exposure
+            self._disconnectSource()
             self.expose()
         elif self.status not in [TransmissionMeasurementStatus.OpenShutter, TransmissionMeasurementStatus.CloseShutter]:
             # shutter opened or closed for a different reason, disregard this
@@ -503,13 +672,18 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                            f'measurement.')
         else:
             # shutter remained open when requested to be closed or could not open: this is an error
-            self.finished.emit(False, "Shutter error")
+            self._disconnectSource()
+            self.finish(False, "Shutter error")
 
     def onImageReceived(self, exposure: Exposure):
+        if self.finishIfUserStop():
+            return
         assert self.status in [TransmissionMeasurementStatus.ExposingDark, TransmissionMeasurementStatus.ExposingSample,
                                TransmissionMeasurementStatus.ExposingEmpty]
         self.waitingforimages -= 1
         counts = exposure.intensity[exposure.intensity > 0].sum()
+        logger.debug(
+            f'Exposure image {exposure.header.fsn=} received. Counts: {counts}. Sample: {self.currentlymeasuredsample}. Status: {self.status}. Waiting for {self.waitingforimages} more images.')
         data = self._data[self.currentlymeasuredsample]
         if self.status == TransmissionMeasurementStatus.ExposingDark:
             data.darkcounts.append(counts)
@@ -521,14 +695,17 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             assert False
         if self.waitingforimages <= 0:
             # all images are received.
+            logger.debug(f'All images received for sample {self.currentlymeasuredsample}, {self.status}')
             self._disconnectExposer()
-            if self.lazymode and (self.status == TransmissionMeasurementStatus.ExposingDark) and (
-                    self.currentlymeasuredsample == 0):
+            if (self.lazymode and
+                    (self.status in [TransmissionMeasurementStatus.ExposingDark,
+                                     TransmissionMeasurementStatus.ExposingEmpty]) and (
+                            self.currentlymeasuredsample == 0)):
                 for i in range(1, len(self._data)):
                     if self.status == TransmissionMeasurementStatus.ExposingDark:
                         self._data[i].darkcounts = list(self._data[0].darkcounts)
                     elif self.status == TransmissionMeasurementStatus.ExposingEmpty:
-                        self._data[i].emptycounts = list(self._data[0].darkcounts)
+                        self._data[i].emptycounts = list(self._data[0].emptycounts)
                     else:
                         pass
             self.dataChanged.emit(self.index(0, 1, QtCore.QModelIndex()),
@@ -544,80 +721,113 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         else:
             pass
 
-    def onExposureFinished(self, success: bool, message: str):
+    def onExposureFinished(self, success: bool):
+        if self.finishIfUserStop():
+            return
         if not success:
             self._disconnectExposer()
-            self.finished.emit(False, f'Error in exposure: {message}')
+            self.finish(False, f'Error in exposure')
         else:
             # pass, finish this step when all images are received.
             pass
 
     def onExposureProgress(self, prefix: str, fsn: int, currenttime: float, starttime: float, endtime: float):
-        pass
+        if self.finishIfUserStop():
+            return
+        self.progress.emit(starttime, endtime, currenttime, 'Exposing...')
 
     def onBeamStopStateChanged(self, state: str):
-        if (state == BeamStop.States.Out) and (self.status == TransmissionMeasurementStatus.BeamstopOut):
+        if self.finishIfUserStop():
+            return
+        if (state == BeamStop.States.Out.value) and (self.status == TransmissionMeasurementStatus.BeamstopOut):
             self._disconnectBeamStop()
             self.currentlymeasuredsample = 0
+            self.dataChanged.emit(self.index(self.currentlymeasuredsample, 0, QtCore.QModelIndex()),
+                                  self.index(self.currentlymeasuredsample, self.columnCount(QtCore.QModelIndex()),
+                                             QtCore.QModelIndex()))
+            self.sampleStarted.emit(self._data[self.currentlymeasuredsample].samplename, 0, len(self._data))
             self.expose()  # start exposing the sample
-        elif (state == BeamStop.States.In) and (self.status == TransmissionMeasurementStatus.BeamstopIn):
+        elif (state == BeamStop.States.In.value) and (self.status == TransmissionMeasurementStatus.BeamstopIn):
             # transmission measurement finished.
             self._disconnectBeamStop()
-            self.finished.emit(True, 'Successfully finished transmission measurement sequence')
+            self.finish(True, 'Successfully finished transmission measurement sequence')
         elif (self.status in [TransmissionMeasurementStatus.BeamstopIn,
                               TransmissionMeasurementStatus.BeamstopOut]) and (
                 state in [BeamStop.States.Moving, BeamStop.States.Undefined]):
             # moving beamstop
             pass
         else:
-            logger.warning('Unexpected Beamstop motion during transmission measurement.')
+            pass
+
+    #            logger.warning(f'Unexpected Beamstop motion during transmission measurement: {self.status=}, {state=}.')
 
     def onXraySourcePowerStateChanged(self, value: str):
-        self.instrument.devicemanager.source().powerStateChanged.disconnect(self.onXraySourcePowerStateChanged)
+        if self.finishIfUserStop():
+            return
         if (self.status == TransmissionMeasurementStatus.XraysToStandby) and (value == GeniXBackend.Status.standby):
             # successful, move out beamstop
+            self._disconnectSource()
             self.beamstopOut()
         else:
             pass
 
     def onMovingToSampleFinished(self, success: bool, samplename: str):
+        if self.finishIfUserStop():
+            return
         if success and (self.status in [TransmissionMeasurementStatus.MovingToEmpty,
                                         TransmissionMeasurementStatus.MovingToSample]):
             self._disconnectSampleStore()
             self.openShutter()
         elif not success:
             self._disconnectSampleStore()
-            self.finished.emit(False, f'Cannot move to sample {samplename}.')
+            self.finish(False, f'Cannot move to sample {samplename}.')
 
     def onMovingToSampleProgress(self, samplename: str, motorname: str, current: float, start: float, end: float):
-        pass
+        self.progress.emit(start, end, current, f'Moving to sample {samplename}: motor {motorname} is at {current:.2f}')
+
+    def orderSamplesByName(self):
+        self.beginResetModel()
+        self._data = sorted(self._data, key=lambda x: x.samplename)
+        self.endResetModel()
 
     def orderSamplesForLeastMovement(self):
         samples = [self.samplestore[d.samplename] for d in self._data]
         empty = self.samplestore[self.emptysample]
-        samples_ordered = []
         positions = {s.title: (s.positionx[0], s.positiony[0]) for s in samples}
         ebpos = (empty.positionx[0], empty.positiony[0])
+        logger.debug(f'X positions: {set([p[0] for p in positions.values()] + [ebpos[0]])}')
+        logger.debug(f'Y positions: {set([p[1] for p in positions.values()] + [ebpos[1]])}')
 
         if len(set([p[0] for p in positions.values()] + [ebpos[0]])) < \
                 len(set([p[1] for p in positions.values()] + [ebpos[1]])):
             # there are more unique Y coordinates than X coordinates: go by X coordinates first
             slowestmoving = 0
             fastestmoving = 1
+            logger.debug('Slowest moving is X')
         else:
             slowestmoving = 1
             fastestmoving = 0
+            logger.debug('Slowest moving is Y')
         # put the slowest moving sample (not empty!) coordinates first in increasing order
-        slow_ordered = sorted(set([p[slowestmoving] for p in positions.values()]))
-        # see which end we must start. Start from that end which is nearest to the empty beam measurement
-        if abs(slow_ordered[-1] - ebpos[slowestmoving]) < abs(slow_ordered[0] - ebpos[slowestmoving]):
-            slow_ordered = reversed(slow_ordered)
+        slow_ordered = sorted(
+            set([p[slowestmoving] for p in positions.values() if p[slowestmoving] != ebpos[slowestmoving]]))
+        if not slow_ordered:
+            # only one position, which is the empty beam position:
+            slow_ordered = []
+        else:
+            # see which end we must start. Start from that end which is nearest to the empty beam measurement
+            if abs(slow_ordered[-1] - ebpos[slowestmoving]) < abs(slow_ordered[0] - ebpos[slowestmoving]):
+                slow_ordered = reversed(slow_ordered)
+            slow_ordered = list(slow_ordered)
+        logger.debug(f'{slow_ordered=}')
         lastfastcoord = ebpos[fastestmoving]
         samplenames_ordered = []
         for slowpos in [ebpos[slowestmoving]] + slow_ordered:
+            logger.debug(f'{slowpos=}')
             # sort those samples which have this X coordinate first by increasing Y coordinate
             samplenames = sorted([s for s, p in positions.items() if p[slowestmoving] == slowpos],
                                  key=lambda s: positions[s][fastestmoving])
+            logger.debug(f'{samplenames=}')
             if not samplenames:
                 # no samples with this slow coordinate
                 continue
@@ -625,8 +835,12 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             if abs(positions[samplenames[-1]][fastestmoving] - lastfastcoord) < \
                     abs(positions[samplenames[0]][fastestmoving] - lastfastcoord):
                 samplenames = reversed(samplenames)
+            samplenames = list(samplenames)
+            logger.debug(f'(ordered) {samplenames=}')
             samplenames_ordered.extend(samplenames)
             lastfastcoord = positions[samplenames_ordered[-1]][fastestmoving]
+        logger.debug(str([d.samplename for d in self._data]))
+        logger.debug(str(samplenames_ordered))
         assert sorted([d.samplename for d in self._data]) == sorted(samplenames_ordered)
         self.beginResetModel()
         sorteddata = [[d for d in self._data if d.samplename == sn][0] for sn in samplenames_ordered]

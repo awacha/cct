@@ -422,13 +422,13 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     if axis < 0 or axis >= self.Naxes:
                         continue
                     motorpos[axis] = (position, (softleft, softright))
-            self.debug(f'Read positions from position file: {motorpos}')
+            self.info(f'Read positions from position file: {motorpos}')
             return motorpos
         except FileNotFoundError:
             self.warning(f'Motor position file {self.positionfile} does not exist.')
             for axis in motorpos:
                 motorpos[axis] = (None, (0.0, 0.0))
-            self.debug(f'Initializing motor positions because of a missing position file: {motorpos}')
+            self.warning(f'Initializing motor positions because of a missing position file: {motorpos}')
             return motorpos
 
     def writeMotorPosFile(self):
@@ -442,7 +442,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 f.write(f'{axis}: {pos:.16f} '
                         f'({self[f"softleft${axis}"]:.16f}, '
                         f'{self[f"softright${axis}"]:.16f})\n')
-        self.debug(f'Motor position file {self.positionfile} written.')
+        #self.debug(f'Motor position file {self.positionfile} written.')
 
     def startMoving(self, axis: int, position: float, relative: bool = False):
         if axis in self.motionstatus:
@@ -516,7 +516,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
 
     def motionEnded(self, axis: int, successful: bool):
         # set query timeouts back to normal
-        self.debug(f'Motion of motor {axis} ended.')
+        #self.debug(f'Motion of motor {axis} ended.')
         for varbasename in ['actualspeed', 'actualposition', 'targetpositionreached', 'leftswitchstatus',
                             'rightswitchstatus', 'load', 'targetspeed', 'rampmode', 'actualacceleration']:
             varname = f'{varbasename}${axis}'
@@ -566,7 +566,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 (actualposition.value == self.motionstatus[axis].targetposition) and
                 (targetpositionreached.value is True)):
             # successful motor stop
-            self.debug('Stop condition #1 (target reached) met.')
+            #self.debug('Stop condition #1 (target reached) met.')
             self.motionEnded(axis, True)
             return False  # motor stopped
 
@@ -587,7 +587,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 (actualspeed.timestamp > self.motionstatus[axis].cmdacktime) and
                 (switchstatus.timestamp > self.motionstatus[axis].cmdacktime) and
                 (switchstatus.value is True) and switchenabled):
-            self.debug('Stop condition #2 (end switch) met.')
+            #self.debug('Stop condition #2 (end switch) met.')
             self.motionEnded(axis, False)
             return False
 
@@ -596,7 +596,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 (actualspeed.timestamp > self.motionstatus[axis].stopcmdacktime) and
                 (actualspeed.value == 0)):
             # motor stop by user break
-            self.debug('Stop condition #3 (user stop) met.')
+            #self.debug('Stop condition #3 (user stop) met.')
             self.motionEnded(axis, False)
             return False
 

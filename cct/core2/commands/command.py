@@ -91,7 +91,8 @@ class Command(QtCore.QObject):
             self._timer = self.startTimer(int(self.timerinterval * 1000))
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
-        self.finish(self.namespace['_'])
+        # self.finish(self.namespace['_'])
+        pass
 
     def initialize(self, *args: Any):
         pass

@@ -17,7 +17,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
     # redefine these attributes in subclasses:
     devicetype: str = 'unknown'  # source, detector, motorcontroller, thermostat, vacuumgauge etc.
-    devicename: str  # unique identifier of the device make/model
+    devicename: str = None  # unique identifier of the device make/model
     backendclass: Type[DeviceBackend]
 
     currentMessage: Optional[Message] = None
@@ -67,6 +67,10 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     # The backend should reply as soon as it receives the command, must not wait for the operation (e.g. exposure or
     # motor movement) to complete.
     commandResult = QtCore.pyqtSignal(bool, str, str)
+
+    # State change: change in the __status__ variable
+    stateChanged = QtCore.pyqtSignal(str)  # the new value
+
 
     class DeviceError(Exception):
         pass
@@ -146,12 +150,12 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
                     self._logger.critical(f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
                 self._logger.error(f'Error while executing command {self.currentMessage["commandname"]} on device {self.name}: {self.currentMessage["errormessage"]}')
             elif self.currentMessage.command == 'commandfinished':
-                self.onCommandResult(False, self.currentMessage['commandname'], self.currentMessage['result'])
+                self.onCommandResult(True, self.currentMessage['commandname'], self.currentMessage['result'])
                 try:
                     self.commandResult.emit(True, self.currentMessage['commandname'], self.currentMessage['result'])
                 except Exception as exc:
                     self._logger.critical(f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
-                self._logger.debug(f'Command {self.currentMessage["commandname"]} finished successfully on device {self.name}. Result: {self.currentMessage["result"]}')
+                #self._logger.debug(f'Command {self.currentMessage["commandname"]} finished successfully on device {self.name}. Result: {self.currentMessage["result"]}')
             elif self.currentMessage.command == 'end':
                 self._backend.join()
                 self.killTimer(self._timerid)
@@ -202,12 +206,12 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         :param args: arguments required for the command.
         :type args: various
         """
-        self._logger.debug(f'Issuing command: {command} with arguments {args}')
+        #self._logger.debug(f'Issuing command: {command} with arguments {args}')
         self._queue_to_backend.put(Message('issuecommand', name=command, args=args))
 
     def stopbackend(self):
         """Ask the backend process to quit."""
-        self._logger.debug(f'Stopping the back-end process')
+        #self._logger.debug(f'Stopping the back-end process')
         self._queue_to_backend.put(Message('end'))
 
     def keys(self) -> Iterator[str]:
@@ -222,6 +226,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             self.index(row, 0, QtCore.QModelIndex()),
             self.index(row, self.columnCount(), QtCore.QModelIndex()),
         )
+        if variablename == '__status__':
+            self.stateChanged.emit(newvalue)
 
     @classmethod
     def subclasses(cls) -> Iterator[Type["DeviceFrontend"]]:

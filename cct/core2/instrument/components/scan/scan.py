@@ -13,7 +13,7 @@ from ..motors import Motor
 from ....dataclasses import Scan
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ScanStore(QtCore.QAbstractItemModel, Component):
@@ -24,9 +24,9 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
     _nextscan: int = 0
     nextscanchanged = QtCore.pyqtSignal(int)
     lastscanchanged = QtCore.pyqtSignal(int)
-    scanstarted = QtCore.pyqtSignal(int, int)
-    scanpointreceived = QtCore.pyqtSignal(int, int, int, tuple)
-    scanprogress = QtCore.pyqtSignal(float, float, float, str)
+    scanstarted = QtCore.pyqtSignal(int, int)  # scanindex, number of steps
+    scanpointreceived = QtCore.pyqtSignal(int, int, int, tuple)  # scanindex, current scan point, total number of scan points, readings
+    scanprogress = QtCore.pyqtSignal(float, float, float, str)  # start, end, current, message
     scanfinished = QtCore.pyqtSignal(bool, int)
     scanrecorder: Optional[ScanRecorder] = None
 
@@ -65,7 +65,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
             motorname, steps, countingtime, comment)
         where = motor.where()
         self.scanrecorder = ScanRecorder(
-            scan.index, (rangemin - where) if relative else rangemin, (rangemax - where) if relative else rangemax,
+            scan.index, (rangemin + where) if relative else rangemin, (rangemax + where) if relative else rangemax,
             steps, countingtime, motor, self.instrument, movemotorback, shutter
         )
         self.scanrecorder.finished.connect(self.onScanFinished)

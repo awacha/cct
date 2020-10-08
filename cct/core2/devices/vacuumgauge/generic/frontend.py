@@ -12,5 +12,6 @@ class VacuumGauge(DeviceFrontend):
         return self['pressure']
 
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
+        super().onVariableChanged(variablename, newvalue, previousvalue)
         if variablename == 'pressure':
             self.pressureChanged.emit(float(newvalue))

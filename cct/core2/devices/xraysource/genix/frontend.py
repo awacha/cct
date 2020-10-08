@@ -64,15 +64,18 @@ class GeniX(DeviceFrontend):
         self.issueCommand('xrays', True)
 
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
+        super().onVariableChanged(variablename, newvalue, previousvalue)
         if variablename == '__status__':
             if (newvalue == GeniXBackend.Status.off) and (previousvalue == GeniXBackend.Status.warmup):
                 logger.debug('Warm-up finished. Going to standby mode.')
                 self.standby()
             self.powerStateChanged.emit(newvalue)
         elif variablename == 'shutter':
+            logger.info(f'Shutter is now {"open" if newvalue else "closed"}.')
             self.shutter.emit(bool(newvalue))
 
     def onCommandResult(self, success: bool, commandname: str, result: str):
         super().onCommandResult(success, commandname, result)
         if commandname == 'shutter' and not success:
+            logger.error(f'Cannot {"close" if self["shutter"] else "open"} shutter')
             self.shutter.emit(self['shutter'])

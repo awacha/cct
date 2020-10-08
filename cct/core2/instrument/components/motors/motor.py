@@ -9,7 +9,7 @@ from ....devices.motor.generic.frontend import MotorController
 from ..auth.privilege import Privilege
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MotorRole(enum.Enum):

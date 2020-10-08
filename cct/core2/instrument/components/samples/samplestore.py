@@ -1,6 +1,7 @@
 import copy
 import datetime
 import logging
+import pickle
 from typing import List, Any, Optional, Union, Iterable
 
 from PyQt5 import QtCore, QtGui
@@ -54,10 +55,11 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         parameter = self._columns[index.column()][0]
         if self._samples[index.row()].isLocked(parameter):
-            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren | \
+                   QtCore.Qt.ItemIsDragEnabled
         else:
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren | \
-                   QtCore.Qt.ItemIsEditable
+                   QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         if role == QtCore.Qt.UserRole:
@@ -122,6 +124,19 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         return QtCore.QModelIndex()
+
+    def mimeData(self, indexes: Iterable[QtCore.QModelIndex]) -> QtCore.QMimeData:
+        md = QtCore.QMimeData()
+        samples = [self._samples[i.row()] for i in indexes]
+        md.setData('application/x-cctsamplelist', pickle.dumps(samples))
+        return md
+
+    def mimeTypes(self) -> List[str]:
+        return ['application/x-cctsamplelist']
+
+    def supportedDragActions(self) -> QtCore.Qt.DropAction:
+        return QtCore.Qt.CopyAction
+
 
     def setSingleColumnMode(self, singlecolumnmode: bool = True):
         self.beginResetModel()
@@ -270,6 +285,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         return self[self._currentsample]
 
     def moveToSample(self, samplename: str, direction='both'):
+        logger.debug(f'Moving to sample {samplename}')
         if self.xmotor().isMoving() or self.ymotor().isMoving():
             raise RuntimeError('Cannot move sample: motors are not idle.')
         sample = [s for s in self._samples if s.title == samplename][0]
@@ -281,7 +297,8 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
                 self.xmotor().moveTo(sample.positionx[0])
             else:
                 self.ymotor().moveTo(sample.positiony[0])
-        except:
+        except Exception as exc:
+            logger.error(f'Cannot start move to sample: {str(exc)}')
             self._disconnectSampleMotors()
             self.movingFinished.emit(False, self._currentsample)
 
@@ -304,6 +321,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         pass
 
     def onMotorStopped(self, success: bool, end: float):
+        logger.debug(f'Motor {self.sender().name} stopped. Success: {success}. End: {end:.4f}')
         if not success:
             self._disconnectSampleMotors()
             self.movingFinished.emit(False, self._currentsample)

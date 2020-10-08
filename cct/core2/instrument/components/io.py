@@ -103,6 +103,24 @@ class IO(QtCore.QObject, Component):
             self._nextfsn[prefix] = self._lastfsn[prefix] + 1 if self._lastfsn[prefix] is not None else 0
             self.nextFSNChanged.emit(prefix, self._nextfsn[prefix])
 
+    def imageReceived(self, prefix:str, fsn: int):
+        if prefix not in self._lastfsn:
+            self._lastfsn[prefix] = fsn
+            self.lastFSNChanged.emit(prefix, fsn)
+        elif self._lastfsn[prefix] < fsn:
+            self._lastfsn[prefix] = fsn
+            self.lastFSNChanged.emit(prefix, fsn)
+        else:
+            pass
+        if prefix not in self._nextfsn:
+            self._nextfsn[prefix] = fsn+1
+            self.nextFSNChanged.emit(prefix, fsn+1)
+        elif self._lastfsn[prefix] + 1 > self._nextfsn[prefix]:
+            self._nextfsn[prefix] = self._lastfsn[prefix] + 1
+            self.nextFSNChanged.emit(prefix, self._lastfsn[prefix] + 1)
+
+
+
     def nextfsn(self, prefix: str, checkout: int = 0) -> int:
         """Get the next file sequence number from the desired sequence
 
@@ -120,7 +138,7 @@ class IO(QtCore.QObject, Component):
             self._nextfsn[prefix] = 0
             nextfsn = self._nextfsn[prefix]
         if checkout:
-            self._nextfsn[prefix] += 1
+            self._nextfsn[prefix] += checkout
         return nextfsn
 
     def lastfsn(self, prefix: str) -> Optional[int]:

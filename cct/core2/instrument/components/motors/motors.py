@@ -9,7 +9,7 @@ from ..auth import Privilege
 from .motor import Motor, MotorRole, MotorDirection
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Motors(QtCore.QAbstractItemModel, Component):
