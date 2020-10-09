@@ -18,7 +18,6 @@ logger.setLevel(logging.DEBUG)
 class SampleStore(QtCore.QAbstractItemModel, Component):
     _samples: List[Sample]
     _currentsample: Optional[str]
-    singleColumnMode: bool = True
     _columns = [('title', 'Title'),
                 ('positionx', 'X position'),
                 ('positiony', 'Y position'),
@@ -46,7 +45,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         return len(self._samples)
 
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return 1 if self.singleColumnMode else 10
+        return 10
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
@@ -64,11 +63,6 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         if role == QtCore.Qt.UserRole:
             return self._samples[index.row()]
-        if self.singleColumnMode:
-            if role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-                return self._samples[index.row()].title
-            if role == QtCore.Qt.ToolTipRole:
-                return self._samples[index.row()].description
         elif role == QtCore.Qt.ToolTipRole:
             return self._samples[index.row()].description
         elif role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]:
@@ -136,12 +130,6 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
 
     def supportedDragActions(self) -> QtCore.Qt.DropAction:
         return QtCore.Qt.CopyAction
-
-
-    def setSingleColumnMode(self, singlecolumnmode: bool = True):
-        self.beginResetModel()
-        self.singleColumnMode = singlecolumnmode
-        self.endResetModel()
 
     def loadFromConfig(self):
         self.beginResetModel()
