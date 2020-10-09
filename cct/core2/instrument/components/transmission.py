@@ -12,6 +12,7 @@ from .expose import Exposer
 from .samples import SampleStore
 from ...dataclasses import Sample, Exposure
 from ...devices.xraysource.genix.frontend import GeniX, GeniXBackend
+from ...algorithms.orderforleastmotormovement import orderForLeastMotorMovement
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -793,56 +794,8 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
     def orderSamplesForLeastMovement(self):
         samples = [self.samplestore[d.samplename] for d in self._data]
         empty = self.samplestore[self.emptysample]
-        positions = {s.title: (s.positionx[0], s.positiony[0]) for s in samples}
-        ebpos = (empty.positionx[0], empty.positiony[0])
-        logger.debug(f'X positions: {set([p[0] for p in positions.values()] + [ebpos[0]])}')
-        logger.debug(f'Y positions: {set([p[1] for p in positions.values()] + [ebpos[1]])}')
-
-        if len(set([p[0] for p in positions.values()] + [ebpos[0]])) < \
-                len(set([p[1] for p in positions.values()] + [ebpos[1]])):
-            # there are more unique Y coordinates than X coordinates: go by X coordinates first
-            slowestmoving = 0
-            fastestmoving = 1
-            logger.debug('Slowest moving is X')
-        else:
-            slowestmoving = 1
-            fastestmoving = 0
-            logger.debug('Slowest moving is Y')
-        # put the slowest moving sample (not empty!) coordinates first in increasing order
-        slow_ordered = sorted(
-            set([p[slowestmoving] for p in positions.values() if p[slowestmoving] != ebpos[slowestmoving]]))
-        if not slow_ordered:
-            # only one position, which is the empty beam position:
-            slow_ordered = []
-        else:
-            # see which end we must start. Start from that end which is nearest to the empty beam measurement
-            if abs(slow_ordered[-1] - ebpos[slowestmoving]) < abs(slow_ordered[0] - ebpos[slowestmoving]):
-                slow_ordered = reversed(slow_ordered)
-            slow_ordered = list(slow_ordered)
-        logger.debug(f'{slow_ordered=}')
-        lastfastcoord = ebpos[fastestmoving]
-        samplenames_ordered = []
-        for slowpos in [ebpos[slowestmoving]] + slow_ordered:
-            logger.debug(f'{slowpos=}')
-            # sort those samples which have this X coordinate first by increasing Y coordinate
-            samplenames = sorted([s for s, p in positions.items() if p[slowestmoving] == slowpos],
-                                 key=lambda s: positions[s][fastestmoving])
-            logger.debug(f'{samplenames=}')
-            if not samplenames:
-                # no samples with this slow coordinate
-                continue
-            # see which end of the fastest coordinate is nearest to the last fast coordinate position
-            if abs(positions[samplenames[-1]][fastestmoving] - lastfastcoord) < \
-                    abs(positions[samplenames[0]][fastestmoving] - lastfastcoord):
-                samplenames = reversed(samplenames)
-            samplenames = list(samplenames)
-            logger.debug(f'(ordered) {samplenames=}')
-            samplenames_ordered.extend(samplenames)
-            lastfastcoord = positions[samplenames_ordered[-1]][fastestmoving]
-        logger.debug(str([d.samplename for d in self._data]))
-        logger.debug(str(samplenames_ordered))
-        assert sorted([d.samplename for d in self._data]) == sorted(samplenames_ordered)
+        samples_ordered = orderForLeastMotorMovement([(s, (s.positionx[0], s.positiony[0])) for s in samples], (empty.positionx[0], empty.positiony[0]))
         self.beginResetModel()
-        sorteddata = [[d for d in self._data if d.samplename == sn][0] for sn in samplenames_ordered]
+        sorteddata = [[d for d in self._data if d.samplename == s.title][0] for s in samples_ordered]
         self._data = sorteddata
         self.endResetModel()
