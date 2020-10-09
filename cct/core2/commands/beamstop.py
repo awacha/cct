@@ -24,11 +24,13 @@ class BeamStopCommand(Command):
             raise self.CommandException(
                 f'Invalid argument to command beamstop: {requestedstate}. Must be either "in" or "out".')
         self.instrument.beamstop.stateChanged.connect(self.onBeamstopStateChanged)
+        self.instrument.beamstop.movingProgress.connect(self.onBeamstopMovingProgress)
         self.instrument.beamstop.movingFinished.connect(self.onBeamstopMovingFinished)
         if self.requestedstate:
             self.instrument.beamstop.moveIn()
         else:
             self.instrument.beamstop.moveOut()
+        self.message.emit(f'Moving beamstop {"in" if requestedstate else "out"}.')
 
     def onBeamstopMovingFinished(self, success: bool):
         self.disconnectSignals()
@@ -49,3 +51,5 @@ class BeamStopCommand(Command):
         self.instrument.beamstop.movingFinished.disconnect(self.onBeamstopMovingFinished)
         self.instrument.beamstop.movingProgress.disconnect(self.onBeamstopMovingProgress)
 
+    def onBeamstopStateChanged(self, state: str):
+        pass

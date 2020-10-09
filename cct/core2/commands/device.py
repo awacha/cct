@@ -21,6 +21,7 @@ class GetVar(InstantCommand):
         except (KeyError, IndexError):
             raise RuntimeError(f'No such device {device}')
         try:
+            self.message.emit(f'{self.instrument.devicemanager[device][variable]}')
             return self.instrument.devicemanager[device][variable]
         except (KeyError, IndexError):
             raise RuntimeError(f'Device {device} has no variable named {variable}')
@@ -68,4 +69,5 @@ class ListVariables(InstantCommand):
     arguments = [StringArgument('device', 'The name of the device')]
 
     def run(self, device: str) -> List[str]:
+        self.message.emit(f'{", ".join(self.instrument.devicemanager[device].keys())}')
         return list(self.instrument.devicemanager[device].keys())

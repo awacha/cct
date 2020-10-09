@@ -26,6 +26,7 @@ class Sleep(Command):
             self.timerinterval = 0.5
         self.sleeptime = interval
         self.starttime = time.monotonic()
+        self.message.emit(f'Sleeping for {self.sleeptime:.3f} seconds.')
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         t = time.monotonic() - self.starttime
@@ -183,4 +184,5 @@ class SaveConfig(InstantCommand):
 
     def run(self, *args: Any) -> Any:
         self.instrument.config.save()
+        self.message.emit('Saved configuration to disk.')
         return True

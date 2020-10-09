@@ -1,11 +1,12 @@
 import logging
 
-from .commandargument import StringArgument, StringChoicesArgument, FloatArgument
-from .command import Command, InstantCommand
+from .command import Command
+from .commandargument import StringChoicesArgument
 from ..devices.xraysource import GeniX
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class XraySourceCommand(Command):
     def _connectXraySource(self):
@@ -36,9 +37,8 @@ class XraySourceCommand(Command):
         return dev
 
 
-
 class Shutter(XraySourceCommand):
-    name= 'shutter'
+    name = 'shutter'
     description = "Open or close the shutter."
     arguments = [StringChoicesArgument('state', 'required shutter state', ['close', 'open'])]
     requestedstate: bool
@@ -52,16 +52,16 @@ class Shutter(XraySourceCommand):
             raise self.CommandException(f'Invalid state: {state}')
         self._connectXraySource()
         self.message.emit(f'{"Opening" if self.requestedstate else "Closing"} beam shutter.')
-        self.progress.emit(f'{"Opening" if self.requestedstate else "Closing"} beam shutter.', 0,0)
+        self.progress.emit(f'{"Opening" if self.requestedstate else "Closing"} beam shutter.', 0, 0)
         self.xraysource().moveShutter(self.requestedstate)
 
-    def onXraySourceCommandResult(self, success:bool, command: str, message: str):
+    def onXraySourceCommandResult(self, success: bool, command: str, message: str):
         if command != 'shutter':
             logger.warning(f'Command result received for unexpected command {command}')
         elif not success:
             self._disconnectXraySource()
             self.fail('Shutter error.')
-        else: # success
+        else:  # success
             # wait for the shutter change
             pass
 
@@ -77,7 +77,7 @@ class Shutter(XraySourceCommand):
 class Xrays(XraySourceCommand):
     name = 'xrays'
     description = 'Enable or disable X-ray generation'
-    arguments = [StringChoicesArgument('state', 'Requested state', ['on','off'])]
+    arguments = [StringChoicesArgument('state', 'Requested state', ['on', 'off'])]
     requestedstate: bool
 
     def initialize(self, state: str):
@@ -89,7 +89,7 @@ class Xrays(XraySourceCommand):
             raise self.CommandException(f'Invalid state: {state}')
         self._connectXraySource()
         self.message.emit(f'Turning X-ray generator {"on" if self.requestedstate else "off"}.')
-        self.progress.emit(f'Turning X-ray generator {"on" if self.requestedstate else "off"}.', 0,0)
+        self.progress.emit(f'Turning X-ray generator {"on" if self.requestedstate else "off"}.', 0, 0)
         if self.requestedstate:
             self.xraysource().xraysOn()
         else:
@@ -160,8 +160,9 @@ class XRayPower(XraySourceCommand):
         else:
             pass
 
+
 class WarmUp(XraySourceCommand):
-    name='xray_warmup'
+    name = 'xray_warmup'
     description = 'Start the warming-up procedure of the X-ray source'
     arguments = []
 
@@ -169,7 +170,7 @@ class WarmUp(XraySourceCommand):
         self._connectXraySource()
         try:
             self.message.emit('Starting X-ray source warm-up')
-            self.progress.emit('X-ray source warm-up in progress...', 0,0)
+            self.progress.emit('X-ray source warm-up in progress...', 0, 0)
             self.xraysource().startWarmUp()
         except:
             self._disconnectXraySource()
