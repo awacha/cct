@@ -1,10 +1,12 @@
 import datetime
 import logging
+import os
 from typing import List, Optional
 
 from PyQt5 import QtWidgets, QtGui
 
 from .script import ScriptUI
+from .wizard.sequencewizard import SequenceWizard
 from .scripting_ui import Ui_Form
 from ....core2.instrument.components.interpreter import ParsingError
 from ....core2.instrument.instrument import Instrument
@@ -18,6 +20,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
     mainwindow: "MainWindow"
     instrument: Instrument
     scripts: List[ScriptUI]
+    wizard: Optional[SequenceWizard] = None
 
     def __init__(self, **kwargs):
         self.mainwindow = kwargs.pop('mainwindow')
@@ -85,8 +88,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         tb.deleteLater()
 
     def onScriptMessage(self, message: str):
-        self.currentScript().outputPlainTextEdit.appendPlainText(f'{datetime.datetime.now()} {message}\n')
-        self.currentScript().outputPlainTextEdit.ensureCursorVisible()
+        self.currentScript().addMessage(message)
 
     def onScriptAdvance(self, currentline: int):
         logger.debug('onScriptAdvance')
@@ -97,8 +99,14 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
     def onScriptStarted(self):
         self.startStopToolButton.setText('Stop')
         self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
+        self.currentScript().outputPlainTextEdit.setVisible(True)
+        self.currentScript().addMessage('Script started')
 
     def onScriptFinished(self, success: bool, message: str):
+        if success:
+            self.currentScript().addMessage(f'Script finished successfully with message "{message}".')
+        else:
+            self.currentScript().addMessage(f'Script failed with message "{message}".')
         self.startStopToolButton.setText('Start')
         self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
         if not success:
@@ -143,13 +151,36 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             self.instrument.interpreter.stop()
 
     def openScriptWizard(self):
-        pass
+        if self.wizard is not None:
+            QtWidgets.QMessageBox.critical(self, 'Error', 'Another wizard is already open.')
+            return
+        self.wizard = SequenceWizard(parent=self)
+        self.wizard.finished.connect(self.onWizardFinished)
+        self.wizard.show()
+
+    def onWizardFinished(self, result: int):
+        # ToDo: create script.
+        logger.debug(f'Wizard finished with result {result}.')
+        self.wizard.close()
+        if result:
+            # try to find an unmodified Untitled script
+            try:
+                s = [s for s in self.scripts if (not s.text().strip()) and (not s.isModified())][0]
+            except IndexError:
+                s=self.newScript()
+            self.tabWidget.setCurrentWidget(s)
+            s.scriptEditor.setPlainText(self.wizard.script())
+            s.scriptEditor.document().setModified(True)
+        self.wizard.deleteLater()
+        self.wizard = None
 
     def stopScriptAfterThisCommand(self):
         pass
 
-    def newScript(self):
-        self._createTab(ScriptUI())
+    def newScript(self) -> ScriptUI:
+        s=ScriptUI()
+        self._createTab(s)
+        return s
 
     def openScript(self):
         filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(self, 'Load a script...', '',

@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Optional
+import datetime
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -88,3 +89,10 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
 
     def text(self) -> str:
         return self.scriptEditor.toPlainText()
+
+    def addMessage(self, message: str):
+        self.outputPlainTextEdit.appendPlainText(f'{datetime.datetime.now()}: {message.strip()}\n')
+        self.outputPlainTextEdit.ensureCursorVisible()
+        if self.filename is not None:
+            with open(os.path.splitext(self.filename)[0]+'.log', 'a') as f:
+                f.write(f'{datetime.datetime.now()}: {message}\n')

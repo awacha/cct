@@ -116,10 +116,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.shutterindicator = ShutterIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.shutterindicator)
         self.indicatorHorizontalLayout.addStretch(1)
+        self.actionScript.triggered.connect(self.onScriptTriggered)
+        self.actionLogbook.triggered.connect(self.onLogTriggered)
         self.scripting = Scripting(mainwindow=self, instrument=self.instrument)
         self.scriptingTab.setLayout(QtWidgets.QVBoxLayout())
         self.scriptingTab.layout().addWidget(self.scripting)
         self.executePushButton.clicked.connect(self.onExecutePushed)
+
+    def onScriptTriggered(self):
+        self.tabWidget.setCurrentWidget(self.scriptingTab)
+
+    def onLogTriggered(self):
+        self.tabWidget.setCurrentWidget(self.logTab)
 
     def onActionTriggered(self, toggled: bool):
         action = self.sender()
