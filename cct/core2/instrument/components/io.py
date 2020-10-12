@@ -165,7 +165,7 @@ class IO(QtCore.QObject, Component):
         yield os.path.join(subdir, prefix, filename)
         yield os.path.join(subdir, filename)
         yield os.path.join(subdir, f'{prefix}{fsn // 10000}', filename)
-        yield os.path.join(subdir, f'{prefix}_{fsn // 10000}')
+        yield os.path.join(subdir, f'{prefix}_{fsn // 10000}', filename)
 
     ### Loading exposures, headers, masks
 
@@ -211,6 +211,7 @@ class IO(QtCore.QObject, Component):
                         intensity = data['Intensity']
                         uncertainty = data['Uncertainty']
                     else:
+                        logger.error(filename)
                         assert False
                     return Exposure(intensity, header, uncertainty, mask)
                 except FileNotFoundError:
