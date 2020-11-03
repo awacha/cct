@@ -82,7 +82,12 @@ class DataReductionPipeLine:
                           self.normalize_by_transmission, self.subtract_empty_background, self.correct_geometry,
                           self.divide_by_thickness, self.absolute_intensity_scaling]:
             try:
+                reluncbefore = np.abs(exposure.uncertainty / exposure.intensity)
+                self.debug(f'Badness {(exposure.uncertainty > exposure.intensity).sum() / exposure.intensity.size} before operation {operation.__name__}')
                 exposure = operation(exposure)
+                self.debug(f'Badness {(exposure.uncertainty > exposure.intensity).sum() / exposure.intensity.size} after operation {operation.__name__}')
+                uncratio = np.abs(exposure.uncertainty/exposure.intensity) / reluncbefore
+                self.debug(f'Uncertainty increase multiplier: {np.nanmean(uncratio)} mean, {np.nanmin(uncratio)} min, {np.nanmax(uncratio)} max.')
             except StopIteration as si:
                 exposure = si.args[0]
                 break
@@ -120,7 +125,7 @@ class DataReductionPipeLine:
             self.info(
                 f'FSN #{self.dark.header.fsn} is a dark background measurement. '
                 f'Level: {self.dark.header.dark_cps[0]:g} \xb1 {self.dark.header.dark_cps[1]:g} cps per pixel '
-                f'(overall {self.dark.header.dark_cps[0]:g} cps)'
+                f'({self.dark.header.dark_cps[0]*exposure.intensity.size:g} cps on the whole detector surface)'
             )
             raise StopIteration(exposure)
         else:
@@ -141,7 +146,7 @@ class DataReductionPipeLine:
             raise ProcessingError(f'Invalid transmission value: '
                                   f'{exposure.header.transmission[0]:g} \xb1 {exposure.header.transmission[1]:g}.')
         exposure.uncertainty = (exposure.uncertainty ** 2 / exposure.header.transmission[0] ** 2 +
-                                exposure.header.transmission[1] ** 2 / exposure.intensity ** 2 /
+                                exposure.header.transmission[1] ** 2 * exposure.intensity ** 2 /
                                 exposure.header.transmission[0] ** 4) ** 0.5
         exposure.intensity = exposure.intensity / exposure.header.transmission[0]
         self.info(
@@ -191,7 +196,7 @@ class DataReductionPipeLine:
 
     def divide_by_thickness(self, exposure: Exposure) -> Exposure:
         exposure.uncertainty = (exposure.uncertainty ** 2 / exposure.header.thickness[0] ** 2 +
-                                exposure.header.thickness[1] ** 2 * exposure.intensity ** 4 / exposure.header.thickness[
+                                exposure.header.thickness[1] ** 2 * exposure.intensity ** 2 / exposure.header.thickness[
                                     0] ** 4) ** 0.5
         exposure.intensity = exposure.intensity / exposure.header.thickness[0]
         self.info(f'FSN #{exposure.header.fsn} has been divided by sample thickness of '

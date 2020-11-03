@@ -128,7 +128,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             cmd, arg = self.queuefromdatareduction.get_nowait()
         except queue.Empty:
             return
-        logger.debug(f'Reply from the dara reduction pipeline: {cmd=}, {arg=}')
+#        logger.debug(f'Reply from the dara reduction pipeline: {cmd=}, {arg=}')
         if cmd == 'finished':
             self.killTimer(timerevent.timerId())
             self.progressBar.hide()
