@@ -178,7 +178,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def onImageReceived(self, exposure):
         self.imagesrequired -= 1
-        self.mainwindow.plotimage.setExposure(exposure)
+        self.mainwindow.showPattern(exposure)
         if self.imagesrequired == 0:
             # we are not waiting for any more images:
             self.instrument.exposer.imageReceived.disconnect(self.onImageReceived)

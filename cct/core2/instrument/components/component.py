@@ -6,7 +6,7 @@ from PyQt5.QtCore import pyqtSignal
 from ...config import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Component:

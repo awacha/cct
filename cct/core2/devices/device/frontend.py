@@ -91,7 +91,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         self._backend.start()
         self._logger = logging.getLogger(f'{__name__}:{self.name}')
         self._backendlogger = logging.getLogger(f'{__name__}:{self.name}:backend')
-        self._backendlogger.setLevel(logging.DEBUG)
+        self._backendlogger.setLevel(logging.INFO)
 #        self._logger.debug('Started backend process. Waiting for variable list...')
         # now wait for the variables:
         while True:

@@ -9,7 +9,7 @@ from .command import Command, InstantCommand, JumpCommand
 from .commandargument import IntArgument, FloatArgument, StringArgument, AnyArgument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Sleep(Command):

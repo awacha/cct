@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import re
+import shutil
 from typing import Dict, Tuple, Optional, List, Iterator
 
 import h5py
@@ -14,7 +15,7 @@ from ...algorithms.readcbf import readcbf
 from ...dataclasses import Exposure, Header
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def mywalkdir(root: str):
@@ -119,8 +120,6 @@ class IO(QtCore.QObject, Component):
             self._nextfsn[prefix] = self._lastfsn[prefix] + 1
             self.nextFSNChanged.emit(prefix, self._lastfsn[prefix] + 1)
 
-
-
     def nextfsn(self, prefix: str, checkout: int = 0) -> int:
         """Get the next file sequence number from the desired sequence
 
@@ -206,6 +205,11 @@ class IO(QtCore.QObject, Component):
                         intensity = readcbf(filename)
                         uncertainty = intensity ** 0.5
                         uncertainty[intensity <= 0] = 1
+                        if (subdir == 'images') and raw:
+                            # try to copy this image to the images_local directory
+                            os.makedirs(os.path.join(self.getSubDir('images_local'), prefix), exist_ok=True)
+                            logger.debug(f'Copying {filename} to images_local.')
+                            shutil.copy2(filename, os.path.join(self.getSubDir('images_local'), prefix, os.path.split(filename)[-1]))
                     elif filename.lower().endswith('.npz'):
                         data = np.load(filename)
                         intensity = data['Intensity']

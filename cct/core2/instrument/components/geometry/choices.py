@@ -7,7 +7,7 @@ from PyQt5 import QtCore
 from ....config import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ComponentType(enum.Enum):

@@ -12,7 +12,7 @@ from ..component import Component
 from ..motors import Motor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SampleStore(QtCore.QAbstractItemModel, Component):
@@ -229,6 +229,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         if title in self:
             self._currentsample = title
             self.currentSampleChanged.emit(title)
+            self.saveToConfig()
         else:
             raise ValueError(f'Unknown sample "{title}"')
 

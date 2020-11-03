@@ -35,15 +35,18 @@ class Interpreter(QtCore.QObject, Component):
         self.flags = InterpreterFlags()
 
     def parseScript(self, script: str):
+        logger.debug(f'Parsing script {script=}')
         parsed = []
         self.namespace = {'_': None}
         for lineno, line in enumerate(script.split('\n'), start=1):
             code = line.strip().split('#')[0].strip()
             if not code:
                 # empty line: this is a comment
+                logger.debug(f'Line #{lineno} is a comment ({line})')
                 parsed.append(Comment(self.instrument, self.namespace, 'None'))
             elif code.startswith('@'):
                 # this is a label
+                logger.debug(f'Line #{lineno} is a label ({line})')
                 parsed.append(Label(self.instrument, self.namespace, code[1:].strip()))
             else:
                 # other commands can be handled more easily
@@ -51,11 +54,14 @@ class Interpreter(QtCore.QObject, Component):
                 if not m:
                     raise ParsingError(lineno, f'Cannot parse line {lineno} of script.')
                 else:
-                    for subclass in Command.__subclasses__():
+                    for subclass in Command.subclasses():
                         assert issubclass(subclass, Command)
                         if subclass.name == m['command']:
                             parsed.append(
                                 subclass(self.instrument, self.namespace, m['arguments'] if m['arguments'] else 'None'))
+                            break
+                    else:
+                        raise ParsingError(lineno, f'Unknown command on line {lineno} of script.')
         self.script = parsed
 
     def execute(self):
@@ -63,6 +69,7 @@ class Interpreter(QtCore.QObject, Component):
         if self.pointer is not None:
             raise RuntimeError('Script already running')
         logger.debug('Starting script')
+        logger.debug('Script:  \n'+'\n'.join([str(cmd) for cmd in self.script]))
         self.pointer = -1
         # clear namespace. Do not create a new dict instance, this is already shared with the commands!
         for key in list(self.namespace):

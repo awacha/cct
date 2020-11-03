@@ -11,7 +11,7 @@ from ....algorithms.beamweighting import beamweights
 from ....dataclasses import Scan, Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ScanRecorder(QtCore.QObject):
@@ -102,7 +102,6 @@ class ScanRecorder(QtCore.QObject):
             self.instrument.devicemanager.source().shutter.connect(self.onShutter)
 
     def openShutter(self):
-        logger.debug('Opening shutter')
         if self.shutter:
             self.state = self.State.OpeningShutter
             self.progress.emit(0,0,0,'Opening shutter')
@@ -111,7 +110,6 @@ class ScanRecorder(QtCore.QObject):
             self.exposeNextImage()
 
     def closeShutter(self):
-        logger.debug('Closing shutter')
         if self.shutter:
             self.state = self.State.ClosingShutter
             self.progress.emit(0,0,0,'Closing shutter')
@@ -120,7 +118,6 @@ class ScanRecorder(QtCore.QObject):
             self.moveMotorBack()
 
     def moveMotorBack(self):
-        logger.debug('Moving motor to the initial position')
         if self.movemotorback:
             self.state = self.State.MotorReset
             self.motor.moveTo(self.initialmotorposition)
@@ -129,12 +126,10 @@ class ScanRecorder(QtCore.QObject):
 
     def exposeNextImage(self):
         self.positionsdone.append(self.motor.where())
-        logger.debug('Exposing the next image')
         self.state = self.State.Exposing
         self.instrument.exposer.startExposure(self.instrument.config['path']['prefixes']['scn'], self.countingtime)
 
     def moveToNextPosition(self):
-        logger.debug('Moving to the next position')
         # do the next scan point
         assert self.stepsexposed < self.nsteps  # the last step should be detected before calling this method
         position = self.startposition + (self.endposition - self.startposition) / (
@@ -143,15 +138,15 @@ class ScanRecorder(QtCore.QObject):
         self.motor.moveTo(position)
 
     def waitForImageProcessing(self):
-        logger.debug('Waiting for image processing. Measurements done.')
-        if self.imageprocessingtimer is None:
+        if self.state == self.State.StopRequested:
+            self.finalize()
+        elif (self.imageprocessingtimer is None) and (self.receiving_images == 0):
             assert not self.imageprocessingtasks
             self.finalize()
         else:
             self.state = self.State.WaitingForImages
 
     def start(self):
-        logger.debug('Starting scan')
         if self.state != self.State.Initializing:
             raise RuntimeError('Cannot start: not in the initializing state.')
         self.stepsexposed = 0
@@ -164,11 +159,9 @@ class ScanRecorder(QtCore.QObject):
         assert self.imageprocessorpool is None
         assert self.imageprocessingtimer is None
         self.imageprocessorpool = multiprocessing.pool.Pool()
-        logger.debug('Moving motor to start position')
         self.motor.moveTo(self.startposition)
 
     def stop(self):
-        logger.debug('Scan stop requested')
         currentstate = self.state
         self.state = self.State.StopRequested
         if currentstate == self.State.Initializing:
@@ -189,7 +182,6 @@ class ScanRecorder(QtCore.QObject):
             assert False
 
     def onShutter(self, state: bool):
-        logger.debug(f'Shutter state: {state=}')
         if self.state == self.State.OpeningShutter:
             if state:
                 self.exposeNextImage()
@@ -213,7 +205,6 @@ class ScanRecorder(QtCore.QObject):
             logger.warning(f'Shutter {"opened" if state else "closed"} during the scan measurement.')
 
     def onMotorStopped(self, success: bool, endposition: float):
-        logger.debug(f'Motor stopped. {success=}, {endposition=}, {self.state=}')
         if not success:
             self.errormessage = f'Positioning error in scan {self.scanindex} at point {self.scanpoint} in state {self.state.value}'
             logger.error(self.errormessage)
@@ -243,8 +234,9 @@ class ScanRecorder(QtCore.QObject):
             pass
 
     def onImageReceived(self, exposure: Exposure):
-        logger.debug('Image received')
-        self.receiving_images -= 1
+        self.receiving_images -= 1  # this can be negative if the exposure finished signal comes after the image received signal.
+        if self.receiving_images > 1:
+            logger.warning(f'{self.receiving_images=}')
         if self.mask is None:
             try:
                 self.mask = self.instrument.io.loadMask(self.instrument.config['scan']['mask'])
@@ -260,8 +252,8 @@ class ScanRecorder(QtCore.QObject):
             self.imageprocessingtimer = self.startTimer(0, QtCore.Qt.VeryCoarseTimer)
 
     def timerEvent(self, timerEvent: QtCore.QTimerEvent) -> None:
+        # see if image processing has been finished
         if not self.imageprocessingtasks:
-            logger.debug('Killing timer event handler: no image processing tasks')
             self.killTimer(timerEvent.timerId())
             self.imageprocessingtimer = None
             if self.state == self.State.WaitingForImages:
@@ -273,18 +265,17 @@ class ScanRecorder(QtCore.QObject):
             task = self.imageprocessingtasks.pop(0)
             position = self.positionsdone.pop(0)
             readings = task.get()
-            logger.debug(f'An image has been processed. Readings: {readings}')
             self.imagesdone += 1
             self.scanpoint.emit((position,)+tuple(readings))
 
     def onExposureFinished(self, success: bool):
-        logger.debug(f'An exposure has been finished {success=}')
         if self.state == self.State.StopRequested:
             self.waitForImageProcessing()
         elif not success:
             self.errormessage = f'Exposure error in scan {self.scanindex} at point {self.scanpoint} in state {self.state.value}'
             self.closeShutter()
         else:
+            # successful exposure
             self.receiving_images += 1
             self.stepsexposed += 1
             self.progress.emit(0, self.nsteps, self.stepsexposed, f'{self.stepsexposed}/{self.nsteps} done')
@@ -311,7 +302,8 @@ class ScanRecorder(QtCore.QObject):
         self.imageprocessorpool.close()
         self.imageprocessorpool.join()
         self.imageprocessorpool = None
-        assert self.imageprocessingtimer is None
-        assert not self.imageprocessingtasks
-        assert self.receiving_images == 0
+        if self.state != self.State.StopRequested:
+            assert self.imageprocessingtimer is None
+            assert not self.imageprocessingtasks
+            assert self.receiving_images == 0
         self.finished.emit(self.errormessage is None, self.errormessage if self.errormessage is not None else 'Success')

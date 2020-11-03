@@ -59,7 +59,7 @@ def radavg(double[:,:] data, double[:,:] error, uint8_t[:,:] mask,
     Inputs:
         data (np.ndarray, two dimensions, double dtype): scattering pattern
         error (np.ndarray, two dimensions, double dtype): uncertainties of the scattering pattern
-        mask (np.ndarray, two dimensions, uint8 dtype): mask matrix
+        mask (np.ndarray, two dimensions, uint8 dtype): mask matrix (1 valid, 0 invalid)
         wavelength (double): X-ray wavelength, in nm
         wavelength_unc (double): uncertainty of the X-ray wavelength, in nm
         distance (double): sample-to-detector distance, in mm

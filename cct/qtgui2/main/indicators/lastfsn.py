@@ -28,6 +28,8 @@ class LastFSNIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.prefixComboBox.clear()
         self.prefixComboBox.addItems(sorted(Instrument.instance().io.prefixes))
         self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText(current))
+        if self.prefixComboBox.currentIndex() < 0:
+            self.prefixComboBox.setCurrentIndex(0)
         self.prefixComboBox.blockSignals(False)
         self.prefixSelected()
 

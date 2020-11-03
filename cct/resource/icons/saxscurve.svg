@@ -621,8 +621,11 @@
      inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:document-rotation="0"
-     inkscape:snap-global="false"
-     inkscape:snap-midpoints="true" />
+     inkscape:snap-global="true"
+     inkscape:snap-midpoints="true"
+     inkscape:object-paths="true"
+     inkscape:snap-intersection-paths="true"
+     inkscape:snap-smooth-nodes="true" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -631,7 +634,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -640,6 +643,13 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-52.214286,-370.1479)">
+    <rect
+       style="fill:#ffffff;stroke:none;stroke-width:5;stroke-linecap:round"
+       id="rect996"
+       width="305.75946"
+       height="294.37442"
+       x="72.699112"
+       y="383.81534" />
     <path
        id="path13616"
        clip-path="url(#p29ea0fa01d)"

@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="icons">
+    <file>scanwizard.svg</file>
+    <file>saxspattern.svg</file>
     <file>wristwatch.svg</file>
     <file>start.svg</file>
     <file>stop.svg</file>

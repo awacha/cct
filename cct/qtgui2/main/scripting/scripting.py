@@ -37,6 +37,12 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         self.saveAsToolButton.clicked.connect(self.saveScriptAs)
         self.loadToolButton.clicked.connect(self.openScript)
         self.wizardToolButton.clicked.connect(self.openScriptWizard)
+        menu = QtWidgets.QMenu()
+        menu.addAction(self.actionMeasurement_sequence_wizard)
+        menu.addAction(self.actionScan_wizard)
+        self.wizardToolButton.setMenu(menu)
+        self.actionMeasurement_sequence_wizard.triggered.connect(self.openScriptWizard)
+        self.actionScan_wizard.triggered.connect(self.openScanWizard)
         self.copyToolButton.clicked.connect(self.editCopy)
         self.cutToolButton.clicked.connect(self.editCut)
         self.pasteToolButton.clicked.connect(self.editPaste)
@@ -149,6 +155,9 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             self.instrument.interpreter.execute()
         elif self.startStopToolButton.text() == 'Stop':
             self.instrument.interpreter.stop()
+
+    def openScanWizard(self):
+        pass
 
     def openScriptWizard(self):
         if self.wizard is not None:

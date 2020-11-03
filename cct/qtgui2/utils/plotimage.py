@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Final, List
 
 import matplotlib
 import matplotlib.cm
@@ -34,6 +34,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
     pixelsize: Optional[float] = None
     distance: Optional[float] = None
     wavelength: Optional[float] = None
+    title: Optional[str] = None
 
     _cmapaxis: Optional[Colorbar] = None
     _imghandle: Optional[AxesImage] = None
@@ -47,6 +48,8 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         'square': matplotlib.colors.PowerNorm(2),
         'sqrt': matplotlib.colors.PowerNorm(0.5),
     }
+
+    _strictlypositivenormalizations: Final[List[str]] = ['log10', 'square', 'sqrt']
 
     def __init__(self, parent: QtWidgets.QWidget = None):
         super().__init__(parent)
@@ -164,9 +167,14 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         extent, center = self._get_extent()
         # now plot the matrix
         axlimits = self.axes.axis()
+        if self.colourScaleComboBox.currentText() in self._strictlypositivenormalizations:
+            matrix = self.matrix.copy()
+            matrix[matrix<=0] = np.nan
+        else:
+            matrix = self.matrix
         if self._imghandle is None:
             self._imghandle = self.axes.imshow(
-                self.matrix,
+                matrix,
                 cmap=self.paletteComboBox.currentText(),
                 norm=self._normalizationdict[self.colourScaleComboBox.currentText()],
                 aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
@@ -188,7 +196,10 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             self._cmapaxis = self.figure.colorbar(
                 self._imghandle,
                 cax=self._cmapaxis.ax if self._cmapaxis is not None else None,
-                ax=None if self._cmapaxis is not None else self.axes)
+                ax=None if self._cmapaxis is not None else self.axes,
+
+            )
+
         else:
             logger.debug('Updating cmap')
         self._cmapaxis.ax.set_visible(self.showColourBarToolButton.isChecked())
@@ -243,9 +254,10 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             assert False
         if keepzoom:
             self.axes.axis(axlimits)
+        self.axes.set_title(self.title)
         self.canvas.draw_idle()
 
-    def setExposure(self, exposure: Exposure, keepzoom: bool=False):
+    def setExposure(self, exposure: Exposure, keepzoom: bool=False, title: Optional[str]=None):
         self.matrix = exposure.intensity
         self.mask = exposure.mask == 0
         self.wavelength = float(exposure.header.wavelength[0])
@@ -253,6 +265,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.beamx = float(exposure.header.beamposcol[0])
         self.beamy = float(exposure.header.beamposrow[0])
         self.distance = float(exposure.header.distance[0])
+        self.title = title
         self.replot(keepzoom)
 
     def setPixelOnly(self, pixelonly: bool):

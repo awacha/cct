@@ -22,7 +22,7 @@ class LockableAttribute:
         self.defaultlocked = locked
 
     def __get__(self, instance: object, type_=None) -> Any:
-        return instance.__dict__.setdefault(f'_lockable_{self.name}.value', self._normalize(self.defaultvalue))
+        return self._normalize(instance.__dict__.setdefault(f'_lockable_{self.name}.value', self.defaultvalue))
 
     def __set__(self, instance: object, value: Any):
         if isinstance(value, LockState):

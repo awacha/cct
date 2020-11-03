@@ -38,7 +38,6 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
         self.treeView.setModel(self.instrument.samplestore)
-        self.instrument.samplestore.setSingleColumnMode(False)
         self.instrument.samplestore.modelReset.connect(self.resizeTreeViewColumns)
         self.instrument.samplestore.dataChanged.connect(self.resizeTreeViewColumns)
         self.instrument.samplestore.rowsInserted.connect(self.resizeTreeViewColumns)
@@ -243,6 +242,8 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     assert False
                 widgets[-1].setChecked(sample.isLocked(attribute))
                 widgets[-1].setIcon(QtGui.QIcon.fromTheme('lock' if sample.isLocked(attribute) else 'unlock'))
+                for w in widgets[:-1]:
+                    w.setDisabled(sample.isLocked(attribute))
             finally:
                 for w in widgets:
                     w.blockSignals(False)

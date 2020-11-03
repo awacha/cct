@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 
 from .genix_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -71,7 +71,7 @@ class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 pal = widget.palette()
                 if name in ['remote_mode', 'xrays', 'interlock']:
                     newvalue = not newvalue
-                pal.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if bool(newvalue) else 'green'))
+                pal.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if bool(newvalue) else 'lightgreen'))
                 widget.setPalette(pal)
                 widget.setAutoFillBackground(True)
             elif isinstance(widget, QtWidgets.QLCDNumber):

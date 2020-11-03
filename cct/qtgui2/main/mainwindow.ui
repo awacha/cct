@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1111</width>
-    <height>938</height>
+    <width>867</width>
+    <height>924</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <property name="spacing">
-     <number>2</number>
+     <number>0</number>
     </property>
     <property name="leftMargin">
      <number>0</number>
@@ -35,7 +35,11 @@
      <number>0</number>
     </property>
     <item>
-     <layout class="QHBoxLayout" name="indicatorHorizontalLayout"/>
+     <layout class="QHBoxLayout" name="indicatorHorizontalLayout">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+     </layout>
     </item>
     <item>
      <layout class="QHBoxLayout" name="deviceStatusBarLayout">
@@ -46,8 +50,8 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>0</width>
-          <height>0</height>
+          <width>11</width>
+          <height>11</height>
          </size>
         </property>
        </spacer>
@@ -62,7 +66,17 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
+      <property name="iconSize">
+       <size>
+        <width>24</width>
+        <height>24</height>
+       </size>
+      </property>
       <widget class="QWidget" name="logTab">
+       <attribute name="icon">
+        <iconset resource="../../resource/icons/icons.qrc">
+         <normaloff>:/icons/logbook.svg</normaloff>:/icons/logbook.svg</iconset>
+       </attribute>
        <attribute name="title">
         <string>Log</string>
        </attribute>
@@ -73,11 +87,28 @@
        </layout>
       </widget>
       <widget class="QWidget" name="patternTab">
+       <attribute name="icon">
+        <iconset resource="../../resource/icons/icons.qrc">
+         <normaloff>:/icons/saxspattern.svg</normaloff>:/icons/saxspattern.svg</iconset>
+       </attribute>
        <attribute name="title">
         <string>Detector image</string>
        </attribute>
       </widget>
+      <widget class="QWidget" name="curveTab">
+       <attribute name="icon">
+        <iconset resource="../../resource/icons/icons.qrc">
+         <normaloff>:/icons/saxscurve.svg</normaloff>:/icons/saxscurve.svg</iconset>
+       </attribute>
+       <attribute name="title">
+        <string>Scattering curve</string>
+       </attribute>
+      </widget>
       <widget class="QWidget" name="scriptingTab">
+       <attribute name="icon">
+        <iconset resource="../../resource/icons/icons.qrc">
+         <normaloff>:/icons/script.svg</normaloff>:/icons/script.svg</iconset>
+       </attribute>
        <attribute name="title">
         <string>Scripting</string>
        </attribute>
@@ -187,6 +218,10 @@
              <property name="text">
               <string>Execute</string>
              </property>
+             <property name="icon">
+              <iconset resource="../../resource/icons/icons.qrc">
+               <normaloff>:/icons/start.svg</normaloff>:/icons/start.svg</iconset>
+             </property>
              <property name="autoDefault">
               <bool>true</bool>
              </property>
@@ -213,7 +248,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1111</width>
+     <width>867</width>
      <height>30</height>
     </rect>
    </property>
@@ -321,20 +356,15 @@
    <addaction name="actionDetector"/>
    <addaction name="actionMotors"/>
    <addaction name="actionTemperature_stage"/>
-   <addaction name="actionVacuum_gauge"/>
    <addaction name="separator"/>
    <addaction name="actionScan"/>
    <addaction name="actionSingle_exposure"/>
    <addaction name="actionTransmission"/>
-   <addaction name="actionScript"/>
    <addaction name="separator"/>
    <addaction name="actionMask_editor"/>
    <addaction name="actionCapillary_sizing"/>
    <addaction name="actionView_images_and_curves"/>
    <addaction name="actionView_scans"/>
-   <addaction name="actionAnisotropy"/>
-   <addaction name="separator"/>
-   <addaction name="actionLogbook"/>
   </widget>
   <action name="actionSample_editor">
    <property name="icon">

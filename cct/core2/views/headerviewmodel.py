@@ -1,6 +1,6 @@
 import datetime
 import multiprocessing.pool
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Sequence, Iterator
 
 from PyQt5 import QtCore
 
@@ -17,6 +17,7 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
     loading = QtCore.pyqtSignal(bool)
     loaderpool: Optional[multiprocessing.pool.Pool] = None
     asyncresults: Optional[List[multiprocessing.pool.AsyncResult]]
+    _stopLoading: bool=False
 
     def __init__(self):
         super().__init__()
@@ -66,14 +67,14 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
 
-    def reload(self, firstfsn: int, lastfsn: int):
+    def reload(self, fsns: Sequence[int]):
         if self.loaderpool is not None:
             raise RuntimeError('Another reload process is running in the background')
         self.loaderpool = multiprocessing.Pool(multiprocessing.cpu_count(), initializer=self._initloaderpool,
                                                initargs=(Instrument.instance().config.asdict(),))
         prefix = Instrument.instance().config['path']['prefixes']['crd']
         self.asyncresults = [self.loaderpool.apply_async(self._loadheader, (prefix, fsn, True)) for fsn in
-                             range(firstfsn, lastfsn + 1)]
+                             fsns]
         self.beginResetModel()
         self._headerdata = []
         self.endResetModel()
@@ -101,7 +102,20 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
         self.beginResetModel()
         self._headerdata.extend([a.get() for a in ready if a.get() is not None])
         self.endResetModel()
-        if not self.asyncresults:
+        if self.loaderpool is None:
+            # user break
+            if not [a for a in self.asyncresults if a.ready()]:
+                # there are no more tasks ready:
+                self.killTimer(timerEvent.timerId())
+                self.asyncresults = None
+                self.beginResetModel()
+                self._headerdata = sorted(self._headerdata, key=lambda h: h.fsn)
+                self.endResetModel()
+                self.loading.emit(False)
+            else:
+                # wait one more turn.
+                pass
+        elif not self.asyncresults:
             self.killTimer(timerEvent.timerId())
             self.loaderpool.close()
             self.loaderpool.join()
@@ -111,3 +125,17 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
             self._headerdata = sorted(self._headerdata, key=lambda h: h.fsn)
             self.endResetModel()
             self.loading.emit(False)
+
+    def stopLoading(self):
+        self.loaderpool.terminate()
+        self.loaderpool.join()
+        self.loaderpool = None
+
+    def isLoading(self) -> bool:
+        return self.loaderpool is not None
+
+    def __iter__(self) -> Iterator[Header]:
+        yield from self._headerdata
+
+    def __len__(self):
+        return len(self._headerdata)

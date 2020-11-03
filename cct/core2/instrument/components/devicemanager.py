@@ -10,7 +10,7 @@ from ...devices.device.frontend import DeviceFrontend
 from ...devices.motor.generic.frontend import MotorController
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 DeviceClassDataTuple = namedtuple('DeviceClassDataTuple',
                                   ['deviceclassname', 'devicename', 'host', 'port'])
@@ -164,6 +164,9 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
     def __iter__(self) -> Iterator[DeviceFrontend]:
         for dev in self.devices.values():
             yield dev
+
+    def __contains__(self, item: str) -> bool:
+        return item in self.devices
 
     def __getitem__(self, item: str) -> DeviceFrontend:
         return self.devices[item]

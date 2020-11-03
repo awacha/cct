@@ -1,23 +1,17 @@
 import enum
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, Iterable
 
 import numpy as np
 
 from .curve import Curve
 from .header import Header
 from ..algorithms.radavg import radavg, autoq
-
-
-class ErrorPropagationType(enum.Enum):
-    IndependentSamplesOfTheSameQuantity = 0
-    Linear = 1
-    Squared = 2
-    SquaredOrRMS = 3
+from ..algorithms.matrixaverager import ErrorPropagationMethod, MatrixAverager
 
 
 class Exposure:
     intensity: np.ndarray
-    mask: np.ndarray
+    mask: np.ndarray  # 1: valid: 0: invalid
     uncertainty: np.ndarray
     header: Header
 
@@ -37,8 +31,8 @@ class Exposure:
         self.header = header
 
     def radial_average(self, qbincenters: Optional[Union[np.ndarray, int]] = None,
-                       errorprop: ErrorPropagationType = ErrorPropagationType.SquaredOrRMS,
-                       qerrorprop: ErrorPropagationType = ErrorPropagationType.SquaredOrRMS) -> Curve:
+                       errorprop: ErrorPropagationMethod = ErrorPropagationMethod.Conservative,
+                       qerrorprop: ErrorPropagationMethod = ErrorPropagationMethod.Conservative) -> Curve:
         if (qbincenters is None) or isinstance(qbincenters, int):
             qbincenters = autoq(
                 self.mask, self.header.wavelength[0], self.header.distance[0], self.header.pixelsize[0],
@@ -99,3 +93,18 @@ class Exposure:
 
     def save(self, filename: str):
         np.savez_compressed(filename, Intensity=self.intensity, Error=self.uncertainty, mask=self.mask)
+
+    @classmethod
+    def average(cls, exposures: Iterable["Exposure"], errorpropagation: ErrorPropagationMethod) -> "Exposure":
+        header = Header.average(*[ex.header for ex in exposures])
+        avgintensity = MatrixAverager(errorpropagation)
+        mask = None
+        for ex in exposures:
+            avgintensity.add(ex.intensity, ex.uncertainty)
+            if mask is None:
+                mask = ex.mask
+            else:
+                mask = np.logical_and(mask>0, ex.mask>0)
+        intensity, uncertainty = avgintensity.get()
+        return Exposure(intensity, header, uncertainty, mask)
+

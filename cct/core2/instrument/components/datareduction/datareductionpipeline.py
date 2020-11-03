@@ -17,7 +17,7 @@ from ....dataclasses import Exposure, Sample
 from ..io import IO
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ProcessingError(Exception):
@@ -38,7 +38,7 @@ class DataReductionPipeLine:
         self.io = IO(config=self.config, instrument=None)
 
     @classmethod
-    def run_in_background(cls, config: Config, commandqueue: multiprocessing.Queue, resultqueue: multiprocessing.Queue, stopevent: Optional[multiprocessing.Event] = None):
+    def run_in_background(cls, config: Dict, commandqueue: multiprocessing.Queue, resultqueue: multiprocessing.Queue, stopevent: Optional[multiprocessing.Event] = None):
         obj = cls(config=config)
         obj.commandqueue = commandqueue
         obj.resultqueue = resultqueue
@@ -96,7 +96,7 @@ class DataReductionPipeLine:
                     self.config['path']['directories']['eval2d'],
                     f'{exposure.header.prefix}_{exposure.header.fsn:0{self.config["path"]["fsndigits"]}d}.pickle'),
                 'wb') as f:
-            pickle.dump(exposure.header, f)
+            pickle.dump(exposure.header._data, f)
         return exposure
 
     def sanitize_data(self, exposure: Exposure) -> Exposure:

@@ -18,7 +18,7 @@ from ...devices.detector.pilatus.backend import PilatusBackend
 from ...devices.detector.pilatus.frontend import PilatusDetector
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ExposerState(enum.Enum):
@@ -134,6 +134,7 @@ class Exposer(QtCore.QObject, Component):
             for timer in self.waittimers:
                 self.killTimer(timer)
             self.waittimers = {}
+            logger.warning('Emitting exposureFinished only because disconnecting the detector while exposing.')
             self.exposureFinished.emit(False)
         self.detector.connectionEnded.disconnect(self.onDetectorDisconnected)
         self.detector.variableChanged.disconnect(self.onDetectorVariableChanged)
@@ -153,7 +154,6 @@ class Exposer(QtCore.QObject, Component):
         nextfsn = io.nextfsn(prefix, checkout=imagecount)
         # start the exposure
         firstfilename = io.formatFileName(prefix, nextfsn, '.cbf')
-        logger.debug(f'Starting exposure: {prefix=}, {firstfilename=}, {exposuretime=}, {imagecount=}, {delay=}')
         self.detector.expose(
             prefix,
             firstfilename,
@@ -181,8 +181,9 @@ class Exposer(QtCore.QObject, Component):
                     expdata.prefix, expdata.fsn, time.monotonic(), expdata.starttime, expdata.endtime)
             return
         # the time has arrived to check for an image.
-        self.killTimer(timerEvent.timerId())
         expdata = self.waittimers[timerEvent.timerId()]
+        self.killTimer(timerEvent.timerId())
+        del self.waittimers[timerEvent.timerId()]
         # see if the file is available
         try:
             image = self.instrument.io.loadCBF(expdata.prefix, expdata.fsn, check_local=False)
@@ -190,12 +191,14 @@ class Exposer(QtCore.QObject, Component):
             if expdata.isTimedOut():
                 # timed out
                 logger.error(f'Timeout while waiting for CBF file {expdata.prefix=}, {expdata.fsn=}')
-                del self.waittimers[timerEvent.timerId()]
                 return
             else:
                 # no timeout, requeue
-                self.waittimers[self.startTimer(0, QtCore.Qt.VeryCoarseTimer)] = expdata
-                logger.debug(f'Waiting more for image {expdata.prefix=}, {expdata.fsn=}')
+                timerid = self.startTimer(0, QtCore.Qt.VeryCoarseTimer)
+                if timerid == 0:
+                    raise RuntimeError('Cannot start timer!')
+                assert timerid not in self.waittimers
+                self.waittimers[timerid] = expdata
                 return
         else:
             # we have the image. Construct a header and load the required mask.
@@ -214,17 +217,12 @@ class Exposer(QtCore.QObject, Component):
             if expdata.prefix == self.config['path']['prefixes']['crd']:
                 self.instrument.datareduction.submit(exposure)
             self.imageReceived.emit(exposure)
-            logger.debug(f'Image received for {expdata.prefix=}, {expdata.fsn=}')
-            # remove the timer
-            del self.waittimers[timerEvent.timerId()]
 
     def isExposing(self) -> bool:
         return self.state != ExposerState.Idle
 
     def onDetectorVariableChanged(self, variable: str, value: Any):
-        # logger.debug(f'Detector variable changed: {variable=}, {value=}')
         if variable == '__status__':
-            logger.debug(f'Detector status changed to {value}')
             if (self.state == ExposerState.Starting) and (
                     value in [PilatusBackend.Status.Exposing, PilatusBackend.Status.ExposingMulti]):
                 # acknowledgement for the exposure command
@@ -307,8 +305,12 @@ class Exposer(QtCore.QObject, Component):
             cmdacktime = self.detector.currentMessage.timestamp
             for expdata in self.pendingtimers:
                 expdata.command_ack_time = cmdacktime
-                self.waittimers[
-                    self.startTimer(int(1000 * (expdata.endtime - time.monotonic())), QtCore.Qt.PreciseTimer)] = expdata
+                # look out: it can happen that the timer is already elapsed: set a 0 timeout then instead of a negative one.
+                timerid = self.startTimer(max(int(1000 * (expdata.endtime - time.monotonic())), 0), QtCore.Qt.PreciseTimer)
+                if timerid == 0:
+                    raise RuntimeError('Cannot start timer!')
+                assert timerid not in self.waittimers
+                self.waittimers[timerid] = expdata
             self.pendingtimers = []
             self.exposureStarted.emit()
         elif commandname == 'expose' and (not success):
@@ -317,6 +319,7 @@ class Exposer(QtCore.QObject, Component):
             self.pendingtimers = []
             self.state = ExposerState.Idle  # we won't get __state__ change from the detector to set this
             self.exposureStarted.emit()
+            logger.warning('Emitting exposureFinished with no image.')
             self.exposureFinished.emit(False)
         elif commandname == 'stopexposure' and success:
             logger.error(f'Exposure stop requested by user.')
@@ -324,6 +327,8 @@ class Exposer(QtCore.QObject, Component):
             self.state = ExposerState.Stopping
         elif commandname == 'stopexposure' and (not success):
             logger.error(f'Exposure cannot be stopped: {result}')
+            assert self.state == ExposerState.Exposing
+            self.state = ExposerState.Stopping
         else:
             pass
 

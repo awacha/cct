@@ -45,9 +45,27 @@ class Motor(QtCore.QObject):
         self.controllername = controllername
         self.axis = axis
         self.name = name
-        self.controller.moveStarted.connect(self.onMoveStarted)
-        self.controller.moveEnded.connect(self.onMoveEnded)
-        self.controller.variableChanged.connect(self.onVariableChanged)
+        self.instrument.devicemanager.deviceConnected.connect(self.onControllerConnected)
+        self.instrument.devicemanager.deviceDisconnected.connect(self.onControllerDisconnected)
+        if self.controllername in self.instrument.devicemanager:
+            self.onControllerConnected(self.controllername)
+
+    def onControllerConnected(self, controllername: str):
+        if controllername == self.controllername:
+            self.controller.moveStarted.connect(self.onMoveStarted)
+            self.controller.moveEnded.connect(self.onMoveEnded)
+            self.controller.variableChanged.connect(self.onVariableChanged)
+
+    def onControllerDisconnected(self, controllername: str, expected: bool):
+        if controllername != self.controllername:
+            return
+        try:
+            self.controller.moveStarted.disconnect(self.onMoveStarted)
+            self.controller.moveEnded.disconnect(self.onMoveEnded)
+            self.controller.variableChanged.disconnect(self.onVariableChanged)
+        except KeyError:
+            # happens if the controller has been removed
+            pass
 
     def onMoveStarted(self, motor: int, startposition: float):
         if motor == self.axis:
@@ -60,17 +78,11 @@ class Motor(QtCore.QObject):
             self.stopped.emit(success, endposition)
 
     def moveTo(self, position: float):
-        if (self.role == MotorRole.BeamStop) and (not self.instrument.auth.hasPrivilege(Privilege.MoveBeamstop)):
-            raise RuntimeError('Cannot move beamstop: insufficient privileges')
-        elif (self.role == MotorRole.Pinhole) and (not self.instrument.auth.hasPrivilege(Privilege.MovePinholes)):
-            raise RuntimeError('Cannot move pinhole: insufficient privileges')
+        self.checkPrivileges(calibration=False)
         return self.controller.moveTo(self.axis, position)
 
     def moveRel(self, position: float):
-        if (self.role == MotorRole.BeamStop) and (not self.instrument.auth.hasPrivilege(Privilege.MoveBeamstop)):
-            raise RuntimeError('Cannot move beamstop: insufficient privileges')
-        elif (self.role == MotorRole.Pinhole) and (not self.instrument.auth.hasPrivilege(Privilege.MovePinholes)):
-            raise RuntimeError('Cannot move pinhole: insufficient privileges')
+        self.checkPrivileges(calibration=False)
         return self.controller.moveRel(self.axis, position)
 
     def stop(self):
@@ -80,21 +92,11 @@ class Motor(QtCore.QObject):
         return self.controller[f'moving${self.axis}']
 
     def setPosition(self, newposition: float):
-        if (self.role == MotorRole.BeamStop) and (not self.instrument.auth.hasPrivilege(Privilege.MoveBeamstop)):
-            raise RuntimeError('Cannot move beamstop: insufficient privileges')
-        elif (self.role == MotorRole.Pinhole) and (not self.instrument.auth.hasPrivilege(Privilege.MovePinholes)):
-            raise RuntimeError('Cannot move pinhole: insufficient privileges')
-        if not self.instrument.auth.hasPrivilege(Privilege.MotorCalibration):
-            raise RuntimeError('Cannot calibrate motor: insufficient privileges')
+        self.checkPrivileges(calibration= True)
         return self.controller.setPosition(self.axis, newposition)
 
     def setLimits(self, left: float, right: float):
-        if (self.role == MotorRole.BeamStop) and (not self.instrument.auth.hasPrivilege(Privilege.MoveBeamstop)):
-            raise RuntimeError('Cannot move beamstop: insufficient privileges')
-        elif (self.role == MotorRole.Pinhole) and (not self.instrument.auth.hasPrivilege(Privilege.MovePinholes)):
-            raise RuntimeError('Cannot move pinhole: insufficient privileges')
-        if not self.instrument.auth.hasPrivilege(Privilege.MotorCalibration):
-            raise RuntimeError('Cannot calibrate motor: insufficient privileges')
+        self.checkPrivileges(calibration=True)
         return self.controller.setLimits(self.axis, left, right)
 
     def where(self) -> float:
@@ -140,3 +142,15 @@ class Motor(QtCore.QObject):
     @property
     def controller(self) -> MotorController:
         return self.instrument.devicemanager[self.controllername]
+
+    @property
+    def hasController(self) -> bool:
+        return self.controllername in self.instrument.devicemanager
+
+    def checkPrivileges(self, calibration: bool):
+        if (self.role == MotorRole.BeamStop) and (not self.instrument.auth.hasPrivilege(Privilege.MoveBeamstop)):
+            raise RuntimeError('Cannot move beamstop: insufficient privileges')
+        elif (self.role == MotorRole.Pinhole) and (not self.instrument.auth.hasPrivilege(Privilege.MovePinholes)):
+            raise RuntimeError('Cannot move pinhole: insufficient privileges')
+        if calibration and (not self.instrument.auth.hasPrivilege(Privilege.MotorCalibration)):
+            raise RuntimeError('Cannot calibrate motor: insufficient privileges')

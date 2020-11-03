@@ -421,7 +421,7 @@
            <item>
             <widget class="QLabel" name="cursorPositionLabel">
              <property name="text">
-              <string>TextLabel</string>
+              <string/>
              </property>
             </widget>
            </item>

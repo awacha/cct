@@ -1,3 +1,4 @@
+import itertools
 import logging
 from typing import Iterator, Any, List, Dict, Union, Optional
 
@@ -9,7 +10,7 @@ from ..auth import Privilege
 from .motor import Motor, MotorRole, MotorDirection
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Motors(QtCore.QAbstractItemModel, Component):
@@ -19,22 +20,44 @@ class Motors(QtCore.QAbstractItemModel, Component):
     motorRemoved = QtCore.pyqtSignal(str)
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         self.motors = []
-        self.instrument.devicemanager.deviceConnected.connect(self.onDeviceConnected)
-        self.instrument.devicemanager.deviceDisconnected.connect(self.onDeviceDisconnected)
+        super().__init__(**kwargs)
+        self.instrument.devicemanager.deviceConnected.connect(self.onDeviceConnectedOrDisconnected)
+        self.instrument.devicemanager.deviceDisconnected.connect(self.onDeviceConnectedOrDisconnected)
 
-    def onDeviceDisconnected(self, name: str, expected: bool):
-        if expected:
-            for motorname in [m.name for m in self.motors]:
-                motor = [m for m in self.motors if m.name == motorname][0]
-                if motor.controller.name == name:
-                    idx = self.motors.index(motor)
-                    self.beginRemoveRows(QtCore.QModelIndex(), idx, idx)
-                    self.motorRemoved.emit(motor.name)
-                    motor.deleteLater()
-                    self.motors.remove(motor)
-                    self.endRemoveRows()
+    def loadFromConfig(self):
+        logger.debug('Loading Motors state from config')
+        motorkeys = list(self.config['motors'])
+        motorkeys_newstyle = [k for k in motorkeys if self.config['motors'][k]['name'] == k]
+        motorkeys_oldstyle = [k for k in motorkeys if k not in motorkeys_newstyle]
+
+        for motorkey in itertools.chain(motorkeys_newstyle, motorkeys_oldstyle):
+            logger.debug(f'Motor key: {motorkey}')
+            motorinfo = self.config['motors'][motorkey]
+            if motorinfo['name'] in self:
+                logger.debug(f'Motor {motorinfo["name"]} with {motorkey=} already exists, not adding')
+                if motorkey != motorinfo['name']:
+                    del self.config['motors'][motorkey]
+                    logger.debug(f'Deleted old-style motor information {motorkey=}, '
+                                 f'corresponding to motor name {motorinfo["name"]} from the config.')
+                    continue
+            direction = motorinfo.setdefault('direction', None)
+            role = motorinfo.setdefault('role', None)
+            self._addmotor(
+                motorinfo['name'],
+                motorinfo['controller'],
+                motorinfo['index'],
+                role= None if role is None else MotorRole(role),
+                direction=None if direction is None else MotorDirection(direction))
+
+    def onDeviceConnectedOrDisconnected(self, name: str, expected: bool=True):
+        # If a motor controller is disconnected or connected
+        for i, motor in enumerate(self.motors):
+            if motor.controllername == name:
+                self.dataChanged.emit(
+                    self.index(i, 0, QtCore.QModelIndex()),
+                    self.index(i, self.columnCount(), QtCore.QModelIndex())
+                )
 
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return 9
@@ -53,29 +76,41 @@ class Motors(QtCore.QAbstractItemModel, Component):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         if role == QtCore.Qt.DisplayRole:
-            if index.column() == 0:  # motor name
-                return self.motors[index.row()].name
-            elif index.column() == 1:  # left limit
-                return f"{self.motors[index.row()]['softleft']:.4f}"
-            elif index.column() == 2:  # right limit
-                return f"{self.motors[index.row()]['softright']:.4f}"
-            elif index.column() == 3:  # position
-                return f"{self.motors[index.row()]['actualposition']:.4f}"
-            elif index.column() == 4:  # speed
-                return f"{self.motors[index.row()]['actualspeed']:.4f}"
-            elif index.column() in [5, 6]:  # left and right switches
-                return None  # CheckStateRole will show the switch status
-            elif index.column() == 7:
-                return self.motors[index.row()]['load']
-            elif index.column() == 8:
-                return self.motors[index.row()]['drivererror']
+            try:
+                if index.column() == 0:  # motor name
+                    return self.motors[index.row()].name
+                elif index.column() == 1:  # left limit
+                    return f"{self.motors[index.row()]['softleft']:.4f}"
+                elif index.column() == 2:  # right limit
+                    return f"{self.motors[index.row()]['softright']:.4f}"
+                elif index.column() == 3:  # position
+                    return f"{self.motors[index.row()]['actualposition']:.4f}"
+                elif index.column() == 4:  # speed
+                    return f"{self.motors[index.row()]['actualspeed']:.4f}"
+                elif index.column() in [5, 6]:  # left and right switches
+                    return None  # CheckStateRole will show the switch status
+                elif index.column() == 7:
+                    return self.motors[index.row()]['load']
+                elif index.column() == 8:
+                    return self.motors[index.row()]['drivererror']
+            except (KeyError, MotorController.DeviceError):
+                # happens when a controller is missing
+                return None
         elif role == QtCore.Qt.CheckStateRole:
-            if index.column() == 5:
-                return QtCore.Qt.Checked if self.motors[index.row()]['leftswitchstatus'] else QtCore.Qt.Unchecked
-            elif index.column() == 6:
-                return QtCore.Qt.Checked if self.motors[index.row()]['rightswitchstatus'] else QtCore.Qt.Unchecked
+            try:
+                if index.column() == 5:
+                    return QtCore.Qt.Checked if self.motors[index.row()]['leftswitchstatus'] else QtCore.Qt.Unchecked
+                elif index.column() == 6:
+                    return QtCore.Qt.Checked if self.motors[index.row()]['rightswitchstatus'] else QtCore.Qt.Unchecked
+            except (KeyError, MotorController.DeviceError):
+                # happens when a controller is missing
+                return None
         elif role == QtCore.Qt.BackgroundColorRole:
-            return QtGui.QColor('lightgreen') if self.motors[index.row()]['moving'] else None
+            try:
+                return QtGui.QColor('lightgreen') if self.motors[index.row()]['moving'] else None
+            except (KeyError, MotorController.DeviceError):
+                # happens when a controller is missing
+                return None
         elif role == QtCore.Qt.FontRole:
             if index.column() == 3:
                 font = QtGui.QFont()
@@ -95,12 +130,18 @@ class Motors(QtCore.QAbstractItemModel, Component):
         return None
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        motor = self.motors[index.row()]
+        if motor.hasController:
+            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        else:
+            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         return QtCore.QModelIndex()
 
-    def _addmotor(self, motorname: str, devicename: str, motorindex: int, role: Optional[MotorRole] = None, direction: Optional[MotorDirection]=None):
+    def _addmotor(self, motorname: str, devicename: str, motorindex: int,
+                  role: Optional[MotorRole] = None, direction: Optional[MotorDirection]=None):
+        logger.debug(f'Adding motor {motorname=}.')
         if any([motor.name == motorname for motor in self.motors]):
             # motor already exists.
             raise ValueError('Motor already exists')
@@ -140,30 +181,6 @@ class Motors(QtCore.QAbstractItemModel, Component):
         self.newMotor.emit(motorname)
         self.config['motors'][motorname] = {'controller':devicename, 'index': motorindex, 'name': motorname,
                                             'role': motor.role.value, 'direction': motor.direction.value}
-
-    def onDeviceConnected(self, name: str):
-        logger.debug(f'Device {name} connected, trying to load motors ')
-        device = self.instrument.devicemanager.devices[name]
-        if device.devicetype == 'motorcontroller':
-            assert isinstance(device, MotorController)
-            logger.debug(f'Device {name} is a motor controller')
-            motorkeys = list(self.config['motors'])
-            motorkeys_newstyle = [k for k in motorkeys if self.config['motors'][k]['name'] == k]
-            motorkeys_oldstyle = [k for k in motorkeys if k not in motorkeys_newstyle]
-            for key in motorkeys_newstyle + motorkeys_oldstyle:
-                if self.config['motors'][key]['controller'] != name:
-                    continue
-                if self.config['motors'][key]['name'] in self:
-                    logger.debug(f'Motor {self.config["motors"][key]["name"]} with {key=} already exists, not adding')
-                    del self.config['motors'][key]
-                    logger.debug(f'Deleted motor information {key=} from the config.')
-                    continue
-                logger.debug(f'Motor {key} belongs to device {name}, creating this motor.')
-                motorname = self.config['motors'][key]['name']
-                motorindex = self.config['motors'][key]['index']
-                direction = self.config['motors'][key].setdefault('direction', None)
-                role = self.config['motors'][key].setdefault('role', None)
-                self._addmotor(motorname, name, motorindex, role= None if role is None else MotorRole(role), direction=None if direction is None else MotorDirection(direction))
 
     def __getitem__(self, item: Union[str,int]) -> Motor:
         if isinstance(item, str):
@@ -210,6 +227,9 @@ class Motors(QtCore.QAbstractItemModel, Component):
             return item in self.motors
         else:
             return bool([m for m in self.motors if m.name == item])
+
+    def __len__(self) -> int:
+        return len(self.motors)
 
     def getHeaderEntry(self) -> Dict[str, float]:
         return {m.name: m.where() for m in self.motors}

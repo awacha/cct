@@ -76,6 +76,12 @@ extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
               Extension("cct.core2.algorithms.beamweighting",
                         [os.path.join("cct","core2", "algorithms", "beamweighting.pyx")],
                         include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.correlmatrix",
+                        [os.path.join("cct","core2", "algorithms", "correlmatrix.pyx")],
+                        include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.schilling",
+                        [os.path.join("cct","core2", "algorithms", "schilling.pyx")],
+                        include_dirs=[get_include()]),
               ]
 
 print(get_include())
@@ -99,7 +105,8 @@ setup(name='cct', author='Andras Wacha',
                                     'cctmask = cct.qtgui.tools.maskeditor2:run',
                                     'cctanisotropy = cct.qtgui.tools.anisotropy:run',
                                     'cctupdatedb = cct.dbutils.updatedb:run',
-                                    'cctsequencebrowser = cct.processing.sequenceinspector.sequencelist:run'],
+                                    'cctsequencebrowser = cct.processing.sequenceinspector.sequencelist:run',
+                                    'cct4 = cct.qtgui2.__main__:main'],
 
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",

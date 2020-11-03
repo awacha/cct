@@ -7,7 +7,7 @@ import scipy.optimize
 from .targetfunctions import peakheight, peakwidth, slices, azimuthal, azimuthal_fold, momentofinertia
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 centeringalgorithms = {
     'Peak height': peakheight,

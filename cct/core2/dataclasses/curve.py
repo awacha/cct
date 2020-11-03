@@ -1,6 +1,8 @@
-from typing import Optional
+from typing import Optional, Iterable
 
 import numpy as np
+
+from ..algorithms.matrixaverager import MatrixAverager, ErrorPropagationMethod
 
 
 class Curve:
@@ -44,8 +46,14 @@ class Curve:
     @classmethod
     def fromArray(cls, array: np.ndarray) -> "Curve":
         self = cls()
-        self._data = array
+        self._data = np.empty((array.shape[0], 6), array.dtype) + np.nan
+        self._data[:, :array.shape[1]] = array
         return self
+
+    def __array__(self) -> np.ndarray:
+        return self._data
+
+    asArray = __array__
 
     @classmethod
     def fromVectors(cls, q: np.ndarray, intensity: np.ndarray, uncertainty: Optional[np.ndarray] = None,
@@ -111,3 +119,20 @@ class Curve:
                     self.binarea > 0
                 ))
         return Curve.fromArray(self._data[idx, :])
+
+    @classmethod
+    def average(cls, curves: Iterable["Curve"], ierrorpropagation: ErrorPropagationMethod, qerrorpropagation: ErrorPropagationMethod) -> "Curve":
+        qavg = MatrixAverager(errorpropagationmethod=qerrorpropagation)
+        iavg = MatrixAverager(errorpropagationmethod=ierrorpropagation)
+        aavg = MatrixAverager(errorpropagationmethod=ierrorpropagation)
+        pavg = MatrixAverager(errorpropagationmethod=ierrorpropagation)
+        for c in curves:
+            qavg.add(c.q, c.quncertainty)
+            iavg.add(c.intensity, c.uncertainty)
+            aavg.add(c.binarea, c.binarea)
+            pavg.add(c.pixel, c.pixel)
+        q, dq = qavg.get()
+        i, di = iavg.get()
+        a = aavg.get()[0]
+        p = pavg.get()[0]
+        return Curve.fromVectors(q, i, di, dq, a, p)

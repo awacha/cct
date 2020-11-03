@@ -27,11 +27,16 @@ class WaitVacuum(Command):
     def initialize(self, pressure_limit: float):
         self.pressure_limit = pressure_limit
         self.vacgauge = self.instrument.devicemanager.vacuum()
+        self.message.emit(
+            f'Waiting for vacuum pressure to go below {self.pressure_limit:.4f} mbar.')
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         pressure = self.vacgauge.pressure()
         if pressure < self.pressure_limit:
+            self.message.emit(
+                f'Vacuum pressure is {pressure:.4f} mbar, below the expected threshold {self.pressure_limit:.4f} mbar')
             self.finish(pressure)
         else:
             self.progress.emit(
-                f'Waiting for vacuum pressure to go below {self.pressure_limit} mbar. Now at {pressure} mbar.', 0, 0)
+                f'Waiting for vacuum pressure to go below {self.pressure_limit:.4f} mbar. Now at {pressure:.4f} mbar.',
+                0, 0)

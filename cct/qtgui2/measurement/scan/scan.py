@@ -1,11 +1,15 @@
 import enum
 from typing import Optional
+import logging
 
 from PyQt5 import QtWidgets, QtGui
 
 from .scan_ui import Ui_Form
 from ...utils.plotscan import PlotScan
 from ...utils.window import WindowRequiresDevices
+
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class RangeType(enum.Enum):
@@ -27,6 +31,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         super().setupUi(Form)
         self.motorComboBox.addItems(sorted([m.name for m in self.instrument.motors.motors]))
         self.motorComboBox.currentIndexChanged.connect(self.onMotorChanged)
+        self.motorComboBox.setCurrentIndex(-1)
         self.rangeTypeComboBox.addItems([rt.value for rt in RangeType])
         self.rangeTypeComboBox.currentIndexChanged.connect(self.onRangeTypeSelected)
         for widget in [self.rangeTypeComboBox, self.rangeMinDoubleSpinBox, self.rangeMaxDoubleSpinBox,
@@ -126,15 +131,16 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.instrument.scan.scanfinished.connect(self.onScanEnded)
             self.instrument.scan.scanpointreceived.connect(self.onScanPointReceived)
             self.instrument.scan.scanprogress.connect(self.onScanProgress)
+            self.startStopPushButton.setEnabled(False)
             self.instrument.scan.startScan(self.motorname, rangemin, rangemax, self.stepCountSpinBox.value(), relative,
                                            self.countingTimeDoubleSpinBox.value(), self.commentLineEdit.text(),
                                            self.resetMotorCheckBox.isChecked(), self.shutterCheckBox.isChecked())
-            self.startStopPushButton.setEnabled(False)
         else:
             self.startStopPushButton.setEnabled(False)
             self.instrument.scan.stopScan()
 
     def onScanStarted(self, scanindex: int):
+        logger.debug('onScanStarted')
         for widget in [self.motorComboBox, self.rangeTypeComboBox, self.rangeMinDoubleSpinBox,
                        self.rangeMaxDoubleSpinBox, self.stepCountSpinBox, self.stepSizeDoubleSpinBox,
                        self.countingTimeDoubleSpinBox, self.commentLineEdit, self.shutterCheckBox,

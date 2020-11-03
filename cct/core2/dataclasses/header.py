@@ -1,9 +1,9 @@
 import pickle
-from typing import Tuple, Dict, Any, Optional
+import numpy as np
+from typing import Tuple, Dict, Any, Optional, Final, List, Sequence
 
 from .headerparameter import ValueAndUncertaintyHeaderParameter, StringHeaderParameter, IntHeaderParameter, \
     DateTimeHeaderParameter, FloatHeaderParameter
-
 from .sample import Sample
 
 ValueAndUncertaintyType = Tuple[float, float]
@@ -18,8 +18,10 @@ class Header:
     flux = ValueAndUncertaintyHeaderParameter(('datareduction', 'flux'), ('datareduction', 'flux.err'))
     samplex = ValueAndUncertaintyHeaderParameter(('sample', 'positionx.val'), ('sample', 'positionx.err'))
     sampley = ValueAndUncertaintyHeaderParameter(('sample', 'positiony.val'), ('sample', 'positiony.err'))
-    temperature = ValueAndUncertaintyHeaderParameter(('environment', 'temperature'), ('environment', 'temperature.err'), (None, 0.0))
-    vacuum = ValueAndUncertaintyHeaderParameter(('environment', 'vacuum_pressure'), ('environment', 'vacuum_pressure.err'), (None, 0.0))
+    temperature = ValueAndUncertaintyHeaderParameter(('environment', 'temperature'), ('environment', 'temperature.err'),
+                                                     (None, 0.0))
+    vacuum = ValueAndUncertaintyHeaderParameter(('environment', 'vacuum_pressure'),
+                                                ('environment', 'vacuum_pressure.err'), (None, 0.0))
     fsn_absintref = IntHeaderParameter(('datareduction', 'absintrefFSN'))
     fsn_emptybeam = IntHeaderParameter(('datareduction', 'emptybeamFSN'))
     fsn_dark = IntHeaderParameter(('datareduction', 'darkFSN'))
@@ -47,6 +49,22 @@ class Header:
     transmission = ValueAndUncertaintyHeaderParameter(('sample', 'transmission.val'), ('sample', 'transmission.err'))
     _data: Dict[str, Any]
 
+    _headerattributes_ensureunique: Final[List[str]] = \
+        ['title', 'distance', 'beamposrow', 'beamposcol', 'wavelength', 'pixelsize', 'distancedecrease', 'prefix']
+
+    _headerattributes_average: Final[List[str]] = \
+        ['transmission', 'thickness', 'flux', 'samplex', 'sampley', 'temperature', 'vacuum', 'dark_cps',
+         'absintfactor', ]
+
+    _headerattributes_collectfirst: Final[List[str]] = \
+        ['startdate', 'date', 'fsn', 'fsn_absintref', 'fsn_emptybeam', 'maskname', 'project', 'username']
+
+    _headerattributes_collectlast: Final[List[str]] = ['enddate']
+
+    _headerattributes_drop: Final[List[str]] = ['absintdof', 'absintchi2', 'absintqmin', 'absintqmax', ]
+
+    _headerattributes_sum: Final[List[str]] = ['exposuretime']
+
     def __init__(self, filename: Optional[str] = None, datadict: Optional[Dict[str, Any]] = None):
         if filename is None and datadict is None:
             raise ValueError('Either filename or datadict must be supplied.')
@@ -61,3 +79,62 @@ class Header:
 
     def sample(self) -> Optional[Sample]:
         return Sample.fromdict(self._data['sample']) if 'sample' in self._data else None
+
+    @classmethod
+    def average(cls, *headers: "Header") -> "Header":
+        collatedvalues = {}
+
+        def collect(f: str, hs: Sequence["Header"]) -> List[Any]:
+            lis = []
+            for h in hs:
+                try:
+                    lis.append(getattr(h, f))
+                except KeyError:
+                    continue
+            return lis
+
+        for field in cls._headerattributes_ensureunique:
+            values = set(collect(field, headers))
+            if len(values) < 1:
+                raise ValueError(f'Field {field} is not unique. Found values: {", ".join([str(x) for x in values])}')
+            collatedvalues[field] = values.pop()
+        for field in cls._headerattributes_sum:
+            values = collect(field, headers)
+            if not values:
+                continue
+            collatedvalues[field] = sum(values)
+        for field in cls._headerattributes_average:
+            values = collect(field, headers)
+            if not values:
+                continue
+            val = np.array([v if isinstance(v, float) else v[0] for v in values])
+            err = np.array([np.nan if isinstance(v, float) else v[1] for v in values])
+            if np.isfinite(err).sum() == 0:
+                # no error bars anywhere
+                err = np.ones_like(val)
+            elif (err > 0).sum() == 0:
+                # no positive error bars
+                err = np.ones_like(val)
+            else:
+                # some non-finite error bars may exist: replace them with the lowest positive error bar data
+                minposerr = np.nanmin(err[err > 0])
+                err[err <= 0] = minposerr
+                err[~np.isfinite(err)] = minposerr
+            collatedvalues[field] = (
+                (val / err ** 2).sum() / (1 / err ** 2).sum(),
+                1 / (1 / err ** 2).sum() ** 0.5
+            )
+        for field in cls._headerattributes_collectfirst:
+            try:
+                collatedvalues[field] = collect(field, headers)[0]
+            except IndexError:
+                continue
+        for field in cls._headerattributes_collectlast:
+            try:
+                collatedvalues[field] = collect(field, headers)[-1]
+            except IndexError:
+                continue
+        h = cls(datadict={})
+        for field in collatedvalues:
+            setattr(h, field, collatedvalues[field])
+        return h

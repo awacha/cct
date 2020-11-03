@@ -1,25 +1,34 @@
 import datetime
-from typing import List, Tuple, Union, Optional, Any
 import itertools
+import logging
+from numbers import Real
+from typing import List, Tuple, Union, Optional, Any
 
 import dateutil.parser
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class HeaderParameter:
     paths: List[Tuple[str, ...]]
     defaultvalue: Optional[Tuple[Any, ...]] = None
 
-    def __init__(self, *paths: Optional[Tuple[str, ...]], default:Optional[Tuple[Any,...]]=None):
+    def __init__(self, *paths: Optional[Tuple[str, ...]], default: Optional[Tuple[Any, ...]] = None):
         self.paths = list(paths)
         self.defaultvalue = default
 
     def __get__(self, instance, objtype):
         lis = []
-        for path, default in zip(self.paths, itertools.repeat(None) if self.defaultvalue is None else self.defaultvalue):
+        logger.debug(f'HeaderParameter.__get__({instance=}, {objtype=})')
+        for path, default in zip(self.paths,
+                                 itertools.repeat(None) if self.defaultvalue is None else self.defaultvalue):
+            logger.debug(f'  {path=}')
             if path is None:
                 lis.append(None)
                 continue
             dic = instance._data
+            logger.debug(f'     {type(dic)=}, {dic=}')
             assert isinstance(dic, dict)
             try:
                 for pcomponent in path:
@@ -50,7 +59,7 @@ class HeaderParameter:
 
 
 class StringHeaderParameter(HeaderParameter):
-    def __init__(self, path: Tuple[str, ...], default: Optional[Any]=None):
+    def __init__(self, path: Tuple[str, ...], default: Optional[Any] = None):
         super().__init__(path, default=(default,))
 
     def __get__(self, instance, owner) -> str:
@@ -62,18 +71,26 @@ class StringHeaderParameter(HeaderParameter):
 
 
 class ValueAndUncertaintyHeaderParameter(HeaderParameter):
-    def __init__(self, pathvalue: Optional[Tuple[str, ...]], pathuncertainty: Optional[Tuple[str, ...]], default: Optional[Tuple[Any,Any]]=None):
+    def __init__(self, pathvalue: Optional[Tuple[str, ...]], pathuncertainty: Optional[Tuple[str, ...]],
+                 default: Optional[Tuple[Any, Any]] = None):
         super().__init__(pathvalue, pathuncertainty, default=default)
 
     def __get__(self, instance, owner) -> Tuple[float, Optional[float]]:
         return tuple([float(x) for x in super().__get__(instance, owner)])
 
     def __set__(self, instance, value: Tuple[float, Optional[float]]):
+        if isinstance(value, Real):
+            value = float(value)
+        elif (isinstance(value, tuple) and isinstance(value[0], Real) and isinstance(value[1], Real) and
+              len(value) == 2):
+            value = (float(value[0]), float(value[1]))
+        else:
+            raise TypeError(value)
         super().__set__(instance, value)
 
 
 class IntHeaderParameter(HeaderParameter):
-    def __init__(self, path: Tuple[str, ...], default: Optional[Any]=None):
+    def __init__(self, path: Tuple[str, ...], default: Optional[Any] = None):
         super().__init__(path, default=(default,))
 
     def __get__(self, instance, owner) -> int:
@@ -84,7 +101,7 @@ class IntHeaderParameter(HeaderParameter):
 
 
 class FloatHeaderParameter(HeaderParameter):
-    def __init__(self, path: Tuple[str, ...], default: Optional[Any]=None):
+    def __init__(self, path: Tuple[str, ...], default: Optional[Any] = None):
         super().__init__(path, default=(default,))
 
     def __get__(self, instance, owner) -> float:
@@ -95,7 +112,7 @@ class FloatHeaderParameter(HeaderParameter):
 
 
 class DateTimeHeaderParameter(HeaderParameter):
-    def __init__(self, path: Tuple[str, ...], default: Optional[Any]=None):
+    def __init__(self, path: Tuple[str, ...], default: Optional[Any] = None):
         super().__init__(path, default=(default,))
 
     def __get__(self, instance, owner) -> datetime.datetime:

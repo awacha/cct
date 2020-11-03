@@ -10,10 +10,10 @@ from ..component import Component
 from ....dataclasses import Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 logger_background = logging.getLogger(__name__ + ':background')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DataReduction(QtCore.QObject, Component):

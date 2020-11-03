@@ -9,7 +9,7 @@ from .commandargument import StringChoicesArgument, FloatArgument
 from ..devices.thermostat.haakephoenix.frontend import HaakePhoenix
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ThermostatCommand(Command):

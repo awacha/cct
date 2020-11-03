@@ -39,6 +39,7 @@ class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
             w.addItems([x.value for x in Sample.Situations])
         else:
             w= super().createEditor(parent, option, index)
+        w.setFrame(False)
         return w
 
     def updateEditorGeometry(self, editor: QtWidgets.QWidget, option: 'QStyleOptionViewItem',

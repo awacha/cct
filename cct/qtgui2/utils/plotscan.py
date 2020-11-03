@@ -43,7 +43,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axes = self.figure.add_subplot(self.figure.add_gridspec(1, 1)[:, :])
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.canvas.mpl_connect('key_press_event', self.onCanvasKeyPress)
-        self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.canvas.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.figtoolbar = NavigationToolbar2QT(self.canvas, self)
         self.figureVerticalLayout.addWidget(self.figtoolbar)
         self.figureVerticalLayout.addWidget(self.canvas)
@@ -163,7 +163,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.showImage(keepzoom=False)
 
     def showImage(self, keepzoom: bool = False):
-        self.mainwindow.plotimage.setExposure(
+        self.mainwindow.showPattern(
             self.instrument.io.loadExposure(
                 self.instrument.config['path']['prefixes']['scn'],
                 int(self.scan['FSN'][self.cursorHorizontalSlider.value()]), raw=True, check_local=True),

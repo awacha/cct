@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import pkg_resources
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -10,6 +10,7 @@ from .indicators.accounting import AccountingIndicator
 from .indicators.beamstop import BeamstopIndicator
 from .indicators.lastfsn import LastFSNIndicator
 from .indicators.shutter import ShutterIndicator
+from .indicators.plotindicator import PlotIndicator
 from .logviewer_text import LogViewerText
 from .mainwindow_ui import Ui_MainWindow
 from .scripting import Scripting
@@ -32,9 +33,11 @@ from ..tools.capillarysizer import CapillarySizer
 from ..tools.maskeditor.maskeditor import MaskEditor
 from ..tools.samplepositionchecker import SamplePositionChecker
 from ..utils.plotimage import PlotImage
+from ..utils.plotcurve import PlotCurve
 from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.instrument import Instrument
 from ...core2.instrument.components.interpreter import ParsingError
+from ...core2.dataclasses import Exposure, Curve
 from ..measurement.scan.scan import ScanMeasurement
 from ..measurement.transmission import TransmissionUi
 
@@ -46,10 +49,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     logViewer: LogViewerText
     instrument: Instrument
     plotimage: PlotImage
+    plotcurve: PlotCurve
     lastfsnindicator: LastFSNIndicator
     accountingindicator: AccountingIndicator
     beamstopindicator: BeamstopIndicator
     shutterindicator: ShutterIndicator
+    plotindicator: PlotIndicator
     scripting: Scripting
 
     _action2windowclass = {
@@ -101,6 +106,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plotimage = PlotImage(self.patternTab)
         self.patternTab.setLayout(QtWidgets.QVBoxLayout())
         self.patternTab.layout().addWidget(self.plotimage)
+        self.plotcurve = PlotCurve(self.curveTab)
+        self.curveTab.setLayout(QtWidgets.QVBoxLayout())
+        self.curveTab.layout().addWidget(self.plotcurve)
         for actionname, windowclass in self._action2windowclass.items():
             action = getattr(self, actionname)
             assert isinstance(action, QtWidgets.QAction)
@@ -115,6 +123,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.indicatorHorizontalLayout.addWidget(self.beamstopindicator)
         self.shutterindicator = ShutterIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.shutterindicator)
+        self.plotindicator = PlotIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
+        self.indicatorHorizontalLayout.addWidget(self.plotindicator)
         self.indicatorHorizontalLayout.addStretch(1)
         self.actionScript.triggered.connect(self.onScriptTriggered)
         self.actionLogbook.triggered.connect(self.onLogTriggered)
@@ -122,6 +132,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.scriptingTab.setLayout(QtWidgets.QVBoxLayout())
         self.scriptingTab.layout().addWidget(self.scripting)
         self.executePushButton.clicked.connect(self.onExecutePushed)
+        self.actionSave_settings.triggered.connect(self.saveSettings)
+
+    def saveSettings(self):
+        self.instrument.saveConfig()
 
     def onScriptTriggered(self):
         self.tabWidget.setCurrentWidget(self.scriptingTab)
@@ -219,3 +233,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 pal.setColor(pal.Window, QtCore.Qt.red)
                 self.commandLineEdit.setPalette(pal)
                 return
+
+    def showPattern(self, exposure: Exposure, keepzoom: bool=False, title: Optional[str]=None):
+        if title is None:
+            title = f'{exposure.header.prefix}/{exposure.header.fsn}: {exposure.header.title} @ {exposure.header.distance[0]:.2f} mm'
+        self.plotimage.setExposure(exposure, keepzoom, title)
+        self.tabWidget.setCurrentWidget(self.patternTab)
+
+    def showCurve(self, curve: Union[Curve, Exposure]):
+        if isinstance(curve, Exposure):
+            title = f'{curve.header.prefix}/{curve.header.fsn}: {curve.header.title} @ {curve.header.distance[0]:.2f} mm'
+            curve = curve.radial_average()
+        else:
+            title = None
+        self.plotcurve.clear()
+        self.plotcurve.addCurve(curve, label=title)
+        self.plotcurve.replot()
+        self.tabWidget.setCurrentWidget(self.curveTab)

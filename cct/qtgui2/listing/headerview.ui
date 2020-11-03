@@ -135,7 +135,7 @@
          </property>
          <property name="icon">
           <iconset resource="../../resource/icons/icons.qrc">
-           <normaloff>:/icons/exposureviewer.svg</normaloff>:/icons/exposureviewer.svg</iconset>
+           <normaloff>:/icons/saxspattern.svg</normaloff>:/icons/saxspattern.svg</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -183,11 +183,26 @@
     </layout>
    </item>
    <item>
-    <widget class="QProgressBar" name="progressBar">
-     <property name="value">
-      <number>24</number>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QProgressBar" name="progressBar">
+       <property name="value">
+        <number>24</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="stopPushButton">
+       <property name="text">
+        <string>Stop</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../resource/icons/icons.qrc">
+         <normaloff>:/icons/stop.svg</normaloff>:/icons/stop.svg</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

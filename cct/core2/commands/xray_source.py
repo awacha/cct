@@ -5,7 +5,7 @@ from .commandargument import StringChoicesArgument
 from ..devices.xraysource import GeniX
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class XraySourceCommand(Command):

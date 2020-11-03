@@ -6,7 +6,7 @@ from PyQt5 import QtCore
 from .commandargument import CommandArgument
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Command(QtCore.QObject):
@@ -158,6 +158,9 @@ class Command(QtCore.QObject):
             s += '\n'.join([f'    {a}' for a in cls.arguments if a is not ...])
         s += '\n'
         return s
+
+    def __str__(self) -> str:
+        return f'{self.name}({self.argumentstring})'
 
 
 class InstantCommand(Command):

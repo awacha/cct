@@ -60,6 +60,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.derivativeToolButton.toggled.connect(self.replot)
         self.scanIndexSpinBox.setValue(self.instrument.scan.lastscan())
         self.signalNameComboBox.setCurrentIndex(0)
+        self.reloadToolButton.clicked.connect(self.replot)
         self.replot()
 
     def fitPeak(self):

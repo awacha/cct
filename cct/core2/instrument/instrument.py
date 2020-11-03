@@ -21,7 +21,7 @@ from .components.transmission import TransmissionMeasurement
 from ..config import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Instrument(QtCore.QObject):
@@ -163,3 +163,8 @@ class Instrument(QtCore.QObject):
     @classmethod
     def instance(cls) -> "Instrument":
         return cls._singleton_instance
+
+    def saveConfig(self):
+        for component in self.components.values():
+            component.saveToConfig()
+        self.config.save(self.config.filename)

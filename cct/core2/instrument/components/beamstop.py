@@ -9,7 +9,7 @@ from .motors import Motor, MotorRole, MotorDirection
 from ...devices.device.frontend import DeviceFrontend
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class BeamStop(QtCore.QObject, Component):

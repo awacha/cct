@@ -111,6 +111,8 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         scanindex = self._nextscan
         self._nextscan += 1
         self.nextscanchanged.emit(self._nextscan)
+        self._lastscan = scanindex
+        self.lastscanchanged.emit(self._lastscan)
         return self._scans[scanindex]
 
     def addScanLine(self, readings: Sequence[float]):
@@ -129,7 +131,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
     def onScanFinished(self, success: bool, message: str):
         with open(self.scanfile(), 'at') as f:
             f.write('\n')
-        self.lastscanchanged.emit(self.scanrecorder.scanindex)
+#        self.lastscanchanged.emit(self.scanrecorder.scanindex)
         self.scanfinished.emit(success, self.scanrecorder.scanindex)
         self.scanrecorder.deleteLater()
         self.scanrecorder = None
