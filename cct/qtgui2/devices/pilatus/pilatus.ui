@@ -19,7 +19,14 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <widget class="QTreeView" name="treeView"/>
+    <widget class="QTreeView" name="treeView">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
    </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -28,18 +35,11 @@
        <property name="title">
         <string>Trimming</string>
        </property>
-       <layout class="QFormLayout" name="formLayout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="2" column="0" colspan="3">
+         <widget class="QPushButton" name="trimPushButton">
           <property name="text">
-           <string>Threshold:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QSpinBox" name="thresholdSpinBox">
-          <property name="suffix">
-           <string> eV</string>
+           <string>Trim</string>
           </property>
          </widget>
         </item>
@@ -48,17 +48,97 @@
           <property name="text">
            <string>Gain:</string>
           </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QComboBox" name="gainComboBox"/>
-        </item>
-        <item row="2" column="0" colspan="2">
-         <widget class="QPushButton" name="trimPushButton">
-          <property name="text">
-           <string>Trim</string>
+          <property name="buddy">
+           <cstring>gainComboBox</cstring>
           </property>
          </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Threshold:</string>
+          </property>
+          <property name="buddy">
+           <cstring>thresholdSpinBox</cstring>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QSpinBox" name="thresholdSpinBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="suffix">
+           <string> eV</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QComboBox" name="gainComboBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0" colspan="3">
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QToolButton" name="setAgToolButton">
+            <property name="toolTip">
+             <string>Trim the detector for Ag radiation</string>
+            </property>
+            <property name="text">
+             <string>Ag</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="setCrToolButton">
+            <property name="toolTip">
+             <string>Trim the detector for Cr radiation</string>
+            </property>
+            <property name="text">
+             <string>Cr</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="setCuToolButton">
+            <property name="toolTip">
+             <string>Trim the detector for Cu radiation</string>
+            </property>
+            <property name="text">
+             <string>Cu</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="setFeToolButton">
+            <property name="toolTip">
+             <string>Trim the detector for Fe radiation</string>
+            </property>
+            <property name="text">
+             <string>Fe</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QToolButton" name="setMoToolButton">
+            <property name="toolTip">
+             <string>Trim the detector for Mo radiation</string>
+            </property>
+            <property name="text">
+             <string>Mo</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
