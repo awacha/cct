@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, List
 
 import pkg_resources
 from PyQt5 import QtWidgets, QtGui, QtCore
@@ -82,8 +82,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     }
     _windows: Dict[str, QtWidgets.QWidget]
+    _devicestatuswidgets: List[DeviceStatus]
 
     def __init__(self, **kwargs):
+        self._devicestatuswidgets = []
         super().__init__(kwargs['parent'] if 'parent' in kwargs else None)
         self.instrument = kwargs['instrument']
         self.instrument.shutdown.connect(self.close)
@@ -219,8 +221,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.statusBar().showMessage(message)
 
     def onDeviceConnected(self, device: str):
-        ds = DeviceStatus(device=self.instrument.devicemanager[device])
-        self.deviceStatusBarLayout.insertWidget(self.deviceStatusBarLayout.count() - 1, ds)
+        if not [ds for ds in self._devicestatuswidgets if ds.devicename == device]:
+            # device status widget not yet exists
+            ds = DeviceStatus(devicename=device)
+            self._devicestatuswidgets.append(ds)
+            self.deviceStatusBarLayout.insertWidget(self.deviceStatusBarLayout.count() - 1, ds)
+        else:
+            logger.debug(f'Device status widget already exists for device {device}')
 
     def onExecutePushed(self):
         if self.executePushButton.text() == 'Stop':

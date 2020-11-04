@@ -11,8 +11,8 @@
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-    <horstretch>0</horstretch>
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Maximum">
+    <horstretch>1</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
@@ -52,6 +52,12 @@
      </property>
      <item>
       <widget class="QLabel" name="readyLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>RD</string>
        </property>
@@ -62,6 +68,12 @@
      </item>
      <item>
       <widget class="QLabel" name="sendLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>OU</string>
        </property>
@@ -72,6 +84,12 @@
      </item>
      <item>
       <widget class="QLabel" name="recvLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>IN</string>
        </property>
@@ -82,6 +100,12 @@
      </item>
      <item>
       <widget class="QLabel" name="autoQueryLabel">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>AQ</string>
        </property>
@@ -91,19 +115,15 @@
       </widget>
      </item>
      <item>
-      <widget class="QToolButton" name="telemetryToolButton">
-       <property name="text">
-        <string>...</string>
+      <widget class="QToolButton" name="reconnectToolButton">
+       <property name="toolTip">
+        <string>Connect to the device</string>
        </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QToolButton" name="disconnectToolButton">
        <property name="text">
-        <string>D</string>
+        <string>C</string>
+       </property>
+       <property name="icon">
+        <iconset theme="network-connect"/>
        </property>
       </widget>
      </item>

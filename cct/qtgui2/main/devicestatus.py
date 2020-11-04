@@ -1,33 +1,70 @@
-from typing import Any
+from typing import Any, Optional
 
 from PyQt5 import QtWidgets, QtGui
 
 from .devicestatus_ui import Ui_GroupBox
 from ...core2.devices.device.frontend import DeviceFrontend
 from ...core2.devices.device.telemetry import TelemetryInformation
+from ...core2.instrument.instrument import Instrument
 
 
 class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
-    device: DeviceFrontend
+    devicename: str
 
     def __init__(self, **kwargs):
         super().__init__(kwargs['parent'] if 'parent' in kwargs else None)
-        self.device = kwargs['device']
+        self.devicename = kwargs['devicename']
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
         self.statusLabel.setText('')
-        self.device.connectionEnded.connect(self.onDeviceConnectionEnded)
-        self.device.allVariablesReady.connect(self.onDeviceAllVariablesReady)
-        self.device.variableChanged.connect(self.onDeviceVariableChanged)
-        self.device.telemetry.connect(self.onDeviceTelemetry)
         self.autoQueryLabel.setAutoFillBackground(True)
         self.sendLabel.setAutoFillBackground(True)
         self.recvLabel.setAutoFillBackground(True)
         self.readyLabel.setAutoFillBackground(True)
+        self.reconnectToolButton.clicked.connect(self.reconnect)
         self.setTitle(self.device.name)
         self.setEnabled(False)
+        Instrument.instance().devicemanager.deviceConnected.connect(self.onDeviceConnected)
+        Instrument.instance().devicemanager.deviceDisconnected.connect(self.onDeviceDisconnected)
+        if self.devicename in Instrument.instance().devicemanager:
+            self.onDeviceConnected(self.devicename)
+        else:
+            self.onDeviceDisconnected(self.devicename, False)
+
+    def reconnect(self):
+        if self.devicename not in Instrument.instance().devicemanager:
+            Instrument.instance().devicemanager.connectDevice(self.devicename)
+        else:
+            Instrument.instance().devicemanager.disconnectDevice(self.devicename)
+        self.reconnectToolButton.setEnabled(False)
+        pass
+
+    def onDeviceConnected(self, name: str):
+        if name == self.devicename:
+            self._connectDevice()
+            self.reconnectToolButton.setText('D')
+            self.reconnectToolButton.setIcon(QtGui.QIcon.fromTheme('network-disconnect'))
+            self.reconnectToolButton.setToolTip('Disconnect from the device')
+            self.reconnectToolButton.setEnabled(True)
+
+    def onDeviceDisconnected(self, name: str, expected: bool):
+        if name == self.devicename:
+            self.reconnectToolButton.setText('C')
+            self.reconnectToolButton.setIcon(QtGui.QIcon.fromTheme('network-connect'))
+            self.reconnectToolButton.setToolTip('Connect to the device')
+            self.reconnectToolButton.setEnabled(True)
+            self.setLabelColor(self.recvLabel, None)
+            self.setLabelColor(self.sendLabel, None)
+            self.setLabelColor(self.readyLabel, None)
+            self.setLabelColor(self.autoQueryLabel, None)
+            self.statusLabel.setText('(disconnected)')
+
+    def _connectDevice(self):
+        self.device.allVariablesReady.connect(self.onDeviceAllVariablesReady)
+        self.device.variableChanged.connect(self.onDeviceVariableChanged)
+        self.device.telemetry.connect(self.onDeviceTelemetry)
 
     def onDeviceVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name in ['__status__', '__auxstatus__']:
@@ -35,9 +72,6 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
                 self.statusLabel.setText(f"{self.device['__status__']} ({self.device['__auxstatus__']})")
             except DeviceFrontend.DeviceError:
                 pass
-
-    def onDeviceConnectionEnded(self, expected: bool):
-        self.close()
 
     def onDeviceAllVariablesReady(self):
         pass
@@ -61,8 +95,15 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
         self.setEnabled(True)
 
     @staticmethod
-    def setLabelColor(label: QtWidgets.QLabel, isok: bool):
+    def setLabelColor(label: QtWidgets.QLabel, isok: Optional[bool]):
         pal = label.palette()
-        pal.setColor(QtGui.QPalette.Window, QtGui.QColor('green' if isok else 'red'))
+        pal.setColor(
+            QtGui.QPalette.Window,
+            QtGui.QColor(
+                ('lightgreen' if isok else 'red') if isok is not None else 'gray'))
         label.setPalette(pal)
         label.setAutoFillBackground(True)
+
+    @property
+    def device(self) -> DeviceFrontend:
+        return Instrument.instance().devicemanager[self.devicename]
