@@ -126,7 +126,7 @@ class Command(QtCore.QObject):
 
     def parseArguments(self) -> Any:
         logger.debug(f'Parsing arguments: {self.argumentstring=}')
-        args = eval(self.argumentstring)
+        args = eval(self.argumentstring, None, self.namespace)
         if args is None:
             args = ()
         elif not isinstance(args, tuple):
@@ -190,7 +190,7 @@ class JumpCommand(Command):
     @final
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         try:
-            label, isgosub = self.run(self.parsed_arguments)
+            label, isgosub = self.run(*self.parsed_arguments)
             if label is not None:
                 self.jump(label, isgosub)
             else:

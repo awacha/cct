@@ -104,7 +104,7 @@ class Interpreter(QtCore.QObject, Component):
         if gosub:
             self.callstack.insert(0, self.pointer)
         linenumbers = [i for i in range(len(self.script)) if
-                       isinstance(self.script[i], Label) and eval(self.script[i].arguments) == label]
+                       isinstance(self.script[i], Label) and self.script[i].argumentstring == label]
         if not linenumbers:
             self.fail(f'Label "{label}" does not exist.')
         elif len(linenumbers) > 1:
