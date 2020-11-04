@@ -63,6 +63,7 @@ class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.shutterPushButton.toggled.connect(self.onShutterToggled)
         self.powerOffPushButton.clicked.connect(self.onPowerOffClicked)
         self.standbyPushButton.clicked.connect(self.onStandbyClicked)
+        self.fullPowerPushButton.clicked.connect(self.onFullPowerClicked)
 
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name in self._var2widget:
