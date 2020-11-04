@@ -143,7 +143,8 @@ class Label(InstantCommand):
     arguments = []
 
     def parseArguments(self) -> Any:
-        return None
+        self.parsed_arguments = ()
+        return ()
 
     def run(self, *args: Any) -> Any:
         return None
