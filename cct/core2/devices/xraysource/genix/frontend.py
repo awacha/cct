@@ -48,7 +48,7 @@ class GeniX(DeviceFrontend):
             raise self.DeviceError(f'Cannot set X-ray source to standby mode from mode {self["__status__"]}')
 
     def rampup(self):
-        if self['__status__'] != GeniXBackend.Status.standby:
+        if self['__status__'] not in [GeniXBackend.Status.standby, GeniXBackend.Status.full]:
             raise self.DeviceError(f'Cannot put X-ray source to full power mode from mode {self["__status__"]}')
         self.issueCommand('full_power')
 

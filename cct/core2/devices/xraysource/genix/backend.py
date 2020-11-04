@@ -229,6 +229,7 @@ class GeniXBackend(DeviceBackend):
             if self['__status__'] == self.Status.warmup:
                 self.commandError(name, 'Cannot turn power of X-ray tube in the middle of the warm-up procedure.')
                 return
+            self.updateVariable('__status__', self.Status.poweringoff)
             self._modbus_set_coil(250, False)  # Standby mode off
             self._modbus_set_coil(244, True)  # power off.
             self.commandFinished(name, "Powering off X-ray generator")
@@ -237,12 +238,16 @@ class GeniXBackend(DeviceBackend):
             if self['__status__'] in [self.Status.warmup, self.Status.xraysoff]:
                 self.commandError(name, 'Cannot go to stand-by if X-rays are off or warming up.')
                 return
+            self.updateVariable('__status__', self.Status.goingtostandby)
             self._modbus_set_coil(250, True)  # Standby mode on
             self.commandFinished(name, 'Going to standby mode.')
         elif name == 'full_power':
-            if self['__status__'] != self.Status.standby:
+            if self['__status__'] == self.Status.full:
+                self.commandFinished(name, 'Already at full power')
+            elif self['__status__'] != self.Status.standby:
                 self.commandError(name, 'X-ray tube can only be put in full-power mode from stand-by.')
                 return
+            self.updateVariable('__status__', self.Status.goingtofull)
             self._modbus_set_coil(250, False)  # Standby mode off
             self._modbus_set_coil(252, True)  # ramp up
             self.commandFinished(name, 'Going to full power mode')
