@@ -116,10 +116,9 @@ class IO(QtCore.QObject, Component):
             pass
         if prefix not in self._nextfsn:
             self._nextfsn[prefix] = fsn+1
-            self.nextFSNChanged.emit(prefix, fsn+1)
         elif self._lastfsn[prefix] + 1 > self._nextfsn[prefix]:
             self._nextfsn[prefix] = self._lastfsn[prefix] + 1
-            self.nextFSNChanged.emit(prefix, self._lastfsn[prefix] + 1)
+        self.nextFSNChanged.emit(prefix, self._nextfsn[prefix])
 
     def nextfsn(self, prefix: str, checkout: int = 0) -> int:
         """Get the next file sequence number from the desired sequence
@@ -139,6 +138,7 @@ class IO(QtCore.QObject, Component):
             nextfsn = self._nextfsn[prefix]
         if checkout:
             self._nextfsn[prefix] += checkout
+            self.nextFSNChanged.emit(prefix, self._nextfsn[prefix])
         return nextfsn
 
     def lastfsn(self, prefix: str) -> Optional[int]:
