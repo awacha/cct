@@ -132,6 +132,9 @@ class Command(QtCore.QObject):
         elif not isinstance(args, tuple):
             # happens in the case of a single argument
             args = (args,)
+        if len(args) < len(self.arguments):
+            # adding default values
+            args = args + tuple([a.defaultvalue for a in self.arguments[len(args):]])
         self.parsed_arguments = args
         return args
 
