@@ -28,7 +28,7 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.scriptEditor = ScriptEditor(self)
+        self.scriptEditor = ScriptEditor(self.splitter)
         self.scriptEditorVerticalLayout.addWidget(self.scriptEditor)
         self.scriptEditor.document().modificationChanged.connect(self.modificationChanged)
         self.scriptEditor.undoAvailable.connect(self.undoAvailable)
@@ -70,6 +70,8 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
         else:
             with open(self.filename, 'wt') as f:
                 f.write(self.scriptEditor.document().toPlainText())
+            self.scriptEditor.document().setModified(False)
+            self.modificationChanged.emit(False)
         logger.info(f'Script saved to {self.filename}')
 
     def saveas(self):
@@ -96,3 +98,6 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
         if self.filename is not None:
             with open(os.path.splitext(self.filename)[0]+'.log', 'a') as f:
                 f.write(f'{datetime.datetime.now()}: {message.strip()}\n')
+
+    def isRunning(self) -> bool:
+        return self.scriptEditor.isReadOnly()

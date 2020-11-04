@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from .linenumbersbar import LineNumbersBar
@@ -11,9 +12,11 @@ logger.setLevel(logging.DEBUG)
 
 class ScriptEditor(QtWidgets.QPlainTextEdit):
     linenumbersbar: LineNumbersBar
+    lastRunCursor: Optional[QtGui.QTextCursor] = None
 
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
+        self.lastRunCursor = None
         self.linenumbersbar = LineNumbersBar(self)
         self.blockCountChanged.connect(self.updateLineNumbersBarAreaWidth)
         self.updateRequest.connect(self.updateLineNumbersBar)
@@ -28,11 +31,15 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         block = self.firstVisibleBlock()
         top = round(self.blockBoundingGeometry(block).translated(self.contentOffset()).top())
         bottom = top + round(self.blockBoundingRect(block).height())
+        if self.isReadOnly():
+            thisblocknumber = self.lastRunCursor.blockNumber()
+        else:
+            thisblocknumber = self.textCursor().blockNumber()
         while block.isValid() and (top <= paintevent.rect().bottom()):
             if block.isVisible() and (bottom >= paintevent.rect().top()):
                 painter.setPen(QtCore.Qt.black)
                 painter.drawText(0, top, self.linenumbersbar.width(), self.fontMetrics().height(), QtCore.Qt.AlignRight, str(block.blockNumber()+1))
-                if (block.blockNumber() == self.textCursor().blockNumber()) and self.isReadOnly():
+                if (block.blockNumber() == thisblocknumber) and self.isReadOnly():
                     img = QtGui.QIcon.fromTheme('media-playback-start').pixmap(QtCore.QSize(self.fontMetrics().height(), self.fontMetrics().height())).toImage()
                     painter.drawImage(QtCore.QRect(0, top, self.fontMetrics().height(), self.fontMetrics().height()), img)
             block = block.next()
@@ -46,17 +53,20 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         cr = self.contentsRect()
         self.linenumbersbar.setGeometry(QtCore.QRect(cr.left(), cr.top(), self.linenumbersbarAreaWidth(), cr.height()))
+        super().resizeEvent(event)
 
     def updateLineNumbersBarAreaWidth(self, blockcount:int):
         self.setViewportMargins(self.linenumbersbarAreaWidth(), 0, 0, 0)
 
     def highlightCurrentLine(self):
+        if self.isReadOnly():
+            return
         selection = QtWidgets.QTextEdit.ExtraSelection()
-        color = QtGui.QColor(QtCore.Qt.green if self.isReadOnly() else QtCore.Qt.yellow).lighter(160)
+        color = QtGui.QColor(QtCore.Qt.yellow).lighter(160)
         selection.format.setBackground(color)
         selection.format.setForeground(QtGui.QColor('black'))
         selection.format.setProperty(QtGui.QTextFormat.FullWidthSelection, True)
-        selection.cursor = self.textCursor()
+        selection.cursor = QtGui.QTextCursor(self.textCursor())
         selection.cursor.clearSelection()
         self.setExtraSelections([selection])
 
@@ -69,4 +79,12 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
             self.updateLineNumbersBarAreaWidth(0)
 
     def highlightRunningLine(self, line: int):
-        self.setTextCursor(QtGui.QTextCursor(self.document().findBlockByNumber(line)))
+        selection = QtWidgets.QTextEdit.ExtraSelection()
+        color = QtGui.QColor(QtCore.Qt.green).lighter(160)
+        selection.format.setBackground(color)
+        selection.format.setForeground(QtGui.QColor('black'))
+        selection.format.setProperty(QtGui.QTextFormat.FullWidthSelection, True)
+        self.lastRunCursor =QtGui.QTextCursor(self.document().findBlockByNumber(line))
+        selection.cursor = self.lastRunCursor
+        selection.cursor.clearSelection()
+        self.setExtraSelections([selection])

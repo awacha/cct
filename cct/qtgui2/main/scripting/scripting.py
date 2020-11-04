@@ -131,6 +131,9 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         self.pasteToolButton.setEnabled(scriptui.canPaste())
 
     def tabCloseRequested(self, index: int):
+        if self.scripts[index].isRunning():
+            QtWidgets.QMessageBox.critical(self, 'Script is running', 'Cannot close the running script!')
+            return
         if self.scripts[index].isModified():
             result = QtWidgets.QMessageBox.question(
                 self, 'Confirm close', 'There are unsaved changes to this script. Do you want to save them?',
@@ -230,7 +233,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
 
     def _createTab(self, script: ScriptUI):
         self.scripts.append(script)
-        self.tabWidget.addTab(self.scripts[-1], 'Untitled')
+        self.tabWidget.addTab(self.scripts[-1], script.getTitle())
         self.tabWidget.setCurrentIndex(len(self.scripts) - 1)
         script.modificationChanged.connect(self.onScriptModificationChanged)
         script.undoAvailable.connect(self.undoToolButton.setEnabled)
@@ -243,6 +246,6 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
 
     def runningScript(self) -> Optional[ScriptUI]:
         try:
-            return [s for s in self.scripts if s.scriptEditor.isReadOnly()][0]
+            return [s for s in self.scripts if s.isRunning()][0]
         except IndexError:
             return None
