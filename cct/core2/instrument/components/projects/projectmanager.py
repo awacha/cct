@@ -1,12 +1,16 @@
+import logging
 import os
 import pickle
 from typing import List, Any
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtWidgets
 
 from .project import Project
 from ..auth import Privilege
 from ..component import Component
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class ProjectManager(QtCore.QAbstractItemModel, Component):
@@ -33,6 +37,9 @@ class ProjectManager(QtCore.QAbstractItemModel, Component):
             return prj.title
         elif role == QtCore.Qt.UserRole:
             return prj
+        elif (role == QtCore.Qt.DecorationRole) and (index.column() == 0):
+            return QtWidgets.QApplication.instance().style().standardIcon(
+                QtWidgets.QStyle.SP_DialogOkButton) if self._currentproject is prj else None
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if not self.instrument.auth.hasPrivilege(Privilege.ProjectManagement):
@@ -139,6 +146,8 @@ class ProjectManager(QtCore.QAbstractItemModel, Component):
 
     def setProject(self, projectid: str):
         self._currentproject = self[projectid]
+        logger.info(f'Current project changed to {self._currentproject}')
+        self.saveToConfig()
 
     def projectID(self) -> str:
         return self._currentproject.projectid

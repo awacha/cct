@@ -19,7 +19,11 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QTreeView" name="projectListTreeView"/>
+    <widget class="QTreeView" name="projectListTreeView">
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
@@ -42,7 +46,8 @@
         <string>Add project...</string>
        </property>
        <property name="icon">
-        <iconset theme="list-add"/>
+        <iconset theme="list-add">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>
@@ -52,7 +57,8 @@
         <string>Remove project</string>
        </property>
        <property name="icon">
-        <iconset theme="list-remove"/>
+        <iconset theme="list-remove">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>

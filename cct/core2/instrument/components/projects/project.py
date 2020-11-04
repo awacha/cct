@@ -15,3 +15,6 @@ class Project:
         self.projectid = state['projectid']
         self.title = state['title']
         self.proposer = state['proposer']
+
+    def __str__(self) -> str:
+        return f'{self.projectid}: {self.title} (by {self.proposer})'
