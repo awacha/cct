@@ -34,6 +34,8 @@ class Expose(Command):
 
     def onExposureFinished(self, success: bool):
         self.success = success
+        if not success:
+            self.waiting_for_images=0
         self.tryToFinalize()
 
     def tryToFinalize(self):
@@ -63,6 +65,10 @@ class Expose(Command):
         except:
             self.disconnectExposer()
             raise
+
+    def stop(self):
+        self.instrument.exposer.stopExposure()
+
 
 
 class ExposeMulti(Expose):
