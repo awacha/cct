@@ -131,7 +131,7 @@ class BeamStop(QtCore.QObject, Component):
         return self.state
 
     def onMotorMoving(self, current: float, start: float, end: float):
-        if self.state == self.States.Moving:
+        if (self.state == self.States.Moving) and (self._movetarget is not None):
             self.movingProgress.emit(
                 f'Moving beamstop {self._movetarget.value}, moving motor {self.sender().name}', start, end, current)
 
