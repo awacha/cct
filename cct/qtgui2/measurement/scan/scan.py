@@ -61,7 +61,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.shrinkWindow()
 
     def shrinkWindow(self):
-        self.resize(self.minimumSize())
+        self.resize(self.minimumSizeHint())
 
     def onMotorChanged(self):
         if self.motorname is not None:

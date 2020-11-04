@@ -60,7 +60,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.motorNameComboBox.addItems(sorted([m.name for m in self.instrument.motors]))
         self.startPushButton.clicked.connect(self.onStartClicked)
         self.progressBar.hide()
-        self.resize(self.minimumSize())
+        self.resize(self.minimumSizeHint())
 
     def motor(self) -> Motor:
         return self.instrument.motors[self.motorname]
@@ -155,6 +155,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.state = AdjustingState.Idle
             QtWidgets.QMessageBox.information(
                 self, 'Success', f'Motor auto-adjustment successful. Delta is {self.delta}.')
+            logger.info(f'Auto-adjusted motor {motor.name} finished successfully. Delta is {self.delta}')
             self.finalize()
 
     def finalize(self):
@@ -167,4 +168,4 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.hide()
         self.startPushButton.setText('Start')
         self.startPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
-        self.resize(self.minimumSize())
+        self.resize(self.minimumSizeHint())
