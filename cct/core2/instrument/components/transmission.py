@@ -48,7 +48,7 @@ class TransmissionData:
         empty = (empty[0] - dark[0]), (empty[1] ** 2 + dark[1] ** 2) ** 0.5
         sample = (sample[0] - dark[0]), (sample[1] ** 2 + dark[1] ** 2) ** 0.5
         return sample[0] / empty[0], (
-                sample[1] ** 2 / dark[0] ** 2 + dark[1] ** 2 * sample[0] ** 2 / dark[0] ** 4) ** 0.5
+                sample[1] ** 2 / empty[0] ** 2 + empty[1] ** 2 * sample[0] ** 2 / empty[0] ** 4) ** 0.5
 
     def dark(self) -> Optional[Tuple[float, float]]:
         if not self.darkcounts:
