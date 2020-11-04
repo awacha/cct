@@ -37,6 +37,19 @@ class DataReduction(QtCore.QObject, Component):
                                                args=(self.config.asdict(), self.queuetobackend, self.queuefrombackend))
         self.backend.start()
 
+    def _cleanupbackend(self):
+        if self.backend is None:
+            return
+        self.queuetobackend.close()
+        self.queuefrombackend.close()
+        self.backend.join()
+        self.queuetobackend = None
+        self.queuefrombackend = None
+        self.backend = None
+        self.killTimer(self.timer)
+        self.timer = None
+        self.stopping = False
+
     def startComponent(self):
         self._startbackend()
         self.started.emit()
@@ -48,14 +61,11 @@ class DataReduction(QtCore.QObject, Component):
             return
         logger.debug(f'Message from backend: {cmd=}, {arg=}')
         if cmd == 'finished' and self.stopping:
-            self.killTimer(self.timer)
-            self.timer = None
-            self.backend = None
-            self.stopping = False
+            self._cleanupbackend()
             self.stopped.emit()
         elif cmd == 'finished':
             # stopped for other reasons, try to restart.
-            self.backend = None
+            self._cleanupbackend()
             self._startbackend()
         elif cmd == 'log':
             logger_background.log(*arg)
@@ -64,10 +74,12 @@ class DataReduction(QtCore.QObject, Component):
             self.submitted -= 1
         else:
             assert False
-        if self.submitted <= 0:
+        if (self.submitted <= 0) and (cmd != 'log'):
             self.submitted = 0
-            self.queuetobackend.put_nowait(('end', None))
-#            self.killTimer(self.timer)
+            if self.timer is not None:
+                self.killTimer(self.timer)
+                self.timer = None
+            # keep the back-end running but we do not expect any message from it.
 
     def stopComponent(self):
         self.stopping = True
