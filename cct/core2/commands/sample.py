@@ -19,7 +19,7 @@ class SetSample(Command):
         self.connectSampleStore()
         try:
             self.instrument.samplestore.moveToSample(sample)
-            self.message(f'Moving to sample {sample}')
+            self.message.emit(f'Moving to sample {sample}')
         except:
             self.disconnectSampleStore()
             raise
