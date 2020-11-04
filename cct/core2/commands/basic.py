@@ -102,6 +102,32 @@ class GoSubOnFlag(JumpCommand):
             return None, False
 
 
+class GoIf(JumpCommand):
+    name = 'goif'
+    description = 'Goto a label if a condition is true'
+    arguments = [StringArgument('label', 'Label name'),
+                 AnyArgument('condition', 'A valid expression that evaluates to True or False')]
+
+    def run(self, label: str, condition: Any) -> Tuple[Optional[str], bool]:
+        if bool(condition):
+            return label, False
+        else:
+            return None, False
+
+
+class GoSubIf(JumpCommand):
+    name = 'gosubif'
+    description = 'Goto a label (with the possibility of returning) if a condition is true'
+    arguments = [StringArgument('label', 'Label name'),
+                 AnyArgument('condition', 'A valid expression that evaluates to True or False')]
+
+    def run(self, label: str, condition: Any) -> Tuple[Optional[str], bool]:
+        if bool(condition):
+            return label, True
+        else:
+            return None, False
+
+
 class End(InstantCommand):
     name = 'end'
     description = 'End the script'
