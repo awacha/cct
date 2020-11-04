@@ -214,18 +214,28 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     w.blockSignals(False)
         self.recalculateCollimationProperties()
 
+    @staticmethod
+    def setLabelBackground(label: QtWidgets.QLabel, good: bool):
+        pal = label.palette()
+        pal.setColor(pal.Window, QtGui.QColor('red' if not good else 'lightgreen'))
+        label.setPalette(pal)
+        label.setAutoFillBackground(True)
+
     def recalculateCollimationProperties(self):
         self.relativeintensityLabel.setText(f'{self.instrument.geometry.currentpreset.intensity:.4f}')
         self.qMinLabel.setText(f'{self.instrument.geometry.currentpreset.qmin:.4f}')
         self.maxRgLabel.setText(f'{self.instrument.geometry.currentpreset.Rgmax:.4f}')
         self.parasiticScatteringLabel.setText(
             'Not expected' if self.instrument.geometry.currentpreset.is_beamstop_large_enough_parasitic else 'Expected')
+        self.setLabelBackground(self.parasiticScatteringLabel, self.instrument.geometry.currentpreset.is_beamstop_large_enough_parasitic)
         self.directBeamHitsDetectorLabel.setText(
             'No' if self.instrument.geometry.currentpreset.is_beamstop_large_enough_direct else 'YES!!!')
+        self.setLabelBackground(self.directBeamHitsDetectorLabel, self.instrument.geometry.currentpreset.is_beamstop_large_enough_direct)
         self.sampleSizeLabel.setText(f'{self.instrument.geometry.currentpreset.dsample:.2f}')
         self.beamStopSizeLabel.setText(f'{self.instrument.geometry.currentpreset.dbeamstop:.2f}')
         self.pinhole3LargeEnoughLabel.setText(
             'Yes' if self.instrument.geometry.currentpreset.is_pinhole3_large_enough else 'NO!!!')
+        self.setLabelBackground(self.pinhole3LargeEnoughLabel, self.instrument.geometry.currentpreset.is_pinhole3_large_enough)
 
     def onGeometryParameterChangedInUI(self):
         widget = self.sender()
