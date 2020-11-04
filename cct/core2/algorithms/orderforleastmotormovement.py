@@ -35,7 +35,7 @@ def orderForLeastMotorMovement(positions: List[Tuple[T, Tuple[float, float]]], s
             # no samples with this slow coordinate
             continue
         # see which end of the fastest coordinate is nearest to the last fast coordinate position
-        if abs(objects[0][1][fast] - lastfastcoord) < abs(objects[-1][1][fast] - lastfastcoord):
+        if abs(objects[0][1][fast] - lastfastcoord) > abs(objects[-1][1][fast] - lastfastcoord):
             objects = reversed(objects)
         objects = list(objects)
         objects_ordered.extend(objects)
