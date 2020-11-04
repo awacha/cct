@@ -13,6 +13,7 @@ from scipy.io import loadmat
 from .component import Component
 from ...algorithms.readcbf import readcbf
 from ...dataclasses import Exposure, Header
+from ...config import Config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -410,3 +411,42 @@ class IO(QtCore.QObject, Component):
             self.reindexScanfile()
         elif path[:2] == ('path', 'directories'):
             self.reindex()
+
+    def loadFromConfig(self):
+        if isinstance(self.config, Config):
+            self.config.blockSignals(True)
+        try:
+            for configpath, defaultvalue in [
+                (('path', 'directories', 'log'), 'log'),
+                (('path', 'directories', 'images'), 'images'),
+                (('path', 'directories', 'images_local'), 'images_local'),
+                (('path', 'directories', 'param'), 'param'),
+                (('path', 'directories', 'config'), 'config'),
+                (('path', 'directories', 'mask'), 'mask'),
+                (('path', 'directories', 'nexus'), 'nexus'),
+                (('path', 'directories', 'eval1d'), 'eval1d'),
+                (('path', 'directories', 'eval2d'), 'eval2d'),
+                (('path', 'directories', 'param_override'), 'param_override'),
+                (('path', 'directories', 'scan'), 'scan'),
+                (('path', 'directories', 'status'), 'status'),
+                (('path', 'directories', 'scripts'), 'scripts'),
+                (('path', 'directories', 'images_detector'), ['/disk2/images', '/home/det/p2_det/images']),
+                (('path', 'fsndigits'), 5),
+                (('path', 'prefixes', 'crd'), 'crd'),
+                (('path', 'prefixes', 'scn'), 'scn'),
+                (('path', 'prefixes', 'tra'), 'tra'),
+                (('path', 'prefixes', 'tst'), 'tst'),
+                (('path', 'prefixes', 'gsx'), 'gsx'),
+                (('path', 'prefixes', 'map'), 'map'),
+                (('path', 'varlogfile'), 'varlog.log'),
+            ]:
+                cnf = self.config
+                for pathelement in configpath[:-1]:
+                    if pathelement not in cnf:
+                        cnf[pathelement] = {}
+                    cnf = cnf[pathelement]
+                if configpath[-1] not in cnf:
+                    cnf[configpath[-1]] = defaultvalue
+        finally:
+            if isinstance(self.config, Config):
+                self.config.blockSignals(False)

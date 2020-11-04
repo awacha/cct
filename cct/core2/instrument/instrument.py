@@ -117,32 +117,6 @@ class Instrument(QtCore.QObject):
         self.devicemanager.disconnectDevices()
 
     def createDefaultConfig(self):
-        self.config['path'] = {
-            'directories': {
-                'log': 'log',
-                'images': 'images',
-                'images_local': 'images_local',
-                'param': 'param',
-                'config': 'config',
-                'mask': 'mask',
-                'nexus': 'nexus',
-                'eval1d': 'eval1d',
-                'eval2d': 'eval2d',
-                'param_override': 'param_override',
-                'scan': 'scan',
-                'images_detector': ['/disk2/images', '/home/det/p2_det/images'],
-                'status': 'status',
-                'scripts': 'scripts',
-            },
-            'fsndigits': 5,
-            'prefixes': {
-                'crd': 'crd',
-                'scn': 'scn',
-                'tra': 'tra',
-                'tst': 'tst',
-            },
-            'varlogfile': 'varlog.log',
-        }
         self.config['beamstop'] = {'in': (0.0, 0.0), 'out': (0.0, 0.0), 'motorx': 'BeamStop_X', 'motory': 'BeamStop_Y'}
         self.config['services'] = {
             'samplestore': {'list': {}, 'active': None, 'motorx': 'Sample_X', 'motory': 'Sample_Y'}
