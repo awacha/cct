@@ -91,8 +91,8 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
         return self.scriptEditor.toPlainText()
 
     def addMessage(self, message: str):
-        self.outputPlainTextEdit.appendPlainText(f'{datetime.datetime.now()}: {message.strip()}\n')
+        self.outputPlainTextEdit.appendPlainText(f'{datetime.datetime.now()}: {message.strip()}')
         self.outputPlainTextEdit.ensureCursorVisible()
         if self.filename is not None:
             with open(os.path.splitext(self.filename)[0]+'.log', 'a') as f:
-                f.write(f'{datetime.datetime.now()}: {message}\n')
+                f.write(f'{datetime.datetime.now()}: {message.strip()}\n')
