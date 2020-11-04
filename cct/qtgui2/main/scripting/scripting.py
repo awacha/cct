@@ -74,6 +74,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         tb.setCheckable(True)
         tb.setChecked(flagstate)
         tb.setObjectName(f'flag_{flagname}_ToolButton')
+        tb.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
         tb.toggled.connect(self.onFlagToolButtonToggled)
         self.flagsHorizontalLayout.insertWidget(self.flagsHorizontalLayout.count() - 1, tb)
 
