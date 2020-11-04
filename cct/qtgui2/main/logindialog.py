@@ -20,7 +20,7 @@ class LoginDialog(QtWidgets.QDialog, Ui_Dialog):
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setIcon(QtGui.QIcon.fromTheme('user-info'))
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).setIcon(QtGui.QIcon.fromTheme('system-exit'))
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).setText('Exit')
-        self.resize(self.minimumSizeHint().width(), self.height())
+        self.resize(self.minimumSizeHint())
 
     def authenticate(self) -> bool:
         try:
