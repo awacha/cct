@@ -80,6 +80,7 @@ def fitpeak(x: np.ndarray, y: np.ndarray, dy: Optional[np.ndarray], dx: Optional
         _, s, VT = scipy.linalg.svd(result.jac, full_matrices=False)
         threshold = np.finfo(float).eps * max(result.jac.shape) * s[0]
         s = s[s > threshold]
+        VT = VT[:s.size]
         try:
             covar = np.dot(VT.T / s ** 2, VT)
         except ValueError:

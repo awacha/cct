@@ -37,8 +37,8 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.figure = Figure(constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.figtoolbar = NavigationToolbar2QT(self.canvas, self)
-        self.figureVerticalLayout.addWidget(self.figtoolbar)
         self.figureVerticalLayout.addWidget(self.canvas)
+        self.figureVerticalLayout.addWidget(self.figtoolbar)
         self.axes = self.figure.add_subplot(self.figure.add_gridspec(1, 1)[:, :])
         self.canvas.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         self.canvas.draw_idle()
@@ -73,7 +73,13 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         )
         if self.sender() == self.fitNegativeToolButton:
             y = -y
-        pars, covar, peakfunc = fitpeak(x[idx], y[idx], None, None, PeakType.AsymmetricLorentzian)
+        try:
+            pars, covar, peakfunc = fitpeak(x[idx], y[idx], y[idx]**0.5, None, PeakType.Lorentzian)
+        except ValueError as ve:
+            QtWidgets.QMessageBox.critical(self, 'Error while fitting', f'Cannot fit peak, please try another range. The error message was: {ve}')
+            return
+        logger.debug(f'Peak parameters: {pars}')
+        logger.debug(f'Covariance matrix: {covar}')
         xfit = np.linspace(x[idx].min(), x[idx].max(), 100)
         yfit = peakfunc(xfit)
         if self.sender() == self.fitNegativeToolButton:
