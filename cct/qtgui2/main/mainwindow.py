@@ -151,9 +151,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         logger.debug(f'Window class: {windowclass}')
         assert issubclass(windowclass, QtWidgets.QWidget)
         try:
-            self._windows[windowclass.__name__].show()
-            self._windows[windowclass.__name__].raise_()
-            self._windows[windowclass.__name__].setFocus()
+            win = self._windows[windowclass.__name__]
+            win.show()
+            if win.isMinimized():
+                win.showNormal()
+            win.raise_()
+            win.setFocus()
         except KeyError:
             assert issubclass(windowclass, WindowRequiresDevices)
             assert issubclass(windowclass, QtWidgets.QWidget)

@@ -360,6 +360,7 @@
    <addaction name="actionScan"/>
    <addaction name="actionSingle_exposure"/>
    <addaction name="actionTransmission"/>
+   <addaction name="actionScript"/>
    <addaction name="separator"/>
    <addaction name="actionMask_editor"/>
    <addaction name="actionCapillary_sizing"/>
