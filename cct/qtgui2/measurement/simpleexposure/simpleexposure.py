@@ -51,6 +51,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.repopulateSampleComboBox()
         self.prefixComboBox.clear()
         self.prefixComboBox.addItems(sorted(self.instrument.io.prefixes))
+        self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText(self.instrument.config['path']['prefixes']['tst']))
         self.progressBar.hide()
         self.resize(self.minimumSizeHint())
         self.setUiEnabled()
@@ -174,7 +175,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onExposureFinished(self, success: bool):
         self.instrument.exposer.exposureFinished.disconnect(self.onExposureFinished)
         self.instrument.exposer.exposureProgress.disconnect(self.onExposureProgress)
-        self._waitforimages()
+        self._closeshutter()
 
     def onImageReceived(self, exposure):
         self.imagesrequired -= 1
@@ -189,7 +190,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setVisible(True)
         self.progressBar.setRange(starttime*100, endtime*100)
         self.progressBar.setValue(currenttime*100)
-        self.progressBar.setFormat(f'Exposing {prefix} #{fsn}, {endtime-currenttime:.2} secs remaining')
+        self.progressBar.setFormat(f'Exposing {prefix} #{fsn}, {endtime-currenttime:.2f} secs remaining')
 
     def onStartStopClicked(self):
         if self.startStopPushButton.text() == 'Start':
@@ -207,6 +208,10 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self.instrument.samplestore.stopMotors()
             elif self.state == State.OpeningShutter:
                 pass
+            elif self.state == State.WaitingForImages:
+                return
+            elif self.state == State.ClosingShutter:
+                return
             self.state = State.StopRequested
 
     def repopulateSampleComboBox(self):
@@ -233,5 +238,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.setUiEnabled()
 
     def setUiEnabled(self):
-        for widget in [self.sampleNameComboBox, self.sampleNameCheckBox, self.prefixComboBox, self.exposureTimeDoubleSpinBox, self.delayDoubleSpinBox, self.imageCountSpinBox, self.shutterCheckBox]:
+        for widget in [self.sampleNameCheckBox, self.prefixComboBox, self.exposureTimeDoubleSpinBox, self.imageCountSpinBox, self.shutterCheckBox]:
             widget.setEnabled(self.isIdle())
+        self.sampleNameComboBox.setEnabled(self.isIdle() and self.sampleNameCheckBox.isChecked())
+        self.delayDoubleSpinBox.setEnabled(self.isIdle() and self.imageCountSpinBox.value() > 1)
