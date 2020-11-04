@@ -34,6 +34,7 @@ class DevCommand(Command):
                StringArgument('commandname', 'The name of the low-level command'),
                ...]
     sentcommand:str
+    timerinterval = None
     device: DeviceFrontend
 
     def _connectDevice(self):

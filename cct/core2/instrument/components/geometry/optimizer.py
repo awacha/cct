@@ -126,13 +126,14 @@ class GeometryOptimizer(QtCore.QObject):
         self.timerid = None
         self.stopevent = Event()
 
-
     def start(self, maxsamplediameter: float, qmin: float, l1min: float, l2min: float, lmax: float):
         if self.process is not None or self.queue is not None:
             raise RuntimeError('Cannot start processing: already running')
         self.queue = Queue()
         self.process = Process(target=_worker, name='optimization worker',
-                               args=(self.stopevent, self.queue, self.config.asdict(), maxsamplediameter, qmin, l1min, l2min, lmax))
+                               args=(
+                               self.stopevent, self.queue, self.config.asdict(), maxsamplediameter, qmin, l1min, l2min,
+                               lmax))
         self.stopevent.clear()
         self.process.start()
         self.timerid = self.startTimer(0, QtCore.Qt.VeryCoarseTimer)
@@ -155,4 +156,3 @@ class GeometryOptimizer(QtCore.QObject):
             self.finished.emit(time.monotonic() - self.starttime)
             self.starttime = None
             self.stopevent.clear()
-
