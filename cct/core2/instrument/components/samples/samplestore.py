@@ -278,7 +278,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         if self.xmotor().isMoving() or self.ymotor().isMoving():
             raise RuntimeError('Cannot move sample: motors are not idle.')
         sample = [s for s in self._samples if s.title == samplename][0]
-        self._currentsample = samplename
+        self.setCurrentSample(samplename)
         self._connectSampleMotors()
         self._movesampledirection = direction
         try:
