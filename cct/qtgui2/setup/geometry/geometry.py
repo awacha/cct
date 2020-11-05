@@ -119,7 +119,15 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.graphTab.layout().addWidget(self.canvas)
         self.graphTab.layout().addWidget(self.figtoolbar)
         self.optimizationTreeView.selectionModel().selectionChanged.connect(self.onOptimizationSelectionChanged)
+        self.browseMaskPushButton.clicked.connect(self.onBrowseMask)
         self.updateSetupParametersPushButton.clicked.connect(self.updateSetupParameters)
+
+    def onBrowseMask(self):
+        filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select a mask file', '', 'Mask files (*.mat *.npz);;All files (*)', 'Mask files (*.mat *.npz)')
+        if not filename:
+            return
+        self.maskFileNameLineEdit.setText(filename)
+        self.maskFileNameLineEdit.editingFinished.emit()
 
     def updateSetupParameters(self):
         current = self.optimizationTreeView.currentIndex().row()
@@ -194,19 +202,24 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                                                                                                            QtWidgets.QDoubleSpinBox):
                     assert isinstance(value, tuple) and len(value) == 2 and isinstance(value[0], float) and isinstance(
                         value[1], float)
-                    widgets[0].setValue(value[0])
-                    widgets[1].setValue(value[1])
+                    if widgets[0].value() != value[0]:
+                        widgets[0].setValue(value[0])
+                    if widgets[1].value() != value[1]:
+                        widgets[1].setValue(value[1])
                 elif len(widgets) == 1:
                     widget = widgets[0]
                     if isinstance(widget, QtWidgets.QDoubleSpinBox):
                         assert isinstance(value, float)
-                        widget.setValue(value)
+                        if widget.value() != value:
+                            widget.setValue(value)
                     elif isinstance(widget, QtWidgets.QPlainTextEdit):
                         assert isinstance(value, str)
-                        widget.setPlainText(value)
+                        if widget.toPlainText() != value:
+                            widget.setPlainText(value)
                     elif isinstance(widget, QtWidgets.QLineEdit):
                         assert isinstance(value, str)
-                        widget.setText(value)
+                        if widget.text() != value:
+                            widget.setText(value)
                     else:
                         assert False
             finally:
