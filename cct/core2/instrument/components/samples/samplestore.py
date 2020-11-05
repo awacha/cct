@@ -236,13 +236,16 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     def updateSample(self, title: str, sample: Sample):
         logger.debug(f'Updating sample {title} with sample {sample.title}')
         row = [i for i, s in enumerate(self._samples) if s.title == title][0]
-        self.beginRemoveRows(QtCore.QModelIndex(), row, row)
-        del self._samples[row]
-        self.endRemoveRows()
-        row = max([i for i, s in enumerate(self._samples) if s.title.upper() < sample.title.upper()] + [-1]) + 1
-        self.beginInsertRows(QtCore.QModelIndex(), row, row)
-        self._samples.insert(row, copy.copy(sample))
-        self.endInsertRows()
+        if sample.title != title:
+            self.beginRemoveRows(QtCore.QModelIndex(), row, row)
+            del self._samples[row]
+            self.endRemoveRows()
+            row = max([i for i, s in enumerate(self._samples) if s.title.upper() < sample.title.upper()] + [-1]) + 1
+            self.beginInsertRows(QtCore.QModelIndex(), row, row)
+            self._samples.insert(row, copy.copy(sample))
+            self.endInsertRows()
+        else:
+            self._samples[row] = sample
         self.dataChanged.emit(self.index(row, 0, QtCore.QModelIndex()),
                               self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
         self.sampleListChanged.emit()

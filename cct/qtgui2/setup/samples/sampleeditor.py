@@ -10,7 +10,7 @@ from ...utils.window import WindowRequiresDevices
 from ....core2.dataclasses.sample import Sample, LockState
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
@@ -23,8 +23,8 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         'preparedby': ('preparedByLineEdit', 'preparedByLockToolButton'),
         'preparetime': ('preparationDateDateEdit', 'preparationDateLockToolButton'),
         'thickness': ('thicknessValDoubleSpinBox', 'thicknessErrDoubleSpinBox', 'thicknessLockToolButton'),
-        'positionx': ('xPositionValDoubleSpinBox', 'yPositionValDoubleSpinBox', 'xPositionLockToolButton'),
-        'positiony': ('yPositionValDoubleSpinBox', 'yPositionValDoubleSpinBox', 'yPositionLockToolButton'),
+        'positionx': ('xPositionValDoubleSpinBox', 'xPositionErrDoubleSpinBox', 'xPositionLockToolButton'),
+        'positiony': ('yPositionValDoubleSpinBox', 'yPositionErrDoubleSpinBox', 'yPositionLockToolButton'),
         'distminus': ('distminusValDoubleSpinBox', 'distminusErrDoubleSpinBox', 'distminusLockToolButton'),
         'transmission': ('transmissionValDoubleSpinBox', 'transmissionErrDoubleSpinBox', 'transmissionLockToolButton'),
         'project': ('projectComboBox', 'projectLockToolButton'),
@@ -123,7 +123,9 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if getattr(sample, attribute) != newvalue:
             logger.debug(f'Really changeSample: {attribute}, {newvalue}')
             setattr(sample, attribute, newvalue)
+            logger.debug('Updating sample')
             self.instrument.samplestore.updateSample(title, sample)
+            logger.debug('Updated sample.')
             self.treeView.selectionModel().setCurrentIndex(
                 self.instrument.samplestore.findSample(sample.title),
                 QtCore.QItemSelectionModel.SelectCurrent |
@@ -207,16 +209,22 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.duplicateSamplePushButton.setEnabled(True)
         self.frame.setEnabled(True)
         sample = self.instrument.samplestore[current.row()]
+        logger.debug(f'Sample is {sample.title}.')
+        logger.debug(f'Title field: {self.sampleNameLineEdit.text()}')
         self.removeSamplePushButton.setEnabled(not sample.isLocked('title'))
         for attribute, widgetnames in self._sampleproperty2widgets.items():
             widgets = [getattr(self, wn) for wn in widgetnames]
             for w in widgets:
                 w.blockSignals(True)
             try:
+                value = getattr(sample, attribute)
                 if (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QLineEdit):
-                    widgets[0].setText(getattr(sample, attribute))
+                    if widgets[0].text() != value:
+                        widgets[0].setText(value)
                 elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QPlainTextEdit):
-                    widgets[0].setPlainText(getattr(sample, attribute))
+                    logger.debug(f'Updating attribute {attribute} in GUI. {widgets[0].toPlainText()=}, {value=}')
+                    if widgets[0].toPlainText() != value:
+                        widgets[0].setPlainText(value)
                 elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QComboBox):
                     value = getattr(sample, attribute)
                     if value is None:
@@ -224,14 +232,18 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                         continue
                     elif not isinstance(value, str):
                         value = value.value
-                    widgets[0].setCurrentIndex(widgets[0].findText(value))
+                    index = widgets[0].findText(value)
+                    if widgets[0].currentIndex() != index:
+                        widgets[0].setCurrentIndex(index)
                 elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QDateEdit):
+                    # todo: do not change date if not needed
                     date = getattr(sample, attribute)
                     widgets[0].setDate(QtCore.QDate(date.year, date.month, date.day))
                 elif ((len(widgets) == 3)
                       and isinstance(widgets[0], QtWidgets.QDoubleSpinBox)
                       and isinstance(widgets[1], QtWidgets.QDoubleSpinBox)):
                     for w in widgets[:-1]:
+                        # ToDo: do not change spinbox values if not needed. Problem: rounding
                         if 'ErrDoubleSpinBox' in w.objectName():
                             w.setValue(getattr(sample, attribute)[1])
                         elif 'ValDoubleSpinBox' in w.objectName():
