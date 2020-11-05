@@ -206,7 +206,9 @@ class ScanRecorder(QtCore.QObject):
 
     def onMotorStopped(self, success: bool, endposition: float):
         if not success:
-            self.errormessage = f'Positioning error in scan {self.scanindex} at point {self.scanpoint} in state {self.state.value}'
+            expectedposition = self.startposition + (self.endposition - self.startposition) / (
+                self.nsteps - 1) * self.stepsexposed
+            self.errormessage = f'Positioning error in scan {self.scanindex} at point {self.stepsexposed} in state {self.state.value}. We are at {endposition}, instead of the expected {expectedposition}'
             logger.error(self.errormessage)
             if self.state == self.State.MoveToStart:
                 self.moveMotorBack()
@@ -272,7 +274,7 @@ class ScanRecorder(QtCore.QObject):
         if self.state == self.State.StopRequested:
             self.waitForImageProcessing()
         elif not success:
-            self.errormessage = f'Exposure error in scan {self.scanindex} at point {self.scanpoint} in state {self.state.value}'
+            self.errormessage = f'Exposure error in scan {self.scanindex} at point {self.stepsexposed} in state {self.state.value}'
             self.closeShutter()
         else:
             # successful exposure

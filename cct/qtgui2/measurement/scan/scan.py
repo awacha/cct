@@ -54,8 +54,14 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             return
         rt = RangeType(self.rangeTypeComboBox.currentText())
         self.fromLabel.setText('Half width:' if rt == RangeType.SymmetricRelative else 'From:')
-        self.toLabel.setVisible(False if rt == RangeType.SymmetricRelative else True)
-        self.rangeMaxDoubleSpinBox.setVisible(False if rt == RangeType.SymmetricRelative else True)
+        if rt == RangeType.SymmetricRelative:
+            self.toLabel.hide()
+            self.rangeMaxDoubleSpinBox.hide()
+        else:
+            self.toLabel.show()
+            self.rangeMaxDoubleSpinBox.show()
+        #self.toLabel.setVisible(False if rt == RangeType.SymmetricRelative else True)
+        #self.rangeMaxDoubleSpinBox.setVisible(False if rt == RangeType.SymmetricRelative else True)
         if self.motorname is not None:
             self.onMotorPositionChanged(self.instrument.motors[self.motorname].where())
         self.shrinkWindow()
@@ -155,7 +161,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setRange(0, 0)
         self.progressBar.setFormat('Starting scan...')
 
-    def onScanEnded(self, scanindex: int):
+    def onScanEnded(self, success: bool,  scanindex: int):
         for widget in [self.motorComboBox, self.rangeTypeComboBox, self.rangeMinDoubleSpinBox,
                        self.rangeMaxDoubleSpinBox, self.stepCountSpinBox, self.stepSizeDoubleSpinBox,
                        self.countingTimeDoubleSpinBox, self.commentLineEdit, self.shutterCheckBox,
@@ -164,8 +170,9 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.startStopPushButton.setEnabled(True)
         self.startStopPushButton.setText('Start')
         self.startStopPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/start.svg")))
-        self.scangraph.setRecording(False)
-        self.scangraph = None
+        if self.scangraph is not None:
+            self.scangraph.setRecording(False)
+            self.scangraph = None
         self.progressBar.hide()
         self.instrument.scan.scanstarted.disconnect(self.onScanStarted)
         self.instrument.scan.scanfinished.disconnect(self.onScanEnded)

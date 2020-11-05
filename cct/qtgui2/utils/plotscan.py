@@ -58,6 +58,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.fitAsymmetricNegativeToolButton.clicked.connect(self.fitPeak)
         self.fitSymmetricNegativeToolButton.clicked.connect(self.fitPeak)
         self.motorToPeakToolButton.clicked.connect(self.motorToPeak)
+        self.motorToCursorToolButton.clicked.connect(self.motorToCursor)
         self.show2DToolButton.toggled.connect(self.show2DToggled)
         self.goBackToolButton.clicked.connect(self.onSliderButton)
         self.goForwardToolButton.clicked.connect(self.onSliderButton)
@@ -212,6 +213,10 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def setRecording(self, recording: bool):
         self._recording = recording
         self.cursorVerticalLayout.setEnabled(not recording)
+        if self.cursor is not None:
+            self.cursor.set_visible(not recording)
+            if not recording:
+                self.updateCursor()
         for button in [self.fitAsymmetricNegativeToolButton, self.fitAsymmetricPositiveToolButton,
                        self.fitSymmetricNegativeToolButton, self.fitSymmetricPositiveToolButton,
                        self.cursorToMaximumToolButton, self.cursorToMinimumToolButton, self.motorToCursorToolButton,
@@ -255,6 +260,8 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axes.grid(True, which='both')
         self.setPlotVisibility()  # this also plots the legend
         self.emphasizeCurrentLine()
+        self.cursorHorizontalSlider.setMinimum(0)
+        self.cursorHorizontalSlider.setMaximum(len(self.scan)-1)
         self.cursor = self.axes.axvline(self.scan[self.scan.motorname][self.cursorHorizontalSlider.value()], lw=2,
                                         ls='dashed', color='k')
         self.cursor.set_visible(not self._recording)
