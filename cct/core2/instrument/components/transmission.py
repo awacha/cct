@@ -171,13 +171,13 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             return QtGui.QColor(QtCore.Qt.green) if index.row() == self.currentlymeasuredsample else None
         elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
             value = data.dark()
-            return '--' if value is None else f'{value[0]} \xb1 {value[1]}'
+            return '--' if value is None else f'{value[0]:.1f} \xb1 {value[1]:.1f}'
         elif (index.column() == 2) and (role == QtCore.Qt.DisplayRole):
             value = data.empty()
-            return '--' if value is None else f'{value[0]} \xb1 {value[1]}'
+            return '--' if value is None else f'{value[0]:.1f} \xb1 {value[1]:.1f}'
         elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
             value = data.sample()
-            return '--' if value is None else f'{value[0]} \xb1 {value[1]}'
+            return '--' if value is None else f'{value[0]:.1f} \xb1 {value[1]:.1f}'
         elif (index.column() == 4) and (role == QtCore.Qt.DisplayRole):
             value = data.transmission()
             return '--' if value is None else f'{value[0]:.4f} \xb1 {value[1]:.4f}'
