@@ -45,12 +45,14 @@ class Config(QtCore.QObject):
         if self.filename is not None:
             if self._autosavetimer is not None:
                 self.killTimer(self._autosavetimer)
+                self._autosavetimer = None
             self._autosavetimer = self.startTimer(self._autosavetimeout)
 
     def timerEvent(self, timerEvent: QtCore.QTimerEvent) -> None:
         if timerEvent.timerId() == self._autosavetimer:
             # do autosave
             self.killTimer(timerEvent.timerId())
+            self._autosavetimer = None
             self.save(self.filename)
 
     def onChanged(self, path: Tuple[str, ...], value: Any):
