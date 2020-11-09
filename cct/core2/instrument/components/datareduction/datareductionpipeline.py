@@ -60,8 +60,10 @@ class DataReductionPipeLine:
                     obj.resultqueue.put_nowait(('result', exposure))
                 except ProcessingError as pe:
                     obj.error(pe.args[0])
+                    obj.resultqueue.put_nowait(('result', None))
                 except Exception as exc:
                     obj.error(repr(exc) + '\n' + traceback.format_exc())
+                    obj.resultqueue.put_nowait(('result', None))
             elif cmd == 'config':
                 obj.config = arg
                 #obj.debug('Config updated.')
@@ -179,9 +181,13 @@ class DataReductionPipeLine:
                              exposure.header.pixelsize[0], exposure.header.pixelsize[1])
         asa, dasa = angledependentabsorption(twotheta[0], twotheta[1], exposure.header.transmission[0],
                                              exposure.header.transmission[1])
-        aaa, daaa = angledependentairtransmission(twotheta[0], twotheta[1], exposure.header.vacuum[0],
-                                                  exposure.header.distance[0],
-                                                  exposure.header.distance[1])  # ToDo: mu_air non-default value
+        try:
+            aaa, daaa = angledependentairtransmission(twotheta[0], twotheta[1], exposure.header.vacuum[0],
+                                                      exposure.header.distance[0],
+                                                      exposure.header.distance[1])  # ToDo: mu_air non-default value
+        except Exception as exc:
+            self.warning(f'Error while getting angle dependent air transmission correction: {exc}. Traceback: {traceback.format_exc()}')
+            aaa, daaa = np.ones_like(twotheta[0]), np.zeros_like(twotheta[1])
         exposure.uncertainty = (exposure.uncertainty ** 2 * sa ** 2 + exposure.intensity ** 2 * dsa ** 2) ** 0.5
         exposure.intensity = exposure.intensity * sa
         self.info(f'FSN #{exposure.header.fsn} has been corrected for detector flatness (pixel solid angle)')

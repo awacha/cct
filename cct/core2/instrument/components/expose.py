@@ -280,12 +280,12 @@ class Exposer(QtCore.QObject, Component):
             vac = self.instrument.devicemanager.vacuum()
             data['environment']['vacuum_pressure'] = vac.pressure()
         except (KeyError, IndexError):
-            pass
+            data['environment']['vacuum_pressure'] = 0.0001
         try:
             temp = self.instrument.devicemanager.temperature()
             data['environment']['temperature'] = temp.temperature()
         except (KeyError, IndexError):
-            pass
+            data['environment']['temperature'] = np.nan
         # adjust truedistance
         if sample is not None:
             data['geometry']['truedistance'] = data['geometry']['dist_sample_det'] - data['sample']['distminus.val']

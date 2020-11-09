@@ -84,6 +84,8 @@ def angledependentairtransmission(twotheta, dtwotheta,
 
     The scattering intensity matrix should be multiplied by the resulting
     correction matrix."""
+    if (pressure <= 0) or (not np.isfinite(pressure)):
+        return np.ones_like(twotheta), np.zeros_like(dtwotheta)
     costth = np.cos(twotheta)
     sintth = np.sin(twotheta)
     mu_air = mu0_air / 1000 * pressure
