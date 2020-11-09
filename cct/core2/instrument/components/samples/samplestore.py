@@ -2,50 +2,73 @@ import copy
 import datetime
 import logging
 import pickle
-from typing import List, Any, Optional, Union, Iterable
+import traceback
+from typing import List, Any, Optional, Union, Iterable, Final, Tuple
 
 from PyQt5 import QtCore, QtGui
 
-from ....dataclasses.descriptors import LockState
-from ....dataclasses.sample import Sample
 from ..component import Component
 from ..motors import Motor
+from ....dataclasses.descriptors import LockState
+from ....dataclasses.sample import Sample
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class SampleStore(QtCore.QAbstractItemModel, Component):
     _samples: List[Sample]
     _currentsample: Optional[str]
-    _columns = [('title', 'Title'),
-                ('positionx', 'X position'),
-                ('positiony', 'Y position'),
-                ('distminus', 'Dist. decr.'),
-                ('thickness', 'Thickness (cm)'),
-                ('transmission', 'Transmission'),
-                ('preparedby', 'Prepared by'),
-                ('preparetime', 'Preparation date'),
-                ('category', 'Category'),
-                ('situation', 'Situation')]
+    _columns: Final[List[Tuple[str, str]]] = [
+        ('title', 'Title'),
+        ('positionx', 'X position'),
+        ('positiony', 'Y position'),
+        ('distminus', 'Dist. decr.'),
+        ('thickness', 'Thickness (cm)'),
+        ('transmission', 'Transmission'),
+        ('preparedby', 'Prepared by'),
+        ('preparetime', 'Preparation date'),
+        ('category', 'Category'),
+        ('situation', 'Situation')]
 
-    _movesampledirection: str='both'
+    _movesampledirection: str = 'both'
     sampleListChanged = QtCore.pyqtSignal()
     currentSampleChanged = QtCore.pyqtSignal(str)
-    movingToSample = QtCore.pyqtSignal(str, str, float, float, float)  # sample, motor name, motor position, start position, end position
+    movingToSample = QtCore.pyqtSignal(str, str, float, float,
+                                       float)  # sample, motor name, motor position, start position, end position
     movingFinished = QtCore.pyqtSignal(bool, str)  # success, sample
 
     def __init__(self, **kwargs):
         self._samples = []
         super().__init__(**kwargs)
         self._currentsample = None
-        #self.loadFromConfig()
+        # self.loadFromConfig()
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
+        logger.debug(f'rowCount: {len(self._samples)}')
         return len(self._samples)
 
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return 10
+        if not parent.isValid():
+            return len(self._columns)
+        else:
+            return 0
+
+    def beginRemoveRows(self, parent: QtCore.QModelIndex, first: int, last: int) -> None:
+        logger.debug(f'beginRemoveRows({parent=}, {first=}, {last=}')
+        return super(SampleStore, self).beginRemoveRows(parent, first, last)
+    
+    def beginInsertRows(self, parent: QtCore.QModelIndex, first: int, last: int) -> None:
+        logger.debug(f'beginInsertRows({parent=}, {first=}, {last=}')
+        return super(SampleStore, self).beginInsertRows(parent, first, last)
+
+    def endRemoveRows(self) -> None:
+        logger.debug('endRemoveRows')
+        return super(SampleStore, self).endRemoveRows()
+    
+    def endInsertRows(self) -> None:
+        logger.debug('endInsertRows')
+        return super(SampleStore, self).endInsertRows()
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
@@ -53,7 +76,14 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         parameter = self._columns[index.column()][0]
-        if self._samples[index.row()].isLocked(parameter):
+        try:
+            sample = self._samples[index.row()]
+        except IndexError:
+            logger.error('++++\n'.join([line.strip() for line in traceback.format_stack()]))
+            logger.warning(f'{index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=} {len(self._samples)=}')
+            raise
+            return QtCore.Qt.ItemNeverHasChildren
+        if sample.isLocked(parameter):
             return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren | \
                    QtCore.Qt.ItemIsDragEnabled
         else:
@@ -61,6 +91,8 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
                    QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDragEnabled
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
+        if index.row() >= len(self._samples):
+            logger.warning(f'in data(): {index.row()} > {len(self._samples)}')
         if role == QtCore.Qt.UserRole:
             return self._samples[index.row()]
         elif role == QtCore.Qt.ToolTipRole:
@@ -109,26 +141,32 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             if isinstance(value, QtCore.QDate):
                 value = datetime.date(value.year(), value.month(), value.day())
             setattr(self._samples[index.row()], attribute, value)
-            self.dataChanged.emit(index, index)
+            self.dataChanged.emit(self.index(index.row(), index.column(), QtCore.QModelIndex()),
+                                  self.index(index.row(), index.column(), QtCore.QModelIndex()))
         self.saveToConfig()
         return True
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
+#        if parent.isValid():
+#            return QtCore.QModelIndex()
         return self.createIndex(row, column, None)
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         return QtCore.QModelIndex()
 
     def mimeData(self, indexes: Iterable[QtCore.QModelIndex]) -> QtCore.QMimeData:
+        logger.debug('mimeData')
         md = QtCore.QMimeData()
         samples = [self._samples[i.row()] for i in indexes]
         md.setData('application/x-cctsamplelist', pickle.dumps(samples))
         return md
 
     def mimeTypes(self) -> List[str]:
+        logger.debug('MimeTypes')
         return ['application/x-cctsamplelist']
 
     def supportedDragActions(self) -> QtCore.Qt.DropAction:
+        logger.debug('supportedDragActions')
         return QtCore.Qt.CopyAction
 
     def loadFromConfig(self):
@@ -164,9 +202,9 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             raise ValueError('Sample name already exists.')
         comesbefore = [i for (i, sam) in enumerate(self._samples) if sam.title.upper() < title.upper()]
         row = max(comesbefore + [-1]) + 1
-        self.beginInsertRows(QtCore.QModelIndex(), row, row + 1)
+        self.beginResetModel()
         self._samples.insert(row, Sample(title))
-        self.endInsertRows()
+        self.endResetModel()
         self.sampleListChanged.emit()
         self.saveToConfig()
         return title
@@ -185,28 +223,41 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         logger.warning(dupname)
         comesbefore = [i for (i, sam) in enumerate(self._samples) if sam.title.upper() < dupname.upper()]
         row = max(comesbefore + [-1]) + 1
-        self.beginInsertRows(QtCore.QModelIndex(), row, row + 1)
+        self.beginResetModel()
         cpy = copy.copy(self[title])
         cpy.title = LockState.UNLOCKED
         cpy.title = dupname
         self._samples.insert(row, cpy)
-        self.endInsertRows()
+        self.endResetModel()
         self.sampleListChanged.emit()
         self.saveToConfig()
         return dupname
 
+    def removeRow(self, row: int, parent: QtCore.QModelIndex = ...) -> bool:
+        logger.debug(f'Removing row {row}. Number of rows: {self.rowCount(QtCore.QModelIndex())}')
+        self.beginResetModel()
+        logger.debug('Deleting sample')
+        del self._samples[row]
+        logger.debug('Ending remove rows')
+        self.endResetModel()
+        logger.debug('Ended remove rows')
+        return True
+
     def removeSample(self, title: str):
+        logger.debug(f'Removing sample {title=}')
         idx = self._samples.index(self[title])
+        logger.debug(f'Sample index is {idx}')
         if self._samples[idx].isLocked('title'):
             raise ValueError('Cannot delete protected sample.')
-        self.beginRemoveRows(QtCore.QModelIndex(), idx, idx)
-        del self._samples[idx]
-        self.endRemoveRows()
         if title == self._currentsample:
-            self._currentsample = None
-            self.currentSampleChanged.emit(None)
-        self.sampleListChanged.emit()
+            raise ValueError('Cannot delete current sample')
+        self.removeRow(idx, QtCore.QModelIndex())
+        logger.debug(f'Removed sample.')
+        logger.debug('Saving to config')
         self.saveToConfig()
+        logger.debug('Emitting samplelistchanged')
+        self.sampleListChanged.emit()
+        logger.debug('End.')
 
     def __contains__(self, item: Union[str, Sample]) -> bool:
         if isinstance(item, str):
@@ -237,22 +288,26 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         logger.debug(f'Updating sample {title} with sample {sample.title}')
         row = [i for i, s in enumerate(self._samples) if s.title == title][0]
         if sample.title != title:
-            self.beginRemoveRows(QtCore.QModelIndex(), row, row)
-            del self._samples[row]
-            self.endRemoveRows()
+            self.removeRow(row, QtCore.QModelIndex())
             row = max([i for i, s in enumerate(self._samples) if s.title.upper() < sample.title.upper()] + [-1]) + 1
+            logger.debug(f'Inserting row {row=}')
             self.beginInsertRows(QtCore.QModelIndex(), row, row)
             self._samples.insert(row, copy.copy(sample))
             self.endInsertRows()
+            logger.debug(f'Inserted row {row=}')
         else:
             self._samples[row] = sample
+        logger.debug('Emitting datachanged')
         self.dataChanged.emit(self.index(row, 0, QtCore.QModelIndex()),
                               self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
+        logger.debug('Emitting sampleListChanged')
         self.sampleListChanged.emit()
+        logger.debug('Saving to config')
         self.saveToConfig()
 
     def findSample(self, title: str) -> QtCore.QModelIndex:
         row = [i for i, s in enumerate(self._samples) if s.title == title][0]
+        logger.debug(f'findsample({title=}): {row=}')
         return self.index(row, 0, QtCore.QModelIndex())
 
     def __iter__(self) -> Iterable[Sample]:
@@ -285,7 +340,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         self._connectSampleMotors()
         self._movesampledirection = direction
         try:
-            if direction in  ['both', 'x']:
+            if direction in ['both', 'x']:
                 self.xmotor().moveTo(sample.positionx[0])
             else:
                 self.ymotor().moveTo(sample.positiony[0])
@@ -306,7 +361,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             motor.stopped.disconnect(self.onMotorStopped)
             motor.moving.disconnect(self.onMotorMoving)
 
-    def onMotorMoving(self, current:float, start:float, end:float):
+    def onMotorMoving(self, current: float, start: float, end: float):
         self.movingToSample.emit(self._currentsample, self.sender().name, current, start, end)
 
     def onMotorStarted(self, start: float):

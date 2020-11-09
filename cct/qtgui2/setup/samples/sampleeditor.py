@@ -79,7 +79,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.duplicateSamplePushButton.setEnabled(False)
 
     def addSample(self):
-        samplename = self.instrument.samplestore.addSample('Untitled')
+        samplename = self.instrument.samplestore.addSample(None)
         self.treeView.selectionModel().setCurrentIndex(
             self.instrument.samplestore.findSample(samplename),
             QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Clear |
@@ -87,10 +87,22 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         )
 
     def removeSample(self):
+        logger.debug('Remove sample requested by user.')
         sample = self.currentSample()
         if not sample:
             return
+        logger.debug(f'Requesting removal of sample {sample.title}')
+        index = self.instrument.samplestore.findSample(sample.title).row()
         self.instrument.samplestore.removeSample(sample.title)
+        row = min(index, self.instrument.samplestore.rowCount(QtCore.QModelIndex())-1)
+        idx = self.treeView.model().index(row, 0, QtCore.QModelIndex())
+        logger.debug(f'{row=}, {idx=}')
+        self.treeView.selectionModel().setCurrentIndex(
+            idx,
+            QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Clear |
+            QtCore.QItemSelectionModel.SelectCurrent)
+        logger.debug(f'Sample {sample.title} removed')
+        self.resizeTreeViewColumns()
 
     def duplicateSample(self):
         sample = self.currentSample()
@@ -140,6 +152,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         return [p for p, ws in self._sampleproperty2widgets.items() if widget.objectName() in ws][0]
 
     def currentSample(self) -> Optional[Sample]:
+        logger.debug('currentSample()')
         if self.treeView.currentIndex().isValid():
             return self.instrument.samplestore[self.treeView.currentIndex().row()]
         else:
@@ -179,6 +192,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.changeSample(attr, text)
 
     def onLockButtonToggled(self, state: bool):
+        logger.debug('onLockButtonToggled')
         focusedwidget = self.focusWidget()
         lockbutton = self.sender()
         assert isinstance(lockbutton, QtWidgets.QToolButton)
@@ -196,8 +210,13 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         focusedwidget.setFocus()
 
     def resizeTreeViewColumns(self):
-        for c in range(self.instrument.samplestore.columnCount()):
+        logger.debug('Resizing treeview columns')
+        for c in range(self.instrument.samplestore.columnCount(QtCore.QModelIndex())):
             self.treeView.resizeColumnToContents(c)
+        if not self.currentSample():
+            for widgets in self._sampleproperty2widgets.values():
+                for w in widgets:
+                    getattr(self, w).setDisabled(True)
 
     def currentSampleSelected(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
         logger.debug('currentSampleSelected')

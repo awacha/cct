@@ -1,18 +1,25 @@
+import logging
+
 from PyQt5 import QtWidgets, QtCore
 
 from ....core2.instrument.components.samples.samplestore import SampleStore, Sample
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 
 class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
     def _get_attribute(self, index: QtCore.QModelIndex) -> str:
+        logger.debug(f'_get_attribute({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         model = index.model()
         assert isinstance(model, SampleStore)
         return model._columns[index.column()][0]
 
     def createEditor(self, parent: QtWidgets.QWidget, option: 'QStyleOptionViewItem',
                      index: QtCore.QModelIndex) -> QtWidgets.QWidget:
+        logger.debug(f'createEditor({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         if self._get_attribute(index) in ['title', 'description', 'preparedby', 'maskoverride']:
-            w =super().createEditor(parent, option, index)
+            w = super().createEditor(parent, option, index)
         elif self._get_attribute(index) in ['positionx', 'positiony', 'distminus']:
             w = QtWidgets.QDoubleSpinBox(parent)
             w.setRange(-1000, 1000)
@@ -38,15 +45,17 @@ class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
             w = QtWidgets.QComboBox(parent)
             w.addItems([x.value for x in Sample.Situations])
         else:
-            w= super().createEditor(parent, option, index)
+            w = super().createEditor(parent, option, index)
         w.setFrame(False)
         return w
 
     def updateEditorGeometry(self, editor: QtWidgets.QWidget, option: 'QStyleOptionViewItem',
                              index: QtCore.QModelIndex) -> None:
+        logger.debug(f'updateEditorGeometry({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         editor.setGeometry(option.rect)
 
     def setEditorData(self, editor: QtWidgets.QWidget, index: QtCore.QModelIndex) -> None:
+        logger.debug(f'setEditorData({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         attribute = self._get_attribute(index)
         sample = index.model()[index.row()]
         assert isinstance(sample, Sample)
@@ -66,6 +75,7 @@ class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
 
     def setModelData(self, editor: QtWidgets.QWidget, model: QtCore.QAbstractItemModel,
                      index: QtCore.QModelIndex) -> None:
+        logger.debug(f'setModelData({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         if isinstance(editor, QtWidgets.QDoubleSpinBox):
             model.setData(index, editor.value(), QtCore.Qt.EditRole)
         elif isinstance(editor, QtWidgets.QComboBox):
