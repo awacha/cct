@@ -85,7 +85,7 @@ class DataReduction(QtCore.QObject, Component):
         self.stopping = True
         self.queuetobackend.put_nowait(('end', None))
         if self.timer is None:
-            self.timer = self.startTimer(0, QtCore.Qt.VeryCoarseTimer)
+            self.timer = self.startTimer(10, QtCore.Qt.VeryCoarseTimer)
 
     def running(self) -> bool:
         return self.backend is not None
