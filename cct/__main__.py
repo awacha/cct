@@ -46,7 +46,8 @@ def main():
 @click.option('--config', '-c', default='config/cct.pickle', help='Config file', type=click.Path(exists=True, file_okay=True, dir_okay=False, writable=False, readable=True, allow_dash=False, ))
 @click.option('--online/--offline', default=False, help='Connect to devices')
 @click.option('--root/--no-root', '-r', default=False, help='Skip login', type=bool, is_flag=True)
-def daq(config:str, online: bool, root: bool):
+@click.option('--die-on-error/--dont-die-on-error', '-d', default=False, help='Die on an unhandled exception (for debugging)', type=bool, is_flag=True)
+def daq(config:str, online: bool, root: bool, die_on_error: bool):
     """Open the data acquisition GUI mode"""
     handler = logging.handlers.TimedRotatingFileHandler('log/cct4.log', 'D', 1, encoding='utf-8', backupCount=0)
     handler.addFilter(logging.Filter('cct'))
@@ -55,7 +56,8 @@ def daq(config:str, online: bool, root: bool):
     logging.root.addHandler(handler)
 
     multiprocessing.set_start_method('forkserver')  # the default 'fork' method is not appropriate for multi-threaded programs, e.g. with PyQt.
-    sys.excepthook = excepthook
+    if not die_on_error:
+        sys.excepthook = excepthook
     app = QtWidgets.QApplication(sys.argv)
     logger.debug('Instantiating Instrument()')
     instrument = Instrument(configfile=config)
