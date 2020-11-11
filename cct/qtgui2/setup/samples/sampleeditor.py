@@ -1,27 +1,26 @@
 import datetime
 import logging
-from typing import Tuple, Dict, Optional, Any
+from typing import Tuple, List, Final, Dict, Optional, Any
 
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 
-from .delegates import SampleEditorDelegate
 from .sampleeditor_ui import Ui_Form
+from .delegates import SampleEditorDelegate
 from ...utils.window import WindowRequiresDevices
-from ....core2.dataclasses.sample import Sample, LockState
+from ...utils.filebrowsers import browseMask
+from ....core2.dataclasses.sample import Sample
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    _sampleeditordelegate: SampleEditorDelegate
-    _sampleproperty2widgets: Dict[str, Tuple[str, ...]] = {
+    _param2widgets: Final[Dict[str, Tuple[str, ...]]] = {
         'title': ('sampleNameLineEdit', 'sampleNameLockToolButton'),
         'description': ('descriptionPlainTextEdit', 'descriptionLockToolButton'),
         'category': ('categoryComboBox', 'categoryLockToolButton'),
         'situation': ('situationComboBox', 'situationLockToolButton'),
         'preparedby': ('preparedByLineEdit', 'preparedByLockToolButton'),
-        'preparetime': ('preparationDateDateEdit', 'preparationDateLockToolButton'),
         'thickness': ('thicknessValDoubleSpinBox', 'thicknessErrDoubleSpinBox', 'thicknessLockToolButton'),
         'positionx': ('xPositionValDoubleSpinBox', 'xPositionErrDoubleSpinBox', 'xPositionLockToolButton'),
         'positiony': ('yPositionValDoubleSpinBox', 'yPositionErrDoubleSpinBox', 'yPositionLockToolButton'),
@@ -29,7 +28,9 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         'transmission': ('transmissionValDoubleSpinBox', 'transmissionErrDoubleSpinBox', 'transmissionLockToolButton'),
         'project': ('projectComboBox', 'projectLockToolButton'),
         'maskoverride': ('maskOverrideLineEdit', 'maskOverrideLockToolButton'),
+        'preparetime': ('preparationDateDateEdit', 'preparationDateLockToolButton'),
     }
+    sampleeditordelegate: SampleEditorDelegate
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -37,245 +38,211 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.treeView.setModel(self.instrument.samplestore)
-        self.instrument.samplestore.modelReset.connect(self.resizeTreeViewColumns)
-        self.instrument.samplestore.dataChanged.connect(self.resizeTreeViewColumns)
-        self.instrument.samplestore.rowsInserted.connect(self.resizeTreeViewColumns)
-        self.instrument.samplestore.rowsRemoved.connect(self.resizeTreeViewColumns)
-        self.treeView.selectionModel().currentChanged.connect(self.currentSampleSelected)
-        self.situationComboBox.addItems([x.value for x in list(Sample.Situations)])
-        self.categoryComboBox.addItems([x.value for x in list(Sample.Categories)])
-        self.frame.setEnabled(False)
-        for propname, widgets in self._sampleproperty2widgets.items():
-            widgets = [getattr(self, w) for w in widgets]
-            lockbutton = widgets[-1]
-            assert isinstance(lockbutton, QtWidgets.QToolButton)
-            lockbutton.toggled.connect(self.onLockButtonToggled)
-            lockbutton.setIcon(QtGui.QIcon.fromTheme('unlock'))
-            if (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QLineEdit):
-                widgets[0].editingFinished.connect(self.onLineEditEditingFinished)
-            elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QPlainTextEdit):
-                widgets[0].textChanged.connect(self.onPlainTextEditTextChanged)
-            elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QComboBox):
-                widgets[0].currentIndexChanged.connect(self.onComboBoxCurrentIndexChanged)
-            elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QDateEdit):
-                widgets[0].dateChanged.connect(self.onDateEditDateChanged)
-            elif ((len(widgets) == 3)
-                  and isinstance(widgets[0], QtWidgets.QDoubleSpinBox)
-                  and isinstance(widgets[1], QtWidgets.QDoubleSpinBox)):
-                widgets[0].valueChanged.connect(self.onDoubleSpinBoxValueChanged)
-                widgets[1].valueChanged.connect(self.onDoubleSpinBoxValueChanged)
-            else:
-                assert False
-        self.maskOverridePushButton.clicked.connect(self.browseMask)
-        self.todayPushButton.clicked.connect(self.setToday)
-        self.resizeTreeViewColumns()
-        self._sampleeditordelegate = SampleEditorDelegate(self.treeView)
-        self.treeView.setItemDelegate(self._sampleeditordelegate)
+        model = QtCore.QSortFilterProxyModel()
+        model.setSourceModel(self.instrument.samplestore)
+        self.treeView.setModel(model)
+        self.treeView.setSortingEnabled(True)
+        self.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.treeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
+        self.treeView.selectionModel().currentRowChanged.connect(self.onCurrentSelectionChanged)
+        self.instrument.samplestore.sampleEdited.connect(self.onSampleChangedInStore)
+        self.sampleeditordelegate = SampleEditorDelegate(self.treeView)
+        self.treeView.setItemDelegate(self.sampleeditordelegate)
+        self.situationComboBox.clear()
+        self.situationComboBox.addItems([e.value for e in Sample.Situations])
+        self.categoryComboBox.clear()
+        self.categoryComboBox.addItems([e.value for e in Sample.Categories])
+        self.projectComboBox.setModel(self.instrument.projects)
+        for attr in self.sampleAttributes():
+            for widget in self.widgetsForAttribute(attr):
+                if isinstance(widget, QtWidgets.QLineEdit):
+                    widget.editingFinished.connect(self.onLineEditEditingFinished)
+                elif isinstance(widget, QtWidgets.QComboBox):
+                    widget.setCurrentIndex(-1)
+                    widget.currentIndexChanged.connect(self.onComboBoxCurrentIndexChanged)
+                elif isinstance(widget, QtWidgets.QPlainTextEdit):
+                    widget.textChanged.connect(self.onPlainTextEdited)
+                elif isinstance(widget, QtWidgets.QDoubleSpinBox):
+                    widget.valueChanged.connect(self.onDoubleSpinBoxValueChanged)
+                elif isinstance(widget, QtWidgets.QDateEdit):
+                    widget.dateChanged.connect(self.onDateEditDateChanged)
+                widget.setDisabled(True)
+            self.lockToolButton(attr).toggled.connect(self.onLockToolButtonToggled)
+            self.lockToolButton(attr).setDisabled(True)
         self.addSamplePushButton.clicked.connect(self.addSample)
         self.removeSamplePushButton.clicked.connect(self.removeSample)
         self.duplicateSamplePushButton.clicked.connect(self.duplicateSample)
-        self.removeSamplePushButton.setEnabled(False)
-        self.duplicateSamplePushButton.setEnabled(False)
-
-    def addSample(self):
-        samplename = self.instrument.samplestore.addSample(None)
-        self.treeView.selectionModel().setCurrentIndex(
-            self.instrument.samplestore.findSample(samplename),
-            QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Clear |
-            QtCore.QItemSelectionModel.SelectCurrent
-        )
-
-    def removeSample(self):
-        logger.debug('Remove sample requested by user.')
-        sample = self.currentSample()
-        if not sample:
-            return
-        logger.debug(f'Requesting removal of sample {sample.title}')
-        index = self.instrument.samplestore.findSample(sample.title).row()
-        self.instrument.samplestore.removeSample(sample.title)
-        row = min(index, self.instrument.samplestore.rowCount(QtCore.QModelIndex())-1)
-        idx = self.treeView.model().index(row, 0, QtCore.QModelIndex())
-        logger.debug(f'{row=}, {idx=}')
-        self.treeView.selectionModel().setCurrentIndex(
-            idx,
-            QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Clear |
-            QtCore.QItemSelectionModel.SelectCurrent)
-        logger.debug(f'Sample {sample.title} removed')
-        self.resizeTreeViewColumns()
-
-    def duplicateSample(self):
-        sample = self.currentSample()
-        if not sample:
-            return
-        newtitle = self.instrument.samplestore.duplicateSample(sample.title)
-        self.treeView.selectionModel().setCurrentIndex(
-            self.instrument.samplestore.findSample(newtitle),
-            QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Clear |
-            QtCore.QItemSelectionModel.SelectCurrent
-        )
+        self.maskOverridePushButton.clicked.connect(self.browseMask)
+        self.todayPushButton.clicked.connect(self.setToday)
 
     def setToday(self):
         self.preparationDateDateEdit.setDate(QtCore.QDate.currentDate())
 
     def browseMask(self):
-        maskfile, filter_ = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Select mask file', '', 'Mask files (*.mat; *.npy);;All files (*)', 'Mask files (*.mat; *.npy)')
-        if not maskfile:
-            return
-        self.maskOverrideLineEdit.setText(maskfile)
+        if (filename := browseMask(self)) is not None:
+            self.maskOverrideLineEdit.setText(filename)
 
-    def changeSample(self, attribute: str, newvalue: Any):
-        logger.debug(f'changeSample: {attribute}, {newvalue}')
-        focusedwidget = self.focusWidget()
-        sample = self.currentSample()
-        title = sample.title
-        if sample is None:
-            return
-        if getattr(sample, attribute) != newvalue:
-            logger.debug(f'Really changeSample: {attribute}, {newvalue}')
-            setattr(sample, attribute, newvalue)
-            logger.debug('Updating sample')
-            self.instrument.samplestore.updateSample(title, sample)
-            logger.debug('Updated sample.')
-            self.treeView.selectionModel().setCurrentIndex(
-                self.instrument.samplestore.findSample(sample.title),
-                QtCore.QItemSelectionModel.SelectCurrent |
-                QtCore.QItemSelectionModel.Clear |
-                QtCore.QItemSelectionModel.Rows)
-            focusedwidget.setFocus()
+    def addSample(self):
+        samplename = self.instrument.samplestore.addSample()
+        self.treeView.selectionModel().setCurrentIndex(
+            self.treeView.model().mapFromSource(self.instrument.samplestore.indexForSample(samplename)),
+            QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Clear |
+            QtCore.QItemSelectionModel.Current | QtCore.QItemSelectionModel.Rows)
 
-    def attributeForWidget(self, widget: Optional[QtWidgets.QWidget] = None):
-        if widget is None:
-            widget = self.sender()
-        assert isinstance(widget, QtWidgets.QWidget)
-        return [p for p, ws in self._sampleproperty2widgets.items() if widget.objectName() in ws][0]
+    def removeSample(self):
+        while lis := self.treeView.selectionModel().selectedRows(0):
+            delendum = self.treeView.model().mapToSource(lis[0])
+            self.instrument.samplestore.removeRow(delendum.row(), delendum.parent())
+
+    def duplicateSample(self):
+        title = self.currentSampleName()
+        if title is None:
+            return
+        self.instrument.samplestore.addSample(
+            self.instrument.samplestore.getFreeSampleName(title),
+            self.currentSample()
+        )
 
     def currentSample(self) -> Optional[Sample]:
-        logger.debug('currentSample()')
-        if self.treeView.currentIndex().isValid():
-            return self.instrument.samplestore[self.treeView.currentIndex().row()]
-        else:
+        if not self.treeView.selectionModel().currentIndex().isValid():
             return None
+        logger.debug(f'Current sample row: {self.treeView.selectionModel().currentIndex().row()}')
+        return self.instrument.samplestore[self.treeView.model().mapToSource(self.treeView.selectionModel().currentIndex()).row()]
+
+    def currentSampleName(self) -> Optional[str]:
+        sam = self.currentSample()
+        return None if sam is None else sam.title
+
+    def onLockToolButtonToggled(self, checked: bool):
+        attr = self.attributeForWidget(self.sender())
+        self.instrument.samplestore.updateAttributeLocking(self.currentSampleName(), attr, checked)
 
     def onDoubleSpinBoxValueChanged(self, value: float):
-        attr = self.attributeForWidget()
-        prevvalue = getattr(self.currentSample(), attr)
-        if self.sender().objectName().endswith('ErrDoubleSpinBox'):
-            self.changeSample(attr, (prevvalue[0], value))
-        elif self.sender().objectName().endswith('ValDoubleSpinBox'):
-            self.changeSample(attr, (value, prevvalue[1]))
+        attribute = self.attributeForWidget(self.sender())
+        oldvalue = getattr(self.currentSample(), attribute)
+        if len(widgetlist := self.widgetsForAttribute(attribute)) == 2:
+            # value and uncertainty. Check which are we
+            if widgetlist.index(self.sender()) == 0:
+                # we are the value
+                self.updateSampleInStore(attribute, (value, oldvalue[1]))
+            else:
+                assert widgetlist.index(self.sender()) == 1
+                self.updateSampleInStore(attribute, (oldvalue[0], value))
         else:
-            self.changeSample(self.attributeForWidget(), value)
+            assert len(self.widgetsForAttribute(attribute)) == 1
+            self.updateSampleInStore(attribute, value)
 
-    def onDateEditDateChanged(self, date: QtCore.QDate):
-        self.changeSample(self.attributeForWidget(), datetime.date(date.year(), date.month(), date.day()))
+    def onDateEditDateChanged(self, value: QtCore.QDate):
+        attribute = self.attributeForWidget(self.sender())
+        date = self.sender().date()
+        self.updateSampleInStore(attribute, datetime.date(date.year(), date.month(), date.day()))
 
-    def onPlainTextEditTextChanged(self):
-        self.changeSample(self.attributeForWidget(), self.sender().toPlainText())
+    def onComboBoxCurrentIndexChanged(self, currentIndex: int):
+        attribute = self.attributeForWidget(self.sender())
+        if self.sender() is self.situationComboBox:
+            self.updateSampleInStore(attribute, Sample.Situations(self.sender().currentText()))
+        elif self.sender() is self.categoryComboBox:
+            self.updateSampleInStore(attribute, Sample.Categories(self.sender().currentText()))
+        elif self.sender() is self.projectComboBox:
+            self.updateSampleInStore(attribute, self.sender().currentText())
+        else:
+            assert False
 
-    def onComboBoxCurrentIndexChanged(self):
-        self.changeSample(self.attributeForWidget(), self.sender().currentText())
+    def onPlainTextEdited(self):
+        attribute = self.attributeForWidget(self.sender())
+        self.updateSampleInStore(attribute, self.sender().toPlainText())
 
     def onLineEditEditingFinished(self):
-        attr = self.attributeForWidget()
-        text = self.sender().text()
-        if (attr == 'title') and (text in self.instrument.samplestore):
-            # avoid making duplicate titles or rename this sample to the same name.
-            logger.debug('Not setting duplicate title.')
-            if self.currentSample().title != text:
-                # re-set the title editor
-                QtWidgets.QMessageBox.warning(self, 'Duplicate title',
-                                              f'Another sample with title {text} already exists.')
-                self.sender().setText(self.currentSample().title)
-        else:
-            self.changeSample(attr, text)
+        attribute = self.attributeForWidget(self.sender())
+        self.updateSampleInStore(attribute, self.sender().text())
 
-    def onLockButtonToggled(self, state: bool):
-        logger.debug('onLockButtonToggled')
-        focusedwidget = self.focusWidget()
-        lockbutton = self.sender()
-        assert isinstance(lockbutton, QtWidgets.QToolButton)
-        lockbutton.setIcon(QtGui.QIcon.fromTheme('lock' if state else 'unlock'))
-        attrname = [a for a, ws in self._sampleproperty2widgets.items() if lockbutton.objectName() in ws][0]
-        currentsample = self.currentSample()
-        setattr(currentsample, attrname, LockState.LOCKED if state else LockState.UNLOCKED)
-        self.removeSamplePushButton.setEnabled(not currentsample.isLocked('title'))
-        self.instrument.samplestore.updateSample(currentsample.title, currentsample)
-        self.treeView.selectionModel().setCurrentIndex(
-            self.instrument.samplestore.findSample(currentsample.title),
-            QtCore.QItemSelectionModel.SelectCurrent |
-            QtCore.QItemSelectionModel.Clear |
-            QtCore.QItemSelectionModel.Rows)
-        focusedwidget.setFocus()
+    def updateSampleInStore(self, attribute: str, newvalue: Any):
+        self.instrument.samplestore.updateSample(self.currentSampleName(), attribute, newvalue)
 
-    def resizeTreeViewColumns(self):
-        logger.debug('Resizing treeview columns')
-        for c in range(self.instrument.samplestore.columnCount(QtCore.QModelIndex())):
-            self.treeView.resizeColumnToContents(c)
-        if not self.currentSample():
-            for widgets in self._sampleproperty2widgets.values():
-                for w in widgets:
-                    getattr(self, w).setDisabled(True)
-
-    def currentSampleSelected(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
-        logger.debug('currentSampleSelected')
-        if not current.isValid():
-            self.removeSamplePushButton.setEnabled(False)
-            self.duplicateSamplePushButton.setEnabled(False)
-            self.frame.setEnabled(False)
+    def onSampleChangedInStore(self, samplename: str, attribute: str, newvalue: Any):
+        logger.debug(f'Sample {samplename=} changed in the store: {attribute=} is now {newvalue=}. Current sample name: {self.currentSampleName()}')
+        if samplename != self.currentSampleName():
             return
-        self.duplicateSamplePushButton.setEnabled(True)
-        self.frame.setEnabled(True)
-        sample = self.instrument.samplestore[current.row()]
-        logger.debug(f'Sample is {sample.title}.')
-        logger.debug(f'Title field: {self.sampleNameLineEdit.text()}')
-        self.removeSamplePushButton.setEnabled(not sample.isLocked('title'))
-        for attribute, widgetnames in self._sampleproperty2widgets.items():
-            widgets = [getattr(self, wn) for wn in widgetnames]
-            for w in widgets:
-                w.blockSignals(True)
+        for i, widget in enumerate(self.widgetsForAttribute(attribute)):
+            widget.blockSignals(True)
             try:
-                value = getattr(sample, attribute)
-                if (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QLineEdit):
-                    if widgets[0].text() != value:
-                        widgets[0].setText(value)
-                elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QPlainTextEdit):
-                    logger.debug(f'Updating attribute {attribute} in GUI. {widgets[0].toPlainText()=}, {value=}')
-                    if widgets[0].toPlainText() != value:
-                        widgets[0].setPlainText(value)
-                elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QComboBox):
-                    value = getattr(sample, attribute)
+                if isinstance(widget, QtWidgets.QPlainTextEdit) and (newvalue != widget.toPlainText()):
+                    widget.setPlainText(newvalue)
+                elif isinstance(widget, QtWidgets.QLineEdit) and (newvalue != widget.text()):
+                    widget.setText(newvalue)
+                elif isinstance(widget, QtWidgets.QComboBox):
+                    if isinstance(newvalue, str) and (widget.currentText() != newvalue):
+                        widget.setCurrentIndex(widget.findText(newvalue))
+                    elif (newvalue is None) and (widget.currentIndex() >= 0):
+                        widget.setCurrentIndex(-1)
+                    elif widget.currentText() != newvalue.value:
+                        widget.setCurrentIndex(widget.findText(newvalue.value))
+                    else:
+                        # must not fail: we can reach this line if no change is needed in the widget value
+                        pass
+                elif isinstance(widget, QtWidgets.QDoubleSpinBox) and isinstance(newvalue, tuple) and (len(newvalue) == 2) and (widget.value() != newvalue[i]):
+                    widget.setValue(newvalue[i])
+                else:
+                    # must not fail: we can reach this line if no change is needed in the widget value
+                    pass
+            finally:
+                widget.blockSignals(False)
+
+    def onSelectionChanged(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
+        nonemptyselection = len(self.treeView.selectionModel().selectedRows())
+        self.removeSamplePushButton.setEnabled(nonemptyselection)
+
+    def updateEditWidgets(self, sample: Optional[Sample]):
+        for attribute in self.sampleAttributes():
+            value = getattr(sample, attribute) if sample is not None else None
+            logger.debug(f'attribute {attribute}: {value}')
+            for i, widget in enumerate(self.widgetsForAttribute(attribute)):
+                widget.setEnabled(sample is not None)
+                widget.blockSignals(True)
+                if isinstance(widget, QtWidgets.QLineEdit):
+                    widget.setText(value if value is not None else '')
+                elif isinstance(widget, QtWidgets.QPlainTextEdit):
+                    widget.setPlainText(value if value is not None else '')
+                elif isinstance(widget, QtWidgets.QComboBox):
                     if value is None:
-                        widgets[0].setCurrentIndex(-1)
+                        widget.setCurrentIndex(-1)
                         continue
                     elif not isinstance(value, str):
+                        # should be an Enum element
                         value = value.value
-                    index = widgets[0].findText(value)
-                    if widgets[0].currentIndex() != index:
-                        widgets[0].setCurrentIndex(index)
-                elif (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QDateEdit):
-                    # todo: do not change date if not needed
-                    date = getattr(sample, attribute)
-                    widgets[0].setDate(QtCore.QDate(date.year, date.month, date.day))
-                elif ((len(widgets) == 3)
-                      and isinstance(widgets[0], QtWidgets.QDoubleSpinBox)
-                      and isinstance(widgets[1], QtWidgets.QDoubleSpinBox)):
-                    for w in widgets[:-1]:
-                        # ToDo: do not change spinbox values if not needed. Problem: rounding
-                        if 'ErrDoubleSpinBox' in w.objectName():
-                            w.setValue(getattr(sample, attribute)[1])
-                        elif 'ValDoubleSpinBox' in w.objectName():
-                            w.setValue(getattr(sample, attribute)[0])
-                        else:
-                            assert False
+                    widget.setCurrentIndex(widget.findText(value))
+                elif isinstance(widget, QtWidgets.QDoubleSpinBox):
+                    if isinstance(value, tuple):
+                        widget.setValue(value[i])
+                    else:
+                        widget.setValue(value if value is not None else 0.0)
+                elif isinstance(widget, QtWidgets.QDateEdit):
+                    if value is None:
+                        widget.setDate(QtCore.QDate.currentDate())
+                    else:
+                        assert isinstance(value, datetime.date)
+                        widget.setDate(QtCore.QDate(value.year, value.month, value.day))
                 else:
                     assert False
-                widgets[-1].setChecked(sample.isLocked(attribute))
-                widgets[-1].setIcon(QtGui.QIcon.fromTheme('lock' if sample.isLocked(attribute) else 'unlock'))
-                for w in widgets[:-1]:
-                    w.setDisabled(sample.isLocked(attribute))
-            finally:
-                for w in widgets:
-                    w.blockSignals(False)
-        logger.debug('End of currentSampleSelected')
+                widget.blockSignals(False)
+            ltb = self.lockToolButton(attribute)
+            ltb.setEnabled(sample is not None)
+            ltb.blockSignals(True)
+            ltb.setChecked(sample.isLocked(attribute) if sample is not None else False)
+            ltb.blockSignals(False)
+
+    def onCurrentSelectionChanged(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
+        self.updateEditWidgets(self.currentSample())
+
+    def widgetsForAttribute(self, attribute: str) -> Tuple[QtWidgets.QWidget, ...]:
+        return tuple([getattr(self, wn) for wn in self._param2widgets[attribute][:-1]])
+
+    def sampleAttributes(self) -> List[str]:
+        return list(self._param2widgets.keys())
+
+    def lockToolButton(self, attribute: str) -> QtWidgets.QToolButton:
+        return getattr(self, self._param2widgets[attribute][-1])
+
+    def attributeForWidget(self, widget: QtWidgets.QWidget) -> str:
+        return [attr for attr, wnames in self._param2widgets.items() if widget.objectName() in wnames][0]
+

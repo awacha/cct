@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>719</width>
+    <width>1143</width>
     <height>625</height>
    </rect>
   </property>
@@ -25,8 +25,8 @@
      </property>
      <widget class="QWidget" name="widget" native="true">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-        <horstretch>0</horstretch>
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+        <horstretch>1</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
@@ -54,12 +54,6 @@
          <property name="acceptDrops">
           <bool>true</bool>
          </property>
-         <property name="horizontalScrollBarPolicy">
-          <enum>Qt::ScrollBarAlwaysOff</enum>
-         </property>
-         <property name="sizeAdjustPolicy">
-          <enum>QAbstractScrollArea::AdjustToContents</enum>
-         </property>
          <property name="showDropIndicator" stdset="0">
           <bool>true</bool>
          </property>
@@ -78,6 +72,9 @@
          <property name="alternatingRowColors">
           <bool>true</bool>
          </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::ExtendedSelection</enum>
+         </property>
          <property name="selectionBehavior">
           <enum>QAbstractItemView::SelectRows</enum>
          </property>
@@ -90,10 +87,63 @@
          <property name="itemsExpandable">
           <bool>false</bool>
          </property>
+         <property name="sortingEnabled">
+          <bool>true</bool>
+         </property>
          <property name="allColumnsShowFocus">
           <bool>true</bool>
          </property>
         </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_16">
+         <item>
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="addSamplePushButton">
+           <property name="text">
+            <string>Add</string>
+           </property>
+           <property name="icon">
+            <iconset theme="list-add">
+             <normaloff>.</normaloff>.</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="removeSamplePushButton">
+           <property name="text">
+            <string>Remove</string>
+           </property>
+           <property name="icon">
+            <iconset theme="list-remove">
+             <normaloff>.</normaloff>.</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="duplicateSamplePushButton">
+           <property name="text">
+            <string>Duplicate</string>
+           </property>
+           <property name="icon">
+            <iconset theme="edit-copy">
+             <normaloff>.</normaloff>.</iconset>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="QWidget" name="widget_2" native="true">
@@ -110,39 +160,6 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
-          <item>
-           <widget class="QPushButton" name="addSamplePushButton">
-            <property name="text">
-             <string>Add</string>
-            </property>
-            <property name="icon">
-             <iconset theme="list-add">
-              <normaloff>.</normaloff>.</iconset>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="removeSamplePushButton">
-            <property name="text">
-             <string>Remove</string>
-            </property>
-            <property name="icon">
-             <iconset theme="list-remove">
-              <normaloff>.</normaloff>.</iconset>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="duplicateSamplePushButton">
-            <property name="text">
-             <string>Duplicate</string>
-            </property>
-            <property name="icon">
-             <iconset theme="edit-copy">
-              <normaloff>.</normaloff>.</iconset>
-            </property>
-           </widget>
-          </item>
          </layout>
         </widget>
        </item>
@@ -192,6 +209,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -223,6 +243,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
            </property>
            <property name="decimals">
             <number>4</number>
@@ -295,7 +318,8 @@
             <string>...</string>
            </property>
            <property name="icon">
-            <iconset theme="unlock"/>
+            <iconset theme="unlock">
+             <normaloff>.</normaloff>.</iconset>
            </property>
            <property name="checkable">
             <bool>true</bool>
@@ -378,7 +402,8 @@
             <string>...</string>
            </property>
            <property name="icon">
-            <iconset theme="unlock"/>
+            <iconset theme="unlock">
+             <normaloff>.</normaloff>.</iconset>
            </property>
            <property name="checkable">
             <bool>true</bool>
@@ -396,6 +421,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
            </property>
            <property name="decimals">
             <number>4</number>
@@ -425,6 +453,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
            </property>
            <property name="decimals">
             <number>4</number>
@@ -470,6 +501,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -498,6 +532,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
            </property>
            <property name="decimals">
             <number>4</number>
@@ -619,7 +656,8 @@
             <string>...</string>
            </property>
            <property name="icon">
-            <iconset theme="unlock"/>
+            <iconset theme="unlock">
+             <normaloff>.</normaloff>.</iconset>
            </property>
            <property name="checkable">
             <bool>true</bool>
@@ -637,6 +675,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
            </property>
            <property name="decimals">
             <number>4</number>
@@ -669,6 +710,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
            </property>
            <property name="decimals">
             <number>4</number>
@@ -704,6 +748,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -735,6 +782,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="keyboardTracking">
+            <bool>false</bool>
            </property>
            <property name="decimals">
             <number>4</number>
@@ -808,7 +858,8 @@
             <string>...</string>
            </property>
            <property name="icon">
-            <iconset theme="unlock"/>
+            <iconset theme="unlock">
+             <normaloff>.</normaloff>.</iconset>
            </property>
            <property name="checkable">
             <bool>true</bool>
@@ -828,7 +879,8 @@
             <string>...</string>
            </property>
            <property name="icon">
-            <iconset theme="unlock"/>
+            <iconset theme="unlock">
+             <normaloff>.</normaloff>.</iconset>
            </property>
            <property name="checkable">
             <bool>true</bool>
@@ -868,9 +920,6 @@
  </widget>
  <tabstops>
   <tabstop>treeView</tabstop>
-  <tabstop>addSamplePushButton</tabstop>
-  <tabstop>removeSamplePushButton</tabstop>
-  <tabstop>duplicateSamplePushButton</tabstop>
   <tabstop>sampleNameLineEdit</tabstop>
   <tabstop>sampleNameLockToolButton</tabstop>
   <tabstop>descriptionPlainTextEdit</tabstop>

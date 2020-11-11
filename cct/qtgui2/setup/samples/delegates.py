@@ -3,6 +3,7 @@ import logging
 from PyQt5 import QtWidgets, QtCore
 
 from ....core2.instrument.components.samples.samplestore import SampleStore, Sample
+from ....core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -11,7 +12,7 @@ logger.setLevel(logging.DEBUG)
 class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
     def _get_attribute(self, index: QtCore.QModelIndex) -> str:
         logger.debug(f'_get_attribute({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
-        model = index.model()
+        model = Instrument.instance().samplestore
         assert isinstance(model, SampleStore)
         return model._columns[index.column()][0]
 
@@ -57,7 +58,7 @@ class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
     def setEditorData(self, editor: QtWidgets.QWidget, index: QtCore.QModelIndex) -> None:
         logger.debug(f'setEditorData({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         attribute = self._get_attribute(index)
-        sample = index.model()[index.row()]
+        sample = Instrument.instance().samplestore[index.row()]
         assert isinstance(sample, Sample)
         if attribute in ['title', 'description', 'preparedby', 'maskoverride', 'preparetime']:
             super().setEditorData(editor, index)
