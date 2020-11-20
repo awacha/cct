@@ -1,5 +1,7 @@
+import datetime
 import pickle
 import numpy as np
+import logging
 from typing import Tuple, Dict, Any, Optional, Final, List, Sequence
 
 from .headerparameter import ValueAndUncertaintyHeaderParameter, StringHeaderParameter, IntHeaderParameter, \
@@ -10,43 +12,43 @@ ValueAndUncertaintyType = Tuple[float, float]
 
 
 class Header:
-    distance = ValueAndUncertaintyHeaderParameter(('geometry', 'truedistance'), ('geometry', 'truedistance.err'))
-    beamposrow = ValueAndUncertaintyHeaderParameter(('geometry', 'beamposx'), ('geometry', 'beamposx.err'))
-    beamposcol = ValueAndUncertaintyHeaderParameter(('geometry', 'beamposy'), ('geometry', 'beamposy.err'))
-    pixelsize = ValueAndUncertaintyHeaderParameter(('geometry', 'pixelsize'), ('geometry', 'pixelsize.err'))
-    wavelength = ValueAndUncertaintyHeaderParameter(('geometry', 'wavelength'), ('geometry', 'wavelength.err'))
-    flux = ValueAndUncertaintyHeaderParameter(('datareduction', 'flux'), ('datareduction', 'flux.err'))
-    samplex = ValueAndUncertaintyHeaderParameter(('sample', 'positionx.val'), ('sample', 'positionx.err'))
-    sampley = ValueAndUncertaintyHeaderParameter(('sample', 'positiony.val'), ('sample', 'positiony.err'))
+    distance = ValueAndUncertaintyHeaderParameter(('geometry', 'truedistance'), ('geometry', 'truedistance.err'), default=(1.0, 0.0))
+    beamposrow = ValueAndUncertaintyHeaderParameter(('geometry', 'beamposx'), ('geometry', 'beamposx.err'), default=(0.0, 0.0))
+    beamposcol = ValueAndUncertaintyHeaderParameter(('geometry', 'beamposy'), ('geometry', 'beamposy.err'), default=(0.0, 0.0))
+    pixelsize = ValueAndUncertaintyHeaderParameter(('geometry', 'pixelsize'), ('geometry', 'pixelsize.err'), default=(1.0, 0.0))
+    wavelength = ValueAndUncertaintyHeaderParameter(('geometry', 'wavelength'), ('geometry', 'wavelength.err'), default=(1.0, 0.0))
+    flux = ValueAndUncertaintyHeaderParameter(('datareduction', 'flux'), ('datareduction', 'flux.err'), default=(np.nan, np.nan))
+    samplex = ValueAndUncertaintyHeaderParameter(('sample', 'positionx.val'), ('sample', 'positionx.err'), default=(np.nan, np.nan))
+    sampley = ValueAndUncertaintyHeaderParameter(('sample', 'positiony.val'), ('sample', 'positiony.err'), default=(np.nan, np.nan))
     temperature = ValueAndUncertaintyHeaderParameter(('environment', 'temperature'), ('environment', 'temperature.err'),
-                                                     (None, 0.0))
+                                                     default=(np.nan, np.nan))
     vacuum = ValueAndUncertaintyHeaderParameter(('environment', 'vacuum_pressure'),
-                                                ('environment', 'vacuum_pressure.err'), (None, 0.0))
-    fsn_absintref = IntHeaderParameter(('datareduction', 'absintrefFSN'))
-    fsn_emptybeam = IntHeaderParameter(('datareduction', 'emptybeamFSN'))
-    fsn_dark = IntHeaderParameter(('datareduction', 'darkFSN'))
-    dark_cps = ValueAndUncertaintyHeaderParameter(('datareduction', 'dark_cps.val'), ('datareduction', 'dark_cps.err'))
-    project = StringHeaderParameter(('accounting', 'projectid'))
-    username = StringHeaderParameter(('accounting', 'operator'))
-    distancedecreaase = ValueAndUncertaintyHeaderParameter(('sample', 'distminus.val'), ('sample', 'distminus.err'))
-    sample_category = StringHeaderParameter(('sample', 'category'))
-    startdate = DateTimeHeaderParameter(('exposure', 'startdate'))
-    enddate = DateTimeHeaderParameter(('exposure', 'enddate'))
+                                                ('environment', 'vacuum_pressure.err'), default=(np.nan, np.nan))
+    fsn_absintref = IntHeaderParameter(('datareduction', 'absintrefFSN'), default=-1)
+    fsn_emptybeam = IntHeaderParameter(('datareduction', 'emptybeamFSN'), default=-1)
+    fsn_dark = IntHeaderParameter(('datareduction', 'darkFSN'), default=-1)
+    dark_cps = ValueAndUncertaintyHeaderParameter(('datareduction', 'dark_cps.val'), ('datareduction', 'dark_cps.err'), default=(np.nan, np.nan))
+    project = StringHeaderParameter(('accounting', 'projectid'), default='--no-project--')
+    username = StringHeaderParameter(('accounting', 'operator'), default='Anonymous')
+    distancedecrease = ValueAndUncertaintyHeaderParameter(('sample', 'distminus.val'), ('sample', 'distminus.err'), default=(0.0, 0.0))
+    sample_category = StringHeaderParameter(('sample', 'category'), default='sample')
+    startdate = DateTimeHeaderParameter(('exposure', 'startdate'), default=datetime.datetime.fromtimestamp(0))
+    enddate = DateTimeHeaderParameter(('exposure', 'enddate'), default=datetime.datetime.fromtimestamp(0))
     date = enddate
-    exposuretime = ValueAndUncertaintyHeaderParameter(('exposure', 'exptime'), ('exposure', 'exptime.err'), (None, 0.0))
+    exposuretime = ValueAndUncertaintyHeaderParameter(('exposure', 'exptime'), ('exposure', 'exptime.err'), default=(np.nan, np.nan))
     absintfactor = ValueAndUncertaintyHeaderParameter(('datareduction', 'absintfactor'),
-                                                      ('datareduction', 'absintfactor.err'))
-    absintdof = IntHeaderParameter(('datareduction', 'absintdof'))
-    absintchi2 = IntHeaderParameter(('datareduction', 'absintchi2_red'))
-    absintqmin = FloatHeaderParameter(('datareduction', 'absintqmin'))
-    absintqmax = FloatHeaderParameter(('datareduction', 'absintqmax'))
+                                                      ('datareduction', 'absintfactor.err'), default=(np.nan, np.nan))
+    absintdof = IntHeaderParameter(('datareduction', 'absintdof'), default=-1)
+    absintchi2 = FloatHeaderParameter(('datareduction', 'absintchi2_red'), default=np.nan)
+    absintqmin = FloatHeaderParameter(('datareduction', 'absintqmin'), default=np.nan)
+    absintqmax = FloatHeaderParameter(('datareduction', 'absintqmax'), default=np.nan)
 
     prefix = StringHeaderParameter(('exposure', 'prefix'), default='crd')
-    title = StringHeaderParameter(('sample', 'title'))
-    fsn = IntHeaderParameter(('exposure', 'fsn'))
-    maskname = StringHeaderParameter(('geometry', 'mask'))
-    thickness = ValueAndUncertaintyHeaderParameter(('sample', 'thickness.val'), ('sample', 'thickness.err'))
-    transmission = ValueAndUncertaintyHeaderParameter(('sample', 'transmission.val'), ('sample', 'transmission.err'))
+    title = StringHeaderParameter(('sample', 'title'), default='Untitled')
+    fsn = IntHeaderParameter(('exposure', 'fsn'), default=-1)
+    maskname = StringHeaderParameter(('geometry', 'mask'), default='')
+    thickness = ValueAndUncertaintyHeaderParameter(('sample', 'thickness.val'), ('sample', 'thickness.err'), default=(1, 0.0))
+    transmission = ValueAndUncertaintyHeaderParameter(('sample', 'transmission.val'), ('sample', 'transmission.err'), default=(1,0.0))
     _data: Dict[str, Any]
 
     _headerattributes_ensureunique: Final[List[str]] = \
@@ -89,7 +91,7 @@ class Header:
             for h in hs:
                 try:
                     lis.append(getattr(h, f))
-                except KeyError:
+                except (KeyError, TypeError):
                     continue
             return lis
 
@@ -102,7 +104,9 @@ class Header:
             values = collect(field, headers)
             if not values:
                 continue
-            collatedvalues[field] = sum(values)
+            val = np.array([v if isinstance(v, float) else v[0] for v in values])
+            err = np.array([np.nan if isinstance(v, float) else v[1] for v in values])
+            collatedvalues[field] = (val.sum(), (err**2).sum()**0.5)
         for field in cls._headerattributes_average:
             values = collect(field, headers)
             if not values:
