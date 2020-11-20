@@ -14,6 +14,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+class ProxyModel(QtCore.QSortFilterProxyModel):
+    simplemode: bool=False
+
+    def filterAcceptsColumn(self, source_column: int, source_parent: QtCore.QModelIndex) -> bool:
+        return (not self.simplemode) or (source_column == 0)
+
+    def setSimpleMode(self, simplemode: bool):
+        self.simplemode = simplemode
+        self.invalidateFilter()
+
+
 class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     _param2widgets: Final[Dict[str, Tuple[str, ...]]] = {
         'title': ('sampleNameLineEdit', 'sampleNameLockToolButton'),
@@ -31,6 +42,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         'preparetime': ('preparationDateDateEdit', 'preparationDateLockToolButton'),
     }
     sampleeditordelegate: SampleEditorDelegate
+    proxymodel: ProxyModel
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -38,9 +50,9 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        model = QtCore.QSortFilterProxyModel()
-        model.setSourceModel(self.instrument.samplestore)
-        self.treeView.setModel(model)
+        self.proxymodel = ProxyModel()
+        self.proxymodel.setSourceModel(self.instrument.samplestore)
+        self.treeView.setModel(self.proxymodel)
         self.treeView.setSortingEnabled(True)
         self.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.treeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
@@ -74,6 +86,16 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.duplicateSamplePushButton.clicked.connect(self.duplicateSample)
         self.maskOverridePushButton.clicked.connect(self.browseMask)
         self.todayPushButton.clicked.connect(self.setToday)
+        self.multiColumnPushButton.toggled.connect(self.onMultiColumnToggled)
+        self.multiColumnPushButton.setChecked(False)
+
+    def onMultiColumnToggled(self, checked: bool):
+        self.multiColumnPushButton.setText('Detailed' if checked else 'Simple')
+        self.proxymodel.setSimpleMode(not checked)
+        self.treeView.resize(self.treeView.minimumSizeHint().width(), self.height())
+        self.resize(1, self.height())
+        for column in range(self.proxymodel.columnCount(QtCore.QModelIndex())):
+            self.treeView.resizeColumnToContents(column)
 
     def setToday(self):
         self.preparationDateDateEdit.setDate(QtCore.QDate.currentDate())

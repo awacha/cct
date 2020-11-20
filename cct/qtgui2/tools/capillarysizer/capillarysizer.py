@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 import logging
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui, QtCore
 from matplotlib.axes import Axes, np
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -54,6 +54,8 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.samplestore.sampleListChanged.connect(self.repopulateSampleComboBox)
         self.updateCenterToolButton.clicked.connect(self.saveCenter)
         self.updateThicknessToolButton.clicked.connect(self.saveThickness)
+        self.updateCenterToolButton.setIcon(QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
+        self.updateThicknessToolButton.setIcon(QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
         self.repopulateSampleComboBox()
         self.instrument.scan.lastscanchanged.connect(self.onLastScanChanged)
         self.scanIndexSpinBox.setRange(self.instrument.scan.firstscan(), self.instrument.scan.lastscan())
@@ -193,23 +195,21 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def saveCenter(self):
         positionval = 0.5 * (self.positive[0] + self.negative[0])
         positionerr = 0.5 * (self.positive[1] ** 2 + self.negative[1] ** 2) ** 0.5
-        sample = self.instrument.samplestore[self.sampleNameComboBox.currentText()]
         try:
             if self.instrument.samplestore.xmotorname() == self.scan.motorname:
-                sample.positionx = (positionval, positionerr)
+                self.instrument.samplestore.updateSample(self.sampleNameComboBox.currentText(), 'positionx', (positionval, positionerr))
             elif self.instrument.samplestore.ymotorname() == self.scan.motorname:
-                sample.positiony = (positionval, positionerr)
+                self.instrument.samplestore.updateSample(self.sampleNameComboBox.currentText(), 'positiony', (positionval, positionerr))
             else:
                 return
         except ValueError:
             QtWidgets.QMessageBox.critical(
                 self, 'Parameter locked',
-                f'Cannot set position for sample {sample.title}: this parameter has been set read-only!')
+                f'Cannot set position for sample {self.sampleNameComboBox.currentText()}: this parameter has been set read-only!')
             return
-        self.instrument.samplestore.updateSample(sample.title, sample)
         logger.info(
             f'Updated {"X" if self.instrument.samplestore.xmotorname() == self.scan.motorname else "Y"} '
-            f'position of sample {sample.title} to {positionval:.4f} \xb1 {positionerr:.4f}.')
+            f'position of sample {self.sampleNameComboBox.currentText()} to {positionval:.4f} \xb1 {positionerr:.4f}.')
 
     def saveThickness(self):
         thicknessval = abs(self.positive[0] - self.negative[0])
