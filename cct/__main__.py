@@ -17,6 +17,7 @@ from cct.core2.config import Config
 import cct.qtgui2.processingmain
 from cct.core2.instrument.components.datareduction.datareductionpipeline import DataReductionPipeLine
 from cct.core2.instrument.components.io import IO
+import cct.dbutils2.updatedb
 
 # logging.basicConfig()
 logging.root.setLevel(logging.DEBUG)
@@ -100,12 +101,16 @@ def daq(config:str, online: bool, root: bool, die_on_error: bool):
 
 @main.command()
 @click.option('--project', '-p', default=None, help='Project file to load')
-def processing(project: Optional[str]):
+@click.option('--die-on-error/--dont-die-on-error', '-d', default=False, help='Die on an unhandled exception (for debugging)', type=bool, is_flag=True)
+def processing(project: Optional[str], die_on_error: bool):
     """Open the data processing GUI"""
     multiprocessing.set_start_method('forkserver')  # the default 'fork' method is not appropriate for multi-threaded programs, e.g. with PyQt.
-    sys.excepthook = excepthook
+    if not die_on_error:
+        sys.excepthook = excepthook
     app = QtWidgets.QApplication(sys.argv)
     mw = cct.qtgui2.processingmain.main.Main()
+    if project is not None:
+        mw.openProject(project)
     mw.show()
     logger.debug('Starting event loop')
     result = app.exec_()
@@ -162,6 +167,19 @@ def dumpconfig(config, maxlevel):
             else:
                 click.echo(f'{indentation*level}{key}: {conf[key]}')
     dump(config, 0)
+
+@main.command()
+@click.option('--dbtype', '-t', default=None, help='Database type', type=click.Choice(['sqlite', 'mysql', 'mariadb'], case_sensitive=False), required=True)
+@click.option('--database', '-d', default='', help='Database name (file name for sqlite)', type=str, required=True)
+@click.option('--host', '-h', default='localhost', help='Database host name', type=str)
+@click.option('--username', '-u', default='user', help='Database user name', type=str)
+@click.option('--password', '-p', default='', help='Database password', type=str)
+@click.option('--config', '-c', default='config/cct.pickle', help='Config file', type=click.Path(exists=True, file_okay=True, dir_okay=False, writable=False, readable=True, allow_dash=False, ))
+@click.option('--verbose', '-v', is_flag=True, default=False, help='Verbose operation', type=bool)
+@click.option('--readall', '-a', is_flag=True, default=False, help='Read all headers instead of only those after the last one', type=bool)
+def updatedb(dbtype: str, database:str, host:str, username:str, password:str, config:str, verbose: bool, readall: bool):
+    """Create or update the exposure list database"""
+    cct.dbutils2.updatedb.updatedb(dbtype, host, database, username, password, config, verbose, not readall)
 
 
 if __name__ == '__main__':
