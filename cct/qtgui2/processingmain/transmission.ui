@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>714</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Transmission</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../resource/icons/icons.qrc">
+    <normaloff>:/icons/transmission.svg</normaloff>:/icons/transmission.svg</iconset>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <widget class="QTreeWidget" name="treeWidget">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="sizeAdjustPolicy">
+      <enum>QAbstractScrollArea::AdjustToContents</enum>
+     </property>
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="rootIsDecorated">
+      <bool>false</bool>
+     </property>
+     <property name="uniformRowHeights">
+      <bool>true</bool>
+     </property>
+     <property name="allColumnsShowFocus">
+      <bool>true</bool>
+     </property>
+     <column>
+      <property name="text">
+       <string>Sample name</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Distance</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Transmission</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Thickness (cm)</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>μ (1/cm)</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Absorption length (cm)</string>
+      </property>
+     </column>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../../resource/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>

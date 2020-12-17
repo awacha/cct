@@ -1,9 +1,8 @@
 import datetime
-import enum
 import multiprocessing
 import os
 import logging
-from typing import Any, List, Final, Optional, Sequence, Iterator
+from typing import Any, List, Final, Optional, Sequence, Iterator, Tuple
 
 from PyQt5 import QtCore
 
@@ -12,26 +11,18 @@ from .task import ProcessingTask, ProcessingStatus
 from ...dataclasses import Header
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-
-class HeaderLoaderStatus(enum.Enum):
-    Idle = 'idle'
-    Stopping = 'user stop requested'
-    Loading = 'Loading headers'
+logger.setLevel(logging.DEBUG)
 
 
 class HeaderStore(ProcessingTask):
 
     _data: List[Header]
+    _data_being_loaded: Optional[List[Optional[Header]]] = None
     columns: Final[List[str]] = ['fsn', 'title', 'distance', 'enddate', 'project', 'thickness', 'transmission']
-    loaderpool: Optional[multiprocessing.pool.Pool] = None
-    asyncresults: Optional[List[multiprocessing.pool.AsyncResult]]
-    _stopLoading: bool = False
 
-    def __init__(self, settings: ProcessingSettings):
+    def __init__(self, processing: "Processing", settings: ProcessingSettings):
         self._data = []
-        super().__init__(settings)
+        super().__init__(processing, settings)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return len(self._data)
@@ -53,7 +44,6 @@ class HeaderStore(ProcessingTask):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         if role == QtCore.Qt.DisplayRole:
-            logger.debug(f'Getting header field {self.columns[index.column()]} of header #{index.row()}')
             value = getattr(self._data[index.row()], self.columns[index.column()])
             columnname = self.columns[index.column()]
             if isinstance(value, str):
@@ -79,7 +69,7 @@ class HeaderStore(ProcessingTask):
         elif role == QtCore.Qt.UserRole:
             return self._data[index.row()]
         elif (role == QtCore.Qt.CheckStateRole) and (index.column() == 0):
-            return QtCore.Qt.Checked if (self._data[index.row()] in self.settings.badfsns) else QtCore.Qt.Unchecked
+            return QtCore.Qt.Checked if (self._data[index.row()].fsn in self.settings.badfsns) else QtCore.Qt.Unchecked
         else:
             return None
 
@@ -99,33 +89,26 @@ class HeaderStore(ProcessingTask):
                    QtCore.Qt.ItemIsUserCheckable
         return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
 
-    def start(self, fsns: Sequence[int]):
-        if not self.isIdle():
-            raise RuntimeError('Another reload process is running in the background')
-        self.status = HeaderLoaderStatus.Loading
-        assert self._pool is None
-        self._pool = multiprocessing.Pool()
-        self._asyncresults = [self._pool.apply_async(
-            self._loadheader,
-            (os.path.join(self.settings.rootpath, self.settings.eval2dsubpath),
-             self.settings.prefix, fsn, self.settings.fsndigits)) for fsn in fsns]
+    def _start(self):
         self.beginResetModel()
         self._data = []
         self.endResetModel()
-        self.startTimer(100, QtCore.Qt.VeryCoarseTimer)
-        self.started.emit()
+        fsns = list(self.settings.fsns())
+        self._data_being_loaded=[None] * len(fsns)
+        for i, fsn in enumerate(fsns):
+            self._submitTask(self._loadheader, i, rootdir=os.path.join(self.settings.rootpath, self.settings.eval2dsubpath), prefix=self.settings.prefix, fsn=fsn, fsndigits=self.settings.fsndigits)
 
     @staticmethod
-    def _loadheader(rootdir: str, prefix: str, fsn: int, fsndigits) -> Header:
+    def _loadheader(h5file: str, h5lock, jobid, messagequeue, stopEvent, rootdir: str, prefix: str, fsn: int, fsndigits) -> Tuple[int, Optional[Header]]:
         filename = f'{prefix}_{fsn:0{fsndigits}d}.pickle'
         # first try the header in the root directory
         try:
-            return Header(filename = os.path.join(rootdir, filename))
+            return jobid, Header(filename = os.path.join(rootdir, filename))
         except FileNotFoundError:
             pass
         # if not successful, try the 'prefix' subfolder
         try:
-            return Header(filename = os.path.join(rootdir, prefix, filename))
+            return jobid, Header(filename = os.path.join(rootdir, prefix, filename))
         except FileNotFoundError:
             pass
 
@@ -136,39 +119,31 @@ class HeaderStore(ProcessingTask):
             except FileNotFoundError:
                 for d in [d for d in os.listdir(folder) if os.path.isdir(d)]:
                     try:
-                        return findrecursive(d,fn)
+                        return findrecursive(d, fn)
                     except FileNotFoundError:
                         continue
                 raise FileNotFoundError(fn)
-        return findrecursive(rootdir, filename)
+        try:
+            return jobid, findrecursive(rootdir, filename)
+        except FileNotFoundError:
+            return jobid, None
 
-    def timerEvent(self, timerEvent: QtCore.QTimerEvent) -> None:
-        ready = [asyncresult for asyncresult in self._asyncresults if asyncresult.ready()]
-        if not ready:
-            return
-        self._asyncresults = [a for a in self._asyncresults if a not in ready]
+    def onAllBackgroundTasksFinished(self):
         self.beginResetModel()
-        self._data.extend([a.get() for a in ready if a.get() is not None])
+        self._data = [h for h in self._data_being_loaded if h is not None]
+        self._data_being_loaded = None
         self.endResetModel()
-        if ((not self._asyncresults) or
-                (self.status == ProcessingStatus.Stopping) and not [ar for ar in self._asyncresults if ar.ready()]):
-            # no more running tasks. OR (user stop requested AND no more finished tasks to gather results from)
-            self.killTimer(timerEvent.timerId())
-            self._pool.close()
-            self._pool.join()
-            self._pool = None
-            self._asyncresults = None
-            self.beginResetModel()
-            self._data = sorted(self._data, key=lambda h: h.fsn)
-            self.endResetModel()
-            success = self.status != ProcessingStatus.Stopping
-            self.status = ProcessingStatus.Idle
-            self.finished.emit(success)
+
+    def onBackgroundTaskFinished(self, result: Tuple[int, Optional[Header]]):
+        jobid, header = result
+        if header is None:
+            return
+        assert isinstance(header, Header)
+        self._data_being_loaded[jobid]=header
+        super().onBackgroundTaskFinished(result)
 
     def stop(self):
-        if self.isIdle():
-            return
-        self.status = ProcessingStatus.Stopping
+        super().stop()
         self._pool.terminate()
 
     def __iter__(self) -> Iterator[Header]:

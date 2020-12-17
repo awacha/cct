@@ -1,5 +1,6 @@
 import multiprocessing
 from typing import Optional, Any, final
+import traceback
 
 from ..h5io import ProcessingH5File
 
@@ -17,6 +18,10 @@ class Results:
     time_total: float = 0
     success: bool = False
     status: str = ''
+    jobid: Any
+
+    def __init__(self, jobid: Any):
+        self.jobid = jobid
 
 
 class Message:
@@ -48,17 +53,23 @@ class BackgroundProcess:
     killSwitch: multiprocessing.Event = None
     h5io: ProcessingH5File = None
     resultsqueue: multiprocessing.Queue = None
-    jobid: Any = None
     result: Results = None
 
     def __init__(self, jobid: Any, h5file: str, h5lock: multiprocessing.Lock,
                  killswitch: multiprocessing.Event, resultsqueue: multiprocessing.Queue,
                  ):
-        self.jobid = jobid
         self.h5io = ProcessingH5File(h5file, h5lock)
         self.resultsqueue = resultsqueue
         self.killSwitch = killswitch
-        self.result = Results()
+        self.result = Results(jobid)
+
+    @property
+    def jobid(self) -> Any:
+        return self.result.jobid
+
+    @jobid.setter
+    def jobid(self, value: Any):
+        self.result.jobid = value
 
     @final
     def sendProgress(self, message: str, total: Optional[int] = None,
@@ -72,10 +83,21 @@ class BackgroundProcess:
     def sendError(self, message: str, traceback: Optional[str] = None):
         self.resultsqueue.put(Message(sender=self.jobid, type_='error', message=message, traceback=traceback))
 
+    @final
+    def sendWarning(self, message: str):
+        self.resultsqueue.put(Message(sender=self.jobid, type_='warning', message=message))
+
+    @final
+    def sendMessage(self, message: str):
+        self.resultsqueue.put(Message(sender=self.jobid, type_='message', message=message))
+
     @classmethod
     def run(cls, *args, **kwargs) -> Any:
         job = cls(*args, **kwargs)
-        job.main()
+        try:
+            job.main()
+        except Exception as exc:
+            job.sendError(exc.args[0], traceback=traceback.format_exc())
         return job.result
 
     def main(self):

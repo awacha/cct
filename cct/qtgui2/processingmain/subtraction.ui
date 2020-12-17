@@ -11,11 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Exposure list</string>
+   <string>Background subtraction</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../../resource/icons/icons.qrc">
-    <normaloff>:/icons/metadata.svg</normaloff>:/icons/metadata.svg</iconset>
+    <normaloff>:/icons/backgroundsubtraction.svg</normaloff>:/icons/backgroundsubtraction.svg</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -32,16 +32,10 @@
      <property name="selectionMode">
       <enum>QAbstractItemView::ExtendedSelection</enum>
      </property>
-     <property name="textElideMode">
-      <enum>Qt::ElideNone</enum>
-     </property>
      <property name="rootIsDecorated">
       <bool>false</bool>
      </property>
      <property name="uniformRowHeights">
-      <bool>true</bool>
-     </property>
-     <property name="allColumnsShowFocus">
       <bool>true</bool>
      </property>
     </widget>
@@ -75,37 +69,29 @@
       </widget>
      </item>
      <item>
-      <widget class="QToolButton" name="markBadToolButton">
-       <property name="toolTip">
-        <string>Mark the selected exposure(s) as bad (i.e. outliers)</string>
-       </property>
+      <widget class="QPushButton" name="addPushButton">
        <property name="text">
-        <string>...</string>
+        <string>Add</string>
        </property>
        <property name="icon">
-        <iconset resource="../../resource/icons/icons.qrc">
-         <normaloff>:/icons/bad.svg</normaloff>:/icons/bad.svg</iconset>
+        <iconset theme="list-add"/>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QToolButton" name="markGoodToolButton">
-       <property name="toolTip">
-        <string>Mark the selected exposures as good</string>
-       </property>
+      <widget class="QPushButton" name="removePushButton">
        <property name="text">
-        <string>Mark as good</string>
+        <string>Remove</string>
        </property>
        <property name="icon">
-        <iconset resource="../../resource/icons/icons.qrc">
-         <normaloff>:/icons/good.svg</normaloff>:/icons/good.svg</iconset>
+        <iconset theme="list-remove"/>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="reloadPushButton">
+      <widget class="QPushButton" name="runPushButton">
        <property name="text">
-        <string>Reload</string>
+        <string>Run</string>
        </property>
        <property name="icon">
         <iconset resource="../../resource/icons/icons.qrc">
@@ -117,12 +103,6 @@
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>treeView</tabstop>
-  <tabstop>markBadToolButton</tabstop>
-  <tabstop>markGoodToolButton</tabstop>
-  <tabstop>reloadPushButton</tabstop>
- </tabstops>
  <resources>
   <include location="../../resource/icons/icons.qrc"/>
  </resources>

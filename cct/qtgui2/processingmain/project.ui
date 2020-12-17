@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>639</width>
-    <height>324</height>
+    <width>644</width>
+    <height>380</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,70 +15,20 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../../resource/icons/icons.qrc">
-    <normaloff>:/icons/cpt2logo.svg</normaloff>:/icons/cpt2logo.svg</iconset>
+    <normaloff>:/icons/project.svg</normaloff>:/icons/project.svg</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="1">
     <widget class="QLineEdit" name="rootPathLineEdit"/>
    </item>
-   <item row="0" column="2">
-    <widget class="QToolButton" name="rootPathToolButton">
-     <property name="text">
-      <string>Browse</string>
-     </property>
-     <property name="icon">
-      <iconset theme="document-open"/>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>HDF5 file:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="2">
-    <widget class="QToolButton" name="h5FileToolButton">
-     <property name="text">
-      <string>Browse</string>
-     </property>
-     <property name="icon">
-      <iconset theme="document-open"/>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="1">
-    <widget class="QLineEdit" name="badFSNsLineEdit"/>
-   </item>
    <item row="0" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Root directory:</string>
+      <string>Measurement root directory:</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="label_3">
-     <property name="text">
-      <string>BadFSNs file:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLineEdit" name="h5FileLineEdit"/>
-   </item>
-   <item row="2" column="2">
-    <widget class="QToolButton" name="badFSNsToolButton">
-     <property name="text">
-      <string>Browse</string>
-     </property>
-     <property name="icon">
-      <iconset theme="document-open"/>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0" colspan="3">
+   <item row="1" column="0" colspan="3">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <widget class="QGroupBox" name="groupBox">
@@ -116,7 +66,8 @@
              <string>Add</string>
             </property>
             <property name="icon">
-             <iconset theme="list-add"/>
+             <iconset theme="list-add">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </widget>
           </item>
@@ -126,7 +77,8 @@
              <string>Remove</string>
             </property>
             <property name="icon">
-             <iconset theme="list-remove"/>
+             <iconset theme="list-remove">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </widget>
           </item>
@@ -136,7 +88,8 @@
              <string>Clear</string>
             </property>
             <property name="icon">
-             <iconset theme="edit-clear-all"/>
+             <iconset theme="edit-clear-all">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </widget>
           </item>
@@ -165,30 +118,70 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="loadHeadersPushButton">
           <property name="text">
-           <string>Load headers</string>
+           <string>Load metadata</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../resource/icons/icons.qrc">
+            <normaloff>:/icons/metadata.svg</normaloff>:/icons/metadata.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_2">
+         <widget class="QPushButton" name="averagingPushButton">
           <property name="text">
            <string>Averaging</string>
           </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_3">
-          <property name="text">
-           <string>Subtraction</string>
+          <property name="icon">
+           <iconset resource="../../resource/icons/icons.qrc">
+            <normaloff>:/icons/averageexposures.svg</normaloff>:/icons/averageexposures.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_4">
+         <widget class="QPushButton" name="subtractionPushButton">
+          <property name="text">
+           <string>Subtraction</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../resource/icons/icons.qrc">
+            <normaloff>:/icons/backgroundsubtraction.svg</normaloff>:/icons/backgroundsubtraction.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="mergingPushButton">
           <property name="text">
            <string>Merging</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../resource/icons/icons.qrc">
+            <normaloff>:/icons/merge.svg</normaloff>:/icons/merge.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>32</width>
+            <height>32</height>
+           </size>
           </property>
          </widget>
         </item>
@@ -197,15 +190,22 @@
      </item>
     </layout>
    </item>
+   <item row="0" column="2">
+    <widget class="QToolButton" name="rootPathToolButton">
+     <property name="text">
+      <string>Browse</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <tabstops>
   <tabstop>rootPathLineEdit</tabstop>
   <tabstop>rootPathToolButton</tabstop>
-  <tabstop>h5FileLineEdit</tabstop>
-  <tabstop>h5FileToolButton</tabstop>
-  <tabstop>badFSNsLineEdit</tabstop>
-  <tabstop>badFSNsToolButton</tabstop>
   <tabstop>fsnsTreeView</tabstop>
   <tabstop>addFSNRangeToolButton</tabstop>
   <tabstop>removeFSNRangeToolButton</tabstop>

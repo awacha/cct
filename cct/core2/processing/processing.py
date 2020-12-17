@@ -1,12 +1,19 @@
 import itertools
 from typing import List, Optional, Tuple, Any
 import enum
+import logging
 
 from .h5io import ProcessingH5File
 from .tasks.summarization import Summarization
 from PyQt5 import QtCore
 from .tasks.headers import HeaderStore
+from .tasks.subtraction import Subtraction
+from .tasks.resultsmodel import ResultsModel
+from .tasks.merging import Merging
 from .settings import ProcessingSettings
+
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class ProcessingStatus(enum.Enum):
@@ -19,75 +26,63 @@ class ProcessingStatus(enum.Enum):
 
 class Processing(QtCore.QAbstractItemModel):
     status: ProcessingStatus = ProcessingStatus.Idle
-    filename: Optional[str] = None
     settings: ProcessingSettings
-    resultviews: List
-    h5io: ProcessingH5File
 
     # parts
-    headers : HeaderStore
+    headers: HeaderStore
     summarization: Summarization
-#    backgroundsubtraction: BackgroundSubtraction
-#    merging: Merging
-#    reporting: Reporting
+    subtraction: Subtraction
+    results: ResultsModel
+    merging: Merging
 
+    _modified: bool=False
+    modificationChanged = QtCore.pyqtSignal(bool)
+    resultItemChanged = QtCore.pyqtSignal(str, str)
 
     """The main class of the processing subsystem"""
-    def __init__(self):
+    def __init__(self, filename: str):
         super().__init__()
-        self.settings = ProcessingSettings()
-        self.headers = HeaderStore(self.settings)
+        self.settings = ProcessingSettings(filename)
+        self.headers = HeaderStore(self, self.settings)
         self.headers.finished.connect(self.onTaskFinished)
-        self.summarization = Summarization(self.settings)
+        self.summarization = Summarization(self, self.settings)
         self.summarization.finished.connect(self.onTaskFinished)
+        self.summarization.itemChanged.connect(self.resultItemChanged)
+        self.subtraction = Subtraction(self, self.settings)
+        self.subtraction.finished.connect(self.onTaskFinished)
+        self.results = ResultsModel(self, self.settings)
+        self.merging = Merging(self, self.settings)
+        self.merging.finished.connect(self.onTaskFinished)
 
     def isIdle(self):
-        return self.headers.isIdle() and self.summarization.isIdle()
-
-    def reloadHeaders(self):
-        if not self.isIdle():
-            raise RuntimeError('Cannot reload headers: working.')
-        self.headers.start(
-            list(
-                itertools.chain(
-                    *[range(fsnmin, fsnmax+1) for fsnmin, fsnmax in self.fsnranges]
-                )
-            )
-        )
-
-    def startSummarizing(self):
-        if not self.isIdle():
-            raise RuntimeError('Cannot start processing: not idle.')
-        self.summarization.start()
-
-    def startBackgroundSubtraction(self):
-        pass
-
-    def stopCurrentWork(self):
-        pass
-
-    def startMerging(self):
-        pass
-
-    def addBackgroundPair(self, sample: str, background: str, distance: Optional[float] = None):
-        pass
-
-    def addMerging(self, sample: str, qmin: str, qmax: str):
-        pass
-
-    def fsnsForSampleAndDistance(self, samplename: str, distance: float, includebad: bool=False):
-        pass
+        return self.headers.isIdle() and self.summarization.isIdle() and self.subtraction.isIdle()
 
     def onTaskFinished(self, success: bool):
-        if (self.sender() is self.headers) and success:
+        if self.sender() is self.headers:
             # headers have been loaded
+            logger.debug('Headers have been loaded.')
             self.summarization.clear()
             for samplename in sorted({h.title for h in self.headers}):
-                for distance in sorted({h.distance for h in self.headers if h.title == samplename}):
-                    self.summarization.addSample(samplename, distance, [h.fsn for h in self.headers if (h.title == samplename) and (h.distance == distance)])
-        elif (self.sender() is self.summarization) and success:
+                sampleheaders = [h for h in self.headers if h.title == samplename]
+                for distance in sorted({h.distance[0] for h in sampleheaders}):
+                    logger.debug(f'Adding {samplename=}, {distance=} to summarization')
+                    fsns = [h.fsn for h in sampleheaders if (h.distance[0] == distance)]
+                    logger.debug(f'Got {len(fsns)} FSNS')
+                    self.summarization.addSample(samplename, distance, fsns)
+                    logger.debug(f'Added {samplename=}. {distance=}')
+            logger.debug('Summarization updated.')
+            self.setModified(True)
+        elif self.sender() is self.summarization:
             # summarization done
-            pass
+            self.setModified(True)
+            self.headers.badfsnschanged()
+            self.results.reload()
+        elif self.sender() is self.subtraction:
+            self.setModified(True)
+            self.results.reload()
+        elif self.sender() is self.merging:
+            self.setModified(True)
+            self.results.reload()
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return len(self.fsnranges)
@@ -131,6 +126,8 @@ class Processing(QtCore.QAbstractItemModel):
         else:
             assert False
         self.dataChanged.emit(index, index)
+        self.settings.save()
+        self.setModified(False)
         return True
 
     def insertRow(self, row: int, parent: QtCore.QModelIndex = ...) -> bool:
@@ -140,6 +137,7 @@ class Processing(QtCore.QAbstractItemModel):
         self.beginInsertRows(QtCore.QModelIndex(), row, row+count-1)
         self.fsnranges = self.fsnranges[:row] + [(0,0)]*count + self.fsnranges[row:]
         self.endInsertRows()
+        self.setModified(True)
         return True
 
     def removeRow(self, row: int, parent: QtCore.QModelIndex = ...) -> bool:
@@ -149,12 +147,14 @@ class Processing(QtCore.QAbstractItemModel):
         self.beginRemoveRows(QtCore.QModelIndex(), row, row+count-1)
         del self.fsnranges[row:row+count]
         self.endRemoveRows()
+        self.setModified(True)
         return True
 
     def modelReset(self) -> None:
         self.beginResetModel()
         self.fsnranges = []
         self.endResetModel()
+        self.setModified(True)
 
     @property
     def fsnranges(self) -> List[Tuple[int, int]]:
@@ -162,13 +162,23 @@ class Processing(QtCore.QAbstractItemModel):
 
     @fsnranges.setter
     def fsnranges(self, newvalue: List[Tuple[int, int]]):
+        self.beginResetModel()
         self.settings.fsnranges = newvalue
+        self.endResetModel()
+        self.setModified(True)
 
     def save(self, filename):
         self.settings.save(filename)
+        self.setModified(False)
 
     @classmethod
     def fromFile(cls, filename) -> "Processing":
-        p = cls()
-        p.settings.load(filename)
+        p = cls(filename)
         return p
+
+    def setModified(self, modified: bool):
+        self._modified = modified
+        self.modificationChanged.emit(self._modified)
+
+    def modified(self) -> bool:
+        return self._modified

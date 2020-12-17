@@ -1,10 +1,15 @@
+import logging
 import os
 import time
-from typing import Tuple, Dict, Final, Optional
+from typing import Tuple, Dict, Final, Optional, List
 
-from ..dataclasses import Exposure, Header
 import numpy as np
 import scipy.io
+
+from ..dataclasses import Exposure, Header
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class Loader:
@@ -15,16 +20,25 @@ class Loader:
     fsndigits: int
     _maskcache: Dict[str, Tuple[np.ndarray, float, str]]
 
-    def __init__(self, rootpath: str, eval2dsubpath: str='eval2d', masksubpath: str='mask', fsndigits: int=5):
+    def __init__(self, rootpath: str, eval2dsubpath: str = 'eval2d', masksubpath: str = 'mask', fsndigits: int = 5):
         self.rootpath = rootpath
         self.eval2dsubpath = eval2dsubpath
         self.masksubpath = masksubpath
         self.fsndigits = fsndigits
         self._maskcache = {}
 
-    def _findfile(self, filename: str, directory: str, arbitraryextension: bool=True):
+    def _findfile(self, filename: str, directory: str, arbitraryextension: bool = True, quicksubdirs: Optional[List[str]]=None):
+        # first try to read the file from the directory
+        if os.path.isfile(os.path.join(directory, filename)):
+            return os.path.join(directory, filename)
+        if quicksubdirs is not None:
+            for sd in quicksubdirs:
+                if os.path.isfile(os.path.join(directory, sd, filename)):
+                    return os.path.join(directory, filename)
         filenames = os.listdir(directory)
-        folders = [fn for fn in filenames if os.path.isdir(fn)]
+        folders = [fn for fn in filenames if os.path.isdir(os.path.join(directory, fn))]
+        if 'mask_long_20200109' in filename:
+            logger.debug(f'Folders in {directory} are {folders}')
         for fn in [fn for fn in filenames if fn not in folders]:
             if fn == filename or (arbitraryextension and (os.path.splitext(fn)[0] == filename)):
                 return os.path.join(directory, fn)
@@ -36,6 +50,7 @@ class Loader:
         raise FileNotFoundError(filename)
 
     def loadMask(self, maskname: str) -> np.ndarray:
+        maskname = os.path.split(maskname)[-1]
         try:
             mask, mtime, filename = self._maskcache[maskname]
             if time.time() > mtime + self._cachetimeout:
@@ -60,17 +75,20 @@ class Loader:
             self._maskcache[maskname] = mask, os.stat(maskfile).st_mtime, maskfile
             return mask
 
-    def loadExposure(self, prefix: str, fsn: int, header:Optional[Header]=None) -> Exposure:
+    def loadExposure(self, prefix: str, fsn: int, header: Optional[Header] = None) -> Exposure:
         if header is None:
             header = self.loadHeader(prefix, fsn)
         filename = f'{prefix}_{fsn:0{self.fsndigits}}.npz'
-        npzfile = np.load(self._findfile(filename, os.path.join(self.rootpath, self.eval2dsubpath)))
+        npzfile = np.load(self._findfile(filename, os.path.join(self.rootpath, self.eval2dsubpath), quicksubdirs=[prefix], arbitraryextension=False))
         if 'mask' not in npzfile:
             mask = self.loadMask(header.maskname)
         else:
             mask = npzfile['mask']
-        return Exposure(npzfile['Intensity'], header, npzfile['Error'], mask)
+        try:
+            return Exposure(npzfile['Intensity'], header, npzfile['Error'], mask)
+        except:
+            raise ValueError(f'Cannot load exposure {fsn=}')
 
     def loadHeader(self, prefix: str, fsn: int) -> Header:
         filename = f'{prefix}_{fsn:0{self.fsndigits}}.pickle'
-        return Header(self._findfile(filename, os.path.join(self.rootpath, self.eval2dsubpath)))
+        return Header(self._findfile(filename, os.path.join(self.rootpath, self.eval2dsubpath), arbitraryextension=False, quicksubdirs=[prefix]))

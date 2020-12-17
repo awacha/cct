@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1555</width>
+    <height>845</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -35,7 +35,11 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QMdiArea" name="mdiArea"/>
+     <widget class="QMdiArea" name="mdiArea">
+      <property name="activationOrder">
+       <enum>QMdiArea::ActivationHistoryOrder</enum>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -44,7 +48,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1555</width>
      <height>30</height>
     </rect>
    </property>
@@ -65,12 +69,17 @@
    </widget>
    <widget class="QMenu" name="menuViews">
     <property name="title">
-     <string>Views</string>
+     <string>Window</string>
     </property>
     <addaction name="actionProject_window"/>
+    <addaction name="actionMetadata"/>
     <addaction name="actionCollect"/>
     <addaction name="actionBackground"/>
-    <addaction name="actionReporting"/>
+    <addaction name="actionMerge"/>
+    <addaction name="actionResults"/>
+    <addaction name="separator"/>
+    <addaction name="actionCascadeWindows"/>
+    <addaction name="actionTileWindows"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menuViews"/>
@@ -91,16 +100,18 @@
    <addaction name="actionSave"/>
    <addaction name="separator"/>
    <addaction name="actionProject_window"/>
+   <addaction name="actionMetadata"/>
    <addaction name="actionCollect"/>
    <addaction name="actionBackground"/>
    <addaction name="actionMerge"/>
-   <addaction name="actionReporting"/>
+   <addaction name="actionResults"/>
    <addaction name="separator"/>
    <addaction name="actionProcess"/>
   </widget>
   <action name="actionNew_project">
    <property name="icon">
-    <iconset theme="document-new"/>
+    <iconset theme="document-new">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>New project...</string>
@@ -114,7 +125,8 @@
   </action>
   <action name="actionOpen_project">
    <property name="icon">
-    <iconset theme="document-open"/>
+    <iconset theme="document-open">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Open project...</string>
@@ -128,7 +140,8 @@
   </action>
   <action name="actionRecent_projects">
    <property name="icon">
-    <iconset theme="document-open-recent"/>
+    <iconset theme="document-open-recent">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Recent projects</string>
@@ -136,7 +149,8 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset theme="document-save"/>
+    <iconset theme="document-save">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Save</string>
@@ -150,7 +164,8 @@
   </action>
   <action name="actionSave_as">
    <property name="icon">
-    <iconset theme="document-save-as"/>
+    <iconset theme="document-save-as">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Save as...</string>
@@ -164,7 +179,8 @@
   </action>
   <action name="actionClose">
    <property name="icon">
-    <iconset theme="document-close"/>
+    <iconset theme="document-close">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Close</string>
@@ -178,7 +194,8 @@
   </action>
   <action name="actionQuit">
    <property name="icon">
-    <iconset theme="application-exit"/>
+    <iconset theme="application-exit">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Quit</string>
@@ -199,7 +216,7 @@
      <normaloff>:/icons/project.svg</normaloff>:/icons/project.svg</iconset>
    </property>
    <property name="text">
-    <string>Project window</string>
+    <string>Project</string>
    </property>
    <property name="toolTip">
     <string>Open the main project window</string>
@@ -209,8 +226,12 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/averageexposures.svg</normaloff>:/icons/averageexposures.svg</iconset>
+   </property>
    <property name="text">
-    <string>Collect</string>
+    <string>Averaging</string>
    </property>
    <property name="toolTip">
     <string>Data collection &amp; averaging</string>
@@ -220,8 +241,12 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/backgroundsubtraction.svg</normaloff>:/icons/backgroundsubtraction.svg</iconset>
+   </property>
    <property name="text">
-    <string>Background</string>
+    <string>Background subtraction</string>
    </property>
    <property name="toolTip">
     <string>Background subtraction</string>
@@ -231,6 +256,10 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/merge.svg</normaloff>:/icons/merge.svg</iconset>
+   </property>
    <property name="text">
     <string>Merge</string>
    </property>
@@ -238,20 +267,10 @@
     <string>Merge measurements from different sample-to-detector distances</string>
    </property>
   </action>
-  <action name="actionReporting">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Reporting</string>
-   </property>
-   <property name="toolTip">
-    <string>Visualize results</string>
-   </property>
-  </action>
   <action name="actionProcess">
    <property name="icon">
-    <iconset theme="system-run"/>
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/start.svg</normaloff>:/icons/start.svg</iconset>
    </property>
    <property name="text">
     <string>Process</string>
@@ -260,9 +279,88 @@
     <string>Re-run all processing steps</string>
    </property>
   </action>
+  <action name="actionMetadata">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/metadata.svg</normaloff>:/icons/metadata.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Metadata</string>
+   </property>
+   <property name="toolTip">
+    <string>Show/hide metadata window</string>
+   </property>
+  </action>
+  <action name="actionResults">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/results.svg</normaloff>:/icons/results.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Results</string>
+   </property>
+   <property name="toolTip">
+    <string>Show/hide results window</string>
+   </property>
+  </action>
+  <action name="actionCascadeWindows">
+   <property name="text">
+    <string>Cascade</string>
+   </property>
+   <property name="toolTip">
+    <string>Arrange the windows in a cascading fashion</string>
+   </property>
+  </action>
+  <action name="actionTileWindows">
+   <property name="text">
+    <string>Tile</string>
+   </property>
+   <property name="toolTip">
+    <string>Arrange the windows in a tiled fashion</string>
+   </property>
+  </action>
  </widget>
  <resources>
   <include location="../../resource/icons/icons.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>actionCascadeWindows</sender>
+   <signal>triggered()</signal>
+   <receiver>mdiArea</receiver>
+   <slot>cascadeSubWindows()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>777</x>
+     <y>444</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionTileWindows</sender>
+   <signal>triggered()</signal>
+   <receiver>mdiArea</receiver>
+   <slot>tileSubWindows()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>777</x>
+     <y>444</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
