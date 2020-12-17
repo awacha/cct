@@ -27,6 +27,8 @@ class Sample(object):
         Empty_beam = 'Empty beam'
         Dark = 'Dark'
         None_ = 'none'
+        Subtracted = 'subtracted'
+        Merged = 'merged'
 
     class Situations(enum.Enum):
         Air = 'air'
