@@ -42,13 +42,6 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
     _xcrosshairhandle: Optional[Line2D] = None
     _ycrosshairhandle: Optional[Line2D] = None
 
-    _normalizationdict = {
-        'linear': matplotlib.colors.Normalize(),
-        'log10': matplotlib.colors.LogNorm(),
-        'square': matplotlib.colors.PowerNorm(2),
-        'sqrt': matplotlib.colors.PowerNorm(0.5),
-    }
-
     _strictlypositivenormalizations: Final[List[str]] = ['log10', 'square', 'sqrt']
 
     def __init__(self, parent: QtWidgets.QWidget = None):
@@ -72,7 +65,8 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.axes = self.figure.add_subplot(gs[:, :])
         self.axes.set_facecolor('black')
         self.canvas.draw_idle()
-        self.paletteComboBox.addItems(sorted(matplotlib.cm.cmap_d))
+        cmapnames = list(matplotlib.cm.cmaps_listed) + list(matplotlib.cm.datad)
+        self.paletteComboBox.addItems(sorted(cmapnames + [f'{cmname}_r' for cmname in cmapnames]))
         self.paletteComboBox.setCurrentIndex(self.paletteComboBox.findText(matplotlib.rcParams['image.cmap']))
         self.paletteComboBox.currentIndexChanged.connect(self.replot)
         self.colourScaleComboBox.currentIndexChanged.connect(self.replot)
@@ -83,6 +77,8 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.equalAspectToolButton.toggled.connect(self.changeAspect)
 
     def axisScaleChanged(self):
+        if self.matrix is None:
+            return
         self.replot()
         (left, right, bottom, top), center = self._get_extent()
         self.axes.axis([left, right, bottom, top])
@@ -164,6 +160,8 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         return extent, center
 
     def replot(self, keepzoom: bool=False):
+        if self.matrix is None:
+            return
         extent, center = self._get_extent()
         # now plot the matrix
         axlimits = self.axes.axis()
@@ -173,10 +171,11 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         else:
             matrix = self.matrix
         if self._imghandle is None:
+            keepzoom = False
             self._imghandle = self.axes.imshow(
                 matrix,
                 cmap=self.paletteComboBox.currentText(),
-                norm=self._normalizationdict[self.colourScaleComboBox.currentText()],
+                norm=self.getNormalization(),
                 aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
                 interpolation='nearest',
                 alpha=1.0,
@@ -187,7 +186,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         else:
             self._imghandle.set_data(self.matrix)
             self._imghandle.set_cmap(self.paletteComboBox.currentText())
-            self._imghandle.set_norm(self._normalizationdict[self.colourScaleComboBox.currentText()])
+            self._imghandle.set_norm(self.getNormalization())
             self._imghandle.set_extent(extent)
             self._imghandle.autoscale()
             self._imghandle.changed()
@@ -282,3 +281,15 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self._maskhandle.set_extent(extent)
         self._maskhandle.changed()
         self.canvas.draw_idle()
+
+    def getNormalization(self):
+        if self.colourScaleComboBox.currentText() == 'linear':
+            return matplotlib.colors.Normalize()
+        elif self.colourScaleComboBox.currentText() == 'log10':
+            return matplotlib.colors.LogNorm()
+        elif self.colourScaleComboBox.currentText() == 'square':
+            return matplotlib.colors.PowerNorm(2)
+        elif self.colourScaleComboBox.currentText() == 'sqrt':
+            return matplotlib.colors.PowerNorm(0.5)
+        else:
+            assert False
