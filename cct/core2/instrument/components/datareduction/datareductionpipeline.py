@@ -80,16 +80,12 @@ class DataReductionPipeLine:
         obj.resultqueue.put_nowait(('finished', None))
 
     def process(self, exposure: Exposure) -> Exposure:
+        self.info(f'Starting data reduction on exposure #{exposure.header.fsn}: {exposure.header.title} @ {exposure.header.distance[0]:.2f} mm, category={exposure.header.sample_category}')
         for operation in [self.sanitize_data, self.normalize_by_monitor, self.subtract_dark_background,
                           self.normalize_by_transmission, self.subtract_empty_background, self.correct_geometry,
                           self.divide_by_thickness, self.absolute_intensity_scaling]:
             try:
-                reluncbefore = np.abs(exposure.uncertainty / exposure.intensity)
-                self.debug(f'Badness {(exposure.uncertainty > exposure.intensity).sum() / exposure.intensity.size} before operation {operation.__name__}')
                 exposure = operation(exposure)
-                self.debug(f'Badness {(exposure.uncertainty > exposure.intensity).sum() / exposure.intensity.size} after operation {operation.__name__}')
-                uncratio = np.abs(exposure.uncertainty/exposure.intensity) / reluncbefore
-                self.debug(f'Uncertainty increase multiplier: {np.nanmean(uncratio)} mean, {np.nanmin(uncratio)} min, {np.nanmax(uncratio)} max.')
             except StopIteration as si:
                 exposure = si.args[0]
                 break
@@ -107,6 +103,15 @@ class DataReductionPipeLine:
         return exposure
 
     def sanitize_data(self, exposure: Exposure) -> Exposure:
+        exposure.mask[exposure.mask!=0] = 1  # set it to only 1 or 0.
+        validbefore = exposure.mask.sum()
+        exposure.mask[exposure.intensity<0] = 0
+        exposure.mask[~np.isfinite(exposure.intensity)] = 0
+        exposure.mask[~np.isfinite(exposure.uncertainty)] = 0
+        exposure.mask[exposure.uncertainty<0] = 0
+        exposure.mask=exposure.mask.astype(np.bool)  # !!! REALLY IMPORTANT!!! Int and bool indexes work differently
+        validafter = exposure.mask.sum()
+        self.info(f'FSN #{exposure.header.fsn}: after sanitization {validbefore-validafter} more points are masked.')
         return exposure
 
     def normalize_by_monitor(self, exposure: Exposure) -> Exposure:
@@ -114,7 +119,7 @@ class DataReductionPipeLine:
                                 exposure.header.exposuretime[0] ** 4 + exposure.uncertainty ** 2 /
                                 exposure.header.exposuretime[0] ** 2) ** 0.5
         exposure.intensity = exposure.intensity / exposure.header.exposuretime[0]
-        self.info(f'FSN #{exposure.header.fsn}: normalized by exposure time.')
+        self.info(f'FSN #{exposure.header.fsn}: normalized by exposure time {exposure.header.exposuretime[0]} s.')
         return exposure
 
     def subtract_dark_background(self, exposure: Exposure) -> Exposure:
@@ -122,12 +127,15 @@ class DataReductionPipeLine:
             # this is a dark current measurement
             self.dark = exposure
             self.dark.header.fsn_dark = self.dark.header.fsn
-            self.dark.header.dark_cps = exposure.intensity[exposure.mask].mean(), exposure.uncertainty[exposure.mask].std()
+            self.dark.header.dark_cps = exposure.intensity[exposure.mask].mean(), (exposure.uncertainty[exposure.mask]**2).mean()**0.5
             logger.debug(str(self.dark.header))
             self.info(
                 f'FSN #{self.dark.header.fsn} is a dark background measurement. '
                 f'Level: {self.dark.header.dark_cps[0]:g} \xb1 {self.dark.header.dark_cps[1]:g} cps per pixel '
-                f'({self.dark.header.dark_cps[0]*exposure.intensity.size:g} cps on the whole detector surface)'
+                f'({self.dark.header.dark_cps[1]/self.dark.header.dark_cps[0]*100:.2f} % relative error, '
+                f'{self.dark.header.dark_cps[0]*exposure.intensity.size:g} \xb1 '
+                f'{self.dark.header.dark_cps[1]*exposure.intensity.size:g} cps on the whole detector surface) '
+                f'{exposure.intensity[exposure.mask].max()=}, {exposure.intensity[exposure.mask].min()=}, {exposure.mask.sum()} valid points'
             )
             raise StopIteration(exposure)
         else:
@@ -139,7 +147,7 @@ class DataReductionPipeLine:
             exposure.header.fsn_dark = self.dark.header.fsn
             exposure.header.dark_cps = self.dark.header.dark_cps
             self.info(
-                f'FSN #{exposure.header.fsn} corrected for dark background signal'
+                f'FSN #{exposure.header.fsn} corrected for dark background signal {exposure.header.dark_cps[0]:.4f} \xb1 {exposure.header.dark_cps[1]}'
             )
         return exposure
 
@@ -228,8 +236,12 @@ class DataReductionPipeLine:
                 elif len(matching) == 1:
                     datafile = self.config['calibrants'][matching[0]]['datafile']
                     calibdata = np.loadtxt(datafile)
+                    self.info(f'Using data file {datafile} (q from {np.nanmin(calibdata[:,0]):.5f} to {np.nanmax(calibdata[:,0]):.5f} 1/nm, {calibdata.shape[0]} points)')
+                    rad0 = exposure.radial_average()
                     rad = exposure.radial_average(calibdata[:, 0]).sanitize()
+                    self.info(f'Radial average has {len(rad.q)} points.')
                     qcalib = rad.q
+                    self.info(f'Measured q from {np.nanmin(rad0.q):.5f} to {np.nanmax(rad0.q):.5f} 1/nm, {len(rad0.q)} points')
                     icalib = np.interp(qcalib, calibdata[:, 0], calibdata[:, 1])
                     ecalib = np.interp(qcalib, calibdata[:, 0], calibdata[:, 2])
                     model = scipy.odr.Model(lambda params, x: x * params[0])
