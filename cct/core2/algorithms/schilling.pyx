@@ -13,7 +13,6 @@ import numpy as np
 from libc.float cimport DBL_MAX_EXP
 from libc.stdlib cimport calloc, free
 
-
 cdef Py_ssize_t A_(Py_ssize_t n, Py_ssize_t x):
     """Calculate A_n(x) as per Schilling's original paper"""
     cdef Py_ssize_t j
@@ -144,3 +143,26 @@ def longest_edge(np.ndarray[np.double_t, ndim=2] cormap):
     if l > lmax:
         lmax = l
     return lmax
+
+
+def longest_run(double [:] data):
+    """Find the longest run of positive/negative numbers. Zeros do not start a new sequence."""
+
+    cdef:
+        Py_ssize_t i
+        Py_ssize_t count
+        Py_ssize_t maxcount = 0
+
+    count=1
+    for i in range(1, data.size):
+        if data[i]*data[i-1] < 0:
+            # the previous number and this number have different signs
+            count = 1
+        else:
+            # the previous number and this number have the same signs or at least one of them is zero
+            count += 1
+        if count > maxcount:
+            maxcount = count
+    return maxcount
+
+
