@@ -44,30 +44,33 @@ class WindowRequiresDevices:
         logger.debug(f'required device names: {self.required_devicenames}')
         logger.debug(f'required device types: {self.required_devicetypes}')
         logger.debug(f'required motors: {self.required_motors}')
-        self.instrument = kwargs['instrument']
+        if 'instrument' in kwargs:
+            self.instrument = kwargs['instrument']
+            devices = {d for d in self.instrument.devicemanager.devices.values()
+                       if (d.name in self.required_devicenames)
+                       or (d.devicetype in self.required_devicetypes)
+                       or ('*' in self.required_devicetypes)
+                       or ('*' in self.required_devicenames)}
+            motors = {m for m in self.instrument.motors.motors
+                      if (m.name in self.required_motors)
+                      or ('*' in self.required_motors)}
+            for d in devices:
+                logger.debug(f'Connecting device {d.name}')
+                self._connectDevice(d)
+            self.instrument.devicemanager.deviceDisconnected.connect(self.onDeviceDisconnected)
+            self.instrument.devicemanager.deviceConnected.connect(self.onDeviceConnected)
+            logger.debug('Connecting motors')
+            for m in motors:
+                assert isinstance(m, Motor)
+                self._connectMotor(m)
+            logger.debug(f'Connected {len(motors)} motors')
+            self.instrument.config.changed.connect(self.onConfigChanged)
+            self.instrument.auth.currentUserChanged.connect(self.onUserOrPrivilegesChanged)
+            self.instrument.motors.newMotor.connect(self.onNewMotor)
+            self.instrument.motors.motorRemoved.connect(self.onMotorRemoved)
+        else:
+            self.instrument = None
         self.mainwindow = kwargs['mainwindow']
-        devices = {d for d in self.instrument.devicemanager.devices.values()
-                   if (d.name in self.required_devicenames)
-                   or (d.devicetype in self.required_devicetypes)
-                   or ('*' in self.required_devicetypes)
-                   or ('*' in self.required_devicenames)}
-        motors = {m for m in self.instrument.motors.motors
-                  if (m.name in self.required_motors)
-                  or ('*' in self.required_motors)}
-        for d in devices:
-            logger.debug(f'Connecting device {d.name}')
-            self._connectDevice(d)
-        self.instrument.devicemanager.deviceDisconnected.connect(self.onDeviceDisconnected)
-        self.instrument.devicemanager.deviceConnected.connect(self.onDeviceConnected)
-        logger.debug('Connecting motors')
-        for m in motors:
-            assert isinstance(m, Motor)
-            self._connectMotor(m)
-        logger.debug(f'Connected {len(motors)} motors')
-        self.instrument.config.changed.connect(self.onConfigChanged)
-        self.instrument.auth.currentUserChanged.connect(self.onUserOrPrivilegesChanged)
-        self.instrument.motors.newMotor.connect(self.onNewMotor)
-        self.instrument.motors.motorRemoved.connect(self.onMotorRemoved)
 
     @classmethod
     @final
