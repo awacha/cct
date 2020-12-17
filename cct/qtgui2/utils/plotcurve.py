@@ -11,7 +11,7 @@ from .plotcurve_ui import Ui_Form
 from ...core2.dataclasses import Curve
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class PlotCurve(QtWidgets.QWidget, Ui_Form):
