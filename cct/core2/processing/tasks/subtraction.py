@@ -11,7 +11,7 @@ from ..calculations.backgroundprocess import Message
 from ..calculations.subtractionjob import SubtractionScalingMode, SubtractionJob, SubtractionResult
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SubtractionData:

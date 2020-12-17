@@ -10,7 +10,7 @@ from ..calculations.resultsentry import SampleDistanceEntry, SampleDistanceEntry
 import numpy as np
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ResultsModel(ProcessingTask):

@@ -4,7 +4,7 @@ from PyQt5 import QtGui, QtCore
 
 import logging
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class HeadersWindow(ProcessingWindow, Ui_Form):

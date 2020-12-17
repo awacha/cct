@@ -16,7 +16,7 @@ from .merging import MergingWindow
 from .closablemdisubwindow import ClosableMdiSubWindow
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Main(QtWidgets.QMainWindow, Ui_MainWindow):

@@ -10,7 +10,7 @@ from ..algorithms.matrixaverager import ErrorPropagationMethod, MatrixAverager
 from ..algorithms.radavg import radavg, autoq, azimavg
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Exposure:

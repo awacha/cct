@@ -13,7 +13,7 @@ from .h5io import ProcessingH5File
 from ..algorithms.matrixaverager import ErrorPropagationMethod
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ProcessingSettings:

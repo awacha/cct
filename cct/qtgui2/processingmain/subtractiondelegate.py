@@ -8,7 +8,7 @@ from ..utils.qrangeentry import QRangeEntry
 from ..utils.valueanduncertaintyentry import ValueAndUncertaintyEntry
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SubtractionDelegate(QtWidgets.QStyledItemDelegate):

@@ -12,7 +12,7 @@ from .merging_ui import Ui_Form
 from PyQt5 import QtGui, QtWidgets, QtCore
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MergingWindow(ProcessingWindow, Ui_Form):

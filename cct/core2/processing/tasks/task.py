@@ -11,7 +11,7 @@ from ..settings import ProcessingSettings
 from ..calculations.backgroundprocess import Results, Message
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ProcessingStatus(enum.Enum):

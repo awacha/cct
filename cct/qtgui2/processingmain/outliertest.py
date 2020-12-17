@@ -21,7 +21,7 @@ from ...core2.dataclasses import Header
 from ...core2.processing.calculations.outliertest import OutlierTest
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SortFilterModel(QtCore.QSortFilterProxyModel):

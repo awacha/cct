@@ -10,7 +10,7 @@ from ..calculations.backgroundprocess import Message
 from ..calculations.summaryjob import SummaryJob, SummaryJobResults, Results
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SummaryData:

@@ -9,7 +9,7 @@ from PyQt5 import QtCore, QtGui
 import numpy as np
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 MergeParameters=namedtuple('MergeParameters', ['qmin', 'qmax'])
 

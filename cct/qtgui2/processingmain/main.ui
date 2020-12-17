@@ -60,9 +60,6 @@
     <addaction name="actionOpen_project"/>
     <addaction name="actionRecent_projects"/>
     <addaction name="separator"/>
-    <addaction name="actionSave"/>
-    <addaction name="actionSave_as"/>
-    <addaction name="separator"/>
     <addaction name="actionClose"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
@@ -97,7 +94,6 @@
    </attribute>
    <addaction name="actionNew_project"/>
    <addaction name="actionOpen_project"/>
-   <addaction name="actionSave"/>
    <addaction name="separator"/>
    <addaction name="actionProject_window"/>
    <addaction name="actionMetadata"/>
@@ -105,8 +101,6 @@
    <addaction name="actionBackground"/>
    <addaction name="actionMerge"/>
    <addaction name="actionResults"/>
-   <addaction name="separator"/>
-   <addaction name="actionProcess"/>
   </widget>
   <action name="actionNew_project">
    <property name="icon">

@@ -11,7 +11,7 @@ from ..dataclasses import Exposure, Header, Curve
 from .calculations.outliertest import OutlierTest, OutlierMethod
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ProcessingH5File:

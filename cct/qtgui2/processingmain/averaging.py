@@ -6,7 +6,7 @@ from .averaging_ui import Ui_Form
 from .processingwindow import ProcessingWindow
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class AveragingWindow(ProcessingWindow, Ui_Form):

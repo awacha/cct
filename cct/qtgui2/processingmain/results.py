@@ -16,7 +16,7 @@ from .transmission import TransmissionWindow
 from .vacuum import VacuumWindow
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ResultsWindow(ProcessingWindow, Ui_Form):

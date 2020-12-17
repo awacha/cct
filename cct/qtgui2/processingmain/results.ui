@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Results</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../../resource/icons/icons.qrc">
+    <normaloff>:/icons/results.svg</normaloff>:/icons/results.svg</iconset>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QTreeView" name="treeView">

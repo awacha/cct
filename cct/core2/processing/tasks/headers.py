@@ -11,7 +11,7 @@ from .task import ProcessingTask, ProcessingStatus
 from ...dataclasses import Header
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class HeaderStore(ProcessingTask):

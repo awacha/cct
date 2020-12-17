@@ -9,7 +9,7 @@ import scipy.io
 from ..dataclasses import Exposure, Header
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Loader:

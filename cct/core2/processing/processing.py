@@ -13,7 +13,7 @@ from .tasks.merging import Merging
 from .settings import ProcessingSettings
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ProcessingStatus(enum.Enum):
