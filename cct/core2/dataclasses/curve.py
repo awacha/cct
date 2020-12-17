@@ -1,4 +1,5 @@
-from typing import Optional, Iterable
+import numbers
+from typing import Optional, Iterable, Tuple, Union
 
 import numpy as np
 
@@ -101,6 +102,34 @@ class Curve:
         return self._data.shape[0]
 
     def sanitize(self) -> "Curve":
+        return Curve.fromArray(self._data[self.isvalid(), :])
+
+    @classmethod
+    def average(cls, curves: Iterable["Curve"], ierrorpropagation: ErrorPropagationMethod,
+                qerrorpropagation: ErrorPropagationMethod) -> "Curve":
+        qavg = MatrixAverager(errorpropagationmethod=qerrorpropagation)
+        iavg = MatrixAverager(errorpropagationmethod=ierrorpropagation)
+        aavg = MatrixAverager(errorpropagationmethod=ierrorpropagation)
+        pavg = MatrixAverager(errorpropagationmethod=ierrorpropagation)
+        for c in curves:
+            qavg.add(c.q, c.quncertainty)
+            iavg.add(c.intensity, c.uncertainty)
+            aavg.add(c.binarea, c.binarea)
+            pavg.add(c.pixel, c.pixel)
+        q, dq = qavg.get()
+        i, di = iavg.get()
+        a = aavg.get()[0]
+        p = pavg.get()[0]
+        return Curve.fromVectors(q, i, di, dq, a, p)
+
+    def isfinite(self) -> np.ndarray:
+        idx = np.logical_and(np.isfinite(self.q, np.isfinite(self.intensity)))
+        for vector in [self.uncertainty, self.quncertainty, self.pixel, self.binarea]:
+            if np.isfinite(vector).sum() > 0:  # if not all elements are NaN
+                idx = np.logical_and(idx, np.isfinite(vector))
+        return idx
+
+    def isvalid(self) -> np.ndarray:
         idx = np.logical_and(np.isfinite(self.q), np.isfinite(self.intensity))
         idx = np.logical_and(idx, self.q > 0)
         for vector in [self.uncertainty, self.quncertainty, self.pixel]:
@@ -118,21 +147,241 @@ class Curve:
                     np.isfinite(self.binarea),
                     self.binarea > 0
                 ))
-        return Curve.fromArray(self._data[idx, :])
+        return idx
 
-    @classmethod
-    def average(cls, curves: Iterable["Curve"], ierrorpropagation: ErrorPropagationMethod, qerrorpropagation: ErrorPropagationMethod) -> "Curve":
-        qavg = MatrixAverager(errorpropagationmethod=qerrorpropagation)
-        iavg = MatrixAverager(errorpropagationmethod=ierrorpropagation)
-        aavg = MatrixAverager(errorpropagationmethod=ierrorpropagation)
-        pavg = MatrixAverager(errorpropagationmethod=ierrorpropagation)
-        for c in curves:
-            qavg.add(c.q, c.quncertainty)
-            iavg.add(c.intensity, c.uncertainty)
-            aavg.add(c.binarea, c.binarea)
-            pavg.add(c.pixel, c.pixel)
-        q, dq = qavg.get()
-        i, di = iavg.get()
-        a = aavg.get()[0]
-        p = pavg.get()[0]
-        return Curve.fromVectors(q, i, di, dq, a, p)
+    def __getitem__(self, item) -> "Curve":
+        if isinstance(item, np.ndarray) and (item.dtype == np.bool):
+            return Curve.fromArray(self._data[item, :])
+
+    def _checkcompatibility(self, other: "Curve", maxdifferenceratio: float=0.005):
+        incompatibility = np.abs(self.q - other.q) / np.max(np.mean((self.q, other.q)), axis=0)*2
+        if np.any(incompatibility[np.isfinite(incompatibility)] > maxdifferenceratio):  # 0.01 means 1%
+            raise ValueError(f'The two q-scales are incompatible. Max. incompatibility: {incompatibility[np.isfinite(incompatibility)].max()}')
+
+    def __sub__(self, other: Union["Curve", numbers.Real, Tuple[numbers.Real, numbers.Real]]) -> "Curve":
+        if isinstance(other, Curve):
+            self._checkcompatibility(other)
+            return self.fromVectors(
+                q=0.5 * (self.q + other.q),
+                intensity=self.intensity - other.intensity,
+                uncertainty=(self.uncertainty ** 2 + other.uncertainty ** 2) ** 0.5,
+                quncertainty=(self.quncertainty ** 2 + other.quncertainty ** 2) ** 0.5 / 2.0,
+                binarea=None,
+                pixel=None
+            )
+        elif isinstance(other, numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity - other,
+                uncertainty=self.uncertainty,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        elif isinstance(other, tuple) and (len(other) == 2) and isinstance(other[0], numbers.Real) and isinstance(
+                other[1], numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity - other[0],
+                uncertainty=(self.uncertainty ** 2 + other[1] ** 2) ** 0.5,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        else:
+            return NotImplemented
+
+    def __add__(self, other: Union["Curve", numbers.Real, Tuple[numbers.Real, numbers.Real]]) -> "Curve":
+        if isinstance(other, Curve):
+            self._checkcompatibility(other)
+            return self.fromVectors(
+                q=0.5 * (self.q + other.q),
+                intensity=self.intensity + other.intensity,
+                uncertainty=(self.uncertainty ** 2 + other.uncertainty ** 2) ** 0.5,
+                quncertainty=(self.quncertainty ** 2 + other.quncertainty ** 2) ** 0.5 / 2.0,
+                binarea=None,
+                pixel=None
+            )
+        elif isinstance(other, numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity + other,
+                uncertainty=self.uncertainty,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        elif isinstance(other, tuple) and (len(other) == 2) and isinstance(other[0], numbers.Real) and isinstance(
+                other[1], numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity + other[0],
+                uncertainty=(self.uncertainty ** 2 + other[1] ** 2) ** 0.5,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        else:
+            return NotImplemented
+
+    def __rsub__(self, other: Union[numbers.Real, Tuple[numbers.Real, numbers.Real]]) -> "Curve":
+        if isinstance(other, numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=other - self.intensity,
+                uncertainty=self.uncertainty,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        elif isinstance(other, tuple) and (len(other) == 2) and isinstance(other[0], numbers.Real) and isinstance(
+                other[1], numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=other[0] - self.intensity,
+                uncertainty=(self.uncertainty ** 2 + other[1] ** 2) ** 0.5,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        else:
+            return NotImplemented
+
+    def __radd__(self, other: Union[numbers.Real, Tuple[numbers.Real, numbers.Real]]) -> "Curve":
+        if isinstance(other, numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity + other,
+                uncertainty=self.uncertainty,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        elif isinstance(other, tuple) and (len(other) == 2) and isinstance(other[0], numbers.Real) and isinstance(
+                other[1], numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity + other[0],
+                uncertainty=(self.uncertainty ** 2 + other[1] ** 2) ** 0.5,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        else:
+            return NotImplemented
+
+    def __truediv__(self, other: Union["Curve", numbers.Real, Tuple[numbers.Real, numbers.Real]]) -> "Curve":
+        if isinstance(other, Curve):
+            self._checkcompatibility(other)
+            return self.fromVectors(
+                q=0.5 * (self.q + other.q),
+                intensity=self.intensity / other.intensity,
+                uncertainty=(
+                                    self.uncertainty ** 2 / other.intensity ** 2 + other.uncertainty ** 2 * self.intensity ** 2 / other.intensity ** 4) ** 0.5,
+                quncertainty=(self.quncertainty ** 2 + other.quncertainty ** 2) ** 0.5 / 2.0,
+                binarea=None,
+                pixel=None
+            )
+        elif isinstance(other, numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity / other,
+                uncertainty=np.abs(self.uncertainty / other),
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        elif isinstance(other, tuple) and (len(other) == 2) and isinstance(other[0], numbers.Real) and isinstance(
+                other[1], numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity / other[0],
+                uncertainty=(self.uncertainty ** 2 / other[0] ** 2 + other[1] ** 2 * self.intensity ** 2 / other[
+                    0] ** 4) ** 0.5,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        else:
+            return NotImplemented
+
+    def __mul__(self, other: Union["Curve", numbers.Real, Tuple[numbers.Real, numbers.Real]]) -> "Curve":
+        if isinstance(other, Curve):
+            self._checkcompatibility(other)
+            return self.fromVectors(
+                q=0.5 * (self.q + other.q),
+                intensity=self.intensity * other.intensity,
+                uncertainty=(
+                                    self.uncertainty ** 2 * other.intensity ** 2 + other.uncertainty ** 2 * self.intensity ** 2) ** 0.5,
+                quncertainty=(self.quncertainty ** 2 + other.quncertainty ** 2) ** 0.5 / 2.0,
+                binarea=None,
+                pixel=None
+            )
+        elif isinstance(other, numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity * other,
+                uncertainty=np.abs(self.uncertainty * other),
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        elif isinstance(other, tuple) and (len(other) == 2) and isinstance(other[0], numbers.Real) and isinstance(
+                other[1], numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity * other[0],
+                uncertainty=(self.uncertainty ** 2 * other[0] ** 2 + self.intensity ** 2 * other[1] ** 2) ** 0.5,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        else:
+            return NotImplemented
+
+    def __rtruediv__(self, other: Union[numbers.Real, Tuple[numbers.Real, numbers.Real]]) -> "Curve":
+        if isinstance(other, numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=other / self.intensity,
+                uncertainty=np.abs(other * self.uncertainty / self.intensity ** 2),
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        elif isinstance(other, tuple) and (len(other) == 2) and isinstance(other[0], numbers.Real) and isinstance(
+                other[1], numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=other[0] / self.intensity,
+                uncertainty=(self.uncertainty ** 2 / self.intensity ** 4 * other[0] ** 2 + other[
+                    1] ** 2 / self.intensity ** 2) ** 0.5,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        else:
+            return NotImplemented
+
+    def __rmul__(self, other: Union[numbers.Real, Tuple[numbers.Real, numbers.Real]]) -> "Curve":
+        if isinstance(other, numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity * other,
+                uncertainty=np.abs(self.uncertainty * other),
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        elif isinstance(other, tuple) and (len(other) == 2) and isinstance(other[0], numbers.Real) and isinstance(
+                other[1], numbers.Real):
+            return self.fromVectors(
+                q=self.q,
+                intensity=self.intensity * other[0],
+                uncertainty=(self.uncertainty ** 2 * other[0] ** 2 + self.intensity ** 2 * other[1] ** 2) ** 0.5,
+                quncertainty=self.quncertainty,
+                binarea=self.binarea,
+                pixel=self.pixel
+            )
+        else:
+            return NotImplemented
