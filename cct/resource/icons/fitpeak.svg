@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
 <svg
-        xmlns:dc="http://purl.org/dc/elements/1.1/"
-        xmlns:cc="http://creativecommons.org/ns#"
-        xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-        xmlns="http://www.w3.org/2000/svg"
-        xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-        xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-        width="330"
-        height="330"
-        id="svg2"
-        version="1.1"
-        inkscape:version="0.48.4 r9939"
-        sodipodi:docname="fitpeak.svg"
-        inkscape:export-filename="/home/labuser/workspace/SAXSCtrl/saxsctrl/widgets/fitpeak.png"
-        inkscape:export-xdpi="69.82"
-        inkscape:export-ydpi="69.82">
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="330"
+   height="330"
+   id="svg2"
+   version="1.1"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
+   sodipodi:docname="fitpeak.svg"
+   inkscape:export-filename="/home/labuser/workspace/SAXSCtrl/saxsctrl/widgets/fitpeak.png"
+   inkscape:export-xdpi="69.82"
+   inkscape:export-ydpi="69.82">
   <defs
      id="defs4">
     <marker
@@ -55,9 +54,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="1"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.5301587"
-     inkscape:cx="180.50949"
-     inkscape:cy="313.86818"
+     inkscape:zoom="1.7890924"
+     inkscape:cx="163.27366"
+     inkscape:cy="178.38969"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -66,10 +65,11 @@
      fit-margin-right="0"
      fit-margin-bottom="0"
      inkscape:window-width="1920"
-     inkscape:window-height="978"
+     inkscape:window-height="1011"
      inkscape:window-x="0"
-     inkscape:window-y="31"
-     inkscape:window-maximized="1" />
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:document-rotation="0" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -78,7 +78,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -87,6 +87,13 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-52.214286,-370.1479)">
+    <rect
+       style="fill:#ffe6d5;stroke-width:10;stroke-linecap:round;stroke-linejoin:bevel"
+       id="rect4472"
+       width="311.23859"
+       height="300"
+       x="65.714287"
+       y="386.64789" />
     <path
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-start:url(#Arrow1Lstart);marker-end:url(#Arrow1Lend)"
        d="m 65.714286,386.6479 0,300 311.238574,0"
