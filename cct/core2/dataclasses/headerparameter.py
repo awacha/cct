@@ -20,15 +20,12 @@ class HeaderParameter:
 
     def __get__(self, instance, objtype):
         lis = []
-        logger.debug(f'HeaderParameter.__get__({instance=}, {objtype=})')
         for path, default in zip(self.paths,
                                  itertools.repeat(None) if self.defaultvalue is None else self.defaultvalue):
-            logger.debug(f'  {path=}')
             if path is None:
                 lis.append(None)
                 continue
             dic = instance._data
-            logger.debug(f'     {type(dic)=}, {dic=}')
             assert isinstance(dic, dict)
             try:
                 for pcomponent in path:
