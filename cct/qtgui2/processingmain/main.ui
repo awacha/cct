@@ -101,6 +101,8 @@
    <addaction name="actionBackground"/>
    <addaction name="actionMerge"/>
    <addaction name="actionResults"/>
+   <addaction name="separator"/>
+   <addaction name="actionPreferences"/>
   </widget>
   <action name="actionNew_project">
    <property name="icon">
@@ -317,6 +319,21 @@
    </property>
    <property name="toolTip">
     <string>Arrange the windows in a tiled fashion</string>
+   </property>
+  </action>
+  <action name="actionPreferences">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/editconfig.svg</normaloff>:/icons/editconfig.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Preferences</string>
+   </property>
+   <property name="toolTip">
+    <string>Edit preferences</string>
    </property>
   </action>
  </widget>

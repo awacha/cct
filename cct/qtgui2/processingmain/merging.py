@@ -45,7 +45,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         self.canvas.draw_idle()
         self.treeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
 
-    def onSelectionChanged(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
+    def onSelectionChanged(self, selected: Optional[QtCore.QItemSelection]=None, deselected: Optional[QtCore.QItemSelection]=None):
         self._resetaxes()
         try:
             index = self.treeView.selectionModel().selectedRows(0)[0]
@@ -88,6 +88,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
             row = index.row()
             self.treeView.model().setData(self.treeView.model().index(row, 1, parent), left, QtCore.Qt.EditRole)
             self.treeView.model().setData(self.treeView.model().index(row, 2, parent), right, QtCore.Qt.EditRole)
+            self.onSelectionChanged()
 
     def _resetaxes(self):
         self.axes.clear()

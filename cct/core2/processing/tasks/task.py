@@ -118,7 +118,7 @@ class ProcessingTask(QtCore.QAbstractItemModel):
         readies = [t for t in self._asyncresults if t.ready()]
         self._asyncresults = [t for t in self._asyncresults if t not in readies]
         for task in readies:
-            result: Results = task.get()  # ToDo: exception handling
+            result: Results = task.get()
             self.onBackgroundTaskFinished(result)
 
         if ((not self._asyncresults) or (

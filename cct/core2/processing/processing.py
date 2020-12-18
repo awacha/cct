@@ -35,8 +35,6 @@ class Processing(QtCore.QAbstractItemModel):
     results: ResultsModel
     merging: Merging
 
-    _modified: bool=False
-    modificationChanged = QtCore.pyqtSignal(bool)
     resultItemChanged = QtCore.pyqtSignal(str, str)
 
     """The main class of the processing subsystem"""
@@ -53,6 +51,10 @@ class Processing(QtCore.QAbstractItemModel):
         self.results = ResultsModel(self, self.settings)
         self.merging = Merging(self, self.settings)
         self.merging.finished.connect(self.onTaskFinished)
+        self.settings.badfsnsChanged.connect(self.onBadFSNsChanged)
+
+    def onBadFSNsChanged(self):
+        self.headers.badfsnschanged()
 
     def isIdle(self):
         return self.headers.isIdle() and self.summarization.isIdle() and self.subtraction.isIdle()
@@ -126,8 +128,7 @@ class Processing(QtCore.QAbstractItemModel):
         else:
             assert False
         self.dataChanged.emit(index, index)
-        self.settings.save()
-        self.setModified(False)
+        self.settings.emitSettingsChanged()
         return True
 
     def insertRow(self, row: int, parent: QtCore.QModelIndex = ...) -> bool:
@@ -137,7 +138,7 @@ class Processing(QtCore.QAbstractItemModel):
         self.beginInsertRows(QtCore.QModelIndex(), row, row+count-1)
         self.fsnranges = self.fsnranges[:row] + [(0,0)]*count + self.fsnranges[row:]
         self.endInsertRows()
-        self.setModified(True)
+        self.settings.emitSettingsChanged()
         return True
 
     def removeRow(self, row: int, parent: QtCore.QModelIndex = ...) -> bool:
@@ -147,14 +148,14 @@ class Processing(QtCore.QAbstractItemModel):
         self.beginRemoveRows(QtCore.QModelIndex(), row, row+count-1)
         del self.fsnranges[row:row+count]
         self.endRemoveRows()
-        self.setModified(True)
+        self.settings.emitSettingsChanged()
         return True
 
     def modelReset(self) -> None:
         self.beginResetModel()
         self.fsnranges = []
         self.endResetModel()
-        self.setModified(True)
+        self.settings.emitSettingsChanged()
 
     @property
     def fsnranges(self) -> List[Tuple[int, int]]:
@@ -165,20 +166,12 @@ class Processing(QtCore.QAbstractItemModel):
         self.beginResetModel()
         self.settings.fsnranges = newvalue
         self.endResetModel()
-        self.setModified(True)
+        self.settings.emitSettingsChanged()
 
     def save(self, filename):
         self.settings.save(filename)
-        self.setModified(False)
 
     @classmethod
     def fromFile(cls, filename) -> "Processing":
         p = cls(filename)
         return p
-
-    def setModified(self, modified: bool):
-        self._modified = modified
-        self.modificationChanged.emit(self._modified)
-
-    def modified(self) -> bool:
-        return self._modified

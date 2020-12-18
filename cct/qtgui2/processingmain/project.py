@@ -17,7 +17,6 @@ class ProjectWindow(ProcessingWindow, Ui_Form):
         self.averagingPushButton.clicked.connect(self.project.summarization.start)
         self.subtractionPushButton.clicked.connect(self.project.subtraction.start)
         self.mergingPushButton.clicked.connect(self.project.merging.start)
-        self.project.modificationChanged.connect(self.setWindowModified)
         for task in [self.project.headers, self.project.subtraction, self.project.summarization, self.project.merging]:
             task.started.connect(self.onTaskStarted)
             task.finished.connect(self.onTaskFinished)
@@ -32,7 +31,7 @@ class ProjectWindow(ProcessingWindow, Ui_Form):
 
     def rootPathChanged(self):
         self.project.settings.rootpath = self.rootPathLineEdit.text()
-        self.project.setModified(True)
+        self.project.settings.emitSettingsChanged()
 
     def addFSNRange(self):
         self.project.insertRow(self.project.rowCount())

@@ -7,6 +7,7 @@ import re
 from typing import Optional, Set, Iterable, List, Tuple, Final, Iterator, Union, Sequence
 
 import numpy as np
+from PyQt5 import QtCore
 
 from .calculations.outliertest import OutlierMethod
 from .h5io import ProcessingH5File
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class ProcessingSettings:
+class ProcessingSettings(QtCore.QObject):
     _errorprop2str: Final[List[Tuple[ErrorPropagationMethod, str]]] = {
         (ErrorPropagationMethod.Conservative, 'Conservative'),
         (ErrorPropagationMethod.Linear, 'Average'),
@@ -37,12 +38,16 @@ class ProcessingSettings:
     h5lock: multiprocessing.synchronize.RLock
     badfsns: Set[int]
     fsnranges: List[Tuple[int, int]]
+
+    settingsChanged= QtCore.pyqtSignal()
+    badfsnsChanged = QtCore.pyqtSignal()
     _h5io: Optional[ProcessingH5File] = None
 
     _manager: multiprocessing.managers.SyncManager
     _modified: bool=False
 
     def __init__(self, filename: str):
+        super().__init__()
         self.filename = filename
         self.rootpath = os.getcwd()
         self._manager = multiprocessing.Manager()
@@ -57,18 +62,21 @@ class ProcessingSettings:
         logger.debug(f'Old bad fsns: {self.badfsns}')
         self.badfsns = self.badfsns.union(newbadfsns)
         self.saveBadFSNs()
+        self.badfsnsChanged.emit()
 
     def markAsBad(self, fsn: Union[int, Iterable[int]]):
         if isinstance(fsn, numbers.Number):
             fsn = [fsn]
         self.badfsns = self.badfsns.union(fsn)
         self.saveBadFSNs()
+        self.badfsnsChanged.emit()
 
     def markAsGood(self, fsn: Union[int, Iterable[int]]):
         if isinstance(fsn, numbers.Number):
             fsn = [fsn]
         self.badfsns = self.badfsns.difference(fsn)
         self.saveBadFSNs()
+        self.badfsnsChanged.emit()
 
     def saveBadFSNs(self):
         with self.h5io.writer('cptsettings') as grp:
@@ -94,6 +102,7 @@ class ProcessingSettings:
             else:
                 badfsns = []
         self.badfsns = set(badfsns)
+        self.badfsnsChanged.emit()
         return self.badfsns
 
     def load(self, filename: str):
@@ -241,3 +250,7 @@ class ProcessingSettings:
     def fsns(self) -> Iterator[int]:
         for fmin, fmax in self.fsnranges:
             yield from range(fmin, fmax)
+
+    def emitSettingsChanged(self):
+        self.save()
+        self.settingsChanged.emit()
