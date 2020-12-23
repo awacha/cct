@@ -73,17 +73,13 @@ class Processing(QtCore.QAbstractItemModel):
                     self.summarization.addSample(samplename, distance, fsns)
                     logger.debug(f'Added {samplename=}. {distance=}')
             logger.debug('Summarization updated.')
-            self.setModified(True)
         elif self.sender() is self.summarization:
             # summarization done
-            self.setModified(True)
             self.headers.badfsnschanged()
             self.results.reload()
         elif self.sender() is self.subtraction:
-            self.setModified(True)
             self.results.reload()
         elif self.sender() is self.merging:
-            self.setModified(True)
             self.results.reload()
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:

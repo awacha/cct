@@ -1,10 +1,13 @@
 import configparser
 import logging
+import multiprocessing
+import multiprocessing.managers
+import multiprocessing.synchronize
 import numbers
-import multiprocessing.synchronize, multiprocessing.managers, multiprocessing
 import os
 import re
-from typing import Optional, Set, Iterable, List, Tuple, Final, Iterator, Union, Sequence
+import appdirs
+from typing import Optional, Set, Iterable, List, Tuple, Final, Iterator, Union
 
 import numpy as np
 from PyQt5 import QtCore
@@ -39,15 +42,16 @@ class ProcessingSettings(QtCore.QObject):
     badfsns: Set[int]
     fsnranges: List[Tuple[int, int]]
 
-    settingsChanged= QtCore.pyqtSignal()
+    settingsChanged = QtCore.pyqtSignal()
     badfsnsChanged = QtCore.pyqtSignal()
     _h5io: Optional[ProcessingH5File] = None
 
     _manager: multiprocessing.managers.SyncManager
-    _modified: bool=False
+    _modified: bool = False
 
     def __init__(self, filename: str):
         super().__init__()
+        self.loadDefaults()
         self.filename = filename
         self.rootpath = os.getcwd()
         self._manager = multiprocessing.Manager()
@@ -55,6 +59,54 @@ class ProcessingSettings(QtCore.QObject):
         self.badfsns = set()
         self.fsnranges = []
         self.load(filename)
+
+    def loadDefaults(self):
+        cp = configparser.ConfigParser()
+        cp.read([os.path.join(appdirs.user_config_dir('cct'), 'cpt4.conf')])
+        cp['DEFAULT'] = {'eval2dsubpath': 'eval2d',
+                         'masksubpath': 'mask',
+                         'fsndigits': '5',
+                         'prefix': 'crd',
+                         'ierrorprop': ErrorPropagationMethod.Conservative.name,
+                         'qerrorprop': ErrorPropagationMethod.Conservative.name,
+                         'outliermethod': OutlierMethod.IQR.value,
+                         'outlierthreshold': '1.5',
+                         'logcorrmat': 'yes',
+                         'bigmemorymode': 'no',
+                         }
+        if not cp.has_section('cpt4'):
+            cp.add_section('cpt4')
+        cpt4section = cp['cpt4']
+        self.eval2dsubpath=cpt4section.get('eval2dsubpath')
+        self.masksubpath=cpt4section.get('masksubpath')
+        self.fsndigits=cpt4section.getint('fsndigits')
+        self.prefix=cpt4section.get('prefix')
+        self.ierrorprop=ErrorPropagationMethod[cpt4section.get('ierrorprop')]
+        self.qerrorprop=ErrorPropagationMethod[cpt4section.get('qerrorprop')]
+        self.outliermethod=OutlierMethod(cpt4section.get('outliermethod'))
+        self.outlierthreshold=cpt4section.getfloat('outlierthreshold')
+        self.outlierlogcormat=cpt4section.getboolean('logcorrmat')
+        self.bigmemorymode=cpt4section.getboolean('bigmemorymode')
+
+    def saveDefaults(self):
+        cp=configparser.ConfigParser()
+        cp.read(os.path.join(appdirs.user_config_dir('cct'), 'cpt4.conf'))
+        if not cp.has_section('cpt4'):
+            cp.add_section('cpt4')
+        cpt4section = cp['cpt4']
+        cpt4section['eval2dsubpath'] = self.eval2dsubpath
+        cpt4section['masksubpath'] = self.masksubpath
+        cpt4section['fsndigits'] = str(self.fsndigits)
+        cpt4section['prefix'] = self.prefix
+        cpt4section['ierrorprop'] = self.ierrorprop.name
+        cpt4section['qerrorprop'] = self.qerrorprop.name
+        cpt4section['outliermethod'] = self.outliermethod.value
+        cpt4section['outlierthreshold'] = str(self.outlierthreshold)
+        cpt4section['logcorrmat'] = 'yes' if self.outlierlogcormat else 'no'
+        cpt4section['bigmemorymode'] = 'yes' if self.bigmemorymode else 'no'
+        os.makedirs(appdirs.user_config_dir('cct'), exist_ok=True)
+        with open(os.path.join(appdirs.user_config_dir('cct'), 'cpt4.conf'), 'wt') as f:
+            cp.write(f)
 
     def addBadFSNs(self, badfsns: Iterable[int]):
         newbadfsns = [b for b in badfsns if b not in self.badfsns]
@@ -87,7 +139,7 @@ class ProcessingSettings(QtCore.QObject):
             grp.create_dataset('badfsns', data=np.array(sorted(self.badfsns)), dtype=np.int)
         logger.debug('BadFSNs list saved to HDF5 file.')
 
-    def loadBadFSNs(self, filename: Optional[str]=None):
+    def loadBadFSNs(self, filename: Optional[str] = None):
         try:
             with self.h5io.reader('cptsettings') as grp:
                 badfsns = set(np.array(grp['badfsns']).tolist())
@@ -110,23 +162,26 @@ class ProcessingSettings(QtCore.QObject):
             cp = configparser.ConfigParser()
             cp.read([filename])
 
-            def parsefsnranges(s) -> List[Tuple[int,int]]:
+            def parsefsnranges(s) -> List[Tuple[int, int]]:
                 if not (m := re.match(r'\[(\(\d+\s*,\s*\d+\))(?:,\s*(\(\d+\s*,\s*\d+\)))*\]', s)):
                     raise ValueError(f'Invalid FSN range designation: {s}.')
                 logger.debug(str(m.groups()))
-                return [tuple([int(g1) for g1 in re.match(r'\((\d+),\s*(\d+)\)', g).groups()]) for g in m.groups() if g is not None]
+                return [tuple([int(g1) for g1 in re.match(r'\((\d+),\s*(\d+)\)', g).groups()]) for g in m.groups() if
+                        g is not None]
 
             for attr, section, option, typeconversion in [
-                ('filename', 'io', 'hdf5', lambda s:os.path.split(s)[-1]),
+                ('filename', 'io', 'hdf5', lambda s: os.path.split(s)[-1]),
                 ('rootpath', 'io', 'datadir', str),
                 ('eval2dsubpath', 'io', 'eval2dsubpath', str),
                 ('masksubpath', 'io', 'masksubpath', str),
                 ('fsndigits', 'io', 'fsndigits', str),
-                ('ierrorprop', 'processing', 'errorpropagation', lambda val: [ep for ep, s in self._errorprop2str if s==val][0]),
-                ('qerrorprop', 'processing', 'abscissaerrorpropagation', lambda val: [ep for ep, s in self._errorprop2str if s==val][0]),
+                ('ierrorprop', 'processing', 'errorpropagation',
+                 lambda val: [ep for ep, s in self._errorprop2str if s == val][0]),
+                ('qerrorprop', 'processing', 'abscissaerrorpropagation',
+                 lambda val: [ep for ep, s in self._errorprop2str if s == val][0]),
                 ('outliermethod', 'processing', 'outliermethod', OutlierMethod),
                 ('outlierthreshold', 'processing', 'std_multiplier', float),
-                ('outlierlogcormat', 'processing', 'logcorrelmatrix', lambda val: val.upper().strip()=='TRUE'),
+                ('outlierlogcormat', 'processing', 'logcorrelmatrix', lambda val: val.upper().strip() == 'TRUE'),
                 ('fsnranges', 'io', 'fsnranges', parsefsnranges),
                 ('badfsns', 'io', 'badfsnsfile', self.loadBadFSNs),
             ]:
@@ -184,10 +239,11 @@ class ProcessingSettings(QtCore.QObject):
             return cp
         elif (filename.lower().endswith('.h5')) or (filename.lower().endswith('.cpt4')):
             self.filename = filename
-            isinstance(self.h5io, ProcessingH5File)  # ensure the h5io is reconstructed with the new file name. Don't use assert, it can be disabled!
+            isinstance(self.h5io,
+                       ProcessingH5File)  # ensure the h5io is reconstructed with the new file name. Don't use assert, it can be disabled!
             try:
                 with self.h5io.reader('cptsettings') as grp:
-                    identity = lambda a:a
+                    identity = lambda a: a
                     for attrname, grpname, h5attrname, typeconversion in [
                         ('filename', 'io', 'hdf5', identity),
                         ('rootpath', 'io', 'datadir', identity),
@@ -215,6 +271,7 @@ class ProcessingSettings(QtCore.QObject):
             raise ValueError('Unknown file format.')
 
     def save(self, filename: Optional[str] = None):
+        self.saveDefaults()
         with self.h5io.writer('cptsettings') as grp:
             iogrp = grp.require_group('io')
             iogrp.attrs['datadir'] = self.rootpath
@@ -227,7 +284,11 @@ class ProcessingSettings(QtCore.QObject):
                 del iogrp['fsnranges']
             except KeyError:
                 pass
-            iogrp.create_dataset('fsnranges', data=np.vstack(self.fsnranges))
+            if self.fsnranges:
+                iogrp.create_dataset('fsnranges', data=np.vstack(self.fsnranges))
+            else:
+                iogrp.create_dataset('fsnranges', data=np.array([]))
+
             processinggrp = grp.require_group('processing')
             processinggrp.attrs['errorpropagation'] = self.ierrorprop.value
             processinggrp.attrs['qerrorpropagation'] = self.qerrorprop.value
@@ -249,7 +310,7 @@ class ProcessingSettings(QtCore.QObject):
 
     def fsns(self) -> Iterator[int]:
         for fmin, fmax in self.fsnranges:
-            yield from range(fmin, fmax)
+            yield from range(fmin, fmax + 1)
 
     def emitSettingsChanged(self):
         self.save()
