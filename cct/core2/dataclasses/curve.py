@@ -16,25 +16,49 @@ class Curve:
     def q(self) -> np.ndarray:
         return self._data[:, 0]
 
+    @q.setter
+    def q(self, newvalue):
+        self._data[:, 0] = newvalue
+
     @property
     def intensity(self) -> np.ndarray:
         return self._data[:, 1]
+
+    @intensity.setter
+    def intensity(self, newvalue):
+        self._data[:, 1] = newvalue
 
     @property
     def uncertainty(self) -> np.ndarray:
         return self._data[:, 2]
 
+    @uncertainty.setter
+    def uncertainty(self, newvalue):
+        self._data[:, 2] = newvalue
+
     @property
     def quncertainty(self) -> np.ndarray:
         return self._data[:, 3]
+
+    @quncertainty.setter
+    def quncertainty(self, newvalue):
+        self._data[:, 3] = newvalue
 
     @property
     def binarea(self) -> np.ndarray:
         return self._data[:, 4]
 
+    @binarea.setter
+    def binarea(self, newvalue):
+        self._data[:, 4] = newvalue
+
     @property
     def pixel(self) -> np.ndarray:
         return self._data[:, 5]
+
+    @pixel.setter
+    def pixel(self, newvalue):
+        self._data[:, 5] = newvalue
 
     @classmethod
     def fromFile(cls, filename: str, *args, **kwargs) -> "Curve":
@@ -153,10 +177,11 @@ class Curve:
         if isinstance(item, np.ndarray) and (item.dtype == np.bool):
             return Curve.fromArray(self._data[item, :])
 
-    def _checkcompatibility(self, other: "Curve", maxdifferenceratio: float=0.005):
-        incompatibility = np.abs(self.q - other.q) / np.max(np.mean((self.q, other.q)), axis=0)*2
+    def _checkcompatibility(self, other: "Curve", maxdifferenceratio: float = 0.005):
+        incompatibility = np.abs(self.q - other.q) / np.max(np.mean((self.q, other.q)), axis=0) * 2
         if np.any(incompatibility[np.isfinite(incompatibility)] > maxdifferenceratio):  # 0.01 means 1%
-            raise ValueError(f'The two q-scales are incompatible. Max. incompatibility: {incompatibility[np.isfinite(incompatibility)].max()}')
+            raise ValueError(
+                f'The two q-scales are incompatible. Max. incompatibility: {incompatibility[np.isfinite(incompatibility)].max()}')
 
     def __sub__(self, other: Union["Curve", numbers.Real, Tuple[numbers.Real, numbers.Real]]) -> "Curve":
         if isinstance(other, Curve):
