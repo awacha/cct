@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 
 from .resultviewwindow import ResultViewWindow
 from ..utils.plotimage import PlotImage
@@ -14,6 +14,7 @@ class ShowImageWindow(ResultViewWindow):
         self.setLayout(layout)
         layout.addWidget(self.plotImage)
         self.onResultItemChanged(self.resultitems[0][0], self.resultitems[0][1])
+        self.setWindowIcon(QtGui.QIcon(':/icons/saxspattern.svg'))
 
     def onResultItemChanged(self, samplename: str, distancekey: str):
         ex = self.project.settings.h5io.readExposure(f'Samples/{samplename}/{distancekey}')

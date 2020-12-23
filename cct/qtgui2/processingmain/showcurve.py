@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 
 from .resultviewwindow import ResultViewWindow
 from ..utils.plotcurve import PlotCurve
@@ -16,6 +16,7 @@ class ShowCurveWindow(ResultViewWindow):
         self.onResultItemChanged('', '')
         self.plotCurve.setPixelMode(False)
         self.plotCurve.setShowErrorBars(False)
+        self.setWindowIcon(QtGui.QIcon(':/icons/saxscurve.svg'))
 
     def onResultItemChanged(self, samplename: str, distancekey: str):
         self.plotCurve.clear()

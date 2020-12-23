@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 
 from .resultviewwindow import ResultViewWindow
 from ..utils.anisotropy import AnisotropyEvaluator
@@ -15,6 +15,7 @@ class ShowAnisotropyWindow(ResultViewWindow):
         layout.addWidget(self.anisotropyWidget)
         self.onResultItemChanged(self.resultitems[0][0], self.resultitems[0][1])
         self.anisotropyWidget.h5Selector.hide()
+        self.setWindowIcon(QtGui.QIcon(':/icons/anisotropy.svg'))
 
     def onResultItemChanged(self, samplename: str, distancekey: str):
         self.anisotropyWidget.setExposure(
