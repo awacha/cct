@@ -61,11 +61,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
             if sde.entrytype != SampleDistanceEntryType.Primary:
                 # only primary results have correlation matrices
                 continue
-            self.mainwindow.createViewWindow(
-                OutlierTestWindow(
-                    project=self.project, mainwindow=self.mainwindow,
-                    samplename=sde.samplename, distancekey=sde.distancekey, closable=True),
-                handlestring=f"OutlierTestWindow(samplename='{sde.samplename}', distancekey='{sde.distancekey}')")
+            self.mainwindow.createViewWindow(OutlierTestWindow, [(sde.samplename, sde.distancekey)])
 
     def resizeColumns(self):
         for c in range(self.treeView.model().columnCount()):
@@ -78,22 +74,14 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
             sde = index.data(QtCore.Qt.UserRole)
             if sde.entrytype not in [SampleDistanceEntryType.Subtracted, SampleDistanceEntryType.Primary]:
                 continue
-            self.mainwindow.createViewWindow(
-                ShowAnisotropyWindow(
-                    project=self.project, mainwindow=self.mainwindow,
-                    samplename=sde.samplename, distancekey=sde.distancekey, closable=True),
-                handlestring=f"ShowAnisotropy(samplename='{sde.samplename}', distancekey='{sde.distancekey}')")
+            self.mainwindow.createViewWindow(ShowAnisotropyWindow, [(sde.samplename, sde.distancekey)])
 
     def showImage(self):
         for index in self.treeView.selectionModel().selectedRows(0):
             sde = index.data(QtCore.Qt.UserRole)
             if sde.entrytype not in [SampleDistanceEntryType.Subtracted, SampleDistanceEntryType.Primary]:
                 continue
-            self.mainwindow.createViewWindow(
-                ShowImageWindow(
-                    project=self.project, mainwindow=self.mainwindow,
-                    samplename=sde.samplename, distancekey=sde.distancekey, closable=True),
-                handlestring=f"ShowImage(samplename='{sde.samplename}', distancekey='{sde.distancekey}')")
+            self.mainwindow.createViewWindow(ShowImageWindow, [(sde.samplename, sde.distancekey)])
 
     def showCurve(self):
         items = []
@@ -101,13 +89,8 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
             sde = index.data(QtCore.Qt.UserRole)
             items.append((sde.samplename, sde.distancekey))
         items = list(sorted(items))
-        itemslist = ', '.join([f"('{sn}', '{dist}')" for sn, dist in items])
         if items:
-            self.mainwindow.createViewWindow(
-                ShowCurveWindow(
-                    project=self.project, mainwindow=self.mainwindow,
-                    resultitems=items, closable=True),
-                handlestring=f"ShowImage(resultitems=[{itemslist}])")
+            self.mainwindow.createViewWindow(ShowCurveWindow, items)
 
     def showTransmission(self):
         items = []
@@ -118,13 +101,8 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                 continue
             items.append((sde.samplename, sde.distancekey))
         items = list(sorted(items))
-        itemslist = ', '.join([f"('{sn}', '{dist}')" for sn, dist in items])
         if items:
-            self.mainwindow.createViewWindow(
-                TransmissionWindow(
-                    project=self.project, mainwindow=self.mainwindow,
-                    resultitems=items, closable=True),
-                handlestring=f"ShowTransmission(resultitems=[{itemslist}])")
+            self.mainwindow.createViewWindow(TransmissionWindow, items)
 
     def showTimeBudget(self):
         pass
@@ -140,13 +118,8 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
             logger.debug(f'Items now {items}')
         items = list(sorted(items))
         logger.debug(f'Sorted items: {items}')
-        itemslist = ', '.join([f"('{sn}', '{dist}')" for sn, dist in items])
         if items:
-            self.mainwindow.createViewWindow(
-                VacuumWindow(
-                    project=self.project, mainwindow=self.mainwindow,
-                    resultitems=items, closable=True),
-                handlestring=f"ShowVacuum(resultitems=[{itemslist}])")
+            self.mainwindow.createViewWindow(VacuumWindow, items)
 
     def exportPatterns(self, action: Optional[QtWidgets.QAction] = None):
         if action is None:
@@ -209,8 +182,19 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                 # append proper file ending
                 xlsxfile = xlsxfile+'.xlsx'
             wb = openpyxl.Workbook()
+            wb.remove(wb.active)
+            wsnamecounter= {}
             for item in items:
-                ws = wb.create_sheet(f'{item.samplename}_{item.distancekey}')
+                wsname = f'{item.samplename}_{item.distancekey}'
+                if len(wsname) >= 31:
+                    # some programs cannot open workbooks with too long sheet names
+                    wsname=wsname[:29]
+                    if wsname in wsnamecounter:
+                        wsname=wsname+str(wsnamecounter[wsname])
+                        wsnamecounter[wsname]+=1
+                    else:
+                        wsnamecounter[wsname]=1
+                ws = wb.create_sheet(wsname)
                 item.writeCurveToXLSX(ws, ws.cell(row=1, column=1))
             wb.save(xlsxfile)
         else:
