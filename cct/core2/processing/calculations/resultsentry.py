@@ -143,8 +143,19 @@ class SampleDistanceEntry:
     def writeCurveToXLSX(self, worksheet: openpyxl.worksheet.worksheet.Worksheet, topleftcell: openpyxl.cell.Cell):
         row = topleftcell.row
         column = topleftcell.column
-        worksheet.cell(row=row, column=column, value=f'{self.samplename} @ {self.distancekey} mm')
-        worksheet.merge_cells(start_row=row, start_column=column, end_row=row, end_column=column+3)
+        worksheet.cell(row=row, column=column, value='Sample name:')
+        worksheet.cell(row=row+1, column=column, value='S-D distance:')
+        worksheet.cell(row=row, column=column+1, value=self.samplename)
+        try:
+            worksheet.cell(row=row+1, column=column+1, value=float(self.distancekey))
+        except ValueError:
+            # e.g. distancekey == 'merged'
+            worksheet.cell(row=row+1, column=column+1, value=self.distancekey)
+        worksheet.merge_cells(start_row=row, start_column=column+1, end_row=row, end_column=column+3)
+        worksheet.merge_cells(start_row=row+1, start_column=column+1, end_row=row+1, end_column=column+3)
+        row +=2
+#        worksheet.cell(row=row, column=column, value=f'{self.samplename} @ {self.distancekey} mm')
+#        worksheet.merge_cells(start_row=row, start_column=column, end_row=row, end_column=column+3)
         for i, (quantity, unit) in enumerate([
             ('q', '1/nm'),
             ('Intensity', '1/nm'),
