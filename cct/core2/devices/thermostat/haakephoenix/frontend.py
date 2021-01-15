@@ -5,6 +5,7 @@ from PyQt5 import QtCore
 
 from .backend import HaakePhoenixBackend
 from ...device.frontend import DeviceFrontend
+from ....sensors.thermometer import Thermometer
 
 
 class HaakePhoenix(DeviceFrontend):
@@ -13,6 +14,13 @@ class HaakePhoenix(DeviceFrontend):
     devicetype = 'thermostat'
     temperatureChanged = QtCore.pyqtSignal(float)
     startStop = QtCore.pyqtSignal(bool)
+
+    def __init__(self, name: str, host: str, port: int, **kwargs):
+        super().__init__(name, host, port, **kwargs)
+        self.sensors = [Thermometer(f'temperature', self.name, 0, '°C'),
+                        Thermometer(f'internal', self.name, 1, '°C'),
+                        Thermometer(f'external', self.name, 2, '°C'),
+                        ]
 
     def temperature(self) -> float:
         return self['temperature']
@@ -61,3 +69,8 @@ class HaakePhoenix(DeviceFrontend):
                 pass
         elif variablename == 'temperature':
             self.temperatureChanged.emit(float(newvalue))
+            self.sensors[0].update(float(newvalue))
+        elif variablename == 'temperature_internal':
+            self.sensors[1].update(float(newvalue))
+        elif variablename == 'temperature_external':
+            self.sensors[2].update(float(newvalue))

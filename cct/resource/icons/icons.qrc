@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>thermometer.svg</file>
     <file>results.svg</file>
     <file>metadata.svg</file>
     <file>rsr.svg</file>

@@ -357,6 +357,7 @@
    <addaction name="actionDetector"/>
    <addaction name="actionMotors"/>
    <addaction name="actionTemperature_stage"/>
+   <addaction name="actionThermometer"/>
    <addaction name="separator"/>
    <addaction name="actionScan"/>
    <addaction name="actionSingle_exposure"/>
@@ -765,6 +766,10 @@
    </property>
   </action>
   <action name="actionThermometer">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/thermometer.svg</normaloff>:/icons/thermometer.svg</iconset>
+   </property>
    <property name="text">
     <string>Thermometer</string>
    </property>

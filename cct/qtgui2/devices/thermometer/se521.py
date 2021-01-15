@@ -28,9 +28,9 @@ class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         elif name == 'isrecallmode':
             self.recallModeLabel.setText(f'{"yes" if newvalue else "no"}')
         elif name in ['isalarm', 'islowalarm', 'ishighalarm']:
-            if self.device()['islowalarm'] and self.device['isalarm']:
+            if self.device()['islowalarm'] and self.device()['isalarm']:
                 self.alarmStateLabel.setText(f'Low temperature!')
-            elif self.device()['ishighalarm'] and self.device['isalarm']:
+            elif self.device()['ishighalarm'] and self.device()['isalarm']:
                 self.alarmStateLabel.setText(f'High temperature!')
             else:
                 self.alarmStateLabel.setText('Unknown alarm' if self.device()['isalarm'] else 'None')

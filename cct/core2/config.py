@@ -46,7 +46,7 @@ class Config(QtCore.QObject):
             if self._autosavetimer is not None:
                 self.killTimer(self._autosavetimer)
                 self._autosavetimer = None
-            self._autosavetimer = self.startTimer(self._autosavetimeout)
+            self._autosavetimer = self.startTimer(int(self._autosavetimeout*1000), QtCore.Qt.PreciseTimer)
 
     def timerEvent(self, timerEvent: QtCore.QTimerEvent) -> None:
         if timerEvent.timerId() == self._autosavetimer:
@@ -124,7 +124,6 @@ class Config(QtCore.QObject):
     def __getstate__(self) -> Dict[str, Any]:
         dic = {}
         for k in self:
-#            logger.debug(f'In __getstate__: {k}. Keys in self: {list(self.keys())}')
             if isinstance(self[k], Config):
                 dic[k] = self[k].__getstate__()
             else:

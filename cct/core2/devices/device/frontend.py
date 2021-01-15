@@ -9,6 +9,8 @@ from .backend import DeviceBackend
 from .message import Message
 from .telemetry import TelemetryInformation
 from .variable import Variable
+from ...sensors.sensor import Sensor
+from ...algorithms.queuewaiter import QueueWaiter
 
 
 class DeviceFrontend(QtCore.QAbstractItemModel):
@@ -21,6 +23,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     backendclass: Type[DeviceBackend]
 
     currentMessage: Optional[Message] = None
+    sensors: List[Sensor] = None
 
     # do not touch these attributes in subclasses
     _variables: List[Variable] = None
@@ -29,7 +32,6 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     _queue_to_backend: Queue = None
     _host: str
     _port: int
-    _timerid: int
     _ready: bool = False
     name: str
     _backendkwargs: Dict[str, Any] = None
@@ -77,6 +79,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
     def __init__(self, name: str, host: str, port: int, **kwargs):
         super().__init__(None)
+        self.sensors = []
         self.name = name
         # initialize variables
         self._variables = []
@@ -87,8 +90,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         self._backend = Process(target=self.backendclass.create_and_run,
                                 args=(self._queue_to_backend, self._queue_from_backend, host, port),
                                 kwargs=self._backendkwargs if self._backendkwargs is not None else {})
-        self._timerid = self.startTimer(0)
         self._backend.start()
+        QueueWaiter.instance().registerQueue(self._queue_from_backend, self.onMessageFromBackend)
         self._logger = logging.getLogger(f'{__name__}:{self.name}')
         self._backendlogger = logging.getLogger(f'{__name__}:{self.name}:backend')
         self._backendlogger.setLevel(logging.INFO)
@@ -103,20 +106,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             break
 #        self._logger.debug('Got variable names. Commencing operation.')
 
-    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
-        """timer event handler
-
-        The main function of this method is to maintain communication with the backend by periodically checking the
-        response queue and emitting appropriate signals.
-
-        Signal emissions are protected: if a slot raises an exception, the exception is caught and transformed into a
-        log message with 'critical' level.
-
-        """
-        try:
-            self.currentMessage = self._queue_from_backend.get_nowait()
-        except queue.Empty:
-            return
+    def onMessageFromBackend(self, message):
+        self.currentMessage = message
         try:
             if self.currentMessage.command == 'variableChanged':
                 var = self.getVariable(self.currentMessage['name'])
@@ -158,7 +149,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
                 #self._logger.debug(f'Command {self.currentMessage["commandname"]} finished successfully on device {self.name}. Result: {self.currentMessage["result"]}')
             elif self.currentMessage.command == 'end':
                 self._backend.join()
-                self.killTimer(self._timerid)
+                QueueWaiter.instance().deregisterQueue(self._queue_from_backend)
                 try:
                     self.connectionEnded.emit(self.currentMessage['expected'])
                 except Exception as exc:

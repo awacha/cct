@@ -18,8 +18,8 @@ logger.setLevel(logging.INFO)
 
 class DataReduction(QtCore.QObject, Component):
     backend: Optional[multiprocessing.Process] = None
-    queuetobackend: multiprocessing.Queue = None
-    queuefrombackend: multiprocessing.Queue = None
+    queuetobackend: Optional[multiprocessing.Queue] = None
+    queuefrombackend: Optional[multiprocessing.Queue] = None
     datareductionresult= QtCore.pyqtSignal(object)
     submitted: int = 0
     timerinterval: float = 0.1
