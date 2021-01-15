@@ -23,7 +23,7 @@ class Variable:
     def update(self, newvalue: Any) -> bool:
         self.lastquery = None
         self.timestamp = time.monotonic()
-        if (self.lastchange is not None) and (newvalue == self.value):
+        if (self.lastchange is not None) and ((newvalue == self.value) or (newvalue is self.value)):
             return False
         self.previousvalue = self.value
         self.value = newvalue

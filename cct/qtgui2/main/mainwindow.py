@@ -9,8 +9,8 @@ from .devicestatus import DeviceStatus
 from .indicators.accounting import AccountingIndicator
 from .indicators.beamstop import BeamstopIndicator
 from .indicators.lastfsn import LastFSNIndicator
-from .indicators.shutter import ShutterIndicator
 from .indicators.plotindicator import PlotIndicator
+from .indicators.shutter import ShutterIndicator
 from .logviewer_text import LogViewerText
 from .mainwindow_ui import Ui_MainWindow
 from .scripting import Scripting
@@ -19,9 +19,12 @@ from ..devices.genix.genix import GeniXTool
 from ..devices.haakephoenix.haakephoenix import HaakePhoenixDevice
 from ..devices.motors.motorview import MotorView
 from ..devices.pilatus.pilatus import PilatusDetectorUI
+from ..devices.thermometer.se521 import SE521Window
 from ..listing.headerview import HeaderView
 from ..listing.scanview import ScanViewer
+from ..measurement.scan.scan import ScanMeasurement
 from ..measurement.simpleexposure.simpleexposure import SimpleExposure
+from ..measurement.transmission import TransmissionUi
 from ..setup.calibrants.calibrants import Calibrants
 from ..setup.calibration.calibration import Calibration
 from ..setup.geometry.geometry import GeometryEditor
@@ -32,14 +35,12 @@ from ..setup.usermanager.usermanager import UserManager
 from ..tools.capillarysizer import CapillarySizer
 from ..tools.maskeditor.maskeditor import MaskEditor
 from ..tools.samplepositionchecker import SamplePositionChecker
-from ..utils.plotimage import PlotImage
 from ..utils.plotcurve import PlotCurve
+from ..utils.plotimage import PlotImage
 from ..utils.window import WindowRequiresDevices
-from ...core2.instrument.instrument import Instrument
-from ...core2.instrument.components.interpreter import ParsingError
 from ...core2.dataclasses import Exposure, Curve
-from ..measurement.scan.scan import ScanMeasurement
-from ..measurement.transmission import TransmissionUi
+from ...core2.instrument.components.interpreter import ParsingError
+from ...core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -79,6 +80,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionData_reduction': HeaderView,
         'actionScan': ScanMeasurement,
         'actionTransmission': TransmissionUi,
+        'actionThermometer': SE521Window,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]
@@ -117,11 +119,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             action.triggered.connect(self.onActionTriggered)
         self.setWindowTitle(
             f'Credo Control Tool v{pkg_resources.get_distribution("cct").version} User: {self.instrument.auth.username()}')
-        self.accountingindicator = AccountingIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
+        self.accountingindicator = AccountingIndicator(parent=self.centralwidget, instrument=self.instrument,
+                                                       mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.accountingindicator)
         self.lastfsnindicator = LastFSNIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.lastfsnindicator)
-        self.beamstopindicator = BeamstopIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
+        self.beamstopindicator = BeamstopIndicator(parent=self.centralwidget, instrument=self.instrument,
+                                                   mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.beamstopindicator)
         self.shutterindicator = ShutterIndicator(parent=self.centralwidget, instrument=self.instrument, mainwindow=self)
         self.indicatorHorizontalLayout.addWidget(self.shutterindicator)
@@ -244,7 +248,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.commandLineEdit.setPalette(pal)
                 return
 
-    def showPattern(self, exposure: Exposure, keepzoom: bool=False, title: Optional[str]=None):
+    def showPattern(self, exposure: Exposure, keepzoom: bool = False, title: Optional[str] = None):
         if title is None:
             title = f'{exposure.header.prefix}/{exposure.header.fsn}: {exposure.header.title} @ {exposure.header.distance[0]:.2f} mm'
         self.plotimage.setExposure(exposure, keepzoom, title)

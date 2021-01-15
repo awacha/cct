@@ -536,7 +536,7 @@ class DeviceBackend:
         var, varinfo = [(v, vi) for v, vi in zip(self.variables, self.varinfo) if v.name == name][0]
         variablestoquery = [self.getVariable(vname) for vname in varinfo.dependsfrom] if varinfo.dependsfrom else [
             var]
-        for var in variablestoquery:
+        for var in set(variablestoquery):
             if var.lastquery is not None:
                 # this variable has already been queried and no reply received yet, don't schedule another query.
                 var.lastquery = time.monotonic()

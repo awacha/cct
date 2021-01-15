@@ -283,6 +283,7 @@
     <addaction name="actionMotors"/>
     <addaction name="actionVacuum_gauge"/>
     <addaction name="actionTemperature_stage"/>
+    <addaction name="actionThermometer"/>
     <addaction name="separator"/>
     <addaction name="actionDevice_connections"/>
    </widget>
@@ -505,7 +506,7 @@
      <normaloff>:/icons/circulator.svg</normaloff>:/icons/circulator.svg</iconset>
    </property>
    <property name="text">
-    <string>&amp;Temperature stage</string>
+    <string>&amp;Temperature controller</string>
    </property>
    <property name="toolTip">
     <string>Control the temperature regulator</string>
@@ -761,6 +762,14 @@
    </property>
    <property name="toolTip">
     <string>Edit the calibrants database</string>
+   </property>
+  </action>
+  <action name="actionThermometer">
+   <property name="text">
+    <string>Thermometer</string>
+   </property>
+   <property name="toolTip">
+    <string>Open the thermometer window</string>
    </property>
   </action>
  </widget>
