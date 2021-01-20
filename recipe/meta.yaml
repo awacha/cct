@@ -31,6 +31,7 @@ requirements:
     - imageio
     - click
     - colorlog
+    - pyusb
 
   host: *id1
 
@@ -52,6 +53,7 @@ requirements:
     - imageio
     - click
     - colorlog
+    - pyusb
 
 about:
   home: https://github.com/awacha/cct

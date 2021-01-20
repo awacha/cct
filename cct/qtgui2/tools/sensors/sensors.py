@@ -1,6 +1,7 @@
-from ...utils.window import WindowRequiresDevices
 from PyQt5 import QtWidgets
+
 from .sensors_ui import Ui_Form
+from ...utils.window import WindowRequiresDevices
 
 
 class SensorsWindow(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
