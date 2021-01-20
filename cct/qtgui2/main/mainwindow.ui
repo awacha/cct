@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1473</width>
+    <width>1604</width>
     <height>924</height>
    </rect>
   </property>
@@ -248,7 +248,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1473</width>
+     <width>1604</width>
      <height>30</height>
     </rect>
    </property>
@@ -358,6 +358,7 @@
    <addaction name="actionMotors"/>
    <addaction name="actionTemperature_stage"/>
    <addaction name="actionThermometer"/>
+   <addaction name="actionSensors"/>
    <addaction name="separator"/>
    <addaction name="actionScan"/>
    <addaction name="actionSingle_exposure"/>
@@ -775,6 +776,18 @@
    </property>
    <property name="toolTip">
     <string>Open the thermometer window</string>
+   </property>
+  </action>
+  <action name="actionSensors">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/resourceusage.svg</normaloff>:/icons/resourceusage.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Sensors</string>
+   </property>
+   <property name="toolTip">
+    <string>Read sensor values</string>
    </property>
   </action>
  </widget>

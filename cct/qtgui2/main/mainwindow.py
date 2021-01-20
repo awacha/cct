@@ -35,6 +35,7 @@ from ..setup.usermanager.usermanager import UserManager
 from ..tools.capillarysizer import CapillarySizer
 from ..tools.maskeditor.maskeditor import MaskEditor
 from ..tools.samplepositionchecker import SamplePositionChecker
+from ..tools.sensors.sensors import SensorsWindow
 from ..utils.plotcurve import PlotCurve
 from ..utils.plotimage import PlotImage
 from ..utils.window import WindowRequiresDevices
@@ -81,6 +82,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionScan': ScanMeasurement,
         'actionTransmission': TransmissionUi,
         'actionThermometer': SE521Window,
+        'actionSensors': SensorsWindow,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]

@@ -18,6 +18,7 @@ from .components.projects import ProjectManager
 from .components.expose import Exposer
 from .components.datareduction.datareduction import DataReduction
 from .components.transmission import TransmissionMeasurement
+from .components.sensors import Sensors
 from ..config import Config
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ class Instrument(QtCore.QObject):
     projects: ProjectManager
     exposer: Exposer
     transmission: TransmissionMeasurement
+    sensors: Sensors
     stopping: bool = False
     running: bool = False
     shutdown = QtCore.pyqtSignal()
@@ -78,6 +80,7 @@ class Instrument(QtCore.QObject):
             ('exposer', Exposer),
             ('datareduction', DataReduction),
             ('transmission', TransmissionMeasurement),
+            ('sensors', Sensors),
         ]:
             comp = componentclass(config=self.config, instrument=self)
             setattr(self, componentname, comp)
