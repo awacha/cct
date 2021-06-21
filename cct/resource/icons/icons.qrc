@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="icons">
+    <file>motor-where.svg</file>
+    <file>beamstop-config.svg</file>
     <file>thermometer.svg</file>
     <file>results.svg</file>
     <file>metadata.svg</file>
