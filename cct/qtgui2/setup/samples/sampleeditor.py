@@ -2,7 +2,7 @@ import datetime
 import logging
 from typing import Tuple, List, Final, Dict, Optional, Any
 
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 
 from .sampleeditor_ui import Ui_Form
 from .delegates import SampleEditorDelegate
@@ -209,6 +209,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     pass
             finally:
                 widget.blockSignals(False)
+            self.updateLockButtonState(self.instrument.samplestore[samplename], attribute)
 
     def onSelectionChanged(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
         nonemptyselection = len(self.treeView.selectionModel().selectedRows())
@@ -219,7 +220,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             value = getattr(sample, attribute) if sample is not None else None
             logger.debug(f'attribute {attribute}: {value}')
             for i, widget in enumerate(self.widgetsForAttribute(attribute)):
-                widget.setEnabled(sample is not None)
+                widget.setEnabled((sample is not None) and (not sample.isLocked(attribute)))
                 widget.blockSignals(True)
                 if isinstance(widget, QtWidgets.QLineEdit):
                     widget.setText(value if value is not None else '')
@@ -247,11 +248,17 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 else:
                     assert False
                 widget.blockSignals(False)
-            ltb = self.lockToolButton(attribute)
-            ltb.setEnabled(sample is not None)
-            ltb.blockSignals(True)
-            ltb.setChecked(sample.isLocked(attribute) if sample is not None else False)
-            ltb.blockSignals(False)
+            self.updateLockButtonState(sample, attribute)
+
+    def updateLockButtonState(self, sample: Optional[Sample], attribute: str):
+        ltb = self.lockToolButton(attribute)
+        ltb.setEnabled(sample is not None)
+        ltb.blockSignals(True)
+        ltb.setChecked(sample.isLocked(attribute) if sample is not None else False)
+        ltb.setIcon(
+            QtGui.QIcon.fromTheme(
+                'lock' if ((sample is not None) and sample.isLocked(attribute)) else 'unlock'))
+        ltb.blockSignals(False)
 
     def onCurrentSelectionChanged(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
         self.updateEditWidgets(self.currentSample())

@@ -100,15 +100,19 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.updateBeamPosition(beamrow, beamcol)
 
     def saveParameter(self):
+        if self.exposure is None:
+            return
         if self.sender() is self.saveSDDistToolButton:
             self.instrument.geometry.currentpreset.sd = self.sd
             logger.info(f'Updated sample-to-detector distance to {self.sd[0]:.5f} \xb1 {self.sd[1]:.5f} mm')
         elif self.sender() == self.saveBeamXToolButton:
             self.instrument.geometry.currentpreset.beamposy = self.exposure.header.beamposcol
-            logger.info(f'Updated beam column (X) coordinate to {self.exposure.header.beamposcol[0]:.5f} \xb1 {self.exposure.header.beamposcol[1]:.5f} pixel')
+            logger.info(f'Updated beam column (X) coordinate to {self.exposure.header.beamposcol[0]:.5f} \xb1 '
+                        f'{self.exposure.header.beamposcol[1]:.5f} pixel')
         elif self.sender() == self.saveBeamYToolButton:
             self.instrument.geometry.currentpreset.beamposx = self.exposure.header.beamposrow
-            logger.info(f'Updated beam row (Y) coordinate to {self.exposure.header.beamposrow[0]:.5f} \xb1 {self.exposure.header.beamposrow[1]:.5f} pixel')
+            logger.info(f'Updated beam row (Y) coordinate to {self.exposure.header.beamposrow[0]:.5f} \xb1 '
+                        f'{self.exposure.header.beamposrow[1]:.5f} pixel')
         else:
             assert False
         self.sender().setEnabled(False)
@@ -212,7 +216,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.plotCalibrationLine()
 
     def fitPeak(self):
-        if self.curve is None:
+        if (self.curve is None) or (self.exposure is None):
             return
         xmin, xmax, ymin, ymax = self.plotcurve.getRange()
         curve = self.curve.trim(xmin, xmax, ymin, ymax, bypixel=True)
@@ -300,6 +304,8 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.selectCalibrantForExposure()
 
     def findCenter(self):
+        if (self.exposure is None) or (self.curve is None):
+            return
         xmin, xmax, ymin, ymax = self.plotcurve.getRange()
         logger.debug(f'Range: {xmin=}, {xmax=}, {ymin=}, {ymax=}')
         if self.curve is None:
@@ -314,6 +320,9 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
             *findbeam(algorithm, self.exposure, rmin, rmax, 0, 0, eps=self.finiteDifferenceDeltaDoubleSpinBox.value()))
 
     def updateBeamPosition(self, row: Tuple[float, float], col: Tuple[float, float]):
+        if self.exposure is None:
+            # no exposure loaded yet
+            return
         self.exposure.header.beamposrow = row
         self.exposure.header.beamposcol = col
         self.setExposure(self.exposure)

@@ -33,9 +33,27 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
     def gotoLast(self):
         self.spinBox.setValue(self.spinBox.maximum())
 
+    def setInvalid(self, invalid: bool):
+        self.spinBox.setEnabled(not invalid)
+        if invalid:
+            self.spinBox.setRange(0, 0)
+        self.firstToolButton.setEnabled(not invalid)
+        self.lastToolButton.setEnabled(not invalid)
+        self.reloadToolButton.setEnabled(not invalid)
+
     def onPrefixChanged(self):
+        if self.comboBox.currentIndex() < 0:
+            self.setInvalid(True)
+            return
+        else:
+            self.setInvalid(False)
         prefix = self.comboBox.currentText()
-        self.spinBox.setRange(0, Instrument.instance().io.lastfsn(prefix))
+        lastfsn = Instrument.instance().io.lastfsn(prefix)
+        if lastfsn is None:
+            self.setInvalid(True)
+        else:
+            self.setInvalid(False)
+            self.spinBox.setRange(0, Instrument.instance().io.lastfsn(prefix))
 
     def onNextFSNChanged(self, prefix: str, fsn: int):
         if prefix == self.comboBox.currentText():

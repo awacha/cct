@@ -20,6 +20,8 @@ class PlotIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.plotImageToolButton.clicked.connect(self.onPlotImage)
         self.firstFSNTtoolButton.clicked.connect(self.onGoToFirstFSN)
         self.lastFSNToolButton.clicked.connect(self.onGoToLastFSN)
+        self.fsnSpinBox.setRange(0, 0)
+        self.fsnSpinBox.setEnabled(False)
         self.repopulatePrefixComboBox()
 
     def repopulatePrefixComboBox(self):
@@ -31,6 +33,9 @@ class PlotIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
             self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText(current))
             if self.prefixComboBox.currentIndex() < 0:
                 self.prefixComboBox.setCurrentIndex(0)
+            self.fsnSpinBox.setEnabled(self.prefixComboBox.currentIndex() >= 0)
+            self.plotCurveToolButton.setEnabled(self.prefixComboBox.currentIndex() >= 0)
+            self.plotImageToolButton.setEnabled(self.prefixComboBox.currentIndex() >= 0)
         finally:
             self.prefixComboBox.blockSignals(False)
         self.onPrefixChanged()
@@ -42,6 +47,9 @@ class PlotIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
     def onPrefixChanged(self):
         if self.prefixComboBox.currentIndex() < 0:
             return
+        self.fsnSpinBox.setEnabled(self.prefixComboBox.currentIndex() >= 0)
+        self.plotCurveToolButton.setEnabled(self.prefixComboBox.currentIndex() >= 0)
+        self.plotImageToolButton.setEnabled(self.prefixComboBox.currentIndex() >= 0)
         self.fsnSpinBox.setRange(0, self.instrument.io.lastfsn(self.prefixComboBox.currentText()))
 
     def onPlotCurve(self):

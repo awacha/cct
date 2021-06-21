@@ -1,6 +1,7 @@
 import logging
 import logging.handlers
 import multiprocessing
+import os
 import pickle
 import sys
 import traceback
@@ -47,7 +48,7 @@ def main():
 
 @main.command()
 @click.option('--config', '-c', default='config/cct.pickle', help='Config file',
-              type=click.Path(exists=True, file_okay=True, dir_okay=False, writable=False, readable=True,
+              type=click.Path(file_okay=True, dir_okay=False, writable=True, readable=True,
                               allow_dash=False, ))
 @click.option('--online/--offline', default=False, help='Connect to devices')
 @click.option('--root/--no-root', '-r', default=False, help='Skip login', type=bool, is_flag=True)
@@ -55,6 +56,7 @@ def main():
               help='Die on an unhandled exception (for debugging)', type=bool, is_flag=True)
 def daq(config: str, online: bool, root: bool, die_on_error: bool):
     """Open the data acquisition GUI mode"""
+    os.makedirs('log', exist_ok=True)
     handler = logging.handlers.TimedRotatingFileHandler('log/cct4.log', 'D', 1, encoding='utf-8', backupCount=0)
     handler.addFilter(logging.Filter('cct'))
     formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
@@ -68,7 +70,9 @@ def daq(config: str, online: bool, root: bool, die_on_error: bool):
     app = QtWidgets.QApplication(sys.argv)
     logger.debug('Instantiating Instrument()')
     instrument = Instrument(configfile=config)
+    logger.debug('Instrument() done.')
     if not root:
+        logger.debug('Opening login dialog')
         logindialog = LoginDialog()
         logindialog.setOffline(not online)
         while True:
