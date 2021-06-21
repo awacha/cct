@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1604</width>
+    <width>1679</width>
     <height>924</height>
    </rect>
   </property>
@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../../resource/icons/icons.qrc">
-    <normaloff>:/icons/cctlogo.svg</normaloff>:/icons/cctlogo.svg</iconset>
+    <normaloff>:/icons/cct4logo.svg</normaloff>:/icons/cct4logo.svg</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -248,7 +248,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1604</width>
+     <width>1679</width>
      <height>30</height>
     </rect>
    </property>
