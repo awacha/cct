@@ -22,7 +22,7 @@ from .components.sensors import Sensors
 from ..config import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Instrument(QtCore.QObject):
@@ -62,7 +62,10 @@ class Instrument(QtCore.QObject):
         except FileNotFoundError:
             logger.warning(f'Config file {configfile} does not exist.')
             pass
-
+        except EOFError:
+            logger.warning(f'Empty or invalid config file {configfile}.')
+            pass
+        logger.debug('Initializing components')
         # initializing components
         self.components = {}
         for componentname, componentclass in [

@@ -222,7 +222,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
                                   self.index(row, column, QtCore.QModelIndex()))
         except IndexError:
             pass
-        self.sampleEdited.emit(sample.title, attribute, getattr(sample.title, attribute))
+        self.sampleEdited.emit(sample.title, attribute, getattr(sample, attribute))
         self.saveToConfig()
 
     def updateSample(self, samplename: str, attribute: str, value: Any) -> bool:
@@ -338,6 +338,12 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         return self.instrument.motors.sample_y.name
 
     def moveToSample(self, samplename: str, direction='both'):
+        try:
+            xmotor = self.xmotor()
+            ymotor = self.ymotor()
+        except KeyError as ke:
+            # motor not found
+            raise
         logger.debug(f'Moving to sample {samplename}')
         if self.xmotor().isMoving() or self.ymotor().isMoving():
             raise RuntimeError('Cannot move sample: motors are not idle.')
