@@ -1,16 +1,18 @@
 import logging
 from typing import Optional
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets
 
-from .motorview_ui import Ui_Form
 from .addmotordialog import AddMotorDialog
-from .motorcalibration import MotorCalibrationDialog
-from ...utils.window import WindowRequiresDevices
-from ....core2.instrument.components.motors import Motor
-from ....core2.instrument.components.auth.privilege import Privilege
 from .autoadjust import AutoAdjustMotor
-
+from .motorcalibration import MotorCalibrationDialog
+from .motormover import MotorMover
+from .motorview_ui import Ui_Form
+from .samplemover import SampleMover
+from ...utils.window import WindowRequiresDevices
+from ...devices.beamstop import BeamstopIndicator
+from .beamstopcalibrator import BeamStopCalibrator
+from ....core2.instrument.components.auth.privilege import Privilege
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -19,6 +21,10 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     addMotorDialog: Optional[AddMotorDialog] = None
     motorCalibrationDialog: Optional[MotorCalibrationDialog] = None
     required_motors = ['*']
+    motormover: MotorMover
+    samplemover: SampleMover
+    beamstop: BeamstopIndicator
+    beamstopcalibrator: BeamStopCalibrator
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -27,99 +33,32 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
         self.treeView.setModel(self.instrument.motors)
-        self.motorNameComboBox.currentIndexChanged.connect(self.onMotorNameChanged)
-        self.relativeMovementCheckBox.toggled.connect(self.onRelativeCheckBoxToggled)
-        self.motorTargetDoubleSpinBox.lineEdit().returnPressed.connect(self.onMoveMotorClicked)
-        self.motorNameComboBox.addItems([m.name for m in self.instrument.motors.motors])
-        self.motorNameComboBox.setCurrentIndex(0)
-        self.moveMotorPushButton.clicked.connect(self.onMoveMotorClicked)
         self.addMotorToolButton.clicked.connect(self.addMotor)
         self.removeMotorToolButton.clicked.connect(self.removeMotor)
         self.calibrateMotorToolButton.clicked.connect(self.calibrateMotor)
         self.autoAdjustMotorToolButton.clicked.connect(self.autoAdjustMotor)
-        self.beamStopInXDoubleSpinBox.setValue(self.instrument.beamstop.inPosition()[0])
-        self.beamStopInYDoubleSpinBox.setValue(self.instrument.beamstop.inPosition()[1])
-        self.beamStopOutXDoubleSpinBox.setValue(self.instrument.beamstop.outPosition()[0])
-        self.beamStopOutYDoubleSpinBox.setValue(self.instrument.beamstop.outPosition()[1])
-        self.calibrateBeamStopInPushButton.clicked.connect(self.calibrateBeamStopIn)
-        self.calibrateBeamStopOutPushButton.clicked.connect(self.calibrateBeamStopOut)
-        self.moveBeamStopInPushButton.clicked.connect(self.instrument.beamstop.moveIn)
-        self.moveBeamStopOutPushButton.clicked.connect(self.instrument.beamstop.moveOut)
-        self.beamStopOutYDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
-        self.beamStopOutXDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
-        self.beamStopInYDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
-        self.beamStopInXDoubleSpinBox.valueChanged.connect(self.onBeamStopCoordinateSpinBoxChanged)
-        self.instrument.samplestore.sampleListChanged.connect(self.repopulateSampleList)
-        self.movetoSampleToolButton.clicked.connect(self.moveToSample)
-        self.movetoSampleXToolButton.clicked.connect(self.moveToSample)
-        self.movetoSampleYToolButton.clicked.connect(self.moveToSample)
-        self.repopulateSampleList()
+        self.motormover = MotorMover(parent=self.motorMoverGroupBox, mainwindow=self.mainwindow,
+                                     instrument=self.instrument)
+        self.motorMoverGroupBox.setLayout(QtWidgets.QVBoxLayout())
+        self.motorMoverGroupBox.layout().addWidget(self.motormover)
+        self.motormover.layout().setContentsMargins(0, 0, 0, 0)
+        self.samplemover = SampleMover(parent=self.sampleMoverGroupBox, mainwindow=self.mainwindow,
+                                       instrument=self.instrument)
+        self.sampleMoverGroupBox.setLayout(QtWidgets.QVBoxLayout())
+        self.sampleMoverGroupBox.layout().addWidget(self.samplemover)
+        self.samplemover.layout().setContentsMargins(0, 0, 0, 0)
+        self.beamstop = BeamstopIndicator(parent=self.beamStopMoverGroupBox, mainwindow=self.mainwindow,
+                                          instrument=self.instrument)
+        self.beamStopMoverGroupBox.setLayout(QtWidgets.QVBoxLayout())
+        self.beamStopMoverGroupBox.layout().addWidget(self.beamstop)
+        self.beamstop.layout().setContentsMargins(0, 0, 0, 0)
+        self.beamstop.setFrameStyle(QtWidgets.QFrame.NoFrame)
+        self.beamstopcalibrator = BeamStopCalibrator(parent=self.beamStopCalibratorGroupBox, mainwindow=self.mainwindow,
+                                                     instrument=self.instrument)
+        self.beamStopCalibratorGroupBox.setLayout(QtWidgets.QVBoxLayout())
+        self.beamStopCalibratorGroupBox.layout().addWidget(self.beamstopcalibrator)
+        self.beamstopcalibrator.layout().setContentsMargins(0,0,0,0)
 
-    def moveToSample(self):
-        if self.sampleNameComboBox.currentIndex() < 0:
-            return
-        for widget in [self.movetoSampleXToolButton, self.movetoSampleYToolButton, self.movetoSampleToolButton, self.sampleNameComboBox]:
-            widget.setEnabled(False)
-        self.instrument.samplestore.movingFinished.connect(self.onMovingToSampleFinished)
-        if self.sender() is self.movetoSampleXToolButton:
-            self.instrument.samplestore.moveToSample(self.sampleNameComboBox.currentText(), direction='x')
-        elif self.sender() is self.movetoSampleYToolButton:
-            self.instrument.samplestore.moveToSample(self.sampleNameComboBox.currentText(), direction='y')
-        elif self.sender() is self.movetoSampleToolButton:
-            self.instrument.samplestore.moveToSample(self.sampleNameComboBox.currentText(), direction='both')
-        logger.debug('Moving to sample started.')
-
-    def onMovingToSampleFinished(self, success:bool, samplename: str):
-        for widget in [self.movetoSampleXToolButton, self.movetoSampleYToolButton, self.movetoSampleToolButton, self.sampleNameComboBox]:
-            widget.setEnabled(True)
-        self.instrument.samplestore.movingFinished.disconnect(self.onMovingToSampleFinished)
-        logger.debug('Moving to sample finished')
-
-    def repopulateSampleList(self):
-        previous = self.sampleNameComboBox.currentText()
-        self.sampleNameComboBox.blockSignals(True)
-        self.sampleNameComboBox.clear()
-        self.sampleNameComboBox.addItems(sorted([sample.title for sample in self.instrument.samplestore]))
-        self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(previous))
-        self.sampleNameComboBox.blockSignals(False)
-
-    def onBeamStopCoordinateSpinBoxChanged(self):
-        if self.sender() is self.beamStopInXDoubleSpinBox:
-            inpos = self.instrument.beamstop.inPosition()
-            self.instrument.beamstop.calibrateIn(self.sender().value(), inpos[1])
-        elif self.sender() is self.beamStopInYDoubleSpinBox:
-            inpos = self.instrument.beamstop.inPosition()
-            self.instrument.beamstop.calibrateIn(inpos[0], self.sender().value())
-        elif self.sender() is self.beamStopOutXDoubleSpinBox:
-            outpos = self.instrument.beamstop.outPosition()
-            self.instrument.beamstop.calibrateOut(self.sender().value(), outpos[1])
-        elif self.sender() is self.beamStopOutYDoubleSpinBox:
-            outpos = self.instrument.beamstop.outPosition()
-            self.instrument.beamstop.calibrateOut(outpos[0], self.sender().value())
-
-    def _calibrateBeamstop(self, out:bool=False):
-        posx, posy = self.instrument.motors.beamstop_x.where(), self.instrument.motors.beamstop_y.where()
-        if QtWidgets.QMessageBox.question(
-                self, 'Confirm beamstop calibration',
-                f'Do you really want to calibrate the beamstop {"out" if out else "in"} position '
-                f'to ({posx:.4f}, {posy:.4f})?'):
-            widgets = [self.beamStopOutXDoubleSpinBox, self.beamStopOutYDoubleSpinBox] if out else [self.beamStopInXDoubleSpinBox, self.beamStopInYDoubleSpinBox]
-            for w in widgets:
-                w.blockSignals(True)
-            widgets[0].setValue(posx)
-            widgets[1].setValue(posy)
-            if out:
-                self.instrument.beamstop.calibrateOut(posx, posy)
-            else:
-                self.instrument.beamstop.calibrateIn(posx, posy)
-            for w in widgets:
-                w.blockSignals(False)
-
-    def calibrateBeamStopIn(self):
-        self._calibrateBeamstop(False)
-
-    def calibrateBeamStopOut(self):
-        self._calibrateBeamstop(True)
 
     def addMotor(self):
         if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
@@ -149,7 +88,8 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if not index.isValid():
             return
         if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
-            QtWidgets.QMessageBox.critical(self, 'Insufficient privileges', 'Cannot remove motor: not enough privileges.')
+            QtWidgets.QMessageBox.critical(self, 'Insufficient privileges',
+                                           'Cannot remove motor: not enough privileges.')
             return
         self.instrument.motors.removeMotor(self.instrument.motors[index.row()].name)
 
@@ -183,63 +123,6 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if win is None:
             return
         win.setMotor(self.instrument.motors[self.treeView.selectionModel().currentIndex().row()].name)
-
-    def onRelativeCheckBoxToggled(self, toggled: Optional[bool] = None):
-        if self.motorNameComboBox.currentIndex() < 0:
-            return
-        motor = self.instrument.motors[self.motorNameComboBox.currentText()]
-        actualposition = motor['actualposition']
-        left = motor['softleft']
-        right = motor['softright']
-        if toggled is None:
-            toggled = self.relativeMovementCheckBox.isChecked()
-        if toggled:
-            self.motorTargetDoubleSpinBox.setRange(left - actualposition, right - actualposition)
-            self.motorTargetDoubleSpinBox.setValue(0)
-        else:
-            self.motorTargetDoubleSpinBox.setRange(left, right)
-            self.motorTargetDoubleSpinBox.setValue(actualposition)
-
-    def onMotorNameChanged(self, currentindex: int):
-        self.onRelativeCheckBoxToggled()  # this ensures setting the target spinbox limits and value.
-
-    def onMotorStarted(self, startposition: float):
-        motor = self.sender()
-        assert isinstance(motor, Motor)
-        logger.debug(f'Motor {motor.name} started')
-        if motor.name == self.motorNameComboBox.currentText():
-            self.moveMotorPushButton.setText('Stop')
-            self.moveMotorPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/stop.svg")))
-            self.motorNameComboBox.setEnabled(False)
-            self.motorTargetDoubleSpinBox.setEnabled(False)
-            self.relativeMovementCheckBox.setEnabled(False)
-
-    def onMotorPositionChanged(self, newposition: float):
-        motor = self.sender()
-        assert isinstance(motor, Motor)
-        if motor.name == self.motorNameComboBox.currentText():
-            self.onRelativeCheckBoxToggled()
-
-    def onMotorStopped(self, success: bool, endposition: float):
-        motor = self.sender()
-        assert isinstance(motor, Motor)
-        logger.debug(f'Motor {motor.name} stopped')
-        if motor.name == self.motorNameComboBox.currentText():
-            self.moveMotorPushButton.setText('Move')
-            self.moveMotorPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
-            self.motorNameComboBox.setEnabled(True)
-            self.motorTargetDoubleSpinBox.setEnabled(True)
-            self.relativeMovementCheckBox.setEnabled(True)
-
-    def onMoveMotorClicked(self):
-        motor = self.instrument.motors[self.motorNameComboBox.currentText()]
-        if self.moveMotorPushButton.text() == 'Move':
-            if self.relativeMovementCheckBox.isChecked():
-                motor.moveRel(self.motorTargetDoubleSpinBox.value())
-            else:
-                motor.moveTo(self.motorTargetDoubleSpinBox.value())
-        elif self.moveMotorPushButton.text() == 'Stop':
-            motor.stop()
 
     def onCommandResult(self, name: str, success: str, message: str):
         pass

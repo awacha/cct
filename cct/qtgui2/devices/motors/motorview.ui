@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>998</width>
+    <width>1086</width>
     <height>464</height>
    </rect>
   </property>
@@ -144,225 +144,32 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QGroupBox" name="moveMotorGroupBox">
+      <widget class="QGroupBox" name="motorMoverGroupBox">
        <property name="title">
         <string>Move motor</string>
        </property>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>Target:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_4">
-          <property name="text">
-           <string>Motor name:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="motorNameComboBox"/>
-        </item>
-        <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="motorTargetDoubleSpinBox">
-          <property name="decimals">
-           <number>4</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QCheckBox" name="relativeMovementCheckBox">
-          <property name="text">
-           <string>Relative</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="2">
-         <widget class="QPushButton" name="moveMotorPushButton">
-          <property name="text">
-           <string>Move</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="groupBox_2">
+      <widget class="QGroupBox" name="sampleMoverGroupBox">
        <property name="title">
         <string>Sample</string>
        </property>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="0">
-         <widget class="QComboBox" name="sampleNameComboBox"/>
-        </item>
-        <item row="2" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QLabel" name="label_9">
-            <property name="text">
-             <string>Move:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="movetoSampleXToolButton">
-            <property name="text">
-             <string>X</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="movetoSampleYToolButton">
-            <property name="text">
-             <string>Y</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QToolButton" name="movetoSampleToolButton">
-            <property name="text">
-             <string>X &amp;&amp; Y</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="groupBox_3">
+      <widget class="QGroupBox" name="beamStopMoverGroupBox">
        <property name="title">
         <string>Beam stop</string>
        </property>
-       <layout class="QGridLayout" name="gridLayout_4">
-        <item row="0" column="5">
-         <widget class="QPushButton" name="calibrateBeamStopInPushButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Set</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="6">
-         <widget class="QPushButton" name="moveBeamStopOutPushButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Move out</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="5">
-         <widget class="QPushButton" name="calibrateBeamStopOutPushButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Set</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="6">
-         <widget class="QPushButton" name="moveBeamStopInPushButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Move in</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QDoubleSpinBox" name="beamStopInXDoubleSpinBox">
-          <property name="decimals">
-           <number>4</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>x=</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="2">
-         <widget class="QDoubleSpinBox" name="beamStopOutXDoubleSpinBox">
-          <property name="decimals">
-           <number>4</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>In position:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="4">
-         <widget class="QDoubleSpinBox" name="beamStopInYDoubleSpinBox">
-          <property name="decimals">
-           <number>4</number>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>x=</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Out position:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="4">
-         <widget class="QDoubleSpinBox" name="beamStopOutYDoubleSpinBox">
-          <property name="decimals">
-           <number>4</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3">
-         <widget class="QLabel" name="label_7">
-          <property name="text">
-           <string>y=</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="3">
-         <widget class="QLabel" name="label_8">
-          <property name="text">
-           <string>y=</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="beamStopCalibratorGroupBox">
+       <property name="title">
+        <string>Calibrate beam stop</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_3"/>
       </widget>
      </item>
     </layout>
@@ -375,19 +182,6 @@
   <tabstop>removeMotorToolButton</tabstop>
   <tabstop>calibrateMotorToolButton</tabstop>
   <tabstop>autoAdjustMotorToolButton</tabstop>
-  <tabstop>motorNameComboBox</tabstop>
-  <tabstop>relativeMovementCheckBox</tabstop>
-  <tabstop>motorTargetDoubleSpinBox</tabstop>
-  <tabstop>moveMotorPushButton</tabstop>
-  <tabstop>sampleNameComboBox</tabstop>
-  <tabstop>beamStopInXDoubleSpinBox</tabstop>
-  <tabstop>beamStopInYDoubleSpinBox</tabstop>
-  <tabstop>calibrateBeamStopInPushButton</tabstop>
-  <tabstop>moveBeamStopInPushButton</tabstop>
-  <tabstop>beamStopOutXDoubleSpinBox</tabstop>
-  <tabstop>beamStopOutYDoubleSpinBox</tabstop>
-  <tabstop>calibrateBeamStopOutPushButton</tabstop>
-  <tabstop>moveBeamStopOutPushButton</tabstop>
  </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>
