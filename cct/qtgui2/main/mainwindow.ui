@@ -295,6 +295,7 @@
     <addaction name="actionSingle_exposure"/>
     <addaction name="actionTransmission"/>
     <addaction name="actionScript"/>
+    <addaction name="actionBeam_Monitor"/>
     <addaction name="actionFirstPrinciplesCalibration"/>
    </widget>
    <widget class="QMenu" name="menu_Tools">
@@ -788,6 +789,18 @@
    </property>
    <property name="toolTip">
     <string>Read sensor values</string>
+   </property>
+  </action>
+  <action name="actionBeam_Monitor">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/beammonitor.svg</normaloff>:/icons/beammonitor.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Beam Monitor</string>
+   </property>
+   <property name="toolTip">
+    <string>Start the beam monitor tool</string>
    </property>
   </action>
  </widget>

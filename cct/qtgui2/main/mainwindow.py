@@ -25,6 +25,7 @@ from ..listing.scanview import ScanViewer
 from ..measurement.scan.scan import ScanMeasurement
 from ..measurement.simpleexposure.simpleexposure import SimpleExposure
 from ..measurement.transmission import TransmissionUi
+from ..measurement.monitor import MonitorMeasurement
 from ..setup.calibrants.calibrants import Calibrants
 from ..setup.calibration.calibration import Calibration
 from ..setup.geometry.geometry import GeometryEditor
@@ -83,6 +84,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionTransmission': TransmissionUi,
         'actionThermometer': SE521Window,
         'actionSensors': SensorsWindow,
+        'actionBeam_Monitor': MonitorMeasurement,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]
