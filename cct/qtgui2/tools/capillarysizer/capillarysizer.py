@@ -1,7 +1,7 @@
-from typing import Optional, Tuple
 import logging
+from typing import Optional, Tuple
 
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5 import QtWidgets
 from matplotlib.axes import Axes, np
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -54,18 +54,26 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.samplestore.sampleListChanged.connect(self.repopulateSampleComboBox)
         self.updateCenterToolButton.clicked.connect(self.saveCenter)
         self.updateThicknessToolButton.clicked.connect(self.saveThickness)
-        self.updateCenterToolButton.setIcon(QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
-        self.updateThicknessToolButton.setIcon(QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
+        self.updateCenterToolButton.setIcon(
+            QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
+        self.updateThicknessToolButton.setIcon(
+            QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
         self.repopulateSampleComboBox()
         self.instrument.scan.lastscanchanged.connect(self.onLastScanChanged)
-        self.scanIndexSpinBox.setRange(self.instrument.scan.firstscan(), self.instrument.scan.lastscan())
+        if self.instrument.scan.firstscan() is None:
+            self.scanIndexSpinBox.setEnabled(False)
+        else:
+            self.scanIndexSpinBox.setRange(self.instrument.scan.firstscan(), self.instrument.scan.lastscan())
         self.derivativeToolButton.toggled.connect(self.replot)
-        self.scanIndexSpinBox.setValue(self.instrument.scan.lastscan())
+        if self.instrument.scan.lastscan() is not None:
+            self.scanIndexSpinBox.setValue(self.instrument.scan.lastscan())
         self.signalNameComboBox.setCurrentIndex(0)
         self.reloadToolButton.clicked.connect(self.replot)
         self.replot()
 
     def fitPeak(self):
+        if self.line is None:
+            return
         x = self.line.get_xdata()
         y = self.line.get_ydata()
         xmin, xmax, ymin, ymax = self.axes.axis()
@@ -76,9 +84,10 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.sender() == self.fitNegativeToolButton:
             y = -y
         try:
-            pars, covar, peakfunc = fitpeak(x[idx], y[idx], y[idx]**0.5, None, PeakType.Lorentzian)
+            pars, covar, peakfunc = fitpeak(x[idx], y[idx], y[idx] ** 0.5, None, PeakType.Lorentzian)
         except ValueError as ve:
-            QtWidgets.QMessageBox.critical(self, 'Error while fitting', f'Cannot fit peak, please try another range. The error message was: {ve}')
+            QtWidgets.QMessageBox.critical(self, 'Error while fitting',
+                                           f'Cannot fit peak, please try another range. The error message was: {ve}')
             return
         logger.debug(f'Peak parameters: {pars}')
         logger.debug(f'Covariance matrix: {covar}')
@@ -114,8 +123,12 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.recalculate()
 
     def onLastScanChanged(self):
-        self.scanIndexSpinBox.setMaximum(self.instrument.scan.lastscan())
-        self.scanIndexSpinBox.setMinimum(self.instrument.scan.firstscan())
+        if self.instrument.scan.firstscan() is not None:
+            self.scanIndexSpinBox.setMaximum(self.instrument.scan.lastscan())
+            self.scanIndexSpinBox.setMinimum(self.instrument.scan.firstscan())
+            self.scanIndexSpinBox.setEnabled(True)
+        else:
+            self.scanIndexSpinBox.setEnabled(False)
 
     def repopulateSampleComboBox(self):
         currentsample = self.sampleNameComboBox.currentText()
@@ -143,10 +156,11 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.sampleNameComboBox.currentIndex() < 0:
             return
         sample = self.instrument.samplestore[self.sampleNameComboBox.currentText()]
-        if self.instrument.samplestore.xmotorname() == self.scan.motorname:
-            self.oldPositionLabel.setText(f'{sample.positionx[0]:.4f} \xb1 {sample.positionx[1]:.4f}')
-        elif self.instrument.samplestore.ymotorname() == self.scan.motorname:
-            self.oldPositionLabel.setText(f'{sample.positiony[0]:.4f} \xb1 {sample.positiony[1]:.4f}')
+        if self.instrument.samplestore.hasMotors():
+            if self.instrument.samplestore.xmotorname() == self.scan.motorname:
+                self.oldPositionLabel.setText(f'{sample.positionx[0]:.4f} \xb1 {sample.positionx[1]:.4f}')
+            elif self.instrument.samplestore.ymotorname() == self.scan.motorname:
+                self.oldPositionLabel.setText(f'{sample.positiony[0]:.4f} \xb1 {sample.positiony[1]:.4f}')
         self.oldThicknessLabel.setText(f'{sample.thickness[0] * 10.0:.4f} \xb1 {sample.thickness[1] * 10.0:.4f} mm')
 
     def scanIndexChanged(self, value: int):
@@ -195,32 +209,55 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def saveCenter(self):
         positionval = 0.5 * (self.positive[0] + self.negative[0])
         positionerr = 0.5 * (self.positive[1] ** 2 + self.negative[1] ** 2) ** 0.5
-        try:
-            if self.instrument.samplestore.xmotorname() == self.scan.motorname:
-                self.instrument.samplestore.updateSample(self.sampleNameComboBox.currentText(), 'positionx', (positionval, positionerr))
-            elif self.instrument.samplestore.ymotorname() == self.scan.motorname:
-                self.instrument.samplestore.updateSample(self.sampleNameComboBox.currentText(), 'positiony', (positionval, positionerr))
+        if not self.instrument.samplestore.hasMotors():
+            # ask the user which direction this is
+            msgbox = QtWidgets.QMessageBox(self.window())
+            msgbox.setIcon(QtWidgets.QMessageBox.Question)
+            msgbox.setWindowTitle('Select direction')
+            msgbox.setText('Please select X or Y direction to save the determined sample center to:')
+            btnX=msgbox.addButton('X', QtWidgets.QMessageBox.YesRole)
+            btnY=msgbox.addButton('Y', QtWidgets.QMessageBox.NoRole)
+            msgbox.addButton(QtWidgets.QMessageBox.Cancel)
+            result = msgbox.exec_()
+            logger.debug(f'{result=}')
+            if msgbox.clickedButton() == btnX:
+                xcoordinate = True
+            elif msgbox.clickedButton() == btnY:
+                xcoordinate = False
             else:
-                return
-        except ValueError:
-            QtWidgets.QMessageBox.critical(
-                self, 'Parameter locked',
-                f'Cannot set position for sample {self.sampleNameComboBox.currentText()}: this parameter has been set read-only!')
+                xcoordinate = None
+        elif self.instrument.samplestore.xmotorname() == self.scan.motorname:
+            xcoordinate = True
+        elif self.instrument.samplestore.ymotorname() == self.scan.motorname:
+            xcoordinate = False
+        else:
+            xcoordinate = None
+        if xcoordinate is None:
             return
-        logger.info(
-            f'Updated {"X" if self.instrument.samplestore.xmotorname() == self.scan.motorname else "Y"} '
-            f'position of sample {self.sampleNameComboBox.currentText()} to {positionval:.4f} \xb1 {positionerr:.4f}.')
+        else:
+            try:
+                self.instrument.samplestore.updateSample(self.sampleNameComboBox.currentText(),
+                                                         'positionx' if xcoordinate else 'positiony',
+                                                         (positionval, positionerr))
+                logger.info(
+                    f'Updated {"X" if xcoordinate else "Y"} '
+                    f'position of sample {self.sampleNameComboBox.currentText()} to {positionval:.4f} \xb1 {positionerr:.4f}.')
+            except ValueError:
+                QtWidgets.QMessageBox.critical(
+                    self, 'Parameter locked',
+                    f'Cannot set position for sample {self.sampleNameComboBox.currentText()}: this parameter has been set read-only!')
 
     def saveThickness(self):
         thicknessval = abs(self.positive[0] - self.negative[0])
         thicknesserr = (self.positive[1] ** 2 + self.negative[1] ** 2) ** 0.5
         sample = self.instrument.samplestore[self.sampleNameComboBox.currentText()]
         try:
-            sample.thickness = (thicknessval/10, thicknesserr/10)
+            sample.thickness = (thicknessval / 10, thicknesserr / 10)
         except ValueError:
             QtWidgets.QMessageBox.critical(
                 self, 'Parameter locked',
                 f'Cannot set thickness for sample {sample.title}: this parameter has been set read-only!')
             return
-        self.instrument.samplestore.updateSample(sample.title, sample)
-        logger.info(f'Updated thickness of sample {sample.title} to {sample.thickness[0]:.4f} \xb1 {sample.thickness[1]:.4f} cm.')
+        self.instrument.samplestore.updateSample(sample.title, 'thickness', sample.thickness)
+        logger.info(
+            f'Updated thickness of sample {sample.title} to {sample.thickness[0]:.4f} \xb1 {sample.thickness[1]:.4f} cm.')

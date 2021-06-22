@@ -325,6 +325,15 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             return None
         return self[self._currentsample]
 
+    def hasMotors(self) -> bool:
+        try:
+            self.xmotor()
+            self.ymotor()
+        except KeyError:
+            return False
+        else:
+            return True
+
     def xmotor(self) -> Motor:
         return self.instrument.motors.sample_x
 

@@ -221,8 +221,8 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
     def nextscan(self) -> int:
         return self._nextscan
 
-    def firstscan(self) -> int:
-        return min(self._scans)
+    def firstscan(self) -> Optional[int]:
+        return min(self._scans) if self._scans else None
 
     def __getitem__(self, item) -> Scan:
         return self._scans[item]

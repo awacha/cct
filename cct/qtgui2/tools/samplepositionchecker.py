@@ -60,8 +60,12 @@ class SamplePositionChecker(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         texts = []
         for x, y, title in zip(xdata, ydata, selected):
             texts.append(self.axes.text(x, y, title, fontsize=self.labelSizeHorizontalSlider.value()))
-        self.axes.set_xlabel(self.instrument.samplestore.xmotorname())
-        self.axes.set_ylabel(self.instrument.samplestore.ymotorname())
+        if self.instrument.samplestore.hasMotors():
+            self.axes.set_xlabel(self.instrument.samplestore.xmotorname())
+            self.axes.set_ylabel(self.instrument.samplestore.ymotorname())
+        else:
+            self.axes.set_xlabel("Sample X motor of unknown name")
+            self.axes.set_ylabel("Sample Y motor of unknown name")
         self.axes.grid(True, which='both')
         self.axes.axis('equal')
         self.flipPlot()

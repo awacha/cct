@@ -31,10 +31,13 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.model = HeaderViewModel()
         self.model.loading.connect(self.onHeadersLoading)
         self.headersTreeView.setModel(self.model)
-        self.firstFSNSpinBox.setMinimum(0)
-        self.firstFSNSpinBox.setMaximum(self.instrument.io.lastfsn(self.instrument.config['path']['prefixes']['crd']))
-        self.lastFSNSpinBox.setMinimum(0)
-        self.lastFSNSpinBox.setMaximum(self.instrument.io.lastfsn(self.instrument.config['path']['prefixes']['crd']))
+        lastfsn = self.instrument.io.lastfsn(self.instrument.config['path']['prefixes']['crd'])
+        if lastfsn is None:
+            self.firstFSNSpinBox.setEnabled(False)
+            self.lastFSNSpinBox.setEnabled(False)
+        else:
+            self.firstFSNSpinBox.setRange(0, lastfsn)
+            self.lastFSNSpinBox.setRange(0, lastfsn)
         self.instrument.io.lastFSNChanged.connect(self.onLastFSNChanged)
         self.reloadToolButton.clicked.connect(self.reload)
         self.showImageToolButton.clicked.connect(self.showImage)
@@ -58,10 +61,16 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setMaximum(0)
         self.progressBar.setFormat('Loading headers...')
 
-    def onLastFSNChanged(self, prefix: str, lastfsn: int):
+    def onLastFSNChanged(self, prefix: str, lastfsn: Optional[int]):
         if prefix == self.instrument.config['path']['prefixes']['crd']:
-            self.firstFSNSpinBox.setMaximum(lastfsn)
-            self.lastFSNSpinBox.setMaximum(lastfsn)
+            if lastfsn is None:
+                self.firstFSNSpinBox.setEnabled(False)
+                self.lastFSNSpinBox.setEnabled(False)
+            else:
+                self.firstFSNSpinBox.setEnabled(True)
+                self.lastFSNSpinBox.setEnabled(True)
+                self.firstFSNSpinBox.setMaximum(lastfsn)
+                self.lastFSNSpinBox.setMaximum(lastfsn)
 
     def onStop(self):
         if self.model.isLoading():
@@ -70,7 +79,8 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.stopprocessingevent.set()
 
     def reload(self):
-        self.model.reload(range(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value() + 1))
+        if self.firstFSNSpinBox.isEnabled() and self.lastFSNSpinBox.isEnabled():
+            self.model.reload(range(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value() + 1))
 
     def showImage(self):
         if self.headersTreeView.selectionModel().currentIndex().isValid():
