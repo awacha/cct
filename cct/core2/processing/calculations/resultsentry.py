@@ -1,17 +1,18 @@
 import enum
-from typing import Dict, Optional
 import gzip
 import logging
+from typing import Dict, Optional
 
-import openpyxl.worksheet.worksheet, openpyxl.cell
+import numpy as np
+import openpyxl.cell
+import openpyxl.worksheet.worksheet
 import scipy.io
 
-from ...dataclasses import Exposure, Curve, Header, Sample
 from .outliertest import OutlierTest
-import weakref
-import numpy as np
+from ..h5io import ProcessingH5File
+from ...dataclasses import Exposure, Curve, Header, Sample
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
@@ -20,12 +21,22 @@ class CurveFileType(enum.Enum):
     ATSAS = ('ATSAS data file', '.dat')
     PDH = ('PCG data file', '.pdh')
     RSR = ('RSR data file', '.rsr')
+    PNG = ('Portable Network Graphics', '.png')
+    JPG = ('JPEG image', '.jpg')
+    SVG = ('Scalable Vector Graphics', '.svg')
+    PDF = ('Portable Document Format', '.pdf')
+
 
 class PatternFileType(enum.Enum):
     ASCII = ('ASCII text file', '.txt')
     ASCIIGZIP = ('GZip-ped ASCII file', '.txt.gz')
     NUMPY = ('NumPy compressed', '.npz')
     MATLAB = ('MatLab(R) matrix', '.mat')
+    PNG = ('Portable Network Graphics', '.png')
+    JPG = ('JPEG image', '.jpg')
+    SVG = ('Scalable Vector Graphics', '.svg')
+    PDF = ('Portable Document Format', '.pdf')
+
 
 CorMatFileType = PatternFileType
 
@@ -41,28 +52,22 @@ class SampleDistanceEntry:
     samplename: str
     distancekey: str
     _entrytype: Optional[SampleDistanceEntryType] = None
-    processing: "Processing"
+    h5io: ProcessingH5File
     _header: Optional[Header] = None
     _exposure: Optional[Exposure] = None
-    _outliertest:  Optional[OutlierTest] = None
+    _outliertest: Optional[OutlierTest] = None
     _curve: Optional[Curve] = None
 
-    def __init__(self, samplename: str, distancekey: str, processing: "Processing"):
+    def __init__(self, samplename: str, distancekey: str, h5io: ProcessingH5File):
         self.samplename = samplename
         self.distancekey = distancekey
-        try:
-            self.processing = weakref.proxy(processing)
-        except TypeError:
-            # already a weakref proxy
-            self.processing = processing
+        self.h5io = h5io
 
+    def curves(self, all: bool = False) -> Dict[int, Curve]:
+        return self.h5io.readCurves(self.h5path, readall=all)
 
-    def curves(self, all: bool=False) -> Dict[int, Curve]:
-        return self.processing.settings.h5io.readCurves(self.h5path, readall=all)
-
-    def headers(self, all: bool=False) -> Dict[int, Header]:
-        return self.processing.settings.h5io.readHeaders(self.h5path, readall=all)
-
+    def headers(self, all: bool = False) -> Dict[int, Header]:
+        return self.h5io.readHeaders(self.h5path, readall=all)
 
     @property
     def h5path(self) -> str:
@@ -71,13 +76,13 @@ class SampleDistanceEntry:
     @property
     def curve(self) -> Curve:
         if self._curve is None:
-            self._curve = self.processing.settings.h5io.readCurve(f'{self.h5path}/curve')
+            self._curve = self.h5io.readCurve(f'{self.h5path}/curve')
         return self._curve
 
     @property
     def exposure(self) -> Exposure:
         if self._exposure is None:
-            self._exposure = self.processing.settings.h5io.readExposure(self.h5path)
+            self._exposure = self.h5io.readExposure(self.h5path)
         return self._exposure
 
     @property
@@ -85,13 +90,13 @@ class SampleDistanceEntry:
         if self.entrytype in [SampleDistanceEntryType.Merged, SampleDistanceEntryType.Subtracted]:
             return None
         if self._outliertest is None:
-            self._outliertest = self.processing.settings.h5io.readOutlierTest(self.h5path)
+            self._outliertest = self.h5io.readOutlierTest(self.h5path)
         return self._outliertest
 
     @property
     def header(self) -> Header:
         if self._header is None:
-            self._header = self.processing.settings.h5io.readHeader(self.h5path)
+            self._header = self.h5io.readHeader(self.h5path)
         return self._header
 
     @property
@@ -109,11 +114,11 @@ class SampleDistanceEntry:
 
     def writeCurve(self, filename: str, filetype: CurveFileType):
         with open(filename, 'wt') as f:
-            dic = self.processing.settings.h5io.readHeaderDict(self.h5path)
+            dic = self.h5io.readHeaderDict(self.h5path)
             curvearray = np.array(self.curve, copy=True)
             if filetype in [CurveFileType.RSR, CurveFileType.ATSAS, CurveFileType.PDH]:
-                curvearray[:,0]/=10
-                curvearray[:,3]/=10
+                curvearray[:, 0] /= 10
+                curvearray[:, 3] /= 10
             if filetype == CurveFileType.RSR:
                 f.write(' TIME\n')
                 f.write(' 1.0\n')
@@ -127,7 +132,7 @@ class SampleDistanceEntry:
                         'Propagated uncertainty of the intensity [1/cm * 1/sr], '
                         'Propagated uncertainty of q [1/nm], Bin area [# of pixels], Pixel coordinate [pixel]\n'
                         )
-                np.savetxt(f, curvearray if filetype == CurveFileType.ASCII else curvearray[:,:3])
+                np.savetxt(f, curvearray if filetype == CurveFileType.ASCII else curvearray[:, :3])
             elif filetype == CurveFileType.PDH:
                 f.write(f'{self.samplename} @ {self.distancekey} mm\n')
                 f.write('SAXS\n')
@@ -144,30 +149,30 @@ class SampleDistanceEntry:
         row = topleftcell.row
         column = topleftcell.column
         worksheet.cell(row=row, column=column, value='Sample name:')
-        worksheet.cell(row=row+1, column=column, value='S-D distance:')
-        worksheet.cell(row=row, column=column+1, value=self.samplename)
+        worksheet.cell(row=row + 1, column=column, value='S-D distance:')
+        worksheet.cell(row=row, column=column + 1, value=self.samplename)
         try:
-            worksheet.cell(row=row+1, column=column+1, value=float(self.distancekey))
+            worksheet.cell(row=row + 1, column=column + 1, value=float(self.distancekey))
         except ValueError:
             # e.g. distancekey == 'merged'
-            worksheet.cell(row=row+1, column=column+1, value=self.distancekey)
-        worksheet.merge_cells(start_row=row, start_column=column+1, end_row=row, end_column=column+3)
-        worksheet.merge_cells(start_row=row+1, start_column=column+1, end_row=row+1, end_column=column+3)
-        row +=2
-#        worksheet.cell(row=row, column=column, value=f'{self.samplename} @ {self.distancekey} mm')
-#        worksheet.merge_cells(start_row=row, start_column=column, end_row=row, end_column=column+3)
+            worksheet.cell(row=row + 1, column=column + 1, value=self.distancekey)
+        worksheet.merge_cells(start_row=row, start_column=column + 1, end_row=row, end_column=column + 3)
+        worksheet.merge_cells(start_row=row + 1, start_column=column + 1, end_row=row + 1, end_column=column + 3)
+        row += 2
+        #        worksheet.cell(row=row, column=column, value=f'{self.samplename} @ {self.distancekey} mm')
+        #        worksheet.merge_cells(start_row=row, start_column=column, end_row=row, end_column=column+3)
         for i, (quantity, unit) in enumerate([
             ('q', '1/nm'),
             ('Intensity', '1/nm'),
             ('dIntensity', '1/cm * 1/sr'),
             ('dq', '1/nm'),
         ]):
-            worksheet.cell(row=row+1, column=column+i, value=quantity)
-            worksheet.cell(row=row+2, column=column+i, value=unit)
+            worksheet.cell(row=row + 1, column=column + i, value=quantity)
+            worksheet.cell(row=row + 2, column=column + i, value=unit)
         curvearray = np.array(self.curve)
         for r in range(len(self.curve)):
             for c in range(4):
-                worksheet.cell(row=row+3+r, column=column+c, value=curvearray[r, c])
+                worksheet.cell(row=row + 3 + r, column=column + c, value=curvearray[r, c])
 
     def writePattern(self, filename: str, filetype: PatternFileType):
         if filetype == PatternFileType.NUMPY:
@@ -206,4 +211,3 @@ class SampleDistanceEntry:
 
     def isDerived(self) -> bool:
         return self.entrytype != SampleDistanceEntryType.Primary
-

@@ -100,7 +100,7 @@ class ResultsModel(ProcessingTask):
                 logger.debug(f'Reading sample {samplename}')
                 for dist in self.settings.h5io.distancekeys(samplename, onlynumeric=False):
                     logger.debug(f'Reading distance {dist}')
-                    self._data.append(SampleDistanceEntry(samplename, dist, self.processing))
+                    self._data.append(SampleDistanceEntry(samplename, dist, self.processing.settings.h5io))
         except OSError:
             logger.warning('Cannot open HDF5 file.')
             # when the HDF5 file cannot be opened.

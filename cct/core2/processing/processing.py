@@ -3,6 +3,8 @@ from typing import List, Optional, Tuple, Any
 import enum
 import logging
 
+import h5py
+
 from .h5io import ProcessingH5File
 from .tasks.summarization import Summarization
 from PyQt5 import QtCore
@@ -171,3 +173,26 @@ class Processing(QtCore.QAbstractItemModel):
     def fromFile(cls, filename) -> "Processing":
         p = cls(filename)
         return p
+
+    def saveAs(self, filename):
+        with h5py.File(filename, 'w') as h5out:
+            with self.settings.h5io.reader() as h5:
+                def copy(path: str):
+                    if isinstance(h5.get(path, getlink=True), h5py.SoftLink):
+                        # do not copy links at this stage
+                        return
+                    if isinstance(h5.get(path, getclass=True), h5py.Group):
+                        grp=h5out.require_group(path)
+                        grp.attrs=h5.get(path).attrs
+                    elif isinstance(h5.get(path, getclass=True), h5py.Dataset):
+                        ds = h5.get(path)
+                        dsnew = h5out.create_dataset(path, shape=ds.shape, dtype=ds.dtype, data=np.array(ds), compression=ds.compression, compression_opts=ds.compression_opts)
+                        dsnew.attrs=ds.attrs
+                    else:
+                        raise ValueError(path)
+                def copysoftlinks(path: str):
+                    if isinstance(h5.get(path, getlink=True), h5py.SoftLink):
+                        h5out[path] = h5py.SoftLink(h5.get(path, getlink=True).path)
+                h5.visit(copy)
+                h5.visit(copysoftlinks)
+
