@@ -1,11 +1,12 @@
 import struct
 import time
-from typing import Sequence, Any, List, Tuple, Optional
+from typing import Sequence, Any, List, Tuple
 
 from ...device.backend import DeviceBackend
+from ...utils.modbus import ModbusTCP
 
 
-class GeniXBackend(DeviceBackend):
+class GeniXBackend(DeviceBackend, ModbusTCP):
     class Status(DeviceBackend.Status):
         off = 'off'
         standby = 'standby'
@@ -52,15 +53,13 @@ class GeniXBackend(DeviceBackend):
                DeviceBackend.VariableInfo('tube_temperature', timeout=1),
                ]
 
-    _lastmodbustransactionid: int = 0
-
     def _query(self, variablename: str):
         if variablename == 'statusbits':
-            self._modbus_read_coils(210, 30)
+            self.modbus_read_coils(210, 30)
         elif variablename == 'power':
-            self._modbus_read_holding_register(50, 2)
+            self.modbus_read_holding_register(50, 2)
         elif variablename == 'tube_temperature':
-            self._modbus_read_holding_register(54, 3)
+            self.modbus_read_holding_register(54, 3)
         else:
             raise ValueError(f'Cannot query variable {variablename} directly.')
 
@@ -70,7 +69,7 @@ class GeniXBackend(DeviceBackend):
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
 #        self.debug(f'Got message {message}')
-        funccode, data = self._modbus_unpack(message, struct.unpack('>H', sentmessage[:2])[0])
+        funccode, data = self.modbus_unpack(message, struct.unpack('>H', sentmessage[:2])[0])
         if funccode == 1:  # read coils
             # we only read from coils 210 to 239, i.e. 30 coils. This needs 4 bytes.
             # each bit corresponds to one coil. Coil 210 is the LSB of the first byte, 217 is the MSB of the first byte
@@ -145,7 +144,7 @@ class GeniXBackend(DeviceBackend):
             self.updatePowerStatus()
 
         elif funccode == 3:  # read holding registers
-            sentfunccode, sentdata = self._modbus_unpack(sentmessage)
+            sentfunccode, sentdata = self.modbus_unpack(sentmessage)
             if sentfunccode != funccode:
                 raise ValueError(
                     f'Sent message function code ({sentfunccode}) does not match that of the received one '
@@ -184,7 +183,7 @@ class GeniXBackend(DeviceBackend):
             ] and (state != 0):
                 # these commands in the GeniX work on impulsions: set the coil to 1, it acknowledges it and then we set
                 # the coil back to 0.
-                self._modbus_set_coil(coil, False)
+                self.modbus_set_coil(coil, False)
             elif coil in [
                 250,  # standby mode
                 251,  # X-rays on/off
@@ -208,21 +207,21 @@ class GeniXBackend(DeviceBackend):
                     # but only if the interlock permits it.
                     self.commandError(name, 'Cannot open shutter: interlock is not OK.')
                     return
-                self._modbus_set_coil(247, True)
+                self.modbus_set_coil(247, True)
             else:
                 # if False, close it
-                self._modbus_set_coil(248, True)
+                self.modbus_set_coil(248, True)
             self.commandFinished(name, f'{"Opening" if args[0] else "Closing"} shutter.')
         elif name == 'reset_faults':
             # re-test fault conditions.
-            self._modbus_set_coil(249, True)
+            self.modbus_set_coil(249, True)
             self.commandFinished(name, "Resetting faults.")
         elif name == 'xrays':
             # x-ray generator can always be turned on. But it can only be turned off if the power is zero.
             if (self['__status__'] != self.Status.off) and not bool(args[0]):
                 self.commandError(name, 'Cannot turn off X-ray generator: tube power is not zero.')
                 return
-            self._modbus_set_coil(251, bool(args[0]))
+            self.modbus_set_coil(251, bool(args[0]))
             self.commandFinished(name, "Turning off X-ray generator")
         elif name == 'poweroff':
             # always allow powering off, except when warming up
@@ -230,8 +229,8 @@ class GeniXBackend(DeviceBackend):
                 self.commandError(name, 'Cannot turn power of X-ray tube in the middle of the warm-up procedure.')
                 return
             self.updateVariable('__status__', self.Status.poweringoff)
-            self._modbus_set_coil(250, False)  # Standby mode off
-            self._modbus_set_coil(244, True)  # power off.
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(244, True)  # power off.
             self.commandFinished(name, "Powering off X-ray generator")
         elif name == 'standby':
             # can go to standby only if X-ray are on and not warming up
@@ -239,7 +238,7 @@ class GeniXBackend(DeviceBackend):
                 self.commandError(name, 'Cannot go to stand-by if X-rays are off or warming up.')
                 return
             self.updateVariable('__status__', self.Status.goingtostandby)
-            self._modbus_set_coil(250, True)  # Standby mode on
+            self.modbus_set_coil(250, True)  # Standby mode on
             self.commandFinished(name, 'Going to standby mode.')
         elif name == 'full_power':
             if self['__status__'] == self.Status.full:
@@ -248,63 +247,27 @@ class GeniXBackend(DeviceBackend):
                 self.commandError(name, 'X-ray tube can only be put in full-power mode from stand-by.')
                 return
             self.updateVariable('__status__', self.Status.goingtofull)
-            self._modbus_set_coil(250, False)  # Standby mode off
-            self._modbus_set_coil(252, True)  # ramp up
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(252, True)  # ramp up
             self.commandFinished(name, 'Going to full power mode')
         elif name == 'start_warmup':
             if self['__status__'] != self.Status.off:
                 self.commandError(
                     name, 'Warm-up can only be started when the X-ray generator is on and the tube power is zero.')
                 return
-            self._modbus_set_coil(250, False)  # Standby mode off
-            self._modbus_set_coil(245, True)  # start warm-up
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(245, True)  # start warm-up
             self.commandFinished(name, 'Starting warm-up sequence.')
         elif name == 'stop_warmup':
             if self['__status__'] != self.Status.warmup:
                 self.commandError(name, 'Not in a warm-up cycle.')
                 return
-            self._modbus_set_coil(250, False)  # Standby mode off
-            self._modbus_set_coil(246, True)  # stop warm-up
-            self._modbus_set_coil(244, True)  # power off
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(246, True)  # stop warm-up
+            self.modbus_set_coil(244, True)  # power off
             self.commandFinished(name, 'Stopping warm-up sequence.')
         else:
             self.commandError(name, 'Invalid command')
-
-    def _modbus_pack(self, functioncode: int, data: bytes) -> bytes:
-        self._lastmodbustransactionid = (self._lastmodbustransactionid + 1) % 65536
-        return struct.pack('>HHHBB',
-                           self._lastmodbustransactionid,  # 2-byte transaction ID
-                           0,  # 2-byte protocol mode, 0 for Modbus/TCP
-                           len(data) + 2,  # 2-byte number of remaining bytes in this message
-                           1,  # 1-byte unit ID
-                           functioncode,  # 1-byte function code
-                           ) + data
-
-    def _modbus_unpack(self, data: bytes, transactionid: Optional[int]=None) -> Tuple[int, bytes]:
-#        self.debug(f'Unpacking modbus message: {data}')
-        # the data header is at least 7 bytes long
-        if len(data) < 7:
-            raise ValueError(f'Not enough bytes in Modbus/TCP message: needed 7, got {len(data)}')
-        transactionid, protocolmode, datalength, unitid, functioncode = struct.unpack('>HHHBB', data[:8])
-        if (transactionid is not None) and (transactionid != transactionid):
-            raise ValueError(
-                f'Transaction IDs do not match: expected {self._lastmodbustransactionid}, got {transactionid}')
-        if protocolmode != 0:
-            raise ValueError(f'Expected protocol mode 0, got {protocolmode}.')
-        if unitid != 1:
-            raise ValueError(f'Expected unit ID 1, got {unitid}.')
-        if len(data) != datalength + 6:
-            raise ValueError(f'Data length mismatch: expected {datalength + 6}, got {len(data)}')
-        return functioncode, data[8:]
-
-    def _modbus_read_holding_register(self, regno: int, nregs: int):
-        self.enqueueHardwareMessage(self._modbus_pack(3, struct.pack('>HH', regno, nregs)), 1)
-
-    def _modbus_read_coils(self, coilno: int, ncoils: int):
-        self.enqueueHardwareMessage(self._modbus_pack(1, struct.pack('>HH', coilno, ncoils)), 1)
-
-    def _modbus_set_coil(self, coilno: int, value: bool):
-        self.enqueueHardwareMessage(self._modbus_pack(5, struct.pack('>HBB', coilno, 0xff if value else 0, 0)))
 
     def updatePowerStatus(self):
         try:
