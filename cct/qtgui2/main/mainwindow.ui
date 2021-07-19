@@ -48,10 +48,13 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Expanding</enum>
+        </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>11</width>
-          <height>11</height>
+          <width>0</width>
+          <height>0</height>
          </size>
         </property>
        </spacer>

@@ -32,7 +32,9 @@ class AddMotorDialog(QtWidgets.QDialog, Ui_Dialog):
         if (not self.motorNameLineEdit.text()) or \
             (self.motorNameLineEdit.text() in Instrument.instance().motors) or \
                 (self.controllerComboBox.currentIndex() < 0) or \
-                ([motor for motor in Instrument.instance().motors if (motor.controllername == self.controllerComboBox.currentText()) and (motor.axis == self.axisSpinBox.value())]) or \
+                ([motor for motor in Instrument.instance().motors
+                  if (motor.controllername == self.controllerComboBox.currentText())
+                     and (motor.axis == self.axisSpinBox.value())]) or \
                 (self.leftLimitDoubleSpinBox.value() > self.rightLimitDoubleSpinBox.value()) or \
                 (self.positionDoubleSpinBox.value() < self.leftLimitDoubleSpinBox.value()) or \
                 (self.positionDoubleSpinBox.value() > self.rightLimitDoubleSpinBox.value()):

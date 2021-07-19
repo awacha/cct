@@ -2,9 +2,12 @@ from PyQt5 import QtWidgets, QtGui
 
 from .beamstop_ui import Ui_Frame
 from ...utils.window import WindowRequiresDevices
+from ....core2.instrument.components.motors import MotorRole, MotorDirection
 
 
 class BeamstopIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
+    required_motors = [(MotorRole.BeamStop, MotorDirection.X), (MotorRole.BeamStop, MotorDirection.Y)]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
@@ -15,6 +18,7 @@ class BeamstopIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.inToolButton.clicked.connect(self.moveBeamstopIn)
         self.outToolButton.clicked.connect(self.moveBeamstopOut)
         self.onBeamstopStateChanged()
+        self.setSensitive(None)
 
     def onBeamstopStateChanged(self):
         if self.instrument.beamstop.state == self.instrument.beamstop.States.In:

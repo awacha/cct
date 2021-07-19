@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Optional
 
 from PyQt5 import QtWidgets, QtGui
@@ -6,6 +7,9 @@ from .devicestatus_ui import Ui_GroupBox
 from ...core2.devices.device.frontend import DeviceFrontend
 from ...core2.devices.device.telemetry import TelemetryInformation
 from ...core2.instrument.instrument import Instrument
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
@@ -26,43 +30,39 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
         self.reconnectToolButton.clicked.connect(self.reconnect)
         self.setTitle(self.device.name)
         self.setEnabled(False)
-        Instrument.instance().devicemanager.deviceConnected.connect(self.onDeviceConnected)
-        Instrument.instance().devicemanager.deviceDisconnected.connect(self.onDeviceDisconnected)
         if self.devicename in Instrument.instance().devicemanager:
-            self.onDeviceConnected(self.devicename)
+            self._connectDevice()
         else:
-            self.onDeviceDisconnected(self.devicename, False)
+            self.onDeviceDisconnected()
 
     def reconnect(self):
-        if self.devicename not in Instrument.instance().devicemanager:
+        if Instrument.instance().devicemanager[self.devicename].isOffline():
             Instrument.instance().devicemanager.connectDevice(self.devicename)
         else:
             Instrument.instance().devicemanager.disconnectDevice(self.devicename)
         self.reconnectToolButton.setEnabled(False)
         pass
 
-    def onDeviceConnected(self, name: str):
-        if name == self.devicename:
-            self._connectDevice()
-            self.reconnectToolButton.setText('D')
-            self.reconnectToolButton.setIcon(QtGui.QIcon.fromTheme('network-disconnect'))
-            self.reconnectToolButton.setToolTip('Disconnect from the device')
-            self.reconnectToolButton.setEnabled(True)
+    def onDeviceAllVariablesReady(self):
+        self.reconnectToolButton.setText('D')
+        self.reconnectToolButton.setIcon(QtGui.QIcon.fromTheme('network-disconnect'))
+        self.reconnectToolButton.setToolTip('Disconnect from the device')
+        self.reconnectToolButton.setEnabled(True)
 
-    def onDeviceDisconnected(self, name: str, expected: bool):
-        if name == self.devicename:
-            self.reconnectToolButton.setText('C')
-            self.reconnectToolButton.setIcon(QtGui.QIcon.fromTheme('network-connect'))
-            self.reconnectToolButton.setToolTip('Connect to the device')
-            self.reconnectToolButton.setEnabled(True)
-            self.setLabelColor(self.recvLabel, None)
-            self.setLabelColor(self.sendLabel, None)
-            self.setLabelColor(self.readyLabel, None)
-            self.setLabelColor(self.autoQueryLabel, None)
-            self.statusLabel.setText('(disconnected)')
+    def onDeviceDisconnected(self):
+        self.reconnectToolButton.setText('C')
+        self.reconnectToolButton.setIcon(QtGui.QIcon.fromTheme('network-connect'))
+        self.reconnectToolButton.setToolTip('Connect to the device')
+        self.reconnectToolButton.setEnabled(True)
+        self.setLabelColor(self.recvLabel, None)
+        self.setLabelColor(self.sendLabel, None)
+        self.setLabelColor(self.readyLabel, None)
+        self.setLabelColor(self.autoQueryLabel, None)
+        self.statusLabel.setText('(disconnected)')
 
     def _connectDevice(self):
         self.device.allVariablesReady.connect(self.onDeviceAllVariablesReady)
+        self.device.connectionLost.connect(self.onDeviceDisconnected)
         self.device.variableChanged.connect(self.onDeviceVariableChanged)
         self.device.telemetry.connect(self.onDeviceTelemetry)
 
@@ -72,9 +72,6 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
                 self.statusLabel.setText(f"{self.device['__status__']} ({self.device['__auxstatus__']})")
             except DeviceFrontend.DeviceError:
                 pass
-
-    def onDeviceAllVariablesReady(self):
-        pass
 
     def onDeviceTelemetry(self, telemetryinformation: TelemetryInformation):
         self.setToolTip(str(telemetryinformation))

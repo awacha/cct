@@ -17,8 +17,13 @@ class UserManager(QtCore.QAbstractItemModel, Component):
     _users: List[User]
     _currentuser: Optional[User] = None
     currentUserChanged = QtCore.pyqtSignal(str)
+    instance = None
 
     def __init__(self, **kwargs):
+        if UserManager.instance is None:
+            UserManager.instance = self
+        else:
+            raise ValueError('Only a single instance can be created of this class')
         self._users = []
         self._currentuser = None
         super().__init__(**kwargs)
@@ -114,6 +119,8 @@ class UserManager(QtCore.QAbstractItemModel, Component):
             self.saveToConfig()
 
     def hasPrivilege(self, privilege: Privilege) -> bool:
+        if self._currentuser is None:
+            return True
         return self._currentuser.hasPrivilege(privilege)
 
     def __contains__(self, item: str) -> bool:

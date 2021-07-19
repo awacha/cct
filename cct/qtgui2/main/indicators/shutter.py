@@ -23,7 +23,10 @@ class ShutterIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.toolButton.toggled.connect(self.onToolButtonToggled)
         self.setToolButtonState()
 
-    def onDeviceDisconnected(self, devicename: str, expected: bool):
+    def onConnectionLost(self):
+        self.setToolButtonState()
+
+    def onConnectionEnded(self, expected: bool):
         self.setToolButtonState()
 
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
@@ -36,6 +39,10 @@ class ShutterIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
             genix = self.instrument.devicemanager.source()
         except (IndexError, KeyError):
             logger.debug('No GeniX instrument')
+            self.toolButton.setEnabled(False)
+            self.toolButton.setChecked(False)
+            return
+        if not genix.isOnline():
             self.toolButton.setEnabled(False)
             self.toolButton.setChecked(False)
             return

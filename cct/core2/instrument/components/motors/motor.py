@@ -17,6 +17,7 @@ class MotorRole(enum.Enum):
     BeamStop = 'beamstop'
     Pinhole = 'pinhole'
     Other = 'other'
+    Any = 'any'
 
 
 class MotorDirection(enum.Enum):
@@ -24,6 +25,7 @@ class MotorDirection(enum.Enum):
     Y = 'y'
     Z = 'z'
     Other = 'other'
+    Any = 'any'
 
 
 class Motor(QtCore.QObject):

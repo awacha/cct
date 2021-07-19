@@ -54,9 +54,11 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def connectDevice(self):
         if not self.treeView.selectionModel().currentIndex().isValid():
             return
-        self.instrument.devicemanager.connectDevice(self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole))
+        self.instrument.devicemanager.connectDevice(
+            self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole))
 
     def disconnectDevice(self):
         if not self.treeView.selectionModel().currentIndex().isValid():
             return
-        self.instrument.devicemanager.disconnectDevice(self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole))
+        self.instrument.devicemanager.disconnectDevice(
+            self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole))

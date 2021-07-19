@@ -1,7 +1,8 @@
+import enum
 import logging
-import queue
 from multiprocessing import Queue, Process
 from typing import Any, Type, List, Iterator, Dict, Optional
+import time
 
 from PyQt5 import QtCore
 
@@ -9,8 +10,15 @@ from .backend import DeviceBackend
 from .message import Message
 from .telemetry import TelemetryInformation
 from .variable import Variable
-from ...sensors.sensor import Sensor
 from ...algorithms.queuewaiter import QueueWaiter
+from ...sensors.sensor import Sensor
+
+
+class DeviceConnectionState(enum.Enum):
+    Offline = 0
+    Initializing = 1
+    Online = 2
+    Reconnecting = 3
 
 
 class DeviceFrontend(QtCore.QAbstractItemModel):
@@ -25,13 +33,20 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     currentMessage: Optional[Message] = None
     sensors: List[Sensor] = None
 
+    connectionstate: DeviceConnectionState=DeviceConnectionState.Offline
+
+    # whenever the connection to the device is broken after a successful initialization, connection is retried.
+    connectRetries: List[float] = [0, 1, 2, 5]
+    _connectretry: Optional[int] = None
+
     # do not touch these attributes in subclasses
     _variables: List[Variable] = None
-    _backend: Process = None
+    _backend: Optional[Process] = None
     _queue_from_backend: Queue = None
     _queue_to_backend: Queue = None
     _host: str
     _port: int
+    _last_ready_time: Optional[float] = None
     _ready: bool = False
     name: str
     _backendkwargs: Dict[str, Any] = None
@@ -47,6 +62,10 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     # `connectionEnded` is the last signal of a device, meaning that the connection to the hardware device is broken,
     # either intentionally (argument is True) or because of a communication error (argument is False).
     connectionEnded = QtCore.pyqtSignal(bool)
+
+    # `deviceOffline` is emitted if contact is lost with the device. The device is temporarily not functional, until
+    # the next `allVariablesReady` signal is received or `connectionEnded` is sent.
+    connectionLost = QtCore.pyqtSignal(bool)
 
     # Emitted when all variables have been successfully queried. The device is considered fully operational only after
     # this signal is emitted.
@@ -73,7 +92,6 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     # State change: change in the __status__ variable
     stateChanged = QtCore.pyqtSignal(str)  # the new value
 
-
     class DeviceError(Exception):
         pass
 
@@ -82,34 +100,70 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         self.sensors = []
         self.name = name
         # initialize variables
-        self._variables = []
         self._queue_from_backend = Queue()
         self._queue_to_backend = Queue()
         self._host = host
         self._port = port
-        self._backend = Process(target=self.backendclass.create_and_run,
-                                args=(self._queue_to_backend, self._queue_from_backend, host, port),
-                                kwargs=self._backendkwargs if self._backendkwargs is not None else {})
-        self._backend.start()
-        QueueWaiter.instance().registerQueue(self._queue_from_backend, self.onMessageFromBackend)
         self._logger = logging.getLogger(f'{__name__}:{self.name}')
         self._backendlogger = logging.getLogger(f'{__name__}:{self.name}:backend')
         self._backendlogger.setLevel(logging.INFO)
-#        self._logger.debug('Started backend process. Waiting for variable list...')
-        # now wait for the variables:
+        self.connectionstate = DeviceConnectionState.Offline
+
+    def startBackend(self):
+        if (self._backend is not None) and (self._backend.is_alive()):
+            raise self.DeviceError('Cannot start backend: already running')
+        self._ready = False
+        self._variables = []
+        self._backend = Process(target=self.backendclass.create_and_run,
+                                args=(self._queue_to_backend, self._queue_from_backend, self._host, self._port),
+                                kwargs=self._backendkwargs if self._backendkwargs is not None else {})
+        self._backend.start()
+        self.connectionstate = DeviceConnectionState.Initializing
+        QueueWaiter.instance().registerQueue(self._queue_from_backend, self.onMessageFromBackend)
+        # now wait for the variables. The first message from the backend is always 'variablenames', it is sent even
+        # before trying to connect to the device itself.
         while True:
             message = self._queue_from_backend.get(True, 5)
-            if message.command != 'variablenames':
-                continue
-            self._variables = [Variable(name, querytimeout) for (name, querytimeout) in message['names']]
-#            self._logger.debug(f'Variables supported by this back-end: {[v.name for v in self._variables]}')
-            break
-#        self._logger.debug('Got variable names. Commencing operation.')
+            if message.command == 'variablenames':
+                self._variables = [Variable(name, querytimeout) for (name, querytimeout) in message['names']]
+                # self._logger.debug(f'Variables supported by this back-end: {[v.name for v in self._variables]}')
+                break
+            else:
+                raise self.DeviceError(f'The first message from the backend must be a list of variable names. '
+                                       f'Instead we got a message of type "{message.command}": {message.kwargs}')
+
+    #        self._logger.debug('Got variable names. Commencing operation.')
+
+    def isOnline(self) -> bool:
+        return self.connectionstate == DeviceConnectionState.Online
+
+    def isOffline(self) -> bool:
+        return self.connectionstate == DeviceConnectionState.Offline
+
+    def isInitializing(self) -> bool:
+        return self.connectionstate == DeviceConnectionState.Initializing
+
 
     def onMessageFromBackend(self, message):
         self.currentMessage = message
         try:
-            if self.currentMessage.command == 'variableChanged':
+            if self.currentMessage.command == 'ready':
+                if (not self._ready) and all([v.timestamp is not None for v in self._variables]):
+                    self.connectionstate = DeviceConnectionState.Online
+                    self._ready = True
+                    self._last_ready_time = time.monotonic()
+                    self._connectretry = None
+                    try:
+                        self.allVariablesReady.emit()
+                    except Exception as exc:
+                        self._logger.critical(
+                            f'Exception while emitting the allVariablesReady signal of device {self.name}: {exc}')
+                elif not self._ready:
+                    raise self.DeviceError('Ready signal got from the backend, but not all variables are initialized!')
+                elif self._ready:
+                    # happens when self._ready is already set
+                    self._logger.warning('Superfluous ready message from the backend.')
+            elif self.currentMessage.command == 'variableChanged':
                 var = self.getVariable(self.currentMessage['name'])
                 var.update(self.currentMessage.kwargs['value'])
                 self.onVariableChanged(var.name, var.value, var.previousvalue)
@@ -118,45 +172,104 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
                 except Exception as exc:
                     self._logger.critical(
                         f'Exception while emitting the variableChanged signal of device {self.name}: {exc}')
-                if (not self._ready) and all([v.timestamp is not None for v in self._variables]):
-                    self._ready = True
-                    try:
-                        self.allVariablesReady.emit()
-                    except Exception as exc:
-                        self._logger.critical(
-                            f'Exception while emitting the allVariablesReady signal of device {self.name}: {exc}')
             elif self.currentMessage.command == 'log':
                 self._backendlogger.log(self.currentMessage['level'], self.currentMessage['logmessage'])
             elif self.currentMessage.command == 'telemetry':
                 try:
-                    #print(self.currentMessage['telemetry'], flush=True)
+                    # print(self.currentMessage['telemetry'], flush=True)
                     self.telemetry.emit(self.currentMessage['telemetry'])
                 except Exception as exc:
                     self._logger.critical(f'Exception while emitting the telemetry signal of device {self.name}: {exc}')
             elif self.currentMessage.command == 'commanderror':
                 self.onCommandResult(False, self.currentMessage['commandname'], self.currentMessage['errormessage'])
                 try:
-                    self.commandResult.emit(False, self.currentMessage['commandname'], self.currentMessage['errormessage'])
+                    self.commandResult.emit(False, self.currentMessage['commandname'],
+                                            self.currentMessage['errormessage'])
                 except Exception as exc:
-                    self._logger.critical(f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
-                self._logger.error(f'Error while executing command {self.currentMessage["commandname"]} on device {self.name}: {self.currentMessage["errormessage"]}')
+                    self._logger.critical(
+                        f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
+                self._logger.error(
+                    f'Error while executing command {self.currentMessage["commandname"]} on device {self.name}: {self.currentMessage["errormessage"]}')
             elif self.currentMessage.command == 'commandfinished':
                 self.onCommandResult(True, self.currentMessage['commandname'], self.currentMessage['result'])
                 try:
                     self.commandResult.emit(True, self.currentMessage['commandname'], self.currentMessage['result'])
                 except Exception as exc:
-                    self._logger.critical(f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
-                #self._logger.debug(f'Command {self.currentMessage["commandname"]} finished successfully on device {self.name}. Result: {self.currentMessage["result"]}')
+                    self._logger.critical(
+                        f'Exception while emitting the commandResult signal of device {self.name}: {exc}')
+                # self._logger.debug(f'Command {self.currentMessage["commandname"]} finished successfully on device {self.name}. Result: {self.currentMessage["result"]}')
             elif self.currentMessage.command == 'end':
                 self._backend.join()
+                # Do not set self._backend to None: we will probably try to restart. Setting it to None means that the
+                # device is inactive.
                 QueueWaiter.instance().deregisterQueue(self._queue_from_backend)
-                try:
-                    self.connectionEnded.emit(self.currentMessage['expected'])
-                except Exception as exc:
-                    self._logger.critical(
-                        f'Exception while emitting the connectionEnded signal of device {self.name}: {exc}')
+                if self.currentMessage['expected']:
+                    # expected end, requested by the front-end.
+                    self._backend = None  # we won't reconnect
+                    self.connectionstate = DeviceConnectionState.Offline
+                    try:
+                        self.connectionLost.emit(True)
+                    except Exception as exc:
+                        self._logger.critical(
+                            f'Exception while emitting the connectionLost signal of device {self.name}: {exc}'
+                        )
+                    try:
+                        self.connectionEnded.emit(True)
+                    except Exception as exc:
+                        self._logger.critical(
+                            f'Exception while emitting the connectionEnded signal of device {self.name}: {exc}'
+                        )
+                else:
+                    # connection to device unexpectedly lost
+                    self.connectionstate = DeviceConnectionState.Reconnecting
+                    try:
+                        self.connectionLost.emit(False)
+                    except Exception as exc:
+                        self._logger.critical(
+                            f'Exception while emitting the connectionLost signal of device {self.name}: {exc}')
+                    self.restartBackend()
         finally:
             self.currentMessage = None
+
+    def restartBackend(self):
+        """Try to restart the backend."""
+        # this function is called whenever the backend process dies unexpectedly, e.g. due to a communication error.
+        # If the communication error is sporadic, the connection can be recovered. Let us retry.
+
+        if self._last_ready_time is None:
+            # it was never successfully initialized, give up trying.
+            self._logger.info('Giving up trying to restart backend: it was never successfully initialized.')
+            self._backend = None  # we won't retry.
+            self.connectionstate = DeviceConnectionState.Offline
+            try:
+                self.connectionEnded.emit(False)
+            except Exception as exc:
+                self._logger.critical(
+                    f'Exception while emitting the connectionEnded signal of device {self.name}: {exc}'
+                )
+            return
+        elif self._connectretry is None:
+            # this is our very first retry.
+            self._connectretry = 0
+        elif self._connectretry == len(self.connectRetries)-1:
+            # this was our last connect retry
+            self._logger.error('Giving up trying to restart backend: maximum number of retries exhausted.')
+            self._backend = None  # we won't retry
+            self.connectionstate = DeviceConnectionState.Offline
+            try:
+                self.connectionEnded.emit(False)
+            except Exception as exc:
+                self._logger.critical(
+                    f'Exception while emitting the connectionEnded signal of device {self.name}: {exc}'
+                )
+            return
+        else:
+            self._connectretry += 1
+        self.connectionstate = DeviceConnectionState.Reconnecting
+        self._logger.info(f'Trying to reconnect to device in {self.connectRetries[self._connectretry]:.2f} seconds. '
+                          f'This retry #{self._connectretry+1} of {len(self.connectRetries)}')
+        QtCore.QTimer.singleShot(
+            int(self.connectRetries[self._connectretry]*1000), QtCore.Qt.PreciseTimer, self.startBackend)
 
     @property
     def ready(self) -> bool:
@@ -175,8 +288,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         """
         var = [v for v in self._variables if v.name == item][0]
         if var.timestamp is None:
-#            self._logger.debug('Available variables: \n'+'\n'.join(sorted([f'    {v.name}' for v in self._variables if v.timestamp is not None])))
-#            self._logger.debug('Not available variables: \n'+'\n'.join(sorted([f'    {v.name}' for v in self._variables if v.timestamp is None])))
+            #            self._logger.debug('Available variables: \n'+'\n'.join(sorted([f'    {v.name}' for v in self._variables if v.timestamp is not None])))
+            #            self._logger.debug('Not available variables: \n'+'\n'.join(sorted([f'    {v.name}' for v in self._variables if v.timestamp is None])))
             raise self.DeviceError(f'Variable {var.name} of device {self.name} has not been updated yet.')
         try:
             return [v.value for v in self._variables if v.name == item][0]
@@ -197,12 +310,12 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         :param args: arguments required for the command.
         :type args: various
         """
-        #self._logger.debug(f'Issuing command: {command} with arguments {args}')
+        # self._logger.debug(f'Issuing command: {command} with arguments {args}')
         self._queue_to_backend.put(Message('issuecommand', name=command, args=args))
 
     def stopbackend(self):
         """Ask the backend process to quit."""
-        #self._logger.debug(f'Stopping the back-end process')
+        # self._logger.debug(f'Stopping the back-end process')
         self._queue_to_backend.put(Message('end'))
 
     def keys(self) -> Iterator[str]:
@@ -244,7 +357,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         pass
 
     def toDict(self) -> Dict[str, Any]:
-        return {v.name:v.value for v in self._variables}
+        return {v.name: v.value for v in self._variables}
 
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return 2
@@ -273,3 +386,11 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+
+    @property
+    def host(self) -> str:
+        return self._host
+
+    @property
+    def port(self) -> int:
+        return self._port

@@ -20,7 +20,10 @@ logger.setLevel(logging.DEBUG)
 class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     addMotorDialog: Optional[AddMotorDialog] = None
     motorCalibrationDialog: Optional[MotorCalibrationDialog] = None
-    required_motors = ['*']
+    connect_all_motors = True
+    required_devicetypes = ['motorcontroller']
+
+    # component widgets
     motormover: MotorMover
     samplemover: SampleMover
     beamstop: BeamstopIndicator

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Maximum">
+   <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
     <horstretch>1</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -53,7 +53,7 @@
      <item>
       <widget class="QLabel" name="readyLabel">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
          <horstretch>1</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -69,7 +69,7 @@
      <item>
       <widget class="QLabel" name="sendLabel">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
          <horstretch>1</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -85,7 +85,7 @@
      <item>
       <widget class="QLabel" name="recvLabel">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
          <horstretch>1</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -101,7 +101,7 @@
      <item>
       <widget class="QLabel" name="autoQueryLabel">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
          <horstretch>1</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -123,7 +123,8 @@
         <string>C</string>
        </property>
        <property name="icon">
-        <iconset theme="network-connect"/>
+        <iconset theme="network-connect">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>

@@ -70,6 +70,7 @@ class Instrument(QtCore.QObject):
         self.components = {}
         for componentname, componentclass in [
             ('io', IO),
+            ('auth', UserManager),
             ('samplestore', SampleStore),
             ('devicemanager', DeviceManager),
             ('motors', Motors),
@@ -78,7 +79,6 @@ class Instrument(QtCore.QObject):
             ('geometry', Geometry),
             ('calibrants', CalibrantStore),
             ('scan', ScanStore),
-            ('auth', UserManager),
             ('projects', ProjectManager),
             ('exposer', Exposer),
             ('datareduction', DataReduction),

@@ -11,8 +11,10 @@ class Sensors(QtCore.QAbstractItemModel, Component):
     def __init__(self, **kwargs):
         self._data = []
         super().__init__(**kwargs)
-        self.instrument.devicemanager.deviceConnected.connect(self.onDeviceConnected)
-        self.instrument.devicemanager.deviceDisconnected.connect(self.onDeviceDisconnected)
+        self.instrument.devicemanager.deviceAdded.connect(self.onDeviceAdded)
+        self.instrument.devicemanager.deviceRemoved.connect(self.onDeviceRemoved)
+        for device in self.instrument.devicemanager:
+            self.onDeviceAdded(device.name)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return len(self._data)
@@ -42,7 +44,7 @@ class Sensors(QtCore.QAbstractItemModel, Component):
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
         return self.createIndex(row, column, None)
 
-    def onDeviceConnected(self, name: str):
+    def onDeviceAdded(self, name: str):
         device: DeviceFrontend = self.instrument.devicemanager[name]
         for sensor in device.sensors:
             self.beginInsertRows(QtCore.QModelIndex(), len(self._data), len(self._data))
@@ -50,7 +52,7 @@ class Sensors(QtCore.QAbstractItemModel, Component):
             sensor.valueChanged.connect(self.onSensorValueChanged)
             self.endInsertRows()
 
-    def onDeviceDisconnected(self, name: str, expected: bool):
+    def onDeviceRemoved(self, name: str, expected: bool):
         while len(sensorstobedeleted := [s for s in self._data if s.devicename == name]):
             idx = self._data.index(sensorstobedeleted[0])
             self.beginRemoveRows(QtCore.QModelIndex(), idx, idx)

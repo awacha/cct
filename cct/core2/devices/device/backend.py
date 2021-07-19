@@ -135,8 +135,6 @@ class DeviceBackend:
         self.host = host
         self.port = port
         self.asynctasks = {}
-        self.updateVariable('__status__', 'initializing')
-        self.updateVariable('__auxstatus__', None)
 
     @classmethod
     def create_and_run(cls, inqueue: Queue, outqueue: Queue, host: str, port: int, **kwargs):
@@ -157,6 +155,8 @@ class DeviceBackend:
         """
         # first of all, send the list of variables to the front-end
         self.messageToFrontend('variablenames', names=[(v.name, v.defaulttimeout) for v in self.variables])
+        self.updateVariable('__status__', 'initializing')
+        self.updateVariable('__auxstatus__', None)
         self.asyncloop = asyncio.get_running_loop()
         self.stopevent = asyncio.Event()
         self.cleartosend = asyncio.Event()
@@ -579,6 +579,7 @@ class DeviceBackend:
             if (not self.variablesready) and all([v.timestamp is not None for v in self.variables]):
                 self.variablesready = True
                 self.info(f'All variables ready.')
+                self.messageToFrontend('ready')
                 self.updateVariable('__status__', 'idle')
                 self.onVariablesReady()
 

@@ -22,10 +22,10 @@ from ..devices.pilatus.pilatus import PilatusDetectorUI
 from ..devices.thermometer.se521 import SE521Window
 from ..listing.headerview import HeaderView
 from ..listing.scanview import ScanViewer
+from ..measurement.monitor import MonitorMeasurement
 from ..measurement.scan.scan import ScanMeasurement
 from ..measurement.simpleexposure.simpleexposure import SimpleExposure
 from ..measurement.transmission import TransmissionUi
-from ..measurement.monitor import MonitorMeasurement
 from ..setup.calibrants.calibrants import Calibrants
 from ..setup.calibration.calibration import Calibration
 from ..setup.geometry.geometry import GeometryEditor
@@ -45,7 +45,7 @@ from ...core2.instrument.components.interpreter import ParsingError
 from ...core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -99,7 +99,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.instrument.interpreter.scriptfinished.connect(self.onInterpreterFinished)
         self.instrument.interpreter.progress.connect(self.onInterpreterProgress)
         self.instrument.interpreter.message.connect(self.onInterpreterMessage)
-        self.instrument.devicemanager.deviceConnected.connect(self.onDeviceConnected)
+        self.instrument.devicemanager.deviceAdded.connect(self.onDeviceAdded)
+        self.instrument.devicemanager.deviceRemoved.connect(self.onDeviceRemoved)
         self._windows = {}
         self.setupUi(self)
 
@@ -144,6 +145,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.executePushButton.clicked.connect(self.onExecutePushed)
         self.actionSave_settings.triggered.connect(self.saveSettings)
 
+        for dev in self.instrument.devicemanager:
+            self.onDeviceAdded(dev.name)
+
     def saveSettings(self):
         self.instrument.saveConfig()
 
@@ -171,7 +175,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.addSubWindow(windowclass, singleton=True)
 
     def addSubWindow(self, windowclass, singleton: bool = True) -> Optional[WindowRequiresDevices]:
-        if windowclass.canOpen(self.instrument):
+        if windowclass.checkRequirements():
             if singleton and windowclass.__name__ in self._windows:
                 raise ValueError(f'Window class {windowclass} has already an active instance.')
             if not singleton:
@@ -231,14 +235,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def onInterpreterMessage(self, message: str):
         self.statusBar().showMessage(message)
 
-    def onDeviceConnected(self, device: str):
+    def onDeviceAdded(self, device: str):
         if not [ds for ds in self._devicestatuswidgets if ds.devicename == device]:
             # device status widget not yet exists
             ds = DeviceStatus(devicename=device)
             self._devicestatuswidgets.append(ds)
-            self.deviceStatusBarLayout.insertWidget(self.deviceStatusBarLayout.count() - 1, ds)
+            self.deviceStatusBarLayout.insertWidget(self.deviceStatusBarLayout.count() - 1, ds, stretch=0)
+            logger.debug(f'Added device status widget for device {device}')
         else:
             logger.debug(f'Device status widget already exists for device {device}')
+
+    def onDeviceRemoved(self, device: str):
+        try:
+            statuswidget = [ds for ds in self._devicestatuswidgets if ds.devicename == device][0]
+        except IndexError:
+            logger.warning(f'Cannot remove device status widget for device {device}: does not exist.')
+            return
+        self._devicestatuswidgets.remove(statuswidget)
+        statuswidget.destroy(True, True)
+        statuswidget.deleteLater()
+        logger.debug(f'Device status widget for device {device} has been removed.')
 
     def onExecutePushed(self):
         if self.executePushButton.text() == 'Stop':

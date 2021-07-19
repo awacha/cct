@@ -9,7 +9,7 @@ from ....core2.devices.thermometer.se521 import SE521
 
 
 class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicenames = ['SE521']
+    required_devicenames = ['se521']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -28,12 +28,19 @@ class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         elif name == 'isrecallmode':
             self.recallModeLabel.setText(f'{"yes" if newvalue else "no"}')
         elif name in ['isalarm', 'islowalarm', 'ishighalarm']:
-            if self.device()['islowalarm'] and self.device()['isalarm']:
-                self.alarmStateLabel.setText(f'Low temperature!')
-            elif self.device()['ishighalarm'] and self.device()['isalarm']:
-                self.alarmStateLabel.setText(f'High temperature!')
-            else:
-                self.alarmStateLabel.setText('Unknown alarm' if self.device()['isalarm'] else 'None')
+            try:
+                if self.device()['islowalarm'] and self.device()['isalarm']:
+                    self.alarmStateLabel.setText(f'Low temperature!')
+                elif self.device()['ishighalarm'] and self.device()['isalarm']:
+                    self.alarmStateLabel.setText(f'High temperature!')
+                else:
+                    self.alarmStateLabel.setText('Unknown alarm' if self.device()['isalarm'] else 'None')
+            except self.device().DeviceError:
+                if self.device().isInitializing():
+                    # can happen when not all variables have been queried yet
+                    pass
+                else:
+                    raise
         elif name == 'isrecording':
             self.recordingLabel.setText('yes' if newvalue else 'no')
         elif name == 'ismemoryfull':
@@ -43,16 +50,23 @@ class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         elif name == 'isbluetoothenabled':
             self.bluetoothLabel.setText('yes' if newvalue else 'no')
         elif name in ['ismaxmode', 'ismaxminmode', 'isminmode', 'isavgmode', 'ismaxminavgflashing']:
-            if self.device()['ismaxmode']:
-                self.displayModeLabel.setText('Max')
-            elif self.device()['isminmode']:
-                self.displayModeLabel.setText('Min')
-            elif self.device()['isavgmode']:
-                self.displayModeLabel.setText('Avg')
-            elif self.device()['ismaxminavgflashing']:
-                self.displayModeLabel.setText('Max/Min/Avg')
-            else:
-                self.displayModeLabel.setText('Current')
+            try:
+                if self.device()['ismaxmode']:
+                    self.displayModeLabel.setText('Max')
+                elif self.device()['isminmode']:
+                    self.displayModeLabel.setText('Min')
+                elif self.device()['isavgmode']:
+                    self.displayModeLabel.setText('Avg')
+                elif self.device()['ismaxminavgflashing']:
+                    self.displayModeLabel.setText('Max/Min/Avg')
+                else:
+                    self.displayModeLabel.setText('Current')
+            except self.device().DeviceError:
+                if self.device().isInitializing():
+                    # can happen when not all variables have been queried yet
+                    pass
+                else:
+                    raise
         elif name == 'thermistortype':
             self.thermistorTypeLabel.setText(newvalue)
         elif name in ['t1', 't2', 't3', 't4', 't1-t2']:
@@ -71,7 +85,7 @@ class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.deviceTypeLabel.setText(newvalue)
 
     def device(self) -> SE521:
-        return self.instrument.devicemanager['SE521']
+        return self.instrument.devicemanager['se521']
 
     def toggleBacklight(self):
         self.device().toggleBacklight()

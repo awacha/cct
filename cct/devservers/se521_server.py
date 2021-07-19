@@ -109,6 +109,7 @@ class SE521DevServer:
     async def acceptConnection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         if (self.reader is not None) or (self.writer is not None):
             # already connected
+            logger.error('Another connection to the device is already active')
             writer.write(b'ERROR: Another connection to the device is already active.***')
             await writer.drain()
             writer.close()
@@ -159,6 +160,7 @@ class SE521DevServer:
             self.writer.write(b'OK['+message+b']: '+self._sendCommand(message)+b'***')
             await self.writer.drain()
         except Exception as exc:
+            logger.error(f'{exc}')
             self.writer.write(f'ERROR: {exc}'.encode('utf-8')+b'***')
             await self.writer.drain()
             raise

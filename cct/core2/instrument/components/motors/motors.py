@@ -22,8 +22,8 @@ class Motors(QtCore.QAbstractItemModel, Component):
     def __init__(self, **kwargs):
         self.motors = []
         super().__init__(**kwargs)
-        self.instrument.devicemanager.deviceConnected.connect(self.onDeviceConnectedOrDisconnected)
-        self.instrument.devicemanager.deviceDisconnected.connect(self.onDeviceConnectedOrDisconnected)
+        self.instrument.devicemanager.deviceAdded.connect(self.onDeviceConnectedOrDisconnected)
+        self.instrument.devicemanager.deviceRemoved.connect(self.onDeviceConnectedOrDisconnected)
 
     def loadFromConfig(self):
         logger.debug('Loading Motors state from config')
@@ -50,7 +50,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
                 role= None if role is None else MotorRole(role),
                 direction=None if direction is None else MotorDirection(direction))
 
-    def onDeviceConnectedOrDisconnected(self, name: str, expected: bool=True):
+    def onDeviceConnectedOrDisconnected(self, name: str):
         # If a motor controller is disconnected or connected
         for i, motor in enumerate(self.motors):
             if motor.controllername == name:
