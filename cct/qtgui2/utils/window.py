@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Any, Tuple, final
+from typing import List, Optional, Any, Tuple, final, Union
 
 from PyQt5 import QtWidgets, QtGui
 
@@ -173,8 +173,10 @@ class WindowRequiresDevices:
             pass
 
     @final
-    def _connectMotor(self, motor: Motor):
+    def connectMotor(self, motor: Union[Motor, str]):
         """Connect the signals of a motor to the callback functions"""
+        if isinstance(motor, str):
+            motor = self.instrument.motors[motor]
         logger.debug(f'Connecting motor {motor.name}')
         motor.started.connect(self.onMotorStarted)
         motor.stopped.connect(self.onMotorStopped)
@@ -183,8 +185,10 @@ class WindowRequiresDevices:
         motor.variableChanged.connect(self.onVariableChanged)
 
     @final
-    def _disconnectMotor(self, motor: Motor):
+    def disconnectMotor(self, motor: Union[Motor, str]):
         """Disconnect the signals of a motor from the callback functions"""
+        if isinstance(motor, str):
+            motor = self.instrument.motors[motor]
         try:
             motor.started.disconnect(self.onMotorStarted)
             motor.stopped.disconnect(self.onMotorStopped)
@@ -266,7 +270,7 @@ class WindowRequiresDevices:
     def onNewMotor(self, motorname: str):
         motor = self.instrument.motors[motorname]
         if self.connect_all_motors or ((motor.role, motor.direction) in self.required_motors):
-            self._connectMotor(self.instrument.motors[motorname])
+            self.connectMotor(self.instrument.motors[motorname])
         self.setSensitive(None)
 
     def onMotorRemoved(self, motorname: str):

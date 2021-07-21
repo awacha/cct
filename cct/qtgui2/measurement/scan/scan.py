@@ -71,12 +71,12 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def onMotorChanged(self):
         if self.motorname is not None:
-            self._disconnectMotor(self.instrument.motors[self.motorname])
+            self.disconnectMotor(self.instrument.motors[self.motorname])
             self.motorname = None
         if self.motorComboBox.currentIndex() < 0:
             return
         self.motorname = self.motorComboBox.currentText()
-        self._connectMotor(self.instrument.motors[self.motorname])
+        self.connectMotor(self.instrument.motors[self.motorname])
         self.onMotorPositionChanged(self.instrument.motors[self.motorname].where())
         for widget in [self.rangeTypeComboBox, self.rangeMinDoubleSpinBox, self.rangeMaxDoubleSpinBox,
                        self.stepSizeDoubleSpinBox, self.stepCountSpinBox, self.countingTimeDoubleSpinBox,

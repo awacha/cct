@@ -77,10 +77,19 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             if self.state != AdjustingState.Idle:
                 QtWidgets.QMessageBox.critical(
                     self, 'Error', 'Cannot start auto-adjustment: auto-adjustment is already running')
+                return
             elif self.motor().isMoving():
                 QtWidgets.QMessageBox.critical(
                     self, 'Error', 'Cannot start auto-adjustment: motor is moving.'
                 )
+                return
+            elif self.motor()['leftswitchstatus']:
+                QtWidgets.QMessageBox.critical(
+                    self, 'Error',
+                    'Cannot start auto-adjustment when the left switch is active. '
+                    'Move the motor right by a small amount and try again.'
+                )
+
             self.oldposition = self.motor().where()
             self.motor().setPosition(self.motor()['softright'])
             self.state = AdjustingState.WaitForInitialSetPositionResult
@@ -94,11 +103,11 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onMotorChanged(self):
         if self.motorname is not None:
             try:
-                self._disconnectMotor(self.instrument.motors[self.motorname])
+                self.disconnectMotor(self.instrument.motors[self.motorname])
             except TypeError:
                 pass
         self.motorname = None if self.motorNameComboBox.currentIndex() < 0 else self.motorNameComboBox.currentText()
-        self._connectMotor(self.instrument.motors[self.motorname])
+        self.connectMotor(self.instrument.motors[self.motorname])
 
     def onMotorPositionChanged(self, newposition: float):
         if (self.state == AdjustingState.WaitForInitialSetPositionResult) and \
@@ -122,7 +131,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def onMotorStopped(self, success: bool, endposition: float):
         motor = self.motor()
-        assert self.sender() is motor
+        #assert self.sender() is motor
         if self.state == AdjustingState.Stopping:
             self.finalize()
             return

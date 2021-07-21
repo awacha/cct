@@ -123,6 +123,9 @@ class DeviceBackend:
     variablesready: bool = False
     autoqueryenabled: asyncio.Event = None
 
+    # buffer for log messages before initialization
+    logbuffer: Optional[List[Message]] = None
+
     def __init__(self, inqueue: Queue, outqueue: Queue, host: str, port: int, **kwargs):
         self.inqueue = inqueue
         self.outqueue = outqueue
@@ -135,6 +138,7 @@ class DeviceBackend:
         self.host = host
         self.port = port
         self.asynctasks = {}
+        self.logbuffer = []
 
     @classmethod
     def create_and_run(cls, inqueue: Queue, outqueue: Queue, host: str, port: int, **kwargs):
@@ -155,6 +159,9 @@ class DeviceBackend:
         """
         # first of all, send the list of variables to the front-end
         self.messageToFrontend('variablenames', names=[(v.name, v.defaulttimeout) for v in self.variables])
+        for msg in self.logbuffer:
+            self.outqueue.put_nowait(msg)
+        self.logbuffer = None
         self.updateVariable('__status__', 'initializing')
         self.updateVariable('__auxstatus__', None)
         self.asyncloop = asyncio.get_running_loop()
@@ -235,7 +242,8 @@ class DeviceBackend:
             self.messageToFrontend('telemetry', telemetry=self.telemetryInformation)
             for timeout in self.telemetryInformation.outdatedqueries.values():
                 if (timeout > self.outstandingqueryfailtimeout) and (self.autoqueryenabled.is_set()):
-                    raise RuntimeError('Outstanding query fail timeout reached.')
+                    raise RuntimeError(f'Outstanding query fail timeout reached. Variables not yet queried: '
+                                       f'{", ".join(sorted(self.telemetryInformation.outdatedqueries))}')
             del self.telemetryInformation
             self.telemetryInformation = None
         gc.collect()
@@ -401,6 +409,9 @@ class DeviceBackend:
                 self.telemetryInformation.messagesreceived += len(messages)
             self.inbuffer = remaining
             for msg in messages:
+                if (not self.lastmessage) or (self.lastmessage is None):
+                    self.error(f'Message received ({msg}) without a query.')
+                    raise RuntimeError(f'Message received ({msg}) without a query.')
                 self.interpretMessage(msg, self.lastmessage[0])
             self.lastmessage = self.lastmessage[0], self.lastmessage[-1] - len(messages)
             if self.lastmessage[1] <= 0:
@@ -616,7 +627,10 @@ class DeviceBackend:
     ### Logging
     @final
     def log(self, level: int, message: str):
-        self.messageToFrontend('log', level=level, logmessage=message)
+        if self.logbuffer is None:
+            self.messageToFrontend('log', level=level, logmessage=message)
+        else:
+            self.logbuffer.append(Message('log', level=level, logmessage=message))
 
     @final
     def debug(self, message: str):

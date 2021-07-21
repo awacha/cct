@@ -15,6 +15,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+    currentmotor: Optional[str] = None
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
@@ -27,11 +28,14 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.motorNameComboBox.addItems([m.name for m in self.instrument.motors.motors])
         self.motorNameComboBox.setCurrentIndex(0)
         self.moveMotorPushButton.clicked.connect(self.onMoveMotorClicked)
-        self.moveMotorPushButton.setEnabled(False)
+        self.instrument.motors.newMotor.connect(self.onMotorAdded)
+        self.instrument.motors.motorRemoved.connect(self.onMotorRemoved)
 
     def onRelativeCheckBoxToggled(self, toggled: Optional[bool] = None):
         if self.motorNameComboBox.currentIndex() < 0:
+            self.moveMotorPushButton.setEnabled(False)
             return
+        self.moveMotorPushButton.setEnabled(True)
         motor = self.instrument.motors[self.motorNameComboBox.currentText()]
         actualposition = motor['actualposition']
         left = motor['softleft']
@@ -46,6 +50,10 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.motorTargetDoubleSpinBox.setValue(actualposition)
 
     def onMotorNameChanged(self, currentindex: int):
+        if self.currentmotor is not None:
+            self.disconnectMotor(self.currentmotor)
+        self.currentmotor = self.motorNameComboBox.currentText()
+        self.connectMotor(self.currentmotor)
         self.onRelativeCheckBoxToggled()  # this ensures setting the target spinbox limits and value.
 
     def onMotorStarted(self, startposition: float):
@@ -85,3 +93,27 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 motor.moveTo(self.motorTargetDoubleSpinBox.value())
         elif self.moveMotorPushButton.text() == 'Stop':
             motor.stop()
+
+    def onMotorAdded(self, motorname: str):
+        self.motorNameComboBox.blockSignals(True)
+        try:
+            currentmotor = self.motorNameComboBox.currentText()
+            self.motorNameComboBox.clear()
+            self.motorNameComboBox.addItems([m.name for m in self.instrument.motors])
+            self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.findText(currentmotor))
+        finally:
+            self.motorNameComboBox.blockSignals(False)
+        if self.motorNameComboBox.currentText() != currentmotor:
+            self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.currentIndex())
+
+    def onMotorRemoved(self, motorname: str):
+        self.motorNameComboBox.blockSignals(True)
+        try:
+            currentmotor = self.motorNameComboBox.currentText()
+            self.motorNameComboBox.clear()
+            self.motorNameComboBox.addItems([m.name for m in self.instrument.motors])
+            self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.findText(currentmotor))
+        finally:
+            self.motorNameComboBox.blockSignals(False)
+        if self.motorNameComboBox.currentText() != currentmotor:
+            self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.currentIndex())

@@ -177,6 +177,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
         motor.started.connect(self.onMotorStarted)
         motor.stopped.connect(self.onMotorStopped)
         motor.variableChanged.connect(self.onMotorVariableChanged)
+        motor.positionChanged.connect(self.onMotorPositionChanged)
         self.endInsertRows()
         self.newMotor.emit(motorname)
         self.config['motors'][motorname] = {'controller':devicename, 'index': motorindex, 'name': motorname,
@@ -191,14 +192,22 @@ class Motors(QtCore.QAbstractItemModel, Component):
         else:
             return self.motors[item]
 
+    def onMotorPositionChanged(self, position:float):
+        motor = self.sender()
+        assert isinstance(motor, Motor)
+        row = self.motors.index(motor)
+        self.dataChanged.emit(
+            self.index(row, 0, QtCore.QModelIndex()),
+            self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex())
+        )
+
     def onMotorStarted(self, startposition: float):
         motor = self.sender()
         assert isinstance(motor, Motor)
         row = self.motors.index(motor)
         self.dataChanged.emit(
             self.index(row, 0, QtCore.QModelIndex()),
-            self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()),
-            [QtCore.Qt.BackgroundColorRole])
+            self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
     def onMotorStopped(self, success: bool, endposition: float):
         motor = self.sender()
@@ -206,8 +215,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
         row = self.motors.index(motor)
         self.dataChanged.emit(
             self.index(row, 0, QtCore.QModelIndex()),
-            self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()),
-            [QtCore.Qt.BackgroundColorRole])
+            self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
     def onMotorVariableChanged(self, name: str, value: Any, prevvalue: Any):
         motor = self.sender()
@@ -234,7 +242,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
     def getHeaderEntry(self) -> Dict[str, float]:
         return {m.name: m.where() for m in self.motors}
 
-    def addMotor(self, motorname: str, controllername: str, axis: int, softleft: float, softright: float, position: float):
+    def addMotor(self, motorname: str, controllername: str, axis: int, softleft: float, softright: float, position: float, role: Optional[MotorRole]=None, direction: Optional[MotorDirection]=None):
         if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
             raise RuntimeError('Not enough privilege to add motors')
         if motorname in self:
@@ -251,7 +259,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
             raise ValueError(f'Left limit must be lower than the right one.')
         if (position < softleft) or (position > softright):
             raise ValueError(f'Position must be between the limits.')
-        self._addmotor(motorname, controllername, axis)
+        self._addmotor(motorname, controllername, axis, role, direction)
         self[motorname].setLimits(softleft, softright)
         self[motorname].setPosition(position)
 
@@ -263,6 +271,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
         self.motors[index].started.disconnect(self.onMotorStarted)
         self.motors[index].stopped.disconnect(self.onMotorStopped)
         self.motors[index].variableChanged.disconnect(self.onMotorVariableChanged)
+        self.motors[index].positionChanged.disconnect(self.onMotorPositionChanged)
         self.motorRemoved.emit(motorname)
         self.endRemoveRows()
 

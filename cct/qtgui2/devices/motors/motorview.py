@@ -62,7 +62,6 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.beamStopCalibratorGroupBox.layout().addWidget(self.beamstopcalibrator)
         self.beamstopcalibrator.layout().setContentsMargins(0,0,0,0)
 
-
     def addMotor(self):
         if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
             QtWidgets.QMessageBox.critical(self, 'Insufficient privileges', 'Insufficient privileges to add a motor.')
@@ -79,7 +78,9 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self.addMotorDialog.axis(),
                 self.addMotorDialog.leftlimit(),
                 self.addMotorDialog.rightlimit(),
-                self.addMotorDialog.position()
+                self.addMotorDialog.position(),
+                self.addMotorDialog.motorrole(),
+                self.addMotorDialog.motordirection(),
             )
         self.addMotorDialog.finished.disconnect(self.onAddMotorDialogFinished)
         self.addMotorDialog.close()

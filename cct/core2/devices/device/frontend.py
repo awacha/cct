@@ -1,5 +1,6 @@
 import enum
 import logging
+import queue
 from multiprocessing import Queue, Process
 from typing import Any, Type, List, Iterator, Dict, Optional
 import time
@@ -114,6 +115,12 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             raise self.DeviceError('Cannot start backend: already running')
         self._ready = False
         self._variables = []
+        while True:
+            # flush queue
+            try:
+                self._queue_from_backend.get_nowait()
+            except queue.Empty:
+                break
         self._backend = Process(target=self.backendclass.create_and_run,
                                 args=(self._queue_to_backend, self._queue_from_backend, self._host, self._port),
                                 kwargs=self._backendkwargs if self._backendkwargs is not None else {})

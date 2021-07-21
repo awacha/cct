@@ -269,10 +269,10 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def setScan(self, scan: Scan):
         if isinstance(self.scan, Scan):
             if self.instrument.online:
-                self._disconnectMotor(self.instrument.motors[self.scan.motorname])
+                self.disconnectMotor(self.instrument.motors[self.scan.motorname])
         self.scan = scan
         if self.instrument.online:
-            self._connectMotor(self.instrument.motors[self.scan.motorname])
+            self.connectMotor(self.instrument.motors[self.scan.motorname])
         self.listWidget.clear()
         self.listWidget.addItems(self.scan.columnnames[1:])
         for row in range(self.listWidget.count()):

@@ -57,9 +57,9 @@ class GeniXBackend(DeviceBackend, ModbusTCP):
         if variablename == 'statusbits':
             self.modbus_read_coils(210, 30)
         elif variablename == 'power':
-            self.modbus_read_holding_register(50, 2)
+            self.modbus_read_holding_registers(50, 2)
         elif variablename == 'tube_temperature':
-            self.modbus_read_holding_register(54, 3)
+            self.modbus_read_holding_registers(54, 3)
         else:
             raise ValueError(f'Cannot query variable {variablename} directly.')
 

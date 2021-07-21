@@ -9,7 +9,7 @@ from ....devices.motor.generic.frontend import MotorController
 from ..auth.privilege import Privilege
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class MotorRole(enum.Enum):
@@ -47,20 +47,18 @@ class Motor(QtCore.QObject):
         self.controllername = controllername
         self.axis = axis
         self.name = name
-        self.instrument.devicemanager.deviceConnected.connect(self.onControllerConnected)
-        self.instrument.devicemanager.deviceDisconnected.connect(self.onControllerDisconnected)
-        if self.controllername in self.instrument.devicemanager:
-            self.onControllerConnected(self.controllername)
+        self.instrument.devicemanager[self.controllername].allVariablesReady.connect(self.onControllerConnected)
+        self.instrument.devicemanager[self.controllername].connectionLost.connect(self.onControllerDisconnected)
+        if self.instrument.devicemanager[self.controllername].isOnline():
+            self.onControllerConnected()
 
-    def onControllerConnected(self, controllername: str):
-        if controllername == self.controllername:
-            self.controller.moveStarted.connect(self.onMoveStarted)
-            self.controller.moveEnded.connect(self.onMoveEnded)
-            self.controller.variableChanged.connect(self.onVariableChanged)
+    def onControllerConnected(self):
+        logger.debug(f'Connecting slots of motor {self.name} to controller {self.controllername}')
+        self.controller.moveStarted.connect(self.onMoveStarted)
+        self.controller.moveEnded.connect(self.onMoveEnded)
+        self.controller.variableChanged.connect(self.onVariableChanged)
 
-    def onControllerDisconnected(self, controllername: str, expected: bool):
-        if controllername != self.controllername:
-            return
+    def onControllerDisconnected(self, expected: bool):
         try:
             self.controller.moveStarted.disconnect(self.onMoveStarted)
             self.controller.moveEnded.disconnect(self.onMoveEnded)
@@ -94,7 +92,7 @@ class Motor(QtCore.QObject):
         return self.controller[f'moving${self.axis}']
 
     def setPosition(self, newposition: float):
-        self.checkPrivileges(calibration= True)
+        self.checkPrivileges(calibration=True)
         return self.controller.setPosition(self.axis, newposition)
 
     def setLimits(self, left: float, right: float):
@@ -147,7 +145,8 @@ class Motor(QtCore.QObject):
 
     @property
     def hasController(self) -> bool:
-        return self.controllername in self.instrument.devicemanager
+        return (self.controllername in self.instrument.devicemanager) and self.instrument.devicemanager[
+            self.controllername].isOnline()
 
     def checkPrivileges(self, calibration: bool):
         if (self.role == MotorRole.BeamStop) and (not self.instrument.auth.hasPrivilege(Privilege.MoveBeamstop)):

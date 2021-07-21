@@ -38,7 +38,7 @@ logging.root.addHandler(handler)
 
 
 def excepthook(exctype, exc, tb):
-    logging.root.critical(f'Uncaught exception: {repr(exc)}\nTraceback:\n{"".join(traceback.format_tb(tb))}')
+    logging.root.critical(f'Uncaught exception: {repr(exc)}\nTraceback:\n{traceback.format_exception(exctype, exc, tb)}')
 
 
 @click.group()

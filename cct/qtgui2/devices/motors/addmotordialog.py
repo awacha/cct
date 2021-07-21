@@ -2,6 +2,7 @@ from PyQt5 import QtWidgets
 from .addmotordialog_ui import Ui_Dialog
 from ....core2.instrument.instrument import Instrument
 from ....core2.devices.motor.generic.frontend import MotorController
+from ....core2.instrument.components.motors.motors import MotorRole, MotorDirection
 
 
 class AddMotorDialog(QtWidgets.QDialog, Ui_Dialog):
@@ -21,6 +22,10 @@ class AddMotorDialog(QtWidgets.QDialog, Ui_Dialog):
         self.leftLimitDoubleSpinBox.valueChanged.connect(self.validate)
         self.rightLimitDoubleSpinBox.valueChanged.connect(self.validate)
         self.positionDoubleSpinBox.valueChanged.connect(self.validate)
+        self.motorRoleComboBox.addItems([role.name for role in MotorRole])
+        self.motorRoleComboBox.setCurrentIndex(0)
+        self.motorDirectionComboBox.addItems([direction.name for direction in MotorDirection])
+        self.motorDirectionComboBox.setCurrentIndex(0)
 
     def motorControllerSelected(self):
         controller = Instrument.instance().devicemanager[self.controllerComboBox.currentText()]
@@ -59,3 +64,8 @@ class AddMotorDialog(QtWidgets.QDialog, Ui_Dialog):
     def rightlimit(self) -> float:
         return self.rightLimitDoubleSpinBox.value()
 
+    def motorrole(self) -> MotorRole:
+        return MotorRole[self.motorRoleComboBox.currentText()]
+
+    def motordirection(self) -> MotorDirection:
+        return MotorDirection[self.motorDirectionComboBox.currentText()]
