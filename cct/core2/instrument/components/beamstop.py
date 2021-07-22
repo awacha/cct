@@ -9,7 +9,7 @@ from .motors import Motor, MotorRole, MotorDirection
 from ...devices.device.frontend import DeviceFrontend
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class BeamStop(QtCore.QObject, Component):
@@ -26,8 +26,6 @@ class BeamStop(QtCore.QObject, Component):
     _movetarget: Optional[States]
     _movephase: Optional[str]
     state:States = States.Undefined
-    xmotorname: Optional[str] = None
-    ymotorname: Optional[str] = None
     motionstoprequested: bool=False
 
     def __init__(self, **kwargs):
@@ -38,15 +36,9 @@ class BeamStop(QtCore.QObject, Component):
         self.instrument.motors.newMotor.connect(self.onNewMotorConnected)
 
     def onMotorDestroyed(self):
-        motor = self.sender()
-        assert isinstance(motor, Motor)
-        if motor.name == self.xmotorname:
-            self.xmotorname = None
-        elif motor.name == self.ymotorname:
-            self.ymotorname = None
+        # no need to disconnect signal handlers from the destroyed object: Qt does it automatically
         self.state = self.States.Undefined
         self.stateChanged.emit(self.state.value)
-        return
 
     def _disconnectMotor(self, motor:Motor):
         motor.started.disconnect(self.onMotorStarted)
@@ -54,6 +46,8 @@ class BeamStop(QtCore.QObject, Component):
         motor.moving.disconnect(self.onMotorMoving)
         motor.positionChanged.disconnect(self.onMotorPositionChanged)
         motor.destroyed.disconnect(self.onMotorDestroyed)
+        motor.cameOnLine.disconnect(self.onMotorOnLine)
+        motor.wentOffLine.disconnect(self.onMotorOffLine)
 
     def _connectMotor(self, motor:Motor):
         motor.started.connect(self.onMotorStarted)
@@ -61,33 +55,19 @@ class BeamStop(QtCore.QObject, Component):
         motor.moving.connect(self.onMotorMoving)
         motor.positionChanged.connect(self.onMotorPositionChanged)
         motor.destroyed.connect(self.onMotorDestroyed)
+        motor.cameOnLine.connect(self.onMotorOnLine)
+        motor.wentOffLine.connect(self.onMotorOffLine)
 
-    def reConnectMotors(self):
-        if (self.xmotorname is not None) and (self.instrument.motors.beamstop_x.name != self.xmotorname):
-            # motor has changed, disconnect the previous motor
-            motor = self.instrument.motors[self.xmotorname]
-            self._disconnectMotor(self.instrument.motors[self.xmotorname])
-            self.xmotorname = None
-        if (self.ymotorname is not None) and (self.instrument.motors.beamstop_y.name != self.ymotorname):
-            # motor has changed, disconnect the previous motor
-            motor = self.instrument.motors[self.ymotorname]
-            self._disconnectMotor(self.instrument.motors[self.ymotorname])
-            self.ymotorname = None
-        if self.xmotorname is None:
-            try:
-                self.xmotorname = self.instrument.motors.beamstop_x.name
-                self._connectMotor(self.instrument.motors.beamstop_x)
-            except KeyError:
-                self.xmotorname = None
-        if self.ymotorname is None:
-            try:
-                self.ymotorname = self.instrument.motors.beamstop_y.name
-                self._connectMotor(self.instrument.motors.beamstop_y)
-            except KeyError:
-                self.ymotorname = None
+    def onMotorOnLine(self):
+        self.checkState()
+
+    def onMotorOffLine(self):
+        self.state = self.States.Undefined
+        self.stateChanged.emit(self.state.value)
 
     def onNewMotorConnected(self, motorname: str):
-        self.reConnectMotors()
+        if self.instrument.motors[motorname].role == MotorRole.BeamStop:
+            self._connectMotor(self.instrument.motors[motorname])
 
     def moveOut(self):
         self._movetarget = self.States.Out
@@ -169,7 +149,11 @@ class BeamStop(QtCore.QObject, Component):
             pass
 
     def motorsAvailable(self) -> bool:
-        return (self.xmotorname is not None) and (self.ymotorname is not None)
+        try:
+            return self.instrument.motors.beamstop_x.isOnline() and self.instrument.motors.beamstop_y.isOnline()
+        except KeyError:
+            # happens when either of the motors is not present
+            return False
 
     def stopMoving(self):
         if self._movetarget is not None:
@@ -187,11 +171,20 @@ class BeamStop(QtCore.QObject, Component):
             self._disconnectMotor(motor)
 
     def startComponent(self):
-        self.reConnectMotors()
+        for motor in self.instrument.motors:
+            if motor.role == MotorRole.BeamStop:
+                self._connectMotor(motor)
         super().startComponent()
 
     def stopComponent(self):
-        self.disconnectMotors()
+        try:
+            self._disconnectMotor(self.motorx)
+        except KeyError:
+            pass
+        try:
+            self._disconnectMotor(self.motory)
+        except KeyError:
+            pass
         super().stopComponent()
 
     @property

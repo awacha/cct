@@ -6,7 +6,7 @@ from PyQt5 import QtCore, QtGui
 
 from ..component import Component
 from ....devices.motor.generic.frontend import MotorController
-from ..auth import Privilege
+from ..auth import Privilege, needsprivilege
 from .motor import Motor, MotorRole, MotorDirection
 
 logger = logging.getLogger(__name__)
@@ -154,26 +154,6 @@ class Motors(QtCore.QAbstractItemModel, Component):
         self.beginInsertRows(QtCore.QModelIndex(), insert_at, 1)
         motor = Motor(self.instrument, devicename, motorindex, motorname)
         self.motors.insert(insert_at, motor)
-        if direction is None:
-            if motorname.upper().endswith('X'):
-                direction = MotorDirection.X
-            elif motorname.upper().endswith('Y'):
-                direction = MotorDirection.Y
-            elif motorname.upper().endswith('Z'):
-                direction = MotorDirection.Z
-            else:
-                direction = MotorDirection.Other
-        motor.direction = MotorDirection(direction)
-        if role is None:
-            if motorname.upper().startswith('SAMPLE'):
-                role = MotorRole.Sample
-            elif motorname.upper().startswith('PH') or motorname.upper().startswith('PINHOLE'):
-                role = MotorRole.Pinhole
-            elif motorname.upper().startswith('BS') or motorname.upper().startswith('BEAMSTOP'):
-                role = MotorRole.BeamStop
-            else:
-                role = MotorRole.Other
-        motor.role = MotorRole(role)
         motor.started.connect(self.onMotorStarted)
         motor.stopped.connect(self.onMotorStopped)
         motor.variableChanged.connect(self.onMotorVariableChanged)
@@ -242,11 +222,14 @@ class Motors(QtCore.QAbstractItemModel, Component):
     def getHeaderEntry(self) -> Dict[str, float]:
         return {m.name: m.where() for m in self.motors}
 
+    @needsprivilege(Privilege.MotorConfiguration, 'Not enough privileges to add motors')
     def addMotor(self, motorname: str, controllername: str, axis: int, softleft: float, softright: float, position: float, role: Optional[MotorRole]=None, direction: Optional[MotorDirection]=None):
-        if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
-            raise RuntimeError('Not enough privilege to add motors')
         if motorname in self:
             raise ValueError(f'A motor already exists with name "{motorname}"')
+        # ensure that some roles and directions are unique
+        for role_, direction_ in [(MotorRole.BeamStop, MotorDirection.X), (MotorRole.BeamStop, MotorDirection.Y), (MotorRole.Sample, MotorDirection.X), (MotorRole.Sample, MotorDirection.Y)]:
+            if (role_ == role) and (direction_ == direction_) and [m for m in self if (m.role == role) and (m.direction == direction)]:
+                raise ValueError(f'Another motor already exists with role {role} and direction {direction}')
         controller = self.instrument.devicemanager[controllername]
         assert isinstance(controller, MotorController)
         if axis >= controller.Naxes:
@@ -263,9 +246,8 @@ class Motors(QtCore.QAbstractItemModel, Component):
         self[motorname].setLimits(softleft, softright)
         self[motorname].setPosition(position)
 
+    @needsprivilege(Privilege.MotorConfiguration, 'Not enough privileges to remove a motor')
     def removeMotor(self, motorname: str):
-        if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
-            raise RuntimeError('Not enough privileges to remove motor')
         index = [i for i, m in enumerate(self.motors) if m.name == motorname][0]
         self.beginRemoveRows(QtCore.QModelIndex(), index, index)
         self.motors[index].started.disconnect(self.onMotorStarted)
@@ -273,6 +255,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
         self.motors[index].variableChanged.disconnect(self.onMotorVariableChanged)
         self.motors[index].positionChanged.disconnect(self.onMotorPositionChanged)
         self.motorRemoved.emit(motorname)
+        del self.motors[index]
         self.endRemoveRows()
 
     def getMotorForRoleAndDirection(self, role: MotorRole, direction: MotorDirection) -> Motor:

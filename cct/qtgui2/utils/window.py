@@ -124,9 +124,9 @@ class WindowRequiresDevices:
             if not [d for d in instrument.devicemanager if (d.name == dn) and d.isOnline()]:
                 logger.debug(f'Cannot instantiate {cls.__name__}: no device with name {dn} available.')
                 return False
-        for mot in required_motors:
-            if not [m for m in instrument.motors if (m.name == mot)]:
-                logger.debug(f'Cannot instantiate {cls.__name__}: no motors with name {mot} available')
+        for motrole, motdir in required_motors:
+            if not [m for m in instrument.motors if (m.role == motrole) and (m.direction == motdir) and m.hasController]:
+                logger.debug(f'Cannot instantiate {cls.__name__}: no motors with role {motrole} and direction {motdir} available')
                 return False
         for priv in required_privileges:
             if not instrument.auth.hasPrivilege(priv):
@@ -183,6 +183,8 @@ class WindowRequiresDevices:
         motor.positionChanged.connect(self.onMotorPositionChanged)
         motor.moving.connect(self.onMotorMoving)
         motor.variableChanged.connect(self.onVariableChanged)
+        motor.cameOnLine.connect(self.onMotorOnLine)
+        motor.wentOffLine.connect(self.onMotorOffLine)
 
     @final
     def disconnectMotor(self, motor: Union[Motor, str]):
@@ -195,6 +197,8 @@ class WindowRequiresDevices:
             motor.positionChanged.disconnect(self.onMotorPositionChanged)
             motor.moving.disconnect(self.onMotorMoving)
             motor.variableChanged.disconnect(self.onVariableChanged)
+            motor.cameOnLine.disconnect(self.onMotorOnLine)
+            motor.wentOffLine.disconnect(self.onMotorOffLine)
         except TypeError:
             pass
 
@@ -244,6 +248,22 @@ class WindowRequiresDevices:
             self._disconnectDevice(device)
             self._connectDevice(device)
             self.setSensitive(None)
+
+    @final
+    def _onMotorOnLine(self):
+        self.setSensitive(None)
+        self.onMotorOnLine()
+
+    @final
+    def _onMotorOffLine(self):
+        self.setSensitive(None)
+        self.onMotorOffLine()
+
+    def onMotorOnLine(self):
+        pass
+
+    def onMotorOffLine(self):
+        pass
 
     def onAllVariablesReady(self):
         self.setSensitive(None)

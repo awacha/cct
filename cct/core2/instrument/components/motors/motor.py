@@ -3,7 +3,7 @@ from PyQt5 import QtCore
 import enum
 
 import logging
-from typing import Iterator, Any
+from typing import Iterator, Any, Optional
 
 from ....devices.motor.generic.frontend import MotorController
 from ..auth.privilege import Privilege
@@ -40,13 +40,36 @@ class Motor(QtCore.QObject):
     variableChanged = QtCore.pyqtSignal(str, object, object)  # emitted whenever a variable changes
     positionChanged = QtCore.pyqtSignal(float)  # emitted when the position changes either by movement or by calibration
     moving = QtCore.pyqtSignal(float, float, float)  # arguments: actual position, start position, target position
+    cameOnLine = QtCore.pyqtSignal()  # emitted when the controller becomes on-line
+    wentOffLine = QtCore.pyqtSignal()  # emitted when the controller becomes off-line
 
-    def __init__(self, instrument: "Instrument", controllername: str, axis: int, name: str):
+    def __init__(self, instrument: "Instrument", controllername: str, axis: int, name: str, role: Optional[MotorRole] = None, direction: Optional[MotorDirection] = None):
         super().__init__()
         self.instrument = instrument
         self.controllername = controllername
         self.axis = axis
         self.name = name
+        if direction is None:
+            if self.name.upper().endswith('X'):
+                direction = MotorDirection.X
+            elif self.name.upper().endswith('Y'):
+                direction = MotorDirection.Y
+            elif self.name.upper().endswith('Z'):
+                direction = MotorDirection.Z
+            else:
+                direction = MotorDirection.Other
+        self.direction = direction
+        if role is None:
+            if self.name.upper().startswith('SAMPLE'):
+                role = MotorRole.Sample
+            elif self.name.upper().startswith('PH') or self.name.upper().startswith('PINHOLE'):
+                role = MotorRole.Pinhole
+            elif self.name.upper().startswith('BS') or self.name.upper().startswith('BEAMSTOP'):
+                role = MotorRole.BeamStop
+            else:
+                role = MotorRole.Other
+        self.role = role
+
         self.instrument.devicemanager[self.controllername].allVariablesReady.connect(self.onControllerConnected)
         self.instrument.devicemanager[self.controllername].connectionLost.connect(self.onControllerDisconnected)
         if self.instrument.devicemanager[self.controllername].isOnline():
@@ -57,6 +80,7 @@ class Motor(QtCore.QObject):
         self.controller.moveStarted.connect(self.onMoveStarted)
         self.controller.moveEnded.connect(self.onMoveEnded)
         self.controller.variableChanged.connect(self.onVariableChanged)
+        self.cameOnLine.emit()
 
     def onControllerDisconnected(self, expected: bool):
         try:
@@ -66,6 +90,7 @@ class Motor(QtCore.QObject):
         except KeyError:
             # happens if the controller has been removed
             pass
+        self.wentOffLine.emit()
 
     def onMoveStarted(self, motor: int, startposition: float):
         if motor == self.axis:
@@ -145,8 +170,7 @@ class Motor(QtCore.QObject):
 
     @property
     def hasController(self) -> bool:
-        return (self.controllername in self.instrument.devicemanager) and self.instrument.devicemanager[
-            self.controllername].isOnline()
+        return self.isOnline()
 
     def checkPrivileges(self, calibration: bool):
         if (self.role == MotorRole.BeamStop) and (not self.instrument.auth.hasPrivilege(Privilege.MoveBeamstop)):
@@ -155,3 +179,6 @@ class Motor(QtCore.QObject):
             raise RuntimeError('Cannot move pinhole: insufficient privileges')
         if calibration and (not self.instrument.auth.hasPrivilege(Privilege.MotorCalibration)):
             raise RuntimeError('Cannot calibrate motor: insufficient privileges')
+
+    def isOnline(self) -> bool:
+        return (self.controllername in self.instrument.devicemanager) and self.instrument.devicemanager[self.controllername].isOnline()

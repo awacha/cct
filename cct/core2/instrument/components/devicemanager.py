@@ -7,6 +7,7 @@ from .auth import Privilege, needsprivilege
 from .component import Component
 from ...devices.device.frontend import DeviceFrontend
 from ...devices.motor.generic.frontend import MotorController
+from ....utils import getIconFromTheme
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -264,13 +265,13 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
             return dev.port
         elif (role == QtCore.Qt.DecorationRole) and (index.column() == 0):
             if dev.isOffline():
-                return QtGui.QIcon.fromTheme('network-offline')
+                return getIconFromTheme('network-offline', 'network-wired-offline', 'network-wired-disconnected')
             elif dev.isOnline():
-                return QtGui.QIcon.fromTheme('network-idle')
+                return getIconFromTheme('network-idle', 'network-wired-activated')
             elif dev.isInitializing():
-                return QtGui.QIcon.fromTheme('network-transmit-receive')
+                return getIconFromTheme('network-transmit-receive', 'network-limited')
             else:
-                return QtGui.QIcon.fromTheme('network-error')
+                return getIconFromTheme('network-error', 'network-wired-unavailable')
         elif role == QtCore.Qt.UserRole:
             return dev.name
         return None

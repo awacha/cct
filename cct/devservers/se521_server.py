@@ -126,6 +126,8 @@ class SE521DevServer:
             await self.writer.drain()
             self.writer.close()
             await self.writer.wait_closed()
+            self.reader = None
+            self.writer = None
             return
         messageremainder = b''
         try:
