@@ -1,7 +1,9 @@
-from typing import Optional, Tuple
+from typing import Tuple, Any
 
 from .backend import PilatusBackend
 from ...device.frontend import DeviceFrontend
+from ....sensors.thermometer import Thermometer
+from ....sensors.hygrometer import Hygrometer
 import enum
 
 
@@ -18,10 +20,17 @@ class PilatusDetector(DeviceFrontend):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.sensors = [Thermometer(f'Power board temperature', self.name, 0, '°C'),
+                        Thermometer(f'Base plate temperature', self.name, 1, '°C'),
+                        Thermometer(f'Sensor temperature', self.name, 2, '°C'),
+                        Hygrometer(f'Power board humidity', self.name, 3, '%'),
+                        Hygrometer(f'Base plate humidity', self.name, 4, '%'),
+                        Hygrometer(f'Sensor humidity', self.name, 5, '%'),
+                        ]
 
     def trim(self, energythreshold: float, gain: PilatusGain):
         thresholdmin, thresholdmax = self.thresholdLimits(gain)
-        if energythreshold < thresholdmin or energythreshold>thresholdmax:
+        if energythreshold < thresholdmin or energythreshold > thresholdmax:
             raise ValueError(f'Invalid threshold value ({energythreshold} eV) for this gain setting ({gain.value}).')
         self.issueCommand('trim', energythreshold, gain.value)
 
@@ -42,7 +51,17 @@ class PilatusDetector(DeviceFrontend):
         else:
             raise ValueError(f'Invalid gain {gain}')
 
-
-
-
-
+    def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
+        super().onVariableChanged(variablename, newvalue, previousvalue)
+        if variablename == 'temperature':
+            for i in range(3):
+                self.sensors[i].update(newvalue[i])
+        elif variablename == 'humidity':
+            for i in range(3):
+                self.sensors[3 + i].update(newvalue[i])
+        elif variablename == 'temperaturelimits':
+            for i in range(3):
+                self.sensors[i].setErrorLimits(*newvalue[i])
+        elif variablename == 'humiditylimits':
+            for i in range(3):
+                self.sensors[3 + i].setErrorLimits(*newvalue[i])
