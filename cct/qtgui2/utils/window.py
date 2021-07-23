@@ -109,6 +109,7 @@ class WindowRequiresDevices:
     @final
     def checkRequirements(cls) -> bool:
         """Check if the requirements are satisfied for this widget class"""
+        logger.debug(f'Rechecking requirements for class {cls.__name__}')
         instrument = Instrument.instance()
         required_devicetypes = [] if cls.required_devicetypes is None else cls.required_devicetypes
         required_devicenames = [] if cls.required_devicenames is None else cls.required_devicenames
@@ -125,13 +126,14 @@ class WindowRequiresDevices:
                 logger.debug(f'Cannot instantiate {cls.__name__}: no device with name {dn} available.')
                 return False
         for motrole, motdir in required_motors:
-            if not [m for m in instrument.motors if (m.role == motrole) and (m.direction == motdir) and m.hasController]:
+            if not [m for m in instrument.motors if (m.role == motrole) and (m.direction == motdir) and m.isOnline()]:
                 logger.debug(f'Cannot instantiate {cls.__name__}: no motors with role {motrole} and direction {motdir} available')
                 return False
         for priv in required_privileges:
             if not instrument.auth.hasPrivilege(priv):
                 logger.debug(f'Cannot instantiate {cls.__name__}: privilege {priv} is not available')
                 return False
+        logger.debug(f'Requirements satisfied for class {cls.__name__}')
         return True
 
     def setSensitive(self, sensitive: Optional[bool] = True):
@@ -177,14 +179,14 @@ class WindowRequiresDevices:
         """Connect the signals of a motor to the callback functions"""
         if isinstance(motor, str):
             motor = self.instrument.motors[motor]
-        logger.debug(f'Connecting motor {motor.name}')
+        logger.debug(f'Connecting motor {motor.name} to an instance of class {self.__class__.__name__}')
         motor.started.connect(self.onMotorStarted)
         motor.stopped.connect(self.onMotorStopped)
         motor.positionChanged.connect(self.onMotorPositionChanged)
         motor.moving.connect(self.onMotorMoving)
         motor.variableChanged.connect(self.onVariableChanged)
-        motor.cameOnLine.connect(self.onMotorOnLine)
-        motor.wentOffLine.connect(self.onMotorOffLine)
+        motor.cameOnLine.connect(self._onMotorOnLine)
+        motor.wentOffLine.connect(self._onMotorOffLine)
 
     @final
     def disconnectMotor(self, motor: Union[Motor, str]):
@@ -192,13 +194,14 @@ class WindowRequiresDevices:
         if isinstance(motor, str):
             motor = self.instrument.motors[motor]
         try:
+            logger.debug(f'Disconnecting motor {motor.name} from an instance of class {self.__class__.__name__}')
             motor.started.disconnect(self.onMotorStarted)
             motor.stopped.disconnect(self.onMotorStopped)
             motor.positionChanged.disconnect(self.onMotorPositionChanged)
             motor.moving.disconnect(self.onMotorMoving)
             motor.variableChanged.disconnect(self.onVariableChanged)
-            motor.cameOnLine.disconnect(self.onMotorOnLine)
-            motor.wentOffLine.disconnect(self.onMotorOffLine)
+            motor.cameOnLine.disconnect(self._onMotorOnLine)
+            motor.wentOffLine.disconnect(self._onMotorOffLine)
         except TypeError:
             pass
 
@@ -288,6 +291,7 @@ class WindowRequiresDevices:
 
     @final
     def onNewMotor(self, motorname: str):
+        logger.debug(f'New motor callback in {self.__class__.__name__}')
         motor = self.instrument.motors[motorname]
         if self.connect_all_motors or ((motor.role, motor.direction) in self.required_motors):
             self.connectMotor(self.instrument.motors[motorname])
