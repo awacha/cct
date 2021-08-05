@@ -7,7 +7,7 @@ from multiprocessing import Queue
 from typing import Sequence, Any, Tuple, List, Dict, Optional
 
 from .conversion import UnitConverter
-from .tmcl import TMCLUnpack, TMCLPack, TMCLError, AxisParameters, Instructions
+from .tmcl import TMCLUnpack, TMCLPack, TMCLError, AxisParameters, Instructions, TMCLStatusMessage
 from ...device.backend import DeviceBackend
 
 
@@ -31,6 +31,7 @@ class MotionData:
 class TrinamicMotorControllerBackend(DeviceBackend):
     class Status(DeviceBackend.Status):
         Moving = 'Moving'
+        Calibrating = 'Calibrating'
 
     Naxes: int
     topRMScurrent: float
@@ -38,7 +39,10 @@ class TrinamicMotorControllerBackend(DeviceBackend):
     clock_frequency: int
     full_step_size: float
     positionfile: str
-    calibratedmotorsfrompositionfile: bool = False
+
+    # `motorsneedingcalibration` is a list of motor indices which were not yet calibrated at startup (i.e. positions set
+    # from the motor state file). If it is empty, all motors are calibrated.
+    motorsneedingcalibration: Optional[List[int]] = None
 
     per_controller_variables = ['firmwareversion']
     position_variables = ['targetposition', 'actualposition']
@@ -135,6 +139,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
             raise ValueError(f'Number of positions read from file {self.positionfile} ({len(posinfo)} is not the same '
                              f'as the number of axes (${self.Naxes}).')
         self.motionstatus = {}
+        self.motorsneedingcalibration = None  # will be set when all variables became ready
 
     def _query(self, variablename: str):
         msg = None
@@ -220,95 +225,142 @@ class TrinamicMotorControllerBackend(DeviceBackend):
     def interpretMessage(self, message: bytes, sentmessage: bytes):
         assert len(sentmessage) == 9
         try:
-            cmd, value = TMCLUnpack(message, sentmessage[1])
-        except TMCLError:
-            raise  # ToDo
-        if cmd == Instructions.GetFirmwareVersion:
-            self.updateVariable(
-                'firmwareversion',
-                f'TMCM{value // 0x10000:d}, '
-                f'firmware v{(value % 0x10000) // 0x100:d}.{value % 0x100:d}')
-        elif cmd == Instructions.MoveTo:
-            axis = sentmessage[3]
-            self.motionstatus[axis].cmdacktime = time.monotonic()
-        elif cmd == Instructions.Stop:
-            axis = sentmessage[3]
-            if axis in self.motionstatus:
-                self.motionstatus[axis].stopcmdacktime = time.monotonic()
-        elif cmd == Instructions.GetAxisParameter:
-            axisparameter = sentmessage[2]
-            axis = sentmessage[3]
-            if axisparameter == AxisParameters.TargetPositionReached:
-                self.updateVariable(f'targetpositionreached${axis}', bool(value))
-            elif axisparameter == AxisParameters.TargetPosition:
-                self.updateVariable(f'targetposition:raw${axis}', value)
-                self.updateVariable(f'targetposition${axis}', self.converters[axis].position2phys(value))
-            elif axisparameter == AxisParameters.ActualPosition:
-                self.updateVariable(f'actualposition:raw${axis}', value)
-                self.updateVariable(f'actualposition${axis}', self.converters[axis].position2phys(value))
-                if axis not in self.motionstatus:
-                    # motor not moving
-                    try:
-                        self.writeMotorPosFile()
-                    except KeyError as ke:
-                        self.debug(f'Cannot (yet?) write motor position file. Changed variable: actualposition${axis}. Missing parameter: {ke.args[0]}')
-            elif axisparameter == AxisParameters.TargetSpeed:
-                self.updateVariable(f'targetspeed:raw${axis}', value)
-                self.updateVariable(f'targetspeed${axis}', self.converters[axis].speed2phys(value))
-            elif axisparameter == AxisParameters.ActualSpeed:
-                self.updateVariable(f'actualspeed:raw${axis}', value)
-                self.updateVariable(f'actualspeed${axis}', self.converters[axis].speed2phys(value))
-            elif axisparameter == AxisParameters.RightLimitSwitchStatus:
-                self.updateVariable(f'rightswitchstatus${axis}', bool(value))
-            elif axisparameter == AxisParameters.LeftLimitSwitchStatus:
-                self.updateVariable(f'leftswitchstatus${axis}', bool(value))
-            elif axisparameter == AxisParameters.ActualAcceleration:
-                self.updateVariable(f'actualacceleration:raw${axis}', value)
-                self.updateVariable(f'actualacceleration${axis}', self.converters[axis].accel2phys(value))
-            elif axisparameter == AxisParameters.ActualLoadValue:
-                self.updateVariable(f'load${axis}', value)
-            elif axisparameter == AxisParameters.DriverErrorFlags:
-                self.updateVariable(f'drivererror${axis}', value)
-            elif axisparameter == AxisParameters.RampMode:
-                self.updateVariable(f'rampmode${axis}', value)
-            elif axisparameter == AxisParameters.PulseDivisor:
-                self.updateVariable(f'pulsedivisor${axis}', value)
-                self.converters[axis].pulsedivisor = value
-                self.reconvertAllRawToPhys(axis)
-            elif axisparameter == AxisParameters.RampDivisor:
-                self.updateVariable(f'rampdivisor${axis}', value)
-                self.converters[axis].rampdivisor = value
-                self.reconvertAllRawToPhys(axis)
-            elif axisparameter == AxisParameters.MicrostepResolution:
-                self.updateVariable(f'microstepresolution${axis}', value)
-                self.converters[axis].microstepresolution = value
-                self.reconvertAllRawToPhys(axis)
-            elif axisparameter == AxisParameters.AbsoluteMaxCurrent:
-                self.updateVariable(f'maxcurrent:raw${axis}', value)
-                self.updateVariable(f'maxcurrent${axis}', self.converters[axis].current2phys(value))
-            elif axisparameter == AxisParameters.StandbyCurrent:
-                self.updateVariable(f'standbycurrent:raw${axis}', value)
-                self.updateVariable(f'standbycurrent${axis}', self.converters[axis].current2phys(value))
-            elif axisparameter == AxisParameters.RightLimitSwitchDisable:
-                self.updateVariable(f'rightswitchenable${axis}', not bool(value))
-            elif axisparameter == AxisParameters.LeftLimitSwitchDisable:
-                self.updateVariable(f'leftswitchenable${axis}', not bool(value))
-            elif axisparameter == AxisParameters.FreewheelingDelay:
-                self.updateVariable(f'freewheelingdelay${axis}', value / 1000.)
-            elif axisparameter == AxisParameters.MaximumPositioningSpeed:
-                self.updateVariable(f'maxspeed:raw${axis}', value)
-                self.updateVariable(f'maxspeed${axis}', self.converters[axis].speed2phys(value))
-            elif axisparameter == AxisParameters.MaximumAcceleration:
-                self.updateVariable(f'maxacceleration:raw${axis}', value)
-                self.updateVariable(f'maxacceleration${axis}', self.converters[axis].accel2phys(value))
+            status, cmd, value = TMCLUnpack(message, sentmessage)
+        except TMCLError as tmcle:
+            raise TMCLError(f'TMCL error: {tmcle}')
+        if status == TMCLStatusMessage.Success:
+            if cmd == Instructions.GetFirmwareVersion:
+                self.updateVariable(
+                    'firmwareversion',
+                    f'TMCM{value // 0x10000:d}, '
+                    f'firmware v{(value % 0x10000) // 0x100:d}.{value % 0x100:d}')
+            elif cmd == Instructions.MoveTo:
+                axis = sentmessage[3]
+                self.motionstatus[axis].cmdacktime = time.monotonic()
+            elif cmd == Instructions.Stop:
+                axis = sentmessage[3]
+                if axis in self.motionstatus:
+                    self.motionstatus[axis].stopcmdacktime = time.monotonic()
+            elif cmd == Instructions.GetAxisParameter:
+                axisparameter = sentmessage[2]
+                axis = sentmessage[3]
+                if axisparameter == AxisParameters.TargetPositionReached:
+                    self.updateVariable(f'targetpositionreached${axis}', bool(value))
+                elif axisparameter == AxisParameters.TargetPosition:
+                    self.updateVariable(f'targetposition:raw${axis}', value)
+                    self.updateVariable(f'targetposition${axis}', self.converters[axis].position2phys(value))
+                elif axisparameter == AxisParameters.ActualPosition:
+                    self.updateVariable(f'actualposition:raw${axis}', value)
+                    self.updateVariable(f'actualposition${axis}', self.converters[axis].position2phys(value))
+                    if axis not in self.motionstatus:
+                        # motor not moving
+                        try:
+                            self.writeMotorPosFile()
+                        except KeyError as ke:
+                            self.debug(f'Cannot (yet?) write motor position file. Changed variable: actualposition${axis}. Missing parameter: {ke.args[0]}')
+                elif axisparameter == AxisParameters.TargetSpeed:
+                    self.updateVariable(f'targetspeed:raw${axis}', value)
+                    self.updateVariable(f'targetspeed${axis}', self.converters[axis].speed2phys(value))
+                elif axisparameter == AxisParameters.ActualSpeed:
+                    self.updateVariable(f'actualspeed:raw${axis}', value)
+                    self.updateVariable(f'actualspeed${axis}', self.converters[axis].speed2phys(value))
+                elif axisparameter == AxisParameters.RightLimitSwitchStatus:
+                    self.updateVariable(f'rightswitchstatus${axis}', bool(value))
+                elif axisparameter == AxisParameters.LeftLimitSwitchStatus:
+                    self.updateVariable(f'leftswitchstatus${axis}', bool(value))
+                elif axisparameter == AxisParameters.ActualAcceleration:
+                    self.updateVariable(f'actualacceleration:raw${axis}', value)
+                    self.updateVariable(f'actualacceleration${axis}', self.converters[axis].accel2phys(value))
+                elif axisparameter == AxisParameters.ActualLoadValue:
+                    self.updateVariable(f'load${axis}', value)
+                elif axisparameter == AxisParameters.DriverErrorFlags:
+                    self.updateVariable(f'drivererror${axis}', value)
+                elif axisparameter == AxisParameters.RampMode:
+                    self.updateVariable(f'rampmode${axis}', value)
+                elif axisparameter == AxisParameters.PulseDivisor:
+                    self.updateVariable(f'pulsedivisor${axis}', value)
+                    self.converters[axis].pulsedivisor = value
+                    self.reconvertAllRawToPhys(axis)
+                elif axisparameter == AxisParameters.RampDivisor:
+                    self.updateVariable(f'rampdivisor${axis}', value)
+                    self.converters[axis].rampdivisor = value
+                    self.reconvertAllRawToPhys(axis)
+                elif axisparameter == AxisParameters.MicrostepResolution:
+                    self.updateVariable(f'microstepresolution${axis}', value)
+                    self.converters[axis].microstepresolution = value
+                    self.reconvertAllRawToPhys(axis)
+                elif axisparameter == AxisParameters.AbsoluteMaxCurrent:
+                    self.updateVariable(f'maxcurrent:raw${axis}', value)
+                    self.updateVariable(f'maxcurrent${axis}', self.converters[axis].current2phys(value))
+                elif axisparameter == AxisParameters.StandbyCurrent:
+                    self.updateVariable(f'standbycurrent:raw${axis}', value)
+                    self.updateVariable(f'standbycurrent${axis}', self.converters[axis].current2phys(value))
+                elif axisparameter == AxisParameters.RightLimitSwitchDisable:
+                    self.updateVariable(f'rightswitchenable${axis}', not bool(value))
+                elif axisparameter == AxisParameters.LeftLimitSwitchDisable:
+                    self.updateVariable(f'leftswitchenable${axis}', not bool(value))
+                elif axisparameter == AxisParameters.FreewheelingDelay:
+                    self.updateVariable(f'freewheelingdelay${axis}', value / 1000.)
+                elif axisparameter == AxisParameters.MaximumPositioningSpeed:
+                    self.updateVariable(f'maxspeed:raw${axis}', value)
+                    self.updateVariable(f'maxspeed${axis}', self.converters[axis].speed2phys(value))
+                elif axisparameter == AxisParameters.MaximumAcceleration:
+                    self.updateVariable(f'maxacceleration:raw${axis}', value)
+                    self.updateVariable(f'maxacceleration${axis}', self.converters[axis].accel2phys(value))
+                else:
+                    raise ValueError(f'Invalid axis parameter: {axisparameter}')
+                if axis in self.motionstatus:
+                    self.checkMotion(axis)
+            elif cmd == Instructions.SetAxisParameter:
+                axisparameter = sentmessage[2]
+                axisno = sentmessage[3]
+                if (bool(self.motorsneedingcalibration) and
+                        (axisparameter == AxisParameters.ActualPosition) and
+                        (axisno in self.motorsneedingcalibration)):
+                    # A Set Axis Parameter command succeeded, setting the actual position of a motor. If we are not yet
+                    # calibrated, this means that a calibration succeeded.
+                    self.motorsneedingcalibration.remove(axisno)
+                    self.info(f'SUCCESSFUL CALIBRATION OF MOTOR #{axisno}')
+                if not self.motorsneedingcalibration:
+                    self.updateVariable('__status__', self.Status.Idle)
             else:
-                raise ValueError(f'Invalid axis parameter: {axisparameter}')
-            if axis in self.motionstatus:
-                self.checkMotion(axis)
-        elif cmd == Instructions.SetAxisParameter:
-            pass  # nothing needs to be done
+                raise ValueError(f'TMCL command {cmd} not implemented.')
         else:
-            raise ValueError(f'TMCL command {cmd} not implemented.')
+            # not success, some error happened.
+            if cmd == Instructions.SetAxisParameter:
+                axisparameter = sentmessage[2]
+                axisno = sentmessage[3]
+                raise RuntimeError(f'Cannot set axis parameter #{axisparameter} of motor #{axisno}')
+            else:
+                raise TMCLError(f'Motor error #{status} ({TMCLStatusMessage.interpretErrorCode(status)}). '
+                                f'Original message sent: {sentmessage}')
+
+    def checkIfJustBecameReady(self) -> bool:
+        if not super().checkIfJustBecameReady():
+            return False
+        elif self.motorsneedingcalibration is None:
+            # we just became ready: all variables have been successfully queried.
+            self.warning(f'STARTING MOTOR CALIBRATION')
+            self.debug('Calibrating motor positions')
+            self.motorsneedingcalibration = list(range(self.Naxes))
+            self.updateVariable('__status__', self.Status.Calibrating)
+            positions = self.readMotorPosFile()
+            for axis in positions:
+                position, (softleft, softright) = positions[axis]
+                if position is None:  # no calibration data, calibrate to the current state of the tmcm controller
+                    position = self.getVariable(f'actualposition${axis}')
+                self.setMotorPosition(axis, position)
+                if softleft is not None:
+                    self.updateVariable(f'softleft${axis}', softleft)
+                if softright is not None:
+                    self.updateVariable(f'softright${axis}', softright)
+            self.warning(f'STARTED MOTOR CALIBRATION')
+            return False
+        elif not self.motorsneedingcalibration:
+            # ready with the calibration
+            return True
+        else:
+            return False
 
     def reconvertAllRawToPhys(self, axis: int):
         for varbasename in self.position_variables:
@@ -433,8 +485,8 @@ class TrinamicMotorControllerBackend(DeviceBackend):
 
     def writeMotorPosFile(self):
         os.makedirs(os.path.split(self.positionfile)[0], exist_ok=True)
-        if not self.calibratedmotorsfrompositionfile:
-            self.warning('Not writing motor position file: not yet read.')
+        if (self.motorsneedingcalibration is None) or (self.motorsneedingcalibration):
+            self.warning('Not writing motor position file: not all motors are calibrated.')
             return
         with open(self.positionfile, 'wt') as f:
             for axis in range(self.Naxes):
@@ -604,21 +656,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
         return True
 
     def onVariablesReady(self):
-        self.debug('Calibrating motor positions')
-        positions = self.readMotorPosFile()
-        for axis in positions:
-            position, (softleft, softright) = positions[axis]
-            if position is not None:
-                self.setMotorPosition(axis, position)
-            if softleft is not None:
-                self.updateVariable(f'softleft${axis}', softleft)
-            if softright is not None:
-                self.updateVariable(f'softright${axis}', softright)
-        self.calibratedmotorsfrompositionfile = True
-        self.writeMotorPosFile()
-        self.updateVariable('__status__', self.Status.Idle)
-        self.updateVariable('__auxstatus__', '')
-
+        pass
 
 class TMCM351Backend(TrinamicMotorControllerBackend):
     name = 'tmcm351'

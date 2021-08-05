@@ -87,8 +87,8 @@ class Motor(QtCore.QObject):
             self.controller.moveStarted.disconnect(self.onMoveStarted)
             self.controller.moveEnded.disconnect(self.onMoveEnded)
             self.controller.variableChanged.disconnect(self.onVariableChanged)
-        except KeyError:
-            # happens if the controller has been removed
+        except (KeyError, TypeError):
+            # happens if the controller has been removed or it has failed to initialize
             pass
         self.wentOffLine.emit()
 

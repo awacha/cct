@@ -54,7 +54,7 @@ def TMCLPack(cmdnum: int, typenum: int, motor_or_bank: int, value: int) -> bytes
     return cmd
 
 
-def TMCLUnpack(message: bytes, command: Optional[int] = None) -> Tuple[int, int]:
+def TMCLUnpack(message: bytes, sentmessage: Optional[bytes] = None) -> Tuple[int, int, int]:
     """Unpacks a TMCL reply message
 
     # messages are composed of 9 bytes:
@@ -76,13 +76,13 @@ def TMCLUnpack(message: bytes, command: Optional[int] = None) -> Tuple[int, int]
         raise TMCLError(f'Checksum error on TMCL message "{message}"')
     # check the error status
     status = message[2]
-    if status != TMCLStatusMessage.Success:
-        raise TMCLError(f'Got error message from TMCM controller: "{TMCLStatusMessage.interpretErrorCode(status)} '
-                        f'(code {status})"')
+#    if status != TMCLStatusMessage.Success:
+#        raise TMCLError(f'Got error message from TMCM controller: "{TMCLStatusMessage.interpretErrorCode(status)} '
+#                        f'(code {status})"')
     # if we can, check if we got the reply for the correct command
-    if (command is not None) and (command != message[3]):
-        raise TMCLError(f'Got reply for command {message[3]}, expected {command}.')
-    return message[3], struct.unpack('>i', message[4:8])[0]
+    if (sentmessage[1] is not None) and (sentmessage[1] != message[3]):
+        raise TMCLError(f'Got reply for command {message[3]}, expected {sentmessage[1]}. Sent message: {sentmessage}')
+    return status, message[3], struct.unpack('>i', message[4:8])[0]
 
 
 class AxisParameters:

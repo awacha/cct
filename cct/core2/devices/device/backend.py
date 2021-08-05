@@ -587,12 +587,16 @@ class DeviceBackend:
             else:
                 return False
         finally:
-            if (not self.variablesready) and all([v.timestamp is not None for v in self.variables]):
+            if self.checkIfJustBecameReady():
                 self.variablesready = True
                 self.info(f'All variables ready.')
                 self.messageToFrontend('ready')
                 self.updateVariable('__status__', 'idle')
                 self.onVariablesReady()
+
+    def checkIfJustBecameReady(self) -> bool:
+        """Check if the device just became ready"""
+        return (not self.variablesready) and all([v.timestamp is not None for v in self.variables])
 
     @final
     def getVariable(self, varname: str) -> Variable:
