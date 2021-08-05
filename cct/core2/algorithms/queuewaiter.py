@@ -7,7 +7,7 @@ from typing import Callable, Tuple, List, Union, Optional, ClassVar
 from PyQt5 import QtCore
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class QueueWaiter(QtCore.QObject):
@@ -17,7 +17,7 @@ class QueueWaiter(QtCore.QObject):
     timerinterval: int
     _instance: ClassVar["QueueWaiter"]
 
-    def __init__(self, timerinterval: int = 0):
+    def __init__(self, timerinterval: int = 1):
         if not hasattr(type(self), '_instance'):
             type(self)._instance = self
         self.queues = []

@@ -252,8 +252,8 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 elif axisparameter == AxisParameters.ActualPosition:
                     self.updateVariable(f'actualposition:raw${axis}', value)
                     self.updateVariable(f'actualposition${axis}', self.converters[axis].position2phys(value))
-                    if axis not in self.motionstatus:
-                        # motor not moving
+                    if (axis not in self.motionstatus) and (self.motorsneedingcalibration is not None) and (not self.motorsneedingcalibration):
+                        # motor not moving and no motors are being calibrated
                         try:
                             self.writeMotorPosFile()
                         except KeyError as ke:
@@ -320,7 +320,6 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     # A Set Axis Parameter command succeeded, setting the actual position of a motor. If we are not yet
                     # calibrated, this means that a calibration succeeded.
                     self.motorsneedingcalibration.remove(axisno)
-                    self.info(f'SUCCESSFUL CALIBRATION OF MOTOR #{axisno}')
                 if not self.motorsneedingcalibration:
                     self.updateVariable('__status__', self.Status.Idle)
             else:
@@ -340,7 +339,6 @@ class TrinamicMotorControllerBackend(DeviceBackend):
             return False
         elif self.motorsneedingcalibration is None:
             # we just became ready: all variables have been successfully queried.
-            self.warning(f'STARTING MOTOR CALIBRATION')
             self.debug('Calibrating motor positions')
             self.motorsneedingcalibration = list(range(self.Naxes))
             self.updateVariable('__status__', self.Status.Calibrating)
@@ -354,7 +352,6 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     self.updateVariable(f'softleft${axis}', softleft)
                 if softright is not None:
                     self.updateVariable(f'softright${axis}', softright)
-            self.warning(f'STARTED MOTOR CALIBRATION')
             return False
         elif not self.motorsneedingcalibration:
             # ready with the calibration
