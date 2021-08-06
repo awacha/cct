@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>679</width>
-    <height>291</height>
+    <height>420</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -120,15 +120,34 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QToolButton" name="viewVariablesToolButton">
+           <property name="toolTip">
+            <string>Show variables</string>
+           </property>
+           <property name="text">
+            <string>View variables</string>
+           </property>
+           <property name="icon">
+            <iconset theme="preferences-other"/>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>24</width>
+             <height>24</height>
+            </size>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="telemetryTab">
+     <widget class="QWidget" name="debugTab">
       <attribute name="title">
        <string>Debugging &amp;&amp; Telemetry</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
@@ -151,22 +170,49 @@
         </layout>
        </item>
        <item>
-        <widget class="QTreeView" name="telemetryTreeView">
-         <property name="alternatingRowColors">
-          <bool>true</bool>
+        <widget class="QTabWidget" name="tabWidget_2">
+         <property name="tabPosition">
+          <enum>QTabWidget::West</enum>
          </property>
-         <property name="selectionMode">
-          <enum>QAbstractItemView::NoSelection</enum>
+         <property name="currentIndex">
+          <number>0</number>
          </property>
-         <property name="verticalScrollMode">
-          <enum>QAbstractItemView::ScrollPerPixel</enum>
-         </property>
-         <property name="rootIsDecorated">
-          <bool>false</bool>
-         </property>
-         <property name="allColumnsShowFocus">
-          <bool>true</bool>
-         </property>
+         <widget class="QWidget" name="telemetryTab">
+          <attribute name="title">
+           <string>Telemetry</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QTreeView" name="telemetryTreeView">
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::NoSelection</enum>
+             </property>
+             <property name="verticalScrollMode">
+              <enum>QAbstractItemView::ScrollPerPixel</enum>
+             </property>
+             <property name="rootIsDecorated">
+              <bool>false</bool>
+             </property>
+             <property name="allColumnsShowFocus">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="variablesTab">
+          <attribute name="title">
+           <string>Variables</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <widget class="QTreeView" name="variablesTreeView"/>
+           </item>
+          </layout>
+         </widget>
         </widget>
        </item>
       </layout>

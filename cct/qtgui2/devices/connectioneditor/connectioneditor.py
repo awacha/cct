@@ -29,6 +29,8 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.telemetryTreeView.setModel(TelemetryModel())
         self.deviceComboBox.currentIndexChanged.connect(self.onDeviceChanged)
         self.updateDeviceComboBox()
+        if self.deviceComboBox.currentIndex() >= 0:
+            self.variablesTreeView.setModel(self.instrument.devicemanager[self.deviceComboBox.currentText()])
 
     def addDevice(self):
         if self.newconnectiondialog is not None:
@@ -98,3 +100,5 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def onDeviceChanged(self):
         self.telemetryTreeView.model().setTelemetry(None)
+        if self.deviceComboBox.currentIndex() >= 0:
+            self.variablesTreeView.setModel(self.instrument.devicemanager[self.deviceComboBox.currentText()])
