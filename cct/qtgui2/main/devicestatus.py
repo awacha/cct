@@ -78,13 +78,13 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
         self.setLabelColor(self.autoQueryLabel, not telemetryinformation.autoqueryinhibited)
         self.setLabelColor(self.sendLabel, telemetryinformation.messagessent > 0)
         self.sendLabel.setToolTip(
-            f'Message rate: {telemetryinformation.messagessent / telemetryinformation.duration():.2f} messages / sec\n'
-            f'Byte rate: {telemetryinformation.bytessent / telemetryinformation.duration():.2f} bytes / sec'
+            f'Message rate: {telemetryinformation.messagessent / telemetryinformation.duration:.2f} messages / sec\n'
+            f'Byte rate: {telemetryinformation.bytessent / telemetryinformation.duration:.2f} bytes / sec'
         )
         self.setLabelColor(self.recvLabel, telemetryinformation.messagesreceived > 0)
         self.recvLabel.setToolTip(
-            f'Message rate: {telemetryinformation.messagesreceived / telemetryinformation.duration():.2f} messages / sec\n'
-            f'Byte rate: {telemetryinformation.bytesreceived / telemetryinformation.duration():.2f} bytes / sec'
+            f'Message rate: {telemetryinformation.messagesreceived / telemetryinformation.duration:.2f} messages / sec\n'
+            f'Byte rate: {telemetryinformation.bytesreceived / telemetryinformation.duration:.2f} bytes / sec'
         )
         self.setLabelColor(self.readyLabel, not telemetryinformation.outstandingvariables)
         self.readyLabel.setToolTip('Outstanding variable queries:\n' + '\n'.join(

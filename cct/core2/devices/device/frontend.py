@@ -106,6 +106,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         self._host = host
         self._port = port
         self._logger = logging.getLogger(f'{__name__}:{self.name}')
+        self._logger.setLevel(logging.INFO)
         self._backendlogger = logging.getLogger(f'{__name__}:{self.name}:backend')
         self._backendlogger.setLevel(logging.INFO)
         self.connectionstate = DeviceConnectionState.Offline
