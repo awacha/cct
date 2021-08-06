@@ -239,6 +239,7 @@ class DeviceBackend:
             self.telemetryInformation.lastmessage = self.lastmessage
             self.telemetryInformation.lastsendtime = self.lastsendtime
             self.telemetryInformation.lastrecvtime = self.lastrecvtime
+            self.telemetryInformation.asyncio_tasks = [t.get_name() for t in asyncio.all_tasks()]
             self.messageToFrontend('telemetry', telemetry=self.telemetryInformation)
             for timeout in self.telemetryInformation.outdatedqueries.values():
                 if (timeout > self.outstandingqueryfailtimeout) and (self.autoqueryenabled.is_set()):
@@ -249,8 +250,8 @@ class DeviceBackend:
         gc.collect()
         self.telemetryInformation = TelemetryInformation()
         t0 = time.monotonic()
-        telemetrytask = asyncio.create_task(asyncio.sleep(self.telemetryPeriod if self.variablesready else 0.5))
-        stoptask = asyncio.create_task(self.stopevent.wait())
+        telemetrytask = asyncio.create_task(asyncio.sleep(self.telemetryPeriod if self.variablesready else 0.5), name='tm_task')
+        stoptask = asyncio.create_task(self.stopevent.wait(), name='tm_stoptask')
         done, pending = await asyncio.wait({telemetrytask, stoptask}, return_when=asyncio.FIRST_COMPLETED)
         #        self.debug(f'Telemetry task slept {time.monotonic() - t0} seconds.')
         if stoptask in done:
@@ -290,20 +291,20 @@ class DeviceBackend:
         # 4) stop is requested by the front-end
 
         # Check if the remote end has disconnected. We get the notification from hardwareReceiver.
-        remotedisconnectedtask = asyncio.create_task(self.remotedisconnected.wait(), name='remotedisconnected')
+        remotedisconnectedtask = asyncio.create_task(self.remotedisconnected.wait(), name='hws_remotedisconnectedtask')
 
         # check if the reply timeout has elapsed after the last send and we did not get a reply.
         if (self.lastsendtime is not None) and (self.lastrecvtime is not None) and (
                 self.lastsendtime > self.lastrecvtime):
             delay = (self.messagereplytimeout - (time.monotonic() - self.lastsendtime))
             #            self.debug(f'Reply timeout delay: {delay}')
-            replytimeouttask = asyncio.create_task(asyncio.sleep(delay), name='replytimeouttask')
+            replytimeouttask = asyncio.create_task(asyncio.sleep(delay), name='hws_replytimeouttask')
         else:
             #            self.debug('Not creating a reply timeout task.')
             replytimeouttask = None
 
         # check if the front-end wants us to cease operation
-        stoptask = asyncio.create_task(self.stopevent.wait(), name='stopevent')
+        stoptask = asyncio.create_task(self.stopevent.wait(), name='hws_stopevent')
 
         # Check if we have something to send.
         async def wait_outbuffer():
@@ -319,16 +320,16 @@ class DeviceBackend:
                 #                self.warning(f'Wait for outbuffer cancelled after {time.monotonic() - t0} seconds.')
                 raise
 
-        outbuffertask = asyncio.create_task(wait_outbuffer(), name='outbuffer')
+        outbuffertask = asyncio.create_task(wait_outbuffer(), name='hws_outbuffer')
 
         # check if we are able to send, i.e. we got the reply for our previous request.
-        cleartosendtask = asyncio.create_task(self.cleartosend.wait(), name='cleartosend')
+        cleartosendtask = asyncio.create_task(self.cleartosend.wait(), name='hws_cleartosend')
 
         # combine the last two tasks into one and check them together. We may only send a message to the hardware if
         # we got the reply AND we have something to send.
 
         cansendtask = asyncio.create_task(
-            asyncio.wait({outbuffertask, cleartosendtask}, return_when=asyncio.ALL_COMPLETED), name='cansend')
+            asyncio.wait({outbuffertask, cleartosendtask}, return_when=asyncio.ALL_COMPLETED), name='hws_cansend')
         tasks = {cansendtask, remotedisconnectedtask, stoptask}.union(
             {replytimeouttask} if replytimeouttask is not None else set())
         #        self.debug(f'Sender going to sleep with tasks {[t.get_name() for t in tasks]}')
@@ -337,7 +338,7 @@ class DeviceBackend:
         done, pending = await asyncio.wait(
             tasks,
             return_when=asyncio.FIRST_COMPLETED)
-        for t in [cansendtask, remotedisconnectedtask, stoptask, outbuffertask, cleartosendtask]:
+        for t in [cansendtask, remotedisconnectedtask, stoptask, outbuffertask, cleartosendtask] + ([replytimeouttask] if replytimeouttask is not None else []):
             if not t.done():
                 t.cancel()
         if (remotedisconnectedtask in done) or (stoptask in done):
@@ -388,8 +389,8 @@ class DeviceBackend:
         This method should not be overridden in subclasses.
         """
         #        self.debug('Receiver running.')
-        readtask = asyncio.create_task(self.streamreader.read(1024))
-        stoptask = asyncio.create_task(self.stopevent.wait())
+        readtask = asyncio.create_task(self.streamreader.read(1024), name='hwrecv_readtask')
+        stoptask = asyncio.create_task(self.stopevent.wait(), name='hwrecv_stoptask')
         done, pending = await asyncio.wait({readtask, stoptask}, return_when=asyncio.FIRST_COMPLETED)
         #        self.debug('Receiver awoke.')
         for task in pending.union(done):
@@ -428,27 +429,27 @@ class DeviceBackend:
     @final
     async def autoquerier(self) -> bool:
         """see which variables need updating and issue queries for them"""
-        stoptask = asyncio.create_task(self.stopevent.wait())
+        stoptask = asyncio.create_task(self.stopevent.wait(), name='aq_stoptask')
         lowest_timeout = min([v.querytimeout for v in self.variables if (v.querytimeout is not None)])
         now = time.monotonic()
         overdue_variables = [(v.name, v.overdue(now)) for v in self.variables if
                              (v.overdue(now) > 0) and (v.lastquery is None)]
         if overdue_variables:
             lowest_timeout = 0.1
-        waittask = asyncio.create_task(asyncio.sleep(lowest_timeout))
-        locktask = asyncio.create_task(self.autoqueryenabled.wait())
+        waittask = asyncio.create_task(asyncio.sleep(lowest_timeout), name='aq_waittask')
+        locktask = asyncio.create_task(self.autoqueryenabled.wait(), name='aq_locktask')
 #        if hasattr(self, 'motionstatus') and self.motionstatus:
 #            self.debug('Autoquery will sleep for {} seconds'.format(lowest_timeout))
 #            self.debug(f'Autoquery enabled: {self.autoqueryenabled.is_set()}')
         self.wakeautoquery.clear()
-        waketask = asyncio.create_task(self.wakeautoquery.wait())
-        wakeorwaittask = asyncio.create_task(asyncio.wait({waittask, waketask}, return_when=asyncio.FIRST_COMPLETED))
-        canquerytask = asyncio.create_task(asyncio.wait({wakeorwaittask, locktask}, return_when=asyncio.ALL_COMPLETED))
+        waketask = asyncio.create_task(self.wakeautoquery.wait(), name='aq_waketask')
+        wakeorwaittask = asyncio.create_task(asyncio.wait({waittask, waketask}, return_when=asyncio.FIRST_COMPLETED), name='aq_wakeorwaittask')
+        canquerytask = asyncio.create_task(asyncio.wait({wakeorwaittask, locktask}, return_when=asyncio.ALL_COMPLETED), name='aq_canquerytask')
 #        t0 = time.monotonic()
         done, pending = await asyncio.wait({stoptask, canquerytask}, return_when=asyncio.FIRST_COMPLETED)
 #        if hasattr(self, 'motionstatus') and self.motionstatus:
 #            self.debug(f'Autoquery woke. Waittask: {waittask.done()} Locktask: {locktask.done()} Waketask: {waketask.done()}, Wakeorwaittask: {wakeorwaittask.done()}, Canquerytask: {canquerytask.done()}')
-        for task in {waittask, locktask, waketask, wakeorwaittask, canquerytask}:
+        for task in {waittask, locktask, waketask, wakeorwaittask, canquerytask, stoptask}:
             task.cancel()
         #        self.wakeautoquery.clear()
         if stoptask in done:
