@@ -1,4 +1,3 @@
-import logging
 import collections
 import logging
 import os
@@ -99,9 +98,10 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def newProject(self):
         self.closeProject()
-        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save the new CPT project to', '',
-                                                                  'CPT4 project files (*.cpt4);;Old-style CPT project files (*.cpt *.cpt2);;All files (*)',
-                                                                  'CPT4 project files (*.cpt4)')
+        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Save the new CPT project to', '',
+            'CPT4 project files (*.cpt4);;Old-style CPT project files (*.cpt *.cpt2);;All files (*)',
+            'CPT4 project files (*.cpt4)')
         if not filename:
             return
         if not filename.lower().endswith('.cpt4'):
@@ -113,7 +113,9 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.addNewRecentFile(filename)
 
     def addNewRecentFile(self, filename):
-        logger.debug(f'Adding new file to the recents list: {filename}. Current actions: {[a.text() for a in self.actionRecent_projects.menu().actions()]}')
+        logger.debug(
+            f'Adding new file to the recents list: {filename}. '
+            f'Current actions: {[a.text() for a in self.actionRecent_projects.menu().actions()]}')
         for action in self.actionRecent_projects.menu().actions():
             if action.toolTip() == filename:
                 logger.debug(f'Removing already existing action with file name {action.toolTip()}')
@@ -126,15 +128,18 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             self.actionRecent_projects.menu().insertAction(self.actionRecent_projects.menu().actions()[0], a)
         except IndexError:
             self.actionRecent_projects.menu().addAction(a)
-        logger.debug(f'Added new file to the recents list: {filename}. Current actions: {[a.text() for a in self.actionRecent_projects.menu().actions()]}')
+        logger.debug(
+            f'Added new file to the recents list: {filename}. '
+            f'Current actions: {[a.text() for a in self.actionRecent_projects.menu().actions()]}')
         self.saveRecentFileList()
 
     @QtCore.pyqtSlot()
     def openProject(self, filename: Optional[str] = None):
         if filename is None:
-            filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open a CPT project file', '',
-                                                                      'CPT4 project files (*.cpt4);;Old-style CPT project files (*.cpt *.cpt2);;All files (*)',
-                                                                      'CPT4 project files (*.cpt4)')
+            filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(
+                self, 'Open a CPT project file', '',
+                'CPT4 project files (*.cpt4);;Old-style CPT project files (*.cpt *.cpt2);;All files (*)',
+                'CPT4 project files (*.cpt4)')
             if not filename:
                 return
         logger.debug(f'Loading project from file {filename}')
@@ -149,9 +154,10 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.addNewRecentFile(filename)
 
     def saveProjectAs(self) -> bool:  # True if saved successfully
-        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(self, 'Select a file to save the project to', '',
-                                                                  'CPT4 project files (*.cpt4);;All files (*)',
-                                                                  'CPT4 project files (*.cpt4)')
+        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Select a file to save the project to', '',
+            'CPT4 project files (*.cpt4);;All files (*)',
+            'CPT4 project files (*.cpt4)')
         if not filename:
             return False
         self.setWindowFilePath(filename)
@@ -169,7 +175,9 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
     def createProjectWindows(self):
         logger.debug('CreateProjectWindows called')
         self.destroyProjectWindows()
+        logger.debug('Now creating project windows')
         for wi in self.windowinfo:
+            logger.debug(f'Creating project window type {wi.attribute}')
             assert not (hasattr(self, wi.attribute) and (getattr(self, wi.attribute) is not None))
             widget = wi.windowclass(self.project, self)
             setattr(self, wi.attribute, widget)
@@ -184,6 +192,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             assert isinstance(action, QtWidgets.QAction)
             action.setEnabled(True)
             action.setChecked(False)
+            logger.debug(f'Created project window type {wi.attribute}')
         self.actionProject_window.setChecked(True)
         self.projectwindow.showNormal()
 
@@ -211,11 +220,14 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.viewwindows = {}
         logger.debug('Destroyed all project windows.')
 
-    def createViewWindow(self, windowclass: Type[ResultViewWindow], items: List[Tuple[str, str]], geometry: Optional[bytes]=None) -> ResultViewWindow:
-        items_str = '(['+ ', '.join([f'({sn}, {dk})' for sn, dk in items]) + '])'
-        handlestring = windowclass.__name__+items_str
+    def createViewWindow(self, windowclass: Type[ResultViewWindow], items: List[Tuple[str, str]],
+                         geometry: Optional[bytes] = None) -> ResultViewWindow:
+        items_str = '([' + ', '.join([f'({sn}, {dk})' for sn, dk in items]) + '])'
+        handlestring = windowclass.__name__ + items_str
         if handlestring not in self.viewwindows:
-            self.viewwindows[handlestring] = windowclass(project=self.project, mainwindow=self, resultitems=items, closable=True)
+            self.viewwindows[handlestring] = windowclass(
+                project=self.project, mainwindow=self, resultitems=items,
+                closable=True)
             subwindow = self.mdiArea.addSubWindow(self.viewwindows[handlestring])
             self.viewwindows[handlestring].setObjectName(
                 self.viewwindows[handlestring].objectName() + f'__{time.monotonic()}')
@@ -233,7 +245,8 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.viewwindows[key].objectName()
             except RuntimeError:
                 logger.debug(
-                    f'Removing {key} from the view windows dictionary because the wrapped C/C++ object has been deleted')
+                    f'Removing {key} from the view windows dictionary '
+                    f'because the wrapped C/C++ object has been deleted')
                 del self.viewwindows[key]
                 continue
             if self.viewwindows[key].objectName() == object.objectName():
@@ -275,8 +288,8 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def loadWindowGeometry(self):
         logger.debug('Loading window geometry')
-        windowstate={}
-        resultviewwindows={}
+        windowstate = {}
+        resultviewwindows = {}
         try:
             # first load all state information, avoid hogging the H5 file
             with self.project.settings.h5io.reader('cpt4gui/windows') as grp:
@@ -300,15 +313,16 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                         logger.debug(f'Geometry loaded for window {wi=}')
                 for key in [k for k in grp if k.startswith('R:')]:
                     try:
-                        windowclass = [c for c in ResultViewWindow.__subclasses__() if c.__name__ == grp[key].attrs['class']][0]
+                        windowclass = \
+                            [c for c in ResultViewWindow.__subclasses__() if c.__name__ == grp[key].attrs['class']][0]
                     except IndexError:
                         logger.warning(f'Unsupported window class: {grp[key].attrs["class"]}')
                         continue
                     items = grp[key]['items']
                     resultviewwindows[key] = {
                         'class': windowclass,
-                        'items':  [
-                            (items[row, 0].decode('utf-8'), items[row,1].decode('utf-8'))
+                        'items': [
+                            (items[row, 0].decode('utf-8'), items[row, 1].decode('utf-8'))
                             for row in range(items.shape[0])]
                     }
                     windowstate[key] = {
@@ -324,6 +338,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             logger.debug('Cannot load geometry information from H5 file.')
             return
         for label in windowstate:
+            logger.debug(f'Updating window state for window {label}')
             if windowstate[label]['basewindow']:
                 win = getattr(self, label)
             else:
@@ -332,16 +347,22 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             # get the subwindow
             subwindow: QtWidgets.QMdiSubWindow = win.parent()
             # restore the size and position of the subwindow
+            logger.debug(f'Restoring geometry of window {label}')
             subwindow.restoreGeometry(windowstate[label]['geometry'])
             # set window state: normal, minimized, maximized, full screen, shaded etc.
+            logger.debug(f'Window {label} is hidden: {windowstate[label]["hidden"]}')
             subwindow.setHidden(windowstate[label]['hidden'])
             if windowstate[label]['shaded']:
+                logger.debug(f'Shading window {label}')
                 subwindow.showShaded()
             if windowstate[label]['minimized']:
+                logger.debug(f'Minimizing window {label}')
                 subwindow.showMinimized()
             if windowstate[label]['maximized']:
+                logger.debug(f'Maximizing window {label}')
                 subwindow.showMaximized()
             if windowstate[label]['fullscreen']:
+                logger.debug(f'Setting window {label} full screen')
                 subwindow.showFullScreen()
             # update the state of the corresponding action
             try:
@@ -355,7 +376,9 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 action.blockSignals(False)
 
     def loadRecentFileList(self):
-        logger.debug(f'Loading recent file list. List is now: {[a.toolTip() for a in self.actionRecent_projects.menu().actions()]}')
+        logger.debug(
+            f'Loading recent file list. List is now: '
+            f'{[a.toolTip() for a in self.actionRecent_projects.menu().actions()]}')
         self.actionRecent_projects.menu().clear()
         try:
             with open(os.path.join(appdirs.user_config_dir('cct'), 'cpt4.recents'), 'rt') as f:
@@ -371,7 +394,9 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                         logger.warning(f'Ignoring unavailable file: {line.strip()}')
         except FileNotFoundError:
             return
-        logger.debug(f'Loaded recent file list. List is now: {[a.toolTip() for a in self.actionRecent_projects.menu().actions()]}')
+        logger.debug(
+            f'Loaded recent file list. List is now: '
+            f'{[a.toolTip() for a in self.actionRecent_projects.menu().actions()]}')
 
     def saveRecentFileList(self):
         logger.debug('Saving recent files list.')
@@ -379,7 +404,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         with open(os.path.join(appdirs.user_config_dir('cct'), 'cpt4.recents'), 'wt') as f:
             for action in self.actionRecent_projects.menu().actions():
                 logger.debug(f'File name: {action.toolTip()}')
-                f.write(action.toolTip()+'\n')
+                f.write(action.toolTip() + '\n')
 
     def loadRecentFile(self):
         action = self.sender()
