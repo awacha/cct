@@ -4,6 +4,7 @@ from typing import List, Optional, Any, Tuple, final, Union
 from PyQt5 import QtWidgets, QtGui
 
 from ...core2.devices.device.frontend import DeviceFrontend
+from ...core2.devices.device.telemetry import TelemetryInformation
 from ...core2.instrument.components.auth import Privilege
 from ...core2.instrument.components.motors import Motor, MotorRole, MotorDirection
 from ...core2.instrument.instrument import Instrument
@@ -88,12 +89,12 @@ class WindowRequiresDevices:
             self.instrument = kwargs['instrument']
             # now try to connect devices and motors
             for dev in self.instrument.devicemanager:
-                self.onDeviceAdded(dev.name)
+                self._onDeviceAdded(dev.name)
             for mot in self.instrument.motors:
                 self.onNewMotor(mot.name)
             # have a look out for added/removed devices and motors
-            self.instrument.devicemanager.deviceRemoved.connect(self.onDeviceRemoved)
-            self.instrument.devicemanager.deviceAdded.connect(self.onDeviceAdded)
+            self.instrument.devicemanager.deviceRemoved.connect(self._onDeviceRemoved)
+            self.instrument.devicemanager.deviceAdded.connect(self._onDeviceAdded)
             self.instrument.motors.newMotor.connect(self.onNewMotor)
             self.instrument.motors.motorRemoved.connect(self.onMotorRemoved)
 
@@ -160,6 +161,7 @@ class WindowRequiresDevices:
         device.allVariablesReady.connect(self.onAllVariablesReady)
         device.connectionLost.connect(self.onConnectionLost)
         device.connectionEnded.connect(self.onConnectionEnded)
+        device.telemetry.connect(self.onDeviceTelemetry)
 
     @final
     def _disconnectDevice(self, device: DeviceFrontend):
@@ -171,6 +173,7 @@ class WindowRequiresDevices:
             device.allVariablesReady.disconnect(self.onAllVariablesReady)
             device.connectionLost.disconnect(self.onConnectionLost)
             device.connectionEnded.disconnect(self.onConnectionEnded)
+            device.telemetry.disconnect(self.onDeviceTelemetry)
         except TypeError:
             pass
 
@@ -207,6 +210,9 @@ class WindowRequiresDevices:
 
     # -------------------------- callback functions from devices and motors -------------------------------------------
 
+    def onDeviceTelemetry(self, telemetry: TelemetryInformation):
+        pass
+
     def onConnectionLost(self):
         """Called when the connection to a device is lost unexpectedly, but will be reconnected if possible.
 
@@ -240,17 +246,25 @@ class WindowRequiresDevices:
         pass
 
     @final
-    def onDeviceRemoved(self, devicename: str, expected: bool):
+    def _onDeviceRemoved(self, devicename: str, expected: bool):
         self.setSensitive(None)
+        self.onDeviceRemoved(devicename, expected)
+
+    def onDeviceRemoved(self, devicename: str, expected: bool):
+        pass
 
     @final
-    def onDeviceAdded(self, devicename: str):
+    def _onDeviceAdded(self, devicename: str):
         device = self.instrument.devicemanager[devicename]
         if (devicename in self.required_devicenames) or self.connect_all_devices  or (device.devicetype in self.required_devicetypes):
             device = self.instrument.devicemanager[devicename]
             self._disconnectDevice(device)
             self._connectDevice(device)
             self.setSensitive(None)
+        self.onDeviceAdded(devicename)
+
+    def onDeviceAdded(self, devicename: str):
+        pass
 
     @final
     def _onMotorOnLine(self):
