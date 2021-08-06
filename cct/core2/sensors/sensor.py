@@ -1,7 +1,7 @@
 import enum
 import logging
 import math
-from typing import Optional
+from typing import Optional, Dict, Any
 
 import numpy as np
 from PyQt5 import QtCore
@@ -122,3 +122,17 @@ class Sensor(QtCore.QObject):
 
     def isUnknown(self) -> bool:
         return self._errorstate == ErrorState.Unknown
+
+    def __getstate__(self) -> Dict[str, Any]:
+        return {
+            'name':self.name,
+            'type': self.sensortype,
+            'quantity': self.quantityname,
+            'device': self.devicename,
+            'index':self.index,
+            'value': self.value(),
+            'units': self.units,
+            'warnlimits': (self.lowwarnlimit, self.highwarnlimit),
+            'errorlimits': (self.lowerrorlimit, self.higherrorlimit),
+            'status': self._errorstate.name,
+        }

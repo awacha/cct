@@ -141,7 +141,7 @@ class Exposer(QtCore.QObject, Component):
         self.detector = None
 
     def startExposure(self, prefix: str, exposuretime: float, imagecount: int = 1, delay: float = 0.003,
-                      maskoverride: Optional[str] = None, movetosample: Optional[str] = None, shutter: bool=False):
+                      maskoverride: Optional[str] = None):
         """prepare the detector for an exposure. Also prepare timers for waiting for images."""
         if self.detector is None:
             self._connectDetector()
@@ -286,6 +286,8 @@ class Exposer(QtCore.QObject, Component):
             data['environment']['temperature'] = temp.temperature()
         except (KeyError, IndexError):
             data['environment']['temperature'] = np.nan
+        # sensors
+        data['sensors'] = {s.name: s.__getstate__() for s in self.instrument.sensors}
         # adjust truedistance
         if sample is not None:
             data['geometry']['truedistance'] = data['geometry']['dist_sample_det'] - data['sample']['distminus.val']
@@ -306,7 +308,9 @@ class Exposer(QtCore.QObject, Component):
             for expdata in self.pendingtimers:
                 expdata.command_ack_time = cmdacktime
                 # look out: it can happen that the timer is already elapsed: set a 0 timeout then instead of a negative one.
-                timerid = self.startTimer(max(int(1000 * (expdata.endtime - time.monotonic())), 0), QtCore.Qt.PreciseTimer)
+                timerid = self.startTimer(
+                    max(int(1000 * (expdata.endtime - time.monotonic())), 0),
+                    QtCore.Qt.PreciseTimer)
                 if timerid == 0:
                     raise RuntimeError('Cannot start timer!')
                 assert timerid not in self.waittimers

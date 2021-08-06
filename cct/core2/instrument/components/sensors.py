@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List
+from typing import Any, List, Iterator
 
 from PyQt5 import QtCore
 
@@ -115,3 +115,6 @@ class Sensors(QtCore.QAbstractItemModel, Component):
         idx = self._data.index(self.sender())
         self.dataChanged.emit(self.index(idx, 0, QtCore.QModelIndex()),
                               self.index(idx, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
+
+    def __iter__(self) -> Iterator[Sensor]:
+        yield from self._data
