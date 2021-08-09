@@ -322,6 +322,29 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                     self.motorsneedingcalibration.remove(axisno)
                 if not self.motorsneedingcalibration:
                     self.updateVariable('__status__', self.Status.Idle)
+            elif cmd == Instructions.StoreAxisParameter:
+                axisparameter = sentmessage[2]
+                axis = sentmessage[3]
+                for ap, command, varname in [
+                    (AxisParameters.PulseDivisor, 'set_pulse_divisor', 'pulsedivisor'),
+                    (AxisParameters.RampDivisor, 'set_ramp_divisor', 'rampdivisor'),
+                    (AxisParameters.MicrostepResolution, 'set_microstep_resolution', 'microstepresolution'),
+                    (AxisParameters.AbsoluteMaxCurrent, 'set_max_current', 'maxcurrent'),
+                    (AxisParameters.StandbyCurrent, 'set_standby_current', 'standbycurrent'),
+                    (AxisParameters.RightLimitSwitchDisable, 'set_right_switch_disabled', 'rightswitchenable'),
+                    (AxisParameters.LeftLimitSwitchDisable, 'set_left_switch_disabled', 'leftswitchenable'),
+                    (AxisParameters.FreewheelingDelay, 'set_freewheeling_delay', 'freewheelingdelay'),
+                    (AxisParameters.MaximumPositioningSpeed, 'set_max_speed', 'maxspeed'),
+                    (AxisParameters.MaximumAcceleration, 'set_max_acceleration', 'maxacceleration'),
+                ]:
+                    if axisparameter == ap:
+                        self.commandFinished(
+                            command,
+                            f'Variable {varname} of motor {axis} has been successfully set and stored in EEPROM')
+                        self.queryVariable(f'{varname}${axis}')
+                        break
+                else:
+                    raise ValueError(f'Unknown axis parameter stored: {axisparameter}')
             else:
                 raise ValueError(f'TMCL command {cmd} not implemented.')
         else:
@@ -445,6 +468,37 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 self.updateVariable(f'softright${motorindex}', right)
                 self.writeMotorPosFile()
                 self.commandFinished(name, f'Set limits for motor #{motorindex}')
+        elif name in ['set_pulse_divisor', 'set_ramp_divisor', 'set_microstep_resolution',
+                      'set_max_current', 'set_standby_current',
+                      'set_right_switch_disabled', 'set_left_switch_disabled', 'set_freewheeling_delay',
+                      'set_max_speed', 'set_max_acceleration']:
+            motorindex, value = args
+            try:
+                value = int(value)
+            except ValueError:
+                self.commandError(name, f'Invalid value type: {type(value)}')
+            else:
+                if motorindex < 0 or motorindex > self.Naxes:
+                    self.commandError(name, f'Invalid motor index: {motorindex}')
+                else:
+                    for commandname, minval, maxval, axisparameter in [
+                        ('set_pulse_divisor', 0, 13, AxisParameters.PulseDivisor),
+                        ('set_ramp_divisor', 0, 13, AxisParameters.RampDivisor),
+                        ('set_microstep_resolution', 0, 8, AxisParameters.MicrostepResolution),
+                        ('set_max_current', 0, 255, AxisParameters.AbsoluteMaxCurrent),
+                        ('set_standby_current', 0, 255, AxisParameters.StandbyCurrent),
+                        ('set_right_switch_disabled', 0, 1, AxisParameters.RightLimitSwitchDisable),
+                        ('set_left_switch_disabled', 0, 1, AxisParameters.LeftLimitSwitchDisable),
+                        ('set_freewheeling_delay', 0, 65535, AxisParameters.FreewheelingDelay),
+                        ('set_max_speed', 0, 2047, AxisParameters.MaximumPositioningSpeed),
+                        ('set_max_acceleration', 0, 2047, AxisParameters.MaximumAcceleration)]:
+                        if name != commandname:
+                            continue
+                        if (value < minval) or (value > maxval):
+                            self.commandError(name, f'Invalid value {value}: must be between {minval} and {maxval}')
+                            break
+                        self.enqueueHardwareMessage(TMCLPack(Instructions.SetAxisParameter, axisparameter, motorindex, value))
+                        self.enqueueHardwareMessage(TMCLPack(Instructions.StoreAxisParameter, axisparameter, motorindex, 0))
         else:
             self.commandError(name, 'Unknown command')
 

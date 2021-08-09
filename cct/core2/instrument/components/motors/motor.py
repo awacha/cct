@@ -6,6 +6,7 @@ import logging
 from typing import Iterator, Any, Optional
 
 from ....devices.motor.generic.frontend import MotorController
+from ....devices.motor.trinamic.frontend import UnitConverter
 from ..auth.privilege import Privilege
 
 logger = logging.getLogger(__name__)
@@ -182,3 +183,6 @@ class Motor(QtCore.QObject):
 
     def isOnline(self) -> bool:
         return (self.controllername in self.instrument.devicemanager) and self.instrument.devicemanager[self.controllername].isOnline()
+
+    def unitConverter(self) -> UnitConverter:
+        return self.controller.unitConverter(self.axis)

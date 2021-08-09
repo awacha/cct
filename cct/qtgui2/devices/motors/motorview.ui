@@ -77,6 +77,12 @@
           <iconset theme="list-add">
            <normaloff>.</normaloff>.</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
         </widget>
        </item>
        <item>
@@ -91,6 +97,12 @@
           <iconset theme="list-remove">
            <normaloff>.</normaloff>.</iconset>
          </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
         </widget>
        </item>
        <item>
@@ -104,6 +116,12 @@
          <property name="icon">
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/motorcalibration.svg</normaloff>:/icons/motorcalibration.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
          </property>
         </widget>
        </item>
@@ -121,6 +139,32 @@
          <property name="icon">
           <iconset resource="../../../resource/icons/icons.qrc">
            <normaloff>:/icons/motorconfig.svg</normaloff>:/icons/motorconfig.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="configureMotorToolButton">
+         <property name="toolTip">
+          <string>Advanced (potentially dangerous) motor configuration</string>
+         </property>
+         <property name="text">
+          <string>Configure motor</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/advancedmotorconfig.svg</normaloff>:/icons/advancedmotorconfig.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
          </property>
         </widget>
        </item>

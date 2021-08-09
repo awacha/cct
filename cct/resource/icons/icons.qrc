@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>advancedmotorconfig.svg</file>
     <file>beammonitor.svg</file>
     <file>motor-where.svg</file>
     <file>beamstop-config.svg</file>

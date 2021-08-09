@@ -91,11 +91,11 @@ class WindowRequiresDevices:
             for dev in self.instrument.devicemanager:
                 self._onDeviceAdded(dev.name)
             for mot in self.instrument.motors:
-                self.onNewMotor(mot.name)
+                self._onNewMotor(mot.name)
             # have a look out for added/removed devices and motors
             self.instrument.devicemanager.deviceRemoved.connect(self._onDeviceRemoved)
             self.instrument.devicemanager.deviceAdded.connect(self._onDeviceAdded)
-            self.instrument.motors.newMotor.connect(self.onNewMotor)
+            self.instrument.motors.newMotor.connect(self._onNewMotor)
             self.instrument.motors.motorRemoved.connect(self.onMotorRemoved)
 
             self.instrument.config.changed.connect(self.onConfigChanged)
@@ -304,12 +304,16 @@ class WindowRequiresDevices:
         pass
 
     @final
-    def onNewMotor(self, motorname: str):
+    def _onNewMotor(self, motorname: str):
         logger.debug(f'New motor callback in {self.__class__.__name__}')
         motor = self.instrument.motors[motorname]
         if self.connect_all_motors or ((motor.role, motor.direction) in self.required_motors):
             self.connectMotor(self.instrument.motors[motorname])
         self.setSensitive(None)
+        self.onNewMotor(motorname)
+
+    def onNewMotor(self, motorname: str):
+        pass
 
     def onMotorRemoved(self, motorname: str):
         self.setSensitive(None)

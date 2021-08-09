@@ -52,3 +52,21 @@ class UnitConverter:
 
     def position2phys(self, position: int):
         return position * self.fullstepsize / 2 ** self.microstepresolution
+
+    def maximumSpeed(self):
+        return self.speed2phys(2047)
+
+    def maximumAcceleration(self):
+        return self.accel2phys(2047)
+
+    def maximumCurrent(self):
+        return self.current2phys(255)
+
+    def speedStep(self):
+        return self.speed2phys(1)
+
+    def accelerationStep(self):
+        return self.accel2phys(1)
+
+    def currentStep(self):
+        return self.current2phys(1)
