@@ -12,13 +12,15 @@ from .monitor_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 from ....core2.devices.xraysource import GeniX
 from ....core2.devices.device.frontend import DeviceFrontend
+from ....core2.dataclasses import Exposure
+from ....core2.algorithms.beamweighting import beamweights
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicetypes = ['source']
+    required_devicetypes = ['source', 'detector']
     figureIntensity: Figure
     figurePosition: Figure
     canvasIntensity: FigureCanvasQTAgg
@@ -33,6 +35,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     cursor: Optional[int] = None  # point in the buffer where the next measurement will be written
     bufferdtype: Final[np.dtype] = np.dtype([('time', 'f4'), ('intensity', 'f4'), ('beamx', 'f4'), ('beamy', 'f4'), ])
     kdepointcount: Final[int] = 1000
+    debugmode: bool=False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -59,6 +62,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.clearBufferToolButton.clicked.connect(self.clearBuffer)
         self.shutterToolButton.toggled.connect(self.moveShutter)
         self.bufferLengthSpinBox.valueChanged.connect(self.resizeBuffer)
+        self.debugModeGroupBox.setVisible(self.debugmode)
         self.resizeBuffer()
 
     def resizeBuffer(self):
@@ -88,11 +92,18 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             # no measurement running, start it.
             self.startStopToolButton.setText('Stop')
             self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
-            self.startTimer(int(self.waitTimeDoubleSpinBox.value() * 1000), QtCore.Qt.PreciseTimer)
+            if self.debugmode:
+                self.startTimer(int(self.waitTimeDoubleSpinBox.value() * 1000), QtCore.Qt.PreciseTimer)
+            else:
+                self.instrument.exposer.exposureFinished.connect(self.onExposureFinished)
+                self.instrument.exposer.imageReceived.connect(self.onImageReceived)
+                self.instrument.exposer.startExposure('mon', self.expTimeDoubleSpinBox.value(), 1)
         else:
             # measurement is running, stop it
             self.startStopToolButton.setText('Start')
             self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
+            if self.instrument.exposer.isExposing():
+                self.instrument.exposer.stopExposure()
 
     def clearBuffer(self):
         self.buffer = np.empty(self.bufferLengthSpinBox.value(), dtype=self.bufferdtype)
@@ -133,19 +144,29 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.updateGraph()
 
     def timerEvent(self, event: QtCore.QTimerEvent):
-        if self.startStopToolButton.text() == 'Start':
+        if self.debugmode:
+            if self.startStopToolButton.text() == 'Start':
+                self.killTimer(event.timerId())
+            self.addPoint(
+                np.random.default_rng().normal(
+                    self.debugIntensityMeanDoubleSpinBox.value(),
+                    self.debugIntensitySTDDoubleSpinBox.value(), 1),
+                np.random.default_rng().normal(
+                    self.debugBeamXMeanDoubleSpinBox.value(),
+                    self.debugBeamXSTDDoubleSpinBox.value(), 1),
+                np.random.default_rng().normal(
+                    self.debugBeamYMeanDoubleSpinBox.value(),
+                    self.debugBeamYSTDDoubleSpinBox.value(), 1)
+            )
+            self.cursor = (self.cursor + 1) % len(self.buffer)
+            self.updateGraph()
+        else:
             self.killTimer(event.timerId())
-        self.buffer[self.cursor] = (
-            time.thread_time(),
-            np.random.default_rng().normal(
-                self.debugIntensityMeanDoubleSpinBox.value(),
-                self.debugIntensitySTDDoubleSpinBox.value(), 1),
-            np.random.default_rng().normal(
-                self.debugBeamXMeanDoubleSpinBox.value(),
-                self.debugBeamXSTDDoubleSpinBox.value(), 1),
-            np.random.default_rng().normal(
-                self.debugBeamYMeanDoubleSpinBox.value(),
-                self.debugBeamYSTDDoubleSpinBox.value(), 1))
+            self.instrument.exposer.startExposure('mon', self.expTimeDoubleSpinBox.value(), 1)
+
+
+    def addPoint(self, intensity: float, x: float, y: float):
+        self.buffer[self.cursor] = (time.thread_time(), intensity, x, y)
         self.cursor = (self.cursor + 1) % len(self.buffer)
         self.updateGraph()
 
@@ -199,3 +220,17 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.shutterToolButton.blockSignals(True)
             self.shutterToolButton.setChecked(newvalue)
             self.shutterToolButton.blockSignals(False)
+
+    def onImageReceived(self, exposure: Exposure):
+        sumimage, maximage, meanrow, meancol, stdrow, stdcol, pixelcount = beamweights(
+            exposure.intensity, exposure.mask)
+        self.addPoint(sumimage, meancol, meanrow)
+
+    def onExposureFinished(self, success: bool):
+        if (self.startStopToolButton.text() == 'Stop') and success:
+            # measurement is still running, do another exposure
+            self.startTimer(int(self.waitTimeDoubleSpinBox.value()*1000), QtCore.Qt.PreciseTimer)
+        else:
+            self.instrument.exposer.exposureFinished.disconnect(self.onExposureFinished)
+            self.instrument.exposer.imageReceived.disconnect(self.onImageReceived)
+
