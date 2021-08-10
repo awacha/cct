@@ -429,7 +429,7 @@ class DeviceBackend:
     @final
     async def autoquerier(self) -> bool:
         """see which variables need updating and issue queries for them"""
-        stoptask = asyncio.create_task(self.stopevent.wait(), name='aq_stoptask')
+        stoptask = asyncio.create_task(self.stopevent.wait(), name='aq_stoptask')  # check for stop
         lowest_timeout = min([v.querytimeout for v in self.variables if (v.querytimeout is not None)])
         now = time.monotonic()
         overdue_variables = [(v.name, v.overdue(now)) for v in self.variables if
@@ -445,16 +445,18 @@ class DeviceBackend:
         waketask = asyncio.create_task(self.wakeautoquery.wait(), name='aq_waketask')
         wakeorwaittask = asyncio.create_task(asyncio.wait({waittask, waketask}, return_when=asyncio.FIRST_COMPLETED), name='aq_wakeorwaittask')
         canquerytask = asyncio.create_task(asyncio.wait({wakeorwaittask, locktask}, return_when=asyncio.ALL_COMPLETED), name='aq_canquerytask')
-#        t0 = time.monotonic()
+
+        # Now commence waiting. The autoquery coroutine will wake up when EITHER the stop event is set OR the canquery
+        # task finishes.
         done, pending = await asyncio.wait({stoptask, canquerytask}, return_when=asyncio.FIRST_COMPLETED)
-#        if hasattr(self, 'motionstatus') and self.motionstatus:
-#            self.debug(f'Autoquery woke. Waittask: {waittask.done()} Locktask: {locktask.done()} Waketask: {waketask.done()}, Wakeorwaittask: {wakeorwaittask.done()}, Canquerytask: {canquerytask.done()}')
         for task in {waittask, locktask, waketask, wakeorwaittask, canquerytask, stoptask}:
             task.cancel()
         #        self.wakeautoquery.clear()
         if stoptask in done:
             return False
-        elif canquerytask in done:
+        elif (canquerytask in done) and (self.autoqueryenabled.is_set()):
+            # we need to check the autoquery enabled event explicitely: it may have been cleared while waiting for the
+            # time of the next query
             now = time.monotonic()
             # Query the variables smartly. First of all, only query variables which:
             #   - can be queried
@@ -496,7 +498,7 @@ class DeviceBackend:
                         queried.append(name)
             del queryable, sortedqueriable
         else:
-            assert False
+            self.debug(f'Autoquery enabled: {self.autoqueryenabled.is_set()}')
 
         return True
 

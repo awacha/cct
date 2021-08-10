@@ -1,10 +1,11 @@
+import enum
+import logging
 from typing import Tuple, Any
 
 from .backend import PilatusBackend
 from ...device.frontend import DeviceFrontend
-from ....sensors.thermometer import Thermometer
 from ....sensors.hygrometer import Hygrometer
-import enum
+from ....sensors.thermometer import Thermometer
 
 
 class PilatusGain(enum.Enum):
@@ -14,12 +15,13 @@ class PilatusGain(enum.Enum):
 
 
 class PilatusDetector(DeviceFrontend):
-    devicename = 'Pilatus'
+    devicename = 'PilatusDetector'
     devicetype = 'detector'
     backendclass = PilatusBackend
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._backendlogger.setLevel(logging.DEBUG)
         self.sensors = [Thermometer(f'Power board temperature', self.name, 0, '°C'),
                         Thermometer(f'Base plate temperature', self.name, 1, '°C'),
                         Thermometer(f'Sensor temperature', self.name, 2, '°C'),

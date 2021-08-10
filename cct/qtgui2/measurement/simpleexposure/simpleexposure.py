@@ -6,7 +6,7 @@ from .simpleexposure_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class State(enum.Enum):
@@ -98,10 +98,6 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setFormat('Closing shutter')
         self.progressBar.show()
         logger.debug('Closing shutter')
-        if self.state == State.StopRequested:
-            logger.debug('No, not closing shutter: stop requested')
-            self._waitforimages()
-            return
         if self.shutterCheckBox.isChecked():
             self.instrument.devicemanager.source().shutter.connect(self.onShutterChanged)
             self.instrument.devicemanager.source().moveShutter(False)
@@ -127,9 +123,15 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.exposer.exposureFinished.connect(self.onExposureFinished)
         self.instrument.exposer.imageReceived.connect(self.onImageReceived)
         self.instrument.exposer.exposureProgress.connect(self.onExposureProgress)
-        self.instrument.exposer.startExposure(self.prefixComboBox.currentText(), self.exposureTimeDoubleSpinBox.value(), self.imageCountSpinBox.value(), self.delayDoubleSpinBox.value())
-        self.imagesrequired = self.imageCountSpinBox.value()
-        self.state = State.Exposing
+        try:
+            self.instrument.exposer.startExposure(self.prefixComboBox.currentText(), self.exposureTimeDoubleSpinBox.value(), self.imageCountSpinBox.value(), self.delayDoubleSpinBox.value())
+        except RuntimeError as rte:
+            QtWidgets.QMessageBox.critical(self.window(), 'Error while starting exposure', str(rte))
+            self.imagesrequired = 0
+            self._closeshutter()
+        else:
+            self.imagesrequired = self.imageCountSpinBox.value()
+            self.state = State.Exposing
 
     # slots for checking the results of the steps
 
@@ -175,6 +177,8 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onExposureFinished(self, success: bool):
         self.instrument.exposer.exposureFinished.disconnect(self.onExposureFinished)
         self.instrument.exposer.exposureProgress.disconnect(self.onExposureProgress)
+        if not success:
+            self.imagesrequired = 0
         self._closeshutter()
 
     def onImageReceived(self, exposure):

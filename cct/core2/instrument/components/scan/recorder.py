@@ -289,12 +289,8 @@ class ScanRecorder(QtCore.QObject):
     @staticmethod
     def _analyzeimage(exposure: Exposure, mask: np.ndarray, mask_total: np.ndarray) -> Tuple:
         img = exposure.intensity
-        imgt = img.copy()
-        imgt[mask_total==0] = 0
-        sumtotal, maxtotal, meanrowtotal, meancoltotal, sigmarowtotal, sigmacoltotal = beamweights(imgt)
-        imgm = img.copy()
-        imgm[mask == 0] = 0
-        summasked, maxmasked, meanrowmasked, meancolmasked, sigmarowmasked, sigmacolmasked = beamweights(imgm)
+        sumtotal, maxtotal, meanrowtotal, meancoltotal, sigmarowtotal, sigmacoltotal, pixelcount = beamweights(img, mask_total)
+        summasked, maxmasked, meanrowmasked, meancolmasked, sigmarowmasked, sigmacolmasked, pixelcount = beamweights(img, mask)
         return (exposure.header.fsn, sumtotal, summasked, maxtotal, maxmasked, meanrowtotal, meanrowmasked,
                 meancoltotal, meancolmasked,
                 sigmarowtotal, sigmarowmasked, sigmacoltotal, sigmacolmasked,

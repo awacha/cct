@@ -18,7 +18,7 @@ from ...devices.detector.pilatus.backend import PilatusBackend
 from ...devices.detector.pilatus.frontend import PilatusDetector
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ExposerState(enum.Enum):
@@ -128,12 +128,15 @@ class Exposer(QtCore.QObject, Component):
         self.detector.variableChanged.connect(self.onDetectorVariableChanged)
         self.detector.commandResult.connect(self.onCommandResult)
 
+    def _cleanuptimers(self):
+        for timer in self.waittimers:
+            self.killTimer(timer)
+        self.waittimers = {}
+
     def _disconnectDetector(self):
         """Disconnect signal handlers from the Detector instance"""
         if self.isExposing():
-            for timer in self.waittimers:
-                self.killTimer(timer)
-            self.waittimers = {}
+            self._cleanuptimers()
             logger.warning('Emitting exposureFinished only because disconnecting the detector while exposing.')
             self.exposureFinished.emit(False)
         self.detector.connectionEnded.disconnect(self.onDetectorDisconnected)
@@ -223,23 +226,34 @@ class Exposer(QtCore.QObject, Component):
 
     def onDetectorVariableChanged(self, variable: str, value: Any):
         if variable == '__status__':
+            logger.debug(f'__status__ set to {value}, exposer state is {self.state.name}')
             if (self.state == ExposerState.Starting) and (
                     value in [PilatusBackend.Status.Exposing, PilatusBackend.Status.ExposingMulti]):
                 # acknowledgement for the exposure command
+                logger.debug('Detector is now exposing.')
                 self.state = ExposerState.Exposing
                 self.progresstimer = self.startTimer(int(1000 * self.progressinterval), QtCore.Qt.CoarseTimer)
             elif (self.state == ExposerState.Exposing) and (value in [PilatusBackend.Status.Idle]):
-                # this means that exposing is done. Images are not necessarily read yet.
+                # this means that exposing is done without error. Images are not necessarily read yet.
+                logger.debug('Exposure finished.')
                 self.state = ExposerState.Idle
                 self.exposureFinished.emit(True)
                 self.killTimer(self.progresstimer)
                 self.progresstimer = None
+            elif (self.state == ExposerState.Exposing) and (value == PilatusBackend.Status.Stopping):
+                # the detector backend acknowledged our stop request and has issued the stop command to the camserver
+                pass
             elif (self.state == ExposerState.Stopping) and (value in [PilatusBackend.Status.Idle]):
                 # this means that an user stop request has been fulfilled.
+                logger.debug('Exposure stopped.')
+                # we need to clean up all waiting image timers
+                self._cleanuptimers()
                 self.state = ExposerState.Idle
                 self.exposureFinished.emit(False)
                 self.killTimer(self.progresstimer)
                 self.progresstimer = None
+            else:
+                logger.warning(f'State set to {value}, exposer state is {self.state.name}')
 
     def onDetectorDisconnected(self):
         self._disconnectDetector()
@@ -302,6 +316,7 @@ class Exposer(QtCore.QObject, Component):
         return Header(datadict=data)
 
     def onCommandResult(self, success: bool, commandname: str, result: str):
+        logger.debug(f'onCommandResult: {success}, {commandname}')
         if commandname == 'expose' and success:
             # now start the timers
             cmdacktime = self.detector.currentMessage.timestamp
@@ -338,3 +353,6 @@ class Exposer(QtCore.QObject, Component):
 
     def isIdle(self) -> bool:
         return self.state == ExposerState.Idle
+
+    def imagesPending(self) -> int:
+        return len(self.waittimers)

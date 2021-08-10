@@ -136,13 +136,11 @@ class PilatusBackend(DeviceBackend):
                 pass
             elif idnum == 7:
                 # Error in single exposure. We must put the device into idle state
-                if self['__status__'] == self.Status.Stopping:
-                    # this was a user break, we need to re-trim the detector
-                    self.enqueueHardwareMessage(
-                        f'SetThreshold {self["gain"]}G {self["threshold"]:.0f}\r'.encode('ascii'))
-                    self.messagereplytimeout = 60
-                    self.updateVariable('__status__', self.Status.Trimming)
+                if (self['__status__'] == self.Status.Stopping) and (sentmessage == b'resetcam\r'):
+                    # an user break. Resetcam always returns a '15 OK' message, we re-trim the detector there.
+                    pass
                 else:
+                    self.debug(f'__status__=={self["__status__"]}')
                     self.updateVariable('__status__', self.Status.Idle)
                     self.updateVariable('__auxstatus__', '')
                     self.error(f'Error in exposure: {remainder}')
@@ -182,9 +180,19 @@ class PilatusBackend(DeviceBackend):
             self.updateVariable('diskfree', int(remainder))
         elif idnum == 7:  # end of single exposure
             self.updateVariable('lastcompletedimage', remainder)
-            self.updateVariable('__status__', self.Status.Idle)
             self.updateVariable('__auxstatus__', '')
-            self.enableAutoQuery()
+            if self['__status__'] == self.Status.Stopping:
+                # this was a user break, we need to re-trim the detector
+                self.updateVariable('__status__', self.Status.Idle)
+                self.info('Re-trimming the detector after an user break.')
+                self.enqueueHardwareMessage(f'resetcam\r'.encode("ascii"))
+                self.enqueueHardwareMessage(
+                    f'SetThreshold {self["gain"]}G {self["threshold"]:.0f}\r'.encode('ascii'))
+                self.messagereplytimeout = 60
+                self.updateVariable('__status__', self.Status.Trimming)
+            else:
+                self.updateVariable('__status__', self.Status.Idle)
+                self.enableAutoQuery()
         elif idnum == 10:  # image path
             self.updateVariable('imgpath', remainder)
             if self.baseimagepath is None:
@@ -249,12 +257,15 @@ class PilatusBackend(DeviceBackend):
                 if sentmessage == b'resetcam\r':
                     if self['__status__'] == self.Status.Stopping:
                         # this was a user break, we need to re-trim the detector
+                        self.info('Re-trimming the detector after an user break.')
+                        self.updateVariable('__status__', self.Status.Idle)
                         self.enqueueHardwareMessage(
                             f'SetThreshold {self["gain"]}G {self["threshold"]:.0f}\r'.encode('ascii'))
                         self.messagereplytimeout = 60
                         self.updateVariable('__status__', self.Status.Trimming)
                     else:
                         # other reason of break.
+                        self.debug(f'__status__=={self["__status__"]}')
                         self.updateVariable('__status__', self.Status.Idle)
                         self.updateVariable('__auxstatus__', '')
                         self.error(f'Error in exposure: {remainder}')
@@ -322,9 +333,12 @@ class PilatusBackend(DeviceBackend):
         else:
             self.error(f'Invalid message received from detector: {message}. Last sent message: {sentmessage}')
 
+
     def issueCommand(self, name: str, args: Sequence[Any]):
         if name == 'trim':
             threshold, gain = args
+            if self.connectionIsReadOnly():
+                self.commandError(name, 'Read-only connection')
             self.disableAutoQuery()
             self.enqueueHardwareMessage(f'SetThreshold {gain} {threshold:f}\r'.encode("ascii"))
             self.messagereplytimeout = 60
@@ -342,12 +356,14 @@ class PilatusBackend(DeviceBackend):
             if delay < self.minimal_exposure_delay:
                 self.commandError(name, 'Too short exposure delay')
                 return
+            if self.connectionIsReadOnly():
+                self.commandError(name, 'Read-only connection')
+            self.disableAutoQuery()
             self.enqueueHardwareMessage(f'imgpath {self.baseimagepath}/{relimgpath}\r'.encode('ascii'))
             self.enqueueHardwareMessage(f'expperiod {exptime + delay:f}\r'.encode('ascii'))
             self.enqueueHardwareMessage(f'nimages {nimages}\r'.encode('ascii'))
             self.enqueueHardwareMessage(f'exptime {exptime}\r'.encode('ascii'))
             fulltime = nimages * exptime + (nimages - 1) * delay
-            self.disableAutoQuery()
             self.enqueueHardwareMessage(f'Exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
             self.updateVariable('__status__', self.Status.Exposing if nimages == 1 else self.Status.ExposingMulti)
             self.commandFinished(name, 'Started exposure')
@@ -362,7 +378,12 @@ class PilatusBackend(DeviceBackend):
                 # but first we ascertain if the last command was really the Exposure command.
                 assert self.lastmessage[0].startswith(b'Exposure ')
                 # no messages should be pending.
-                assert self.outbuffer.qsize() == 0
+                if self.connectionIsReadOnly():
+                    self.commandError(name, 'Read-only connection')
+
+                #                assert self.outbuffer.qsize() == 0
+                while self.outbuffer.qsize() > 0:
+                    self.warning(f'Outbuffer not empty! Queue size is: {self.outbuffer.qsize()}')
                 self.enqueueHardwareMessage(b'resetcam\r')
                 self.lastmessage = None
                 self.cleartosend.set()
@@ -371,11 +392,15 @@ class PilatusBackend(DeviceBackend):
             elif self['__status__'] == self.Status.ExposingMulti:
                 # we do the same trick as above, only we have to issue the "K" command.
                 assert self.lastmessage[0].startswith(b'Exposure ')
-                assert self.outbuffer.qsize() == 0
+                if self.connectionIsReadOnly():
+                    self.commandError(name, 'Read-only connection')
+                #assert self.outbuffer.qsize() == 0
                 # the command "K" by itself does not elicit a reply, but the multiple exposure does. Since we clear all
                 # traces of the last 'Exposure' command by resetting `self.lastmessage`, the reply from the detector
                 # will be attibuted by us to the "K" command, hence "numreplies=1".
-                self.enqueueHardwareMessage(b'K\r', numreplies=1)
+                while self.outbuffer.qsize() > 0:
+                    self.warning(f'Outbuffer not empty! Queue size is: {self.outbuffer.qsize()}')
+                self.enqueueHardwareMessage(b'K\r', numreplies=2)
                 self.lastmessage = None
                 self.cleartosend.set()
                 self.updateVariable('__status__', self.Status.Stopping)
@@ -386,3 +411,9 @@ class PilatusBackend(DeviceBackend):
                 self.commandError(name, 'No ongoing exposure')
         else:
             self.commandError(name, f'Unknown command: {name}')
+
+    def connectionIsReadOnly(self) -> bool:
+        try:
+            return self['pid'] != self['controllingPID']
+        except ValueError:
+            return True

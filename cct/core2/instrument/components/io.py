@@ -109,11 +109,13 @@ class IO(QtCore.QObject, Component):
         if prefix not in self._lastfsn:
             self._lastfsn[prefix] = fsn
             self.lastFSNChanged.emit(prefix, fsn)
-        elif self._lastfsn[prefix] < fsn:
+        elif (self._lastfsn[prefix] is None) or (self._lastfsn[prefix] < fsn):
             self._lastfsn[prefix] = fsn
             self.lastFSNChanged.emit(prefix, fsn)
         else:
-            pass
+            raise RuntimeError(
+                f'Exposure received for prefix {prefix} with fsn {fsn}, which is greater than the current '
+                f'highest fsn on file: {self._lastfsn[prefix]}')
         if prefix not in self._nextfsn:
             self._nextfsn[prefix] = fsn+1
         elif self._lastfsn[prefix] + 1 > self._nextfsn[prefix]:
