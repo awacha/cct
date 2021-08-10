@@ -50,7 +50,8 @@ class PlotIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.fsnSpinBox.setEnabled(self.prefixComboBox.currentIndex() >= 0)
         self.plotCurveToolButton.setEnabled(self.prefixComboBox.currentIndex() >= 0)
         self.plotImageToolButton.setEnabled(self.prefixComboBox.currentIndex() >= 0)
-        self.fsnSpinBox.setRange(0, self.instrument.io.lastfsn(self.prefixComboBox.currentText()))
+        lastfsn = self.instrument.io.lastfsn(self.prefixComboBox.currentText())
+        self.fsnSpinBox.setRange(0, -1 if lastfsn is None else lastfsn)
 
     def onPlotCurve(self):
         if (exposure := self.exposure()) is not None:
