@@ -16,7 +16,7 @@ from matplotlib.lines import Line2D
 from .plotimage_ui import Ui_Form
 from ...core2.dataclasses import Exposure
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 maskcmap = matplotlib.colors.ListedColormap([(0.0, 0.0, 0.0, 0.0), (1.0, 1.0, 1.0, 0.7)])
@@ -159,7 +159,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             assert False
         return extent, center
 
-    def replot(self, keepzoom: bool=False):
+    def replot(self, keepzoom: bool = False):
         if self.matrix is None:
             return
         extent, center = self._get_extent()
@@ -167,7 +167,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         axlimits = self.axes.axis()
         if self.colourScaleComboBox.currentText() in self._strictlypositivenormalizations:
             matrix = self.matrix.copy()
-            matrix[matrix<=0] = np.nan
+            matrix[matrix <= 0] = np.nan
         else:
             matrix = self.matrix
         if self._imghandle is None:
@@ -192,16 +192,19 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             self._imghandle.changed()
         # color bar
         if self._cmapaxis is None:
-            self._cmapaxis = self.figure.colorbar(
-                self._imghandle,
-                cax=self._cmapaxis.ax if self._cmapaxis is not None else None,
-                ax=None if self._cmapaxis is not None else self.axes,
-
-            )
+            try:
+                self._cmapaxis = self.figure.colorbar(
+                    self._imghandle,
+                    cax=self._cmapaxis.ax if self._cmapaxis is not None else None,
+                    ax=None if self._cmapaxis is not None else self.axes,
+                )
+                self._cmapaxis.ax.set_visible(self.showColourBarToolButton.isChecked())
+            except ValueError as ve:
+                logger.warning('Cannot draw color bar: {ve}')
 
         else:
             logger.debug('Updating cmap')
-        self._cmapaxis.ax.set_visible(self.showColourBarToolButton.isChecked())
+            self._cmapaxis.ax.set_visible(self.showColourBarToolButton.isChecked())
 
         # now plot the mask
         logger.debug(f'Mask: {(self.mask != 0).sum()} nonzero, {(self.mask == 0).sum()} zero pixels')
@@ -256,7 +259,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.axes.set_title(self.title)
         self.canvas.draw_idle()
 
-    def setExposure(self, exposure: Exposure, keepzoom: bool=False, title: Optional[str]=None):
+    def setExposure(self, exposure: Exposure, keepzoom: bool = False, title: Optional[str] = None):
         self.matrix = exposure.intensity
         self.mask = exposure.mask == 0
         self.wavelength = float(exposure.header.wavelength[0])
