@@ -1,5 +1,10 @@
+import logging
+
 from .commandargument import StringArgument, FloatArgument, IntArgument
 from .command import Command
+
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class ScanCommand(Command):
@@ -11,6 +16,10 @@ class ScanCommand(Command):
                  IntArgument('Npoints', 'number of points'),
                  FloatArgument('exptime', 'exposure time at each point'),
                  StringArgument('comment', 'description of the scan')]
+
+    def stop(self):
+        self.instrument.scan.stopScan()
+
 
     def connectScanComponent(self):
         self.instrument.scan.scanstarted.connect(self.onScanStarted)
@@ -32,7 +41,7 @@ class ScanCommand(Command):
                 f'{(end-start)/(Npoints-1)} with {exptime:.3f} seconds exposure time')
             self.instrument.scan.startScan(
                 motorname=motor, rangemin=start, rangemax=end, steps=Npoints, countingtime=exptime, comment=comment,
-                relative=relative)
+                relative=relative, movemotorback=False, shutter=False)
         except:
             self.disconnectScanComponent()
             raise
@@ -49,7 +58,11 @@ class ScanCommand(Command):
             self.fail(scanindex)
 
     def onScanProgress(self, start: float, end: float, current: float, message: str):
-        self.progress.emit(message, int(1000*(current-start)/(end-start)), 1000)
+        logger.debug(f'Scan progress: {start=}, {end=}, {current=}, {message=}')
+        if start != end:
+            self.progress.emit(message, int(1000*(current-start)/(end-start)), 1000)
+        else:
+            self.progress.emit(message, 0, 0)
 
 
 class ScanRelCommand(ScanCommand):
