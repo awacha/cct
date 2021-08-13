@@ -308,7 +308,7 @@ class IO(QtCore.QObject, Component):
                     pass
         raise FileNotFoundError(self.formatFileName(prefix, fsn, '.pickle'))
 
-    def loadMask(self, maskname: str) -> np.array:
+    def loadMask(self, maskname: Optional[str]) -> Optional[np.array]:
         """Load a mask
 
         The 'mask' subdirectory is traversed recursively. The first file with matching name is found.
