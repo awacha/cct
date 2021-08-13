@@ -64,6 +64,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         gs = self.figure.add_gridspec(1, 1)
         self.axes = self.figure.add_subplot(gs[:, :])
         self.axes.set_facecolor('black')
+        self.axes.set_anchor((0.5, 0.5))
         self.canvas.draw_idle()
         cmapnames = list(matplotlib.cm.cmaps_listed) + list(matplotlib.cm.datad)
         self.paletteComboBox.addItems(sorted(cmapnames + [f'{cmname}_r' for cmname in cmapnames]))
@@ -175,7 +176,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             self._imghandle = self.axes.imshow(
                 matrix,
                 cmap=self.paletteComboBox.currentText(),
-                norm=self.getNormalization(),
+                norm=self.getNormalization(float(np.nanmin(matrix)), float(np.nanmin(matrix[matrix>0]))),
                 aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
                 interpolation='nearest',
                 alpha=1.0,
@@ -186,26 +187,30 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         else:
             self._imghandle.set_data(self.matrix)
             self._imghandle.set_cmap(self.paletteComboBox.currentText())
-            self._imghandle.set_norm(self.getNormalization())
+            self._imghandle.set_norm(self.getNormalization(float(np.nanmin(self.matrix)), float(np.nanmin(self.matrix[self.matrix>0]))))
             self._imghandle.set_extent(extent)
             self._imghandle.autoscale()
             self._imghandle.changed()
         # color bar
-        if self._cmapaxis is None:
-            try:
+        if np.ma.core.is_masked(self._imghandle.norm.vmin) or np.ma.core.is_masked(self._imghandle.norm.vmax):
+            # we won't be able to make a color bar
+            if self._cmapaxis is None:
+                # keep it that way
+                pass
+            else:
+                self._cmapaxis.remove()
+                self._cmapaxis = None
+        else:
+            if self._cmapaxis is None:
                 self._cmapaxis = self.figure.colorbar(
                     self._imghandle,
                     cax=self._cmapaxis.ax if self._cmapaxis is not None else None,
                     ax=None if self._cmapaxis is not None else self.axes,
                 )
-                self._cmapaxis.ax.set_visible(self.showColourBarToolButton.isChecked())
-            except ValueError as ve:
-                logger.warning('Cannot draw color bar: {ve}')
-
-        else:
-            logger.debug('Updating cmap')
             self._cmapaxis.ax.set_visible(self.showColourBarToolButton.isChecked())
-
+        self.axes.set_anchor((0.5, 0.5))
+        if self._cmapaxis is not None:
+            self._cmapaxis.ax.set_anchor((0, 0.5))
         # now plot the mask
         logger.debug(f'Mask: {(self.mask != 0).sum()} nonzero, {(self.mask == 0).sum()} zero pixels')
         if self._maskhandle is None:
@@ -214,6 +219,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
                 cmap=maskcmap,
                 aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
                 interpolation='nearest',
+                norm=matplotlib.colors.Normalize(0, 1),
                 # alpha=0.7,  # no need to specify: the color map does the job.
                 origin='upper',
                 extent=extent,
@@ -278,21 +284,26 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
     def setMask(self, mask: np.ndarray):
         if not mask.shape == self.mask.shape:
             raise ValueError('Mask shape mismatch')
-        self.mask = mask
-        extent, center = self._get_extent()
-        self._maskhandle.set_data(mask == 0)
-        self._maskhandle.set_extent(extent)
-        self._maskhandle.changed()
-        self.canvas.draw_idle()
+        logger.debug('Updating mask')
+        self.mask = mask == 0
+        if self._maskhandle is not None:
+            self._maskhandle.remove()
+            self._maskhandle = None
+#        extent, center = self._get_extent()
+#        self._maskhandle.set_data(mask)
+#        self._maskhandle.set_extent(extent)
+#        self._maskhandle.changed()
+#        self.canvas.draw_idle()
+        self.replot(keepzoom=True)
 
-    def getNormalization(self):
+    def getNormalization(self, minposvalue: float, minvalue: float):
         if self.colourScaleComboBox.currentText() == 'linear':
-            return matplotlib.colors.Normalize()
+            return matplotlib.colors.Normalize(minvalue)
         elif self.colourScaleComboBox.currentText() == 'log10':
-            return matplotlib.colors.LogNorm()
+            return matplotlib.colors.LogNorm(minposvalue)
         elif self.colourScaleComboBox.currentText() == 'square':
-            return matplotlib.colors.PowerNorm(2)
+            return matplotlib.colors.PowerNorm(2, minposvalue)
         elif self.colourScaleComboBox.currentText() == 'sqrt':
-            return matplotlib.colors.PowerNorm(0.5)
+            return matplotlib.colors.PowerNorm(0.5, minposvalue)
         else:
             assert False
