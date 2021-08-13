@@ -1,10 +1,12 @@
 from PyQt5 import QtCore
 
 import enum
+import math
 
 import logging
 from typing import Iterator, Any, Optional
 
+from ....devices.device.frontend import DeviceFrontend
 from ....devices.motor.generic.frontend import MotorController
 from ....devices.motor.trinamic.frontend import UnitConverter
 from ..auth.privilege import Privilege
@@ -126,7 +128,10 @@ class Motor(QtCore.QObject):
         return self.controller.setLimits(self.axis, left, right)
 
     def where(self) -> float:
-        return self.controller[f'actualposition${self.axis}']
+        try:
+            return self.controller[f'actualposition${self.axis}']
+        except DeviceFrontend.DeviceError:
+            return math.nan
 
     def keys(self) -> Iterator[str]:
         for key in self.controller.keys():
