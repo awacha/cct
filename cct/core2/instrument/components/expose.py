@@ -16,6 +16,7 @@ from .io import IO
 from ...dataclasses import Header, Exposure
 from ...devices.detector.pilatus.backend import PilatusBackend
 from ...devices.detector.pilatus.frontend import PilatusDetector
+from ...devices.device.frontend import DeviceFrontend
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -282,7 +283,7 @@ class Exposer(QtCore.QObject, Component):
             'geometry': self.instrument.geometry.currentpreset.getHeaderEntry(),
             'sample': sample.todict() if sample is not None else {},
             'motors': self.instrument.motors.getHeaderEntry(),
-            'devices': {dev.devicename: dev.toDict() for dev in self.instrument.devicemanager},
+            'devices': {dev.devicename: dev.toDict() for dev in self.instrument.devicemanager if dev.isOnline()},
             'environment': {},
             'accounting': {'projectid': self.instrument.projects.project().projectid,
                            'operator': self.instrument.auth.username(),
@@ -293,12 +294,12 @@ class Exposer(QtCore.QObject, Component):
         try:
             vac = self.instrument.devicemanager.vacuum()
             data['environment']['vacuum_pressure'] = vac.pressure()
-        except (KeyError, IndexError):
+        except (KeyError, IndexError, DeviceFrontend.DeviceError):
             data['environment']['vacuum_pressure'] = 0.0001
         try:
             temp = self.instrument.devicemanager.temperature()
             data['environment']['temperature'] = temp.temperature()
-        except (KeyError, IndexError):
+        except (KeyError, IndexError, DeviceFrontend.DeviceError):
             data['environment']['temperature'] = np.nan
         # sensors
         data['sensors'] = {s.name: s.__getstate__() for s in self.instrument.sensors}
