@@ -113,7 +113,7 @@ class Command(QtCore.QObject):
             self.killTimer(self._timer)
             self._timer = None
         self._finished = True
-        self.failed.emit(message)
+        self.failed.emit(str(message))
 
     @final
     def finish(self, returnvalue: Any):
@@ -122,7 +122,7 @@ class Command(QtCore.QObject):
             self.killTimer(self._timer)
             self._timer = None
         self._finished = True
-        self.finished.emit(returnvalue)
+        self.finished.emit(str(returnvalue))
 
     def parseArguments(self) -> Any:
         logger.debug(f'Parsing arguments: {self.argumentstring=}')
