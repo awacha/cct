@@ -29,7 +29,6 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
         self.readyLabel.setAutoFillBackground(True)
         self.reconnectToolButton.clicked.connect(self.reconnect)
         self.setTitle(self.device.name)
-        self.setEnabled(False)
         if self.devicename in Instrument.instance().devicemanager:
             self._connectDevice()
         else:
@@ -41,7 +40,6 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
         else:
             Instrument.instance().devicemanager.disconnectDevice(self.devicename)
         self.reconnectToolButton.setEnabled(False)
-        pass
 
     def onDeviceAllVariablesReady(self):
         self.reconnectToolButton.setText('D')
@@ -89,7 +87,6 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
         self.setLabelColor(self.readyLabel, not telemetryinformation.outstandingvariables)
         self.readyLabel.setToolTip('Outstanding variable queries:\n' + '\n'.join(
             [f'  {vname}' for vname in telemetryinformation.outstandingvariables]))
-        self.setEnabled(True)
 
     @staticmethod
     def setLabelColor(label: QtWidgets.QLabel, isok: Optional[bool]):
