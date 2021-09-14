@@ -215,7 +215,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         assert isinstance(self.sender(), DeviceFrontend)
         if (self.sender().devicetype == 'source') and (name == 'shutter'):
-            self.shutterToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/beamshutter_open.svg' if newvalue else ':/icons/beamshutter_close.svg')))
+            self.shutterToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/beamshutter_open.svg' if newvalue else ':/icons/beamshutter_closed.svg')))
             self.shutterToolButton.setText("Close shutter" if newvalue else "Open shutter")
             self.shutterToolButton.blockSignals(True)
             self.shutterToolButton.setChecked(newvalue)
