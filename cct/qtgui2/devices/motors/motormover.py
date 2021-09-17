@@ -37,17 +37,22 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             return
         self.moveMotorPushButton.setEnabled(True)
         motor = self.instrument.motors[self.motorNameComboBox.currentText()]
-        actualposition = motor['actualposition']
-        left = motor['softleft']
-        right = motor['softright']
-        if toggled is None:
-            toggled = self.relativeMovementCheckBox.isChecked()
-        if toggled:
-            self.motorTargetDoubleSpinBox.setRange(left - actualposition, right - actualposition)
-            self.motorTargetDoubleSpinBox.setValue(0)
+        if motor.isOnline():
+            self.onMotorOnline()
+            actualposition = motor['actualposition']
+            left = motor['softleft']
+            right = motor['softright']
+            if toggled is None:
+                toggled = self.relativeMovementCheckBox.isChecked()
+            if toggled:
+                self.motorTargetDoubleSpinBox.setRange(left - actualposition, right - actualposition)
+                self.motorTargetDoubleSpinBox.setValue(0)
+            else:
+                self.motorTargetDoubleSpinBox.setRange(left, right)
+                self.motorTargetDoubleSpinBox.setValue(actualposition)
         else:
-            self.motorTargetDoubleSpinBox.setRange(left, right)
-            self.motorTargetDoubleSpinBox.setValue(actualposition)
+            self.onMotorOffLine()
+            self.motorTargetDoubleSpinBox.setRange(0,0)
 
     def onMotorNameChanged(self, currentindex: int):
         if self.currentmotor is not None:
@@ -117,3 +122,13 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.motorNameComboBox.blockSignals(False)
         if self.motorNameComboBox.currentText() != currentmotor:
             self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.currentIndex())
+
+    def onMotorOffLine(self):
+        self.relativeMovementCheckBox.setEnabled(False)
+        self.moveMotorPushButton.setEnabled(False)
+        self.motorTargetDoubleSpinBox.setEnabled(False)
+
+    def onMotorOnline(self):
+        self.relativeMovementCheckBox.setEnabled(True)
+        self.moveMotorPushButton.setEnabled(True)
+        self.motorTargetDoubleSpinBox.setEnabled(True)
