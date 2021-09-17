@@ -287,6 +287,7 @@
     <addaction name="actionVacuum_gauge"/>
     <addaction name="actionTemperature_stage"/>
     <addaction name="actionThermometer"/>
+    <addaction name="actionKeen800UPS"/>
     <addaction name="separator"/>
     <addaction name="actionDevice_connections"/>
    </widget>
@@ -362,6 +363,7 @@
    <addaction name="actionMotors"/>
    <addaction name="actionTemperature_stage"/>
    <addaction name="actionThermometer"/>
+   <addaction name="actionKeen800UPS"/>
    <addaction name="actionSensors"/>
    <addaction name="separator"/>
    <addaction name="actionScan"/>
@@ -804,6 +806,18 @@
    </property>
    <property name="toolTip">
     <string>Start the beam monitor tool</string>
+   </property>
+  </action>
+  <action name="actionKeen800UPS">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/ups.svg</normaloff>:/icons/ups.svg</iconset>
+   </property>
+   <property name="text">
+    <string>NJoy Keen 800 UPS</string>
+   </property>
+   <property name="toolTip">
+    <string>Open status window of the NJoy Keen800 UPS</string>
    </property>
   </action>
  </widget>

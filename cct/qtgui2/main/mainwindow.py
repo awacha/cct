@@ -20,6 +20,7 @@ from ..devices.haakephoenix.haakephoenix import HaakePhoenixDevice
 from ..devices.motors.motorview import MotorView
 from ..devices.pilatus.pilatus import PilatusDetectorUI
 from ..devices.thermometer.se521 import SE521Window
+from ..devices.ups.keen800 import Keen80UPS
 from ..listing.headerview import HeaderView
 from ..listing.scanview import ScanViewer
 from ..measurement.monitor import MonitorMeasurement
@@ -85,6 +86,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionThermometer': SE521Window,
         'actionSensors': SensorsWindow,
         'actionBeam_Monitor': MonitorMeasurement,
+        'actionKeen800UPS': Keen80UPS,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]
