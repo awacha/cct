@@ -289,18 +289,20 @@ class ScanRecorder(QtCore.QObject):
                     self.mask_total = self.instrument.io.loadMask(self.instrument.config['scan']['mask_total'])
                 except (KeyError, FileNotFoundError, TypeError):
                     self.mask_total = exposure.intensity>=0
+        logger.debug('Queueing analyzeimage task to imageprocessorpool')
         self.imageprocessingtasks.append(self.imageprocessorpool.apply_async(self._analyzeimage, args=(exposure, self.mask, self.mask_total)))
         if self.imageprocessingtimer is None:
-            self.imageprocessingtimer = self.startTimer(0, QtCore.Qt.VeryCoarseTimer)
+            self.imageprocessingtimer = self.startTimer(1, QtCore.Qt.VeryCoarseTimer)
         if not self.exposurefinished:
             # imageReceived signal has been called first.
             logger.debug('imageReceived signal has been called first')
             self.moveToNextPosition()
 
     def timerEvent(self, timerEvent: QtCore.QTimerEvent) -> None:
-        if self.state == self.State.WaitingForDetector:
+        if (self.state == self.State.WaitingForDetector):
             if self.isReadyForExposure():
-                self.killTimer(timerEvent.timerId())
+                if timerEvent.timerId() != self.imageprocessingtimer:
+                    self.killTimer(timerEvent.timerId())
                 self.exposeNextImage()
                 return
         # see if image processing has been finished
@@ -317,6 +319,7 @@ class ScanRecorder(QtCore.QObject):
             position = self.positionsdone.pop(0)
             readings = task.get()
             self.imagesdone += 1
+            logger.debug(f'New scan point: at {position=}. {self.imagesdone=}. {self.positionsdone=}, {len(self.imageprocessingtasks)=}')
             self.scanpoint.emit((position,)+tuple(readings))
 
     def onExposureFinished(self, success: bool):
