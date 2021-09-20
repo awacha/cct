@@ -7,6 +7,8 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+import matplotlib.transforms
 
 from .monitor_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -31,6 +33,11 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     axesPosition: Axes
     axesHPositionKDE: Axes
     axesVPositionKDE: Axes
+    xTargetLine: Optional[Line2D] = None
+    yTargetLine: Optional[Line2D] = None
+    xTargetLineKDE: Optional[Line2D] = None
+    yTargetLineKDE: Optional[Line2D] = None
+    intensityTargetLine: Optional[Line2D] = None
     buffer: Optional[np.ndarray] = None
     cursor: Optional[int] = None  # point in the buffer where the next measurement will be written
     bufferdtype: Final[np.dtype] = np.dtype([('time', 'f4'), ('intensity', 'f4'), ('beamx', 'f4'), ('beamy', 'f4'), ])
@@ -63,7 +70,47 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.shutterToolButton.toggled.connect(self.moveShutter)
         self.bufferLengthSpinBox.valueChanged.connect(self.resizeBuffer)
         self.debugModeGroupBox.setVisible(self.debugmode)
+        self.beamXTargetCheckBox.toggled.connect(self.updateTargetLines)
+        self.beamYTargetCheckBox.toggled.connect(self.updateTargetLines)
+        self.intensityTargetCheckBox.toggled.connect(self.updateTargetLines)
+        self.beamXTargetDoubleSpinBox.valueChanged.connect(self.updateTargetLines)
+        self.beamYTargetDoubleSpinBox.valueChanged.connect(self.updateTargetLines)
+        self.intensityTargetDoubleSpinBox.valueChanged.connect(self.updateTargetLines)
         self.resizeBuffer()
+
+    def updateTargetLines(self):
+        logger.debug(f'UpdateTargetLines() called from {self.sender().objectName()=}')
+        if self.xTargetLine is not None:
+            logger.debug('xTargetLine')
+            self.xTargetLine.set_xdata(self.beamXTargetDoubleSpinBox.value())
+            self.xTargetLine.set_visible(self.beamXTargetCheckBox.isChecked())
+        if self.yTargetLine is not None:
+            logger.debug('yTargetLine')
+            self.yTargetLine.set_ydata(self.beamYTargetDoubleSpinBox.value())
+            self.yTargetLine.set_visible(self.beamYTargetCheckBox.isChecked())
+        if self.xTargetLineKDE is not None:
+            logger.debug('xTargetLineKDE')
+            self.xTargetLineKDE.set_xdata(self.beamXTargetDoubleSpinBox.value())
+            self.xTargetLineKDE.set_visible(self.beamXTargetCheckBox.isChecked())
+        if self.yTargetLineKDE is not None:
+            logger.debug('yTargetLineKDE')
+            self.yTargetLineKDE.set_ydata(self.beamYTargetDoubleSpinBox.value())
+            self.yTargetLineKDE.set_visible(self.beamYTargetCheckBox.isChecked())
+        if self.intensityTargetLine is not None:
+            logger.debug('intensityTargetLine')
+            self.intensityTargetLine.set_ydata(self.intensityTargetDoubleSpinBox.value())
+            self.intensityTargetLine.set_visible(self.intensityTargetCheckBox.isChecked())
+#        return
+        self.axesPosition.relim(visible_only=True)
+        self.axesPosition.autoscale_view(False)
+        self.axesHPositionKDE.relim(visible_only=True)
+        self.axesHPositionKDE.autoscale_view(False)
+        self.axesVPositionKDE.relim(visible_only=True)
+        self.axesVPositionKDE.autoscale_view(False)
+        self.axesIntensity.relim(visible_only=True)
+        self.axesIntensity.autoscale_view(False)
+        self.canvasPosition.draw_idle()
+        self.canvasIntensity.draw_idle()
 
     def resizeBuffer(self):
         """Resize the measurement buffer"""
@@ -122,15 +169,25 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axesIntensity.set_ylabel('Beam intensity')
         self.axesIntensity.grid(True, which='both')
         self.axesIntensity.plot(np.empty(len(self.buffer))+np.nan, np.empty(len(self.buffer))+np.nan, '.')
+        self.intensityTargetLine = self.axesIntensity.axhline(self.intensityTargetDoubleSpinBox.value(), color='red')
+        self.intensityTargetLine.set_visible(self.intensityTargetCheckBox.isChecked())
         self.axesPosition.clear()
         self.axesPosition.set_xlabel('Horizontal beam coordinate (pixel)')
         self.axesPosition.set_ylabel('Vertical beam coordinate (pixel)')
         self.axesPosition.grid(True, which='both')
+        self.xTargetLine = self.axesPosition.axvline(self.beamXTargetDoubleSpinBox.value(), color='red')
+        self.xTargetLine.set_visible(self.beamXTargetCheckBox.isChecked())
+        self.yTargetLine = self.axesPosition.axhline(self.beamYTargetDoubleSpinBox.value(), color='red')
+        self.yTargetLine.set_visible(self.beamYTargetCheckBox.isChecked())
 #        validdata = np.isfinite(self.buffer['time'])
 #        self.axesPosition.scatter(self.buffer['beamx'][validdata], self.buffer['beamy'][validdata],
 #                                  c=self.buffer['time'][validdata], cmap='Blues')
         self.axesHPositionKDE.plot(np.empty(self.kdepointcount)+np.nan, np.empty(self.kdepointcount)+np.nan, '-')
         self.axesVPositionKDE.plot(np.empty(self.kdepointcount)+np.nan, np.empty(self.kdepointcount)+np.nan, '-')
+        self.xTargetLineKDE = self.axesHPositionKDE.axvline(self.beamXTargetDoubleSpinBox.value(), color='red')
+        self.xTargetLineKDE.set_visible(self.beamXTargetCheckBox.isChecked())
+        self.yTargetLineKDE = self.axesVPositionKDE.axhline(self.beamYTargetDoubleSpinBox.value(), color='red')
+        self.yTargetLineKDE.set_visible(self.beamYTargetCheckBox.isChecked())
         self.axesHPositionKDE.xaxis.set_ticks_position('top')
         self.axesHPositionKDE.xaxis.set_label_position('top')
         self.axesVPositionKDE.yaxis.set_ticks_position('right')
@@ -175,7 +232,15 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.axesPosition.collections[0].remove()
         except IndexError:
             pass
-        validdata = np.isfinite(self.buffer['time'])
+        validdata = np.logical_and(
+            np.logical_and(
+                np.isfinite(self.buffer['time']),
+                np.isfinite(self.buffer['intensity'])
+            ),
+            np.logical_and(
+                np.isfinite(self.buffer['beamx']),
+                np.isfinite(self.buffer['beamy'])
+            ))
         beamx = self.buffer['beamx'][validdata]
         beamy = self.buffer['beamy'][validdata]
         timestamp = self.buffer['time'][validdata]
@@ -183,10 +248,17 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axesPosition.scatter(beamx, beamy, c=timestamp, cmap='Blues')
         self.axesIntensity.lines[0].set_xdata(self.buffer['time'])
         self.axesIntensity.lines[0].set_ydata(self.buffer['intensity'])
-        self.axesPosition.relim()
-        self.axesIntensity.relim()
-        self.axesIntensity.autoscale_view()
-        self.axesPosition.autoscale_view()
+        if validdata.sum() > 0:
+            self.axesPosition.dataLim = matplotlib.transforms.Bbox.unit()
+            self.axesPosition.dataLim.update_from_data_xy(np.vstack((self.buffer['beamx'], self.buffer['beamy'])).T[validdata,:], ignore=True)
+            xmargin, ymargin = self.axesPosition.margins()
+            width= self.axesPosition.dataLim.width
+            height = self.axesPosition.dataLim.height
+            self.axesPosition.set_xlim(self.axesPosition.dataLim.xmin - width*xmargin, self.axesPosition.dataLim.xmax+width*xmargin)
+            self.axesPosition.set_ylim(self.axesPosition.dataLim.ymin - height*ymargin, self.axesPosition.dataLim.ymax+height*ymargin)
+            logger.debug(f'{self.axesPosition.dataLim=}')
+        self.axesIntensity.relim(visible_only=True)
+        self.axesIntensity.autoscale_view(False)
         if validdata.sum() >= 2:
             timeweight = np.exp(-(timestamp.max()-timestamp)/(timestamp.ptp()*0.1))
         else:
@@ -196,20 +268,22 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             kde = (np.exp(-(beamx[np.newaxis, :]-kdex[:, np.newaxis])**2/(2*self.positionKDEWidthDoubleSpinBox.value()**2))*timeweight[np.newaxis,:]).sum(axis=1)
             self.axesHPositionKDE.lines[0].set_xdata(kdex)
             self.axesHPositionKDE.lines[0].set_ydata(kde)
-            self.axesHPositionKDE.relim()
-            self.axesHPositionKDE.autoscale_view()
+            self.axesHPositionKDE.set_ylim(kde.min()-kde.ptp()*0.1, kde.max()+kde.ptp()*0.1)
+
             kdey = np.linspace(self.buffer['beamy'][validdata].min(), self.buffer['beamy'][validdata].max(), self.kdepointcount)
             kde = (np.exp(-(beamy[np.newaxis, :]-kdey[:, np.newaxis])**2/(2*self.positionKDEWidthDoubleSpinBox.value()**2))*timeweight[np.newaxis, :]).sum(axis=1)
             self.axesVPositionKDE.lines[0].set_xdata(kde)
             self.axesVPositionKDE.lines[0].set_ydata(kdey)
-            self.axesVPositionKDE.relim()
-            self.axesVPositionKDE.autoscale_view()
+            self.axesVPositionKDE.set_xlim(kde.min()-kde.ptp()*0.1, kde.max()+kde.ptp()*0.1)
+#            self.axesVPositionKDE.relim(visible_only=True)
+#            self.axesVPositionKDE.autoscale_view(vis)
 
         self.canvasIntensity.draw_idle()
         self.canvasPosition.draw_idle()
         for label, dataset in [(self.intensityAverageLabel, intensity), (self.beamXAverageLabel, beamx), (self.beamYAverageLabel, beamy)]:
-            mean = np.sum(dataset*timeweight)/np.sum(timeweight)
-            sigma = (np.sum(dataset**2*timeweight)/np.sum(timeweight) - mean**2)**0.5
+            validpoints = np.isfinite(dataset)
+            mean = np.sum(dataset[validpoints]*timeweight[validpoints])/np.sum(timeweight[validpoints])
+            sigma = (np.sum(dataset[validpoints]**2*timeweight[validpoints])/np.sum(timeweight[validpoints]) - mean**2)**0.5
             label.setText(f'{mean:.2f} (σ={sigma:.2f})')
 
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
@@ -224,6 +298,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onImageReceived(self, exposure: Exposure):
         sumimage, maximage, meanrow, meancol, stdrow, stdcol, pixelcount = beamweights(
             exposure.intensity, exposure.mask)
+        logger.debug(f'{sumimage=}, {maximage=}, {meanrow=}, {meancol=}, {stdrow=}, {stdcol=}, {pixelcount=}')
         self.addPoint(sumimage, meancol, meanrow)
 
     def onExposureFinished(self, success: bool):
