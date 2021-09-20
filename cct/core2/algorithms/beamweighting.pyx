@@ -20,7 +20,7 @@ def beamweights(double [:,:] image not None, uint8_t [:,:] mask not None):
     maximage=image[0,0]
     for irow in range(0, image.shape[0]):
         for icol in range(0, image.shape[1]):
-            if image[irow, icol] <=0:
+            if image[irow, icol] <= 0:
                 continue
             if mask[irow, icol] == 0:
                 continue
