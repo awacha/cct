@@ -1,7 +1,7 @@
 import logging
 import weakref
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5 import QtCore
 
 from ...config import Config
 
@@ -13,10 +13,12 @@ class Component:
     """Logical component of an instrument"""
     config: Config
     instrument: "Instrument"
-    started= pyqtSignal()
-    stopped = pyqtSignal()
+    started= QtCore.pyqtSignal()
+    stopped = QtCore.pyqtSignal()
     stopping: bool = False
     __running: bool = False
+    __panicking: bool = False
+    panicAcknowledged = QtCore.pyqtSignal()
 
     def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PyQt5/multiinheritance.html
         self.config = kwargs['config']
@@ -48,3 +50,8 @@ class Component:
 
     def running(self) -> bool:
         return self.__running
+
+    def panichandler(self):
+        """Default panic handler: schedules the emission of the panicAcknowledged signal soon afterwards."""
+        self.__panicking = True
+        QtCore.QTimer.singleShot(0, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)

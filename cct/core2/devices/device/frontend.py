@@ -49,6 +49,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     _port: int
     _last_ready_time: Optional[float] = None
     _ready: bool = False
+    _panicking: bool = False
     name: str
     _backendkwargs: Dict[str, Any] = None
     _logger: logging.Logger
@@ -92,6 +93,11 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
     # State change: change in the __status__ variable
     stateChanged = QtCore.pyqtSignal(str)  # the new value
+
+    # Panic acknowledged signal: when a panic situation arises anywhere in the instrument, the panichandler() method
+    # of each device is called. The device then needs to stop anything it is doing and shut down into a clean state.
+    # When this is achieved, the panicAcknowledged() signal is emitted to notify the instrument.
+    panicAcknowledged = QtCore.pyqtSignal()
 
     class DeviceError(Exception):
         pass
@@ -402,3 +408,13 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     @property
     def port(self) -> int:
         return self._port
+
+    def panichandler(self):
+        """This method is called when there is a "panic" situation from anywhere in the instrument.
+        The device needs to clean up and shut down. After the shutdown sequence, the panicAcknowledged() signal
+        must be emitted.
+
+        The default handler simply schedules the emission of the panicAcknowledged signal soon afterwards
+        """
+        self._panicking = True
+        QtCore.QTimer.singleShot(0, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)

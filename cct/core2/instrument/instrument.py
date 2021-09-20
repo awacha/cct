@@ -85,6 +85,7 @@ class Instrument(QtCore.QObject):
             ('transmission', TransmissionMeasurement),
             ('sensors', Sensors),
         ]:
+            ### NOTE! When you add a new component, add a corresponding entry in the panic() method as well!
             comp = componentclass(config=self.config, instrument=self)
             setattr(self, componentname, comp)
             self.components[componentname] = comp
@@ -148,3 +149,26 @@ class Instrument(QtCore.QObject):
         for component in self.components.values():
             component.saveToConfig()
         self.config.save(self.config.filename)
+
+    def panic(self):
+        """Start the panic sequence
+
+        Whenever something really bad happens, the panic sequence ensures that everything is put in a clean state and
+        powered off.
+
+        Some events which might evoke the panic sequence:
+        - the user pressing the PANIC button
+        - serious trouble with the X-ray source
+        - grid power outage reported by the UPS
+        """
+        self._panic_components=[
+            ['interpreter'],
+            ['scan', 'transmission'],
+            ['exposer'],
+            ['beamstop', 'samplestore'],
+            ['motors', 'sensors'],
+            ['devicemanager'],
+            ['projects'],
+            ['calibrants', 'auth', 'io', 'geometry', 'datareduction']
+        ]
+        self.interpreter.panichandler()

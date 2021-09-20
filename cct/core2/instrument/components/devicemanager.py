@@ -1,7 +1,7 @@
 import logging
 from typing import List, Any, Type, Iterator
 
-from PyQt5 import QtCore, QtGui
+from PyQt5 import QtCore
 
 from .auth import Privilege, needsprivilege
 from .component import Component
@@ -113,7 +113,9 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         pass
 
     def onPanic(self):
-        pass
+        device:DeviceFrontend = self.sender()
+        logger.error(f'Device {device.name} panicked! Escalating...')
+        self.instrument.panic()
 
     # ------------------ Convenience methods for accessing devices ---------------------------------------------------------
 
@@ -283,3 +285,13 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
         return self.createIndex(row, column, None)
+
+    def onDevicePanicAcknowledged(self):
+        device: DeviceFrontend = self.sender()
+        device.disconnect()
+
+    def panichandler(self):
+        self._panicking = True
+        for dev in self._devices:
+            dev.panicAcknowledged.connect(self.onDevicePanicAcknowledged)
+            dev.panic()
