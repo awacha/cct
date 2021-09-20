@@ -6,7 +6,7 @@ from ...utils.window import WindowRequiresDevices
 from .keen800_ui import Ui_Form
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Keen80UPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
