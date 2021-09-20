@@ -6,7 +6,7 @@ from typing import List, Any
 from PyQt5 import QtCore, QtWidgets
 
 from .project import Project
-from ..auth import Privilege
+from ..auth import Privilege, needsprivilege
 from ..component import Component
 
 logger = logging.getLogger(__name__)
@@ -41,11 +41,10 @@ class ProjectManager(QtCore.QAbstractItemModel, Component):
             return QtWidgets.QApplication.instance().style().standardIcon(
                 QtWidgets.QStyle.SP_DialogOkButton) if self._currentproject is prj else None
 
+    @needsprivilege(Privilege.ProjectManagement, 'Insufficient privileges')
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
-        if not self.instrument.auth.hasPrivilege(Privilege.ProjectManagement):
-            raise RuntimeError('Insufficient privileges')
         if role != QtCore.Qt.EditRole:
-            return
+            return False
         prj = self._projects[index.row()]
         if (index.column() == 0) and (value not in self):
             prj.projectid = str(value)
@@ -78,9 +77,8 @@ class ProjectManager(QtCore.QAbstractItemModel, Component):
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
         return self.createIndex(row, column, None)
 
+    @needsprivilege(Privilege.ProjectManagement, 'Insufficient privileges')
     def addProject(self, projectid: str):
-        if not self.instrument.auth.hasPrivilege(Privilege.ProjectManagement):
-            raise RuntimeError('Insufficient privileges')
         if projectid in self:
             raise RuntimeError(f'Project {projectid} already exists')
         row = max([i for i, p in enumerate(self._projects) if p.projectid < projectid] + [-1]) + 1
@@ -89,9 +87,8 @@ class ProjectManager(QtCore.QAbstractItemModel, Component):
         self.endInsertRows()
         self.saveToConfig()
 
+    @needsprivilege(Privilege.ProjectManagement, 'Insufficient privileges')
     def removeProject(self, projectid: str):
-        if not self.instrument.auth.hasPrivilege(Privilege.ProjectManagement):
-            raise RuntimeError('Insufficient privileges')
         row = [i for i, p in enumerate(self._projects) if p.projectid == projectid][0]
         self.beginRemoveRows(QtCore.QModelIndex(), row, row)
         del self._projects[row]
