@@ -71,12 +71,11 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
     def disconnectDevices(self):
         logger.info('Disconnecting all devices')
         if not self._devices:
-            QtCore.QTimer.singleShot(100, self.stopped.emit)
+            QtCore.QTimer.singleShot(0, QtCore.Qt.VeryCoarseTimer, self.stopped.emit)
             logger.debug('No devices, emitting stopped.')
         for dev in self._devices:
             self.disconnectDevice(dev.name)
 
-    @needsprivilege(Privilege.ConnectDevices)
     def disconnectDevice(self, devicename: str):
         if self[devicename].isOffline():
             # already off-line, no need to disconnect
@@ -85,7 +84,6 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
             raise ValueError('Cannot disconnect from device: it is not online and not initializing')
         self[devicename].stopbackend()
 
-    @needsprivilege(Privilege.ConnectDevices)
     def connectDevice(self, devicename: str):
         """Start the backend of an existing device"""
         if not self.instrument.online:
