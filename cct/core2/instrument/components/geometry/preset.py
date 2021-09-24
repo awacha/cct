@@ -29,10 +29,15 @@ class GeometryPreset(QtCore.QObject):
         return self.config['geometry'].setdefault(propertyname, defaultvalue)
 
     def _get_sd(self) -> Tuple[float, float]:
-        if self._state['sd'] is None:
-            return self.ph3toflightpipes + sum(self.flightpipes) + self.lastflightpipetodetector - self.ph3tosample, 0.0
+        if self._state['dist_sample_det'] is None:
+            value = self.ph3toflightpipes + sum(self.flightpipes) + self.lastflightpipetodetector - self.ph3tosample
         else:
-            return self._state['sd']
+            value = self._state['dist_sample_det']
+        if self._state['dist_sample_det.err'] is None:
+            uncertainty = 0.0
+        else:
+            uncertainty = self._state['dist_sample_det.err']
+        return value, uncertainty
 
     description = pyqtProperty(
         str, lambda self: self._getproperty('description'), lambda self, value: self._setproperty('description', value))
@@ -43,7 +48,7 @@ class GeometryPreset(QtCore.QObject):
         list, lambda self: self._getproperty('l2_elements'),
         lambda self, value: self._setproperty('l2_elements', value))
     sd = pyqtProperty(
-        tuple, _get_sd, lambda self, value: self._setproperty('sd', value))
+        tuple, _get_sd, lambda self, value: self._setproperty('dist_sample_det', value))
     beamposx = pyqtProperty(
         tuple, lambda self: self._getproperty('beamposx'), lambda self, value: self._setproperty('beamposx', value))
     beamposy = pyqtProperty(
