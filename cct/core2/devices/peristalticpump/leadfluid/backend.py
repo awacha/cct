@@ -101,7 +101,6 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
                 self.commandFinished('start', 'Started pump')
         else:
             raise ValueError(f'Invalid function code: {funccode}')
-        self.updatePowerStatus()
 
     def issueCommand(self, name: str, args: Sequence[Any]):
         if name == 'start':
@@ -128,79 +127,3 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
             self.modbus_write_register(3104, 3)
         elif name == 'set_dispense_volume':
             self.modbus_write_registers(3105, )
-        elif name == 'xrays':
-            # x-ray generator can always be turned on. But it can only be turned off if the power is zero.
-            if (self['__status__'] != self.Status.off) and not bool(args[0]):
-                self.commandError(name, 'Cannot turn off X-ray generator: tube power is not zero.')
-                return
-            self.modbus_set_coil(251, bool(args[0]))
-            self.commandFinished(name, "Turning off X-ray generator")
-        elif name == 'poweroff':
-            # always allow powering off, except when warming up
-            if self['__status__'] == self.Status.warmup:
-                self.commandError(name, 'Cannot turn power of X-ray tube in the middle of the warm-up procedure.')
-                return
-            self.updateVariable('__status__', self.Status.poweringoff)
-            self.modbus_set_coil(250, False)  # Standby mode off
-            self.modbus_set_coil(244, True)  # power off.
-            self.commandFinished(name, "Powering off X-ray generator")
-        elif name == 'standby':
-            # can go to standby only if X-ray are on and not warming up
-            if self['__status__'] in [self.Status.warmup, self.Status.xraysoff]:
-                self.commandError(name, 'Cannot go to stand-by if X-rays are off or warming up.')
-                return
-            self.updateVariable('__status__', self.Status.goingtostandby)
-            self.modbus_set_coil(250, True)  # Standby mode on
-            self.commandFinished(name, 'Going to standby mode.')
-        elif name == 'full_power':
-            if self['__status__'] == self.Status.full:
-                self.commandFinished(name, 'Already at full power')
-            elif self['__status__'] != self.Status.standby:
-                self.commandError(name, 'X-ray tube can only be put in full-power mode from stand-by.')
-                return
-            self.updateVariable('__status__', self.Status.goingtofull)
-            self.modbus_set_coil(250, False)  # Standby mode off
-            self.modbus_set_coil(252, True)  # ramp up
-            self.commandFinished(name, 'Going to full power mode')
-        elif name == 'start_warmup':
-            if self['__status__'] != self.Status.off:
-                self.commandError(
-                    name, 'Warm-up can only be started when the X-ray generator is on and the tube power is zero.')
-                return
-            self.modbus_set_coil(250, False)  # Standby mode off
-            self.modbus_set_coil(245, True)  # start warm-up
-            self.commandFinished(name, 'Starting warm-up sequence.')
-        elif name == 'stop_warmup':
-            if self['__status__'] != self.Status.warmup:
-                self.commandError(name, 'Not in a warm-up cycle.')
-                return
-            self.modbus_set_coil(250, False)  # Standby mode off
-            self.modbus_set_coil(246, True)  # stop warm-up
-            self.modbus_set_coil(244, True)  # power off
-            self.commandFinished(name, 'Stopping warm-up sequence.')
-        else:
-            self.commandError(name, 'Invalid command')
-
-    def updatePowerStatus(self):
-        try:
-            if not self['xrays']:
-                self.updateVariable('__status__', self.Status.xraysoff)
-            elif self['warmingup']:
-                self.updateVariable('__status__', self.Status.warmup)
-            elif self['goingtostandby']:
-                self.updateVariable('__status__', self.Status.goingtostandby)
-            elif self['rampingup']:
-                self.updateVariable('__status__', self.Status.goingtofull)
-            elif self['poweringdown']:
-                self.updateVariable('__status__', self.Status.poweringoff)
-            elif self['power'] == 9:
-                self.updateVariable('__status__', self.Status.standby)
-            elif self['power'] == self['tube_power']:
-                self.updateVariable('__status__', self.Status.full)
-            elif self['power'] == 0:
-                self.updateVariable('__status__', self.Status.off)
-            else:
-                self.updateVariable('__status__', self.Status.unknown)
-        except KeyError:
-            # this can happen when not all variables have been queried yet
-            pass

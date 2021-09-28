@@ -254,3 +254,27 @@ class GeometryPreset(QtCore.QObject):
             'truedistance': self.sd[0],  # should be overridden when information on the sample is ready
             'truedistance.err': self.sd[1],  # should be overridden when information on the sample is ready
         }  # other fields: truedistance, truedistance.err
+
+    def __eq__(self, other: "GeometryPreset") -> bool:
+        if not isinstance(other, type(self)):
+            raise TypeError(type(other))
+        if [key for key in self._state if key not in other._state]:
+            return False
+        elif [key for key in other._state if key not in self._state]:
+            return False
+        else:
+            for key in self._state:
+                thisvalue = self._state[key]
+                othervalue = other._state[key]
+                if not isinstance(thisvalue, type(othervalue)):
+                    # types are different
+                    return False
+                elif isinstance(thisvalue, (float, str)) and thisvalue != othervalue:
+                    return False
+                elif isinstance(thisvalue, (tuple, list, set, dict)) and len(thisvalue) != len(othervalue):
+                    return False
+                elif isinstance(thisvalue, tuple) and any([t!=o for t, o in zip(thisvalue, othervalue)]):
+                    return False
+                elif isinstance(thisvalue, list) and any([t!=o for t, o in zip(sorted(thisvalue), sorted(othervalue))]):
+                    return False
+            return True

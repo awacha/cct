@@ -287,7 +287,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.geometry.savePreset(self.presetsListView.currentIndex().data(QtCore.Qt.DisplayRole))
 
     def loadPreset(self):
-        self.instrument.geometry.loadPreset(self.presetsListView.currentIndex().data(QtCore.Qt.DisplayRole))
+        self.instrument.geometry.setCurrentPreset(self.presetsListView.currentIndex().data(QtCore.Qt.DisplayRole))
 
     def updateL1L2Labels(self):
         self.l1Label.setText(f'{self.instrument.geometry.currentpreset.l1:.2f}')

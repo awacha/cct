@@ -18,15 +18,20 @@ class ComponentType(enum.Enum):
 
 
 class GeometryChoices(QtCore.QAbstractItemModel):
-    """
+    """Model to store all possible choices for beamstop, flight pipes, pinholes (in 3 stages) and inter-pinhole spacers.
+
+    The tree hierarchy is like:
+
     - beamstops
         - 2.6
         - 4
+        - ...
     - flightpipes
         - 160
         - 280
         - 1038
         - 1200
+        - ...
     - pinholes
         - stage 1
             - 300
@@ -52,6 +57,7 @@ class GeometryChoices(QtCore.QAbstractItemModel):
     """
 
     class IndexObject:
+        """Class for indexing the choices tree model"""
         def __init__(self, componenttype: ComponentType, index1: Optional[int] = None, index2: Optional[int] = None):
             #            logger.debug(f'Creating indexObject {componenttype=} {index1=} {index=}')
             self.componenttype = componenttype
@@ -82,14 +88,14 @@ class GeometryChoices(QtCore.QAbstractItemModel):
         def __str__(self):
             return f'IndexObject({self.componenttype.value=}, {self.index1=}, {self.index2=} {self.level=})'
 
-    pinhole1: List[float]
-    pinhole2: List[float]
-    pinhole3: List[float]
-    beamstop: List[float]
-    spacers: List[float]
-    flightpipes: List[float]
-    _indexobjects: List[IndexObject]
-    config: Config
+    pinhole1: List[float]  # list of pinhole apertures in the 1st stage
+    pinhole2: List[float]  # list of pinhole apertures in the 2nd stage
+    pinhole3: List[float]  # list of pinhole apertures in the 3rd stage
+    beamstop: List[float]  # list of possible beam stop diameters
+    spacers: List[float]  # list of the lengths of spacers that can be put between pinhole stages. May be repeated
+    flightpipes: List[float]  # list of flight pipe lengths to be put between the sample chamber and the beamstop stage
+    _indexobjects: List[IndexObject]  # cache of index objects, to avoid garbage collecting them
+    config: Config  # the configuration object
 
     def __init__(self, **kwargs):
         self.pinhole1 = []
@@ -106,10 +112,10 @@ class GeometryChoices(QtCore.QAbstractItemModel):
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         ip = parent.internalPointer() if parent.isValid() else None
         assert isinstance(ip, self.IndexObject) or ip is None
-        if not parent.isValid():
+        if not parent.isValid():  # root level
             return 4  # pinholes, spacers, beamstops, pipes
         elif ip.level == 1:
-            if ip.componenttype == ComponentType.Pinhole:
+            if ip.componenttype == ComponentType.Pinhole:  # the pinhole branch is one level deeper
                 return 3
             elif ip.componenttype == ComponentType.Beamstop:
                 return len(self.beamstop)
@@ -223,7 +229,7 @@ class GeometryChoices(QtCore.QAbstractItemModel):
         return None
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        pass
+        return None
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         logger.debug('setData')
@@ -250,6 +256,15 @@ class GeometryChoices(QtCore.QAbstractItemModel):
         return True
 
     def addPinhole(self, stage: int, aperture: float):
+        """Add a new pinhole diameter, maintaining increasing order
+
+        After the pinhole is added, the configuration is saved
+
+        :param stage: which stage should it be added (indexing from 0)
+        :type stage: integer between 0 and 2
+        :param aperture: pinhole diameter
+        :type aperture: float
+        """
         lis = [self.pinhole1, self.pinhole2, self.pinhole3][stage]
         row = max([i for i, l in enumerate(lis) if l < aperture] + [-1]) + 1
         self.beginInsertRows(self.createIndex(stage, 0, self.IndexObject(ComponentType.Pinhole, stage, None)), row, row)
@@ -258,6 +273,13 @@ class GeometryChoices(QtCore.QAbstractItemModel):
         self.saveToConfig()
 
     def addSpacer(self, length: float):
+        """Add a new spacer, maintaining increasing order
+
+        After the spacer length is added, the configuration is saved
+
+        :param length: length of the spacer in mm
+        :type length: float
+        """
         row = max([i for i, l in enumerate(self.spacers) if l < length] + [-1]) + 1
         self.beginInsertRows(self.index(3, 0, QtCore.QModelIndex()), row, row)
         self.spacers.insert(row, length)
@@ -307,6 +329,7 @@ class GeometryChoices(QtCore.QAbstractItemModel):
         self.endResetModel()
 
     def saveToConfig(self):
+        """Save the current state to the configuration dictionary"""
         if 'geometry' not in self.config:
             self.config['geometry'] = {}
         if 'choices' not in self.config:
