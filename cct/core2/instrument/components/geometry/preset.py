@@ -29,11 +29,11 @@ class GeometryPreset(QtCore.QObject):
         return self.config['geometry'].setdefault(propertyname, defaultvalue)
 
     def _get_sd(self) -> Tuple[float, float]:
-        if self._state['dist_sample_det'] is None:
+        if ('dist_sample_det' not in self._state) or (self._state['dist_sample_det'] is None):
             value = self.ph3toflightpipes + sum(self.flightpipes) + self.lastflightpipetodetector - self.ph3tosample
         else:
             value = self._state['dist_sample_det']
-        if self._state['dist_sample_det.err'] is None:
+        if ('dist_sample_det.err' not in self._state) or (self._state['dist_sample_det.err'] is None):
             uncertainty = 0.0
         else:
             uncertainty = self._state['dist_sample_det.err']
