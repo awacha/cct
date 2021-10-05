@@ -246,6 +246,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 QtWidgets.QMessageBox.critical(
                     self, 'Parameter locked',
                     f'Cannot set position for sample {self.sampleNameComboBox.currentText()}: this parameter has been set read-only!')
+        self.sampleChanged()
 
     def saveThickness(self):
         thicknessval = abs(self.positive[0] - self.negative[0])
@@ -261,3 +262,4 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.samplestore.updateSample(sample.title, 'thickness', sample.thickness)
         logger.info(
             f'Updated thickness of sample {sample.title} to {sample.thickness[0]:.4f} \xb1 {sample.thickness[1]:.4f} cm.')
+        self.sampleChanged()

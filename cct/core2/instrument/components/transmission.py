@@ -626,15 +626,13 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                     self.moveSample()
                 else:
                     # we are just ready with exposing the sample. Save the transmission if possible.
-                    sample = self.samplestore[currenttask.samplename]
                     transm = currenttask.transmission()
-                    logger.info(f'Transmission for sample {sample.title} measured: '
+                    logger.info(f'Transmission for sample {currenttask.samplename} measured: '
                                 f'{transm[0]:.4f} \xb1 {transm[1]:.4f}')
                     try:
-                        sample.transmission = transm
+                        self.samplestore.updateSample(currenttask.samplename, 'transmission', transm)
                     except ValueError as ve:
-                        logger.error(f'Cannot set transmission of sample {sample.title}: {str(ve)}')
-                    self.samplestore.updateSample(sample.title, sample)
+                        logger.error(f'Cannot set transmission of sample {currenttask.samplename}: {str(ve)}')
                     # go to the next sample
                     if self.currentlymeasuredsample >= (len(self._data) - 1):
                         # no more samples to measure

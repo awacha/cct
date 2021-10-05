@@ -33,6 +33,6 @@ def beamweights(double [:,:] image not None, uint8_t [:,:] mask not None):
             meancol2 += icol * icol* image[irow, icol]
             pixelcount += 1
     if pixelcount == 0:
-        return NAN, NAN, NAN, NAN, NAN, NAN, 0
+        return 0.0, 0.0, NAN, NAN, NAN, NAN, 0
     else:
         return sumimage, maximage, meanrow/sumimage, meancol/sumimage, sqrt((meanrow2 / sumimage - meanrow) / sumimage), sqrt((meancol2 / sumimage - meancol) / sumimage), pixelcount
