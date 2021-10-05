@@ -42,6 +42,7 @@ class GeometryPreset(QtCore.QObject):
     def _set_sd(self, value: Tuple[float, float]):
         self._state['dist_sample_det'] = value[0]
         self._state['dist_sample_det.err'] = value[1]
+        self.changed.emit('dist_sample_det', value)
 
     description = pyqtProperty(
         str, lambda self: self._getproperty('description'), lambda self, value: self._setproperty('description', value))
@@ -108,7 +109,7 @@ class GeometryPreset(QtCore.QObject):
         self.pinhole3 = pinhole3
         self.beamstop = beamstop
         self.flightpipes = flightpipes if flightpipes is not None else []
-        self.sd = sd
+        self.sd = sd if sd is not None else (0.0, 0.0)
         self.beamposx = beamposx
         self.beamposy = beamposy
         self.mask = '' if mask is None else mask
