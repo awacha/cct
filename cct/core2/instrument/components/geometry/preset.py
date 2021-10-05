@@ -39,6 +39,10 @@ class GeometryPreset(QtCore.QObject):
             uncertainty = self._state['dist_sample_det.err']
         return value, uncertainty
 
+    def _set_sd(self, value: Tuple[float, float]):
+        self._state['dist_sample_det'] = value[0]
+        self._state['dist_sample_det.err'] = value[1]
+
     description = pyqtProperty(
         str, lambda self: self._getproperty('description'), lambda self, value: self._setproperty('description', value))
     l1_elements = pyqtProperty(
@@ -48,7 +52,7 @@ class GeometryPreset(QtCore.QObject):
         list, lambda self: self._getproperty('l2_elements'),
         lambda self, value: self._setproperty('l2_elements', value))
     sd = pyqtProperty(
-        tuple, _get_sd, lambda self, value: self._setproperty('dist_sample_det', value))
+        tuple, _get_sd, _set_sd)
     beamposx = pyqtProperty(
         tuple, lambda self: self._getproperty('beamposx'), lambda self, value: self._setproperty('beamposx', value))
     beamposy = pyqtProperty(
