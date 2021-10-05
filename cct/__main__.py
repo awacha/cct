@@ -18,7 +18,6 @@ from cct.core2.config import Config
 from cct.core2.instrument.components.datareduction.datareductionpipeline import DataReductionPipeLine
 from cct.core2.instrument.components.io import IO
 from cct.core2.instrument.instrument import Instrument
-from cct.devservers.se521_server import SE521DevServer
 from cct.qtgui2.main.logindialog import LoginDialog
 from cct.qtgui2.main.mainwindow import MainWindow
 
@@ -221,21 +220,6 @@ def mkexcel(filename: str, firstfsn: int, lastfsn: int, config: str, verbose: bo
     """Create or update the exposure list database"""
     cct.dbutils2.mkexcel.mkexcel(filename=filename, firstfsn=firstfsn, lastfsn=lastfsn, configfile=config,
                                  verbose=verbose)
-
-
-@main.group()
-def devserver():
-    """Start a device server program"""
-    pass
-
-
-@devserver.command()
-@click.option('-p', '--port', type=int, default=3000, help='TCP port to listen on', required=False)
-@click.option('-v', '--verbose', type=bool, is_flag=True, default=False, help='Verbose operation')
-def se521(port: int, verbose: bool):
-    """TCP/IP server for an USB-connected SE521 thermometer"""
-    logging.basicConfig()
-    SE521DevServer.main(port, verbose)
 
 
 if __name__ == '__main__':
