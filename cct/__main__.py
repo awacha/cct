@@ -72,18 +72,21 @@ def daq(config: str, online: bool, root: bool, die_on_error: bool):
     instrument = Instrument(configfile=config)
     logger.debug('Instrument() done.')
     if not root:
-        logger.debug('Opening login dialog')
-        logindialog = LoginDialog()
-        logindialog.setOffline(not online)
         while True:
             logger.debug('Starting new logindialog iteration')
+            logger.debug('Opening login dialog')
+            logindialog = LoginDialog()
+            logindialog.setOffline(not online)
             result = logindialog.exec()
             if result == QtWidgets.QDialog.Accepted:
                 if logindialog.authenticate():
                     logger.debug('Successful authentication')
+                    online = not logindialog.isOffline()
+                    logindialog.deleteLater()
                     break
                 else:
                     logger.debug('Failed authentication')
+                    logindialog.deleteLater()
                     continue
             else:
                 logger.debug('Cancelled, exiting')
@@ -91,8 +94,6 @@ def daq(config: str, online: bool, root: bool, die_on_error: bool):
                 instrument.deleteLater()
                 app.deleteLater()
                 sys.exit()
-        online = not logindialog.isOffline()
-        logindialog.deleteLater()
     else:
         instrument.auth.setRoot()
     instrument.setOnline(online)
