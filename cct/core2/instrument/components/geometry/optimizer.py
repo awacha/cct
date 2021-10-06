@@ -30,8 +30,9 @@ def yieldflightpipes(flightpipes: Sequence[float]):
     uniquepipes = sorted(set(flightpipes))
     pipecounts = [flightpipes.count(s) for s in uniquepipes]
     # for L1:
-    for counts in itertools.product(*[range(c + 1) for c in pipecounts]):
-        yield counts, uniquepipes
+    for counts in itertools.product(*[range(0, c + 1) for c in pipecounts]):
+        if sum(counts) > 0:  # do not allow 0 flight pipes
+            yield counts, uniquepipes
 
 
 def _worker(stopevent: Event, outqueue: Queue, config: Dict, maxsamplediameter: Tuple[float, float], qmin: Tuple[float, float], l1min: float = 0.0,
