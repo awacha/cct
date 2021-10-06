@@ -34,7 +34,7 @@ class Keen800Backend(DeviceBackend):
         DeviceBackend.VariableInfo(name='ratedvoltage', dependsfrom=[], urgent=False, timeout=inf),
         DeviceBackend.VariableInfo(name='ratedcurrent', dependsfrom=['ratedvoltage'], urgent=False, timeout=inf),
         DeviceBackend.VariableInfo(name='ratedbatteryvoltage', dependsfrom=['ratedvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ratedfrequency', dependsfrom=['ratedfrequency'], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='ratedfrequency', dependsfrom=['ratedvoltage'], urgent=False, timeout=inf),
         DeviceBackend.VariableInfo(name='statusbits', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
 
     ]
