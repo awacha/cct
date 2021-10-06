@@ -95,7 +95,7 @@ def _worker(stopevent: Event, outqueue: Queue, config: Dict, maxsamplediameter: 
         rmin = ((dbeamatsample + bs) * sd / (sd - beamstoptodetector) - dbeamatsample) * 0.5
         # logger.debug(f'{rmin=}, {sd=}, {wavelength=}')
         thisqmin = 4 * np.pi * np.sin(0.5 * np.arctan(rmin / sd)) / wavelength
-        if (thisqmin > qmin[0]) or (thisqmin < qmin[1]):
+        if (thisqmin <= qmin[0]) or (thisqmin >= qmin[1]):
             # not reached or too fine
             continue
         # otherwise we have found a good solution. Maybe not the best one though
