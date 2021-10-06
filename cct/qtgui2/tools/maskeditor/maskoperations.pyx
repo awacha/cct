@@ -96,10 +96,10 @@ def maskPolygon(uint8_t[:,:] mask, double [:, :] vertices, MaskingMode maskmode)
             for iedge in range(0, vertices.shape[0]-1):
                 # iedge is the starting point of the vertex, iedge +1 is its ending point.
                 # notice that indexing of Numpy arrays is (row, column), therefore (y, x)!
-                x0 = vertices[iedge, 1]
-                y0 = vertices[iedge, 0]
-                x1 = vertices[iedge+1, 1]
-                y1 = vertices[iedge+1, 0]
+                x0 = vertices[iedge, 0]
+                y0 = vertices[iedge, 1]
+                x1 = vertices[iedge+1, 0]
+                y1 = vertices[iedge+1, 1]
                 if y1 == y0:
                     # horizontal edge, disregard this.
                     continue
