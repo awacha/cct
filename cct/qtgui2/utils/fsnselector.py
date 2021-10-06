@@ -17,7 +17,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
         instrument = Instrument.instance()
-        instrument.io.nextFSNChanged.connect(self.onNextFSNChanged)
+        instrument.io.lastFSNChanged.connect(self.onLastFSNChanged)
         self.comboBox.addItems(sorted(instrument.io.prefixes))
         self.comboBox.currentIndexChanged.connect(self.onPrefixChanged)
         self.comboBox.setCurrentIndex(0)
@@ -55,7 +55,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
             self.setInvalid(False)
             self.spinBox.setRange(0, Instrument.instance().io.lastfsn(prefix))
 
-    def onNextFSNChanged(self, prefix: str, fsn: int):
+    def onLastFSNChanged(self, prefix: str, fsn: int):
         if prefix == self.comboBox.currentText():
             self.spinBox.setRange(0, fsn)
 
