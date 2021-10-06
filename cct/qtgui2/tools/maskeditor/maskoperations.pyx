@@ -72,13 +72,13 @@ def maskPolygon(uint8_t[:,:] mask, double [:, :] vertices, MaskingMode maskmode)
     # if the polygon is strictly inside the matrix (no vertices outside), we can check a smaller part of the mask, which
     # speeds up things a bit.
     for iedge in range(vertices.shape[0]):
-        if vertices[iedge, 0] < rowmin:
+        if vertices[iedge, 1] < rowmin:
             rowmin = vertices[iedge, 1]
-        if vertices[iedge, 0] > rowmax:
+        if vertices[iedge, 1] > rowmax:
             rowmax = vertices[iedge, 1]
-        if vertices[iedge, 1] < colmin:
+        if vertices[iedge, 0] < colmin:
             colmin = vertices[iedge, 0]
-        if vertices[iedge, 1] > colmax:
+        if vertices[iedge, 0] > colmax:
             colmax = vertices[iedge, 0]
     if rowmin < 0:
         rowmin = 0
