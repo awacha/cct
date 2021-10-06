@@ -249,7 +249,9 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def selectedFreeHand(self, vertices):
         logger.debug(vertices)
         logger.debug(type(vertices))
+        # add the last vertex to the beginning
         vertices.append(vertices[0])
+        logger.debug(f'First 2 vertices: {vertices[:2]}. Last 3 vertices: {vertices[-3:]}')
         mask = self.undoStack.get()
         mask = mask.copy()
         maskPolygon(mask, np.array(vertices, dtype=np.double), self._getMaskingMode())
