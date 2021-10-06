@@ -77,6 +77,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         for propertyname, widgetnames in self._geometryproperty2widgetname.items():
             widgets = [getattr(self, wn) for wn in widgetnames]
             if len(widgets) == 1 and isinstance(widgets[0], QtWidgets.QDoubleSpinBox):
+                logger.debug(f'Property name is {propertyname}, widget names are {widgetnames}, value is {getattr(self.instrument.geometry.currentpreset, propertyname)}')
                 widgets[0].setValue(getattr(self.instrument.geometry.currentpreset, propertyname))
                 widgets[0].valueChanged.connect(self.onGeometryParameterChangedInUI)
             elif len(widgets) == 1 and isinstance(widgets[0], QtWidgets.QLineEdit):
