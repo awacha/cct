@@ -3,7 +3,7 @@ import logging
 import queue
 import time
 from multiprocessing import Process, Queue, Event
-from typing import Sequence, Optional, Dict
+from typing import Sequence, Optional, Dict, Tuple
 
 import numpy as np
 from PyQt5 import QtCore
@@ -34,7 +34,7 @@ def yieldflightpipes(flightpipes: Sequence[float]):
         yield counts, uniquepipes
 
 
-def _worker(stopevent: Event, outqueue: Queue, config: Dict, maxsamplediameter: float, qmin: float, l1min: float = 0.0,
+def _worker(stopevent: Event, outqueue: Queue, config: Dict, maxsamplediameter: Tuple[float, float], qmin: Tuple[float, float], l1min: float = 0.0,
             l2min: float = 0.0,
             lmax: float = 0.0):
     isoKFringwidth = config['geometry']['isoKFspacer']
@@ -86,16 +86,17 @@ def _worker(stopevent: Event, outqueue: Queue, config: Dict, maxsamplediameter: 
         # 4) check if the beam is not too large at the sample
         dbeamatsample = ((ph1 + ph2) * (l1 + l2 + ph3tosample) / l1 - ph1) * 1e-3
         #            logger.debug(f'{dbeamatsample=}')
-        if dbeamatsample >= maxsamplediameter:
-            # yes, it is
+        if (dbeamatsample >= maxsamplediameter[1]) or (dbeamatsample <= maxsamplediameter[0]):
+            # yes, it is too large (or too small)
             continue
         # 5) check if qmin is reached
         # at this point we do not have parasitic scattering, nor direct beam hitting the detector. Therefore qmin
         # is only limited by the shadow of the beamstop on the detector.
         rmin = ((dbeamatsample + bs) * sd / (sd - beamstoptodetector) - dbeamatsample) * 0.5
         # logger.debug(f'{rmin=}, {sd=}, {wavelength=}')
-        if 4 * np.pi * np.sin(0.5 * np.arctan(rmin / sd)) / wavelength > qmin:
-            # not reached
+        thisqmin = 4 * np.pi * np.sin(0.5 * np.arctan(rmin / sd)) / wavelength
+        if (thisqmin > qmin[0]) or (thisqmin < qmin[1]):
+            # not reached or too fine
             continue
         # otherwise we have found a good solution. Maybe not the best one though
         outqueue.put((
@@ -126,7 +127,7 @@ class GeometryOptimizer(QtCore.QObject):
         self.timerid = None
         self.stopevent = Event()
 
-    def start(self, maxsamplediameter: float, qmin: float, l1min: float, l2min: float, lmax: float):
+    def start(self, maxsamplediameter: Tuple[float, float], qmin: Tuple[float, float], l1min: float, l2min: float, lmax: float):
         if self.process is not None or self.queue is not None:
             raise RuntimeError('Cannot start processing: already running')
         self.queue = Queue()
@@ -136,7 +137,7 @@ class GeometryOptimizer(QtCore.QObject):
                                lmax))
         self.stopevent.clear()
         self.process.start()
-        self.timerid = self.startTimer(0, QtCore.Qt.VeryCoarseTimer)
+        self.timerid = self.startTimer(10, QtCore.Qt.PreciseTimer)
         self.starttime = time.monotonic()
 
     def timerEvent(self, timerevent: QtCore.QTimerEvent) -> None:

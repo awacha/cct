@@ -1151,18 +1151,60 @@ p, li { white-space: pre-wrap; }
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
         <layout class="QGridLayout" name="gridLayout_4">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_14">
-           <property name="text">
-            <string>Minimum PH#1-PH#2 distance (mm):</string>
+         <item row="0" column="5">
+          <widget class="QDoubleSpinBox" name="optQMinMaxDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
-           <property name="buddy">
-            <cstring>minPh1Ph2DistanceDoubleSpinBox</cstring>
+           <property name="decimals">
+            <number>4</number>
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QDoubleSpinBox" name="minPh1Ph2DistanceDoubleSpinBox">
+         <item row="0" column="3">
+          <widget class="QDoubleSpinBox" name="optQMinMinDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
+           <property name="value">
+            <double>0.020000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_38">
+           <property name="text">
+            <string>Maximum camera length (mm):</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_18">
+           <property name="text">
+            <string>Minimum PH#2-PH#3 distance (mm):</string>
+           </property>
+           <property name="buddy">
+            <cstring>minPh2Ph3DistanceDoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QDoubleSpinBox" name="minPh2Ph3DistanceDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -1174,18 +1216,46 @@ p, li { white-space: pre-wrap; }
            </property>
           </widget>
          </item>
-         <item row="0" column="3">
-          <widget class="QDoubleSpinBox" name="optQMinDoubleSpinBox">
+         <item row="1" column="5">
+          <widget class="QDoubleSpinBox" name="maxMaxSampleSizeDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QDoubleSpinBox" name="minPh1Ph2DistanceDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
+           <property name="maximum">
+            <double>100000.000000000000000</double>
+           </property>
            <property name="value">
-            <double>0.020000000000000</double>
+            <double>208.000000000000000</double>
            </property>
           </widget>
          </item>
          <item row="1" column="3">
-          <widget class="QDoubleSpinBox" name="maxSampleSizeDoubleSpinBox">
+          <widget class="QDoubleSpinBox" name="minMaxSampleSizeDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -1201,13 +1271,6 @@ p, li { white-space: pre-wrap; }
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_38">
-           <property name="text">
-            <string>Maximum camera length (mm):</string>
-           </property>
-          </widget>
-         </item>
          <item row="1" column="2">
           <widget class="QLabel" name="label_22">
            <property name="text">
@@ -1215,31 +1278,14 @@ p, li { white-space: pre-wrap; }
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QDoubleSpinBox" name="minPh2Ph3DistanceDoubleSpinBox">
-           <property name="decimals">
-            <number>4</number>
-           </property>
-           <property name="maximum">
-            <double>100000.000000000000000</double>
-           </property>
-           <property name="value">
-            <double>208.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_18">
-           <property name="text">
-            <string>Minimum PH#2-PH#3 distance (mm):</string>
-           </property>
-           <property name="buddy">
-            <cstring>minPh2Ph3DistanceDoubleSpinBox</cstring>
-           </property>
-          </widget>
-         </item>
          <item row="2" column="1">
           <widget class="QDoubleSpinBox" name="maxCameraLengthDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="decimals">
             <number>4</number>
            </property>
@@ -1248,6 +1294,30 @@ p, li { white-space: pre-wrap; }
            </property>
            <property name="value">
             <double>6000.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_14">
+           <property name="text">
+            <string>Minimum PH#1-PH#2 distance (mm):</string>
+           </property>
+           <property name="buddy">
+            <cstring>minPh1Ph2DistanceDoubleSpinBox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4">
+          <widget class="QLabel" name="label_40">
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="4">
+          <widget class="QLabel" name="label_41">
+           <property name="text">
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -1422,8 +1492,10 @@ p, li { white-space: pre-wrap; }
   <tabstop>minPh1Ph2DistanceDoubleSpinBox</tabstop>
   <tabstop>minPh2Ph3DistanceDoubleSpinBox</tabstop>
   <tabstop>maxCameraLengthDoubleSpinBox</tabstop>
-  <tabstop>optQMinDoubleSpinBox</tabstop>
-  <tabstop>maxSampleSizeDoubleSpinBox</tabstop>
+  <tabstop>optQMinMinDoubleSpinBox</tabstop>
+  <tabstop>optQMinMaxDoubleSpinBox</tabstop>
+  <tabstop>minMaxSampleSizeDoubleSpinBox</tabstop>
+  <tabstop>maxMaxSampleSizeDoubleSpinBox</tabstop>
   <tabstop>tabWidget_2</tabstop>
   <tabstop>optimizationTreeView</tabstop>
   <tabstop>optimizePushButton</tabstop>

@@ -150,7 +150,8 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         logger.info('Starting geometry search')
         self._optpresets.clear()
         self._optimizer.start(
-            self.maxSampleSizeDoubleSpinBox.value(), self.optQMinDoubleSpinBox.value(),
+            (self.minMaxSampleSizeDoubleSpinBox.value(), self.maxMaxSampleSizeDoubleSpinBox.value()),
+            (self.optQMinMineDoubleSpinBox.value(), self.optQMinMaxDoubleSpinBox.value()),
             self.minPh1Ph2DistanceDoubleSpinBox.value(), self.minPh2Ph3DistanceDoubleSpinBox.value(),
             self.maxCameraLengthDoubleSpinBox.value())
         self.progressBar.setVisible(True)
