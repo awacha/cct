@@ -270,7 +270,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.commandLineEdit.setPalette(pal)
                 return
 
-    def showPattern(self, exposure: Exposure, keepzoom: bool = False, title: Optional[str] = None):
+    def showPattern(self, exposure: Exposure, keepzoom: Optional[bool] = None, title: Optional[str] = None):
         if title is None:
             title = f'{exposure.header.prefix}/{exposure.header.fsn}: {exposure.header.title} @ {exposure.header.distance[0]:.2f} mm'
         self.plotimage.setExposure(exposure, keepzoom, title)
