@@ -11,7 +11,7 @@ from ...utils.filebrowsers import browseMask
 from ....core2.dataclasses.sample import Sample
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ProxyModel(QtCore.QSortFilterProxyModel):
@@ -193,6 +193,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 elif isinstance(widget, QtWidgets.QLineEdit) and (newvalue != widget.text()):
                     widget.setText(newvalue)
                 elif isinstance(widget, QtWidgets.QComboBox):
+                    logger.debug(f'Newvalue: {newvalue}. {type(newvalue)=}')
                     if isinstance(newvalue, str) and (widget.currentText() != newvalue):
                         widget.setCurrentIndex(widget.findText(newvalue))
                     elif (newvalue is None) and (widget.currentIndex() >= 0):
