@@ -198,6 +198,8 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                         widget.setCurrentIndex(widget.findText(newvalue))
                     elif (newvalue is None) and (widget.currentIndex() >= 0):
                         widget.setCurrentIndex(-1)
+                    elif (newvalue is None) and (widget.currentIndex() < 0):
+                        pass
                     elif widget.currentText() != newvalue.value:
                         widget.setCurrentIndex(widget.findText(newvalue.value))
                     else:
