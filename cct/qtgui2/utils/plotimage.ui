@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>673</width>
+    <width>819</width>
     <height>42</height>
    </rect>
   </property>
@@ -233,6 +233,29 @@
         <bool>true</bool>
        </property>
        <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="lockZoomToolButton">
+       <property name="toolTip">
+        <string>Lock the current zoom. If set, the zoom of the image is kept whenever a new scattering pattern is shown.</string>
+       </property>
+       <property name="text">
+        <string>Lock zoom</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../resource/icons/icons.qrc">
+         <normaloff>:/icons/zoom_unlocked.svg</normaloff>:/icons/zoom_unlocked.svg</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="checkable">
         <bool>true</bool>
        </property>
       </widget>

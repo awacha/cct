@@ -160,7 +160,9 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             assert False
         return extent, center
 
-    def replot(self, keepzoom: bool = False):
+    def replot(self, keepzoom: Optional[bool] = None):
+        if keepzoom is None:
+            keepzoom = self.lockZoomToolButton.isChecked()
         if self.matrix is None:
             return
         extent, center = self._get_extent()

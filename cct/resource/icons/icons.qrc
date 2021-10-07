@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="icons">
+    <file>zoom_locked.svg</file>
+    <file>zoom_unlocked.svg</file>
     <file>ups.svg</file>
     <file>advancedmotorconfig.svg</file>
     <file>beammonitor.svg</file>
