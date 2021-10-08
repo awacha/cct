@@ -53,7 +53,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
         self.plotimage = PlotImage(self)
-        self.plotImageVerticalLayout.addLayout(self.plotimage, 1)
+        self.plotImageVerticalLayout.addWidget(self.plotimage, 1)
         self.plotimage.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         self.figureIntensity = Figure(constrained_layout=True)
         self.canvasIntensity = FigureCanvasQTAgg(self.figureIntensity)
