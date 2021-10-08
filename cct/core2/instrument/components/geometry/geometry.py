@@ -82,6 +82,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         del self.presets[oldname]
         self.endResetModel()
         self.saveToConfig()
+        return True
 
     def savePreset(self, name: str):
         """Save the current settings under a preset name"""
