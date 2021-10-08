@@ -78,7 +78,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
             raise ValueError(f'Cannot rename preset "{oldname}" to an already existing name "{newname}"')
         self.beginResetModel()
         data = self.presets[oldname]
-        self.presets[str(newname)] = data.asdict()
+        self.presets[str(newname)] = data.toDict()
         del self.presets[oldname]
         self.endResetModel()
         self.saveToConfig()
