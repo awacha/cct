@@ -190,7 +190,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         self.config['geometry']['description'] = self.currentpreset.description
         for preset in self.presets:
             self.config['geometry']['presets'][preset] = self.presets[preset].toDict()
-        for name in self.config['geometry']['presets']:
+        for name in list(self.config['geometry']['presets']):
             if name not in self.presets:
                 del self.config['geometry']['presets'][name]
 
