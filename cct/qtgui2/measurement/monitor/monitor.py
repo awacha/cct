@@ -12,6 +12,7 @@ import matplotlib.transforms
 
 from .monitor_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
+from ...utils.plotimage import PlotImage
 from ....core2.devices.xraysource import GeniX
 from ....core2.devices.device.frontend import DeviceFrontend
 from ....core2.dataclasses import Exposure
@@ -43,6 +44,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     bufferdtype: Final[np.dtype] = np.dtype([('time', 'f4'), ('intensity', 'f4'), ('beamx', 'f4'), ('beamy', 'f4'), ])
     kdepointcount: Final[int] = 1000
     debugmode: bool=False
+    plotimage: PlotImage
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -50,6 +52,9 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
+        self.plotimage = PlotImage(self)
+        self.plotImageVerticalLayout.addLayout(self.plotimage, 1)
+        self.plotimage.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
         self.figureIntensity = Figure(constrained_layout=True)
         self.canvasIntensity = FigureCanvasQTAgg(self.figureIntensity)
         self.toolbarIntensity = NavigationToolbar2QT(self.canvasIntensity, self)
@@ -300,6 +305,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             exposure.intensity, exposure.mask)
         logger.debug(f'{sumimage=}, {maximage=}, {meanrow=}, {meancol=}, {stdrow=}, {stdcol=}, {pixelcount=}')
         self.addPoint(sumimage, meancol, meanrow)
+        self.plotimage.setExposure(exposure, keepzoom=None)
 
     def onExposureFinished(self, success: bool):
         if (self.startStopToolButton.text() == 'Stop') and success:
