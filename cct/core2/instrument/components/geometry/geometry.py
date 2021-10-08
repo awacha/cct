@@ -192,7 +192,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
             self.config['geometry']['presets'][preset] = self.presets[preset].toDict()
         for name in self.config['geometry']['presets']:
             if name not in self.presets:
-                del self.config['geometry']['presets']
+                del self.config['geometry']['presets'][name]
 
     def setCurrentPreset(self, preset: Union[GeometryPreset, str]):
         if isinstance(preset, str):
