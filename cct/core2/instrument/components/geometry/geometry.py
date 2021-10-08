@@ -37,7 +37,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         self.choices = GeometryChoices(config=self.config)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return len(self.config['geometry']['presets'])+1
+        return len(self.presets)+1
 
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return 1
@@ -61,13 +61,14 @@ class Geometry(QtCore.QAbstractItemModel, Component):
             if index.row() == 0:
                 return self.CURRENTPRESETNAME
             else:
-                return sorted(self.config['geometry']['presets'].keys())[index.row()-1]
+                return sorted(self.presets.keys())[index.row()-1]
         return None
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if index.row() == 0:
             raise RuntimeError('Cannot change the name of the current settings.')
-        oldname = sorted(self.config['geometry']['presets'].keys())[index.row()-1]
+        oldname = sorted(self.presets.keys())[index.row()-1]
+        self.saveToConfig()
         return self.renamePreset(oldname, value)
 
     def renamePreset(self, oldname: str, newname: str) -> bool:
@@ -76,10 +77,11 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         if newname in self.presetNames():
             raise ValueError(f'Cannot rename preset "{oldname}" to an already existing name "{newname}"')
         self.beginResetModel()
-        data = self.config['geometry']['presets'][oldname]
-        self.config['geometry']['presets'][str(newname)] = data.asdict()
-        del self.config['geometry']['presets'][oldname]
+        data = self.presets[oldname]
+        self.presets[str(newname)] = data.asdict()
+        del self.presets[oldname]
         self.endResetModel()
+        self.saveToConfig()
 
     def savePreset(self, name: str):
         """Save the current settings under a preset name"""
@@ -89,7 +91,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
     def addPreset(self, name: str, preset: Optional[GeometryPreset] = None) -> str:
         if name in self.presetNames():
             i = 1
-            while f'{name}{i}' in self.config['geometry']['presets']:
+            while f'{name}{i}' in self.presets:
                 i += 1
             name = f'{name}{i}'
         if preset is None:
@@ -98,16 +100,18 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         self.presets[name] = preset
         self.endResetModel()
         logger.info(f'Added a new geometry preset {name}')
+        self.saveToConfig()
         return name
 
     def removePreset(self, name: str):
         if name == self.CURRENTPRESETNAME:
             raise ValueError('Cannot remove current preset')
-        if name not in self.config['geometry']['presets']:
+        if name not in self.presets:
             raise ValueError(f'Cannot remove nonexistent preset {name}')
         self.beginResetModel()
-        del self.config['geometry']['presets'][name]
+        del self.presets[name]
         self.endResetModel()
+        self.saveToConfig()
         logger.info(f'Removed geometry preset {name}.')
 
     def onConfigChanged(self, path, value):
@@ -183,6 +187,11 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         self.config['geometry']['beamposy.err'] = self.currentpreset.beamposy[1]
         self.config['geometry']['mask'] = self.currentpreset.mask
         self.config['geometry']['description'] = self.currentpreset.description
+        for preset in self.presets:
+            self.config['geometry']['presets'][preset] = self.presets[preset].toDict()
+        for name in self.config['geometry']['presets']:
+            if name not in self.presets:
+                del self.config['geometry']['presets']
 
     def setCurrentPreset(self, preset: Union[GeometryPreset, str]):
         if isinstance(preset, str):
