@@ -84,6 +84,9 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             widget.setEnabled(True)
 
     def onMotorPositionChanged(self, newposition: float):
+        if self.startStopPushButton.text() != 'Start':
+            # scan is running, do not update motor limits in the input boxes
+            return
         rt = RangeType(self.rangeTypeComboBox.currentText())
         motor = self.instrument.motors[self.motorname]
         if rt == RangeType.Absolute:
