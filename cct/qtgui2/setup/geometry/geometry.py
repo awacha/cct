@@ -13,7 +13,7 @@ from ....core2.instrument.components.geometry.optimizer import GeometryOptimizer
 from ....core2.instrument.components.geometry.presetstore import PresetStore
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

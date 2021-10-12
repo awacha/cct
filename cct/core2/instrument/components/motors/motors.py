@@ -4,13 +4,13 @@ from typing import Iterator, Any, List, Dict, Union, Optional
 
 from PyQt5 import QtCore, QtGui
 
+from .motor import Motor, MotorRole, MotorDirection
+from ..auth import Privilege, needsprivilege
 from ..component import Component
 from ....devices.motor.generic.frontend import MotorController
-from ..auth import Privilege, needsprivilege
-from .motor import Motor, MotorRole, MotorDirection
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Motors(QtCore.QAbstractItemModel, Component):
@@ -47,7 +47,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
                 motorinfo['name'],
                 motorinfo['controller'],
                 motorinfo['index'],
-                role= None if role is None else MotorRole(role),
+                role=None if role is None else MotorRole(role),
                 direction=None if direction is None else MotorDirection(direction))
 
     def onDeviceConnectedOrDisconnected(self, name: str):
@@ -140,7 +140,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
         return QtCore.QModelIndex()
 
     def _addmotor(self, motorname: str, devicename: str, motorindex: int,
-                  role: Optional[MotorRole] = None, direction: Optional[MotorDirection]=None):
+                  role: Optional[MotorRole] = None, direction: Optional[MotorDirection] = None):
         logger.debug(f'Adding motor {motorname=}.')
         if any([motor.name == motorname for motor in self.motors]):
             # motor already exists.
@@ -160,10 +160,10 @@ class Motors(QtCore.QAbstractItemModel, Component):
         motor.positionChanged.connect(self.onMotorPositionChanged)
         self.endInsertRows()
         self.newMotor.emit(motorname)
-        self.config['motors'][motorname] = {'controller':devicename, 'index': motorindex, 'name': motorname,
+        self.config['motors'][motorname] = {'controller': devicename, 'index': motorindex, 'name': motorname,
                                             'role': motor.role.value, 'direction': motor.direction.value}
 
-    def __getitem__(self, item: Union[str,int]) -> Motor:
+    def __getitem__(self, item: Union[str, int]) -> Motor:
         if isinstance(item, str):
             try:
                 return [m for m in self.motors if m.name == item][0]
@@ -172,7 +172,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
         else:
             return self.motors[item]
 
-    def onMotorPositionChanged(self, position:float):
+    def onMotorPositionChanged(self, position: float):
         motor = self.sender()
         assert isinstance(motor, Motor)
         row = self.motors.index(motor)
@@ -223,12 +223,15 @@ class Motors(QtCore.QAbstractItemModel, Component):
         return {m.name: m.where() for m in self.motors}
 
     @needsprivilege(Privilege.MotorConfiguration, 'Not enough privileges to add motors')
-    def addMotor(self, motorname: str, controllername: str, axis: int, softleft: float, softright: float, position: float, role: Optional[MotorRole]=None, direction: Optional[MotorDirection]=None):
+    def addMotor(self, motorname: str, controllername: str, axis: int, softleft: float, softright: float,
+                 position: float, role: Optional[MotorRole] = None, direction: Optional[MotorDirection] = None):
         if motorname in self:
             raise ValueError(f'A motor already exists with name "{motorname}"')
         # ensure that some roles and directions are unique
-        for role_, direction_ in [(MotorRole.BeamStop, MotorDirection.X), (MotorRole.BeamStop, MotorDirection.Y), (MotorRole.Sample, MotorDirection.X), (MotorRole.Sample, MotorDirection.Y)]:
-            if (role_ == role) and (direction_ == direction_) and [m for m in self if (m.role == role) and (m.direction == direction)]:
+        for role_, direction_ in [(MotorRole.BeamStop, MotorDirection.X), (MotorRole.BeamStop, MotorDirection.Y),
+                                  (MotorRole.Sample, MotorDirection.X), (MotorRole.Sample, MotorDirection.Y)]:
+            if (role_ == role) and (direction_ == direction_) and [m for m in self if
+                                                                   (m.role == role) and (m.direction == direction)]:
                 raise ValueError(f'Another motor already exists with role {role} and direction {direction}')
         controller = self.instrument.devicemanager[controllername]
         assert isinstance(controller, MotorController)

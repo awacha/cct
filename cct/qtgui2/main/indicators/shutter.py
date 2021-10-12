@@ -8,7 +8,7 @@ from ....core2.instrument.instrument import Instrument
 from ....core2.devices.xraysource.genix.frontend import GeniX
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ShutterIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):

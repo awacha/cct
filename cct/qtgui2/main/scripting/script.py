@@ -10,7 +10,7 @@ from .scripteditor import ScriptEditor
 from .syntaxhighlighter import ScriptSyntaxHighlighter
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ScriptUI(QtWidgets.QWidget, Ui_Form):

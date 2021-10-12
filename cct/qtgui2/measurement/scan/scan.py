@@ -9,7 +9,7 @@ from ...utils.plotscan import PlotScan
 from ...utils.window import WindowRequiresDevices
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class RangeType(enum.Enum):

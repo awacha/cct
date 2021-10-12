@@ -15,7 +15,7 @@ from ...devices.beamstop import BeamstopIndicator
 from .beamstopcalibrator import BeamStopCalibrator
 from ....core2.instrument.components.auth.privilege import Privilege
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

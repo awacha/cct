@@ -10,7 +10,7 @@ from ..core2.config import Config
 from ..core2.dataclasses import Header
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 MAXNOTFOUNDCOUNT: Final[int] = 100
 

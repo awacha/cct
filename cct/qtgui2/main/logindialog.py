@@ -6,7 +6,7 @@ from .logindialog_ui import Ui_Dialog
 from ...core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class LoginDialog(QtWidgets.QDialog, Ui_Dialog):

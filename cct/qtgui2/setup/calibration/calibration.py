@@ -22,7 +22,7 @@ from ....core2.dataclasses import Exposure, Curve
 from ....core2.instrument.components.calibrants.q import QCalibrant
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):

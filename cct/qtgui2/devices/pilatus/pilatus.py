@@ -8,7 +8,7 @@ from ....core2.devices.detector.pilatus.frontend import PilatusDetector, Pilatus
 from ....core2.devices.device.frontend import DeviceFrontend
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # humidity & temperature
 

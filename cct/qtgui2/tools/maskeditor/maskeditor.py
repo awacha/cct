@@ -20,7 +20,7 @@ from ....core2.dataclasses import Exposure
 from .maskoperations import maskCircle, maskRectangle, maskPolygon, mm_mask, mm_flip, mm_unmask
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

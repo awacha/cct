@@ -19,7 +19,7 @@ from ....core2.dataclasses import Exposure
 from ....core2.algorithms.beamweighting import beamweights
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

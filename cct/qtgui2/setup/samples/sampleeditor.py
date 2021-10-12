@@ -11,7 +11,7 @@ from ...utils.filebrowsers import browseMask
 from ....core2.dataclasses.sample import Sample
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ProxyModel(QtCore.QSortFilterProxyModel):

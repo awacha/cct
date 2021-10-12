@@ -13,7 +13,7 @@ from ....core2.algorithms.peakfit import fitpeak, PeakType
 from ....core2.dataclasses import Scan
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

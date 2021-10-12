@@ -8,7 +8,7 @@ from ...device.frontend import DeviceFrontend
 from ....sensors.thermometer import Thermometer
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SE521(DeviceFrontend):

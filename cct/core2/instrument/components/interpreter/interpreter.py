@@ -1,16 +1,15 @@
+import logging
 import re
 from typing import Any, Dict, List, Optional
-import logging
 
 from PyQt5 import QtCore
 
+from .flags import InterpreterFlags
 from ..component import Component
 from ....commands import Command, Comment, Label
-from .flags import InterpreterFlags
-
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ParsingError(Exception):
@@ -69,7 +68,7 @@ class Interpreter(QtCore.QObject, Component):
         if self.pointer is not None:
             raise RuntimeError('Script already running')
         logger.debug('Starting script')
-        logger.debug('Script:  \n'+'\n'.join([str(cmd) for cmd in self.script]))
+        logger.debug('Script:  \n' + '\n'.join([str(cmd) for cmd in self.script]))
         self.pointer = -1
         # clear namespace. Do not create a new dict instance, this is already shared with the commands!
         for key in list(self.namespace):

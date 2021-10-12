@@ -13,7 +13,7 @@ from ....core2.instrument.instrument import Instrument
 from ....core2.commands import Command
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Scripting(QtWidgets.QWidget, Ui_Form):

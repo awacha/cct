@@ -8,7 +8,7 @@ from ...utils.window import WindowRequiresDevices
 from ....core2.devices.peristalticpump.leadfluid.frontend import ControlMode, BT100S
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class LeadFluid_BT100S(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

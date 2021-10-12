@@ -16,7 +16,7 @@ from ...core2.algorithms.peakfit import PeakType, fitpeak
 from ...core2.dataclasses import Scan
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

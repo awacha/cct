@@ -1,18 +1,17 @@
-from PyQt5 import QtCore
-
 import enum
-import math
-
 import logging
+import math
 from typing import Iterator, Any, Optional
 
+from PyQt5 import QtCore
+
+from ..auth.privilege import Privilege
 from ....devices.device.frontend import DeviceFrontend
 from ....devices.motor.generic.frontend import MotorController
 from ....devices.motor.trinamic.frontend import UnitConverter
-from ..auth.privilege import Privilege
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MotorRole(enum.Enum):
@@ -46,7 +45,8 @@ class Motor(QtCore.QObject):
     cameOnLine = QtCore.pyqtSignal()  # emitted when the controller becomes on-line
     wentOffLine = QtCore.pyqtSignal()  # emitted when the controller becomes off-line
 
-    def __init__(self, instrument: "Instrument", controllername: str, axis: int, name: str, role: Optional[MotorRole] = None, direction: Optional[MotorDirection] = None):
+    def __init__(self, instrument: "Instrument", controllername: str, axis: int, name: str,
+                 role: Optional[MotorRole] = None, direction: Optional[MotorDirection] = None):
         super().__init__()
         self.instrument = instrument
         self.controllername = controllername
@@ -187,7 +187,8 @@ class Motor(QtCore.QObject):
             raise RuntimeError('Cannot calibrate motor: insufficient privileges')
 
     def isOnline(self) -> bool:
-        return (self.controllername in self.instrument.devicemanager) and self.instrument.devicemanager[self.controllername].isOnline()
+        return (self.controllername in self.instrument.devicemanager) and self.instrument.devicemanager[
+            self.controllername].isOnline()
 
     def unitConverter(self) -> UnitConverter:
         return self.controller.unitConverter(self.axis)

@@ -17,7 +17,7 @@ from .plotimage_ui import Ui_Form
 from ...core2.dataclasses import Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 maskcmap = matplotlib.colors.ListedColormap([(0.0, 0.0, 0.0, 0.0), (1.0, 1.0, 1.0, 0.7)])
 

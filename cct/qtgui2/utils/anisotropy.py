@@ -15,7 +15,7 @@ from ...core2.algorithms.radavg import maskforannulus, maskforsectors
 from ...core2.dataclasses import Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

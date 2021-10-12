@@ -6,7 +6,7 @@ from .transmission_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

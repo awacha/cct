@@ -11,7 +11,7 @@ from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.components.motors.motor import Motor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SampleMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

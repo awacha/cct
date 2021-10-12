@@ -47,7 +47,7 @@ from ...core2.instrument.components.interpreter import ParsingError
 from ...core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):

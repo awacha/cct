@@ -7,7 +7,7 @@ from .samples_ui import Ui_WizardPage
 from ......core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Model(QtCore.QAbstractItemModel):

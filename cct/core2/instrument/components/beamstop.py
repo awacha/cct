@@ -1,6 +1,6 @@
+import enum
 import logging
 from typing import Optional, Tuple
-import enum
 
 from PyQt5 import QtCore
 
@@ -9,7 +9,7 @@ from .motors import Motor, MotorRole, MotorDirection
 from ...devices.device.frontend import DeviceFrontend
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class BeamStop(QtCore.QObject, Component):
@@ -25,8 +25,8 @@ class BeamStop(QtCore.QObject, Component):
     movingProgress = QtCore.pyqtSignal(str, float, float, float)
     _movetarget: Optional[States]
     _movephase: Optional[str]
-    state:States = States.Undefined
-    motionstoprequested: bool=False
+    state: States = States.Undefined
+    motionstoprequested: bool = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -40,7 +40,7 @@ class BeamStop(QtCore.QObject, Component):
         self.state = self.States.Undefined
         self.stateChanged.emit(self.state.value)
 
-    def _disconnectMotor(self, motor:Motor):
+    def _disconnectMotor(self, motor: Motor):
         motor.started.disconnect(self.onMotorStarted)
         motor.stopped.disconnect(self.onMotorStopped)
         motor.moving.disconnect(self.onMotorMoving)
@@ -49,7 +49,7 @@ class BeamStop(QtCore.QObject, Component):
         motor.cameOnLine.disconnect(self.onMotorOnLine)
         motor.wentOffLine.disconnect(self.onMotorOffLine)
 
-    def _connectMotor(self, motor:Motor):
+    def _connectMotor(self, motor: Motor):
         motor.started.connect(self.onMotorStarted)
         motor.stopped.connect(self.onMotorStopped)
         motor.moving.connect(self.onMotorMoving)

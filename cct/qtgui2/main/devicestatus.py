@@ -9,7 +9,7 @@ from ...core2.devices.device.telemetry import TelemetryInformation
 from ...core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):

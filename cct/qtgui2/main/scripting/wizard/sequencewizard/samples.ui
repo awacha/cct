@@ -116,7 +116,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset theme="go-next"/>
+          <iconset theme="go-next">
+           <normaloff>.</normaloff>.</iconset>
          </property>
         </widget>
        </item>
@@ -126,7 +127,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset theme="go-previous"/>
+          <iconset theme="go-previous">
+           <normaloff>.</normaloff>.</iconset>
          </property>
         </widget>
        </item>
@@ -136,7 +138,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset theme="edit-clear-all"/>
+          <iconset theme="edit-clear-all">
+           <normaloff>.</normaloff>.</iconset>
          </property>
         </widget>
        </item>
@@ -173,6 +176,9 @@
        </property>
        <property name="selectionMode">
         <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="textElideMode">
+        <enum>Qt::ElideNone</enum>
        </property>
        <property name="verticalScrollMode">
         <enum>QAbstractItemView::ScrollPerPixel</enum>

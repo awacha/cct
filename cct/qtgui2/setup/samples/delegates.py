@@ -6,7 +6,7 @@ from ....core2.instrument.components.samples.samplestore import SampleStore, Sam
 from ....core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):

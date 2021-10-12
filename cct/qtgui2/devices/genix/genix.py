@@ -9,7 +9,7 @@ from ....core2.devices.xraysource.genix.frontend import GeniXBackend, GeniX
 from ....core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
