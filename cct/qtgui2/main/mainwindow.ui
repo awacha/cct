@@ -287,6 +287,7 @@
     <addaction name="actionVacuum_gauge"/>
     <addaction name="actionTemperature_stage"/>
     <addaction name="actionThermometer"/>
+    <addaction name="actionPeristaltic_pump"/>
     <addaction name="actionKeen800UPS"/>
     <addaction name="separator"/>
     <addaction name="actionDevice_connections"/>
@@ -363,6 +364,7 @@
    <addaction name="actionMotors"/>
    <addaction name="actionTemperature_stage"/>
    <addaction name="actionThermometer"/>
+   <addaction name="actionPeristaltic_pump"/>
    <addaction name="actionKeen800UPS"/>
    <addaction name="actionSensors"/>
    <addaction name="separator"/>
@@ -818,6 +820,18 @@
    </property>
    <property name="toolTip">
     <string>Open status window of the NJoy Keen800 UPS</string>
+   </property>
+  </action>
+  <action name="actionPeristaltic_pump">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/peristaltic_pump.svg</normaloff>:/icons/peristaltic_pump.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Peristaltic pump</string>
+   </property>
+   <property name="toolTip">
+    <string>Open the peristaltic pump control</string>
    </property>
   </action>
  </widget>

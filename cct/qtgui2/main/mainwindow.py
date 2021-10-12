@@ -21,6 +21,7 @@ from ..devices.motors.motorview import MotorView
 from ..devices.pilatus.pilatus import PilatusDetectorUI
 from ..devices.thermometer.se521 import SE521Window
 from ..devices.ups.keen800 import Keen80UPS
+from ..devices.peristalticpump.leadfluid import LeadFluid_BT100S
 from ..listing.headerview import HeaderView
 from ..listing.scanview import ScanViewer
 from ..measurement.monitor import MonitorMeasurement
@@ -87,6 +88,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionSensors': SensorsWindow,
         'actionBeam_Monitor': MonitorMeasurement,
         'actionKeen800UPS': Keen80UPS,
+        'actionPeristaltic_pump': LeadFluid_BT100S,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]
