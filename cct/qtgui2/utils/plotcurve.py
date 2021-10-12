@@ -194,3 +194,11 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
 
     def setShowErrorBars(self, show: bool):
         self.showErrorBarsToolButton.setChecked(show)
+
+    def setSymbolsType(self, showmarkers: bool, filled: bool):
+        if not showmarkers:
+            self.symbolsTypeComboBox.setCurrentIndex(self.symbolsTypeComboBox.findText('No symbols'))
+        elif filled:
+            self.symbolsTypeComboBox.setCurrentIndex(self.symbolsTypeComboBox.findText('Filled symbols'))
+        else:
+            self.symbolsTypeComboBox.setCurrentIndex(self.symbolsTypeComboBox.findText('Empty symbols'))
