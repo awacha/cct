@@ -18,10 +18,10 @@ from ..devices.connectioneditor.connectioneditor import ConnectionEditor
 from ..devices.genix.genix import GeniXTool
 from ..devices.haakephoenix.haakephoenix import HaakePhoenixDevice
 from ..devices.motors.motorview import MotorView
+from ..devices.peristalticpump.leadfluid import LeadFluid_BT100S
 from ..devices.pilatus.pilatus import PilatusDetectorUI
 from ..devices.thermometer.se521 import SE521Window
 from ..devices.ups.keen800 import Keen80UPS
-from ..devices.peristalticpump.leadfluid import LeadFluid_BT100S
 from ..listing.headerview import HeaderView
 from ..listing.scanview import ScanViewer
 from ..measurement.monitor import MonitorMeasurement

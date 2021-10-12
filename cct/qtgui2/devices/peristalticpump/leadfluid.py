@@ -1,24 +1,28 @@
-from PyQt5 import QtWidgets
-from .leadfluid_ui import Ui_Form
+import logging
 from typing import Any
+
+from PyQt5 import QtWidgets
+
+from .leadfluid_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 from ....core2.devices.peristalticpump.leadfluid.frontend import ControlMode, BT100S
 
-import logging
-
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
 class LeadFluid_BT100S(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     required_devicenames = ['BT100S']
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        for widget in [self.easyDispensePushButton, self.timeDispensePushButton, self.rotationSpeedDoubleSpinBox, self.dispenseTimeDoubleSpinBox, self.dispenseVolumeDoubleSpinBox, self.fullSpeedPushButton, self.clockwisePushButton, self.startPushButton, self.stopPushButton, self.controlModeComboBox]:
+        for widget in [self.easyDispensePushButton, self.timeDispensePushButton, self.rotationSpeedDoubleSpinBox,
+                       self.dispenseTimeDoubleSpinBox, self.dispenseVolumeDoubleSpinBox, self.fullSpeedPushButton,
+                       self.clockwisePushButton, self.startPushButton, self.stopPushButton, self.controlModeComboBox]:
             widget.setEnabled(False)
         self.easyDispensePushButton.toggled.connect(self.onEasyDispenseToggled)
         self.timeDispensePushButton.toggled.connect(self.onTimeDispenseToggled)
@@ -26,7 +30,7 @@ class LeadFluid_BT100S(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.fullSpeedPushButton.toggled.connect(self.onFullSpeedToggled)
         self.startPushButton.clicked.connect(self.onStartClicked)
         self.stopPushButton.clicked.connect(self.onStopClicked)
-        self.controlModeComboBox.addItems([cm.value.capitalize()+' control' for cm in ControlMode])
+        self.controlModeComboBox.addItems([cm.value.capitalize() + ' control' for cm in ControlMode])
         self.controlModeComboBox.currentIndexChanged.connect(self.onControlModeChanged)
         self.rotationSpeedDoubleSpinBox.valueChanged.connect(self.onRotationSpeedChanged)
         self.dispenseTimeDoubleSpinBox.valueChanged.connect(self.onDispenseTimeChanged)
@@ -51,7 +55,7 @@ class LeadFluid_BT100S(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.device().setDispenseTime(value)
 
     def onDispenseVolumeChanged(self, value: float):
-        return False  #ToDo
+        return False  # ToDo
         self.dispenseVolumeDoubleSpinBox.setEnabled(False)
         self.device().setDispenseVolume(value)
 
@@ -90,7 +94,7 @@ class LeadFluid_BT100S(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if name == 'steps_for_one_round':
             self.stepCountLabel.setText(f'{newvalue}')
         elif name == 'analog_speed_control':
-            self.analogSpeedLabel.setText(f'{newvalue*0.1} rpm')
+            self.analogSpeedLabel.setText(f'{newvalue * 0.1} rpm')
         elif name == 'manufacturer':
             self.manufacturerLabel.setText(newvalue)
         elif name == 'product':
@@ -133,7 +137,8 @@ class LeadFluid_BT100S(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.fullSpeedPushButton.blockSignals(False)
         elif name == 'control_mode':
             self.controlModeComboBox.blockSignals(True)
-            self.controlModeComboBox.setCurrentIndex(self.controlModeComboBox.findText(newvalue.capitalize()+' control'))
+            self.controlModeComboBox.setCurrentIndex(
+                self.controlModeComboBox.findText(newvalue.capitalize() + ' control'))
             self.controlModeComboBox.setEnabled(True)
             self.controlModeComboBox.blockSignals(False)
         elif name == 'easy_dispense_volume':
@@ -146,7 +151,7 @@ class LeadFluid_BT100S(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.dispenseTimeDoubleSpinBox.setValue(newvalue)
             self.dispenseTimeDoubleSpinBox.setEnabled(True)
             self.dispenseTimeDoubleSpinBox.blockSignals(False)
-        elif name in [ 'rotating_speed_timer', '__status__', '__auxstatus__', 'modbusaddress', 'littleendian']:
+        elif name in ['rotating_speed_timer', '__status__', '__auxstatus__', 'modbusaddress', 'littleendian']:
             pass
         else:
             logger.warning(f'Unknown variable {name}, new value {newvalue}')

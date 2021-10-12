@@ -1,8 +1,6 @@
+import enum
 import logging
 from typing import Any
-import enum
-
-from PyQt5 import QtCore
 
 from .backend import BT100SBackend
 from ...device.frontend import DeviceFrontend
@@ -17,6 +15,7 @@ class ControlMode(enum.Enum):
     Foot_Switch = 'footswitch'
     Logic_Level = 'logic level'
     Logic_Level_2 = 'logic level 2'
+
 
 class BT100S(DeviceFrontend):
     Status = BT100SBackend.Status
@@ -49,7 +48,7 @@ class BT100S(DeviceFrontend):
         super().onCommandResult(success, commandname, result)
 
     def setControlMode(self, mode: ControlMode):
-        self.issueCommand(f'{mode.value.replace(" ","_")}_control')
+        self.issueCommand(f'{mode.value.replace(" ", "_")}_control')
 
     def setEasyDispenseMode(self, active: bool):
         self.issueCommand('set_easy_dispense_mode', active)

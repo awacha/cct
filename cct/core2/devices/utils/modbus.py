@@ -51,5 +51,4 @@ class ModbusTCP:
         self.enqueueHardwareMessage(self.modbus_pack(6, struct.pack('>HH', regno, value)))
 
     def modbus_write_registers(self, regno: int, values: Sequence[int]):
-        self.enqueueHardwareMessage(self.modbus_pack(16, struct.pack('>H'+'H'*len(values), regno, *values)))
-
+        self.enqueueHardwareMessage(self.modbus_pack(16, struct.pack('>H' + 'H' * len(values), regno, *values)))

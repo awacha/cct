@@ -49,11 +49,7 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
         return [message], b''
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
-        try:
-            funccode, data = self.modbus_unpack(message, struct.unpack('>H', sentmessage[:2])[0])
-        except ValueError:
-            print(f'{message=}')
-            raise
+        funccode, data = self.modbus_unpack(message, struct.unpack('>H', sentmessage[:2])[0])
         sentfunccode, sentdata = self.modbus_unpack(sentmessage)
         if sentfunccode != funccode:
             raise ValueError(
@@ -92,7 +88,6 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
             else:
                 raise ValueError(f'Invalid register span: first {regno}, count {nregs}')
         elif funccode == 6:  # write holding register result
-            print(f'sentmessage: {sentmessage}')
             regrec, newvaluerec = struct.unpack('>HH', data)
             regsent, newvaluesent = struct.unpack('>HH', sentdata)
             if (regrec != regsent) or (newvaluerec != newvaluesent):
