@@ -540,7 +540,7 @@ class DeviceBackend:
         self.outqueue.put(Message(message, **kwargs))
 
     @final
-    def queryVariable(self, name: str):
+    def queryVariable(self, name: str, force: bool=False):
         """Schedule a query for a variable.
 
         Only schedules if there are no outstanding queries yet.
@@ -548,6 +548,8 @@ class DeviceBackend:
         Always schedules, even if the outgoing messages buffer is full.
         """
         var, varinfo = [(v, vi) for v, vi in zip(self.variables, self.varinfo) if v.name == name][0]
+        if force:
+            var.lastchange = None
         variablestoquery = [self.getVariable(vname) for vname in varinfo.dependsfrom] if varinfo.dependsfrom else [
             var]
         for var in set(variablestoquery):
