@@ -69,3 +69,9 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
     def loadExposure(self, raw: bool = True) -> Exposure:
         return Instrument.instance().io.loadExposure(
             self.comboBox.currentText(), self.spinBox.value(), raw, check_local=True)
+
+    def setPrefix(self, prefix: str):
+        if (i := self.comboBox.findText(prefix)) >= 0:
+            self.comboBox.setCurrentIndex(i)
+        else:
+            raise ValueError(f'Prefix {prefix} unknown.')
