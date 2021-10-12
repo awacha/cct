@@ -5,7 +5,7 @@ import matplotlib
 import matplotlib.cm
 import matplotlib.colors
 import numpy as np
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.colorbar import Colorbar
@@ -76,6 +76,11 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.showBeamToolButton.toggled.connect(self.showBeam)
         self.showMaskToolButton.toggled.connect(self.showMask)
         self.equalAspectToolButton.toggled.connect(self.changeAspect)
+        self.lockZoomToolButton.toggled.connect(self.onLockZoomToggled)
+
+    def onLockZoomToggled(self, active: bool):
+        self.lockZoomToolButton.setIcon(
+            QtGui.QIcon(QtGui.QPixmap(":/icons/zoom_locked.svg" if active else ":/icons/zoom_unlocked.svg")))
 
     def axisScaleChanged(self):
         if self.matrix is None:
