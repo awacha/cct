@@ -97,14 +97,20 @@ class Command(QtCore.QObject):
     def initialize(self, *args: Any):
         pass
 
+    def finalize(self):
+        pass
+
     @final
     def jump(self, label: str, gosub: bool = False):
         logger.debug(f'Jumping to label {label} from command {self.name}. {gosub=}')
         if self._timer is not None:
             self.killTimer(self._timer)
             self._timer = None
-        self._finished = True
-        self.goto.emit(label, gosub)
+        try:
+            self.finalize()
+        finally:
+            self._finished = True
+            self.goto.emit(label, gosub)
 
     @final
     def fail(self, message: str):
@@ -112,8 +118,11 @@ class Command(QtCore.QObject):
         if self._timer is not None:
             self.killTimer(self._timer)
             self._timer = None
-        self._finished = True
-        self.failed.emit(str(message))
+        try:
+            self.finalize()
+        finally:
+            self._finished = True
+            self.failed.emit(str(message))
 
     @final
     def finish(self, returnvalue: Any):
@@ -121,8 +130,11 @@ class Command(QtCore.QObject):
         if self._timer is not None:
             self.killTimer(self._timer)
             self._timer = None
-        self._finished = True
-        self.finished.emit(str(returnvalue))
+        try:
+            self.finalize()
+        finally:
+            self._finished = True
+            self.finished.emit(str(returnvalue))
 
     def parseArguments(self) -> Any:
         logger.debug(f'Parsing arguments: {self.argumentstring=}')
