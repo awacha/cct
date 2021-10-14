@@ -30,12 +30,13 @@ class Expose(Command):
         self.instrument.exposer.exposureFinished.disconnect(self.onExposureFinished)
 
     def onExposureProgress(self, prefix: str, fsn: int, currenttime: float, starttime: float, endtime: float):
-        self.progress.emit(f'Exposing {prefix}/{fsn}, remaining time {endtime-currenttime:.1f} sec', int(1000*(currenttime-starttime)/(endtime-starttime)), 1000)
+        self.progress.emit(f'Exposing {prefix}/{fsn}, remaining time {endtime - currenttime:.1f} sec',
+                           int(1000 * (currenttime - starttime) / (endtime - starttime)), 1000)
 
     def onExposureFinished(self, success: bool):
         self.success = success
         if not success:
-            self.waiting_for_images=0
+            self.waiting_for_images = 0
         self.tryToFinalize()
 
     def tryToFinalize(self):
@@ -70,7 +71,6 @@ class Expose(Command):
         self.instrument.exposer.stopExposure()
 
 
-
 class ExposeMulti(Expose):
     name = 'exposemulti'
     description = 'Expose multiple images'
@@ -79,7 +79,7 @@ class ExposeMulti(Expose):
                  StringArgument('prefix', 'Exposure prefix', defaultvalue='crd'),
                  FloatArgument('delay', 'Delay between exposures in seconds', defaultvalue=0.003)]
 
-    def initialize(self, exptime: float, nimages:int, prefix: str, delay: float):
+    def initialize(self, exptime: float, nimages: int, prefix: str, delay: float):
         self.connectExposer()
         self.success = None
         self.waiting_for_images = nimages
