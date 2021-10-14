@@ -5,6 +5,7 @@ from .device import GetVar, ListVariables, DevCommand
 from .expose import Expose, ExposeMulti
 from .flags import ClearFlag, NewFlag, SetFlag
 from .motor import MoveTo, MoveRel, Where
+from .peristalticpump import PeristalticPumpDispense, PeristalticPumpDispenseNowait, PeristalticPumpStart, PeristalticPumpStop
 from .pilatus import Trim
 from .sample import SetSample
 from .scan import ScanCommand, ScanRelCommand
