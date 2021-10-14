@@ -154,6 +154,14 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         """Get all motor controllers"""
         return [d for d in self._devices if d.devicetype == 'motorcontroller']
 
+    def peristalticpump(self) -> DeviceFrontend:
+        """Get the first available peristaltic pump"""
+        return [d for d in self._devices if d.devicetype == 'peristalticpump'][0]
+
+    def ups(self) -> DeviceFrontend:
+        """Get the first available ups"""
+        return [d for d in self._devices if d.devicetype == 'ups'][0]
+
     def devicesOfType(self, devicetype: str, online: bool = True) -> List[DeviceFrontend]:
         return [d for d in self._devices if (d.devicetype == devicetype) and (online or d.isOnline())]
 
