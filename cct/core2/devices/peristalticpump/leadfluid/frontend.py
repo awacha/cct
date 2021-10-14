@@ -19,7 +19,7 @@ class ControlMode(enum.Enum):
 
 class BT100S(DeviceFrontend):
     Status = BT100SBackend.Status
-    devicetype = 'peristaltic pump'
+    devicetype = 'peristalticpump'
     devicename = 'BT100S'
     backendclass = BT100SBackend
 

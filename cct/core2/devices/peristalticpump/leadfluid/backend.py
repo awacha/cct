@@ -31,6 +31,12 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
                DeviceBackend.VariableInfo('modbusaddress', timeout=np.inf, dependsfrom=['rotating_speed']),
                ]
 
+    lastissuedcommand : List[str]
+
+    def onVariablesReady(self):
+        self.lastissuedcommand = []
+        return super().onVariablesReady()
+
     def enqueueHardwareMessage(self, message: bytes, numreplies: int = 1, urgencymodifier: float = 0.0):
         super().enqueueHardwareMessage(message, numreplies, urgencymodifier)
 
@@ -94,61 +100,69 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
                 raise ValueError(
                     f'Invalid message received for write holding register function: '
                     f'{regsent=}, {regrec=}, {newvaluesent=}, {newvaluerec=}')
-            elif (regrec == 3102) and (newvaluerec == 1):
-                self.commandFinished('start', 'Started pump')
-            elif (regrec == 3102) and (newvaluerec == 1):
-                self.commandFinished('start', 'Started pump')
+            for regno, regvalue, commandname, result, queryvariable in [
+                (3102, 1, 'start', 'Peristaltic pump started', 'running'),
+                (3102, 0, 'stop', 'Peristaltic pump stopped', 'running'),
+                (3101, 0, 'clockwise', 'Peristaltic pump running clockwise', 'direction'),
+                (3101, 1, 'counterclockwise', 'Peristaltic pump running counterclockwise', 'direction'),
+                (3100, None, 'setspeed', 'Speed has been set.', 'rotating_speed'),
+                (3103, 1, 'fullspeed', 'Running at full speed.', 'fullspeed'),
+                (3103, 0, 'normalspeed', 'Running at normal speed.', 'fullspeed'),
+                (3104, 0, 'internal_control', 'Internal control mode selected.', 'control_mode'),
+                (3104, 1, 'external_control', 'External control mode selected.', 'control_mode'),
+                (3104, 2, 'footswitch_control', 'Foot switch control mode selected.', 'control_mode'),
+                (3104, 3, 'logic_level_control', 'Logic level control mode selected.', 'control_mode'),
+                (3104, 4, 'logic_level_2_control', 'Logic level #2 control mode selected.', 'control_mode'),
+                (3001, None, 'set_easy_dispense_mode', 'Easy dispense mode set/unset.', 'easydispense'),
+                (3002, None, 'set_time_dispense_mode', 'Time dispense mode set/unset.', 'timedispense'),
+                (3109, None, 'set_dispense_time', 'Dispense time set.', 'dispense_time')
+            ]:
+                if (self.lastissuedcommand) and (self.lastissuedcommand[0] == commandname) and (regrec == regno) and ((newvaluerec == regvalue) or (regvalue is None)):
+                    self.commandFinished(commandname, result)
+                    self.lastissuedcommand.pop()
+                    self.queryVariable(queryvariable, True)
+        elif funccode == 16: # write multiple registers
+            regrec, nrecset = struct.unpack('>HH', data)
+            if (regrec == 3105) and (nrecset == 2) and (self.lastissuedcommand[0] == 'set_easy_dispense_volume'):
+                self.commandFinished('set_easy_dispense_volume', 'Easy dispense volume has been set.')
+                self.lastissuedcommand.pop()
+                self.queryVariable('easy_dispense_volume', True)
         else:
             raise ValueError(f'Invalid function code: {funccode}')
 
     def issueCommand(self, name: str, args: Sequence[Any]):
         if name == 'start':
             self.modbus_write_register(3102, 1)
-            self.queryVariable('running', True)
         elif name == 'stop':
             self.modbus_write_register(3102, 0)
-            self.queryVariable('running', True)
         elif name == 'clockwise':
             self.modbus_write_register(3101, 0)
-            self.queryVariable('direction', True)
         elif name == 'counterclockwise':
             self.modbus_write_register(3101, 1)
-            self.queryVariable('direction', True)
         elif name == 'setspeed':
             self.modbus_write_register(3100, int(args[0] * 10))
-            self.queryVariable('rotating_speed', True)
         elif name == 'fullspeed':
             self.modbus_write_register(3103, 1)
-            self.queryVariable('fullspeed', True)
         elif name == 'normalspeed':
             self.modbus_write_register(3103, 0)
-            self.queryVariable('fullspeed', True)
         elif name == 'internal_control':
             self.modbus_write_register(3104, 0)
-            self.queryVariable('control_mode', True)
         elif name == 'external_control':
             self.modbus_write_register(3104, 1)
-            self.queryVariable('control_mode', True)
         elif name == 'footswitch_control':
             self.modbus_write_register(3104, 2)
-            self.queryVariable('control_mode', True)
         elif name == 'logic_level_control':
             self.modbus_write_register(3104, 3)
-            self.queryVariable('control_mode', True)
         elif name == 'logic_level_2_control':
             self.modbus_write_register(3104, 3)
-            self.queryVariable('control_mode', True)
         elif name == 'set_easy_dispense_mode':
             self.modbus_write_register(3001, int(bool(args[0])))
-            self.queryVariable('easydispense', True)
         elif name == 'set_time_dispense_mode':
             self.modbus_write_register(3002, int(bool(args[0])))
-            self.queryVariable('timedispense', True)
         elif name == 'set_easy_dispense_volume':
             self.modbus_write_registers(3105, [int(args[0]) % 65536, int(args[0]) // 65536])
         elif name == 'set_dispense_time':
             self.modbus_write_register(3109, int(args[0] * 10))
-            self.queryVariable('dispense_time', True)
         else:
             raise ValueError(f'Unknown command: {name}')
-        self.commandFinished(name, 'OK')
+        self.lastissuedcommand.append(name)
