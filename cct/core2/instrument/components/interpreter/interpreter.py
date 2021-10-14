@@ -1,6 +1,7 @@
 import logging
 import re
 from typing import Any, Dict, List, Optional
+import traceback
 
 from PyQt5 import QtCore
 
@@ -151,7 +152,7 @@ class Interpreter(QtCore.QObject, Component):
                 command.execute()
             except Exception as exc:
                 self._disconnectCommand(command)
-                self.fail(str(exc))
+                self.fail(traceback.format_exc())
 
     def commandProgress(self, message: str, current: int, total: int):
         self.progress.emit(message, current, total)
