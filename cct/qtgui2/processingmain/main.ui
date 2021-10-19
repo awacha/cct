@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../../resource/icons/icons.qrc">
-    <normaloff>:/icons/cpt2logo.svg</normaloff>:/icons/cpt2logo.svg</iconset>
+    <normaloff>:/icons/cpt4logo.svg</normaloff>:/icons/cpt4logo.svg</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">

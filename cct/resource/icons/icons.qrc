@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>cpt4logo.svg</file>
     <file>peristaltic_pump.svg</file>
     <file>zoom_locked.svg</file>
     <file>zoom_unlocked.svg</file>
