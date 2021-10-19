@@ -1,10 +1,9 @@
-from typing import Optional
 import logging
+from typing import Optional
 
 from .command import Command
 from .commandargument import StringArgument, FloatArgument, IntArgument
 from ..dataclasses import Exposure
-from ..devices.detector import PilatusDetector
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -69,7 +68,7 @@ class Expose(Command):
         currentsample = self.instrument.samplestore.currentSample()
         self.message.emit(f'Started exposure crd/{fsn} (' + (
             f'sample {currentsample.title}' if currentsample is not None else 'no sample'
-        ))
+        ) + ')')
 
     def stop(self):
         self.instrument.exposer.stopExposure()
@@ -93,6 +92,6 @@ class ExposeMulti(Expose):
             self.disconnectExposer()
             raise
         currentsample = self.instrument.samplestore.currentSample()
-        self.message.emit(f'Started exposure crd/{fsn}...{fsn+nimages-1} (' + (
+        self.message.emit(f'Started exposure crd/{fsn}...{fsn + nimages - 1} (' + (
             f'sample {currentsample.title}' if currentsample is not None else 'no sample'
-        ))
+        ) + ')')
