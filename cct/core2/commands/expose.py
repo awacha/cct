@@ -62,10 +62,14 @@ class Expose(Command):
         self.success = None
         self.waiting_for_images = 1
         try:
-            self.instrument.exposer.startExposure(prefix, exptime)
+            fsn = self.instrument.exposer.startExposure(prefix, exptime)
         except:
             self.disconnectExposer()
             raise
+        currentsample = self.instrument.samplestore.currentSample()
+        self.message.emit(f'Started exposure crd/{fsn} (' + (
+            f'sample {currentsample.title}' if currentsample is not None else 'no sample'
+        ))
 
     def stop(self):
         self.instrument.exposer.stopExposure()
@@ -84,7 +88,11 @@ class ExposeMulti(Expose):
         self.success = None
         self.waiting_for_images = nimages
         try:
-            self.instrument.exposer.startExposure(prefix, exptime, nimages, delay)
+            fsn = self.instrument.exposer.startExposure(prefix, exptime, nimages, delay)
         except:
             self.disconnectExposer()
             raise
+        currentsample = self.instrument.samplestore.currentSample()
+        self.message.emit(f'Started exposure crd/{fsn}...{fsn+nimages-1} (' + (
+            f'sample {currentsample.title}' if currentsample is not None else 'no sample'
+        ))

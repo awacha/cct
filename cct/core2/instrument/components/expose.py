@@ -145,7 +145,7 @@ class Exposer(QtCore.QObject, Component):
         self.detector = None
 
     def startExposure(self, prefix: str, exposuretime: float, imagecount: int = 1, delay: float = 0.003,
-                      maskoverride: Optional[str] = None):
+                      maskoverride: Optional[str] = None) -> int:
         """prepare the detector for an exposure. Also prepare timers for waiting for images."""
         if self.detector is None:
             self._connectDetector()
@@ -170,6 +170,7 @@ class Exposer(QtCore.QObject, Component):
             # do not initialize the timers yet.
             self.pendingtimers.append(ExposureData(
                 prefix, i + nextfsn, i, exposuretime, delay, cmdissuetime, maskoverride))
+        return nextfsn
 
     def _currentlyExposedImage(self) -> Optional[ExposureData]:
         try:
