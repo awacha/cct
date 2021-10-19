@@ -215,7 +215,8 @@ class Exposer(QtCore.QObject, Component):
             except FileNotFoundError:
                 logger.warning(f'Invalid mask file "{header.maskname}". You might have to create a mask yourself.')
                 mask = np.ones_like(image, dtype=np.uint8)
-            uncertainty = image ** 0.5
+            uncertainty = np.empty_like(image)
+            uncertainty[image > 0] = image[image > 0] ** 0.5
             uncertainty[image <= 0] = 1
             # emit the raw image.
             exposure = Exposure(image, header, uncertainty, mask)
