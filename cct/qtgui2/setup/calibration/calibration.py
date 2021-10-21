@@ -48,7 +48,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.fsnSelectorGroupBox.setLayout(QtWidgets.QVBoxLayout())
         self.fsnSelectorGroupBox.layout().addWidget(self.fsnSelector)
         self.fsnSelector.fsnSelected.connect(self.onFSNSelected)
-        self.fsnSelector.setPrefix(self.instrument.config['io']['prefixes']['tst'])
+        self.fsnSelector.setPrefix(self.instrument.config['path']['prefixes']['tst'])
         self.tab2D.setLayout(QtWidgets.QVBoxLayout())
         self.plotimage = PlotImage(self.tab2D)
         self.tab2D.layout().addWidget(self.plotimage)
