@@ -1,4 +1,4 @@
-from typing import Tuple, Sequence, Dict, Any, Optional
+from typing import Tuple, Sequence, Dict, Any, Optional, Union
 
 import numpy as np
 from PyQt5 import QtCore
@@ -208,11 +208,13 @@ class GeometryPreset(QtCore.QObject):
         return max(parasitic_ring_diameter, direct_ring_diameter, beamstop_shadow_diameter) * 0.5
 
     def toDict(self) -> Dict[str, Any]:
-        return self._state.copy()
+        return self._state
 
     @classmethod
-    def fromDict(cls, config: Config, dic: Dict[str, Any]) -> "GeometryPreset":
+    def fromDict(cls, config: Config, dic: Union[Dict[str, Any], Config]) -> "GeometryPreset":
         obj = cls(config)
+        if isinstance(dic, Config):
+            dic = dic.asdict()
         obj.__setstate__(dic)
         return obj
 
