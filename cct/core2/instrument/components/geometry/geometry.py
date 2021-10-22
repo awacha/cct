@@ -202,7 +202,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         self.currentpreset = preset
         self.currentpreset.changed.connect(self.onCurrentPresetChanged)
         dic = self.currentpreset.toDict()
-        for key in dic:
+        for key in list(dic.keys()):
             self.currentPresetChanged.emit(key, getattr(self.currentpreset, key))
         self.saveToConfig()
 
