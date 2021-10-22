@@ -47,7 +47,7 @@ class PresetStore(QtCore.QAbstractItemModel):
                 return 'Spacers needed: ' + ' + '.join([f'{x:.0f} mm' for x in sorted(preset.l2_elements)])
         elif columnlabel == 'S-D':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset.sd[0]:.2f}'
+                return f'{preset.dist_sample_det[0]:.2f}'
             elif role == QtCore.Qt.ToolTipRole:
                 return 'Flight pipes needed: ' + ' + '.join([f'{x:.0f} mm' for x in sorted(preset.flightpipes)])
         elif columnlabel == 'PH#1':
@@ -90,7 +90,7 @@ class PresetStore(QtCore.QAbstractItemModel):
         elif columnlabel == 'PH#2-PH#3':
             self._presets.sort(key=lambda preset: preset.l2, reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'S-D':
-            self._presets.sort(key=lambda preset: preset.sd[0], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._presets.sort(key=lambda preset: preset.dist_sample_det[0], reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'PH#1':
             self._presets.sort(key=lambda preset: preset.pinhole1, reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'PH#2':

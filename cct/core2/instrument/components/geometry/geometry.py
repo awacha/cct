@@ -180,8 +180,8 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         self.config['geometry']['pinhole_2'] = self.currentpreset.pinhole2
         self.config['geometry']['pinhole_3'] = self.currentpreset.pinhole3
         self.config['geometry']['beamstop'] = self.currentpreset.beamstop
-        self.config['geometry']['dist_sample_det'] = self.currentpreset.sd[0]
-        self.config['geometry']['dist_sample_det.err'] = self.currentpreset.sd[1]
+        self.config['geometry']['dist_sample_det'] = self.currentpreset.dist_sample_det[0]
+        self.config['geometry']['dist_sample_det.err'] = self.currentpreset.dist_sample_det[1]
         self.config['geometry']['beamposx'] = self.currentpreset.beamposx[0]
         self.config['geometry']['beamposx.err'] = self.currentpreset.beamposx[1]
         self.config['geometry']['beamposy'] = self.currentpreset.beamposy[0]

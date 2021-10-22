@@ -47,7 +47,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         'pinhole3': ('D3DoubleSpinBox',),
         'beamstop': ('DBSDoubleSpinBox',),
         'description': ('descriptionPlainTextEdit',),
-        'sd': ('sdValDoubleSpinBox', 'sdErrDoubleSpinBox'),
+        'dist_sample_det': ('sdValDoubleSpinBox', 'sdErrDoubleSpinBox'),
         'beamposx': ('beamPosXValDoubleSpinBox', 'beamPosXErrDoubleSpinBox'),
         'beamposy': ('beamPosYValDoubleSpinBox', 'beamPosYErrDoubleSpinBox'),
         'mask': ('maskFileNameLineEdit',),

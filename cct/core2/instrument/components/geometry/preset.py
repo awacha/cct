@@ -56,7 +56,7 @@ class GeometryPreset(QtCore.QObject):
     l2_elements = pyqtProperty(
         list, lambda self: self._getproperty('l2_elements'),
         lambda self, value: self._setproperty('l2_elements', value))
-    sd = pyqtProperty(
+    dist_sample_det = pyqtProperty(
         tuple, _get_sd, _set_sd)
     beamposx = pyqtProperty(
         tuple, lambda self: self._getproperty('beamposx'), lambda self, value: self._setproperty('beamposx', value))
@@ -98,7 +98,7 @@ class GeometryPreset(QtCore.QObject):
                  pinhole1: float = 0.0, pinhole2: float = 0.0, pinhole3: float = 0.0,
                  flightpipes: Optional[Sequence[float]] = None,
                  beamstop: float = 0.0,
-                 sd: Optional[Tuple[float, float]] = None,
+                 dist_sample_det: Optional[Tuple[float, float]] = None,
                  beamposx: Tuple[float, float] = (0.0, 0.0),
                  beamposy: Tuple[float, float] = (0.0, 0.0),
                  mask: Optional[str] = None,
@@ -113,7 +113,7 @@ class GeometryPreset(QtCore.QObject):
         self.pinhole3 = pinhole3
         self.beamstop = beamstop
         self.flightpipes = flightpipes if flightpipes is not None else []
-        self.sd = sd if sd is not None else (0.0, 0.0)
+        self.dist_sample_det = dist_sample_det if dist_sample_det is not None else (0.0, 0.0)
         self.beamposx = beamposx
         self.beamposy = beamposy
         self.mask = '' if mask is None else mask
@@ -129,7 +129,7 @@ class GeometryPreset(QtCore.QObject):
         elif position < 0:
             # before pinhole #1
             return np.inf
-        elif (position > self.l1 + self.l2 + self.ph3tosample + self.sd[0] - self.beamstoptodetector) and (
+        elif (position > self.l1 + self.l2 + self.ph3tosample + self.dist_sample_det[0] - self.beamstoptodetector) and (
                 not withparasitic):
             # direct beam after the beamstop
             return 0
@@ -139,11 +139,11 @@ class GeometryPreset(QtCore.QObject):
         elif (position < self.l1 + self.l2) or (not withparasitic):
             # before pinhole #3 or direct beam before the beamstop and after ph #2
             return (position * (self.pinhole2 + self.pinhole1) / self.l1 - self.pinhole1) * 1e-3
-        elif position <= self.l1 + self.l2 + self.ph3tosample + self.sd[0] - self.beamstoptodetector:
+        elif position <= self.l1 + self.l2 + self.ph3tosample + self.dist_sample_det[0] - self.beamstoptodetector:
             assert withparasitic  # the direct beam has been handled above.
             # parasitic scattering from PH#1 and PH#2 after PH#3 and before the beamstop face
             return ((position - self.l1) * (self.pinhole2 + self.pinhole3) / self.l2 - self.pinhole2) * 1e-3
-        elif position <= self.l1 + self.l2 + self.ph3tosample + self.sd[0]:
+        elif position <= self.l1 + self.l2 + self.ph3tosample + self.dist_sample_det[0]:
             assert withparasitic
             # parasitic scattering after the beamstop
             d = ((position - self.l1) * (self.pinhole2 + self.pinhole3) / self.l2 - self.pinhole2) * 1e-3
@@ -172,7 +172,7 @@ class GeometryPreset(QtCore.QObject):
 
     @property
     def dbeamstop(self) -> float:
-        return self.dbeam(self.l1 + self.l2 + self.ph3tosample + self.sd[0] - self.beamstoptodetector,
+        return self.dbeam(self.l1 + self.l2 + self.ph3tosample + self.dist_sample_det[0] - self.beamstoptodetector,
                           withparasitic=True)
 
     @property
@@ -185,7 +185,7 @@ class GeometryPreset(QtCore.QObject):
 
     @property
     def is_beamstop_large_enough_direct(self) -> bool:
-        return self.dbeam(self.l1 + self.l2 + self.ph3tosample + self.sd[0] - self.beamstoptodetector,
+        return self.dbeam(self.l1 + self.l2 + self.ph3tosample + self.dist_sample_det[0] - self.beamstoptodetector,
                           withparasitic=False) <= self.beamstop
 
     @property
@@ -196,13 +196,13 @@ class GeometryPreset(QtCore.QObject):
     def rmindetector(self) -> float:
         """Smallest radius of the detector with meaningful scattering"""
         # check if we have a halo from parasitic scattering
-        parasitic_ring_diameter = self.dbeam(self.l1 + self.l2 + self.ph3tosample + self.sd[0],
+        parasitic_ring_diameter = self.dbeam(self.l1 + self.l2 + self.ph3tosample + self.dist_sample_det[0],
                                              withparasitic=True) if not self.is_beamstop_large_enough_parasitic else 0
-        direct_ring_diameter = self.dbeam(self.l1 + self.l2 + self.ph3tosample + self.sd[0],
+        direct_ring_diameter = self.dbeam(self.l1 + self.l2 + self.ph3tosample + self.dist_sample_det[0],
                                           withparasitic=False) if not self.is_beamstop_large_enough_direct else 0
         try:
-            beamstop_shadow_diameter = (self.beamstop + self.dsample) * self.sd[0] / (
-                    self.sd[0] - self.beamstoptodetector) - self.dsample
+            beamstop_shadow_diameter = (self.beamstop + self.dsample) * self.dist_sample_det[0] / (
+                    self.dist_sample_det[0] - self.beamstoptodetector) - self.dsample
         except ZeroDivisionError:
             beamstop_shadow_diameter = np.nan
         return max(parasitic_ring_diameter, direct_ring_diameter, beamstop_shadow_diameter) * 0.5
@@ -230,7 +230,7 @@ class GeometryPreset(QtCore.QObject):
     @property
     def qmin(self) -> float:
         try:
-            return 4 * np.pi * np.sin(0.5 * np.arctan(self.rmindetector / self.sd[0])) / self.wavelength[0]
+            return 4 * np.pi * np.sin(0.5 * np.arctan(self.rmindetector / self.dist_sample_det[0])) / self.wavelength[0]
         except ZeroDivisionError:
             return np.nan
 
@@ -243,8 +243,8 @@ class GeometryPreset(QtCore.QObject):
 
     def getHeaderEntry(self) -> Dict[str, Any]:
         return {
-            'dist_sample_det': self.sd[0],
-            'dist_sample_det.err': self.sd[1],
+            'dist_sample_det': self.dist_sample_det[0],
+            'dist_sample_det.err': self.dist_sample_det[1],
             'dist_source_ph1': self.sourcetoph1,
             'dist_ph1_ph2': self.l1,
             'dist_ph2_ph3': self.l2,
@@ -262,11 +262,11 @@ class GeometryPreset(QtCore.QObject):
             'beamposx.err': self.beamposx[1],
             'beamposy.err': self.beamposy[1],
             'mask': self.mask,
-            'dist_sample_det.val': self.sd[0],
+            'dist_sample_det.val': self.dist_sample_det[0],
             'pixelsize': self.pixelsize[0],
             'pixelsize.err': self.pixelsize[1],
-            'truedistance': self.sd[0],  # should be overridden when information on the sample is ready
-            'truedistance.err': self.sd[1],  # should be overridden when information on the sample is ready
+            'truedistance': self.dist_sample_det[0],  # should be overridden when information on the sample is ready
+            'truedistance.err': self.dist_sample_det[1],  # should be overridden when information on the sample is ready
         }  # other fields: truedistance, truedistance.err
 
     def __eq__(self, other: "GeometryPreset") -> bool:

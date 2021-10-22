@@ -36,7 +36,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
     figure: Figure
     figtoolbar: NavigationToolbar2QT
     canvas: FigureCanvasQTAgg
-    sd: Tuple[float, float] = (0, 0)
+    dist_sample_det: Tuple[float, float] = (0, 0)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -105,8 +105,8 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         if self.exposure is None:
             return
         if self.sender() is self.saveSDDistToolButton:
-            self.instrument.geometry.currentpreset.sd = self.sd
-            logger.info(f'Updated sample-to-detector distance to {self.sd[0]:.5f} \xb1 {self.sd[1]:.5f} mm')
+            self.instrument.geometry.currentpreset.dist_sample_det = self.dist_sample_det
+            logger.info(f'Updated sample-to-detector distance to {self.dist_sample_det[0]:.5f} \xb1 {self.dist_sample_det[1]:.5f} mm')
         elif self.sender() == self.saveBeamXToolButton:
             self.instrument.geometry.currentpreset.beamposy = self.exposure.header.beamposcol
             logger.info(f'Updated beam column (X) coordinate to {self.exposure.header.beamposcol[0]:.5f} \xb1 '
@@ -214,7 +214,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.sdDistDoubleSpinBox.setValue(L[0])
         self.sdDistErrDoubleSpinBox.setValue(L[1])
         self.saveSDDistToolButton.setEnabled(True)
-        self.sd = L
+        self.dist_sample_det = L
         self.plotCalibrationLine()
 
     def fitPeak(self):
