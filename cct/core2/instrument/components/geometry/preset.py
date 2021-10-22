@@ -208,7 +208,7 @@ class GeometryPreset(QtCore.QObject):
         return max(parasitic_ring_diameter, direct_ring_diameter, beamstop_shadow_diameter) * 0.5
 
     def toDict(self) -> Dict[str, Any]:
-        return self._state
+        return self._state.copy()
 
     @classmethod
     def fromDict(cls, config: Config, dic: Dict[str, Any]) -> "GeometryPreset":
