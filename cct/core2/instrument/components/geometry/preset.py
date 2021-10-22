@@ -218,8 +218,11 @@ class GeometryPreset(QtCore.QObject):
         obj.__setstate__(dic)
         return obj
 
-    def __setstate__(self, state):
-        self._state = state
+    def __setstate__(self, state: Dict[str, Any]):
+        assert isinstance(state, dict)
+        self._state = state.copy()
+        if 'dist_sample_det' not in self._state:
+            self._state['dist_sample_det'] = None
 
     def __getstate__(self):
         return self._state
