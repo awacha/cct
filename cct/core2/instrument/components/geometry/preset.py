@@ -29,19 +29,23 @@ class GeometryPreset(QtCore.QObject):
         return self.config['geometry'].setdefault(propertyname, defaultvalue)
 
     def _get_sd(self) -> Tuple[float, float]:
-        if ('dist_sample_det' not in self._state) or (self._state['dist_sample_det'] is None) or (self._state['dist_sample_det'] <= 0):
-            value = self.ph3toflightpipes + sum(self.flightpipes) + self.lastflightpipetodetector - self.ph3tosample
+        if (('dist_sample_det' in self._state) and ('dist_sample_det.err' in self._state) and
+            isinstance(self._state['dist_sample_det'], float) and
+            isinstance(self._state['dist_sample_det.err'], float)
+            ):
+            self._state['dist_sample_det'] = (self._state['dist_sample_det'], self._state['dist_sample_det.err'])
+            del self._state['dist_sample_det.err']
+        if (('dist_sample_det' not in self._state)
+            or (self._state['dist_sample_det'] is None)
+            or (self._state['dist_sample_det'][0] <= 0)):
+            value = self.ph3toflightpipes + sum(self.flightpipes) + self.lastflightpipetodetector - self.ph3tosample, 0.0
         else:
             value = self._state['dist_sample_det']
-        if ('dist_sample_det.err' not in self._state) or (self._state['dist_sample_det.err'] is None):
-            uncertainty = 0.0
-        else:
-            uncertainty = self._state['dist_sample_det.err']
-        return value, uncertainty
+            assert isinstance(value, tuple) and (len(value)==2) and all([isinstance(v, float) for v in value])
+        return value
 
     def _set_sd(self, value: Tuple[float, float]):
-        self._state['dist_sample_det'] = value[0]
-        self._state['dist_sample_det.err'] = value[1]
+        self._state['dist_sample_det'] = (value[0], value[1])
         self.changed.emit('dist_sample_det', value)
 
     description = pyqtProperty(
@@ -86,7 +90,6 @@ class GeometryPreset(QtCore.QObject):
                                                    self.config['geometry'].setdefault('wavelength.err', 0.0)))
     pixelsize = pyqtProperty(tuple, lambda self: (self.config['geometry'].setdefault('pixelsize', 1.0),
                                                   self.config['geometry'].setdefault('pixelsize.err', 0.0002)))
-    dist_sample_det = sd
 
     def __init__(self,
                  config: Config,
