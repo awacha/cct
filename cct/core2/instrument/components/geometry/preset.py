@@ -29,12 +29,6 @@ class GeometryPreset(QtCore.QObject):
         return self.config['geometry'].setdefault(propertyname, defaultvalue)
 
     def _get_sd(self) -> Tuple[float, float]:
-        if (('dist_sample_det' in self._state) and ('dist_sample_det.err' in self._state) and
-            isinstance(self._state['dist_sample_det'], float) and
-            isinstance(self._state['dist_sample_det.err'], float)
-            ):
-            self._state['dist_sample_det'] = (self._state['dist_sample_det'], self._state['dist_sample_det.err'])
-            del self._state['dist_sample_det.err']
         if (('dist_sample_det' not in self._state)
             or (self._state['dist_sample_det'] is None)
             or (self._state['dist_sample_det'][0] <= 0)):
@@ -223,6 +217,12 @@ class GeometryPreset(QtCore.QObject):
         self._state = state.copy()
         if 'dist_sample_det' not in self._state:
             self._state['dist_sample_det'] = None
+        if (('dist_sample_det' in self._state) and ('dist_sample_det.err' in self._state) and
+            isinstance(self._state['dist_sample_det'], float) and
+            isinstance(self._state['dist_sample_det.err'], float)
+            ):
+            self._state['dist_sample_det'] = (self._state['dist_sample_det'], self._state['dist_sample_det.err'])
+            del self._state['dist_sample_det.err']
 
     def __getstate__(self):
         return self._state
