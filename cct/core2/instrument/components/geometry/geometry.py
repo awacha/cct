@@ -162,9 +162,9 @@ class Geometry(QtCore.QAbstractItemModel, Component):
 
     def saveToConfig(self):
         """Save the geometry values of the current preset to the config"""
-        self.config['geometry']['l1_elements'] = tuple(self.currentpreset.l1_elements)
-        self.config['geometry']['l2_elements'] = tuple(self.currentpreset.l2_elements)
-        self.config['geometry']['flightpipes'] = tuple(self.currentpreset.flightpipes)
+        self.config['geometry']['l1_elements'] = list(self.currentpreset.l1_elements)
+        self.config['geometry']['l2_elements'] = list(self.currentpreset.l2_elements)
+        self.config['geometry']['flightpipes'] = list(self.currentpreset.flightpipes)
         self.config['geometry']['pinhole_1'] = self.currentpreset.pinhole1
         self.config['geometry']['pinhole_2'] = self.currentpreset.pinhole2
         self.config['geometry']['pinhole_3'] = self.currentpreset.pinhole3
