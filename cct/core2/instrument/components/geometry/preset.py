@@ -1,3 +1,4 @@
+import logging
 from typing import Tuple, Sequence, Dict, Any, Optional, Union
 
 import numpy as np
@@ -5,6 +6,9 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtProperty
 
 from ....config import Config
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class GeometryPreset(QtCore.QObject):
@@ -30,12 +34,13 @@ class GeometryPreset(QtCore.QObject):
 
     def _get_sd(self) -> Tuple[float, float]:
         if (('dist_sample_det' not in self._state)
-            or (self._state['dist_sample_det'] is None)
-            or (self._state['dist_sample_det'][0] <= 0)):
-            value = self.ph3toflightpipes + sum(self.flightpipes) + self.lastflightpipetodetector - self.ph3tosample, 0.0
+                or (self._state['dist_sample_det'] is None)
+                or (self._state['dist_sample_det'][0] <= 0)):
+            value = self.ph3toflightpipes + sum(
+                self.flightpipes) + self.lastflightpipetodetector - self.ph3tosample, 0.0
         else:
             value = self._state['dist_sample_det']
-            assert isinstance(value, tuple) and (len(value)==2) and all([isinstance(v, float) for v in value])
+            assert isinstance(value, tuple) and (len(value) == 2) and all([isinstance(v, float) for v in value])
         return value
 
     def _set_sd(self, value: Tuple[float, float]):
@@ -218,9 +223,9 @@ class GeometryPreset(QtCore.QObject):
         if 'dist_sample_det' not in self._state:
             self._state['dist_sample_det'] = None
         if (('dist_sample_det' in self._state) and ('dist_sample_det.err' in self._state) and
-            isinstance(self._state['dist_sample_det'], float) and
-            isinstance(self._state['dist_sample_det.err'], float)
-            ):
+                isinstance(self._state['dist_sample_det'], float) and
+                isinstance(self._state['dist_sample_det.err'], float)
+        ):
             self._state['dist_sample_det'] = (self._state['dist_sample_det'], self._state['dist_sample_det.err'])
             del self._state['dist_sample_det.err']
 
@@ -270,11 +275,15 @@ class GeometryPreset(QtCore.QObject):
         }  # other fields: truedistance, truedistance.err
 
     def __eq__(self, other: "GeometryPreset") -> bool:
+        logger.debug('Comparing two presets.')
         if not isinstance(other, type(self)):
+            logger.debug('Not the same type')
             raise TypeError(type(other))
-        if [key for key in self._state if key not in other._state]:
+        if missingkeys := [key for key in self._state if key not in other._state]:
+            logger.debug(f'Keys missing from the other: {missingkeys}')
             return False
-        elif [key for key in other._state if key not in self._state]:
+        elif missingkeys := [key for key in other._state if key not in self._state]:
+            logger.debug(f'Keys missing from this: {missingkeys}')
             return False
         else:
             for key in self._state:
@@ -282,13 +291,20 @@ class GeometryPreset(QtCore.QObject):
                 othervalue = other._state[key]
                 if not isinstance(thisvalue, type(othervalue)):
                     # types are different
+                    logger.debug(f'Types of key {key} in this ({type(thisvalue)}) and other ({type(othervalue)}) are different.')
                     return False
                 elif isinstance(thisvalue, (float, str)) and thisvalue != othervalue:
+                    logger.debug(f'The value of key {key} in this ({thisvalue}) and other ({othervalue}) is different')
                     return False
                 elif isinstance(thisvalue, (tuple, list, set, dict)) and len(thisvalue) != len(othervalue):
+                    logger.debug(f'The length of key {key} in this ({len(thisvalue)}) and other ({len(othervalue)}) is different')
                     return False
-                elif isinstance(thisvalue, tuple) and any([t!=o for t, o in zip(thisvalue, othervalue)]):
+                elif isinstance(thisvalue, tuple) and any([t != o for t, o in zip(thisvalue, othervalue)]):
+                    logger.debug(f'The elements of key {key} in this ({thisvalue}) and other ({othervalue}) are different')
                     return False
-                elif isinstance(thisvalue, list) and any([t!=o for t, o in zip(sorted(thisvalue), sorted(othervalue))]):
+                elif isinstance(thisvalue, list) and any(
+                        [t != o for t, o in zip(sorted(thisvalue), sorted(othervalue))]):
                     return False
+                # ToDo: set, dict
+            logger.debug('The two presets are equal.')
             return True

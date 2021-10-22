@@ -8,7 +8,7 @@ from .preset import GeometryPreset
 from ..component import Component
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Geometry(QtCore.QAbstractItemModel, Component):
@@ -23,7 +23,6 @@ class Geometry(QtCore.QAbstractItemModel, Component):
     Changing geometry parameters does not update the stored preset values.
 
     """
-    CURRENTPRESETNAME: Final[str] = '-- Current settings --'
     choices: GeometryChoices
     currentPresetChanged = QtCore.pyqtSignal(str, object)
     presets: Dict[str, GeometryPreset]
@@ -37,7 +36,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         self.choices = GeometryChoices(config=self.config)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return len(self.presets)+1
+        return len(self.presets)
 
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return 1
@@ -49,25 +48,16 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         return self.createIndex(row, column, None)
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        if index.row() == 0:
-            # the first preset is special: it is the current preset. It cannot be renamed.
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
-        else:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | \
-                   QtCore.Qt.ItemIsSelectable
+        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | \
+               QtCore.Qt.ItemIsSelectable
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         if (role == QtCore.Qt.DisplayRole) or (role == QtCore.Qt.EditRole):
-            if index.row() == 0:
-                return self.CURRENTPRESETNAME
-            else:
-                return sorted(self.presets.keys())[index.row()-1]
+            return sorted(self.presets.keys())[index.row()]
         return None
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
-        if index.row() == 0:
-            raise RuntimeError('Cannot change the name of the current settings.')
-        oldname = sorted(self.presets.keys())[index.row()-1]
+        oldname = sorted(self.presets.keys())[index.row()]
         self.saveToConfig()
         return self.renamePreset(oldname, value)
 
@@ -105,8 +95,6 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         return name
 
     def removePreset(self, name: str):
-        if name == self.CURRENTPRESETNAME:
-            raise ValueError('Cannot remove current preset')
         if name not in self.presets:
             raise ValueError(f'Cannot remove nonexistent preset {name}')
         self.beginResetModel()
@@ -162,6 +150,7 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         for name in self.config['geometry']['presets']:
             self.presets[name] = GeometryPreset.fromDict(self.config, self.config['geometry']['presets'][name])
             # check if this is the current preset
+            logger.debug(f'Comparing preset {name} to current preset.')
             if (self.presets[name] == currpres) and (not hasattr(self, 'currentpreset')):
                 self.currentpreset = self.presets[name]
                 self.currentpreset.changed.connect(self.onCurrentPresetChanged)
@@ -207,4 +196,4 @@ class Geometry(QtCore.QAbstractItemModel, Component):
         self.saveToConfig()
 
     def presetNames(self) -> List[str]:
-        return [self.CURRENTPRESETNAME] + list(self.config['geometry']['presets'].keys())
+        return list(self.config['geometry']['presets'].keys())
