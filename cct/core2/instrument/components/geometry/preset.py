@@ -86,6 +86,7 @@ class GeometryPreset(QtCore.QObject):
                                                    self.config['geometry'].setdefault('wavelength.err', 0.0)))
     pixelsize = pyqtProperty(tuple, lambda self: (self.config['geometry'].setdefault('pixelsize', 1.0),
                                                   self.config['geometry'].setdefault('pixelsize.err', 0.0002)))
+    dist_sample_det = sd
 
     def __init__(self,
                  config: Config,
