@@ -84,7 +84,8 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.sender() == self.fitNegativeToolButton:
             y = -y
         try:
-            pars, covar, peakfunc = fitpeak(x[idx], y[idx], y[idx] ** 0.5, None, PeakType.Lorentzian)
+            # do not use y error bars: if y<0, y**0.5 is NaN, which will break the fitting routine
+            pars, covar, peakfunc = fitpeak(x[idx], y[idx], None, None, PeakType.Lorentzian)
         except ValueError as ve:
             QtWidgets.QMessageBox.critical(self, 'Error while fitting',
                                            f'Cannot fit peak, please try another range. The error message was: {ve}')
