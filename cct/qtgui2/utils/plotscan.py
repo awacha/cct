@@ -268,7 +268,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.cursor.set_visible(not self._recording)
         limits = self.axes.axis()
         try:
-            self.motorvline = self.axes.axvline(self.instrument.motors[self.scan.motorname].where(), lw=1, ls='dotted', color='r')
+            self.motorvline = self.axes.axvline(self.instrument.motors[self.scan.motorname].where(), lw=1, ls='dotted', color='g')
             self.axes.axis(limits)
         except Exception as exc:
             logger.warning(f'Cannot plot motor vline: {exc}')
