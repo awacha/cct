@@ -174,7 +174,11 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.startStopPushButton.setText('Start')
         self.startStopPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/start.svg")))
         if self.scangraph is not None:
-            self.scangraph.setRecording(False)
+            try:
+                self.scangraph.setRecording(False)
+            except RuntimeError:
+                # this can happen when the user closes the scan graph prematurely
+                pass
             self.scangraph = None
         self.progressBar.hide()
         self.instrument.scan.scanstarted.disconnect(self.onScanStarted)
@@ -185,12 +189,19 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.shrinkWindow()
 
     def onScanPointReceived(self, scanindex, currentpoint, maxpoints, readings):
-        if self.scangraph is None:
+        if (self.scangraph is None) and (currentpoint == 0):
             self.scangraph = self.mainwindow.addSubWindow(PlotScan, singleton=False)
             assert isinstance(self.scangraph, PlotScan)
             self.scangraph.setScan(self.instrument.scan[scanindex])
             self.scangraph.setRecording(True)
-        self.scangraph.replot()
+        elif self.scangraph is not None:
+            try:
+                self.scangraph.replot()
+            except RuntimeError:
+                # this can happen when the user closes the scan graph during scan
+                self.scangraph = None
+        else:
+            pass
 
     def onScanProgress(self, start, end, current, message):
         if end == start:
