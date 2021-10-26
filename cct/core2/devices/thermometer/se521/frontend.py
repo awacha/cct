@@ -35,6 +35,14 @@ class SE521(DeviceFrontend):
         if variablename in ['t1', 't2', 't3', 't4']:
             self.temperatureChanged.emit(int(variablename[1]), float(newvalue))
             self.sensors[int(variablename[1])-1].update(float(newvalue))
+        elif variablename == 't1name':
+            self.sensors[0].name = newvalue
+        elif variablename == 't2name':
+            self.sensors[1].name = newvalue
+        elif variablename == 't3name':
+            self.sensors[2].name = newvalue
+        elif variablename == 't4name':
+            self.sensors[3].name = newvalue
 
     def setChannelName(self, channel: str, newname: str):
         if channel not in ['t1', 't2', 't3', 't4', 't1-t2']:
