@@ -32,6 +32,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     peakcurve: Optional[Line2D] = None
     peakvline: Optional[Line2D] = None
     peaktext: Optional[Text] = None
+    motorvline: Optional[Line2D] = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -265,6 +266,13 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.cursor = self.axes.axvline(self.scan[self.scan.motorname][self.cursorHorizontalSlider.value()], lw=2,
                                         ls='dashed', color='k')
         self.cursor.set_visible(not self._recording)
+        limits = self.axes.axis()
+        try:
+            self.motorvline = self.axes.axvline(self.instrument.motors[self.scan.motorname].where(), lw=1, ls='dotted', color='r')
+            self.axes.axis(limits)
+        except Exception as exc:
+            logger.warning(f'Cannot plot motor vline: {exc}')
+            self.motorvline = None
 
     def setScan(self, scan: Scan):
         if isinstance(self.scan, Scan):
@@ -292,3 +300,8 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def onMotorStopped(self, success: bool, endposition: float):
         self.setMotorButtonsEnabled()
+
+    def onMotorPositionChanged(self, newposition: float):
+        if self.motorvline is not None:
+            self.motorvline.set_xdata(newposition)
+            self.canvas.draw_idle()
