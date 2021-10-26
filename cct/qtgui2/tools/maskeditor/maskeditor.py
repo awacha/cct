@@ -132,7 +132,7 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Load a mask file...', self.windowFilePath(),
             'Mask files (*.mat);;All files (*)', 'Mask files (*.mat)')
-        if filename is None:
+        if not filename:
             return
         mat = scipy.io.loadmat(filename)
         maskkey = [k for k in mat.keys() if not k.startswith('_')][0]
