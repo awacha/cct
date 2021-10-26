@@ -194,7 +194,8 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         else:
             self._imghandle.set_data(self.matrix)
             self._imghandle.set_cmap(self.paletteComboBox.currentText())
-            self._imghandle.set_norm(self.getNormalization(float(np.nanmin(self.matrix)), float(np.nanmin(self.matrix[self.matrix>0]))))
+            if (self.matrix > 0).sum() > 0:
+                self._imghandle.set_norm(self.getNormalization(float(np.nanmin(self.matrix)), float(np.nanmin(self.matrix[self.matrix>0]))))
             self._imghandle.set_extent(extent)
             self._imghandle.autoscale()
             self._imghandle.changed()
