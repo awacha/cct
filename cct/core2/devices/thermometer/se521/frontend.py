@@ -35,3 +35,8 @@ class SE521(DeviceFrontend):
         if variablename in ['t1', 't2', 't3', 't4']:
             self.temperatureChanged.emit(int(variablename[1]), float(newvalue))
             self.sensors[int(variablename[1])-1].update(float(newvalue))
+
+    def setChannelName(self, channel: str, newname: str):
+        if channel not in ['t1', 't2', 't3', 't4', 't1-t2']:
+            raise ValueError('Invalid channel name: can only be "t1", "t2", "t3", "t4" or "t1-t2".')
+        self.issueCommand(f'set{channel}name', newname)

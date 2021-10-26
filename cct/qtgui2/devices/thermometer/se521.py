@@ -10,6 +10,8 @@ from ....core2.devices.thermometer.se521 import SE521
 
 class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     required_devicenames = ['se521']
+    _name_lineedits = {'t1name': 't1NameLineEdit', 't2name': 't2NameLineEdit', 't3name': 't3NameLineEdit',
+                       't4name': 't4NameLineEdit', 't1-t2name': 't1minust2NameLineEdit'}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -21,6 +23,9 @@ class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.onVariableChanged(variable, self.device()[variable], None)
         self.backlightPushButton.clicked.connect(self.toggleBacklight)
         self.switchUnitsPushButton.clicked.connect(self.celsiusorfahrenheit)
+        for widgetname in self._name_lineedits.values():
+            widget: QtWidgets.QLineEdit = getattr(self, widgetname)
+            widget.editingFinished.connect(self.onNameEdited)
 
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name == 'battery_level':
@@ -83,6 +88,18 @@ class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 labelwidget.setText(f'{newvalue:.1f}°C')
         elif name == 'firmwareversion':
             self.deviceTypeLabel.setText(newvalue)
+        elif name in ['t1name', 't2name', 't3name', 't4name', 't1-t2name']:
+            widget: QtWidgets.QLineEdit = {
+                't1name': self.t1NameLineEdit,
+                't2name': self.t2NameLineEdit,
+                't3name': self.t3NameLineEdit,
+                't4name': self.t4NameLineEdit,
+                't1-t2name': self.t1minust2NameLineEdit}[name]
+            widget.blockSignals(True)
+            try:
+                widget.setText(newvalue)
+            finally:
+                widget.blockSignals(False)
 
     def device(self) -> SE521:
         return self.instrument.devicemanager['se521']
@@ -92,3 +109,8 @@ class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def celsiusorfahrenheit(self):
         self.device().setDisplayUnits()
+
+    def onNameEdited(self):
+        for name, widgetname in self._name_lineedits.items():
+            if self.sender().objectName() == widgetname:
+                self.device().setChannelName(name.replace('name', ''), self.sender().text())

@@ -38,6 +38,11 @@ class SE521Backend(DeviceBackend):
         DeviceBackend.VariableInfo(name='t3', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
         DeviceBackend.VariableInfo(name='t4', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
         DeviceBackend.VariableInfo(name='t1-t2', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='t1name', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='t2name', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='t3name', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='t4name', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='t1-t2name', dependsfrom=[], urgent=False, timeout=inf),
 
     ]
 
@@ -46,6 +51,16 @@ class SE521Backend(DeviceBackend):
             self.enqueueHardwareMessage(b'A\r\n')
         elif variablename == 'firmwareversion':
             self.enqueueHardwareMessage(b'K\r\n')
+        elif variablename == 't1name':
+            self.enqueueHardwareMessage(b'getchannelname0\r\n')
+        elif variablename == 't2name':
+            self.enqueueHardwareMessage(b'getchannelname1\r\n')
+        elif variablename == 't3name':
+            self.enqueueHardwareMessage(b'getchannelname2\r\n')
+        elif variablename == 't4name':
+            self.enqueueHardwareMessage(b'getchannelname3\r\n')
+        elif variablename == 't1-t2name':
+            self.enqueueHardwareMessage(b'getchannelname4\r\n')
         else:
             self.error(f'Unknown variable: {variablename}')
 
@@ -96,6 +111,21 @@ class SE521Backend(DeviceBackend):
                 pass
             elif m['message'] == b'B':
                 pass
+            elif (m1:=re.match(b'setchannelname(?P<channel>[01234])', m['message'])) is not None:
+                pass
+            elif (m1:=re.match(b'getchannelname(?P<channel>[01234])', m['message'])) is not None:
+                if m1['channel'] == b'0':
+                    self.updateVariable('t1name', m['result'].decode('utf-8'))
+                elif m1['channel'] == b'1':
+                    self.updateVariable('t2name', m['result'].decode('utf-8'))
+                elif m1['channel'] == b'2':
+                    self.updateVariable('t3name', m['result'].decode('utf-8'))
+                elif m1['channel'] == b'3':
+                    self.updateVariable('t4name', m['result'].decode('utf-8'))
+                elif m1['channel'] == b'4':
+                    self.updateVariable('t1-t2name', m['result'].decode('utf-8'))
+                else:
+                    assert False
             else:
                 self.warning(f'Unknown command: {m["message"]}')
             self.updateVariable('__status__', 'idle')
@@ -112,5 +142,15 @@ class SE521Backend(DeviceBackend):
             self.enqueueHardwareMessage(b'B\r\n')
             self.queryVariable('encodedstate')
             self.commandFinished(name, 'Toggle backlight')
+        elif name == 'sett1name':
+            self.enqueueHardwareMessage(b'setchannelname0 '+args[0].encode('utf-8'))
+        elif name == 'sett2name':
+            self.enqueueHardwareMessage(b'setchannelname1 ' + args[0].encode('utf-8'))
+        elif name == 'sett3name':
+            self.enqueueHardwareMessage(b'setchannelname2 ' + args[0].encode('utf-8'))
+        elif name == 'sett4name':
+            self.enqueueHardwareMessage(b'setchannelname3 ' + args[0].encode('utf-8'))
+        elif name == 'sett1-t2name':
+            self.enqueueHardwareMessage(b'setchannelname4 ' + args[0].encode('utf-8'))
         else:
             self.commandFinished(name, 'Unknown command')
