@@ -111,9 +111,9 @@ class SE521Backend(DeviceBackend):
                 pass
             elif m['message'] == b'B':
                 pass
-            elif (m1:=re.match(b'setchannelname(?P<channel>[01234])', m['message'])) is not None:
+            elif (m1 := re.match(b'setchannelname(?P<channel>[01234])', m['message'])) is not None:
                 pass
-            elif (m1:=re.match(b'getchannelname(?P<channel>[01234])', m['message'])) is not None:
+            elif (m1 := re.match(b'getchannelname(?P<channel>[01234])', m['message'])) is not None:
                 if m1['channel'] == b'0':
                     self.updateVariable('t1name', m['result'].decode('utf-8'))
                 elif m1['channel'] == b'1':
@@ -143,14 +143,14 @@ class SE521Backend(DeviceBackend):
             self.queryVariable('encodedstate')
             self.commandFinished(name, 'Toggle backlight')
         elif name == 'sett1name':
-            self.enqueueHardwareMessage(b'setchannelname0 '+args[0].encode('utf-8'))
+            self.enqueueHardwareMessage(b'setchannelname0 ' + args[0].encode('utf-8')+b'\r\n')
         elif name == 'sett2name':
-            self.enqueueHardwareMessage(b'setchannelname1 ' + args[0].encode('utf-8'))
+            self.enqueueHardwareMessage(b'setchannelname1 ' + args[0].encode('utf-8')+b'\r\n')
         elif name == 'sett3name':
-            self.enqueueHardwareMessage(b'setchannelname2 ' + args[0].encode('utf-8'))
+            self.enqueueHardwareMessage(b'setchannelname2 ' + args[0].encode('utf-8')+b'\r\n')
         elif name == 'sett4name':
-            self.enqueueHardwareMessage(b'setchannelname3 ' + args[0].encode('utf-8'))
+            self.enqueueHardwareMessage(b'setchannelname3 ' + args[0].encode('utf-8')+b'\r\n')
         elif name == 'sett1-t2name':
-            self.enqueueHardwareMessage(b'setchannelname4 ' + args[0].encode('utf-8'))
+            self.enqueueHardwareMessage(b'setchannelname4 ' + args[0].encode('utf-8')+b'\r\n')
         else:
             self.commandFinished(name, 'Unknown command')
