@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>978</width>
+    <height>557</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Outlier test results</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../resource/icons/icons.qrc">
+    <normaloff>:/icons/outliers.svg</normaloff>:/icons/outliers.svg</iconset>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_2">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QTabWidget" name="tabWidget">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="tabPosition">
+        <enum>QTabWidget::South</enum>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="correlMatrixTab">
+        <attribute name="title">
+         <string>Correlation matrix</string>
+        </attribute>
+       </widget>
+       <widget class="QWidget" name="outlierTestTab">
+        <attribute name="title">
+         <string>Test results</string>
+        </attribute>
+       </widget>
+       <widget class="QWidget" name="curvesTab">
+        <attribute name="title">
+         <string>Curves</string>
+        </attribute>
+       </widget>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QTreeView" name="treeView">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="rootIsDecorated">
+        <bool>false</bool>
+       </property>
+       <property name="uniformRowHeights">
+        <bool>true</bool>
+       </property>
+       <property name="allColumnsShowFocus">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QPushButton" name="reloadPushButton">
+         <property name="toolTip">
+          <string>Reload experiment metadata</string>
+         </property>
+         <property name="icon">
+          <iconset theme="view-refresh">
+           <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="showImagePushButton">
+         <property name="toolTip">
+          <string>Show the scattering pattern of the selected measurements</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../resource/icons/icons.qrc">
+           <normaloff>:/icons/saxspattern.svg</normaloff>:/icons/saxspattern.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="showCurvePushButton">
+         <property name="toolTip">
+          <string>Show the scattering curves of the selected measurements</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../resource/icons/icons.qrc">
+           <normaloff>:/icons/saxscurve.svg</normaloff>:/icons/saxscurve.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="markGoodPushButton">
+         <property name="toolTip">
+          <string>Mark the selected exposures as good</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../resource/icons/icons.qrc">
+           <normaloff>:/icons/good.svg</normaloff>:/icons/good.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="markBadPushButton">
+         <property name="toolTip">
+          <string>Mark the selected exposures as bad</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../resource/icons/icons.qrc">
+           <normaloff>:/icons/bad.svg</normaloff>:/icons/bad.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../../resource/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>

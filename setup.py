@@ -2,10 +2,11 @@
 import os
 import sys
 
-import codegenerator
 from Cython.Build import cythonize
 from numpy import get_include
 from setuptools import setup, find_packages, Extension
+
+import codegenerator
 
 try:
     from PyQt5.uic import compileUi
@@ -57,6 +58,30 @@ extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
               Extension("cct.core.processing.correlmatrix",
                         [os.path.join("cct", "core", "processing", "correlmatrix.pyx")],
                         include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.radavg",
+                        [os.path.join("cct", "core2", "algorithms", "radavg.pyx")],
+                        include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.cbfdecompress",
+                        [os.path.join("cct", "core2", "algorithms", "cbfdecompress.pyx")],
+                        include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.centering.momentofinertia",
+                        [os.path.join("cct", "core2", "algorithms", "centering", "momentofinertia.pyx")],
+                        include_dirs=[get_include()]),
+              Extension("cct.qtgui2.tools.maskeditor.maskoperations",
+                        [os.path.join("cct", "qtgui2", "tools", "maskeditor", "maskoperations.pyx")],
+                        include_dirs=[get_include()]),
+              Extension("cct.core2.instrument.components.auth.user",
+                        [os.path.join("cct", "core2", "instrument", "components", "auth", "user.pyx")],
+                        include_dirs=[get_include()], libraries=krb5_libs),
+              Extension("cct.core2.algorithms.beamweighting",
+                        [os.path.join("cct","core2", "algorithms", "beamweighting.pyx")],
+                        include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.correlmatrix",
+                        [os.path.join("cct","core2", "algorithms", "correlmatrix.pyx")],
+                        include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.schilling",
+                        [os.path.join("cct","core2", "algorithms", "schilling.pyx")],
+                        include_dirs=[get_include()]),
               ]
 
 print(get_include())
@@ -71,26 +96,17 @@ setup(name='cct', author='Andras Wacha',
       setup_requires=['setuptools_scm'],
       #      cmdclass = {'build_ext': build_ext},
       ext_modules=cythonize(extensions),
-      install_requires=['appdirs>=1.4.0',
-                        'numpy>=1.15.0',
-                        'scipy>=1.0.0',
-                        'matplotlib>=3.0.0',
-                        'sastool>=1.2.3',
-                        'pymodbustcp>=0.0.13',
-                        'psutil>=4.1.0',
-                        'h5py',
-                        'pillow',
-                        'openpyxl',
-                        'sqlalchemy',
-                        'adjusttext',
-                        'imageio'],
+      install_requires=['appdirs', 'numpy>=1.15.0', 'scipy>=1.0.0', 'matplotlib>=3.0.0', 'sastool>=1.2.3',
+                        'pymodbustcp>=0.0.13', 'psutil>=4.1.0', 'h5py', 'pillow', 'openpyxl', 'sqlalchemy',
+                        'adjusttext', 'imageio', 'click', 'colorlog', 'pyusb'],
       entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run',
                                     'cpt = cct.processing.__main__:run',
                                     'cpt2 = cct.processinggui.__main__:run',
                                     'cctmask = cct.qtgui.tools.maskeditor2:run',
                                     'cctanisotropy = cct.qtgui.tools.anisotropy:run',
                                     'cctupdatedb = cct.dbutils.updatedb:run',
-                                    'cctsequencebrowser = cct.processing.sequenceinspector.sequencelist:run'],
+                                    'cctsequencebrowser = cct.processing.sequenceinspector.sequencelist:run',
+                                    'cct4 = cct.__main__:main'],
 
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",

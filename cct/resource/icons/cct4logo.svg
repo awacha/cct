@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:export-ydpi="15.48"
+   inkscape:export-xdpi="15.48"
+   inkscape:export-filename="/home/labuser/PycharmProjects/cct/cct/resource/icons/64x64/cctlogo.png"
+   sodipodi:docname="cct4logo.svg"
+   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   version="1.1"
+   id="svg2"
+   viewBox="0 0 372.04724 372.04724"
+   height="105mm"
+   width="105mm">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     inkscape:snap-bbox-edge-midpoints="true"
+     inkscape:document-rotation="0"
+     inkscape:snap-center="true"
+     inkscape:snap-midpoints="true"
+     inkscape:snap-smooth-nodes="true"
+     inkscape:snap-others="true"
+     inkscape:window-maximized="1"
+     inkscape:window-y="0"
+     inkscape:window-x="1920"
+     inkscape:window-height="1051"
+     inkscape:window-width="1920"
+     fit-margin-bottom="0"
+     fit-margin-right="0"
+     fit-margin-left="0"
+     fit-margin-top="0"
+     inkscape:object-nodes="true"
+     inkscape:object-paths="true"
+     inkscape:snap-intersection-paths="true"
+     inkscape:snap-bbox="true"
+     inkscape:snap-object-midpoints="true"
+     showgrid="false"
+     inkscape:current-layer="layer1"
+     inkscape:document-units="px"
+     inkscape:cy="416.09753"
+     inkscape:cx="742.62766"
+     inkscape:zoom="0.7"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     id="base" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     transform="translate(-22.702327,-49.747479)"
+     id="layer1"
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
+    <path
+       inkscape:transform-center-y="-5.5155786"
+       inkscape:transform-center-x="-1.9849616"
+       d="m 142.0734,388.19313 -32.7762,-28.34989 -19.413661,38.7441 -6.885069,-42.78541 -39.775951,17.20084 22.227663,-37.20116 -41.526635,-12.39088 40.939824,-14.21008 -23.846545,-36.18477 40.495786,15.43007 4.991609,-43.04741 21.103319,37.8503 31.49413,-29.76768 -8.16362,42.55997 43.2602,-2.55933 -33.61071,27.35535 34.78434,25.84656 -43.33099,-0.64914 z"
+       inkscape:randomized="0"
+       inkscape:rounded="0"
+       inkscape:flatsided="false"
+       sodipodi:arg2="1.3742072"
+       sodipodi:arg1="1.0251413"
+       sodipodi:r2="38.897457"
+       sodipodi:r1="77.794914"
+       sodipodi:cy="321.69501"
+       sodipodi:cx="101.69954"
+       sodipodi:sides="9"
+       id="path4136"
+       style="opacity:1;fill:#ff0000;fill-opacity:1;fill-rule:nonzero;stroke:#ff0000;stroke-width:0.74998933;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       sodipodi:type="star" />
+    <path
+       sodipodi:nodetypes="caccaaac"
+       d="m 333.63465,334.35873 c 0,0 27.75367,-1.12774 41.44122,-3.28935 2.50797,-0.39607 7.40947,-1.7666 7.40947,-1.7666 m -77.30693,44.40996 c 0,0 -13.8976,29.65015 -27.90192,33.90987 -18.02116,5.48154 -40.38821,-3.36055 -54.12151,-16.25264 -14.09147,-13.22833 -5.15572,-42.17262 -20.14881,-54.36957 -26.49288,-21.5521 -101.30663,-15.30539 -101.30663,-15.30539"
+       style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:9.99921;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:9.99921, 19.9984;stroke-dashoffset:0;stroke-opacity:1"
+       id="path4138" />
+    <text
+       id="text4140"
+       y="209.18941"
+       x="24.24367"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:Arial;-inkscape-font-specification:'Arial, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         style="font-size:180px;line-height:1.25"
+         y="209.18941"
+         x="24.24367"
+         id="tspan4142"
+         sodipodi:role="line">CCT</tspan></text>
+    <text
+       id="text828"
+       y="373.31256"
+       x="228.95235"
+       style="font-style:normal;font-weight:normal;font-size:180px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.9375"
+       xml:space="preserve"><tspan
+         style="stroke-width:0.9375"
+         y="373.31256"
+         x="228.95235"
+         id="tspan826"
+         sodipodi:role="line">4</tspan></text>
+  </g>
+</svg>

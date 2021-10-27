@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="73.16246mm"
+   height="73.16246mm"
+   viewBox="0 0 259.23706 259.23706"
+   id="svg2"
+   version="1.1"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
+   sodipodi:docname="png.svg">
+  <defs
+     id="defs4">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 129.61853 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="259.23706 : 129.61853 : 1"
+       inkscape:persp3d-origin="129.61853 : 86.412353 : 1"
+       id="perspective1872" />
+    <rect
+       x="128.6056"
+       y="157.27919"
+       width="119.5036"
+       height="77.25281"
+       id="rect1636" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4354"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4350"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4346"
+       is_visible="true" />
+    <filter
+       x="-0.24"
+       width="1.48"
+       y="-0.24"
+       height="1.48"
+       style="color-interpolation-filters:sRGB"
+       id="filter1334">
+      <feGaussianBlur
+         stdDeviation="1.6007865"
+         id="feGaussianBlur1332" />
+    </filter>
+    <filter
+       x="-0.24"
+       width="1.48"
+       y="-0.24"
+       height="1.48"
+       style="color-interpolation-filters:sRGB"
+       id="filter1342">
+      <feGaussianBlur
+         stdDeviation="1.6007865"
+         id="feGaussianBlur1340" />
+    </filter>
+    <filter
+       x="-0.48"
+       width="1.96"
+       y="-0.48"
+       height="1.96"
+       style="color-interpolation-filters:sRGB"
+       id="filter1348">
+      <feGaussianBlur
+         stdDeviation="3.201573"
+         id="feGaussianBlur1346" />
+    </filter>
+    <filter
+       x="-0.72"
+       width="2.44"
+       y="-0.72"
+       height="2.44"
+       style="color-interpolation-filters:sRGB"
+       id="filter1354">
+      <feGaussianBlur
+         stdDeviation="4.8023595"
+         id="feGaussianBlur1352" />
+    </filter>
+    <filter
+       x="-0.96"
+       width="2.92"
+       y="-0.96"
+       height="2.92"
+       style="color-interpolation-filters:sRGB"
+       id="filter1360">
+      <feGaussianBlur
+         stdDeviation="6.403146"
+         id="feGaussianBlur1358" />
+    </filter>
+    <filter
+       x="-1.2"
+       width="3.4"
+       y="-1.2"
+       height="3.4"
+       style="color-interpolation-filters:sRGB"
+       id="filter1366">
+      <feGaussianBlur
+         stdDeviation="8.0039324"
+         id="feGaussianBlur1364" />
+    </filter>
+    <filter
+       x="-1.44"
+       width="3.88"
+       y="-1.44"
+       height="3.88"
+       style="color-interpolation-filters:sRGB"
+       id="filter1372">
+      <feGaussianBlur
+         stdDeviation="9.6047189"
+         id="feGaussianBlur1370" />
+    </filter>
+    <filter
+       x="-1.68"
+       width="4.36"
+       y="-1.68"
+       height="4.36"
+       style="color-interpolation-filters:sRGB"
+       id="filter1378">
+      <feGaussianBlur
+         stdDeviation="11.205505"
+         id="feGaussianBlur1376" />
+    </filter>
+    <filter
+       x="-1.92"
+       width="4.84"
+       y="-1.92"
+       height="4.84"
+       style="color-interpolation-filters:sRGB"
+       id="filter1384">
+      <feGaussianBlur
+         stdDeviation="12.806292"
+         id="feGaussianBlur1382" />
+    </filter>
+    <filter
+       x="-2.16"
+       width="5.32"
+       y="-2.16"
+       height="5.32"
+       style="color-interpolation-filters:sRGB"
+       id="filter1390">
+      <feGaussianBlur
+         stdDeviation="14.407078"
+         id="feGaussianBlur1388" />
+    </filter>
+    <filter
+       x="-0.24"
+       width="1.48"
+       y="-0.24"
+       height="1.48"
+       style="color-interpolation-filters:sRGB"
+       id="filter1398">
+      <feGaussianBlur
+         stdDeviation="1.6007865"
+         id="feGaussianBlur1396" />
+    </filter>
+    <filter
+       x="-0.48"
+       width="1.96"
+       y="-0.48"
+       height="1.96"
+       style="color-interpolation-filters:sRGB"
+       id="filter1404">
+      <feGaussianBlur
+         stdDeviation="3.201573"
+         id="feGaussianBlur1402" />
+    </filter>
+    <filter
+       x="-0.72"
+       width="2.44"
+       y="-0.72"
+       height="2.44"
+       style="color-interpolation-filters:sRGB"
+       id="filter1410">
+      <feGaussianBlur
+         stdDeviation="4.8023595"
+         id="feGaussianBlur1408" />
+    </filter>
+    <filter
+       x="-0.96"
+       width="2.92"
+       y="-0.96"
+       height="2.92"
+       style="color-interpolation-filters:sRGB"
+       id="filter1416">
+      <feGaussianBlur
+         stdDeviation="6.403146"
+         id="feGaussianBlur1414" />
+    </filter>
+    <filter
+       x="-1.2"
+       width="3.4"
+       y="-1.2"
+       height="3.4"
+       style="color-interpolation-filters:sRGB"
+       id="filter1422">
+      <feGaussianBlur
+         stdDeviation="8.0039324"
+         id="feGaussianBlur1420" />
+    </filter>
+    <filter
+       x="-1.44"
+       width="3.88"
+       y="-1.44"
+       height="3.88"
+       style="color-interpolation-filters:sRGB"
+       id="filter1428">
+      <feGaussianBlur
+         stdDeviation="9.6047189"
+         id="feGaussianBlur1426" />
+    </filter>
+    <filter
+       x="-1.68"
+       width="4.36"
+       y="-1.68"
+       height="4.36"
+       style="color-interpolation-filters:sRGB"
+       id="filter1434">
+      <feGaussianBlur
+         stdDeviation="11.205505"
+         id="feGaussianBlur1432" />
+    </filter>
+    <filter
+       x="-1.92"
+       width="4.84"
+       y="-1.92"
+       height="4.84"
+       style="color-interpolation-filters:sRGB"
+       id="filter1440">
+      <feGaussianBlur
+         stdDeviation="12.806292"
+         id="feGaussianBlur1438" />
+    </filter>
+    <filter
+       x="-2.16"
+       width="5.32"
+       y="-2.16"
+       height="5.32"
+       style="color-interpolation-filters:sRGB"
+       id="filter1446">
+      <feGaussianBlur
+         stdDeviation="14.407078"
+         id="feGaussianBlur1444" />
+    </filter>
+    <filter
+       x="-2.4"
+       width="5.8"
+       y="-2.4"
+       height="5.8"
+       style="color-interpolation-filters:sRGB"
+       id="filter1452">
+      <feGaussianBlur
+         stdDeviation="16.007865"
+         id="feGaussianBlur1450" />
+    </filter>
+    <filter
+       x="-2.4"
+       width="5.8"
+       y="-2.4"
+       height="5.8"
+       style="color-interpolation-filters:sRGB"
+       id="filter1458">
+      <feGaussianBlur
+         stdDeviation="16.007865"
+         id="feGaussianBlur1456" />
+    </filter>
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4488"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4484"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4480"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4408"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4404"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4398"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4394"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4310"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4260"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4256"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4252"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4248"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4244"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4240"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4236"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4232"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4228"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4224"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4220"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4216"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4212"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4208"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4204"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4200"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4196"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4185"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4181"
+       is_visible="true" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4177"
+       effect="spiro" />
+    <inkscape:path-effect
+       is_visible="true"
+       id="path-effect4173"
+       effect="spiro" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4169"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4354-3"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4350-6"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect4346-7"
+       is_visible="true" />
+    <clipPath
+       id="p29ea0fa01d">
+      <rect
+         height="113.32678"
+         width="223.2"
+         x="36"
+         y="25.92"
+         id="rect14300" />
+    </clipPath>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.979899"
+     inkscape:cx="90.130638"
+     inkscape:cy="145.81014"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1920"
+     inkscape:window-height="1011"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:snap-bbox="true"
+     inkscape:snap-bbox-edge-midpoints="true"
+     inkscape:object-nodes="true"
+     inkscape:object-paths="true"
+     inkscape:snap-intersection-paths="true"
+     inkscape:snap-smooth-nodes="true"
+     inkscape:snap-midpoints="true"
+     inkscape:snap-global="false"
+     inkscape:document-rotation="0"
+     inkscape:bbox-paths="true"
+     inkscape:bbox-nodes="true"
+     inkscape:snap-bbox-midpoints="true"
+     inkscape:snap-page="true"
+     inkscape:snap-text-baseline="true"
+     inkscape:snap-center="true"
+     inkscape:snap-object-midpoints="true"
+     inkscape:snap-grids="true"
+     inkscape:snap-to-guides="false" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-102.71655,-104.52011)">
+    <text
+       xml:space="preserve"
+       id="text1634"
+       style="fill:black;fill-opacity:1;line-height:1.25;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:37.49999992px;white-space:pre;shape-inside:url(#rect1636);" />
+    <rect
+       style="fill:#0100ff;fill-opacity:1;stroke:none;stroke-width:17.7169;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect946"
+       width="100.12352"
+       height="100.12352"
+       x="248.38216"
+       y="113.86242" />
+    <path
+       style="fill:#ff00ee;fill-opacity:1;stroke:none;stroke-width:0.9375px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 171.23506,107.66512 108.66855,216.03347 H 237.95959 Z"
+       id="path948" />
+    <path
+       style="fill:#00a115;fill-opacity:1;stroke:none;stroke-width:17.7169;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path944"
+       sodipodi:type="arc"
+       sodipodi:cx="238.18112"
+       sodipodi:cy="240.18594"
+       sodipodi:rx="50.87859"
+       sodipodi:ry="50.87859"
+       sodipodi:start="0"
+       sodipodi:end="6.2554695"
+       sodipodi:open="true"
+       sodipodi:arc-type="arc"
+       d="m 289.05971,240.18594 a 50.87859,50.87859 0 0 1 -50.52606,50.87737 50.87859,50.87859 0 0 1 -51.22623,-50.17232 50.87859,50.87859 0 0 1 49.81617,-51.57264 50.87859,50.87859 0 0 1 51.91658,49.45763" />
+    <text
+       xml:space="preserve"
+       style="font-size:133.229px;line-height:1.25;font-family:sans-serif;stroke-width:0.937502"
+       x="89.640854"
+       y="361.87064"
+       id="text952"><tspan
+         sodipodi:role="line"
+         id="tspan950"
+         x="89.640854"
+         y="361.87064"
+         style="stroke-width:0.937502">PNG</tspan></text>
+  </g>
+</svg>

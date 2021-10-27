@@ -1,5 +1,54 @@
 <RCC>
   <qresource prefix="icons">
+    <file>cpt4logo.svg</file>
+    <file>peristaltic_pump.svg</file>
+    <file>zoom_locked.svg</file>
+    <file>zoom_unlocked.svg</file>
+    <file>ups.svg</file>
+    <file>advancedmotorconfig.svg</file>
+    <file>beammonitor.svg</file>
+    <file>motor-where.svg</file>
+    <file>beamstop-config.svg</file>
+    <file>thermometer.svg</file>
+    <file>results.svg</file>
+    <file>metadata.svg</file>
+    <file>rsr.svg</file>
+    <file>ascii_gzip.svg</file>
+    <file>ascii.svg</file>
+    <file>pdh.svg</file>
+    <file>atsas.svg</file>
+    <file>backgroundsubtraction.svg</file>
+    <file>matlablogo.png</file>
+    <file>numpylogoicon.svg</file>
+    <file>vacuum.svg</file>
+    <file>merge.svg</file>
+    <file>average.svg</file>
+    <file>averagecurves.svg</file>
+    <file>averageexposures.svg</file>
+    <file>outliers.svg</file>
+    <file>spinner_00.svg</file>
+    <file>spinner_01.svg</file>
+    <file>spinner_02.svg</file>
+    <file>spinner_03.svg</file>
+    <file>spinner_04.svg</file>
+    <file>spinner_05.svg</file>
+    <file>spinner_06.svg</file>
+    <file>spinner_07.svg</file>
+    <file>spinner_08.svg</file>
+    <file>spinner_09.svg</file>
+    <file>spinner_10.svg</file>
+    <file>spinner_11.svg</file>
+    <file>bad.svg</file>
+    <file>good.svg</file>
+    <file>scanwizard.svg</file>
+    <file>saxspattern.svg</file>
+    <file>wristwatch.svg</file>
+    <file>start.svg</file>
+    <file>stop.svg</file>
+    <file>saxscurve.svg</file>
+    <file>beamstop-moving.svg</file>
+    <file>pinhole.svg</file>
+    <file>cct4logo.svg</file>
     <file>cpt2logo.svg</file>
     <file>snapx.svg</file>
     <file>snapy.svg</file>

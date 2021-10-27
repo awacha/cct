@@ -1,0 +1,1 @@
+from .geticon import getIconFromTheme

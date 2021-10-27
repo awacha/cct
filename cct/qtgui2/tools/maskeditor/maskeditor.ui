@@ -1,0 +1,744 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>694</width>
+    <height>543</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Mask Editor [*]</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../resource/icons/icons.qrc">
+    <normaloff>:/icons/maskeditor.svg</normaloff>:/icons/maskeditor.svg</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QToolButton" name="newMaskToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Create an empty mask</string>
+         </property>
+         <property name="text">
+          <string>New</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-new">
+           <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="loadMaskToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Load a mask from a file</string>
+         </property>
+         <property name="text">
+          <string>Open</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-open">
+           <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="saveMaskToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Save the mask</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-save">
+           <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="saveMaskAsToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Save the mask under a new name</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-save-as">
+           <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <item>
+        <widget class="QToolButton" name="undoToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Undo the previous operation</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset theme="edit-undo">
+           <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="redoToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Redo the previously undone operation</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset theme="edit-redo">
+           <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QToolButton" name="maskToolButton">
+         <property name="toolTip">
+          <string>Masking mode: the next selection will be masked</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/mask.svg</normaloff>:/icons/mask.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="unMaskToolButton">
+         <property name="toolTip">
+          <string>Unmasking mode: the next selection will be unmasked</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/unmask.svg</normaloff>:/icons/unmask.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="flipMaskToolButton">
+         <property name="toolTip">
+          <string>Mask flip mode: the mask will be flipped over the next selection (masked -&gt; unmasked, unmasked -&gt; masked)</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/flipmask.svg</normaloff>:/icons/flipmask.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="Line" name="line_3">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <item>
+        <widget class="QToolButton" name="zoomModeToolButton">
+         <property name="toolTip">
+          <string>Image browsing mode</string>
+         </property>
+         <property name="text">
+          <string>Zoom mode</string>
+         </property>
+         <property name="icon">
+          <iconset theme="edit-find">
+           <normaloff>.</normaloff>.</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="selectRectangleToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Select two opposite corners of a rectangle by dragging</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/selectrectangle.svg</normaloff>:/icons/selectrectangle.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="selectCircleToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Select a circle by dragging from its center</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/selectcircle.svg</normaloff>:/icons/selectcircle.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="selectPolygonToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Select a polygon by clicking on its corners. Finish by clicking at the first point.</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/selectpolygon.svg</normaloff>:/icons/selectpolygon.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="selectLassoToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Lasso selector: click and drag around the area to be selected</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/selectlasso.svg</normaloff>:/icons/selectlasso.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="selectByPixelToolButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Mask/unmask individual pixels</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../../../resource/icons/icons.qrc">
+           <normaloff>:/icons/pixelhunt.svg</normaloff>:/icons/pixelhunt.svg</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="fsnSelectorHorizontalLayout"/>
+   </item>
+   <item>
+    <widget class="Line" name="line_4">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QSplitter" name="splitter">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="midLineWidth">
+      <number>2</number>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="handleWidth">
+      <number>3</number>
+     </property>
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <layout class="QVBoxLayout" name="imageVerticalLayout"/>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget_2">
+      <layout class="QVBoxLayout" name="curveVerticalLayout"/>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+  <action name="actionNew_mask">
+   <property name="icon">
+    <iconset theme="document-new">
+     <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+   </property>
+   <property name="text">
+    <string>New mask</string>
+   </property>
+   <property name="toolTip">
+    <string>Create a new, empty mask</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionLoad_mask">
+   <property name="icon">
+    <iconset theme="document-open">
+     <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+   </property>
+   <property name="text">
+    <string>Load mask</string>
+   </property>
+   <property name="toolTip">
+    <string>Load a mask file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionSave_mask">
+   <property name="icon">
+    <iconset theme="document-save">
+     <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+   </property>
+   <property name="text">
+    <string>Save mask</string>
+   </property>
+   <property name="toolTip">
+    <string>Save the mask</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionSave_mask_as">
+   <property name="icon">
+    <iconset theme="document-save-as">
+     <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+   </property>
+   <property name="text">
+    <string>Save mask as...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save mask under a different file name</string>
+   </property>
+  </action>
+  <action name="actionUndo">
+   <property name="icon">
+    <iconset theme="edit-undo">
+     <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+   </property>
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="toolTip">
+    <string>Undo last operation</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="icon">
+    <iconset theme="edit-redo">
+     <normaloff>../../../../../../</normaloff>../../../../../../</iconset>
+   </property>
+   <property name="text">
+    <string>Redo</string>
+   </property>
+   <property name="toolTip">
+    <string>Redo last undone operation</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
+   </property>
+  </action>
+  <action name="actionMasking">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/mask.svg</normaloff>:/icons/mask.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Masking</string>
+   </property>
+   <property name="toolTip">
+    <string>Set masking mode</string>
+   </property>
+  </action>
+  <action name="actionUnmasking">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/unmask.svg</normaloff>:/icons/unmask.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Unmasking</string>
+   </property>
+   <property name="toolTip">
+    <string>Set unmasking mode</string>
+   </property>
+  </action>
+  <action name="actionFlipping">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/flipmask.svg</normaloff>:/icons/flipmask.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Flipping</string>
+   </property>
+   <property name="toolTip">
+    <string>Set mask flipping mode</string>
+   </property>
+  </action>
+  <action name="actionSelect_rectangle">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/selectrectangle.svg</normaloff>:/icons/selectrectangle.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Select a rectangle</string>
+   </property>
+   <property name="toolTip">
+    <string>Select a rectangle</string>
+   </property>
+  </action>
+  <action name="actionSelect_a_circle">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/selectcircle.svg</normaloff>:/icons/selectcircle.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Select a circle</string>
+   </property>
+   <property name="toolTip">
+    <string>Select a circle</string>
+   </property>
+  </action>
+  <action name="actionSelect_a_polygon">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/selectpolygon.svg</normaloff>:/icons/selectpolygon.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Select a polygon</string>
+   </property>
+   <property name="toolTip">
+    <string>Select a polygon</string>
+   </property>
+  </action>
+  <action name="actionSelect_free_hand">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/selectlasso.svg</normaloff>:/icons/selectlasso.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Select free-hand</string>
+   </property>
+   <property name="toolTip">
+    <string>Select a free-hand drawn area</string>
+   </property>
+  </action>
+  <action name="actionPixel_hunting">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../../../resource/icons/icons.qrc">
+     <normaloff>:/icons/pixelhunt.svg</normaloff>:/icons/pixelhunt.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Pixel hunting</string>
+   </property>
+   <property name="toolTip">
+    <string>Pixel-by-pixel selection</string>
+   </property>
+  </action>
+  <action name="actionQ_range_cursor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Q-range cursor</string>
+   </property>
+   <property name="toolTip">
+    <string>Enable the q-range cursor on the scattering curve</string>
+   </property>
+  </action>
+ </widget>
+ <tabstops>
+  <tabstop>newMaskToolButton</tabstop>
+  <tabstop>loadMaskToolButton</tabstop>
+  <tabstop>saveMaskToolButton</tabstop>
+  <tabstop>saveMaskAsToolButton</tabstop>
+  <tabstop>undoToolButton</tabstop>
+  <tabstop>redoToolButton</tabstop>
+  <tabstop>maskToolButton</tabstop>
+  <tabstop>unMaskToolButton</tabstop>
+  <tabstop>flipMaskToolButton</tabstop>
+  <tabstop>zoomModeToolButton</tabstop>
+  <tabstop>selectRectangleToolButton</tabstop>
+  <tabstop>selectCircleToolButton</tabstop>
+  <tabstop>selectPolygonToolButton</tabstop>
+  <tabstop>selectLassoToolButton</tabstop>
+  <tabstop>selectByPixelToolButton</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../../../resource/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>
