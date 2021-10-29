@@ -89,7 +89,7 @@ print(get_include())
 
 # update_languagespec()
 setup(name='cct', author='Andras Wacha',
-      author_email='awacha@gmail.com', url='http://github.com/awacha/cct',
+      author_email='awacha@gmail.com', url='http://gitlab.com/awacha/cct',
       description='CREDO Control Tool',
       packages=find_packages(),
       use_scm_version=True,

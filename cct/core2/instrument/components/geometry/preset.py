@@ -228,6 +228,10 @@ class GeometryPreset(QtCore.QObject):
         ):
             self._state['dist_sample_det'] = (self._state['dist_sample_det'], self._state['dist_sample_det.err'])
             del self._state['dist_sample_det.err']
+        try:
+            del self._state['dist_sample_det.err']
+        except KeyError:
+            pass
 
     def __getstate__(self):
         return self._state
