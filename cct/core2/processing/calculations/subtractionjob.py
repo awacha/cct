@@ -153,10 +153,10 @@ class SubtractionJob(BackgroundProcess):
             ex.header.maskname = f'{os.path.split(exposure.header.maskname)[-1]}-{os.path.split(bg.header.maskname)[-1]}'
             ex.mask = np.logical_and(exposure.mask, bg.mask)
         samplecurve_avg = self.h5io.readCurve(f'Samples/{self.samplename}/{distkey}/curve_averaged')
-        distcurve_avg = self.h5io.readCurve(f'Samples/{self.backgroundname}/{distkey}/curve_averaged')
+        bgcurve_avg = self.h5io.readCurve(f'Samples/{self.backgroundname}/{distkey}/curve_averaged')
         return ex, ex.radial_average(
             qbincenters=(self.qrangemethod, self.qcount), errorprop=self.errorprop, qerrorprop=self.qerrorprop), \
-               samplecurve_avg - factor * distcurve_avg
+               samplecurve_avg - factor * bgcurve_avg
 
     def main(self):
         if self.samplename is None:

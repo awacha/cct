@@ -134,19 +134,16 @@ class SummaryJob(BackgroundProcess):
         self.curves = None
         self.sendProgress('Loading exposures {}/{}'.format(0, len(self.headers)),
                           total=len(self.headers), current=0)
-        qrange = (self.qrangemethod, self.qcount)
         for i, h in enumerate(self.headers, start=0):
             if self.killSwitch.is_set():
                 raise BackgroundProcessError('Stop switch is set.')
             try:
                 ex = self.loader.loadExposure(self.prefix, h.fsn)
                 radavg = ex.radial_average(
-                    qbincenters=qrange,
+                    qbincenters=(self.qrangemethod, self.qcount),
                     errorprop=self.ierrorprop,
                     qerrorprop=self.qerrorprop,
                 )
-                if not isinstance(qrange, np.ndarray):
-                    qrange = radavg.q
                 curvearray = radavg.asArray()
                 if self.curves is None:
                     self.curves = np.empty(curvearray.shape + (len(self.headers),), curvearray.dtype) + np.nan
