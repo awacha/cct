@@ -393,6 +393,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         if not success:
             self._disconnectSampleMotors()
             self.movingFinished.emit(False, self._currentsample)
+            return
         if (self.sender() is self.xmotor()) and (self._movesampledirection == 'both'):
             try:
                 self.ymotor().moveTo(self.currentSample().positiony[0])
