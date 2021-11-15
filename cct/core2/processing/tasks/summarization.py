@@ -130,7 +130,8 @@ class Summarization(ProcessingTask):
                              outliermethod=self.settings.outliermethod,
                              outlierthreshold=self.settings.outlierthreshold,
                              cormatLogarithmic=self.settings.outlierlogcormat,
-                             qrange=None,  # ToDo
+                             qrangemethod=self.settings.qrangemethod,
+                             qcount=self.settings.qcount,
                              bigmemorymode=self.settings.bigmemorymode,
                              badfsns=self.settings.badfsns
                              )

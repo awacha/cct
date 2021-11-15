@@ -10,6 +10,7 @@ import numpy as np
 
 from .backgroundprocess import BackgroundProcess, Results, BackgroundProcessError, UserStopException
 from .outliertest import OutlierMethod, OutlierTest
+from ...dataclasses.exposure import QRangeMethod
 from ..h5io import ProcessingH5File
 from ..loader import Loader
 from ...algorithms.matrixaverager import ErrorPropagationMethod
@@ -63,6 +64,8 @@ class SummaryJob(BackgroundProcess):
     averagedExposure: Exposure
     averagedCurve: Curve
     reintegratedCurve: Curve
+    qcount: int
+    qrangemethod: QRangeMethod
 
     result: SummaryJobResults
 
@@ -72,7 +75,7 @@ class SummaryJob(BackgroundProcess):
                  prefix: str, fsnlist: List[int],
                  ierrorprop: ErrorPropagationMethod, qerrorprop: ErrorPropagationMethod,
                  outliermethod: OutlierMethod, outlierthreshold: float, cormatLogarithmic: bool,
-                 qrange: Optional[np.ndarray], bigmemorymode: bool, badfsns: List[int]):
+                 qrangemethod: QRangeMethod, qcount: int, bigmemorymode: bool, badfsns: List[int]):
         super().__init__(jobid, h5file, h5lock, stopEvent, messagequeue)
         self.loader = Loader(rootpath, eval2dsubpath, masksubpath, fsndigits)
         self.ierrorprop = ierrorprop
@@ -82,7 +85,8 @@ class SummaryJob(BackgroundProcess):
         self.outliermethod = outliermethod
         self.outlierthreshold = outlierthreshold
         self.cormatLogarithmic = cormatLogarithmic
-        self.qrange = qrange
+        self.qrangemethod = qrangemethod
+        self.qcount = qcount
         self.bigmemorymode = bigmemorymode
         self.result = SummaryJobResults(jobid)
         self.result.badfsns = set(badfsns)
@@ -130,7 +134,7 @@ class SummaryJob(BackgroundProcess):
         self.curves = None
         self.sendProgress('Loading exposures {}/{}'.format(0, len(self.headers)),
                           total=len(self.headers), current=0)
-        qrange = self.qrange
+        qrange = (self.qrangemethod, self.qcount)
         for i, h in enumerate(self.headers, start=0):
             if self.killSwitch.is_set():
                 raise BackgroundProcessError('Stop switch is set.')
@@ -141,7 +145,7 @@ class SummaryJob(BackgroundProcess):
                     errorprop=self.ierrorprop,
                     qerrorprop=self.qerrorprop,
                 )
-                if qrange is None:
+                if not isinstance(qrange, np.ndarray):
                     qrange = radavg.q
                 curvearray = radavg.asArray()
                 if self.curves is None:
@@ -236,7 +240,7 @@ class SummaryJob(BackgroundProcess):
                                            ierrorpropagation=self.ierrorprop,
                                            qerrorpropagation=self.qerrorprop)
         self.reintegratedCurve = self.averagedExposure.radial_average(
-            self.qrange, errorprop=self.ierrorprop,
+            (self.qrangemethod, self.qcount), errorprop=self.ierrorprop,
             qerrorprop=self.qerrorprop)
         self.result.time_averaging_curves = time.monotonic() - t1
         self.result.time_averaging = time.monotonic() - t0

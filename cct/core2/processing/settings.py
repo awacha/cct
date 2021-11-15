@@ -6,15 +6,16 @@ import multiprocessing.synchronize
 import numbers
 import os
 import re
-import appdirs
 from typing import Optional, Set, Iterable, List, Tuple, Final, Iterator, Union
 
+import appdirs
 import numpy as np
 from PyQt5 import QtCore
 
 from .calculations.outliertest import OutlierMethod
 from .h5io import ProcessingH5File
 from ..algorithms.matrixaverager import ErrorPropagationMethod
+from ..dataclasses.exposure import QRangeMethod
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -41,6 +42,8 @@ class ProcessingSettings(QtCore.QObject):
     h5lock: multiprocessing.synchronize.RLock
     badfsns: Set[int]
     fsnranges: List[Tuple[int, int]]
+    qrangemethod: QRangeMethod = QRangeMethod.Linear
+    qcount: int = 0  # 0 means the same number as pixels
 
     settingsChanged = QtCore.pyqtSignal()
     badfsnsChanged = QtCore.pyqtSignal()
@@ -73,23 +76,27 @@ class ProcessingSettings(QtCore.QObject):
                          'outlierthreshold': '1.5',
                          'logcorrmat': 'yes',
                          'bigmemorymode': 'no',
+                         'qrangemethod': QRangeMethod.Linear.name,
+                         'qrangecount': 0,
                          }
         if not cp.has_section('cpt4'):
             cp.add_section('cpt4')
         cpt4section = cp['cpt4']
-        self.eval2dsubpath=cpt4section.get('eval2dsubpath')
-        self.masksubpath=cpt4section.get('masksubpath')
-        self.fsndigits=cpt4section.getint('fsndigits')
-        self.prefix=cpt4section.get('prefix')
-        self.ierrorprop=ErrorPropagationMethod[cpt4section.get('ierrorprop')]
-        self.qerrorprop=ErrorPropagationMethod[cpt4section.get('qerrorprop')]
-        self.outliermethod=OutlierMethod(cpt4section.get('outliermethod'))
-        self.outlierthreshold=cpt4section.getfloat('outlierthreshold')
-        self.outlierlogcormat=cpt4section.getboolean('logcorrmat')
-        self.bigmemorymode=cpt4section.getboolean('bigmemorymode')
+        self.eval2dsubpath = cpt4section.get('eval2dsubpath')
+        self.masksubpath = cpt4section.get('masksubpath')
+        self.fsndigits = cpt4section.getint('fsndigits')
+        self.prefix = cpt4section.get('prefix')
+        self.ierrorprop = ErrorPropagationMethod[cpt4section.get('ierrorprop')]
+        self.qerrorprop = ErrorPropagationMethod[cpt4section.get('qerrorprop')]
+        self.outliermethod = OutlierMethod(cpt4section.get('outliermethod'))
+        self.outlierthreshold = cpt4section.getfloat('outlierthreshold')
+        self.outlierlogcormat = cpt4section.getboolean('logcorrmat')
+        self.bigmemorymode = cpt4section.getboolean('bigmemorymode')
+        self.qrangemethod = QRangeMethod[cpt4section.get('qrangemethod')]
+        self.qcount = cpt4section.getint('qrangecount')
 
     def saveDefaults(self):
-        cp=configparser.ConfigParser()
+        cp = configparser.ConfigParser()
         cp.read(os.path.join(appdirs.user_config_dir('cct'), 'cpt4.conf'))
         if not cp.has_section('cpt4'):
             cp.add_section('cpt4')
@@ -104,6 +111,8 @@ class ProcessingSettings(QtCore.QObject):
         cpt4section['outlierthreshold'] = str(self.outlierthreshold)
         cpt4section['logcorrmat'] = 'yes' if self.outlierlogcormat else 'no'
         cpt4section['bigmemorymode'] = 'yes' if self.bigmemorymode else 'no'
+        cpt4section['qrangecount'] = str(self.qcount)
+        cpt4section['qrangemethod'] = self.qrangemethod.name
         os.makedirs(appdirs.user_config_dir('cct'), exist_ok=True)
         with open(os.path.join(appdirs.user_config_dir('cct'), 'cpt4.conf'), 'wt') as f:
             cp.write(f)
@@ -183,6 +192,8 @@ class ProcessingSettings(QtCore.QObject):
                 ('outlierthreshold', 'processing', 'std_multiplier', float),
                 ('outlierlogcormat', 'processing', 'logcorrelmatrix', lambda val: val.upper().strip() == 'TRUE'),
                 ('fsnranges', 'io', 'fsnranges', parsefsnranges),
+                ('qrangemethod', 'processing', 'qrangemethod', lambda x: QRangeMethod[x]),
+                ('qcount', 'processing', 'qrangecount', int),
                 ('badfsns', 'io', 'badfsnsfile', self.loadBadFSNs),
             ]:
                 try:
@@ -255,6 +266,8 @@ class ProcessingSettings(QtCore.QObject):
                         ('outliermethod', 'processing', 'outliermethod', OutlierMethod),
                         ('outlierthreshold', 'processing', 'outlierthreshold', identity),
                         ('outlierlogcormat', 'processing', 'logcorrelmatrix', identity),
+                        ('qrangemethod', 'processing', 'qrangemethod', lambda x: QRangeMethod[x]),
+                        ('count', 'processing', 'qrangecount', int),
                     ]:
                         try:
                             setattr(self, attrname, typeconversion(grp[grpname].attrs[h5attrname]))
@@ -295,6 +308,8 @@ class ProcessingSettings(QtCore.QObject):
             processinggrp.attrs['outliermethod'] = self.outliermethod.value
             processinggrp.attrs['outlierthreshold'] = self.outlierthreshold
             processinggrp.attrs['logcorrelmatrix'] = self.outlierlogcormat
+            processinggrp.attrs['qrangemethod'] = self.qrangemethod.name
+            processinggrp.attrs['qrangecount'] = self.qcount
         logger.info(f'Saved settings to h5 file {self.h5io.filename}')
 
     @property

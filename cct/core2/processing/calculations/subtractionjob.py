@@ -11,7 +11,9 @@ import scipy.optimize
 
 from .backgroundprocess import BackgroundProcess, Results, BackgroundProcessError
 from ...dataclasses import Exposure, Curve
+from ...dataclasses.exposure import QRangeMethod
 from ...dataclasses.sample import Sample
+from ...algorithms.matrixaverager import ErrorPropagationMethod
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -46,17 +48,26 @@ class SubtractionJob(BackgroundProcess):
     factor: Tuple[float, float]
     interval: Tuple[float, float, int]
     result: SubtractionResult
+    qrangemethod: QRangeMethod
+    qcount: int
+    errorprop: ErrorPropagationMethod
+    qerrorprop: ErrorPropagationMethod
 
     def __init__(self, jobid: int, h5file: str, h5lock: multiprocessing.Lock, stopEvent: multiprocessing.Event,
                  messagequeue: multiprocessing.Queue, samplename: Optional[str], backgroundname: Optional[str],
                  scalingmode: SubtractionScalingMode, factor: Tuple[float, float], interval: Tuple[float, float, int],
-                 subtractedname: Optional[str]):
+                 subtractedname: Optional[str], qrangemethod: QRangeMethod, qcount: int,
+                 errorprop: ErrorPropagationMethod, qerrorprop: ErrorPropagationMethod):
         super().__init__(jobid, h5file, h5lock, stopEvent, messagequeue)
         self.samplename = samplename
         self.backgroundname = backgroundname
         self.scalingmode = scalingmode
         self.factor = factor
         self.interval = interval
+        self.qrangemethod = qrangemethod
+        self.qcount = qcount
+        self.errorprop = errorprop
+        self.qerrorprop = qerrorprop
         self.result = SubtractionResult(jobid=self.jobid)
         if subtractedname is None:
             self.result.subtractedname = f'{samplename}-{backgroundname if backgroundname is not None else "constant"}'
@@ -88,7 +99,9 @@ class SubtractionJob(BackgroundProcess):
         ex = Exposure(exposure.intensity - bglevel[0], exposure.header,
                       (exposure.uncertainty ** 2 + bglevel[1] ** 2) ** 0.5, exposure.mask)
         curve_avg = self.h5io.readCurve(f'Samples/{self.samplename}/{distkey}/curve_averaged')
-        return ex, ex.radial_average(), curve_avg - bglevel
+        return ex, ex.radial_average(
+            qbincenters=(self.qrangemethod, self.qcount), errorprop=self.errorprop, qerrorprop=self.qerrorprop), \
+               curve_avg - bglevel
 
     def subtractbackground(self, distkey: str) -> Tuple[Exposure, Curve, Curve]:
         exposure = self.h5io.readExposure(f'Samples/{self.samplename}/{distkey}')
@@ -141,7 +154,9 @@ class SubtractionJob(BackgroundProcess):
             ex.mask = np.logical_and(exposure.mask, bg.mask)
         samplecurve_avg = self.h5io.readCurve(f'Samples/{self.samplename}/{distkey}/curve_averaged')
         distcurve_avg = self.h5io.readCurve(f'Samples/{self.backgroundname}/{distkey}/curve_averaged')
-        return ex, ex.radial_average(), samplecurve_avg - factor * distcurve_avg
+        return ex, ex.radial_average(
+            qbincenters=(self.qrangemethod, self.qcount), errorprop=self.errorprop, qerrorprop=self.qerrorprop), \
+               samplecurve_avg - factor * distcurve_avg
 
     def main(self):
         if self.samplename is None:

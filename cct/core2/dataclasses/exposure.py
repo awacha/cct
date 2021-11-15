@@ -1,16 +1,25 @@
-from typing import Optional, Union, Tuple, Iterable
+import enum
 import logging
+from typing import Optional, Union, Tuple, Iterable
 
 import numpy as np
 
-from .curve import Curve
 from .azimuthalcurve import AzimuthalCurve
+from .curve import Curve
 from .header import Header
 from ..algorithms.matrixaverager import ErrorPropagationMethod, MatrixAverager
 from ..algorithms.radavg import radavg, autoq, azimavg
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+class QRangeMethod(enum.Enum):
+    """Methods for spacing q-bins"""
+    Linear = 1
+    Logarithmic = 0
+    Square = 2
+    Square_root = 3
 
 
 class Exposure:
@@ -34,14 +43,21 @@ class Exposure:
         self.uncertainty = uncertainty
         self.header = header
 
-    def radial_average(self, qbincenters: Optional[Union[np.ndarray, int]] = None,
-                       errorprop: ErrorPropagationMethod = ErrorPropagationMethod.Conservative,
-                       qerrorprop: ErrorPropagationMethod = ErrorPropagationMethod.Conservative) -> Curve:
+    def radial_average(self, qbincenters: Optional[Union[np.ndarray, int, Tuple[QRangeMethod, int]]] = None,
+                       errorprop: ErrorPropagationMethod = ErrorPropagationMethod.Gaussian,
+                       qerrorprop: ErrorPropagationMethod = ErrorPropagationMethod.Gaussian) -> Curve:
         if (qbincenters is None) or isinstance(qbincenters, int):
             qbincenters = autoq(
                 self.mask, self.header.wavelength[0], self.header.distance[0], self.header.pixelsize[0],
-                self.header.beamposrow[0], self.header.beamposcol[0], linspacing=True,
+                self.header.beamposrow[0], self.header.beamposcol[0], linspacing=1,
                 N=-1 if qbincenters is None else qbincenters)
+        elif isinstance(qbincenters, tuple) and (len(qbincenters) == 2) and isinstance(qbincenters[0], QRangeMethod):
+            qbincenters = autoq(
+                self.mask, self.header.wavelength[0], self.header.distance[0], self.header.pixelsize[0],
+                self.header.beamposrow[0], self.header.beamposcol[0], linspacing=qbincenters[0].value,
+                N=-1 if (qbincenters[1]<1) else qbincenters[1])
+        elif not isinstance(qbincenters, np.ndarray):
+            raise TypeError(f'Invalid type for parameter `qbincenters`: {type(qbincenters)}')
         q, intensity, uncertainty, quncertainty, binarea, pixel = radavg(
             self.intensity, self.uncertainty, self.mask,
             self.header.wavelength[0], self.header.wavelength[1],
@@ -117,7 +133,7 @@ class Exposure:
     def average(cls, exposures: Iterable["Exposure"], errorpropagation: ErrorPropagationMethod) -> "Exposure":
         avgintensity = MatrixAverager(errorpropagation)
         mask = None
-        headers=[]
+        headers = []
         for ex in exposures:
             assert ex.intensity is not None
             assert ex.uncertainty is not None

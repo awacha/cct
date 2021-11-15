@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>327</width>
-    <height>256</height>
+    <width>363</width>
+    <height>332</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,23 +18,7 @@
     <normaloff>:/icons/editconfig.svg</normaloff>:/icons/editconfig.svg</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="1">
-    <widget class="QDoubleSpinBox" name="outlierTestThresholdDoubleSpinBox"/>
-   </item>
-   <item row="5" column="1">
-    <widget class="QComboBox" name="intensityErrorPropagationComboBox"/>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Outlier test method:</string>
-     </property>
-     <property name="buddy">
-      <cstring>outlierTestMethodComboBox</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0">
+   <item row="6" column="0">
     <widget class="QLabel" name="label_3">
      <property name="text">
       <string>Abscissa error propagation method:</string>
@@ -44,47 +28,7 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>Intensity error propagation method:</string>
-     </property>
-     <property name="buddy">
-      <cstring>intensityErrorPropagationComboBox</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label_4">
-     <property name="text">
-      <string>Outlier test threshold:</string>
-     </property>
-     <property name="buddy">
-      <cstring>outlierTestThresholdDoubleSpinBox</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="1">
-    <widget class="QComboBox" name="qErrorPropagationComboBox"/>
-   </item>
-   <item row="3" column="0" colspan="2">
-    <widget class="QCheckBox" name="bigMemoryModeCheckBox">
-     <property name="text">
-      <string>Keep exposures in memory when averaging</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QComboBox" name="outlierTestMethodComboBox"/>
-   </item>
-   <item row="2" column="0" colspan="2">
-    <widget class="QCheckBox" name="logarithmicCorrelationMatrixCheckBox">
-     <property name="text">
-      <string>Logarithmic correlation matrix</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="0" colspan="2">
+   <item row="8" column="0" colspan="2">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <spacer name="horizontalSpacer">
@@ -114,21 +58,114 @@
         <string>Save settings</string>
        </property>
        <property name="icon">
-        <iconset theme="document-save"/>
+        <iconset theme="document-save">
+         <normaloff>.</normaloff>.</iconset>
        </property>
       </widget>
      </item>
     </layout>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Outlier test method:</string>
+     </property>
+     <property name="buddy">
+      <cstring>outlierTestMethodComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>Outlier test threshold:</string>
+     </property>
+     <property name="buddy">
+      <cstring>outlierTestThresholdDoubleSpinBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QComboBox" name="qErrorPropagationComboBox"/>
+   </item>
+   <item row="2" column="1">
+    <widget class="QComboBox" name="autoQScaleSpacingComboBox"/>
+   </item>
+   <item row="7" column="1">
+    <widget class="QComboBox" name="intensityErrorPropagationComboBox"/>
+   </item>
+   <item row="5" column="0" colspan="2">
+    <widget class="QCheckBox" name="bigMemoryModeCheckBox">
+     <property name="text">
+      <string>Keep exposures in memory when averaging</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QCheckBox" name="logarithmicCorrelationMatrixCheckBox">
+     <property name="text">
+      <string>Logarithmic correlation matrix</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QDoubleSpinBox" name="outlierTestThresholdDoubleSpinBox"/>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Intensity error propagation method:</string>
+     </property>
+     <property name="buddy">
+      <cstring>intensityErrorPropagationComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>q-scale spacing:</string>
+     </property>
+     <property name="buddy">
+      <cstring>autoQScaleSpacingComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="outlierTestMethodComboBox"/>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_6">
+     <property name="text">
+      <string>Number of q points:</string>
+     </property>
+     <property name="buddy">
+      <cstring>autoQLengthSpinBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QSpinBox" name="autoQLengthSpinBox">
+     <property name="specialValueText">
+      <string>Same as pixels</string>
+     </property>
+     <property name="maximum">
+      <number>999999999</number>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
  <tabstops>
   <tabstop>outlierTestMethodComboBox</tabstop>
   <tabstop>outlierTestThresholdDoubleSpinBox</tabstop>
+  <tabstop>autoQScaleSpacingComboBox</tabstop>
+  <tabstop>autoQLengthSpinBox</tabstop>
   <tabstop>logarithmicCorrelationMatrixCheckBox</tabstop>
   <tabstop>bigMemoryModeCheckBox</tabstop>
   <tabstop>qErrorPropagationComboBox</tabstop>
   <tabstop>intensityErrorPropagationComboBox</tabstop>
+  <tabstop>savePushButton</tabstop>
  </tabstops>
  <resources>
   <include location="../../resource/icons/icons.qrc"/>

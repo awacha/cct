@@ -4,7 +4,7 @@ from libc.math cimport sqrt, atan, sin, cos, M_PI, NAN, floor, HUGE_VAL, atan2, 
 from libc.stdint cimport uint32_t, uint8_t
 
 def autoq(uint8_t[:,:] mask, double wavelength, double distance, double pixelsize, double center_row, double center_col,
-          bint linspacing=True, Py_ssize_t N=-1):
+          int linspacing=True, Py_ssize_t N=-1):
     """Determine q-scale automatically
 
     Inputs:
@@ -13,7 +13,7 @@ def autoq(uint8_t[:,:] mask, double wavelength, double distance, double pixelsiz
         distance (double): sample-detector distance in mm
         pixelsize (double): pixel size in mm
         center_row, center_col (double): beam position in pixel (starting from 0)
-        linspacing (bool): if linear spacing is expected. Otherwise log10 spacing.
+        linspacing (int): q bin spacing. 1 = linear, 0 = logarithmic, 2 = square, 3 = square root
         N (Py_ssize_t): number of points. If nonpositive, auto-determined.
 
     Output: the q scale in a numpy vector.
@@ -38,10 +38,20 @@ def autoq(uint8_t[:,:] mask, double wavelength, double distance, double pixelsiz
     if N <= 0:
         N = <Py_ssize_t>(r2max**0.5 - r2min**0.5)+1
 
-    if linspacing:
+    if linspacing == 1:
         return np.linspace(qmin, qmax, N)
+    elif linspacing == 0:
+        # logarithmic spacing: log(q) is evenly spaced
+        return np.geomspace(qmin, qmax, N)  # or np.exp(np.linspace(np.log(qmin), np.log(qmax), N)
+    elif linspacing == 2:
+        # squared spacing: q^2 is evenly spaced
+        return np.sqrt(np.linspace(qmin**2, qmax**2, N))
+    elif linspacing == 3:
+        # square root spacing: sqrt(q) is evenly spaced
+        return (np.linspace(qmin**0.5, qmax**0.5, N))**2
     else:
-        return np.logspace(np.log10(qmin), np.log10(qmax), N)
+        raise ValueError(f'Invalid q spacing: {linspacing}')
+
 
 
 def radavg(double[:,:] data, double[:,:] error, uint8_t[:,:] mask,

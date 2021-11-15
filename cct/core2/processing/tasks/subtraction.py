@@ -219,7 +219,9 @@ class Subtraction(ProcessingTask):
         for i, sd in enumerate(self._data):
             self._submitTask(SubtractionJob.run, jobid=i, samplename=sd.samplename, backgroundname=sd.backgroundname,
                              scalingmode=sd.scalingmode, interval=sd.interval, factor=sd.factor,
-                             subtractedname=sd.subtractedname)
+                             subtractedname=sd.subtractedname, qrangemethod=self.settings.qrangemethod,
+                             qcount=self.settings.qcount, errorprop=self.settings.ierrorprop,
+                             qerrorprop=self.settings.qerrorprop)
 
     def onBackgroundTaskFinished(self, result: SubtractionResult):
         self._data[result.jobid].spinner = None
