@@ -355,15 +355,18 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             if windowstate[label]['shaded']:
                 logger.debug(f'Shading window {label}')
                 subwindow.showShaded()
-            if windowstate[label]['minimized']:
+            elif windowstate[label]['minimized']:
                 logger.debug(f'Minimizing window {label}')
                 subwindow.showMinimized()
-            if windowstate[label]['maximized']:
+            elif windowstate[label]['maximized']:
                 logger.debug(f'Maximizing window {label}')
                 subwindow.showMaximized()
-            if windowstate[label]['fullscreen']:
+            elif windowstate[label]['fullscreen']:
                 logger.debug(f'Setting window {label} full screen')
                 subwindow.showFullScreen()
+            elif not windowstate[label]['hidden']:
+                logger.debug(f'Showing window {label} as normal')
+                subwindow.showNormal()
             # update the state of the corresponding action
             try:
                 wi = [wi_ for wi_ in self.windowinfo if wi_.attribute == label][0]

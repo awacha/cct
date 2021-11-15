@@ -1,6 +1,10 @@
 from typing import Tuple, List
+import logging
 
 from .processingwindow import ProcessingWindow
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class ResultViewWindow(ProcessingWindow):
@@ -15,9 +19,13 @@ class ResultViewWindow(ProcessingWindow):
         super().__init__(**kwargs)
         self.project.resultItemChanged.connect(self._onResultItemChanged)
 
-    def _onResultItemChanged(self, samplename:str, distancekey:str):
+    def _onResultItemChanged(self, samplename: str, distancekey: str):
+        logger.debug(f'_onResultItemChanged in ResultViewWindow with resultitems {self.resultitems}')
         if (samplename, distancekey) in self.resultitems:
+            logging.debug(f'ACCEPTED _onResultItemChanged({samplename}, {distancekey})')
             self.onResultItemChanged(samplename, distancekey)
+        else:
+            logging.debug(f'SKIPPED _onResultItemChanged({samplename}, {distancekey})')
 
     def onResultItemChanged(self, samplename: str, distancekey: str):
         raise NotImplementedError

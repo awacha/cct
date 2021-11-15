@@ -166,7 +166,7 @@ class Summarization(ProcessingTask):
         self._data[i].lastfoundbadfsns = result.newbadfsns
         self.newbadfsns = self.newbadfsns.union(result.newbadfsns)
         self._data[i].statusmessage = 'Processing done'
-        self.itemChanged.emit(self._data[i].samplename, f'{self._data[i].distance:.2f}')
+        #self.itemChanged.emit(self._data[i].samplename, f'{self._data[i].distance:.2f}')
         self.dataChanged.emit(self.index(i, 0), self.index(i, self.columnCount()))
         self.itemChanged.emit(self._data[i].samplename, f'{self._data[i].distance:.2f}')
         super().onBackgroundTaskFinished(result)

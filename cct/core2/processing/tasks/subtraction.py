@@ -1,13 +1,12 @@
-import enum
-import multiprocessing
-import queue
-from typing import List, Any, Optional, Sequence, Tuple
+from typing import List, Any, Optional, Tuple
 import logging
+
+import logging
+from typing import List, Any, Optional, Tuple
 
 from PyQt5 import QtCore
 
-from .task import ProcessingTask, ProcessingStatus, ProcessingSettings
-from ..calculations.backgroundprocess import Message
+from .task import ProcessingTask, ProcessingSettings
 from ..calculations.subtractionjob import SubtractionScalingMode, SubtractionJob, SubtractionResult
 
 logger = logging.getLogger(__name__)
@@ -42,8 +41,10 @@ class SubtractionData:
     def subtractedname(self) -> str:
         return f'{self.samplename}-{self.backgroundname}'
 
+
 class Subtraction(ProcessingTask):
     _data: List[SubtractionData] = None
+    itemChanged = QtCore.pyqtSignal(str, str)
 
     def __init__(self, processing: "Processing", settings: ProcessingSettings):
         self._data = []
@@ -222,6 +223,8 @@ class Subtraction(ProcessingTask):
 
     def onBackgroundTaskFinished(self, result: SubtractionResult):
         self._data[result.jobid].spinner = None
+        for distkey in result.distancekeys:
+            self.itemChanged.emit(self._data[result.jobid].subtractedname, distkey)
 
     def onAllBackgroundTasksFinished(self):
         pass

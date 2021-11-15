@@ -1,17 +1,18 @@
-from typing import Dict, List, Any, Optional
 import logging
+from collections import namedtuple
+from typing import Dict, List, Any, Optional
+
+import numpy as np
+from PyQt5 import QtCore, QtGui
 
 from .task import ProcessingTask
-from ..settings import ProcessingSettings
 from ..calculations.mergingjob import MergingResult, MergingJob
-from collections import namedtuple
-from PyQt5 import QtCore, QtGui
-import numpy as np
+from ..settings import ProcessingSettings
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-MergeParameters=namedtuple('MergeParameters', ['qmin', 'qmax'])
+MergeParameters = namedtuple('MergeParameters', ['qmin', 'qmax'])
 
 
 class MergingData:
@@ -35,12 +36,13 @@ class MergingData:
 class Merging(ProcessingTask):
     _data: List[MergingData]
     spinnerTimer: Optional[QtCore.QTimer]
-    
-    def __init__(self, processing: "Processing", settings:ProcessingSettings):
-        self._data=[]
+    itemChanged = QtCore.pyqtSignal(str, str)
+
+    def __init__(self, processing: "Processing", settings: ProcessingSettings):
+        self._data = []
         super().__init__(processing, settings)
         self.reload()
-        
+
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         if not parent.isValid():
             # 1st level item: sample name
@@ -50,17 +52,18 @@ class Merging(ProcessingTask):
             return len(self._data[parent.row()])
         else:
             return 0
-    
+
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return 3
-#        if not parent.isValid():
-#            # 1st level item: sample name
-#            return 1
-#        elif not parent.parent().isValid():
-#            # 2nd level item: distance key
-#            return 3
-#        else:
-#            return 0
+
+    #        if not parent.isValid():
+    #            # 1st level item: sample name
+    #            return 1
+    #        elif not parent.parent().isValid():
+    #            # 2nd level item: distance key
+    #            return 3
+    #        else:
+    #            return 0
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         if not child.isValid():
@@ -88,14 +91,15 @@ class Merging(ProcessingTask):
             elif (role == QtCore.Qt.TextColorRole) and (md.errormessage is not None):
                 return QtGui.QColor('black')
             elif (index.column() == 0) and (role == QtCore.Qt.DecorationRole):
-                return QtGui.QIcon(QtGui.QPixmap(f':/icons/spinner_{md.spinner % 12:02d}.svg')) if md.spinner is not None else None
+                return QtGui.QIcon(
+                    QtGui.QPixmap(f':/icons/spinner_{md.spinner % 12:02d}.svg')) if md.spinner is not None else None
             elif (role == QtCore.Qt.ToolTipRole) and (md.errormessage is not None):
                 return md.traceback
 
         elif not index.parent().parent().isValid():
             # 2nd level index: distance key
             md = self._data[index.parent().row()]
-            distkey = list(sorted(md.intervals.keys(), key=lambda k:float(k)))[index.row()]
+            distkey = list(sorted(md.intervals.keys(), key=lambda k: float(k)))[index.row()]
             if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
                 return distkey
             elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
@@ -130,14 +134,14 @@ class Merging(ProcessingTask):
             return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
         else:
             # 2nd level index: qmin & qmax editable
-            assert index.column() in [1,2]
+            assert index.column() in [1, 2]
             return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if not index.parent().isValid():
             raise ValueError('Top-level items are not editable')
         md = self._data[index.parent().row()]
-        distkey = sorted(md.intervals.keys(), key=lambda k:float(k))[index.row()]
+        distkey = sorted(md.intervals.keys(), key=lambda k: float(k))[index.row()]
         qmin, qmax = md.intervals[distkey]
         if index.column() == 1:
             md.intervals[distkey] = MergeParameters(float(value), qmax)
@@ -145,10 +149,11 @@ class Merging(ProcessingTask):
             md.intervals[distkey] = MergeParameters(qmin, float(value))
         else:
             return False
-        self.dataChanged.emit(self.index(index.row(), 0, index.parent()), self.index(index.row(), self.columnCount(index.parent()), index.parent()))
+        self.dataChanged.emit(self.index(index.row(), 0, index.parent()),
+                              self.index(index.row(), self.columnCount(index.parent()), index.parent()))
         self.save()
         return True
-    
+
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
         if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
             return ['Sample/Distance', 'qmin', 'qmax', 'status'][section]
@@ -178,7 +183,8 @@ class Merging(ProcessingTask):
             md.statusmessage = 'Queued...'
             md.traceback = None
             md.spinner = 0
-            self._submitTask(MergingJob.run, i, samplename=md.samplename, distancekeys=sorted(md.intervals.keys()), intervals=[md.intervals[k] for k in sorted(md.intervals)])
+            self._submitTask(MergingJob.run, i, samplename=md.samplename, distancekeys=sorted(md.intervals.keys()),
+                             intervals=[md.intervals[k] for k in sorted(md.intervals)])
         self.dataChanged.emit(
             self.index(0, 0, QtCore.QModelIndex()),
             self.index(
@@ -191,7 +197,7 @@ class Merging(ProcessingTask):
         self.spinnerTimer.start(200)
 
     def onBackgroundTaskProgress(self, jobid: Any, total: int, current: int, message: str):
-        self._data[jobid].statusmessage=message
+        self._data[jobid].statusmessage = message
         self.dataChanged.emit(self.index(jobid, 0, QtCore.QModelIndex()),
                               self.index(jobid, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
@@ -199,6 +205,7 @@ class Merging(ProcessingTask):
         self._data[result.jobid].spinner = None
         self.dataChanged.emit(self.index(result.jobid, 0, QtCore.QModelIndex()),
                               self.index(result.jobid, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
+        self.itemChanged.emit(self._data[result.jobid].samplename, 'merged')
 
     def onAllBackgroundTasksFinished(self):
         for md in self._data:
@@ -212,7 +219,7 @@ class Merging(ProcessingTask):
         for md in self._data:
             if md.spinner is not None:
                 md.spinner += 1
-        self.dataChanged.emit(self.index(0,0, QtCore.QModelIndex()),
+        self.dataChanged.emit(self.index(0, 0, QtCore.QModelIndex()),
                               self.index(self.rowCount(QtCore.QModelIndex()), 0, QtCore.QModelIndex()))
         if all([md.spinner is None for md in self._data]):
             self.spinnerTimer.stop()
@@ -223,7 +230,7 @@ class Merging(ProcessingTask):
         with self.settings.h5io.writer('Samples') as grp:
             for md in self._data:
                 grp.require_group(md.samplename)
-                mg=grp[md.samplename].require_group('merged')
+                mg = grp[md.samplename].require_group('merged')
                 scgrp = mg.require_group('scaled_curves')
                 for name in scgrp:
                     if name not in md.intervals:
@@ -243,7 +250,7 @@ class Merging(ProcessingTask):
                     continue
                 md = MergingData(samplename)
                 md.intervals = {
-                    distkey:MergeParameters(
+                    distkey: MergeParameters(
                         grp[f'{samplename}/merged/scaled_curves/{distkey}'].attrs['qmin'],
                         grp[f'{samplename}/merged/scaled_curves/{distkey}'].attrs['qmax'],
                     ) for distkey in grp[f'{samplename}/merged/scaled_curves']

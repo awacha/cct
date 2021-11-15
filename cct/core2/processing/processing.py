@@ -50,9 +50,11 @@ class Processing(QtCore.QAbstractItemModel):
         self.summarization.itemChanged.connect(self.resultItemChanged)
         self.subtraction = Subtraction(self, self.settings)
         self.subtraction.finished.connect(self.onTaskFinished)
+        self.subtraction.itemChanged.connect(self.resultItemChanged)
         self.results = ResultsModel(self, self.settings)
         self.merging = Merging(self, self.settings)
         self.merging.finished.connect(self.onTaskFinished)
+        self.merging.itemChanged.connect(self.resultItemChanged)
         self.settings.badfsnsChanged.connect(self.onBadFSNsChanged)
 
     def onBadFSNsChanged(self):
