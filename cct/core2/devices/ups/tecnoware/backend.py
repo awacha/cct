@@ -382,7 +382,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                                     ('autostartenabled', 'r'),
                                     ('bypassenabled', 'o'),
                                     ('warningalarm', 'a'),
-                                    ('batteryprotectionenabled', 's'),
+                                    ('batteryprotectenabled', 's'),
                                     ('convertermodeenabled', 'v'),
                                     ('batteryopenstatuscheckenabled', 'd'),
                                     ('bypassforbiddingenabled', 'f'),
