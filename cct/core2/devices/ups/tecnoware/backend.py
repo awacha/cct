@@ -347,7 +347,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                                    'batteryvoltage', 'temperature']:
                 self.updateVariable(f'lastfault.{floatparameter}',
                                     safe_float(m[floatparameter]))
-            for boolparameter in ['dctodc_on', 'pfc_on', 'inverter_on', 'inputrelay_on', 'outputrealy_on']:
+            for boolparameter in ['dctodc_on', 'pfc_on', 'inverter_on', 'inputrelay_on', 'outputrelay_on']:
                 self.updateVariable(f'lastfault.{boolparameter}', bool(int(m[boolparameter])))
         elif (m := self.re_warningstatus.match(message)) and (sentmessage == b'QWS\r'):
             self.updateVariable('warning.batteryopen', m['status'][0:1] == b'1')
