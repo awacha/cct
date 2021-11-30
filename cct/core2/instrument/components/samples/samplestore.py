@@ -35,11 +35,15 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     movingToSample = QtCore.pyqtSignal(str, str, float, float,
                                        float)  # sample, motor name, motor position, start position, end position
     movingFinished = QtCore.pyqtSignal(bool, str)  # success, sample
+    sortedmodel: QtCore.QSortFilterProxyModel
 
     def __init__(self, **kwargs):
         self._samples = []
         super().__init__(**kwargs)
         self._currentsample = None
+        self.sortedmodel = QtCore.QSortFilterProxyModel()
+        self.sortedmodel.setSourceModel(self)
+        self.sortedmodel.sort(0, QtCore.Qt.AscendingOrder)
         # self.loadFromConfig()
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
