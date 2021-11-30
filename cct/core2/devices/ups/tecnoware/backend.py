@@ -238,7 +238,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                             re_optional_float('bypassfrequency_low', 2, 1))
     re_flags = re.compile(br'\((?:E(?P<enabled>[pbroasvdftim]*))?(?:D(?P<disabled>[pbroasvdftim]*))?')
     re_flags2 = re.compile(
-        br'\((?P<thdisetting>\d)(?P<standardmodelsetting>\d)(?P<eepromversion>\d)(?P<maincapacityovertempcounter>\d)]')
+        br'\((?P<thdisetting>\d)(?P<standardmodelsetting>\d)(?P<eepromversion>\d)(?P<maincapacityovertempcounter>\d)')
 
     def _query(self, variablename: str):
         if variablename == 'protocolID':
