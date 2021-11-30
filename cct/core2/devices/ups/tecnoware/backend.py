@@ -214,7 +214,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
         #        self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
-        if (m := re.match(br'\(PI\s+(?P<protocolID>\d{2})', message)) and (sentmessage == b'QPI\r'):
+        if (m := re.match(br'\(PI\s*(?P<protocolID>\d{2})', message)) and (sentmessage == b'QPI\r'):
             self.updateVariable('protocolid', int(m['protocolid']))
         elif (m := re.match(
                 br'\((?P<modelname>(\w|#){15}) '
