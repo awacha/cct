@@ -218,10 +218,10 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                             re_optional_float('negativeBUSvoltage', 3, 1) + b' ' +
                             re_optional_float('batteryvoltage', 3, 1) + b' ' +
                             re_optional_float('temperature', 3, 1) + b' ' +
-                            br'(?P<dctodc_on>[01]) ' +
-                            br'(?P<pfc_on>[01]) ' +
-                            br'(?P<inverter_on>[01]) ' +
-                            br'(?P<inputrelay_on>[01]) ' +
+                            br'(?P<dctodc_on>[01])' +
+                            br'(?P<pfc_on>[01])' +
+                            br'(?P<inverter_on>[01])' +
+                            br'(?P<inputrelay_on>[01])' +
                             br'(?P<outputrelay_on>[01])')
     re_warningstatus = re.compile(br'\((?P<status>[01]{64})')
     re_upsmode = re.compile(br'\((?P<upsmode>[PSYLBTFECD])')
