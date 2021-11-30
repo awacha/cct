@@ -19,11 +19,11 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
         self.transmissionTreeView.setModel(self.instrument.transmission)
-        self.sampleListView.setModel(self.instrument.samplestore)
+        self.sampleListView.setModel(self.instrument.samplestore.sortedmodel)
         self.addSamplesPushButton.clicked.connect(self.onAddSamplesClicked)
         self.removeSamplesPushButton.clicked.connect(self.onRemoveSamplesClicked)
         self.clearSampleListPushButton.clicked.connect(self.onClearTransmissionList)
-        self.emptySampleComboBox.setModel(self.instrument.samplestore)
+        self.emptySampleComboBox.setModel(self.instrument.samplestore.sortedmodel)
         self.emptySampleComboBox.setModelColumn(0)
         self.startStopPushButton.clicked.connect(self.onStartStopClicked)
         self.sortSamplesByNamePushButton.clicked.connect(self.sortSamplesByName)
