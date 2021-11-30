@@ -178,6 +178,15 @@ class DeviceBackend:
         except Exception as exc:
             self.error(f'Connection error to device: {repr(exc)}')
             self.messageToFrontend('end', expected=False)
+        # flush the incoming stream: remove residual data
+        done, pending = await asyncio.wait(
+            [asyncio.create_task(self.streamreader.read(), name='flush'),
+             asyncio.create_task(asyncio.sleep(0.1), name='sleep')], return_when=asyncio.FIRST_COMPLETED)
+        for donetask in done:
+            if donetask.get_name() == 'flush':
+                self.debug(f'Flushed input queue: {len(donetask.result()):d} bytes.')
+        for task in pending:
+            task.cancel()
         name2coro = {'processFrontendMessages': self.processFrontendMessages,
                      'hardwareSender': self.hardwareSender,
                      'hardwareReceiver': self.hardwareReceiver,
