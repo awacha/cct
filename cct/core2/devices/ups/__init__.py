@@ -1,1 +1,1 @@
-from . import generic, keen800
+from . import generic, keen800, tecnoware

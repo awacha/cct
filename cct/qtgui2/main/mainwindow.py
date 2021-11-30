@@ -22,6 +22,7 @@ from ..devices.peristalticpump.leadfluid import LeadFluid_BT100S
 from ..devices.pilatus.pilatus import PilatusDetectorUI
 from ..devices.thermometer.se521 import SE521Window
 from ..devices.ups.keen800 import Keen80UPS
+from ..devices.ups.tecnoware import TecnowareUPS
 from ..listing.headerview import HeaderView
 from ..listing.scanview import ScanViewer
 from ..measurement.monitor import MonitorMeasurement
@@ -89,6 +90,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionBeam_Monitor': MonitorMeasurement,
         'actionKeen800UPS': Keen80UPS,
         'actionPeristaltic_pump': LeadFluid_BT100S,
+        'actionTecnowareUPS': TecnowareUPS,  # ToDo: group similar instruments
 
     }
     _windows: Dict[str, QtWidgets.QWidget]

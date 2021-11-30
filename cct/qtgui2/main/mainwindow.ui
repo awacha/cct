@@ -252,7 +252,7 @@
      <x>0</x>
      <y>0</y>
      <width>1679</width>
-     <height>30</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -366,6 +366,7 @@
    <addaction name="actionThermometer"/>
    <addaction name="actionPeristaltic_pump"/>
    <addaction name="actionKeen800UPS"/>
+   <addaction name="actionTecnowareUPS"/>
    <addaction name="actionSensors"/>
    <addaction name="separator"/>
    <addaction name="actionScan"/>
@@ -832,6 +833,18 @@
    </property>
    <property name="toolTip">
     <string>Open the peristaltic pump control</string>
+   </property>
+  </action>
+  <action name="actionTecnowareUPS">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/ups.svg</normaloff>:/icons/ups.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Tecnoware UPS</string>
+   </property>
+   <property name="toolTip">
+    <string>Tecnoware UPS</string>
    </property>
   </action>
  </widget>

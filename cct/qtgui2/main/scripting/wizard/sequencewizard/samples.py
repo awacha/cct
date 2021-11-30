@@ -167,6 +167,7 @@ class Model(QtCore.QAbstractItemModel):
             self.index(len(self._data), 2, QtCore.QModelIndex())
         )
 
+
 class SamplesPage(QtWidgets.QWizardPage, Ui_WizardPage):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -175,7 +176,7 @@ class SamplesPage(QtWidgets.QWizardPage, Ui_WizardPage):
     def setupUi(self, WizardPage):
         super().setupUi(WizardPage)
         instrument = Instrument.instance()
-        self.sampleListView.setModel(instrument.samplestore)
+        self.sampleListView.setModel(instrument.samplestore.sortedmodel)
         self.sampleListView.setSelectionModel(QtCore.QItemSelectionModel(self.sampleListView.model(), self.sampleListView))
         self.exposureTreeView.setModel(Model())
         self.exposureTreeView.setSelectionModel(QtCore.QItemSelectionModel(self.exposureTreeView.model(), self.exposureTreeView))

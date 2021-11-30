@@ -9,15 +9,16 @@ logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Keen80UPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicenames = ['keen800']
+class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+    required_devicenames = ['tecnowareevodspplus']
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'Keen800'][0]
+        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'tecnowareevodspplus'][0]
+        self.treeView.setModel(ups)
         for variable in ups.keys():
             try:
                 self.onVariableChanged(variable, ups[variable], ups[variable])
@@ -26,7 +27,7 @@ class Keen80UPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         logger.debug(f'{name}: {prevvalue} -> {newvalue}')
-        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'Keen800'][0]
+        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'tecnowareevodspplus'][0]
         if name == '__status__':
             pass
         elif name == '__auxstatus__':

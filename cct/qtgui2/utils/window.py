@@ -1,4 +1,5 @@
 import logging
+import traceback
 from typing import List, Optional, Any, Tuple, final, Union
 
 from PyQt5 import QtWidgets, QtGui
@@ -8,6 +9,7 @@ from ...core2.devices.device.telemetry import TelemetryInformation
 from ...core2.instrument.components.auth import Privilege
 from ...core2.instrument.components.motors import Motor, MotorRole, MotorDirection
 from ...core2.instrument.instrument import Instrument
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -50,12 +52,13 @@ class WindowRequiresDevices:
 
     :ivar required_devicenames: list of device names which are required for
     """
-    connect_all_devices: bool=False  # regardless of requirements, always connect all available devices
-    connect_all_motors: bool=False  # regardless of requirements, always connect all available motors
+    connect_all_devices: bool = False  # regardless of requirements, always connect all available devices
+    connect_all_motors: bool = False  # regardless of requirements, always connect all available motors
     required_devicenames: Optional[List[str]] = None  # list of the names of required devices
     required_devicetypes: Optional[
         List[str]] = None  # list of required device types: at least one device of each type must be present
-    required_motors: Optional[List[Tuple[MotorRole, MotorDirection]]] = None  # list of required motor roles and directions
+    required_motors: Optional[
+        List[Tuple[MotorRole, MotorDirection]]] = None  # list of required motor roles and directions
     required_privileges: Optional[List[Privilege]] = None  # list of required privileges
 
     _idle: bool = True  # True if the widget is 'idle'. If False, the user will be asked for confirmation for closing the widget
@@ -128,7 +131,8 @@ class WindowRequiresDevices:
                 return False
         for motrole, motdir in required_motors:
             if not [m for m in instrument.motors if (m.role == motrole) and (m.direction == motdir) and m.isOnline()]:
-                logger.debug(f'Cannot instantiate {cls.__name__}: no motors with role {motrole} and direction {motdir} available')
+                logger.debug(
+                    f'Cannot instantiate {cls.__name__}: no motors with role {motrole} and direction {motdir} available')
                 return False
         for priv in required_privileges:
             if not instrument.auth.hasPrivilege(priv):
@@ -256,12 +260,16 @@ class WindowRequiresDevices:
     @final
     def _onDeviceAdded(self, devicename: str):
         device = self.instrument.devicemanager[devicename]
-        if (devicename in self.required_devicenames) or self.connect_all_devices  or (device.devicetype in self.required_devicetypes):
+        if (device.devicename in self.required_devicenames) or self.connect_all_devices or (
+                device.devicetype in self.required_devicetypes):
             device = self.instrument.devicemanager[devicename]
             self._disconnectDevice(device)
             self._connectDevice(device)
             self.setSensitive(None)
-        self.onDeviceAdded(devicename)
+        try:
+            self.onDeviceAdded(devicename)
+        except Exception as exc:
+            logger.critical(f'Exception in callback onDeviceAdded(): {exc}' + traceback.format_exc())
 
     def onDeviceAdded(self, devicename: str):
         pass
