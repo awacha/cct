@@ -237,7 +237,8 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                             re_optional_float('bypassfrequency_high', 2, 1) + b' ' +
                             re_optional_float('bypassfrequency_low', 2, 1))
     re_flags = re.compile(br'\((?:E(?P<enabled>[pbroasvdftim]*))?(?:D(?P<disabled>[pbroasvdftim]*))?')
-    re_flags2 = re.compile(br'\(')
+    re_flags2 = re.compile(
+        br'\((?P<thdisetting>\d)(?P<standardmodelsetting>\d)(?P<eepromversion>\d)(?P<maincapacityovertempcounter>\d)]')
 
     def _query(self, variablename: str):
         if variablename == 'protocolID':
@@ -397,9 +398,8 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                 else:
                     raise RuntimeError(f'Flag {flagname} (short name {short}) neither enabled nor disabled')
         elif (m := self.re_flags2.match(message)) and (sentmessage == b'QFLAG2\r'):
-            # ToDo: the documentation on the protocol is not clear enough, testing is needed
-            #            self.updateVariable('', m[''])
-            pass
+            for group in m.groupdict():
+                self.updateVariable('flag.'+group, int(m[group]))
         elif (m := re.match(br'\(VERFW:(?P<firmwareversion>.*)', message)) and (sentmessage == b'QVFW\r'):
             self.updateVariable('firmwareversion', m['firmwareversion'].decode('utf-8').strip())
         elif (m := re.match(br'\((?P<hardwareversion>[a-zA-Z0-9]{14})', message)) and (sentmessage == b'QID\r'):
