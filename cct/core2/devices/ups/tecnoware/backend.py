@@ -172,6 +172,73 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
 
     ]
 
+    re_protocolid = re.compile(br'\(PI\s*(?P<protocolID>\d{2})')
+    re_modelinfo = re.compile(
+                br'\((?P<modelname>(\w|#){15}) '
+                br'(?P<ratedVA>(\d|#){7}) '
+                br'(?P<powerfactor>\d{2}) '
+                br'(?P<inputphasecount>\d)/(?P<outputphasecount>\d) '
+                br'(?P<nominalinputvoltage>\d{3}) '
+                br'(?P<nominaloutputvoltage>\d{3}) '
+                br'(?P<batterycount>\d{2}) '
+                br'(?P<nominalbatteryvoltage>\d\d\.\d)')
+    re_generalinfo = re.compile(
+        br'\(' + re_optional_float('inputvoltage', 3, 1) + b' ' +
+        re_optional_float('inputfrequency', 2, 1) + b' ' +
+        re_optional_float('outputvoltage', 3, 1) + b' ' +
+        re_optional_float('outputfrequency', 2, 1) + b' ' +
+        re_optional_float('outputcurrent', 3, 1) + b' ' +
+        re_optional_float('outputloadpercentage', 3, 0) + b' ' +
+        re_optional_float('positiveBUSvoltage', 3, 1) + b' ' +
+        re_optional_float('negativeBUSvoltage', 2, 1) + b' ' +
+        re_optional_float('batteryvoltage', 3, 1) + b' ' +
+        br'---\.- ' +
+        re_optional_float('temperature', 3, 1) + b' ' +
+        br'(?P<upstype>[01]{2})' +
+        br'(?P<utilityfail>[01])' +
+        br'(?P<batterylow>[01])' +
+        br'(?P<bypassactive>[01])' +
+        br'(?P<upsfailed>[01])' +
+        br'(?P<epo>[01])' +
+        br'(?P<testinprogress>[01])' +
+        br'(?P<shutdownactive>[01])' +
+        br'(?P<battery_silence>[01])' +
+        br'(?P<battery_test_failed>[01])' +
+        br'(?P<battery_test_ok>[01])'
+    )
+    re_ok = re.compile(br'\(OK')
+    re_faultstatus = re.compile(br'\((?P<type>[0-9a-f]{2}) ' +
+                            re_optional_float('inputvoltage', 3, 1) + b' ' +
+                            re_optional_float('inputfrequency', 2, 1) + b' ' +
+                            re_optional_float('outputvoltage', 3, 1) + b' ' +
+                            re_optional_float('outputfrequency', 2, 1) + b' ' +
+                            re_optional_float('outputloadpercentage', 3, 0) + b' ' +
+                            re_optional_float('outputcurrent', 3, 1) + b' ' +
+                            re_optional_float('positiveBUSvoltage', 3, 1) + b' ' +
+                            re_optional_float('negativeBUSvoltage', 3, 1) + b' ' +
+                            re_optional_float('batteryvoltage', 3, 1) + b' ' +
+                            re_optional_float('temperature', 3, 1) + b' ' +
+                            br'(?P<dctodc_on>[01]) ' +
+                            br'(?P<pfc_on>[01]) ' +
+                            br'(?P<inverter_on>[01]) ' +
+                            br'(?P<inputrelay_on>[01]) ' +
+                            br'(?P<outputrelay_on>[01])')
+    re_warningstatus = re.compile(br'\((?P<status>[01]{64})')
+    re_upsmode = re.compile(br'\((?P<upsmode>[PSYLBTFECD])')
+    re_ratings = re.compile(br'\(' +
+                            re_optional_float('ratedvoltage', 3, 1) + b' ' +
+                            re_optional_float('ratedcurrent', 3, 0) + b' ' +
+                            re_optional_float('ratedbatteryvoltage', 3, 1) + b' ' +
+                            re_optional_float('ratedfrequency', 2, 1))
+    re_bypassvoltage = re.compile(br'\(' +
+                            re_optional_float('bypassvoltage_high', 3, 0) + b' ' +
+                            re_optional_float('bypassvoltage_low', 3, 0))
+    re_bypassfrequency = re.compile(br'\(' +
+                            re_optional_float('bypassfrequency_high', 2, 1) + b' ' +
+                            re_optional_float('bypassfrequency_low', 2, 1))
+    re_flags = re.compile(br'\((?:E(?P<enabled>[pbroasvdftim]*))?(?:D(?P<disabled>[pbroasvdftim]*))?')
+    re_flags2 = re.compile(br'\(')
+
     def _query(self, variablename: str):
         if variablename == 'protocolID':
             self.enqueueHardwareMessage(b'QPI\r')
@@ -214,17 +281,9 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
         #        self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
-        if (m := re.match(br'\(PI\s*(?P<protocolID>\d{2})', message)) and (sentmessage == b'QPI\r'):
+        if (m := self.re_protocolid.match(message)) and (sentmessage == b'QPI\r'):
             self.updateVariable('protocolID', int(m['protocolID']))
-        elif (m := re.match(
-                br'\((?P<modelname>(\w|#){15}) '
-                br'(?P<ratedVA>(\d|#){7}) '
-                br'(?P<powerfactor>\d{2}) '
-                br'(?P<inputphasecount>\d)/(?P<outputphasecount>\d) '
-                br'(?P<nominalinputvoltage>\d{3}) '
-                br'(?P<nominaloutputvoltage>\d{3}) '
-                br'(?P<batterycount>\d{2}) '
-                br'(?P<nominalbatteryvoltage>\d\d\.\d)', message)) and (sentmessage == b'QMD\r'):
+        elif (m := self.re_modelinfo.match(message)) and (sentmessage == b'QMD\r'):
             self.updateVariable('modelname', m['modelname'].decode('utf-8').replace('#', ''))
             self.updateVariable('ratedVA', int(m['ratedVA'].decode('utf-8').replace('#', '')))
             self.updateVariable('powerfactor', int(m['powerfactor']) / 100.)
@@ -234,28 +293,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
             self.updateVariable('nominaloutputvoltage', float(m['nominaloutputvoltage']))
             self.updateVariable('batterycount', int(m['batterycount']))
             self.updateVariable('nominalbatteryvoltage', float(m['nominalbatteryvoltage']))
-        elif (m := re.match(br'\(' + re_optional_float('inputvoltage', 3, 1) + b' ' +
-                            re_optional_float('inputfrequency', 2, 1) + b' ' +
-                            re_optional_float('outputvoltage', 3, 1) + b' ' +
-                            re_optional_float('outputfrequency', 2, 1) + b' ' +
-                            re_optional_float('outputcurrent', 3, 1) + b' ' +
-                            re_optional_float('outputloadpercentage', 3, 0) + b' ' +
-                            re_optional_float('positiveBUSvoltage', 3, 1) + b' ' +
-                            re_optional_float('negativeBUSvoltage', 2, 1) + b' ' +
-                            re_optional_float('batteryvoltage', 3, 1) + b' ' +
-                            br'---\.- ' +
-                            re_optional_float('temperature', 3, 1) + b' ' +
-                            br'(?P<upstype>[01]{2})'
-                            br'(?P<utilityfail>[01])'
-                            br'(?P<batterylow>[01])'
-                            br'(?P<bypassactive>[01])'
-                            br'(?P<upsfailed>[01])'
-                            br'(?P<epo>[01])'
-                            br'(?P<testinprogress>[01])'
-                            br'(?P<shutdownactive>[01])'
-                            br'(?P<battery_silence>[01])'
-                            br'(?P<battery_test_failed>[01])'
-                            br'(?P<battery_test_ok>[01])', message)) and (sentmessage == b'QGS\r'):
+        elif (m := self.re_generalinfo.match(message)) and (sentmessage == b'QGS\r'):
             for floatparam in ['inputvoltage', 'inputfrequency', 'outputvoltage', 'outputfrequency',
                                'outputcurrent', 'outputloadpercentage', 'positiveBUSvoltage',
                                'negativeBUSvoltage', 'batteryvoltage', 'temperature']:
@@ -271,7 +309,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                 self.updateVariable('upstype', 'on-line')
             else:
                 self.updateVariable('upstype', 'unknown')
-        elif (m := re.match(br'\(OK', message)) and (sentmessage == b'QFS\r'):
+        elif (m := self.re_ok.match(message)) and (sentmessage == b'QFS\r'):
             for varname in ['lastfault.type', 'lastfault.inputvoltage', 'lastfault.inputfrequency',
                             'lastfault.outputvoltage', 'lastfault.outputfrequency', 'lastfault.outputloadpercentage',
                             'lastfault.outputcurrent', 'lastfault.positiveBUSvoltage', 'lastfault.negativeBUSvoltage',
@@ -279,23 +317,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                             'lastfault.pfc_on', 'lastfault.inverter_on', 'lastfault.inputrelay_on',
                             'lastfault.outputrelay_on']:
                 self.updateVariable(varname, None)
-        elif (m := re.match(br'\((?P<type>[0-9a-f]{2}) ' +
-                            re_optional_float('inputvoltage', 3, 1) + b' ' +
-                            re_optional_float('inputfrequency', 2, 1) + b' ' +
-                            re_optional_float('outputvoltage', 3, 1) + b' ' +
-                            re_optional_float('outputfrequency', 2, 1) + b' ' +
-                            re_optional_float('outputloadpercentage', 3, 0) + b' ' +
-                            re_optional_float('outputcurrent', 3, 1) + b' ' +
-                            re_optional_float('positiveBUSvoltage', 3, 1) + b' ' +
-                            re_optional_float('negativeBUSvoltage', 3, 1) + b' ' +
-                            re_optional_float('batteryvoltage', 3, 1) + b' ' +
-                            re_optional_float('temperature', 3, 1) + b' ' +
-                            br'(?P<dctodc_on>[01]) '
-                            br'(?P<pfc_on>[01]) '
-                            br'(?P<inverter_on>[01]) '
-                            br'(?P<inputrelay_on>[01]) '
-                            br'(?P<outputrelay_on>[01])',
-                            message)) and (sentmessage == b'QFS\r'):
+        elif (m := self.re_faultstatus.match(message)) and (sentmessage == b'QFS\r'):
             if m['type'] == b'01':
                 self.updateVariable('lastfault.type', 'Bus start fail')
             elif m['type'] == b'02':
@@ -327,7 +349,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                                     safe_float(m[floatparameter]))
             for boolparameter in ['dctodc_on', 'pfc_on', 'inverter_on', 'inputrelay_on', 'outputrealy_on']:
                 self.updateVariable(f'lastfault.{boolparameter}', bool(int(m[boolparameter])))
-        elif (m := re.match(br'\((?P<status>[01]{64})', message)) and (sentmessage == b'QWS\r'):
+        elif (m := self.re_warningstatus.match(message)) and (sentmessage == b'QWS\r'):
             self.updateVariable('warning.batteryopen', m['status'][0:1] == b'1')
             self.updateVariable('warning.batteryovercharge', m['status'][6:7] == b'1')
             self.updateVariable('warning.batterylow', m['status'][7:8] == b'1')
@@ -335,30 +357,22 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
             self.updateVariable('warning.epo', m['status'][10:11] == b'1')
             self.updateVariable('warning.overtemperature', m['status'][12:13] == b'1')
             self.updateVariable('warning.chargerfail', m['status'][13:14] == b'1')
-        elif (m := re.match(br'\((?P<upsmode>[PSYLBTFECD])', message)) and (sentmessage == b'QMOD\r'):
+        elif (m := self.re_upsmode.match(message)) and (sentmessage == b'QMOD\r'):
             mode = {
                 'P': 'Power on', 'S': 'Standby', 'Y': 'Bypass', 'L': 'Line', 'B': 'Battery', 'T': 'Testing',
                 'F': 'Fault', 'E': 'HE/ECO', 'C': 'Converter', 'D': 'Shutdown'}[m['upsmode'].decode('ascii')]
             self.updateVariable('upsmode', mode)
             self.updateVariable('__status__', mode)
-        elif (m := re.match(br'\(' +
-                            re_optional_float('ratedvoltage', 3, 1) + b' ' +
-                            re_optional_float('ratedcurrent', 3, 0) + b' ' +
-                            re_optional_float('ratedbatteryvoltage', 3, 1) + b' ' +
-                            re_optional_float('ratedfrequency', 2, 1), message)) and (sentmessage == b'QRI\r'):
+        elif (m := self.re_ratings.match(message)) and (sentmessage == b'QRI\r'):
             for floatparameter in ['ratedvoltage', 'ratedcurrent', 'ratedbatteryvoltage', 'ratedfrequency']:
                 self.updateVariable(floatparameter, safe_float(m[floatparameter]))
-        elif (m := re.match(br'\(' +
-                            re_optional_float('bypassvoltage_high', 3, 0) + b' ' +
-                            re_optional_float('bypassvoltage_low', 3, 0), message)) and (sentmessage == b'QBYV\r'):
+        elif (m := self.re_bypassvoltage.match(message)) and (sentmessage == b'QBYV\r'):
             self.updateVariable('bypassvoltage.high', safe_float(m['bypassvoltage_high']))
             self.updateVariable('bypassvoltage.low', safe_float(m['bypassvoltage_low']))
-        elif (m := re.match(br'\(' +
-                            re_optional_float('bypassfrequency_high', 2, 1) + b' ' +
-                            re_optional_float('bypassfrequency_low', 2, 1), message)) and (sentmessage == b'QBYF\r'):
+        elif (m := self.re_bypassfrequency.match(message)) and (sentmessage == b'QBYF\r'):
             self.updateVariable('bypassfrequency.high', safe_float(m['bypassfrequency_high']))
             self.updateVariable('bypassfrequency.low', safe_float(m['bypassfrequency_low']))
-        elif (m := re.match(br'\((?:E(?P<enabled>[pbroasvdftim]*))?(?:D(?P<disabled>[pbroasvdftim]*))?', message)) and (sentmessage == b'QFLAG\r'):
+        elif (m := self.re_flags.match(message)) and (sentmessage == b'QFLAG\r'):
             enabled = m['enabled'].decode('ascii') if m['enabled'] is not None else ''
             disabled = m['disabled'].decode('ascii') if m['disabled'] is not None else ''
             # ToDo: the documentation on the protocol is not clear enough, testing is needed
@@ -382,7 +396,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                     self.updateVariable(f'flag.{flagname}', False)
                 else:
                     raise RuntimeError(f'Flag {flagname} (short name {short}) neither enabled nor disabled')
-        elif (m := re.match(br'\(', message)) and (sentmessage == b'QFLAG2\r'):
+        elif (m := self.re_flags2.match(message)) and (sentmessage == b'QFLAG2\r'):
             # ToDo: the documentation on the protocol is not clear enough, testing is needed
             #            self.updateVariable('', m[''])
             pass
