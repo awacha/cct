@@ -190,7 +190,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         re_optional_float('outputcurrent', 3, 1) + b' ' +
         re_optional_float('outputloadpercentage', 3, 0) + b' ' +
         re_optional_float('positiveBUSvoltage', 3, 1) + b' ' +
-        re_optional_float('negativeBUSvoltage', 2, 1) + b' ' +
+        re_optional_float('negativeBUSvoltage', 3, 1) + b' ' +
         re_optional_float('batteryvoltage', 3, 1) + b' ' +
         br'---\.- ' +
         re_optional_float('temperature', 3, 1) + b' ' +
