@@ -63,15 +63,3 @@ about:
   license_file: LICENSE
   summary: DAQ for CREDO
   description: Instrument control and data acquisition software for the CREDO SAXS instrument
-
-app:
-  entry: cpt [win]
-  summary: Credo Processing Tool
-  type: desk
-  icon: cptlogo.png
-
-app:
-  entry: cpt2 [win]
-  summary: Credo Processing Tool v2
-  type: desk
-  icon: cpt2logo.png

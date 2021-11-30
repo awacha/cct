@@ -1,1 +1,0 @@
-from .comparetool import CompareTool

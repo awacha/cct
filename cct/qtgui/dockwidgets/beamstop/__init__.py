@@ -1,1 +1,0 @@
-from .beamstop import BeamStopDockWidget

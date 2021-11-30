@@ -6,7 +6,6 @@ from Cython.Build import cythonize
 from numpy import get_include
 from setuptools import setup, find_packages, Extension
 
-import codegenerator
 
 try:
     from PyQt5.uic import compileUi
@@ -14,7 +13,6 @@ except ImportError:
     def compileUi(*args):
         pass
 
-codegenerator.writeCode()
 rcc_output = os.path.join('cct', 'resource', 'icons_rc.py')
 rcc_input = os.path.join('cct', 'resource', 'icons', 'icons.qrc')
 os.system('pyrcc5 {} -o {}'.format(rcc_input, rcc_output))
@@ -49,16 +47,7 @@ if sys.platform.lower().startswith('win') and sys.maxsize > 2 ** 32:
 else:
     krb5_libs = ['krb5']
 
-extensions = [Extension("cct.qtgui.tools.optimizegeometry.estimateworksize",
-                        [os.path.join("cct", "qtgui", "tools", "optimizegeometry", "estimateworksize.pyx")],
-                        include_dirs=[get_include()]),
-              Extension("cct.core.services.accounting.krb5_check_pass",
-                        [os.path.join("cct", "core", "services", "accounting", "krb5_check_pass.pyx")],
-                        include_dirs=[get_include()], libraries=krb5_libs),
-              Extension("cct.core.processing.correlmatrix",
-                        [os.path.join("cct", "core", "processing", "correlmatrix.pyx")],
-                        include_dirs=[get_include()]),
-              Extension("cct.core2.algorithms.radavg",
+extensions = [Extension("cct.core2.algorithms.radavg",
                         [os.path.join("cct", "core2", "algorithms", "radavg.pyx")],
                         include_dirs=[get_include()]),
               Extension("cct.core2.algorithms.cbfdecompress",
@@ -99,14 +88,7 @@ setup(name='cct', author='Andras Wacha',
       install_requires=['appdirs', 'numpy>=1.15.0', 'scipy>=1.0.0', 'matplotlib>=3.0.0', 'sastool>=1.2.3',
                         'pymodbustcp>=0.0.13', 'psutil>=4.1.0', 'h5py', 'pillow', 'openpyxl', 'sqlalchemy',
                         'adjusttext', 'imageio', 'click', 'colorlog', 'pyusb'],
-      entry_points={'gui_scripts': ['cct = cct.qtgui.__main__:run',
-                                    'cpt = cct.processing.__main__:run',
-                                    'cpt2 = cct.processinggui.__main__:run',
-                                    'cctmask = cct.qtgui.tools.maskeditor2:run',
-                                    'cctanisotropy = cct.qtgui.tools.anisotropy:run',
-                                    'cctupdatedb = cct.dbutils.updatedb:run',
-                                    'cctsequencebrowser = cct.processing.sequenceinspector.sequencelist:run',
-                                    'cct4 = cct.__main__:main'],
+      entry_points={'gui_scripts': ['cct4 = cct.__main__:main'],
 
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",

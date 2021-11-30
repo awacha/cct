@@ -1,1 +1,0 @@
-from .maskeditor import MaskEditor

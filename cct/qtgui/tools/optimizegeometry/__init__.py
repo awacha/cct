@@ -1,1 +1,0 @@
-from .optimizegeometry import OptimizeGeometry

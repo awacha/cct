@@ -1,1 +1,0 @@
-from .projectdialog import ProjectDialog

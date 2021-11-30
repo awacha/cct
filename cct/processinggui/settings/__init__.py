@@ -1,1 +1,0 @@
-from .settingsmain import SettingsWindow

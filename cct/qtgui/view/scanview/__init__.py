@@ -1,1 +1,0 @@
-from .scanview import ScanViewer

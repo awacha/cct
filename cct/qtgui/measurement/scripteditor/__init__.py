@@ -1,1 +1,0 @@
-from .scripteditor import ScriptEditor
