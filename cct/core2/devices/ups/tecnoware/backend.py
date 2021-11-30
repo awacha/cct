@@ -400,7 +400,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
             # ToDo: the documentation on the protocol is not clear enough, testing is needed
             #            self.updateVariable('', m[''])
             pass
-        elif (m := re.match(br'\(VERFW: (?P<firmwareversion>.*)', message)) and (sentmessage == b'QVFW\r'):
+        elif (m := re.match(br'\(VERFW:(?P<firmwareversion>.*)', message)) and (sentmessage == b'QVFW\r'):
             self.updateVariable('firmwareversion', m['firmwareversion'].decode('utf-8').strip())
         elif (m := re.match(br'\((?P<hardwareversion>[a-zA-Z0-9]{14})', message)) and (sentmessage == b'QID\r'):
             self.updateVariable('hardwareversion', m['hardwareversion'].decode('utf-8').strip())
