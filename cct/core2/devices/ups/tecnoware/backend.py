@@ -348,15 +348,15 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
             for floatparameter in ['ratedvoltage', 'ratedcurrent', 'ratedbatteryvoltage', 'ratedfrequency']:
                 self.updateVariable(floatparameter, safe_float(m[floatparameter]))
         elif (m := re.match(br'\(' +
-                            re_optional_float('bypassvoltage.high', 3, 0) + b' ' +
-                            re_optional_float('bypassvoltage.low', 3, 0), message)) and (sentmessage == b'QBYV\r'):
-            self.updateVariable('bypassvoltage.high', safe_float(m['bypassvoltage.high']))
-            self.updateVariable('bypassvoltage.low', safe_float(m['bypassvoltage.low']))
+                            re_optional_float('bypassvoltage_high', 3, 0) + b' ' +
+                            re_optional_float('bypassvoltage_low', 3, 0), message)) and (sentmessage == b'QBYV\r'):
+            self.updateVariable('bypassvoltage.high', safe_float(m['bypassvoltage_high']))
+            self.updateVariable('bypassvoltage.low', safe_float(m['bypassvoltage_low']))
         elif (m := re.match(br'\(' +
-                            re_optional_float('bypassfrequency.high', 2, 1) + b' ' +
-                            re_optional_float('bypassfrequency.low', 2, 1), message)) and (sentmessage == b'QBYF\r'):
-            self.updateVariable('bypassfrequency.high', safe_float(m['bypassfrequency.high']))
-            self.updateVariable('bypassfrequency.low', safe_float(m['bypassfrequency.low']))
+                            re_optional_float('bypassfrequency_high', 2, 1) + b' ' +
+                            re_optional_float('bypassfrequency_low', 2, 1), message)) and (sentmessage == b'QBYF\r'):
+            self.updateVariable('bypassfrequency.high', safe_float(m['bypassfrequency_high']))
+            self.updateVariable('bypassfrequency.low', safe_float(m['bypassfrequency_low']))
         elif (m := re.match(br'\((?:E(?P<enabled>[pbroasvdftim]*))?(?:D(?P<disabled>[pbroasvdftim]*))?', message)) and (sentmessage == b'QFLAG\r'):
             enabled = m['enabled'].decode('ascii') if m['enabled'] is not None else ''
             disabled = m['disabled'].decode('ascii') if m['disabled'] is not None else ''
@@ -406,11 +406,11 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
             self.updateVariable('loadlevel_wattpercent', safe_float(m['loadlevel_wattpercent']))
             self.updateVariable('loadlevel_vapercent', safe_float(m['loadlevel_vapercent']))
         elif (m := re.match(br'\(' +
-                            re_optional_float('temperature.pfc', 3, 1) + b' ' +
-                            re_optional_float('temperature.ambient', 3, 1) + b' ' +
-                            re_optional_float('temperature.charger', 3, 1) + b' ' + b'---\.-'         , message)) and (sentmessage == b'QTPR\r'):
-            self.updateVariable('temperature.pfc', safe_float(m['temperature.pfc']))
-            self.updateVariable('temperature.ambient', safe_float(m['temperature.ambient']))
-            self.updateVariable('temperature.charger', safe_float(m['temperature.charger']))
+                            re_optional_float('temperature_pfc', 3, 1) + b' ' +
+                            re_optional_float('temperature_ambient', 3, 1) + b' ' +
+                            re_optional_float('temperature_charger', 3, 1) + b' ' + b'---\.-'         , message)) and (sentmessage == b'QTPR\r'):
+            self.updateVariable('temperature.pfc', safe_float(m['temperature_pfc']))
+            self.updateVariable('temperature.ambient', safe_float(m['temperature_ambient']))
+            self.updateVariable('temperature.charger', safe_float(m['temperature_charger']))
         else:
             raise ValueError(f'Invalid reply for sent message *{sentmessage}*: *{message}*')
