@@ -237,6 +237,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         elif (m := re.match(br'\(' + re_optional_float('inputvoltage', 3, 1) + b' ' +
                             re_optional_float('inputfrequency', 2, 1) + b' ' +
                             re_optional_float('outputvoltage', 3, 1) + b' ' +
+                            re_optional_float('outputfrequency', 2, 1) + b' ' +
                             re_optional_float('outputcurrent', 3, 1) + b' ' +
                             re_optional_float('outputloadpercentage', 3, 0) + b' ' +
                             re_optional_float('positiveBUSvoltage', 3, 1) + b' ' +
