@@ -124,5 +124,5 @@ class TelemetryInformation:
             # self.commstart should not be None
             if self.commstart is None:
                 self.commstart = self.start
-            self.comm_duration += time.monotonic() - self.commstart
+            self.comm_duration += (time.monotonic() - self.commstart)
             self.commstart = None

@@ -435,7 +435,11 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         signal.
         """
         self._panicking = self.PanicState.Panicking
-        self._queue_to_backend.put(Message('panic'))
+        if self.isOffline():
+            self._panicking = self.PanicState.Panicked
+            QtCore.QTimer.singleShot(1, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged)
+        else:
+            self._queue_to_backend.put(Message('panic'))
 
     def panicking(self) -> PanicState:
         return self._panicking
