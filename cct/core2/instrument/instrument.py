@@ -45,7 +45,7 @@ class Instrument(QtCore.QObject):
     stopping: bool = False
     running: bool = False
     shutdown = QtCore.pyqtSignal()
-    panicAcknowledged = QtCore.pyqtSignal
+    panicAcknowledged = QtCore.pyqtSignal()
     online: bool = False
     components: Dict[str, Component] = None
 
