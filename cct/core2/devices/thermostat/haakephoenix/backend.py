@@ -209,6 +209,8 @@ class HaakePhoenixBackend(DeviceBackend):
                 self.updateVariable('__status__', self.Status.Running)
             elif sentmessage == b'W TS 0\r':
                 self.updateVariable('__status__', self.Status.Stopped)
+                if self.panicking == self.PanicState.Panicking:
+                    super().doPanic()
         else:
             self.error(f'Cannot interpret message: {message}. Sent message was: {sentmessage}')
 
