@@ -21,7 +21,7 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.treeView.setModel(ups)
+        self.treeView.setModel(self.ups())
         for variable in self.ups().keys():
             if variable.startswith('flag.'):
                 try:
