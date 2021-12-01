@@ -415,7 +415,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         elif (m := self.re_flags.match(message)) and (sentmessage == b'QFLAG\r'):
             enabled = m['enabled'].decode('ascii') if m['enabled'] is not None else ''
             disabled = m['disabled'].decode('ascii') if m['disabled'] is not None else ''
-            for flagname, short in self._flagchars:
+            for flagname, short in self._flagchars.items():
                 if short in enabled:
                     self.updateVariable(f'flag.{flagname}', True)
                 elif short in disabled:
