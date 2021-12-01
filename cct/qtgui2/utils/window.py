@@ -11,7 +11,7 @@ from ...core2.instrument.components.motors import Motor, MotorRole, MotorDirecti
 from ...core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class WindowRequiresDevices:
