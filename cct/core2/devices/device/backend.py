@@ -265,9 +265,7 @@ class DeviceBackend:
             del self.telemetryInformation
             self.telemetryInformation = None
         gc.collect()
-        self.telemetryInformation = TelemetryInformation()
-        if communicating:
-            self.telemetryInformation.setCommunicating(communicating)
+        self.telemetryInformation = TelemetryInformation(communicating)
         t0 = time.monotonic()
         telemetrytask = asyncio.create_task(asyncio.sleep(self.telemetryPeriod if self.variablesready else 0.5), name='tm_task')
         stoptask = asyncio.create_task(self.stopevent.wait(), name='tm_stoptask')

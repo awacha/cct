@@ -84,7 +84,7 @@ class TelemetryInformation:
         self.outdatedqueries = {}
         self.coro_wakes = {}
         self.lastmessage = None
-        self.commstart = time.monotonic_ns() if iscommunicating else None
+        self.commstart = time.monotonic() if iscommunicating else None
         self.communicating = iscommunicating
 
     def finish(self):
@@ -119,10 +119,10 @@ class TelemetryInformation:
 
     def setCommunicating(self, commstatus: bool):
         if commstatus:
-            self.commstart = time.monotonic_ns()
+            self.commstart = time.monotonic()
         else:
             # self.commstart should not be None
             if self.commstart is None:
                 self.commstart = self.start
-            self.comm_duration += time.monotonic_ns() - self.commstart
+            self.comm_duration += time.monotonic() - self.commstart
             self.commstart = None
