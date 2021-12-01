@@ -10,7 +10,7 @@ from ...devices.motor.generic.frontend import MotorController
 from ....utils import getIconFromTheme
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DeviceManager(QtCore.QAbstractItemModel, Component):
@@ -55,6 +55,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
                           d not in {dev.name for dev in self._devices}]
         for dn in removeddevices:
             del self.config['connections'][dn]
+        logger.debug(f'Config connections keys: {list(self.config["connections"].keys())}')
 
     @staticmethod
     def getDriverClass(deviceclassname: str) -> Type[DeviceFrontend]:
