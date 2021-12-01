@@ -150,7 +150,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.scriptingTab.layout().addWidget(self.scripting)
         self.executePushButton.clicked.connect(self.onExecutePushed)
         self.actionSave_settings.triggered.connect(self.saveSettings)
-
+        self.panicPushButton.clicked.connect(self.instrument.panic)
         for dev in self.instrument.devicemanager:
             self.onDeviceAdded(dev.name)
 

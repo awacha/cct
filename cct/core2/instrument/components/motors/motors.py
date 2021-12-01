@@ -196,6 +196,8 @@ class Motors(QtCore.QAbstractItemModel, Component):
         self.dataChanged.emit(
             self.index(row, 0, QtCore.QModelIndex()),
             self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
+        if (self.__panicking == self.PanicState.Panicking) and (not [m for m in self.motors if m.isMoving()]):
+            super().panichandler()
 
     def onMotorVariableChanged(self, name: str, value: Any, prevvalue: Any):
         motor = self.sender()
@@ -284,3 +286,11 @@ class Motors(QtCore.QAbstractItemModel, Component):
     @property
     def beamstop_y(self) -> Motor:
         return self.getMotorForRoleAndDirection(MotorRole.BeamStop, MotorDirection.Y)
+
+    def panichandler(self):
+        self.__panicking =self.PanicState.Panicking
+        for m in self.motors:
+            if m.isMoving():
+                m.stop()
+        if not [m for m in self.motors if m.isMoving()]:
+            super().panichandler()

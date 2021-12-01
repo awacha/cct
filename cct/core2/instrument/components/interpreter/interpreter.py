@@ -162,8 +162,25 @@ class Interpreter(QtCore.QObject, Component):
 
     def fail(self, message: str):
         self.pointer = None
-        self.scriptfinished.emit(False, message)
+        try:
+            self.scriptfinished.emit(False, message)
+        except Exception as exc:
+            logger.error(f'Exception in scriptfinished signal handler: {traceback.format_exc()}')
+        if self.__panicking == self.PanicState.Panicking:
+            super().panichandler()
 
     def finish(self):
         self.pointer = None
-        self.scriptfinished.emit(True, '')
+        try:
+            self.scriptfinished.emit(True, '')
+        except Exception as exc:
+            logger.error(f'Exception in the scriptfinished signal handler: {traceback.format_exc()}')
+        if self.__panicking == self.PanicState.Panicking:
+            super().panichandler()
+
+    def panichandler(self):
+        self.__panicking = self.PanicState.Panicking
+        if self.pointer is not None:
+            self.stop()
+        else:
+            super().panichandler()

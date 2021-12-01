@@ -630,6 +630,9 @@ class TrinamicMotorControllerBackend(DeviceBackend):
         self.updateVariable(f'lastmovewassuccessful${axis}', successful)
         self.updateVariable(f'moving${axis}', False)
         self.writeMotorPosFile()
+        if (self.panicking == self.PanicState.Panicking) and not self.motionstatus:
+            # no motor moving and we are panicking: acknowledge the panic situation
+            super().doPanic()
 
     def checkMotion(self, axis: int) -> bool:
         """Check if a motor is (still) moving and act if it has stopped.
@@ -708,6 +711,13 @@ class TrinamicMotorControllerBackend(DeviceBackend):
 
     def onVariablesReady(self):
         pass
+
+    def doPanic(self):
+        if self.motionstatus:
+            for axis in self.motionstatus:
+                self.enqueueHardwareMessage(TMCLPack(Instructions.Stop, 0, axis, 0), urgencymodifier=-10.0)
+        else:
+            super().doPanic()
 
 class TMCM351Backend(TrinamicMotorControllerBackend):
     name = 'tmcm351'

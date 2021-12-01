@@ -1,6 +1,7 @@
 import enum
 import logging
 import pickle
+import traceback
 from typing import List, Tuple, Any, Optional, Iterable
 
 import numpy as np
@@ -393,6 +394,8 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
 
     def startMeasurement(self, emptysample: str, countingtime: float, nimages: int, delaytime: float,
                          lazymode: bool = False):
+        if self.__panicking != self.PanicState.NoPanic:
+            raise RuntimeError('Cannot start transmission measurement: in panic state!')
         if self.status != TransmissionMeasurementStatus.Idle:
             raise RuntimeError('Cannot start transmission measurement: already running')
         self.emptysample = emptysample
@@ -599,7 +602,13 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         self._disconnectSource()
         self._disconnectBeamStop()
         self._disconnectSampleStore()
-        self.finished.emit(success, message)
+        try:
+            self.finished.emit(success, message)
+        except Exception as exc:
+            logger.error(f'Exception in transmission.finished() callback: {traceback.format_exc()}')
+        if self.__panicking == self.PanicState.Panicking:
+            logger.error('Transmission measurement stopped on panic!')
+            super().panichandler()
 
     # slots for checking the outcome of the above commands
 
@@ -797,3 +806,10 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         sorteddata = [[d for d in self._data if d.samplename == s.title][0] for s in samples_ordered]
         self._data = sorteddata
         self.endResetModel()
+
+    def panichandler(self):
+        self.__panicking = self.PanicState.Panicking
+        if self.status == TransmissionMeasurementStatus.Idle:
+            super().panichandler()
+        else:
+            self.stopMeasurement()

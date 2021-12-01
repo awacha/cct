@@ -34,6 +34,9 @@ class TelemetryInformation:
     lastsendtime: float
     lastrecvtime: float
     asyncio_tasks: List[str]
+    comm_duration: float = 0.0
+    communicating: bool=True
+    commstart: Optional[None]
 
     attributeinfo: Final[List[TelemetryAttribute]] = [
         TelemetryAttribute('enddate', 'Date of telemetry', str),
@@ -61,6 +64,8 @@ class TelemetryInformation:
         TelemetryAttribute(
             'asyncio_tasks', 'Number of asyncio tasks',
             lambda x: '\n'+'\n'.join([f'    {name}: {x.count(name)}' for name in sorted(set(x))])),
+        TelemetryAttribute(
+            'comm_duration', 'Time spent with communication', lambda x: f'{x:.2f} sec'),
     ]
 
 
@@ -109,3 +114,11 @@ class TelemetryInformation:
     @property
     def messagerate(self) -> Tuple[float, float]:
         return (self.messagessent/self.duration, self.messagesreceived/self.duration)
+
+    def setCommunicating(self, commstatus: bool):
+        if commstatus:
+            self.commstart = time.monotonic_ns()
+        else:
+            # self.commstart should not be None
+            self.comm_duration += time.monotonic_ns() - self.commstart
+            self.commstart = None

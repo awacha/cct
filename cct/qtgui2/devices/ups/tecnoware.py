@@ -47,13 +47,8 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.faultVoltageLabel.setText(f'{newvalue:.2f} V')
         elif name == 'outputvoltage':
             self.outputVoltageLabel.setText(f'{newvalue:.2f} V')
-        elif name == 'outputcurrentpercentage':
-            try:
-                ratedcurrent = self.ups()['ratedcurrent']
-            except self.ups().DeviceError:
-                pass
-            else:
-                self.currentUsageLabel.setText(f'{ratedcurrent*newvalue/100.:.3f} A ({newvalue:.0f} %)')
+        elif name == 'outputcurrent':
+            self.currentUsageLabel.setText(f'{newvalue:.1f} A')
         elif name == 'inputfrequency':
             self.inputFrequencyLabel.setText(f'{newvalue:.2f} Hz')
         elif name == 'batteryvoltage':

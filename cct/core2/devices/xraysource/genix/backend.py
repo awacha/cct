@@ -285,10 +285,50 @@ class GeniXBackend(DeviceBackend, ModbusTCP):
                 self.updateVariable('__status__', self.Status.standby)
             elif self['power'] == self['tube_power']:
                 self.updateVariable('__status__', self.Status.full)
-            elif self['power'] == 0:
+            elif (self['ht'] == 0) and (self['current'] == 0):
                 self.updateVariable('__status__', self.Status.off)
+                if self.panicking == self.PanicState.Panicking:
+                    super().doPanic()
             else:
                 self.updateVariable('__status__', self.Status.unknown)
         except KeyError:
             # this can happen when not all variables have been queried yet
             pass
+
+    def doPanic(self):
+        self.panicking = self.PanicState.Panicking
+        if self['__status__'] == self.Status.xraysoff:
+            super().doPanic()
+        elif self['__status__'] == self.Status.warmup:
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(246, True)  # stop warm-up
+            self.modbus_set_coil(244, True)  # power off
+        elif self['__status__'] == self.Status.goingtostandby:
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(244, True)  # power off
+        elif self['__status__'] == self.Status.goingtofull:
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(252, False)  # ramp up off
+            self.modbus_set_coil(244, True)  # power off
+        elif self['__status__'] == self.Status.poweringoff:
+            pass
+        elif self['__status__'] == self.Status.standby:
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(244, True)  # power off
+        elif self['__status__'] == self.Status.full:
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(252, False)  # ramp up off
+            self.modbus_set_coil(244, True)  # power off
+        elif self['__status__'] == self.Status.off:
+            super().doPanic()
+        elif self['__status__'] == self.Status.unknown:
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(252, False)  # ramp up off
+            self.modbus_set_coil(244, True)  # power off
+        elif (self['ht'] > 0) or (self['current'] > 0):
+            self.modbus_set_coil(250, False)  # Standby mode off
+            self.modbus_set_coil(252, False)  # ramp up off
+            self.modbus_set_coil(244, True)  # power off
+        else:
+            # ht == 0, current == 0
+            super().doPanic()

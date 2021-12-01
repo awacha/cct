@@ -109,7 +109,7 @@ class HaakePhoenixBackend(DeviceBackend):
         return msgs[:-1], msgs[-1]
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
-#        self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
+        #        self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
         if message.startswith(b'F001'):
             self.error(f'Unknown command reported by the circulator. Last command: {sentmessage}')
         elif message.startswith(b'F123'):
@@ -197,7 +197,11 @@ class HaakePhoenixBackend(DeviceBackend):
             self.updateVariable('watchdog_setpoint', float(message[2:-1]))
         elif message.startswith(b'PF'):
             if self.updateVariable('pump_power', float(message[2:-1])):
-                self.updateVariable('__status__', self.Status.Running if self['pump_power'] > 0 else self.Status.Stopped)
+                if (self['__status__'] == self.Status.Running) and (self['pump_power'] <= 0) and (
+                        self.panicking == self.PanicState.Panicking):
+                    super().doPanic()
+                self.updateVariable('__status__',
+                                    self.Status.Running if self['pump_power'] > 0 else self.Status.Stopped)
         elif message.startswith(b'CC'):
             self.updateVariable('cooling_on', bool(int(message[2:3])))
         elif message == b'$':
@@ -299,3 +303,10 @@ class HaakePhoenixBackend(DeviceBackend):
                 self.commandFinished(name, f'Setting pump power to {value}%')
         else:
             self.commandFinished(name, 'Unknown command')
+
+    def doPanic(self):
+        self.panicking = self.PanicState.Panicking
+        if self['__status__'] == self.Status.Running:
+            self.enqueueHardwareMessage(b'W TS 0\r')
+        else:
+            super().doPanic()

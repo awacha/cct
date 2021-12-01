@@ -297,10 +297,18 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
 
     def onDevicePanicAcknowledged(self):
         device: DeviceFrontend = self.sender()
-        device.disconnect()
+        logger.info(f'Panic acknowledged by device {device.name}')
+        device.panicAcknowledged.disconnect(self.onDevicePanicAcknowledged)
+        logger.debug(f'Waiting for devices: {", ".join([dev.name for dev in self._devices if dev.panicking() != dev.PanicState.Panicked])}')
+        if all([dev.panicking() == dev.PanicState.Panicked for dev in self._devices]):
+            # all devices have reacted
+            logger.info('All devices acknowledged the panic situation.')
+            self.__panicking = self.PanicState.Panicked
+            self.panicAcknowledged.emit()
 
     def panichandler(self):
-        self._panicking = True
+        self.__panicking = self.PanicState.Panicking
         for dev in self._devices:
             dev.panicAcknowledged.connect(self.onDevicePanicAcknowledged)
-            dev.panic()
+            logger.info(f'Notifying device {dev.name} on the panic situation')
+            dev.panichandler()

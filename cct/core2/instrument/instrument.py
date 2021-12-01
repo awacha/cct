@@ -45,6 +45,7 @@ class Instrument(QtCore.QObject):
     stopping: bool = False
     running: bool = False
     shutdown = QtCore.pyqtSignal()
+    panicAcknowledged = QtCore.pyqtSignal
     online: bool = False
     components: Dict[str, Component] = None
 
@@ -104,6 +105,37 @@ class Instrument(QtCore.QObject):
             logger.debug('Emitting instrument shutdown signal.')
             self.shutdown.emit()
 
+    def onComponentPanicAcknowledged(self):
+        component: Component = self.sender()
+        try:
+            componentname = [cn for cn in self.components if self.components[cn] is component][0]
+        except IndexError:
+            pass  # happens at the first round.
+        else:
+            component.panicAcknowledged.disconnect(self.onComponentPanicAcknowledged)
+            logger.info(f'Component {componentname} acknowledged the panic situation.')
+            try:
+                self._panic_components[0].remove(componentname)
+            except ValueError:
+                # should not happen, but who knows
+                pass
+        if self._panic_components[0]:
+            # still waiting for some components from this round
+            return
+        # all components of this round have acted, notify the new ones
+        del self._panic_components[0]
+        if not self._panic_components:
+            # all components done
+            logger.info('Panic sequence finished.')
+            self.panicAcknowledged.emit()
+            # stop the instrument.
+            self.stop()
+            return
+        for cname in self._panic_components[0]:
+            self.components[cname].panicAcknowledged.connect(self.onComponentPanicAcknowledged)
+            logger.info(f'Notifying component {cname} on the panic situation.')
+            self.components[cname].panichandler()
+
     def setOnline(self, online: bool):
         self.online = online
         logger.info(f'Running {"on-line" if online else "off-line"}')
@@ -162,6 +194,7 @@ class Instrument(QtCore.QObject):
         - grid power outage reported by the UPS
         """
         self._panic_components=[
+            [],
             ['interpreter'],
             ['scan', 'transmission'],
             ['exposer'],
@@ -171,4 +204,4 @@ class Instrument(QtCore.QObject):
             ['projects'],
             ['calibrants', 'auth', 'io', 'geometry', 'datareduction']
         ]
-        self.interpreter.panichandler()
+        self.onComponentPanicAcknowledged()

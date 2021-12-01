@@ -30,6 +30,7 @@ class Sensor(QtCore.QObject):
     highwarnlimit: Optional[float] = None
     lowerrorlimit: Optional[float] = None
     higherrorlimit: Optional[float] = None
+    paniconerror: bool
     _errorstate: ErrorState = ErrorState.Unknown
 
     warning = QtCore.pyqtSignal()
@@ -39,7 +40,7 @@ class Sensor(QtCore.QObject):
 
     def __init__(self, name: str, devicename: str, index: int, units: str, lowwarnlimit: Optional[float] = None,
                  highwarnlimit: Optional[float] = None, lowerrorlimit: Optional[float] = None,
-                 higherrorlimit: Optional[float] = None):
+                 higherrorlimit: Optional[float] = None, paniconerror: bool=False):
         self._value = math.nan
         self.name = name
         self.devicename = devicename
@@ -49,6 +50,7 @@ class Sensor(QtCore.QObject):
         self.highwarnlimit = highwarnlimit
         self.lowerrorlimit = lowerrorlimit
         self.higherrorlimit = higherrorlimit
+        self.paniconerror = paniconerror
         super().__init__()
         self._checkLimits()
 

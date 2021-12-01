@@ -49,7 +49,13 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     _port: int
     _last_ready_time: Optional[float] = None
     _ready: bool = False
-    _panicking: bool = False
+
+    class PanicState(enum.Enum):
+        NoPanic = enum.auto()
+        Panicking = enum.auto()
+        Panicked = enum.auto()
+
+    _panicking: PanicState = PanicState.NoPanic
     name: str
     _backendkwargs: Dict[str, Any] = None
     _logger: logging.Logger
@@ -242,6 +248,11 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
                         self._logger.critical(
                             f'Exception while emitting the connectionLost signal of device {self.name}: {exc}')
                     self.restartBackend()
+            elif self.currentMessage.command == 'panicacknowledged':
+                self._panicking = self.PanicState.Panicked
+                self.panicAcknowledged.emit()
+            elif self.currentMessage.command == 'panic':
+                self.panic.emit()
         finally:
             self.currentMessage = None
 
@@ -332,6 +343,10 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         # self._logger.debug(f'Stopping the back-end process')
         self._queue_to_backend.put(Message('end'))
 
+    def sendpanictobackend(self):
+        """Notify the backend of a panic situation, ask it to turn the device off"""
+        self._queue_to_backend.put(Message('panic'))
+
     def keys(self) -> Iterator[str]:
         """Return the names of the variables in an iterator"""
         for v in self._variables:
@@ -411,10 +426,16 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
     def panichandler(self):
         """This method is called when there is a "panic" situation from anywhere in the instrument.
-        The device needs to clean up and shut down. After the shutdown sequence, the panicAcknowledged() signal
-        must be emitted.
+        The device needs to clean up and shut down. After the shutdown sequence is completed, the panicAcknowledged()
+        signal must be emitted.
 
-        The default handler simply schedules the emission of the panicAcknowledged signal soon afterwards
+        The default handler notifies the backend on the panic situation, which should take the appropriate actions (e.g.
+        turning off the X-ray generator or stopping moving motors). If all needed actions have been done, the backend
+        replies to the frontend with a 'panicacknowledged' message, resulting in the emission of the panicAcknowledged
+        signal.
         """
-        self._panicking = True
-        QtCore.QTimer.singleShot(0, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)
+        self._panicking = self.PanicState.Panicking
+        self._queue_to_backend.put(Message('panic'))
+
+    def panicking(self) -> PanicState:
+        return self._panicking

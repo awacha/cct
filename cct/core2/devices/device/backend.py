@@ -1,5 +1,6 @@
 import asyncio
 import gc
+import enum
 import logging
 import queue
 import time
@@ -74,6 +75,10 @@ class DeviceBackend:
             - written by:
                 hardwareReceiver
     """
+    class PanicState(enum.Enum):
+        NoPanic=enum.auto()
+        Panicking = enum.auto()
+        Panicked = enum.auto()
 
     class Status:
         Idle = 'idle'
@@ -125,6 +130,7 @@ class DeviceBackend:
 
     # buffer for log messages before initialization
     logbuffer: Optional[List[Message]] = None
+    panicking: PanicState = PanicState.NoPanic
 
     def __init__(self, inqueue: Queue, outqueue: Queue, host: str, port: int, **kwargs):
         self.inqueue = inqueue
@@ -232,6 +238,7 @@ class DeviceBackend:
     async def telemetry(self) -> bool:
         """Collect telemetry"""
         #        self.debug('Telemetry task started.')
+        communicating = False
         if self.telemetryInformation is not None:
             self.telemetryInformation.finish()
             self.telemetryInformation.outbufferlength = self.outbuffer.qsize()
@@ -254,10 +261,13 @@ class DeviceBackend:
                 if (timeout > self.outstandingqueryfailtimeout) and (self.autoqueryenabled.is_set()):
                     raise RuntimeError(f'Outstanding query fail timeout reached. Variables not yet queried: '
                                        f'{", ".join(sorted(self.telemetryInformation.outdatedqueries))}')
+            communicating = self.telemetryInformation.communicating
             del self.telemetryInformation
             self.telemetryInformation = None
         gc.collect()
         self.telemetryInformation = TelemetryInformation()
+        if communicating:
+            self.telemetryInformation.setCommunicating(communicating)
         t0 = time.monotonic()
         telemetrytask = asyncio.create_task(asyncio.sleep(self.telemetryPeriod if self.variablesready else 0.5), name='tm_task')
         stoptask = asyncio.create_task(self.stopevent.wait(), name='tm_stoptask')
@@ -282,10 +292,17 @@ class DeviceBackend:
             else:
                 assert isinstance(message, Message)
                 if message.command == 'issuecommand':
-                    self.issueCommand(name=message.kwargs['name'], args=message.kwargs['args'])
+                    if self.panicking != self.PanicState.NoPanic:
+                        self.commandError(message.kwargs['name'], 'Cannot issue command due to panic state.')
+                    else:
+                        self.issueCommand(name=message.kwargs['name'], args=message.kwargs['args'])
                 elif message.command == 'end':
                     self.stopevent.set()
                     return False
+                elif message.command == 'panic':
+                    self.panicking = self.PanicState.Panicking
+                    self.doPanic()
+                    return True
 
     @final
     async def hardwareSender(self) -> bool:
@@ -383,6 +400,7 @@ class DeviceBackend:
         self.streamwriter.write(message)
         self.lastsendtime = time.monotonic()
         if self.telemetryInformation is not None:
+            self.telemetryInformation.setCommunicating(True)
             self.telemetryInformation.bytessent += len(message)
             self.telemetryInformation.messagessent += 1
         self.lastmessage = message, nreplies
@@ -415,6 +433,7 @@ class DeviceBackend:
             self.inbuffer += recv
             messages, remaining = self._cutmessages(self.inbuffer)
             if self.telemetryInformation is not None:
+                self.telemetryInformation.setCommunicating(False)
                 self.telemetryInformation.bytesreceived += len(recv)
                 self.telemetryInformation.messagesreceived += len(messages)
             self.inbuffer = remaining
@@ -702,3 +721,15 @@ class DeviceBackend:
 
     def onVariablesReady(self):
         pass
+
+    def doPanic(self):
+        """Perform actions when a panic situation occurs.
+
+        The default implementation simply sends an acknowledgement reply to the front-end.
+        """
+        self.panicking = self.PanicState.Panicked
+        self.messageToFrontend('panicacknowledged')
+
+    def panic(self):
+        """Notify the front-end thread of a panic situation."""
+        self.messageToFrontend('panic')

@@ -121,6 +121,14 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
                     self.commandFinished(commandname, result)
                     self.lastissuedcommand.pop()
                     self.queryVariable(queryvariable, True)
+            if (regrec == 3102) and (newvaluerec == 0):
+                # stopped
+                self.updateVariable('__status__', self.Status.stopped)
+                if self.panicking == self.PanicState.Panicking:
+                    super().doPanic()
+            elif (regrec == 3102) and (newvaluerec == 1):
+                # started
+                self.updateVariable('__status__', self.Status.running)
         elif funccode == 16: # write multiple registers
             regrec, nrecset = struct.unpack('>HH', data)
             if (regrec == 3105) and (nrecset == 2) and (self.lastissuedcommand[0] == 'set_easy_dispense_volume'):
@@ -166,3 +174,10 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
         else:
             raise ValueError(f'Unknown command: {name}')
         self.lastissuedcommand.append(name)
+
+    def doPanic(self):
+        self.panicking = self.PanicState.Panicking
+        if self['__status__'] == self.Status.running:
+            self.modbus_write_register(3102, 0)
+        else:
+            super().doPanic()

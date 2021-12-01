@@ -1,3 +1,4 @@
+import enum
 import logging
 import weakref
 
@@ -17,8 +18,14 @@ class Component:
     stopped = QtCore.pyqtSignal()
     stopping: bool = False
     __running: bool = False
-    __panicking: bool = False
     panicAcknowledged = QtCore.pyqtSignal()
+
+    class PanicState(enum.Enum):
+        NoPanic = enum.auto()
+        Panicking = enum.auto()
+        Panicked = enum.auto()
+
+    __panicking: PanicState = PanicState.NoPanic
 
     def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PyQt5/multiinheritance.html
         self.config = kwargs['config']
@@ -53,5 +60,5 @@ class Component:
 
     def panichandler(self):
         """Default panic handler: schedules the emission of the panicAcknowledged signal soon afterwards."""
-        self.__panicking = True
+        self.__panicking = self.PanicState.Panicked
         QtCore.QTimer.singleShot(0, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)

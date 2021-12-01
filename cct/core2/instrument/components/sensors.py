@@ -99,7 +99,10 @@ class Sensors(QtCore.QAbstractItemModel, Component):
                               self.index(idx, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
     def onSensorError(self):
-        logger.debug(f'Sensor {self.sender().name} is {self.sender()._errorstate}')
+        logger.error(f'Sensor {self.sender().name} is {self.sender()._errorstate}')
+        if self.sender().paniconerror:
+            logger.error(f'Sensor {self.sender().name} value is out of bounds: panicking!')
+            self.instrument.panic()
         idx = self._data.index(self.sender())
         self.dataChanged.emit(self.index(idx, 0, QtCore.QModelIndex()),
                               self.index(idx, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
