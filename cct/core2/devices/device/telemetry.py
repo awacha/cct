@@ -69,7 +69,7 @@ class TelemetryInformation:
     ]
 
 
-    def __init__(self):
+    def __init__(self, iscommunicating: bool=False):
         self.start = time.monotonic()
         self.querytimes = []
         self.bytessent = 0
@@ -84,6 +84,8 @@ class TelemetryInformation:
         self.outdatedqueries = {}
         self.coro_wakes = {}
         self.lastmessage = None
+        self.commstart = time.monotonic_ns() if iscommunicating else None
+        self.communicating = iscommunicating
 
     def finish(self):
         self.end = time.monotonic()
@@ -120,5 +122,7 @@ class TelemetryInformation:
             self.commstart = time.monotonic_ns()
         else:
             # self.commstart should not be None
+            if self.commstart is None:
+                self.commstart = self.start
             self.comm_duration += time.monotonic_ns() - self.commstart
             self.commstart = None
