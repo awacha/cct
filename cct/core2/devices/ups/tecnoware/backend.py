@@ -444,7 +444,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
             self.updateVariable('temperature.ambient', safe_float(m['temperature_ambient']))
             self.updateVariable('temperature.charger', safe_float(m['temperature_charger']))
         elif (m := self.re_acknowledgement.match(message)) and (sentmessage.startswith(b'PE') or sentmessage.startswith(b'PD')):
-            self.commandFinished('setflag' if sentmessage.startswith(b'PE') else 'clearflag', m['ack'] == b'ACK')
+            self.commandFinished('setflag' if sentmessage.startswith(b'PE') else 'clearflag', m['ack'].decode('utf-8'))
         else:
             raise ValueError(f'Invalid reply for sent message *{sentmessage}*: *{message}*')
 
