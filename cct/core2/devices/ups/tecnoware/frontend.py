@@ -6,7 +6,7 @@ from ....sensors.thermometer import Thermometer
 
 
 class TecnowareEvoDSPPlus(UPS):
-    devicename = 'tecnowareevodspplus'
+    devicename = 'TecnowareEvoDSPPlus'
     backendclass = TecnowareEvoDSPPlusBackend
 
     def __init__(self, name: str, host: str, port: int, **kwargs):
