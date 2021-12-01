@@ -10,7 +10,7 @@ logger.setLevel(logging.INFO)
 
 
 class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicenames = ['tecnowareevodspplus']
+    required_devicenames = ['TecnowareEvoDSPPlus']
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
