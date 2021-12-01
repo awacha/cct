@@ -10,7 +10,7 @@ logger.setLevel(logging.INFO)
 
 
 class Keen80UPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicenames = ['keen800']
+    required_devicenames = ['Keen800']
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)

@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     instrument: Instrument
-    required_devicenames = ['genix']
+    required_devicenames = ['GeniX']
 
     _var2widget = {
         "__status__": "statusLabel",

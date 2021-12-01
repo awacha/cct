@@ -9,7 +9,7 @@ from ....core2.devices.thermostat.haakephoenix.frontend import HaakePhoenix
 
 
 class HaakePhoenixDevice(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicenames = ['haakephoenix']
+    required_devicenames = ['HaakePhoenix']
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

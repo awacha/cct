@@ -29,7 +29,7 @@ logger.setLevel(logging.INFO)
 
 
 class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicenames = ['pilatus']
+    required_devicenames = ['PilatusDetector']
     thresholdsettings: Final[Dict[str, Tuple[float, PilatusGain]]] = {
         'Cu': (4024, PilatusGain.High),
         'Ag': (11082, PilatusGain.Low),
