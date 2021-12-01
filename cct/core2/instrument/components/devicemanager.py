@@ -49,7 +49,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
 
     def saveToConfig(self):
         self.config['connections'] = {dev.name: {
-            'classname': dev.__class__.__name__, 'name': dev.name, 'host': dev.host, 'port': dev.port}
+            'classname': dev.__class__.devicename, 'name': dev.name, 'host': dev.host, 'port': dev.port}
             for dev in self._devices}
         removeddevices = [d for d in self.config['connections'] if
                           d not in {dev.name for dev in self._devices}]

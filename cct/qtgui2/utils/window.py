@@ -126,7 +126,7 @@ class WindowRequiresDevices:
                 logger.debug(f'Cannot instantiate {cls.__name__}: no device of type {dt} available.')
                 return False
         for dn in required_devicenames:
-            if not [d for d in instrument.devicemanager if (d.name == dn) and d.isOnline()]:
+            if not [d for d in instrument.devicemanager if (d.devicename == dn) and d.isOnline()]:
                 logger.debug(f'Cannot instantiate {cls.__name__}: no device with name {dn} available.')
                 return False
         for motrole, motdir in required_motors:
