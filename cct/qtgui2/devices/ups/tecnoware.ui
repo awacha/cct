@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>575</width>
-    <height>396</height>
+    <width>805</width>
+    <height>436</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,6 +18,9 @@
     <normaloff>:/icons/ups.svg</normaloff>:/icons/ups.svg</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
+   <item row="0" column="4" rowspan="3">
+    <widget class="QTreeView" name="treeView"/>
+   </item>
    <item row="2" column="0">
     <widget class="QGroupBox" name="groupBox_3">
      <property name="title">
@@ -77,64 +80,6 @@
        <widget class="QLabel" name="ratedFrequencyLabel">
         <property name="text">
          <string>--</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="0" column="2" rowspan="3">
-    <widget class="QGroupBox" name="groupBox_4">
-     <property name="title">
-      <string>Status</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="3" column="0">
-       <widget class="QLabel" name="bypassLabel">
-        <property name="text">
-         <string>Bypass active</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="shutdownInProgressLabel">
-        <property name="text">
-         <string>Shutdown in progress</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="upsFailedLabel">
-        <property name="text">
-         <string>UPS failed</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="batteryLowLabel">
-        <property name="text">
-         <string>Battery OK</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="0">
-       <widget class="QLabel" name="beeperOnLabel">
-        <property name="text">
-         <string>Beeper is on</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="testInProgressLabel">
-        <property name="text">
-         <string>Test in progress</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="utilityFailedLabel">
-        <property name="text">
-         <string>Utility power</string>
         </property>
        </widget>
       </item>
@@ -257,11 +202,210 @@
      </layout>
     </widget>
    </item>
+   <item row="0" column="2" rowspan="3">
+    <widget class="QGroupBox" name="groupBox_4">
+     <property name="title">
+      <string>Status</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <item row="3" column="0">
+       <widget class="QLabel" name="bypassLabel">
+        <property name="text">
+         <string>Bypass active</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="shutdownInProgressLabel">
+        <property name="text">
+         <string>Shutdown in progress</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="upsFailedLabel">
+        <property name="text">
+         <string>UPS failed</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="batteryLowLabel">
+        <property name="text">
+         <string>Battery OK</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="beeperOnLabel">
+        <property name="text">
+         <string>Beeper is on</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="testInProgressLabel">
+        <property name="text">
+         <string>Test in progress</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="utilityFailedLabel">
+        <property name="text">
+         <string>Utility power</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
    <item row="0" column="3" rowspan="3">
-    <widget class="QTreeView" name="treeView"/>
+    <widget class="QGroupBox" name="groupBox_5">
+     <property name="title">
+      <string>Flags</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QPushButton" name="bypassmodealarmPushButton">
+        <property name="text">
+         <string>Alarm in bypass mode</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="batterymodealarmPushButton">
+        <property name="text">
+         <string>Alarm in battery mode</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="autostartenabledPushButton">
+        <property name="text">
+         <string>Autostart enabled</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="bypassenabledPushButton">
+        <property name="text">
+         <string>Bypass enabled</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="warningalarmPushButton">
+        <property name="text">
+         <string>Warning alarm</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="batteryprotectenabledPushButton">
+        <property name="text">
+         <string>Battery protection enabled</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="convertermodeenabledPushButton">
+        <property name="text">
+         <string>Converter mode enabled</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="batteryopenstatuscheckenabledPushButton">
+        <property name="text">
+         <string>Battery open check enabled</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="bypassforbiddingenabledPushButton">
+        <property name="text">
+         <string>Bypass forbidding enabled</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="batterylowprotectenabledPushButton">
+        <property name="text">
+         <string>Battery low protection enabled</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="invertershortclearenabledPushButton">
+        <property name="text">
+         <string>Inverter short clear enabled</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="hotstandbymasterPushButton">
+        <property name="text">
+         <string>Hot standby master/slave</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>bypassmodealarmPushButton</tabstop>
+  <tabstop>batterymodealarmPushButton</tabstop>
+  <tabstop>autostartenabledPushButton</tabstop>
+  <tabstop>bypassenabledPushButton</tabstop>
+  <tabstop>warningalarmPushButton</tabstop>
+  <tabstop>batteryprotectenabledPushButton</tabstop>
+  <tabstop>convertermodeenabledPushButton</tabstop>
+  <tabstop>batteryopenstatuscheckenabledPushButton</tabstop>
+  <tabstop>bypassforbiddingenabledPushButton</tabstop>
+  <tabstop>batterylowprotectenabledPushButton</tabstop>
+  <tabstop>invertershortclearenabledPushButton</tabstop>
+  <tabstop>hotstandbymasterPushButton</tabstop>
+  <tabstop>treeView</tabstop>
+ </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>
  </resources>

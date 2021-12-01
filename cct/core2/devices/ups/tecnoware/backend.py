@@ -1,6 +1,6 @@
 import re
 from math import inf
-from typing import Tuple, List, Optional, Union
+from typing import Tuple, List, Optional, Union, Sequence, Any, Dict, Final
 
 from ...device.backend import DeviceBackend
 
@@ -172,17 +172,17 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
 
     ]
 
-    re_protocolid = re.compile(br'\(PI\s*(?P<protocolID>\d{2})')
-    re_modelinfo = re.compile(
-                br'\((?P<modelname>(\w|#){15}) '
-                br'(?P<ratedVA>(\d|#){7}) '
-                br'(?P<powerfactor>\d{2}) '
-                br'(?P<inputphasecount>\d)/(?P<outputphasecount>\d) '
-                br'(?P<nominalinputvoltage>\d{3}) '
-                br'(?P<nominaloutputvoltage>\d{3}) '
-                br'(?P<batterycount>\d{2}) '
-                br'(?P<nominalbatteryvoltage>\d\d\.\d)')
-    re_generalinfo = re.compile(
+    re_protocolid: Final[re.Pattern] = re.compile(br'\(PI\s*(?P<protocolID>\d{2})')
+    re_modelinfo: Final[re.Pattern] = re.compile(
+        br'\((?P<modelname>(\w|#){15}) '
+        br'(?P<ratedVA>(\d|#){7}) '
+        br'(?P<powerfactor>\d{2}) '
+        br'(?P<inputphasecount>\d)/(?P<outputphasecount>\d) '
+        br'(?P<nominalinputvoltage>\d{3}) '
+        br'(?P<nominaloutputvoltage>\d{3}) '
+        br'(?P<batterycount>\d{2}) '
+        br'(?P<nominalbatteryvoltage>\d\d\.\d)')
+    re_generalinfo: Final[re.Pattern] = re.compile(
         br'\(' + re_optional_float('inputvoltage', 3, 1) + b' ' +
         re_optional_float('inputfrequency', 2, 1) + b' ' +
         re_optional_float('outputvoltage', 3, 1) + b' ' +
@@ -206,39 +206,78 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         br'(?P<battery_test_failed>[01])' +
         br'(?P<battery_test_ok>[01])'
     )
-    re_ok = re.compile(br'\(OK')
-    re_faultstatus = re.compile(br'\((?P<type>[0-9a-f]{2}) ' +
-                            re_optional_float('inputvoltage', 3, 1) + b' ' +
-                            re_optional_float('inputfrequency', 2, 1) + b' ' +
-                            re_optional_float('outputvoltage', 3, 1) + b' ' +
-                            re_optional_float('outputfrequency', 2, 1) + b' ' +
-                            re_optional_float('outputloadpercentage', 3, 0) + b' ' +
-                            re_optional_float('outputcurrent', 3, 1) + b' ' +
-                            re_optional_float('positiveBUSvoltage', 3, 1) + b' ' +
-                            re_optional_float('negativeBUSvoltage', 3, 1) + b' ' +
-                            re_optional_float('batteryvoltage', 3, 1) + b' ' +
-                            re_optional_float('temperature', 3, 1) + b' ' +
-                            br'(?P<dctodc_on>[01])' +
-                            br'(?P<pfc_on>[01])' +
-                            br'(?P<inverter_on>[01])' +
-                            br'(?P<inputrelay_on>[01])' +
-                            br'(?P<outputrelay_on>[01])')
-    re_warningstatus = re.compile(br'\((?P<status>[01]{64})')
-    re_upsmode = re.compile(br'\((?P<upsmode>[PSYLBTFECD])')
-    re_ratings = re.compile(br'\(' +
-                            re_optional_float('ratedvoltage', 3, 1) + b' ' +
-                            re_optional_float('ratedcurrent', 3, 0) + b' ' +
-                            re_optional_float('ratedbatteryvoltage', 3, 1) + b' ' +
-                            re_optional_float('ratedfrequency', 2, 1))
-    re_bypassvoltage = re.compile(br'\(' +
-                            re_optional_float('bypassvoltage_high', 3, 0) + b' ' +
-                            re_optional_float('bypassvoltage_low', 3, 0))
-    re_bypassfrequency = re.compile(br'\(' +
-                            re_optional_float('bypassfrequency_high', 2, 1) + b' ' +
-                            re_optional_float('bypassfrequency_low', 2, 1))
-    re_flags = re.compile(br'\((?:E(?P<enabled>[pbroasvdftim]*))?(?:D(?P<disabled>[pbroasvdftim]*))?')
-    re_flags2 = re.compile(
-        br'\((?P<thdisetting>\d)(?P<standardmodelsetting>\d)(?P<eepromversion>\d)(?P<maincapacityovertempcounter>\d)')
+    re_ok: Final[re.Pattern] = re.compile(br'\(OK')
+    re_faultstatus: Final[re.Pattern] = re.compile(
+        br'\((?P<type>[0-9a-f]{2}) ' +
+        re_optional_float('inputvoltage', 3, 1) + b' ' +
+        re_optional_float('inputfrequency', 2, 1) + b' ' +
+        re_optional_float('outputvoltage', 3, 1) + b' ' +
+        re_optional_float('outputfrequency', 2, 1) + b' ' +
+        re_optional_float('outputloadpercentage', 3, 0) + b' ' +
+        re_optional_float('outputcurrent', 3, 1) + b' ' +
+        re_optional_float('positiveBUSvoltage', 3, 1) + b' ' +
+        re_optional_float('negativeBUSvoltage', 3, 1) + b' ' +
+        re_optional_float('batteryvoltage', 3, 1) + b' ' +
+        re_optional_float('temperature', 3, 1) + b' ' +
+        br'(?P<dctodc_on>[01])' +
+        br'(?P<pfc_on>[01])' +
+        br'(?P<inverter_on>[01])' +
+        br'(?P<inputrelay_on>[01])' +
+        br'(?P<outputrelay_on>[01])')
+    re_warningstatus: Final[re.Pattern] = re.compile(br'\((?P<status>[01]{64})')
+    re_upsmode: Final[re.Pattern] = re.compile(br'\((?P<upsmode>[PSYLBTFECD])')
+    re_ratings: Final[re.Pattern] = re.compile(
+        br'\(' +
+        re_optional_float('ratedvoltage', 3, 1) + b' ' +
+        re_optional_float('ratedcurrent', 3, 0) + b' ' +
+        re_optional_float('ratedbatteryvoltage', 3, 1) + b' ' +
+        re_optional_float('ratedfrequency', 2, 1))
+    re_bypassvoltage: Final[re.Pattern] = re.compile(
+        br'\(' +
+        re_optional_float('bypassvoltage_high', 3, 0) + b' ' +
+        re_optional_float('bypassvoltage_low', 3, 0))
+    re_bypassfrequency: Final[re.Pattern] = re.compile(
+        br'\(' +
+        re_optional_float('bypassfrequency_high', 2, 1) + b' ' +
+        re_optional_float('bypassfrequency_low', 2, 1))
+    re_flags: Final[re.Pattern] = re.compile(
+        br'\((?:E(?P<enabled>[pbroasvdftim]*))?(?:D(?P<disabled>[pbroasvdftim]*))?')
+    re_flags2: Final[re.Pattern] = re.compile(
+        br'\((?P<thdisetting>\d)(?P<standardmodelsetting>\d)'
+        br'(?P<eepromversion>\d)(?P<maincapacityovertempcounter>\d)')
+    re_verfw: Final[re.Pattern] = re.compile(br'\(VERFW:(?P<firmwareversion>.*)')
+    re_hardwareversion: Final[re.Pattern] = re.compile(br'\((?P<hardwareversion>[a-zA-Z0-9]{14})')
+    re_batteryinfo: Final[re.Pattern] = re.compile(
+        br'\(' +
+        re_optional_float('batteryvoltage_2', 3, 1) + b' ' +
+        re_optional_float('batterycount_2', 2, 0) + b' ' +
+        re_optional_float('batterygroupcount', 2, 0) + b' ' +
+        re_optional_float('batterycapacity', 3, 0) + b' ' +
+        br'(?:(?P<batteryremaintime>\d{3}|\d{5})|(-+))')
+    re_loadlevel: Final[re.Pattern] = re.compile(
+        br'\(' +
+        re_optional_float('loadlevel_wattpercent', 3, 0) + b' ' +
+        re_optional_float('loadlevel_vapercent', 3, 0))
+    re_temperature: Final[re.Pattern] = re.compile(
+        br'\(' +
+        re_optional_float('temperature_pfc', 3, 1) + b' ' +
+        re_optional_float('temperature_ambient', 3, 1) + b' ' +
+        re_optional_float('temperature_charger', 3, 1) + b' ' + b'---\.-')
+    re_acknowledgement: Final[re.Pattern] = re.compile(br'\((?P<ack>ACK|NAK)')
+    _flagchars: Final[Dict[str, str]] = dict([
+        ('bypassmodealarm', 'p'),
+        ('batterymodealarm', 'b'),
+        ('autostartenabled', 'r'),
+        ('bypassenabled', 'o'),
+        ('warningalarm', 'a'),
+        ('batteryprotectenabled', 's'),
+        ('convertermodeenabled', 'v'),
+        ('batteryopenstatuscheckenabled', 'd'),
+        ('bypassforbiddingenabled', 'f'),
+        ('batterylowprotectenabled', 't'),
+        ('invertershortclearenabled', 'i'),
+        ('hotstandbymaster', 'm'),
+    ])
 
     def _query(self, variablename: str):
         if variablename == 'protocolID':
@@ -376,21 +415,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         elif (m := self.re_flags.match(message)) and (sentmessage == b'QFLAG\r'):
             enabled = m['enabled'].decode('ascii') if m['enabled'] is not None else ''
             disabled = m['disabled'].decode('ascii') if m['disabled'] is not None else ''
-            # ToDo: the documentation on the protocol is not clear enough, testing is needed
-            #            self.updateVariable('', m[''])
-            for flagname, short in [('bypassmodealarm', 'p'),
-                                    ('batterymodealarm', 'b'),
-                                    ('autostartenabled', 'r'),
-                                    ('bypassenabled', 'o'),
-                                    ('warningalarm', 'a'),
-                                    ('batteryprotectenabled', 's'),
-                                    ('convertermodeenabled', 'v'),
-                                    ('batteryopenstatuscheckenabled', 'd'),
-                                    ('bypassforbiddingenabled', 'f'),
-                                    ('batterylowprotectenabled', 't'),
-                                    ('invertershortclearenabled', 'i'),
-                                    ('hotstandbymaster', 'm'),
-                                    ]:
+            for flagname, short in self._flagchars:
                 if short in enabled:
                     self.updateVariable(f'flag.{flagname}', True)
                 elif short in disabled:
@@ -399,33 +424,37 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                     raise RuntimeError(f'Flag {flagname} (short name {short}) neither enabled nor disabled')
         elif (m := self.re_flags2.match(message)) and (sentmessage == b'QFLAG2\r'):
             for group in m.groupdict():
-                self.updateVariable('flag.'+group, int(m[group]))
-        elif (m := re.match(br'\(VERFW:(?P<firmwareversion>.*)', message)) and (sentmessage == b'QVFW\r'):
+                self.updateVariable('flag.' + group, int(m[group]))
+        elif (m := self.re_verfw.match(message)) and (sentmessage == b'QVFW\r'):
             self.updateVariable('firmwareversion', m['firmwareversion'].decode('utf-8').strip())
-        elif (m := re.match(br'\((?P<hardwareversion>[a-zA-Z0-9]{14})', message)) and (sentmessage == b'QID\r'):
+        elif (m := self.re_hardwareversion.match(message)) and (sentmessage == b'QID\r'):
             self.updateVariable('hardwareversion', m['hardwareversion'].decode('utf-8').strip())
-        elif (m := re.match(br'\(' +
-                            re_optional_float('batteryvoltage_2', 3, 1) + b' ' +
-                            re_optional_float('batterycount_2', 2, 0) + b' ' +
-                            re_optional_float('batterygroupcount', 2, 0) + b' ' +
-                            re_optional_float('batterycapacity', 3, 0) + b' ' +
-                            br'(?:(?P<batteryremaintime>\d{3}|\d{5})|(-+))', message)) and (sentmessage == b'QBV\r'):
+        elif (m := self.re_batteryinfo.match(message)) and (sentmessage == b'QBV\r'):
             self.updateVariable('batteryvoltage_2', safe_float(m['batteryvoltage_2']))
             self.updateVariable('batterycount_2', safe_int(m['batterycount_2']))
             self.updateVariable('batterygroupcount', safe_int(m['batterygroupcount']))
             self.updateVariable('batterycapacity', safe_int(m['batterycapacity']))
             self.updateVariable('batteryremaintime', safe_int(m['batteryremaintime']))
-        elif (m := re.match(br'\(' +
-                            re_optional_float('loadlevel_wattpercent', 3, 0) + b' ' +
-                            re_optional_float('loadlevel_vapercent', 3, 0), message)) and (sentmessage == b'QLDL\r'):
+        elif (m := self.re_loadlevel.match(message)) and (sentmessage == b'QLDL\r'):
             self.updateVariable('loadlevel_wattpercent', safe_float(m['loadlevel_wattpercent']))
             self.updateVariable('loadlevel_vapercent', safe_float(m['loadlevel_vapercent']))
-        elif (m := re.match(br'\(' +
-                            re_optional_float('temperature_pfc', 3, 1) + b' ' +
-                            re_optional_float('temperature_ambient', 3, 1) + b' ' +
-                            re_optional_float('temperature_charger', 3, 1) + b' ' + b'---\.-'         , message)) and (sentmessage == b'QTPR\r'):
+            self.updateVariable('__auxstatus__', f'{self["loadlevel_wattpercent"]:.0f}%')
+        elif (m := self.re_temperature.match(message)) and (sentmessage == b'QTPR\r'):
             self.updateVariable('temperature.pfc', safe_float(m['temperature_pfc']))
             self.updateVariable('temperature.ambient', safe_float(m['temperature_ambient']))
             self.updateVariable('temperature.charger', safe_float(m['temperature_charger']))
+        elif (m := self.re_acknowledgement.match(message)) and (sentmessage.startswith(b'PE') or sentmessage.startswith(b'PD')):
+            self.commandFinished('setflag' if sentmessage.startswith(b'PE') else 'clearflag', m['ack'] == b'ACK')
         else:
             raise ValueError(f'Invalid reply for sent message *{sentmessage}*: *{message}*')
+
+    def issueCommand(self, name: str, args: Sequence[Any]):
+        if name in ['setflag', 'clearflag']:
+            flagname = args[0]
+            if flagname not in self._flagchars:
+                self.commandError(name, f'Unknown flag {flagname}')
+            else:
+                self.enqueueHardwareMessage(
+                    f'P{"E" if name == "setflag" else "D"}{self._flagchars[flagname]}\r'.upper().encode('ascii'))
+        else:
+            self.commandError(name, f'Unknown command {name}')

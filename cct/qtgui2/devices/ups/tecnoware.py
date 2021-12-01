@@ -20,6 +20,13 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'tecnowareevodspplus'][0]
         self.treeView.setModel(ups)
         for variable in ups.keys():
+            if variable.startswith('flag.'):
+                try:
+                    toolbutton: QtWidgets.QPushButton = getattr(self, variable.split('.')[1]+'PushButton')
+                    toolbutton.setEnabled(False)
+                    toolbutton.toggled.connect(self.onFlagButtonToggled)
+                except AttributeError:
+                    pass
             try:
                 self.onVariableChanged(variable, ups[variable], ups[variable])
             except ups.DeviceError:
@@ -59,6 +66,16 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.ratedBatteryVoltageLabel.setText(f'{newvalue:.2f} V')
         elif name == 'ratedfrequency':
             self.ratedFrequencyLabel.setText(f'{newvalue:.2f} Hz')
+        elif name.startswith('flag.'):
+            flagname = name.split('.')[1]
+            try:
+                toolbutton:QtWidgets.QPushButton = getattr(self, flagname+'PushButton')
+                toolbutton.blockSignals(True)
+                toolbutton.setChecked(bool(newvalue))
+                toolbutton.setEnabled(True)
+                toolbutton.blockSignals(False)
+            except AttributeError:
+                pass
         else:
             for varname, widget, goodtext, badtext, goodbool in [
                 ('utilityfail', self.utilityFailedLabel, 'Grid power OK', 'Grid power out', False),
@@ -76,3 +93,9 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     pal = widget.palette()
                     pal.setColor(pal.Window, QtGui.QColor('lightgreen' if good else 'red'))
                     widget.setPalette(pal)
+
+    def onFlagButtonToggled(self, state: bool):
+        flagbutton: QtWidgets.QPushButton = self.sender()
+        flagname = flagbutton.objectName().replace('PushButton', '')
+        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'tecnowareevodspplus'][0]
+        ups.issueCommand('setflag' if state else 'clearflag', flagname)
