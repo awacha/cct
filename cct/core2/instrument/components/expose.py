@@ -147,7 +147,7 @@ class Exposer(QtCore.QObject, Component):
     def startExposure(self, prefix: str, exposuretime: float, imagecount: int = 1, delay: float = 0.003,
                       maskoverride: Optional[str] = None) -> int:
         """prepare the detector for an exposure. Also prepare timers for waiting for images."""
-        if self.__panicking != self.PanicState.NoPanic:
+        if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot start exposure: panic!')
         if self.detector is None:
             self._connectDetector()
@@ -245,8 +245,8 @@ class Exposer(QtCore.QObject, Component):
                 self.exposureFinished.emit(True)
                 self.killTimer(self.progresstimer)
                 self.progresstimer = None
-                if self.__panicking == self.PanicState.Panicking:
-                    self.__panicking = self.PanicState.Panicked
+                if self._panicking == self.PanicState.Panicking:
+                    self._panicking = self.PanicState.Panicked
                     self.panicAcknowledged.emit()
             elif (self.state == ExposerState.Exposing) and (value == PilatusBackend.Status.Stopping):
                 # the detector backend acknowledged our stop request and has issued the stop command to the camserver
@@ -366,7 +366,7 @@ class Exposer(QtCore.QObject, Component):
         return len(self.waittimers)
 
     def panichandler(self):
-        self.__panicking = self.PanicState.Panicking
+        self._panicking = self.PanicState.Panicking
         if (self.state == ExposerState.Idle):
             super().panichandler()
         elif (self.state == ExposerState.Exposing):

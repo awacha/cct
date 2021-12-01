@@ -51,7 +51,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
 
     def startScan(self, motorname: str, rangemin: float, rangemax: float, steps: int, relative: bool,
                   countingtime: float, comment: str, movemotorback: bool = True, shutter: bool = True):
-        if self.__panicking != self.PanicState.NoPanic:
+        if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot start scan: panic!')
         if self.scanrecorder is not None:
             raise RuntimeError('Cannot start scan: already running')
@@ -137,7 +137,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         self.scanfinished.emit(success, self.scanrecorder.scanindex)
         self.scanrecorder.deleteLater()
         self.scanrecorder = None
-        if self.__panicking == self.PanicState.Panicking:
+        if self._panicking == self.PanicState.Panicking:
             super().panichandler()
 
     def scanfile(self) -> str:
@@ -236,7 +236,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
             self.config['scan'] = {'mask': None, 'mask_total': None, 'scanfile': 'credoscan.spec'}
 
     def panichandler(self):
-        self.__panicking = self.PanicState.Panicking
+        self._panicking = self.PanicState.Panicking
         if self.scanrecorder is None:
             super().panichandler()
         else:

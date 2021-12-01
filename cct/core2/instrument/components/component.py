@@ -25,7 +25,7 @@ class Component:
         Panicking = enum.auto()
         Panicked = enum.auto()
 
-    __panicking: PanicState = PanicState.NoPanic
+    _panicking: PanicState = PanicState.NoPanic
 
     def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PyQt5/multiinheritance.html
         self.config = kwargs['config']
@@ -60,5 +60,5 @@ class Component:
 
     def panichandler(self):
         """Default panic handler: schedules the emission of the panicAcknowledged signal soon afterwards."""
-        self.__panicking = self.PanicState.Panicked
+        self._panicking = self.PanicState.Panicked
         QtCore.QTimer.singleShot(0, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)

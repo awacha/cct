@@ -394,7 +394,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
 
     def startMeasurement(self, emptysample: str, countingtime: float, nimages: int, delaytime: float,
                          lazymode: bool = False):
-        if self.__panicking != self.PanicState.NoPanic:
+        if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot start transmission measurement: in panic state!')
         if self.status != TransmissionMeasurementStatus.Idle:
             raise RuntimeError('Cannot start transmission measurement: already running')
@@ -606,7 +606,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             self.finished.emit(success, message)
         except Exception as exc:
             logger.error(f'Exception in transmission.finished() callback: {traceback.format_exc()}')
-        if self.__panicking == self.PanicState.Panicking:
+        if self._panicking == self.PanicState.Panicking:
             logger.error('Transmission measurement stopped on panic!')
             super().panichandler()
 
@@ -808,7 +808,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         self.endResetModel()
 
     def panichandler(self):
-        self.__panicking = self.PanicState.Panicking
+        self._panicking = self.PanicState.Panicking
         if self.status == TransmissionMeasurementStatus.Idle:
             super().panichandler()
         else:

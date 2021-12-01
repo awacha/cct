@@ -70,14 +70,14 @@ class BeamStop(QtCore.QObject, Component):
             self._connectMotor(self.instrument.motors[motorname])
 
     def moveOut(self):
-        if self.__panicking != self.PanicState.NoPanic:
+        if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot move beam-stop: panic!')
         self._movetarget = self.States.Out
         self.motionstoprequested = False
         self.motorx.moveTo(self.config['beamstop']['out'][0])
 
     def moveIn(self):
-        if self.__panicking != self.PanicState.NoPanic:
+        if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot move beam-stop: panic!')
         self._movetarget = self.States.In
         self.motionstoprequested = False
@@ -144,7 +144,7 @@ class BeamStop(QtCore.QObject, Component):
                 self.movingFinished.emit(True)
         if self.stopping and (not self.motorx.isMoving()) and (not self.motory.isMoving()):
             self.stopComponent()
-        if self.__panicking == self.PanicState.Panicking:
+        if self._panicking == self.PanicState.Panicking:
             super().panichandler()
 
     def onMotorPositionChanged(self, actualposition: float):
@@ -208,7 +208,7 @@ class BeamStop(QtCore.QObject, Component):
         return self.config['beamstop']['out']
 
     def panichandler(self):
-        self.__panicking = self.PanicState.Panicking
+        self._panicking = self.PanicState.Panicking
         if self._movetarget is not None:
             self.stopMoving()
         else:

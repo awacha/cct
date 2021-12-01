@@ -166,7 +166,7 @@ class Interpreter(QtCore.QObject, Component):
             self.scriptfinished.emit(False, message)
         except Exception as exc:
             logger.error(f'Exception in scriptfinished signal handler: {traceback.format_exc()}')
-        if self.__panicking == self.PanicState.Panicking:
+        if self._panicking == self.PanicState.Panicking:
             super().panichandler()
 
     def finish(self):
@@ -175,11 +175,11 @@ class Interpreter(QtCore.QObject, Component):
             self.scriptfinished.emit(True, '')
         except Exception as exc:
             logger.error(f'Exception in the scriptfinished signal handler: {traceback.format_exc()}')
-        if self.__panicking == self.PanicState.Panicking:
+        if self._panicking == self.PanicState.Panicking:
             super().panichandler()
 
     def panichandler(self):
-        self.__panicking = self.PanicState.Panicking
+        self._panicking = self.PanicState.Panicking
         if self.pointer is not None:
             self.stop()
         else:

@@ -80,7 +80,7 @@ class DataReduction(QtCore.QObject, Component):
                 self.killTimer(self.timer)
                 self.timer = None
             # keep the back-end running but we do not expect any message from it.
-            if self.__panicking == self.PanicState.Panicking:
+            if self._panicking == self.PanicState.Panicking:
                 super().panichandler()
 
     def stopComponent(self):
@@ -93,7 +93,7 @@ class DataReduction(QtCore.QObject, Component):
         return self.backend is not None
 
     def submit(self, exposure: Exposure):
-        if self.__panicking != self.PanicState.NoPanic:
+        if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot submit exposure: panic!')
         if not self.running():
             raise RuntimeError('Cannot submit exposure: data reduction component not running')
@@ -107,7 +107,7 @@ class DataReduction(QtCore.QObject, Component):
             self.queuetobackend.put_nowait(('config', self.config.asdict()))
 
     def panichandler(self):
-        self.__panicking = self.PanicState.Panicking
+        self._panicking = self.PanicState.Panicking
         if self.submitted > 0:
             pass
         else:

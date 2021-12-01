@@ -351,7 +351,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         return self.instrument.motors.sample_y.name
 
     def moveToSample(self, samplename: str, direction='both'):
-        if self.__panicking != self.PanicState.NoPanic:
+        if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot move to sample: panicking!')
         try:
             xmotor = self.xmotor()
@@ -399,10 +399,10 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         if not success:
             self._disconnectSampleMotors()
             self.movingFinished.emit(False, self._currentsample)
-            if self.__panicking == self.PanicState.Panicking:
+            if self._panicking == self.PanicState.Panicking:
                 super().panichandler()
             return
-        if self.__panicking == self.PanicState.Panicking:
+        if self._panicking == self.PanicState.Panicking:
             super().panichandler()
             return
         if (self.sender() is self.xmotor()) and (self._movesampledirection == 'both'):
@@ -423,7 +423,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         self.ymotor().stop()
 
     def panichandler(self):
-        self.__panicking = self.PanicState.Panicking
+        self._panicking = self.PanicState.Panicking
         if not (self.xmotor().isMoving() or self.ymotor().isMoving()):
             super().panichandler()
         else:
