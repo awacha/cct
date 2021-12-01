@@ -3,7 +3,8 @@ import logging
 
 from PyQt5 import QtWidgets, QtGui
 from ...utils.window import WindowRequiresDevices
-from .keen800_ui import Ui_Form
+from .tecnoware_ui import Ui_Form
+from ....core2.devices.ups.tecnoware import TecnowareEvoDSPPlus
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,11 +16,13 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         super().__init__(**kwargs)
         self.setupUi(self)
 
+    def ups(self) -> TecnowareEvoDSPPlus:
+        return [dev for dev in self.instrument.devicemanager if dev.devicename == 'TecnowareEvoDSPPlus'][0]
+
     def setupUi(self, Form):
         super().setupUi(Form)
-        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'tecnowareevodspplus'][0]
         self.treeView.setModel(ups)
-        for variable in ups.keys():
+        for variable in self.ups().keys():
             if variable.startswith('flag.'):
                 try:
                     toolbutton: QtWidgets.QPushButton = getattr(self, variable.split('.')[1]+'PushButton')
@@ -28,13 +31,12 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 except AttributeError:
                     pass
             try:
-                self.onVariableChanged(variable, ups[variable], ups[variable])
+                self.onVariableChanged(variable, self.ups()[variable], self.ups()[variable])
             except ups.DeviceError:
                 pass
 
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         logger.debug(f'{name}: {prevvalue} -> {newvalue}')
-        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'tecnowareevodspplus'][0]
         if name == '__status__':
             pass
         elif name == '__auxstatus__':
@@ -47,8 +49,8 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.outputVoltageLabel.setText(f'{newvalue:.2f} V')
         elif name == 'outputcurrentpercentage':
             try:
-                ratedcurrent = ups['ratedcurrent']
-            except ups.DeviceError:
+                ratedcurrent = self.ups()['ratedcurrent']
+            except self.ups().DeviceError:
                 pass
             else:
                 self.currentUsageLabel.setText(f'{ratedcurrent*newvalue/100.:.3f} A ({newvalue:.0f} %)')
@@ -97,5 +99,4 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onFlagButtonToggled(self, state: bool):
         flagbutton: QtWidgets.QPushButton = self.sender()
         flagname = flagbutton.objectName().replace('PushButton', '')
-        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'tecnowareevodspplus'][0]
-        ups.issueCommand('setflag' if state else 'clearflag', flagname)
+        self.ups().issueCommand('setflag' if state else 'clearflag', flagname)
