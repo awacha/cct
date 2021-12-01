@@ -1,7 +1,7 @@
 import os
 import time
 import datetime
-from typing import List, NamedTuple, Dict, Tuple, Final
+from typing import List, NamedTuple, Dict, Tuple, Final, Optional
 from collections import namedtuple
 import textwrap
 
@@ -36,7 +36,7 @@ class TelemetryInformation:
     asyncio_tasks: List[str]
     comm_duration: float = 0.0
     communicating: bool=True
-    commstart: Optional[None]
+    commstart: Optional[float] = None
 
     attributeinfo: Final[List[TelemetryAttribute]] = [
         TelemetryAttribute('enddate', 'Date of telemetry', str),
