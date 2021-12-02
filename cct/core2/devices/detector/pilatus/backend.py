@@ -139,12 +139,12 @@ class PilatusBackend(DeviceBackend):
                 # an user break. Resetcam always returns a '15 OK' message, we re-trim the detector there.
                 pass
             else:
-                # not a user break, something went really wrong with the exposure. We need to panic.
+                # not a user break, something went really wrong with the exposure
                 self.debug(f'__status__=={self["__status__"]}')
                 self.updateVariable('__status__', self.Status.Idle)
                 self.updateVariable('__auxstatus__', '')
                 self.error(f'Error in exposure: {remainder}')
-                self.panic()
+#                self.panic()
                 self.enableAutoQuery()
         elif (status == 'OK') and (idnum == 7):  # successful end of single exposure
             self.updateVariable('lastcompletedimage', remainder)
@@ -169,7 +169,7 @@ class PilatusBackend(DeviceBackend):
                 self.enableAutoQuery()
         elif status == 'ERR':
             self.error(f'Unknown error reported by the Pilatus detector: {remainder}')
-            self.panic()
+            #self.panic()
         elif (status == 'OK') and (idnum == 2):  # reply to 'camsetup'
             lines = [l.strip() for l in remainder.split('\n')]
             if not ((lines[0] == 'Camera definition:') and

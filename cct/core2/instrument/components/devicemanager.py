@@ -113,10 +113,10 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
     def onError(self):
         pass
 
-    def onPanic(self):
+    def onPanic(self, reason: str):
         device:DeviceFrontend = self.sender()
-        logger.error(f'Device {device.name} panicked! Escalating...')
-        self.instrument.panic()
+        logger.error(f'Device {device.name} panicked! Reason: {reason}. Escalating...')
+        self.instrument.panic(reason)
 
     # ------------------ Convenience methods for accessing devices ---------------------------------------------------------
 

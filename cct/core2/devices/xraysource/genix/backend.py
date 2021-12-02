@@ -297,6 +297,9 @@ class GeniXBackend(DeviceBackend, ModbusTCP):
 
     def doPanic(self):
         self.panicking = self.PanicState.Panicking
+        # close the shutter
+        self.modbus_set_coil(247, False)
+        self.modbus_set_coil(248, True)
         if self['__status__'] == self.Status.xraysoff:
             super().doPanic()
         elif self['__status__'] == self.Status.warmup:

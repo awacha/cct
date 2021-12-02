@@ -1,24 +1,24 @@
 import logging
-from typing import Dict
+from typing import Dict, Optional, List
 
 from PyQt5 import QtCore
 
-from .components.component import Component
+from .components.auth import UserManager
 from .components.beamstop import BeamStop
 from .components.calibrants.calibrants import CalibrantStore
+from .components.component import Component
+from .components.datareduction.datareduction import DataReduction
 from .components.devicemanager import DeviceManager
+from .components.expose import Exposer
 from .components.geometry.geometry import Geometry
 from .components.interpreter import Interpreter
 from .components.io import IO
 from .components.motors import Motors
+from .components.projects import ProjectManager
 from .components.samples import SampleStore
 from .components.scan import ScanStore
-from .components.auth import UserManager
-from .components.projects import ProjectManager
-from .components.expose import Exposer
-from .components.datareduction.datareduction import DataReduction
-from .components.transmission import TransmissionMeasurement
 from .components.sensors import Sensors
+from .components.transmission import TransmissionMeasurement
 from ..config import Config
 
 logger = logging.getLogger(__name__)
@@ -48,6 +48,8 @@ class Instrument(QtCore.QObject):
     panicAcknowledged = QtCore.pyqtSignal()
     online: bool = False
     components: Dict[str, Component] = None
+    _panic_components: Optional[List[List[str]]] = None
+    panicreason: Optional[str] = None
 
     def __init__(self, configfile: str):
         if type(self)._singleton_instance is not None:
@@ -98,7 +100,8 @@ class Instrument(QtCore.QObject):
             logger.info('All components are up and running.')
 
     def onComponentStopped(self):
-        logger.debug(f'Currently running components: {", ".join(c for c in self.components if self.components[c].running())}')
+        logger.debug(
+            f'Currently running components: {", ".join(c for c in self.components if self.components[c].running())}')
         if all([not c.running() for n, c in self.components.items()]):
             self.running = False
             self.stopping = False
@@ -182,7 +185,7 @@ class Instrument(QtCore.QObject):
             component.saveToConfig()
         self.config.save(self.config.filename)
 
-    def panic(self):
+    def panic(self, reason: str):
         """Start the panic sequence
 
         Whenever something really bad happens, the panic sequence ensures that everything is put in a clean state and
@@ -193,7 +196,11 @@ class Instrument(QtCore.QObject):
         - serious trouble with the X-ray source
         - grid power outage reported by the UPS
         """
-        self._panic_components=[
+        if self._panic_components is not None:
+            logger.error(f'Another panic occurred while handling a panic situation. Reason: {reason}')
+            return
+        self.panicreason = reason
+        self._panic_components = [
             [],
             ['interpreter'],
             ['scan', 'transmission'],

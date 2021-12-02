@@ -163,8 +163,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     def isInitializing(self) -> bool:
         return self.connectionstate == DeviceConnectionState.Initializing
 
-
-    def onMessageFromBackend(self, message):
+    def onMessageFromBackend(self, message: Message):
         self.currentMessage = message
         try:
             if self.currentMessage.command == 'ready':
@@ -252,7 +251,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
                 self._panicking = self.PanicState.Panicked
                 self.panicAcknowledged.emit()
             elif self.currentMessage.command == 'panic':
-                self.panic.emit()
+                self.panic.emit(self.currentMessage['reason'])
         finally:
             self.currentMessage = None
 

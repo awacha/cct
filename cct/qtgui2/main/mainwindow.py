@@ -100,6 +100,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._devicestatuswidgets = []
         super().__init__(kwargs['parent'] if 'parent' in kwargs else None)
         self.instrument = kwargs['instrument']
+        self.instrument.panicAcknowledged.connect(self.onPanicAcknowledged)
         self.instrument.shutdown.connect(self.close)
         self.instrument.interpreter.scriptstarted.connect(self.onInterpreterStarted)
         self.instrument.interpreter.scriptfinished.connect(self.onInterpreterFinished)
@@ -156,6 +157,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def saveSettings(self):
         self.instrument.saveConfig()
+
+    def onPanicAcknowledged(self):
+        QtWidgets.QMessageBox.critical(
+            self, 'Panic',
+            f'Panic occurred, the instrument has been shut down. The program will exit. '
+            f'Reason of the panic: {self.instrument.panicreason}')
 
     def onScriptTriggered(self):
         self.tabWidget.setCurrentWidget(self.scriptingTab)

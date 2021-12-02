@@ -1,4 +1,5 @@
 import re
+import time
 from math import inf
 from typing import Tuple, List, Optional, Union, Sequence, Any, Dict, Final
 
@@ -279,6 +280,10 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         ('hotstandbymaster', 'm'),
     ])
 
+    gridpowerlostat: Optional[float] = None
+    gridpowerlosspanicdelay: float = 300  # the number of seconds after which a panic will be initiated if the utility power is not back yet
+
+
     def _query(self, variablename: str):
         if variablename == 'protocolID':
             self.enqueueHardwareMessage(b'QPI\r')
@@ -320,6 +325,12 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         return msgs[:-1], msgs[-1]
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
+        # for the time being, in the absence of a timer callback, we put the check for grid power loss here
+        if self.gridpowerlostat is not None:
+            # grid power is lost
+            if time.monotonic() - self.gridpowerlostat > self.gridpowerlosspanicdelay:
+                self.panic(f'Grid power out for more than {self.gridpowerlosspanicdelay}.')
+
         #        self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
         if (m := self.re_protocolid.match(message)) and (sentmessage == b'QPI\r'):
             self.updateVariable('protocolID', int(m['protocolID']))
@@ -458,3 +469,12 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
                     f'P{"E" if name == "setflag" else "D"}{self._flagchars[flagname]}\r'.upper().encode('ascii'))
         else:
             self.commandError(name, f'Unknown command {name}')
+
+    def onVariableChanged(self, name: str, newvalue: Any, oldvalue: Any):
+        if (name == 'utilityfail') and bool(newvalue):
+            # utility failed
+            self.error('Utility power failure!')
+            self.gridpowerlostat = time.monotonic()
+        elif (name == 'utilityfail') and not bool(newvalue):
+            # utility power back
+            self.info('Utility power is back!')

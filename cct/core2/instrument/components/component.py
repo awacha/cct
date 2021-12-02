@@ -14,7 +14,7 @@ class Component:
     """Logical component of an instrument"""
     config: Config
     instrument: "Instrument"
-    started= QtCore.pyqtSignal()
+    started = QtCore.pyqtSignal()
     stopped = QtCore.pyqtSignal()
     stopping: bool = False
     __running: bool = False

@@ -614,6 +614,12 @@ class DeviceBackend:
             if variable.update(newvalue):
                 self.messageToFrontend('variableChanged', name=variable.name, value=variable.value,
                                        previousvalue=variable.previousvalue)
+                try:
+                    self.onVariableChanged(variable.name, variable.value, variable.previousvalue)
+                except Exception as exc:
+                    self.error(
+                        f'Exception in backend onVariableChanged callback on variable {variable.name}, '
+                        f'new value {variable.value}')
                 return True
             else:
                 return False
@@ -728,6 +734,9 @@ class DeviceBackend:
         self.panicking = self.PanicState.Panicked
         self.messageToFrontend('panicacknowledged')
 
-    def panic(self):
+    def panic(self, reason: str):
         """Notify the front-end thread of a panic situation."""
-        self.messageToFrontend('panic')
+        self.messageToFrontend('panic', reason=reason)
+
+    def onVariableChanged(self, name: str, newvalue: Any, oldvalue: Any):
+        pass
