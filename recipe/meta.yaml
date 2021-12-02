@@ -18,11 +18,9 @@ requirements:
     - cython >=0.15
     - matplotlib
     - scipy
-    - sastool >=1.1.5
     - krb5
     - pyqt >=5
     - psutil
-    - pymodbustcp
     - appdirs
     - pillow
     - openpyxl
@@ -31,7 +29,6 @@ requirements:
     - imageio
     - click
     - colorlog
-    - pyusb
 
   host: *id1
 
@@ -40,12 +37,10 @@ requirements:
     - python
     - appdirs
     - numpy {{ numpy }}
-    - pymodbustcp
     - psutil
     - krb5
     - scipy
     - matplotlib
-    - sastool >=1.2.3
     - pyqt >=5
     - openpyxl
     - sqlalchemy
@@ -53,7 +48,6 @@ requirements:
     - imageio
     - click
     - colorlog
-    - pyusb
 
 about:
   home: https://github.com/awacha/cct
