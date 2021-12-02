@@ -185,7 +185,7 @@ class Instrument(QtCore.QObject):
             component.saveToConfig()
         self.config.save(self.config.filename)
 
-    def panic(self, reason: str):
+    def panic(self, reason: str = 'Unspecified reason'):
         """Start the panic sequence
 
         Whenever something really bad happens, the panic sequence ensures that everything is put in a clean state and

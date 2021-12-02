@@ -151,12 +151,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.scriptingTab.layout().addWidget(self.scripting)
         self.executePushButton.clicked.connect(self.onExecutePushed)
         self.actionSave_settings.triggered.connect(self.saveSettings)
-        self.panicPushButton.clicked.connect(self.instrument.panic)
+        self.panicPushButton.clicked.connect(self.onPanicClicked)
         for dev in self.instrument.devicemanager:
             self.onDeviceAdded(dev.name)
 
     def saveSettings(self):
         self.instrument.saveConfig()
+
+    def onPanicClicked(self):
+        self.instrument.panic('User clicked on the panic button')
 
     def onPanicAcknowledged(self):
         QtWidgets.QMessageBox.critical(
