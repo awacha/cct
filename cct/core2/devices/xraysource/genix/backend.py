@@ -273,6 +273,8 @@ class GeniXBackend(DeviceBackend, ModbusTCP):
         try:
             if not self['xrays']:
                 self.updateVariable('__status__', self.Status.xraysoff)
+                if self.panicking == self.PanicState.Panicking:
+                    super().doPanic()
             elif self['warmingup']:
                 self.updateVariable('__status__', self.Status.warmup)
             elif self['goingtostandby']:
@@ -288,7 +290,7 @@ class GeniXBackend(DeviceBackend, ModbusTCP):
             elif (self['ht'] == 0) and (self['current'] == 0):
                 self.updateVariable('__status__', self.Status.off)
                 if self.panicking == self.PanicState.Panicking:
-                    super().doPanic()
+                    self.modbus_set_coil(251, 0)  # turn X-rays off
             else:
                 self.updateVariable('__status__', self.Status.unknown)
         except KeyError:
@@ -323,6 +325,7 @@ class GeniXBackend(DeviceBackend, ModbusTCP):
             self.modbus_set_coil(252, False)  # ramp up off
             self.modbus_set_coil(244, True)  # power off
         elif self['__status__'] == self.Status.off:
+            self.modbus_set_coil(251, False)  # turn X-rays off
             super().doPanic()
         elif self['__status__'] == self.Status.unknown:
             self.modbus_set_coil(250, False)  # Standby mode off
