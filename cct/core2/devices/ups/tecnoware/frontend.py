@@ -12,10 +12,10 @@ class TecnowareEvoDSPPlus(UPS):
     def __init__(self, name: str, host: str, port: int, **kwargs):
         super().__init__(name, host, port, **kwargs)
         self.sensors = [
-            Thermometer('ups temperature', self.name, 0, '°C', highwarnlimit=30, higherrorlimit=40),
-            Thermometer('pfc', self.name, 1, '°C', highwarnlimit=30, higherrorlimit=40),
-            Thermometer('ambient', self.name, 2, '°C', highwarnlimit=30, higherrorlimit=40),
-            Thermometer('charger', self.name, 3, '°C', highwarnlimit=30, higherrorlimit=40),
+            Thermometer('ups temperature', self.name, 0, '°C', highwarnlimit=30, higherrorlimit=50, paniconerror=True),
+            Thermometer('pfc', self.name, 1, '°C', highwarnlimit=30, higherrorlimit=50, paniconerror=True),
+            Thermometer('ambient', self.name, 2, '°C', highwarnlimit=30, higherrorlimit=50, paniconerror=True),
+            Thermometer('charger', self.name, 3, '°C', highwarnlimit=30, higherrorlimit=50, paniconerror=True),
         ]
 
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
