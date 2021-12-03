@@ -273,6 +273,7 @@
     <addaction name="separator"/>
     <addaction name="actionCalibration"/>
     <addaction name="separator"/>
+    <addaction name="actionNotification"/>
     <addaction name="actionUser_management"/>
     <addaction name="actionChange_password"/>
     <addaction name="actionProject_management"/>
@@ -289,6 +290,7 @@
     <addaction name="actionThermometer"/>
     <addaction name="actionPeristaltic_pump"/>
     <addaction name="actionKeen800UPS"/>
+    <addaction name="actionTecnowareUPS"/>
     <addaction name="separator"/>
     <addaction name="actionDevice_connections"/>
    </widget>
@@ -845,6 +847,18 @@
    </property>
    <property name="toolTip">
     <string>Tecnoware UPS</string>
+   </property>
+  </action>
+  <action name="actionNotification">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/notification.svg</normaloff>:/icons/notification.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Notification</string>
+   </property>
+   <property name="toolTip">
+    <string>Set up notification</string>
    </property>
   </action>
  </widget>

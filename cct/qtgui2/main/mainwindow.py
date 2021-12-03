@@ -32,6 +32,7 @@ from ..measurement.transmission import TransmissionUi
 from ..setup.calibrants.calibrants import Calibrants
 from ..setup.calibration.calibration import Calibration
 from ..setup.geometry.geometry import GeometryEditor
+from ..setup.notifier.notifier import NotifierSetup
 from ..setup.projectmanager.projectmanager import ProjectManager
 from ..setup.samples.sampleeditor import SampleEditor
 from ..setup.usermanager.passwordchange import PasswordChange
@@ -91,6 +92,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionKeen800UPS': Keen80UPS,
         'actionPeristaltic_pump': LeadFluid_BT100S,
         'actionTecnowareUPS': TecnowareUPS,  # ToDo: group similar instruments
+        'actionNotifier': NotifierSetup,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]

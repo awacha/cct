@@ -19,6 +19,7 @@ from .components.samples import SampleStore
 from .components.scan import ScanStore
 from .components.sensors import Sensors
 from .components.transmission import TransmissionMeasurement
+from .components.notifier import Notifier
 from ..config import Config
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ class Instrument(QtCore.QObject):
     exposer: Exposer
     transmission: TransmissionMeasurement
     sensors: Sensors
+    notifier: Notifier
     stopping: bool = False
     running: bool = False
     shutdown = QtCore.pyqtSignal()
@@ -87,6 +89,7 @@ class Instrument(QtCore.QObject):
             ('datareduction', DataReduction),
             ('transmission', TransmissionMeasurement),
             ('sensors', Sensors),
+            ('notifier', Notifier),
         ]:
             ### NOTE! When you add a new component, add a corresponding entry in the panic() method as well!
             comp = componentclass(config=self.config, instrument=self)
@@ -209,6 +212,7 @@ class Instrument(QtCore.QObject):
             ['motors', 'sensors'],
             ['devicemanager'],
             ['projects'],
-            ['calibrants', 'auth', 'io', 'geometry', 'datareduction']
+            ['calibrants', 'auth', 'io', 'geometry', 'datareduction'],
+            ['notifier'],
         ]
         self.onComponentPanicAcknowledged()
