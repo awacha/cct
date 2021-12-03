@@ -378,7 +378,7 @@ class PilatusBackend(DeviceBackend):
         else:
             self.commandError(name, f'Unknown command: {name}')
 
-    def stopExposure(self):
+    def stopExposure(self, commandname: str):
         """Do what it takes to stop an ongoing exposure"""
         if self['__status__'] == self.Status.Exposing:
             # single exposure, do a "resetcam", then trim again.
@@ -391,7 +391,7 @@ class PilatusBackend(DeviceBackend):
             assert self.lastmessage[0].startswith(b'Exposure ')
             # no messages should be pending.
             if self.connectionIsReadOnly():
-                self.commandError(name, 'Read-only connection')
+                self.commandError('stopexposure', 'Read-only connection')
 
             #                assert self.outbuffer.qsize() == 0
             while self.outbuffer.qsize() > 0:
@@ -400,12 +400,12 @@ class PilatusBackend(DeviceBackend):
             self.lastmessage = None
             self.cleartosend.set()
             self.updateVariable('__status__', self.Status.Stopping)
-            self.commandFinished(name, 'Stopping a single exposure')
+            self.commandFinished('stopexposure', 'Stopping a single exposure')
         elif self['__status__'] == self.Status.ExposingMulti:
             # we do the same trick as above, only we have to issue the "K" command.
             assert self.lastmessage[0].startswith(b'Exposure ')
             if self.connectionIsReadOnly():
-                self.commandError(name, 'Read-only connection')
+                self.commandError('stopexposure', 'Read-only connection')
             # assert self.outbuffer.qsize() == 0
             # the command "K" by itself does not elicit a reply, but the multiple exposure does. Since we clear all
             # traces of the last 'Exposure' command by resetting `self.lastmessage`, the reply from the detector
@@ -416,11 +416,11 @@ class PilatusBackend(DeviceBackend):
             self.lastmessage = None
             self.cleartosend.set()
             self.updateVariable('__status__', self.Status.Stopping)
-            self.commandFinished(name, 'Stopping a multiple exposure sequence')
+            self.commandFinished('stopexposure', 'Stopping a multiple exposure sequence')
         elif self['__status__'] == self.Status.Stopping:
-            self.commandError(name, 'Already stopping...')
+            self.commandError('stopexposure', 'Already stopping...')
         else:
-            self.commandError(name, 'No ongoing exposure')
+            self.commandError('stopexposure', 'No ongoing exposure')
 
     def connectionIsReadOnly(self) -> bool:
         try:

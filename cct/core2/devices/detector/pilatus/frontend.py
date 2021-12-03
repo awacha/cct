@@ -22,12 +22,12 @@ class PilatusDetector(DeviceFrontend):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._backendlogger.setLevel(logging.DEBUG)
-        self.sensors = [Thermometer(f'Power board temperature', self.name, 0, '°C'),
-                        Thermometer(f'Base plate temperature', self.name, 1, '°C'),
-                        Thermometer(f'Sensor temperature', self.name, 2, '°C'),
-                        Hygrometer(f'Power board humidity', self.name, 3, '%'),
-                        Hygrometer(f'Base plate humidity', self.name, 4, '%'),
-                        Hygrometer(f'Sensor humidity', self.name, 5, '%'),
+        self.sensors = [Thermometer(f'Power board temperature', self.name, 0, '°C', paniconerror=True),
+                        Thermometer(f'Base plate temperature', self.name, 1, '°C', paniconerror=True),
+                        Thermometer(f'Sensor temperature', self.name, 2, '°C', paniconerror=True),
+                        Hygrometer(f'Power board humidity', self.name, 3, '%', paniconerror=True),
+                        Hygrometer(f'Base plate humidity', self.name, 4, '%', paniconerror=True),
+                        Hygrometer(f'Sensor humidity', self.name, 5, '%', paniconerror=True),
                         ]
 
     def trim(self, energythreshold: float, gain: PilatusGain):
