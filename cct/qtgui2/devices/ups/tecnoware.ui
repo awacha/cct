@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>805</width>
-    <height>436</height>
+    <width>835</width>
+    <height>470</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,250 +17,424 @@
    <iconset resource="../../../resource/icons/icons.qrc">
     <normaloff>:/icons/ups.svg</normaloff>:/icons/ups.svg</iconset>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
-   <item row="0" column="4" rowspan="3">
-    <widget class="QTreeView" name="treeView"/>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QGroupBox" name="groupBox_7">
+       <property name="title">
+        <string>Description</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_15">
+          <property name="text">
+           <string>Firmware version:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_16">
+          <property name="text">
+           <string>Hardware version:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_13">
+          <property name="text">
+           <string>Model:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_14">
+          <property name="text">
+           <string>Battery count:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_21">
+          <property name="text">
+           <string>Battery capacity (Ah):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="modelnameLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="batterycountLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLabel" name="firmwareversionLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLabel" name="hardwareversionLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLabel" name="batterycapacityAHLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_3">
+       <property name="title">
+        <string>Rating</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="1" column="1">
+         <widget class="QLabel" name="ratedCurrentLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="ratedVoltageLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLabel" name="ratedFrequencyLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Current:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_9">
+          <property name="text">
+           <string>Voltage:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_11">
+          <property name="text">
+           <string>Battery voltage:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_12">
+          <property name="text">
+           <string>Frequency:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLabel" name="ratedBatteryVoltageLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox">
+       <property name="title">
+        <string>Input</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="1" column="1">
+         <widget class="QLabel" name="inputFrequencyLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="inputVoltageLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Voltage:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Frequency:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Battery voltage:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLabel" name="batteryVoltageLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
    </item>
-   <item row="2" column="0">
-    <widget class="QGroupBox" name="groupBox_3">
-     <property name="title">
-      <string>Rating</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_4">
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_10">
-        <property name="text">
-         <string>Current:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_12">
-        <property name="text">
-         <string>Frequency:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_9">
-        <property name="text">
-         <string>Voltage:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_11">
-        <property name="text">
-         <string>Battery voltage:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLabel" name="ratedVoltageLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLabel" name="ratedCurrentLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLabel" name="ratedBatteryVoltageLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLabel" name="ratedFrequencyLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <item>
+      <widget class="QGroupBox" name="groupBox_6">
+       <property name="title">
+        <string>Status</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="1">
+         <widget class="QLabel" name="statusLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLabel" name="loadlevelLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="batterycapacityLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLabel" name="remainingtimeLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_20">
+          <property name="text">
+           <string>Load level:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Status:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Output voltage:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_18">
+          <property name="text">
+           <string>Battery capacity (%):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLabel" name="outputVoltageLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_19">
+          <property name="text">
+           <string>Remaining time:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Output current:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QLabel" name="currentUsageLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_2">
+       <property name="title">
+        <string>Temperature:</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Ambient:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLabel" name="temperaturePFCLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>PFC:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_17">
+          <property name="text">
+           <string>Charger:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLabel" name="temperatureAmbientLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QLabel" name="temperatureChargerLabel">
+          <property name="text">
+           <string>--</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_4">
+       <property name="title">
+        <string>Status flags</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="4" column="0">
+         <widget class="QLabel" name="upsFailedLabel">
+          <property name="text">
+           <string>UPS failed</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="bypassLabel">
+          <property name="text">
+           <string>Bypass active</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
+         <widget class="QLabel" name="shutdownInProgressLabel">
+          <property name="text">
+           <string>Shutdown in progress</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="batteryLowLabel">
+          <property name="text">
+           <string>Battery OK</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="utilityFailedLabel">
+          <property name="text">
+           <string>Utility power</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="testInProgressLabel">
+          <property name="text">
+           <string>Test in progress</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
    </item>
-   <item row="0" column="0">
-    <widget class="QGroupBox" name="groupBox">
-     <property name="title">
-      <string>Input</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Voltage:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLabel" name="inputVoltageLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Fault voltage:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLabel" name="inputFrequencyLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Frequency:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLabel" name="faultVoltageLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QGroupBox" name="groupBox_2">
-     <property name="title">
-      <string>Output</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_3">
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="text">
-         <string>Voltage:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_8">
-        <property name="text">
-         <string>Temperature:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_7">
-        <property name="text">
-         <string>Battery voltage:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_6">
-        <property name="text">
-         <string>Current:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLabel" name="outputVoltageLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLabel" name="currentUsageLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLabel" name="batteryVoltageLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLabel" name="temperatureLabel">
-        <property name="text">
-         <string>--</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="0" column="2" rowspan="3">
-    <widget class="QGroupBox" name="groupBox_4">
-     <property name="title">
-      <string>Status</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="3" column="0">
-       <widget class="QLabel" name="bypassLabel">
-        <property name="text">
-         <string>Bypass active</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="shutdownInProgressLabel">
-        <property name="text">
-         <string>Shutdown in progress</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="upsFailedLabel">
-        <property name="text">
-         <string>UPS failed</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="batteryLowLabel">
-        <property name="text">
-         <string>Battery OK</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="0">
-       <widget class="QLabel" name="beeperOnLabel">
-        <property name="text">
-         <string>Beeper is on</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="testInProgressLabel">
-        <property name="text">
-         <string>Test in progress</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="utilityFailedLabel">
-        <property name="text">
-         <string>Utility power</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="0" column="3" rowspan="3">
+   <item>
     <widget class="QGroupBox" name="groupBox_5">
      <property name="title">
       <string>Flags</string>
@@ -404,7 +578,6 @@
   <tabstop>batterylowprotectenabledPushButton</tabstop>
   <tabstop>invertershortclearenabledPushButton</tabstop>
   <tabstop>hotstandbymasterPushButton</tabstop>
-  <tabstop>treeView</tabstop>
  </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>

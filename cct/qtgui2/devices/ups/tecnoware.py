@@ -1,17 +1,19 @@
-from typing import Any
 import logging
+from typing import Any
 
 from PyQt5 import QtWidgets, QtGui
-from ...utils.window import WindowRequiresDevices
+
 from .tecnoware_ui import Ui_Form
+from ...utils.window import WindowRequiresDevices
 from ....core2.devices.ups.tecnoware import TecnowareEvoDSPPlus
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     required_devicenames = ['TecnowareEvoDSPPlus']
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
@@ -21,18 +23,17 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.treeView.setModel(self.ups())
         for variable in self.ups().keys():
             if variable.startswith('flag.'):
                 try:
-                    toolbutton: QtWidgets.QPushButton = getattr(self, variable.split('.')[1]+'PushButton')
+                    toolbutton: QtWidgets.QPushButton = getattr(self, variable.split('.')[1] + 'PushButton')
                     toolbutton.setEnabled(False)
                     toolbutton.toggled.connect(self.onFlagButtonToggled)
                 except AttributeError:
                     pass
             try:
                 self.onVariableChanged(variable, self.ups()[variable], self.ups()[variable])
-            except ups.DeviceError:
+            except TecnowareEvoDSPPlus.DeviceError:
                 pass
 
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
@@ -43,8 +44,6 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             pass
         elif name == 'inputvoltage':
             self.inputVoltageLabel.setText(f'{newvalue:.2f} V')
-        elif name == 'inputfaultvoltage':
-            self.faultVoltageLabel.setText(f'{newvalue:.2f} V')
         elif name == 'outputvoltage':
             self.outputVoltageLabel.setText(f'{newvalue:.2f} V')
         elif name == 'outputcurrent':
@@ -53,8 +52,6 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.inputFrequencyLabel.setText(f'{newvalue:.2f} Hz')
         elif name == 'batteryvoltage':
             self.batteryVoltageLabel.setText(f'{newvalue:.2f} V')
-        elif name == 'temperature':
-            self.temperatureLabel.setText(f'{newvalue:.2f} °C')
         elif name == 'ratedvoltage':
             self.ratedVoltageLabel.setText(f'{newvalue:.2f} V')
         elif name == 'ratedcurrent':
@@ -63,10 +60,34 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.ratedBatteryVoltageLabel.setText(f'{newvalue:.2f} V')
         elif name == 'ratedfrequency':
             self.ratedFrequencyLabel.setText(f'{newvalue:.2f} Hz')
+        elif name == 'modelname':
+            self.modelnameLabel.setText(f'{newvalue:}')
+        elif name == 'batterycount':
+            self.batterycountLabel.setText(f'{newvalue:}')
+        elif name == 'firmwareversion':
+            self.firmwareversionLabel.setText(f'{newvalue:}')
+        elif name == 'hardwareversion':
+            self.hardwareversionLabel.setText(f'{newvalue:}')
+        elif name == 'batterycapacity_ah':
+            self.batterycapacityAHLabel.setText(f'{newvalue:} Ah')
+        elif name == 'upsmode':
+            self.statusLabel.setText(f'{newvalue:}')
+        elif name == 'batterycapacity':
+            self.batterycapacityLabel.setText(f'{newvalue:.0f} %')
+        elif name == 'batteryremaintime':
+            self.remainingtimeLabel.setText(f'{newvalue:.0f} min')
+        elif name == 'loadlevel_wattpercent':
+            self.loadlevelLabel.setText(f'{newvalue:}')
+        elif name == 'temperature.pfc':
+            self.temperaturePFCLabel.setText(f'{newvalue:.0f}°C')
+        elif name == 'temperature.ambient':
+            self.temperatureAmbientLabel.setText(f'{newvalue:.0f}°C')
+        elif name == 'temperature.charger':
+            self.temperatureChargerLabel.setText(f'{newvalue:.0f}°C')
         elif name.startswith('flag.'):
             flagname = name.split('.')[1]
             try:
-                toolbutton:QtWidgets.QPushButton = getattr(self, flagname+'PushButton')
+                toolbutton: QtWidgets.QPushButton = getattr(self, flagname + 'PushButton')
                 toolbutton.blockSignals(True)
                 toolbutton.setChecked(bool(newvalue))
                 toolbutton.setEnabled(True)
@@ -81,7 +102,6 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 ('upsfailed', self.upsFailedLabel, 'UPS OK', 'UPS failed', False),
                 ('testinprogress', self.testInProgressLabel, 'No test in progress', 'Test in progress', False),
                 ('shutdownactive', self.shutdownInProgressLabel, "Won't shut down", 'Will shut down soon', False),
-                ('beeperon', self.beeperOnLabel, "Beeper off", 'Beeper on', False),
             ]:
                 if name == varname:
                     good = (newvalue == goodbool)
