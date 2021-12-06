@@ -488,11 +488,11 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
             self.commandError(name, f'Unknown command {name}')
 
     def onVariableChanged(self, name: str, newvalue: Any, oldvalue: Any):
-        if (name == 'utilityfail') and bool(newvalue):
+        if (name == 'utilityfail') and bool(newvalue) and (oldvalue is False):
             # utility failed
             self.error('Utility power failure!')
             self.gridpowerlostat = time.monotonic()
-        elif (name == 'utilityfail') and not bool(newvalue):
+        elif (name == 'utilityfail') and (not bool(newvalue)) and (oldvalue is True) :
             # utility power back
             self.info('Utility power is back!')
             self.gridpowerlostat = None
