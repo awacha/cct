@@ -388,7 +388,9 @@ class DeviceBackend:
             if self.messageretries >= self.messagemaxretries:
                 raise RuntimeError('Reached maximal number of send retries')
             self.messageretries += 1
-            self.warning(f'Retrying sending of message {self.lastmessage[0]=}, {self.lastmessage[1]=}')
+            if self.messageretries > 1:
+                # only issue a warning on the 2nd retry
+                self.warning(f'Retrying sending of message {self.lastmessage[0]=}, {self.lastmessage[1]=}')
             await self._dosend(self.lastmessage[0], self.lastmessage[1])
         #        self.debug('Sender done.')
         return True
