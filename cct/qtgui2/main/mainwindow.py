@@ -92,7 +92,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionKeen800UPS': Keen80UPS,
         'actionPeristaltic_pump': LeadFluid_BT100S,
         'actionTecnowareUPS': TecnowareUPS,  # ToDo: group similar instruments
-        'actionNotifier': NotifierSetup,
+        'actionNotification': NotifierSetup,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]
