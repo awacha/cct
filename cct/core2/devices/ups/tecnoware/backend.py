@@ -275,7 +275,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         re_optional_float('battery_number_per_string', 2, 0) + b' ' +
         re_optional_float('number_of_strings', 2, 0) + b' ' +
         re_optional_float('batterycapacity_ah', 3, 0) + b' ' +
-        re_optional_float('batteryremainingtimefactor', 2, 1)
+        re_optional_float('batteryremainingtimefactor', 1, 1)
     )
 
     _flagchars: Final[Dict[str, str]] = dict([
