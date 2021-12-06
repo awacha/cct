@@ -31,14 +31,14 @@ class Loader:
         # first try to read the file from the directory
         if os.path.isfile(os.path.join(directory, filename)):
             return os.path.join(directory, filename)
+        # next, try each subdirectory supplied in the `quicksubdirs` argument
         if quicksubdirs is not None:
             for sd in quicksubdirs:
                 if os.path.isfile(os.path.join(directory, sd, filename)):
                     return os.path.join(directory, filename)
+        #
         filenames = os.listdir(directory)
         folders = [fn for fn in filenames if os.path.isdir(os.path.join(directory, fn))]
-        if 'mask_long_20200109' in filename:
-            logger.debug(f'Folders in {directory} are {folders}')
         for fn in [fn for fn in filenames if fn not in folders]:
             if fn == filename or (arbitraryextension and (os.path.splitext(fn)[0] == filename)):
                 return os.path.join(directory, fn)
