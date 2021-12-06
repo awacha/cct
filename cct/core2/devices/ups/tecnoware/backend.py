@@ -171,6 +171,11 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         DeviceBackend.VariableInfo(name='temperature.ambient', dependsfrom=['temperature.pfc'], timeout=inf),
         DeviceBackend.VariableInfo(name='temperature.charger', dependsfrom=['temperature.pfc'], timeout=inf),
 
+        # query with b'QBAT\r'
+        DeviceBackend.VariableInfo(name='batterycapacity_ah', timeout=1.0),
+        DeviceBackend.VariableInfo(name='batteryremainingtimefactor', dependsfrom=['batterycapacity_ah'], timeout=inf),
+
+
     ]
 
     re_protocolid: Final[re.Pattern] = re.compile(br'\(PI\s*(?P<protocolID>\d{2})')
@@ -265,6 +270,14 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         re_optional_float('temperature_ambient', 3, 1) + b' ' +
         re_optional_float('temperature_charger', 3, 1) + b' ' + b'---\.-')
     re_acknowledgement: Final[re.Pattern] = re.compile(br'\((?P<ack>ACK|NAK)')
+    re_batterycapacity: Final[re.Pattern] = re.compile(
+        br'\(BAT' +
+        re_optional_float('battery_number_per_string', 2, 0) + b' ' +
+        re_optional_float('number_of_strings', 2, 0) + b' ' +
+        re_optional_float('batterycapacity_ah', 3, 0) + b' ' +
+        re_optional_float('batteryremainingtimefactor', 2, 1)
+    )
+
     _flagchars: Final[Dict[str, str]] = dict([
         ('bypassmodealarm', 'p'),
         ('batterymodealarm', 'b'),
@@ -281,7 +294,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
     ])
 
     gridpowerlostat: Optional[float] = None
-    gridpowerlosspanicdelay: float = 300  # the number of seconds after which a panic will be initiated if the utility power is not back yet
+    panic_at_remaining_minutes: float = 10  # panic if there is less than this much time is available in battery mode
 
 
     def _query(self, variablename: str):
@@ -326,11 +339,11 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
         # for the time being, in the absence of a timer callback, we put the check for grid power loss here
-        if self.gridpowerlostat is not None:
-            # grid power is lost
-            if time.monotonic() - self.gridpowerlostat > self.gridpowerlosspanicdelay:
-                self.panic(f'Grid power out for more than {self.gridpowerlosspanicdelay}.')
-
+        try:
+            if self['utilityfail'] and (self['batteryremaintime'] < self.panic_at_remaining_minutes):
+                self.panic('UPS battery almost empty')
+        except KeyError:
+            pass
         #        self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
         if (m := self.re_protocolid.match(message)) and (sentmessage == b'QPI\r'):
             self.updateVariable('protocolID', int(m['protocolID']))
@@ -449,13 +462,15 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         elif (m := self.re_loadlevel.match(message)) and (sentmessage == b'QLDL\r'):
             self.updateVariable('loadlevel_wattpercent', safe_float(m['loadlevel_wattpercent']))
             self.updateVariable('loadlevel_vapercent', safe_float(m['loadlevel_vapercent']))
-            self.updateVariable('__auxstatus__', f'{self["loadlevel_wattpercent"]:.0f}%')
         elif (m := self.re_temperature.match(message)) and (sentmessage == b'QTPR\r'):
             self.updateVariable('temperature.pfc', safe_float(m['temperature_pfc']))
             self.updateVariable('temperature.ambient', safe_float(m['temperature_ambient']))
             self.updateVariable('temperature.charger', safe_float(m['temperature_charger']))
         elif (m := self.re_acknowledgement.match(message)) and (sentmessage.startswith(b'PE') or sentmessage.startswith(b'PD')):
             self.commandFinished('setflag' if sentmessage.startswith(b'PE') else 'clearflag', m['ack'].decode('utf-8'))
+        elif (m := self.re_batterycapacity.match(message)) and (sentmessage.startswith(b'QBAT')):
+            self.updateVariable('batterycapacity_ah', safe_float(m['batterycapacity_ah']))
+            self.updateVariable('batteryremainingtimefactor', safe_float(m['batteryremainingtimefactor']))
         else:
             raise ValueError(f'Invalid reply for sent message *{sentmessage}*: *{message}*')
 
@@ -478,3 +493,18 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         elif (name == 'utilityfail') and not bool(newvalue):
             # utility power back
             self.info('Utility power is back!')
+            self.gridpowerlostat = None
+        elif name in ['upsmode', 'loadlevel_wattpercent', 'batteryremaintime']:
+            self.setAuxStatus()
+
+    def setAuxStatus(self):
+        try:
+            if self['upsmode'] == self.Status.Battery:
+                # show the remaining time
+                self.updateVariable('__auxstatus__', f'{self["batteryremaintime"]:.0f} mins rem.')
+            elif self['upsmode'] in (self.Status.Line, self.Status.Bypass):
+                self.updateVariable('__auxstatus__', f'{self["loadlevel_wattpercent"]:.0f} %')
+            else:
+                self.updateVariable('__auxstatus__', None)
+        except KeyError:
+            pass
