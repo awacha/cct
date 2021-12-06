@@ -424,7 +424,11 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
 
     def panichandler(self):
         self._panicking = self.PanicState.Panicking
-        if not (self.xmotor().isMoving() or self.ymotor().isMoving()):
+        try:
+            if not (self.xmotor().isMoving() or self.ymotor().isMoving()):
+                super().panichandler()
+            else:
+                self.stopMotors()
+        except KeyError:
+            # either motor does not exist
             super().panichandler()
-        else:
-            self.stopMotors()
