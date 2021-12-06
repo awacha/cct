@@ -18,6 +18,7 @@ class PilatusDetector(DeviceFrontend):
     devicename = 'PilatusDetector'
     devicetype = 'detector'
     backendclass = PilatusBackend
+    loglevel = logging.DEBUG
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -6,21 +6,19 @@ from PyQt5 import QtCore
 from .backend import GeniXBackend
 from ...device.frontend import DeviceFrontend
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 
 class GeniX(DeviceFrontend):
     Status = GeniXBackend.Status
     devicetype = 'source'
     devicename = 'GeniX'
     backendclass = GeniXBackend
+    loglevel = logging.DEBUG
 
     shutter = QtCore.pyqtSignal(bool)
     powerStateChanged = QtCore.pyqtSignal(str)
 
     def moveShutter(self, requestedstate: bool):
-        logger.info(f'{"Opening" if requestedstate else "Closing"} shutter')
+        self._logger.info(f'{"Opening" if requestedstate else "Closing"} shutter')
         if self['shutter'] is requestedstate:
             self.shutter.emit(requestedstate)
         self.issueCommand('shutter', requestedstate)
@@ -66,16 +64,17 @@ class GeniX(DeviceFrontend):
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
         super().onVariableChanged(variablename, newvalue, previousvalue)
         if variablename == '__status__':
-            if (newvalue == GeniXBackend.Status.off) and (previousvalue == GeniXBackend.Status.warmup):
-                logger.debug('Warm-up finished. Going to standby mode.')
+            self._logger.debug(f'X-ray generator status changed from {previousvalue} to {newvalue}.')
+            if previousvalue == GeniXBackend.Status.warmup:
+                self._logger.debug('Warm-up finished. Going to standby mode.')
                 self.standby()
             self.powerStateChanged.emit(newvalue)
         elif variablename == 'shutter':
-            logger.info(f'Shutter is now {"open" if newvalue else "closed"}.')
+            self._logger.info(f'Shutter is now {"open" if newvalue else "closed"}.')
             self.shutter.emit(bool(newvalue))
 
     def onCommandResult(self, success: bool, commandname: str, result: str):
         super().onCommandResult(success, commandname, result)
         if commandname == 'shutter' and not success:
-            logger.error(f'Cannot {"close" if self["shutter"] else "open"} shutter')
+            self._logger.error(f'Cannot {"close" if self["shutter"] else "open"} shutter')
             self.shutter.emit(self['shutter'])
