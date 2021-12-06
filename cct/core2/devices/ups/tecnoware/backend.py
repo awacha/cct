@@ -330,8 +330,10 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
             self.enqueueHardwareMessage(b'QLDL\r')
         elif variablename == 'temperature.pfc':
             self.enqueueHardwareMessage(b'QTPR\r')
+        elif variablename == 'batterycapacity_ah':
+            self.enqueueHardwareMessage(b'QBAT\r')
         else:
-            self.error(f'Unknown variable: {variablename}')
+            self.error(f'Not known how to query variable: {variablename}')
 
     def _cutmessages(self, message: bytes) -> Tuple[List[bytes], bytes]:
         msgs = message.split(b'\r')
