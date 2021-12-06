@@ -274,7 +274,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
             msg += f'Module: {record.module}\n'
             msg += f'Function name: {record.funcName}\n'
             msg += f'Stack info: {record.stack_info}\n'
-            self.notify_email(f'[{record.levelname}] {record.getMessage()}', msg, emailaddresses)
+            self.notify_email(f'[{record.levelname}] in {record.module}:{record.funcName}', msg, emailaddresses)
         except Exception as exc:
             # swallow the exception: unhandled exceptions return in a CRITICAL log event, resulting in an infinite loop.
             print(traceback.format_exc())
