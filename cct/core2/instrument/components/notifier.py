@@ -57,22 +57,21 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         self.config.save()
 
     def loadFromConfig(self):
+        if 'notifier' not in self.config:
+            self.config['notifier'] = {}
         self.beginResetModel()
         try:
             self._data = []
-            try:
-                self.config['notifier']['addresses']
-            except KeyError:
-                pass
-            else:
-                for key in sorted(self.config['notifier']['addresses']):
-                    self._data.append(NotificationAddress(
-                        self.config['notifier']['addresses'][key]['name'],
-                        self.config['notifier']['addresses'][key]['emailaddress'],
-                        self.config['notifier']['addresses'][key]['panic'],
-                        self.config['notifier']['addresses'][key]['runtime'],
-                        self.config['notifier']['addresses'][key]['loglevel']
-                    ))
+            if 'addresses' not in self.config['notifier']:
+                self.config['notifier']['addresses'] = {}
+            for key in sorted(self.config['notifier']['addresses']):
+                self._data.append(NotificationAddress(
+                    self.config['notifier']['addresses'][key]['name'],
+                    self.config['notifier']['addresses'][key]['emailaddress'],
+                    self.config['notifier']['addresses'][key]['panic'],
+                    self.config['notifier']['addresses'][key]['runtime'],
+                    self.config['notifier']['addresses'][key]['loglevel']
+                ))
         finally:
             self.endResetModel()
 
