@@ -205,6 +205,7 @@ class Instrument(QtCore.QObject):
         self.panicreason = reason
         self._panic_components = [
             [],
+            ['notifier'],
             ['interpreter'],
             ['scan', 'transmission'],
             ['exposer'],
@@ -213,6 +214,5 @@ class Instrument(QtCore.QObject):
             ['devicemanager'],
             ['projects'],
             ['calibrants', 'auth', 'io', 'geometry', 'datareduction'],
-            ['notifier'],
         ]
         self.onComponentPanicAcknowledged()
