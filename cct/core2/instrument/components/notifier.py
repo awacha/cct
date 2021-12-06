@@ -1,5 +1,6 @@
 import email
 import logging
+import re
 import smtplib
 import traceback
 from typing import Sequence, Optional, List, Any
@@ -33,11 +34,17 @@ class NotificationAddress:
 class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
     _data: List[NotificationAddress]
 
+    re_valid_email = re.compile(r'(?P<username>[-a-zA-Z_.0-9]+)@(?P<hostname>[-a-zA-Z0-9._]+)')
+
     def __init__(self, **kwargs):
         self._data = []
         super().__init__(**kwargs)
+        logging.Handler.__init__(self)
+        self.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s'))
 
     def saveToConfig(self):
+        if 'notifier' not in self.config:
+            self.config['notifier'] = {}
         self.config['notifier']['addresses'] = {}
         for i, address in enumerate(self._data):
             self.config['notifier']['addresses'][f'{i:08d}'] = {
@@ -47,6 +54,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
                 'runtime': address.runtime,
                 'loglevel': address.loglevel
             }
+        self.config.save()
 
     def loadFromConfig(self):
         self.beginResetModel()
@@ -66,7 +74,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
                         self.config['notifier']['addresses'][key]['loglevel']
                     ))
         finally:
-            self.endRemoveRows()
+            self.endResetModel()
 
     @property
     def smtpserver(self) -> Optional[str]:
@@ -79,6 +87,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
     @smtpserver.setter
     def smtpserver(self, value: Optional[str]):
         self.config['notifier']['smtpserver'] = value
+        self.saveToConfig()
 
     @property
     def fromaddress(self) -> Optional[str]:
@@ -91,9 +100,10 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
     @fromaddress.setter
     def fromaddress(self, value: Optional[str]):
         self.config['notifier']['fromaddress'] = value
+        self.saveToConfig()
 
     @staticmethod
-    def notify_desktop(self, title: str, body: str, expiretimeout: int = 10000, iconfile: str = 'cct4logo.svg'):
+    def notify_desktop(title: str, body: str, expiretimeout: int = 10000, iconfile: str = 'cct4logo.svg'):
         dbus.Interface(
             dbus.SessionBus().get_object(
                 'org.freedesktop.Notifications', '/org/freedesktop/Notifications'),
@@ -109,12 +119,22 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         )
 
     def notify_email(self, title: str, body: str, emailaddresses: Sequence[str]):
+        emailaddresses = [a for a in emailaddresses if self.re_valid_email.match(a)]
+        if not emailaddresses:
+            print('Not sending e-mails, empty address list.')
+            return
         if (self.smtpserver is None) or (self.fromaddress is None):
             logger.debug('Not sending e-mail: either smtpserver or fromaddress or toaddress is None.')
             return
-        s = smtplib.SMTP(self.smtpserver)
+        m = re.match(r'(?P<host>[^:]+)(?::(?P<port>\d+))?', self.smtpserver)
+        if not m:
+            print(f'Malformed smtp host: {self.smtpserver}')
+            return
+        print(f'Host: {m["host"]}, port: {m["port"]}')
+        s = smtplib.SMTP(m['host'], int(m['port']) if m['port'] is not None else None)
         try:
             for addressee in emailaddresses:
+                print(f'Sending e-mail to "{addressee}"')
                 msg = email.message.EmailMessage()
                 msg.set_content(body)
                 msg['Subject'] = title
@@ -126,14 +146,18 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
             s.quit()
 
     def panichandler(self):
-        self.notify_desktop(
-            'Panic in the SAXS instrument',
-            f'Panic situation occurred in the SAXS instrument: {self.instrument.panicreason}.')
-        self.notify_email(
-            f'[PANIC] Panic in the SAXS instrument',
-            f'There was a panic incident in the SAXS instrument. The reason: {self.instrument.panicreason}.',
-            []
-        )
+        try:
+            self.notify_desktop(
+                'Panic in the SAXS instrument',
+                f'Panic situation occurred in the SAXS instrument: {self.instrument.panicreason}.')
+            self.notify_email(
+                f'[PANIC] Panic in the SAXS instrument',
+                f'There was a panic incident in the SAXS instrument. The reason: {self.instrument.panicreason}.',
+                set([n.emailaddress for n in self._data if (n.emailaddress is not None) and (n.panic)] + [self.instrument.auth.currentUser().email])
+            )
+        except:
+            print(traceback.format_exc())
+        self._panicking = self.PanicState.Panicked
         QtCore.QTimer.singleShot(1, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
@@ -188,7 +212,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         if isinstance(parent, QtCore.QModelIndex) and parent.isValid():
             return False
         else:
-            self.beginInsertRows(parent, row, row + count - 1)
+            self.beginInsertRows(QtCore.QModelIndex(), row, row + count - 1)
             if row >= len(self._data):
                 for i in range(count):
                     self._data.append(NotificationAddress())
@@ -202,7 +226,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         if isinstance(parent, QtCore.QModelIndex) and parent.isValid():
             return False
         else:
-            self.beginRemoveRows(parent, row, row + count - 1)
+            self.beginRemoveRows(QtCore.QModelIndex(), row, row + count - 1)
             del self._data[row:row + count]
             self.endRemoveRows()
             self.saveToConfig()
@@ -217,15 +241,15 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if (index.column() == 0) and (role == QtCore.Qt.EditRole):
-            self._data[index.column()].name = str(value)
+            self._data[index.row()].name = str(value)
         elif (index.column() == 1) and (role == QtCore.Qt.EditRole):
-            self._data[index.column()].emailaddress = str(value)
+            self._data[index.row()].emailaddress = str(value)
         elif (index.column() == 2) and (role == QtCore.Qt.EditRole):
-            self._data[index.column()].panic = bool(value)
+            self._data[index.row()].panic = bool(value)
         elif (index.column() == 3) and (role == QtCore.Qt.EditRole):
-            self._data[index.column()].runtime = bool(value)
+            self._data[index.row()].runtime = bool(value)
         elif (index.column() == 4) and (role == QtCore.Qt.EditRole):
-            self._data[index.column()].loglevel = int(value)
+            self._data[index.row()].loglevel = int(value)
         else:
             return False
         self.saveToConfig()
@@ -234,7 +258,9 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
     def emit(self, record: logging.LogRecord):
         """Format the log message for an e-mail body and send an e-mail"""
         try:
-            emailaddresses = [n.emailaddress for n in self._data if n.loglevel <= record.levelno]
+            if (self.smtpserver is None) or (self.fromaddress is None):
+                return
+            emailaddresses = [n.emailaddress for n in self._data if (n.loglevel <= record.levelno) and (n.emailaddress is not None)]
             if not emailaddresses:
                 # speed up
                 return
@@ -256,13 +282,15 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
     def notify(self, title: str, body: str):
         """Send notification to desktop and the current user"""
         self.notify_desktop(title, body)
-        emails = set([n.emailaddress for n in self._data if n.runtime] + [self.instrument.auth.currentUser().email])
+        emails = set([n.emailaddress for n in self._data if (n.runtime) and (n.emailaddress is not None)] + [self.instrument.auth.currentUser().email])
         self.notify_email(title, body, emailaddresses=list(emails))
 
     def startComponent(self):
+        logger.debug('Starting component Notification')
         super().startComponent()
         logging.root.addHandler(self)
         self.setLevel(logging.DEBUG)
+        logger.debug('Started component Notification')
 
     def stopComponent(self):
         logging.root.removeHandler(self)
