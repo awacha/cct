@@ -61,6 +61,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     _logger: logging.Logger
     _backendlogger: logging.Logger
 
+    loglevel: int = logging.INFO
+
     # Signals
 
     # the `variableChanged` signal is emitted whenever a value of a variable changes. Its arguments are the name,
@@ -118,9 +120,9 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         self._host = host
         self._port = port
         self._logger = logging.getLogger(f'{__name__}:{self.name}')
-        self._logger.setLevel(logging.INFO)
+        self._logger.setLevel(self.loglevel)
         self._backendlogger = logging.getLogger(f'{__name__}:{self.name}:backend')
-        self._backendlogger.setLevel(logging.INFO)
+        self._backendlogger.setLevel(self.loglevel)
         self.connectionstate = DeviceConnectionState.Offline
 
     def startBackend(self):
