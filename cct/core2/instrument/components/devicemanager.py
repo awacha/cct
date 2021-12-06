@@ -29,7 +29,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
     """
     _devices: List[DeviceFrontend]
     deviceAdded = QtCore.pyqtSignal(str)
-    deviceRemoved = QtCore.pyqtSignal(str)
+    deviceRemoved = QtCore.pyqtSignal(str, bool)
 
     def __init__(self, **kwargs):
         self._devices = []
@@ -212,7 +212,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         row = self._devices.index(device)
         logger.info(f'Removing device {device.name}')
         try:
-            self.deviceRemoved.emit(devicename)
+            self.deviceRemoved.emit(devicename, True)
         except Exception as exc:
             logger.critical(f'Exception while emitting deviceRemoved signal for device {devicename}: {exc}')
         self.beginRemoveRows(QtCore.QModelIndex(), row, row)
@@ -308,7 +308,10 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
 
     def panichandler(self):
         self._panicking = self.PanicState.Panicking
-        for dev in self._devices:
-            dev.panicAcknowledged.connect(self.onDevicePanicAcknowledged)
-            logger.info(f'Notifying device {dev.name} on the panic situation')
-            dev.panichandler()
+        if not [d for d in self._devices if d.isOnline()]:
+            super().panichandler()
+        else:
+            for dev in self._devices:
+                dev.panicAcknowledged.connect(self.onDevicePanicAcknowledged)
+                logger.info(f'Notifying device {dev.name} on the panic situation')
+                dev.panichandler()
