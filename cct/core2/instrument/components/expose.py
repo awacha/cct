@@ -261,7 +261,7 @@ class Exposer(QtCore.QObject, Component):
                 self.killTimer(self.progresstimer)
                 self.progresstimer = None
             else:
-                logger.warning(f'State set to {value}, exposer state is {self.state.name}')
+                logger.debug(f'State set to {value}, exposer state is {self.state.name}')
 
     def onDetectorDisconnected(self):
         self._disconnectDetector()
