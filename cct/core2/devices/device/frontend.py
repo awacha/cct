@@ -2,7 +2,7 @@ import enum
 import logging
 import queue
 from multiprocessing import Queue, Process
-from typing import Any, Type, List, Iterator, Dict, Optional
+from typing import Any, Type, List, Iterator, Dict, Optional, Tuple
 import time
 
 from PyQt5 import QtCore
@@ -444,3 +444,13 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
     def panicking(self) -> PanicState:
         return self._panicking
+
+    def __len__(self) -> int:
+        return len(self._variables)
+
+    def __contains__(self, item: str) -> bool:
+        return bool([v for v in self._variables if (v.name == item) and v.hasValidValue()])
+
+    def __iter__(self) -> Iterator[Tuple[str, Any]]:
+        for v in self._variables:
+            yield v.name, v.value
