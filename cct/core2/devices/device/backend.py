@@ -1,6 +1,6 @@
 import asyncio
-import gc
 import enum
+import gc
 import logging
 import queue
 import time
@@ -75,8 +75,9 @@ class DeviceBackend:
             - written by:
                 hardwareReceiver
     """
+
     class PanicState(enum.Enum):
-        NoPanic=enum.auto()
+        NoPanic = enum.auto()
         Panicking = enum.auto()
         Panicked = enum.auto()
 
@@ -117,10 +118,10 @@ class DeviceBackend:
     remotedisconnected: asyncio.Event = None
     lastsendtime: float = None
     lastrecvtime: float = None
-    messagereplytimeout: float = 1
+    messagereplytimeout: float = 1.0
     messageretries: int = 0
     messagemaxretries: int = 10
-    outstandingqueryfailtimeout: float=5
+    outstandingqueryfailtimeout: float = 5.0
 
     lastmessage: Optional[Tuple[bytes, int]] = None
     telemetryPeriod: float = 5.0  # telemetry period in seconds
@@ -267,7 +268,8 @@ class DeviceBackend:
         gc.collect()
         self.telemetryInformation = TelemetryInformation(communicating)
         t0 = time.monotonic()
-        telemetrytask = asyncio.create_task(asyncio.sleep(self.telemetryPeriod if self.variablesready else 0.5), name='tm_task')
+        telemetrytask = asyncio.create_task(asyncio.sleep(self.telemetryPeriod if self.variablesready else 0.5),
+                                            name='tm_task')
         stoptask = asyncio.create_task(self.stopevent.wait(), name='tm_stoptask')
         done, pending = await asyncio.wait({telemetrytask, stoptask}, return_when=asyncio.FIRST_COMPLETED)
         #        self.debug(f'Telemetry task slept {time.monotonic() - t0} seconds.')
@@ -283,7 +285,7 @@ class DeviceBackend:
         while True:
             try:
                 message = self.inqueue.get_nowait()
-                #self.inqueue.task_done()
+                # self.inqueue.task_done()
             except queue.Empty:
                 await asyncio.sleep(0.1)
                 return True
@@ -362,7 +364,8 @@ class DeviceBackend:
         done, pending = await asyncio.wait(
             tasks,
             return_when=asyncio.FIRST_COMPLETED)
-        for t in [cansendtask, remotedisconnectedtask, stoptask, outbuffertask, cleartosendtask] + ([replytimeouttask] if replytimeouttask is not None else []):
+        for t in [cansendtask, remotedisconnectedtask, stoptask, outbuffertask, cleartosendtask] + (
+        [replytimeouttask] if replytimeouttask is not None else []):
             if not t.done():
                 t.cancel()
         if (remotedisconnectedtask in done) or (stoptask in done):
@@ -384,13 +387,13 @@ class DeviceBackend:
                 #                self.debug('False alarm in replytimeouttask')
                 return True
             #            self.warning(f'Reply timeout #{self.messageretries+1} / {self.messagemaxretries}')
-            self.warning('Reply timeout')
             if self.messageretries >= self.messagemaxretries:
                 raise RuntimeError('Reached maximal number of send retries')
             self.messageretries += 1
             if self.messageretries > 1:
                 # only issue a warning on the 2nd retry
-                self.warning(f'Retrying sending of message {self.lastmessage[0]=}, {self.lastmessage[1]=}')
+                self.warning(
+                    f'Reply timeout, retrying sending of message {self.lastmessage[0]=}, {self.lastmessage[1]=}')
             await self._dosend(self.lastmessage[0], self.lastmessage[1])
         #        self.debug('Sender done.')
         return True
@@ -442,8 +445,9 @@ class DeviceBackend:
                     self.error(f'Message received ({msg}) without a query.')
                     raise RuntimeError(f'Message received ({msg}) without a query.')
                 self.interpretMessage(msg, self.lastmessage[0])
-            self.lastmessage = self.lastmessage[0], self.lastmessage[-1] - len(messages)
-            if self.lastmessage[1] <= 0:
+            if self.lastmessage is not None:
+                self.lastmessage = self.lastmessage[0], self.lastmessage[-1] - len(messages)
+            if (self.lastmessage is None) or (self.lastmessage[1] <= 0):
                 self.lastmessage = None
                 self.cleartosend.set()
             if self.streamreader.at_eof():
@@ -466,13 +470,15 @@ class DeviceBackend:
             lowest_timeout = 0.1
         waittask = asyncio.create_task(asyncio.sleep(lowest_timeout), name='aq_waittask')
         locktask = asyncio.create_task(self.autoqueryenabled.wait(), name='aq_locktask')
-#        if hasattr(self, 'motionstatus') and self.motionstatus:
-#            self.debug('Autoquery will sleep for {} seconds'.format(lowest_timeout))
-#            self.debug(f'Autoquery enabled: {self.autoqueryenabled.is_set()}')
+        #        if hasattr(self, 'motionstatus') and self.motionstatus:
+        #            self.debug('Autoquery will sleep for {} seconds'.format(lowest_timeout))
+        #            self.debug(f'Autoquery enabled: {self.autoqueryenabled.is_set()}')
         self.wakeautoquery.clear()
         waketask = asyncio.create_task(self.wakeautoquery.wait(), name='aq_waketask')
-        wakeorwaittask = asyncio.create_task(asyncio.wait({waittask, waketask}, return_when=asyncio.FIRST_COMPLETED), name='aq_wakeorwaittask')
-        canquerytask = asyncio.create_task(asyncio.wait({wakeorwaittask, locktask}, return_when=asyncio.ALL_COMPLETED), name='aq_canquerytask')
+        wakeorwaittask = asyncio.create_task(asyncio.wait({waittask, waketask}, return_when=asyncio.FIRST_COMPLETED),
+                                             name='aq_wakeorwaittask')
+        canquerytask = asyncio.create_task(asyncio.wait({wakeorwaittask, locktask}, return_when=asyncio.ALL_COMPLETED),
+                                           name='aq_canquerytask')
 
         # Now commence waiting. The autoquery coroutine will wake up when EITHER the stop event is set OR the canquery
         # task finishes.
@@ -510,8 +516,8 @@ class DeviceBackend:
             #   - second according to their overdue-ness.
             sortedqueriable = sorted(queryable, key=lambda v_vi: (not v_vi[1].urgent, -v_vi[0].overdue(now)))
             #                self.debug(f'Queriable: {[v.name for v, vi in sortedqueriable]}')
- #           if hasattr(self, 'motionstatus') and self.motionstatus:
- #               self.debug(f'Sortedqueriable: {[v.name for v, vi in sortedqueriable]}')
+            #           if hasattr(self, 'motionstatus') and self.motionstatus:
+            #               self.debug(f'Sortedqueriable: {[v.name for v, vi in sortedqueriable]}')
             queried = []
             for variable, varinfo in sortedqueriable:
                 if self.outbuffer.full():
@@ -542,14 +548,14 @@ class DeviceBackend:
     ### Tools for subclasses to use
     @final
     def disableAutoQuery(self):
-        #self.debug('Disabling autoquery')
+        # self.debug('Disabling autoquery')
         self.autoqueryenabled.clear()
         for v in self.variables:
             v.lastquery = None
 
     @final
     def enableAutoQuery(self):
-        #self.debug('Enabling autoquery')
+        # self.debug('Enabling autoquery')
         for v in self.variables:
             v.lastquery = None
         self.autoqueryenabled.set()
@@ -568,7 +574,7 @@ class DeviceBackend:
         self.outqueue.put(Message(message, **kwargs))
 
     @final
-    def queryVariable(self, name: str, force: bool=False):
+    def queryVariable(self, name: str, force: bool = False):
         """Schedule a query for a variable.
 
         Only schedules if there are no outstanding queries yet.
@@ -589,12 +595,12 @@ class DeviceBackend:
             self._query(var.name)
 
     @final
-    def enqueueHardwareMessage(self, message: bytes, numreplies: int = 1, urgencymodifier: float=0.0):
+    def enqueueHardwareMessage(self, message: bytes, numreplies: int = 1, urgencymodifier: float = 0.0):
         """Put a new message to the outbound queue to the hardware.
 
         This method should not be overridden in subclasses.
         """
-        self.outbuffer.put_nowait((time.monotonic(), (message, numreplies, time.monotonic()-urgencymodifier)))
+        self.outbuffer.put_nowait((time.monotonic(), (message, numreplies, time.monotonic() - urgencymodifier)))
 
     #        self.debug(f'Enqueued message {message}, num replies {numreplies}')
     #        self.debug(f'Output buffer length after enqueueing message: {self.outbuffer.qsize()}')
