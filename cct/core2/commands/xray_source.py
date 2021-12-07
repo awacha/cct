@@ -57,7 +57,7 @@ class Shutter(XraySourceCommand):
 
     def onXraySourceCommandResult(self, success: bool, command: str, message: str):
         if command != 'shutter':
-            logger.warning(f'Command result received for unexpected command "{command}"')
+            logger.warning(f'Command result received for unexpected command "{command}" ({type(command)=}')
         elif not success:
             self._disconnectXraySource()
             self.fail('Shutter error.')
