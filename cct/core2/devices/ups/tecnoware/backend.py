@@ -259,7 +259,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         re_optional_float('batterycount_2', 2, 0) + b' ' +
         re_optional_float('batterygroupcount', 2, 0) + b' ' +
         re_optional_float('batterycapacity', 3, 0) + b' ' +
-        br'(?:(?P<batteryremaintime>\d{3}|\d{5})|(-+))')
+        br'(?:(?P<batteryremaintime>\d+)|(-+))')
     re_loadlevel: Final[re.Pattern] = re.compile(
         br'\(' +
         re_optional_float('loadlevel_wattpercent', 3, 0) + b' ' +
