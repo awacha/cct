@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1679</width>
+    <width>1966</width>
     <height>924</height>
    </rect>
   </property>
@@ -114,6 +114,11 @@
        </attribute>
        <attribute name="title">
         <string>Scripting</string>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="deviceStatusTab">
+       <attribute name="title">
+        <string>Device status</string>
        </attribute>
       </widget>
      </widget>
@@ -251,7 +256,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1679</width>
+     <width>1966</width>
      <height>25</height>
     </rect>
    </property>

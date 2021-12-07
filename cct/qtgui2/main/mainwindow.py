@@ -6,6 +6,7 @@ import pkg_resources
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 from .devicestatus import DeviceStatus
+from .devicevariablemeasurement import DeviceVariableMeasurement
 from .indicators.accounting import AccountingIndicator
 from .indicators.beamstop import BeamstopIndicator
 from .indicators.lastfsn import LastFSNIndicator
@@ -63,6 +64,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     shutterindicator: ShutterIndicator
     plotindicator: PlotIndicator
     scripting: Scripting
+    devicevariablemeasurement: DeviceVariableMeasurement
 
     _action2windowclass = {
         'actionX_ray_source': GeniXTool,
@@ -156,6 +158,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.panicPushButton.clicked.connect(self.onPanicClicked)
         for dev in self.instrument.devicemanager:
             self.onDeviceAdded(dev.name)
+        self.devicevariablemeasurement = DeviceVariableMeasurement(mainwindow=self, instrument=self.instrument)
+        self.deviceStatusTab.setLayout(QtWidgets.QVBoxLayout())
+        self.deviceStatusTab.layout().addWidget(self.devicevariablemeasurement)
 
     def saveSettings(self):
         self.instrument.saveConfig()
