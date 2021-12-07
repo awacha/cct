@@ -149,7 +149,8 @@ class XRayPower(XraySourceCommand):
             self._disconnectXraySource()
             self.fail(f'Error while putting X-ray source power to {self.requestedstate} mode.')
         elif command != self.commandsent:
-            logger.warning(f'Command result received for unexpected command {command}')
+            pass
+            #logger.warning(f'Command result received for unexpected command {command}')
         else:  # (command == self.commandsent) and success
             pass
 
