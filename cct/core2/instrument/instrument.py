@@ -9,6 +9,7 @@ from .components.calibrants.calibrants import CalibrantStore
 from .components.component import Component
 from .components.datareduction.datareduction import DataReduction
 from .components.devicemanager import DeviceManager
+from .components.devicestatus import DeviceStatus
 from .components.expose import Exposer
 from .components.geometry.geometry import Geometry
 from .components.interpreter import Interpreter
@@ -35,6 +36,7 @@ class Instrument(QtCore.QObject):
     samplestore: SampleStore
     motors: Motors
     devicemanager: DeviceManager
+    devicestatus: DeviceStatus
     geometry: Geometry
     calibrants: CalibrantStore
     scan: ScanStore
@@ -78,6 +80,7 @@ class Instrument(QtCore.QObject):
             ('auth', UserManager),
             ('samplestore', SampleStore),
             ('devicemanager', DeviceManager),
+            ('devicestatus', DeviceStatus),
             ('motors', Motors),
             ('interpreter', Interpreter),
             ('beamstop', BeamStop),
@@ -211,6 +214,7 @@ class Instrument(QtCore.QObject):
             ['exposer'],
             ['beamstop', 'samplestore'],
             ['motors', 'sensors'],
+            ['devicestatus'],
             ['devicemanager'],
             ['projects'],
             ['calibrants', 'auth', 'io', 'geometry', 'datareduction'],
