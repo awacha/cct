@@ -378,7 +378,7 @@ class PilatusBackend(DeviceBackend):
         else:
             self.commandError(name, f'Unknown command: {name}')
 
-    def stopExposure(self, commandname: str):
+    def stopExposure(self):
         """Do what it takes to stop an ongoing exposure"""
         if self['__status__'] == self.Status.Exposing:
             # single exposure, do a "resetcam", then trim again.
