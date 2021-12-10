@@ -15,7 +15,7 @@ class SE521Backend(DeviceBackend):
         pass
 
     varinfo = [
-        DeviceBackend.VariableInfo(name='encodedstate', dependsfrom=[], urgent=False, timeout=0.1, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='encodedstate', dependsfrom=[], urgent=False, timeout=0.1, vartype=VariableType.BYTES),
         DeviceBackend.VariableInfo(name='firmwareversion', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
         DeviceBackend.VariableInfo(name='battery_level', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.INT),
         DeviceBackend.VariableInfo(name='isrecallmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
