@@ -3,7 +3,7 @@ from typing import Sequence, Any, List, Tuple
 
 import numpy as np
 
-from ...device.backend import DeviceBackend
+from ...device.backend import DeviceBackend, VariableType
 from ...utils.modbus import ModbusTCP
 
 
@@ -12,23 +12,23 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
         stopped = 'stopped'
         running = 'running'
 
-    varinfo = [DeviceBackend.VariableInfo('rotating_speed_timer', timeout=1, dependsfrom=None),
-               DeviceBackend.VariableInfo('steps_for_one_round', timeout=np.inf, dependsfrom=['rotating_speed_timer']),
-               DeviceBackend.VariableInfo('analog_speed_control', timeout=np.inf, dependsfrom=['rotating_speed_timer']),
-               DeviceBackend.VariableInfo('manufacturer', timeout=np.inf, dependsfrom=['rotating_speed_timer']),
-               DeviceBackend.VariableInfo('product', timeout=np.inf, dependsfrom=['rotating_speed_timer']),
-               DeviceBackend.VariableInfo('keyvalue', timeout=1, dependsfrom=None),
-               DeviceBackend.VariableInfo('easydispense', timeout=np.inf, dependsfrom=['keyvalue']),
-               DeviceBackend.VariableInfo('timedispense', timeout=np.inf, dependsfrom=['keyvalue']),
-               DeviceBackend.VariableInfo('rotating_speed', timeout=1, dependsfrom=None),
-               DeviceBackend.VariableInfo('direction', timeout=np.inf, dependsfrom=['rotating_speed']),
-               DeviceBackend.VariableInfo('running', timeout=np.inf, dependsfrom=['rotating_speed']),
-               DeviceBackend.VariableInfo('fullspeed', timeout=np.inf, dependsfrom=['rotating_speed']),
-               DeviceBackend.VariableInfo('control_mode', timeout=np.inf, dependsfrom=['rotating_speed']),
-               DeviceBackend.VariableInfo('easy_dispense_volume', timeout=np.inf, dependsfrom=['rotating_speed']),
-               DeviceBackend.VariableInfo('dispense_time', timeout=np.inf, dependsfrom=['rotating_speed']),
-               DeviceBackend.VariableInfo('littleendian', timeout=np.inf, dependsfrom=['rotating_speed']),
-               DeviceBackend.VariableInfo('modbusaddress', timeout=np.inf, dependsfrom=['rotating_speed']),
+    varinfo = [DeviceBackend.VariableInfo('rotating_speed_timer', timeout=1, dependsfrom=None, vartype=VariableType.INT),
+               DeviceBackend.VariableInfo('steps_for_one_round', timeout=np.inf, dependsfrom=['rotating_speed_timer'], vartype=VariableType.INT),
+               DeviceBackend.VariableInfo('analog_speed_control', timeout=np.inf, dependsfrom=['rotating_speed_timer'], vartype=VariableType.INT),
+               DeviceBackend.VariableInfo('manufacturer', timeout=np.inf, dependsfrom=['rotating_speed_timer'], vartype=VariableType.STR),
+               DeviceBackend.VariableInfo('product', timeout=np.inf, dependsfrom=['rotating_speed_timer'], vartype=VariableType.STR),
+               DeviceBackend.VariableInfo('keyvalue', timeout=1, dependsfrom=None, vartype=VariableType.INT),
+               DeviceBackend.VariableInfo('easydispense', timeout=np.inf, dependsfrom=['keyvalue'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('timedispense', timeout=np.inf, dependsfrom=['keyvalue'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('rotating_speed', timeout=1, dependsfrom=None, vartype=VariableType.INT),
+               DeviceBackend.VariableInfo('direction', timeout=np.inf, dependsfrom=['rotating_speed'], vartype=VariableType.STR),
+               DeviceBackend.VariableInfo('running', timeout=np.inf, dependsfrom=['rotating_speed'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('fullspeed', timeout=np.inf, dependsfrom=['rotating_speed'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('control_mode', timeout=np.inf, dependsfrom=['rotating_speed'], vartype=VariableType.STR),
+               DeviceBackend.VariableInfo('easy_dispense_volume', timeout=np.inf, dependsfrom=['rotating_speed'], vartype=VariableType.FLOAT),
+               DeviceBackend.VariableInfo('dispense_time', timeout=np.inf, dependsfrom=['rotating_speed'], vartype=VariableType.FLOAT),
+               DeviceBackend.VariableInfo('littleendian', timeout=np.inf, dependsfrom=['rotating_speed'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('modbusaddress', timeout=np.inf, dependsfrom=['rotating_speed'], vartype=VariableType.INT),
                ]
 
     lastissuedcommand : List[str]

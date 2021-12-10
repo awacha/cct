@@ -147,7 +147,9 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         while True:
             message = self._queue_from_backend.get(True, 5)
             if message.command == 'variablenames':
-                self._variables = [Variable(name, querytimeout) for (name, querytimeout) in message['names']]
+                self._variables = [
+                    Variable(name, querytimeout, vartype) for (name, querytimeout, vartype) in message['names']
+                ]
                 # self._logger.debug(f'Variables supported by this back-end: {[v.name for v in self._variables]}')
                 break
             else:

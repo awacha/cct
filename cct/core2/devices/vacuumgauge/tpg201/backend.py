@@ -2,7 +2,7 @@ from math import inf
 from multiprocessing import Queue
 from typing import Tuple, List, Sequence, Any
 
-from ...device.backend import DeviceBackend
+from ...device.backend import DeviceBackend, VariableType
 
 
 class TPG201Backend(DeviceBackend):
@@ -13,9 +13,9 @@ class TPG201Backend(DeviceBackend):
 
     varinfo = [
         # version of the firmware running in the TMCM controller. Query only once, at the beginning.
-        DeviceBackend.VariableInfo(name='pressure', dependsfrom=[], urgent=False, timeout=0.5),
-        DeviceBackend.VariableInfo(name='version', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='units', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='pressure', dependsfrom=[], urgent=False, timeout=0.5, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='version', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='units', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
     ]
 
     def __init__(self, inqueue: Queue, outqueue: Queue, host: str, port: int):

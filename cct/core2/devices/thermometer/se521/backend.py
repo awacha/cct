@@ -3,7 +3,7 @@ import struct
 from math import inf, nan, isfinite
 from typing import Sequence, Any, Tuple, List
 
-from ...device.backend import DeviceBackend
+from ...device.backend import DeviceBackend, VariableType
 
 
 def f2c(value_in_fahrenheit):
@@ -15,34 +15,34 @@ class SE521Backend(DeviceBackend):
         pass
 
     varinfo = [
-        DeviceBackend.VariableInfo(name='encodedstate', dependsfrom=[], urgent=False, timeout=0.1),
-        DeviceBackend.VariableInfo(name='firmwareversion', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='battery_level', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='isrecallmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='displayunits', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='isalarm', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ishighalarm', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='islowalarm', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='isrecording', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ismemoryfull', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='isholdmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='isbluetoothenabled', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ismaxminmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ismaxmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='isminmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='isavgmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ismaxminavgflashing', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='thermistortype', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t1', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t2', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t3', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t4', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t1-t2', dependsfrom=['encodedstate'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t1name', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t2name', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t3name', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t4name', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='t1-t2name', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='encodedstate', dependsfrom=[], urgent=False, timeout=0.1, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='firmwareversion', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='battery_level', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='isrecallmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='displayunits', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='isalarm', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='ishighalarm', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='islowalarm', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='isrecording', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='ismemoryfull', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='isholdmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='isbluetoothenabled', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='ismaxminmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='ismaxmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='isminmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='isavgmode', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='ismaxminavgflashing', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='thermistortype', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='t1', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='t2', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='t3', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='t4', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='t1-t2', dependsfrom=['encodedstate'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='t1name', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='t2name', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='t3name', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='t4name', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='t1-t2name', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
 
     ]
 

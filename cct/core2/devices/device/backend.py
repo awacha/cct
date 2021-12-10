@@ -10,7 +10,7 @@ from typing import List, Any, Tuple, Dict, Optional, Sequence, final
 
 from .message import Message
 from .telemetry import TelemetryInformation
-from .variable import Variable
+from .variable import Variable, VariableType
 
 
 class DeviceBackend:
@@ -93,13 +93,15 @@ class DeviceBackend:
         dependsfrom: List[str]
         urgent: bool
         timeout: float
+        vartype: VariableType
 
         def __init__(self, name: str, dependsfrom: Optional[Sequence[str]] = None, urgent: bool = False,
-                     timeout: float = 1.0):
+                     timeout: float = 1.0, vartype: VariableType = VariableType.UNKNOWN):
             self.name = name
             self.dependsfrom = list(dependsfrom) if dependsfrom is not None else []
             self.urgent = urgent
             self.timeout = timeout
+            self.vartype = vartype
 
     varinfo: List[VariableInfo]  # class-level variable: static information on state variables
     variables: List[Variable]  # instance-level information: volatile information on state variables
@@ -136,11 +138,11 @@ class DeviceBackend:
     def __init__(self, inqueue: Queue, outqueue: Queue, host: str, port: int, **kwargs):
         self.inqueue = inqueue
         self.outqueue = outqueue
-        self.variables = [Variable(vi.name, vi.timeout) for vi in self.varinfo]
+        self.variables = [Variable(vi.name, vi.timeout, vi.vartype) for vi in self.varinfo]
         assert '__status__' not in [v.name for v in self.variables]
         assert '__auxstatus__' not in [v.name for v in self.variables]
-        self.variables.append(Variable('__status__', None))
-        self.variables.append(Variable('__auxstatus__', None))
+        self.variables.append(Variable('__status__', None, VariableType.STR))
+        self.variables.append(Variable('__auxstatus__', None, VariableType.STR))
         self.inbuffer = b''
         self.host = host
         self.port = port
@@ -165,7 +167,7 @@ class DeviceBackend:
             - read and interpret messages from the hardware.
         """
         # first of all, send the list of variables to the front-end
-        self.messageToFrontend('variablenames', names=[(v.name, v.defaulttimeout) for v in self.variables])
+        self.messageToFrontend('variablenames', names=[(v.name, v.defaulttimeout, v.vartype) for v in self.variables])
         for msg in self.logbuffer:
             self.outqueue.put_nowait(msg)
         self.logbuffer = None

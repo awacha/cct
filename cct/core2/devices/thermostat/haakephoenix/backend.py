@@ -2,7 +2,7 @@ import datetime
 from math import inf
 from typing import Sequence, Any, Tuple, List
 
-from ...device.backend import DeviceBackend
+from ...device.backend import DeviceBackend, VariableType
 
 
 class HaakePhoenixBackend(DeviceBackend):
@@ -11,43 +11,43 @@ class HaakePhoenixBackend(DeviceBackend):
         Stopped = 'stopped'
 
     varinfo = [
-        DeviceBackend.VariableInfo(name='firmwareversion', dependsfrom=[], urgent=True, timeout=inf),
-        DeviceBackend.VariableInfo(name='faultstatus', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='external_pt100_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='internal_pt100_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='cooling_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='firmwareversion', dependsfrom=[], urgent=True, timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='faultstatus', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='external_pt100_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='internal_pt100_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='cooling_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='liquid_level_low_error', dependsfrom=['faultstatus'], urgent=False,
-                                   timeout=inf),
-        DeviceBackend.VariableInfo(name='external_alarm_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='pump_overload_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='external_alarm_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='pump_overload_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='liquid_level_alarm_error', dependsfrom=['faultstatus'], urgent=False,
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='overtemperature_error', dependsfrom=['faultstatus'], urgent=False,
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='main_relay_missing_error', dependsfrom=['faultstatus'], urgent=False,
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='control_external', dependsfrom=['faultstatus'], urgent=False,
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='temperature_control', dependsfrom=['faultstatus'], urgent=False,
-                                   timeout=inf),
-        DeviceBackend.VariableInfo(name='fuzzycontrol', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='fuzzystatus', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='temperature_internal', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='temperature_external', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='temperature', dependsfrom=[], urgent=False, timeout=None),
-        DeviceBackend.VariableInfo(name='setpoint', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='highlimit', dependsfrom=[], urgent=False, timeout=10),
-        DeviceBackend.VariableInfo(name='lowlimit', dependsfrom=[], urgent=False, timeout=10),
-        DeviceBackend.VariableInfo(name='diffcontrol_on', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='autostart', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='fuzzyid', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='beep', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='time', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='date', dependsfrom=[], urgent=False, timeout=5),
-        DeviceBackend.VariableInfo(name='watchdog_on', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='watchdog_setpoint', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='cooling_on', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='pump_power', dependsfrom=[], urgent=False, timeout=1.0),
+                                   timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='fuzzycontrol', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='fuzzystatus', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.UNKNOWN),
+        DeviceBackend.VariableInfo(name='temperature_internal', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='temperature_external', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='temperature', dependsfrom=[], urgent=False, timeout=None, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='setpoint', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='highlimit', dependsfrom=[], urgent=False, timeout=10, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lowlimit', dependsfrom=[], urgent=False, timeout=10, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='diffcontrol_on', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='autostart', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='fuzzyid', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.UNKNOWN),
+        DeviceBackend.VariableInfo(name='beep', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='time', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.TIME),
+        DeviceBackend.VariableInfo(name='date', dependsfrom=[], urgent=False, timeout=5, vartype=VariableType.DATE),
+        DeviceBackend.VariableInfo(name='watchdog_on', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='watchdog_setpoint', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='cooling_on', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='pump_power', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
     ]
 
     def _query(self, variablename: str):

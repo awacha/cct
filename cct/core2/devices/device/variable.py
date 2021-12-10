@@ -1,6 +1,20 @@
+import datetime
+import enum
 import time
 from math import inf
 from typing import Any, Optional
+
+
+class VariableType(enum.Enum):
+    INT = enum.auto()
+    FLOAT = enum.auto()
+    STR = enum.auto()
+    BYTES = enum.auto()
+    BOOL = enum.auto()
+    DATETIME = enum.auto()  # datetime.datetime
+    DATE = enum.auto()  # datetime.date
+    TIME = enum.auto()  # datetime.time
+    UNKNOWN = enum.auto()
 
 
 class Variable:
@@ -9,18 +23,35 @@ class Variable:
     value: Any = None  # the actual value of the variable
     previousvalue: Any = None  # the previous value of the variable
     timestamp: Optional[float] = None  # time the actual value was read
-    lastquery: Optional[float] = None  # time when the last query has been sent or None if there are no unreplied queries
+    lastquery: Optional[
+        float] = None  # time when the last query has been sent or None if there are no unreplied queries
     lastchange: Optional[float] = None  # time when the value was last changed
     querytimeout: float  # current querying period. If None, this variable will never be queried
     defaulttimeout: float  # default querying period
     queryretries: int = 0
+    vartype: VariableType = VariableType.UNKNOWN
 
-    def __init__(self, name: str, querytimeout: Optional[float]):
+    def __init__(self, name: str, querytimeout: Optional[float], vartype: VariableType = VariableType.UNKNOWN):
         self.name = name
         self.querytimeout = querytimeout
         self.defaulttimeout = querytimeout
+        self.vartype = vartype
 
     def update(self, newvalue: Any) -> bool:
+        if (newvalue is not None) and (
+                ((self.vartype == VariableType.FLOAT) and (not isinstance(newvalue, (float, int)))) or
+                ((self.vartype == VariableType.STR) and not isinstance(newvalue, str)) or
+                ((self.vartype == VariableType.BYTES) and not isinstance(newvalue, bytes)) or
+                ((self.vartype == VariableType.BOOL) and not isinstance(newvalue, bool)) or
+                ((self.vartype == VariableType.INT) and not isinstance(newvalue, int)) or
+                ((self.vartype == VariableType.DATE) and not isinstance(newvalue, datetime.date)) or
+                ((self.vartype == VariableType.TIME) and not isinstance(newvalue, datetime.time)) or
+                ((self.vartype == VariableType.DATETIME) and not isinstance(newvalue, datetime.datetime))
+        ):
+            print(
+                f'WARNING: Setting variable {self.name} to {newvalue}, '
+                f'but has wrong type ({type(newvalue)}) for {self.vartype.name}')
+
         self.lastquery = None
         self.timestamp = time.monotonic()
         if (self.lastchange is not None) and ((newvalue == self.value) or (newvalue is self.value)):
@@ -59,6 +90,7 @@ class Variable:
 
     def __str__(self) -> str:
         return (f'Variable {self.name}:\n'
+                f'   type: {self.type.name}\n'
                 f'   value: {self.value}\n'
                 f'   previous value: {self.previousvalue}\n'
                 f'   last refreshed: {self.timestamp}\n'

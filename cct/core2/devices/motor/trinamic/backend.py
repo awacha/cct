@@ -8,7 +8,7 @@ from typing import Sequence, Any, Tuple, List, Dict, Optional
 
 from .conversion import UnitConverter
 from .tmcl import TMCLUnpack, TMCLPack, TMCLError, AxisParameters, Instructions, TMCLStatusMessage
-from ...device.backend import DeviceBackend
+from ...device.backend import DeviceBackend, VariableType
 
 
 class MotionData:
@@ -55,37 +55,37 @@ class TrinamicMotorControllerBackend(DeviceBackend):
 
     varinfo = [
         # version of the firmware running in the TMCM controller. Query only once, at the beginning.
-        DeviceBackend.VariableInfo(name='firmwareversion', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='firmwareversion', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
         # the following variables are per-axis ones: they have
-        DeviceBackend.VariableInfo(name='targetpositionreached', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='targetposition', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='actualposition', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='targetspeed', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='actualspeed', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='rightswitchstatus', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='leftswitchstatus', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='actualacceleration', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='load', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='drivererror', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='rampmode', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='targetpositionreached', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='targetposition', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='actualposition', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='targetspeed', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='actualspeed', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='rightswitchstatus', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='leftswitchstatus', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='actualacceleration', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='load', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='drivererror', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='rampmode', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.INT),
         # the following variables are not changeable from CCT and are not expected to be changed externally.
-        DeviceBackend.VariableInfo(name='pulsedivisor', dependsfrom=[], urgent=True, timeout=inf),
-        DeviceBackend.VariableInfo(name='rampdivisor', dependsfrom=[], urgent=True, timeout=inf),
-        DeviceBackend.VariableInfo(name='microstepresolution', dependsfrom=[], urgent=True, timeout=inf),
-        DeviceBackend.VariableInfo(name='maxcurrent', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='standbycurrent', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='rightswitchenable', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='leftswitchenable', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='freewheelingdelay', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='maxspeed', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='maxacceleration', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='pulsedivisor', dependsfrom=[], urgent=True, timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='rampdivisor', dependsfrom=[], urgent=True, timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='microstepresolution', dependsfrom=[], urgent=True, timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='maxcurrent', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='standbycurrent', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='rightswitchenable', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='leftswitchenable', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='freewheelingdelay', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='maxspeed', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='maxacceleration', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
         # These are special: not from the controller but read and written to a file.
-        DeviceBackend.VariableInfo(name='softleft', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='softright', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='softleft', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='softright', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
         # this is also a special, per-axis variable, set by the program.
-        DeviceBackend.VariableInfo(name='moving', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='movestartposition', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='lastmovewassuccessful', dependsfrom=[], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='moving', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='movestartposition', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastmovewassuccessful', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.BOOL),
     ]
 
     def __init__(self, inqueue: Queue, outqueue: Queue, host: str, port: int, **kwargs):
@@ -105,7 +105,8 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                             name=f'{vi.name}${iaxis}',
                             dependsfrom=[],  # ToDo
                             urgent=vi.urgent,
-                            timeout=vi.timeout
+                            timeout=vi.timeout,
+                            vartype=vi.vartype,
                         )
                     )
         # some variables can be expressed in physically relevant units, but the controller reports their "raw" values.
@@ -121,7 +122,8 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                         name=f'{varbasename}:raw{peraxistag}',
                         dependsfrom=varinfo.dependsfrom,
                         urgent=varinfo.urgent,
-                        timeout=varinfo.timeout
+                        timeout=varinfo.timeout,
+                        vartype=VariableType.INT,
                     ))
                 # make the physical one depend from the raw one.
                 varinfo.dependsfrom = [f'{varbasename}:raw{peraxistag}']

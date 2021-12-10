@@ -3,7 +3,7 @@ import time
 from math import inf
 from typing import Tuple, List, Optional, Union, Sequence, Any, Dict, Final
 
-from ...device.backend import DeviceBackend
+from ...device.backend import DeviceBackend, VariableType
 
 
 def re_optional_float(name: str, nintdigits: int = 3, ndecimals: int = 0, bytes: bool = True) -> Union[bytes, str]:
@@ -41,139 +41,139 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
 
     varinfo = [
         # query with b'QPI\r'
-        DeviceBackend.VariableInfo(name='protocolID', timeout=inf),
+        DeviceBackend.VariableInfo(name='protocolID', timeout=inf, vartype=VariableType.INT),
         # query the following variables with b'QMD\r'
-        DeviceBackend.VariableInfo(name='modelname', timeout=inf),
-        DeviceBackend.VariableInfo(name='ratedVA', dependsfrom=['modelname'], timeout=inf),
-        DeviceBackend.VariableInfo(name='powerfactor', dependsfrom=['modelname'], timeout=inf),  # may be volatile?
-        DeviceBackend.VariableInfo(name='inputphasecount', dependsfrom=['modelname'], timeout=inf),
-        DeviceBackend.VariableInfo(name='outputphasecount', dependsfrom=['modelname'], timeout=inf),
-        DeviceBackend.VariableInfo(name='nominalinputvoltage', dependsfrom=['modelname'], timeout=inf),
-        DeviceBackend.VariableInfo(name='nominaloutputvoltage', dependsfrom=['modelname'], timeout=inf),
-        DeviceBackend.VariableInfo(name='batterycount', dependsfrom=['modelname'], timeout=inf),
-        DeviceBackend.VariableInfo(name='nominalbatteryvoltage', dependsfrom=['modelname'], timeout=inf),
+        DeviceBackend.VariableInfo(name='modelname', timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='ratedVA', dependsfrom=['modelname'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='powerfactor', dependsfrom=['modelname'], timeout=inf, vartype=VariableType.FLOAT),  # may be volatile?
+        DeviceBackend.VariableInfo(name='inputphasecount', dependsfrom=['modelname'], timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='outputphasecount', dependsfrom=['modelname'], timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='nominalinputvoltage', dependsfrom=['modelname'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='nominaloutputvoltage', dependsfrom=['modelname'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='batterycount', dependsfrom=['modelname'], timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='nominalbatteryvoltage', dependsfrom=['modelname'], timeout=inf, vartype=VariableType.FLOAT),
 
         # query the following variables with b'QGS\r'
-        DeviceBackend.VariableInfo(name='inputvoltage', timeout=1.0),
-        DeviceBackend.VariableInfo(name='inputfrequency', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='outputvoltage', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='outputfrequency', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='outputcurrent', dependsfrom=['inputvoltage'], timeout=inf),
+        DeviceBackend.VariableInfo(name='inputvoltage', timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='inputfrequency', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='outputvoltage', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='outputfrequency', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='outputcurrent', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='outputloadpercentage', dependsfrom=['inputvoltage'],
-                                   timeout=inf),
-        DeviceBackend.VariableInfo(name='positiveBUSvoltage', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='negativeBUSvoltage', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='batteryvoltage', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='temperature', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='upstype', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='utilityfail', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='batterylow', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='bypassactive', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='upsfailed', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='epo', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='testinprogress', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='shutdownactive', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='battery_silence', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='battery_test_failed', dependsfrom=['inputvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='battery_test_ok', dependsfrom=['inputvoltage'], timeout=inf),
+                                   timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='positiveBUSvoltage', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='negativeBUSvoltage', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='batteryvoltage', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='temperature', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='upstype', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='utilityfail', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='batterylow', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='bypassactive', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='upsfailed', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='epo', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='testinprogress', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='shutdownactive', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='battery_silence', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='battery_test_failed', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='battery_test_ok', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.BOOL),
 
         # query with b'QFS\r'
         DeviceBackend.VariableInfo(name='lastfault.type', timeout=1.0),
-        DeviceBackend.VariableInfo(name='lastfault.inputvoltage', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.inputfrequency', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.outputvoltage', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.outputfrequency', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.outputloadpercentage', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.outputcurrent', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.positiveBUSvoltage', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.negativeBUSvoltage', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.batteryvoltage', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.temperature', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.dctodc_on', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.pfc_on', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.inverter_on', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.inputrelay_on', dependsfrom=['lastfault.type'], timeout=inf),
-        DeviceBackend.VariableInfo(name='lastfault.outputrelay_on', dependsfrom=['lastfault.type'], timeout=inf),
+        DeviceBackend.VariableInfo(name='lastfault.inputvoltage', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.inputfrequency', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.outputvoltage', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.outputfrequency', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.outputloadpercentage', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.outputcurrent', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.positiveBUSvoltage', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.negativeBUSvoltage', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.batteryvoltage', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.temperature', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastfault.dctodc_on', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='lastfault.pfc_on', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='lastfault.inverter_on', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='lastfault.inputrelay_on', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='lastfault.outputrelay_on', dependsfrom=['lastfault.type'], timeout=inf, vartype=VariableType.BOOL),
 
         # query with b'QWS\r'
-        DeviceBackend.VariableInfo(name='warning.batteryopen', timeout=1.0),
-        DeviceBackend.VariableInfo(name='warning.batteryovercharge', dependsfrom=['warning.batteryopen'], timeout=inf),
-        DeviceBackend.VariableInfo(name='warning.batterylow', dependsfrom=['warning.batteryopen'], timeout=inf),
-        DeviceBackend.VariableInfo(name='warning.overload', dependsfrom=['warning.batteryopen'], timeout=inf),
-        DeviceBackend.VariableInfo(name='warning.epo', dependsfrom=['warning.batteryopen'], timeout=inf),
-        DeviceBackend.VariableInfo(name='warning.overtemperature', dependsfrom=['warning.batteryopen'], timeout=inf),
-        DeviceBackend.VariableInfo(name='warning.chargerfail', dependsfrom=['warning.batteryopen'], timeout=inf),
+        DeviceBackend.VariableInfo(name='warning.batteryopen', timeout=1.0, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='warning.batteryovercharge', dependsfrom=['warning.batteryopen'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='warning.batterylow', dependsfrom=['warning.batteryopen'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='warning.overload', dependsfrom=['warning.batteryopen'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='warning.epo', dependsfrom=['warning.batteryopen'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='warning.overtemperature', dependsfrom=['warning.batteryopen'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='warning.chargerfail', dependsfrom=['warning.batteryopen'], timeout=inf, vartype=VariableType.BOOL),
 
         # query with b'QMOD\r'
-        DeviceBackend.VariableInfo(name='upsmode', timeout=1.0),
+        DeviceBackend.VariableInfo(name='upsmode', timeout=1.0, vartype=VariableType.STR),
 
         # query with b'QRI\r'
-        DeviceBackend.VariableInfo(name='ratedvoltage', timeout=inf),
-        DeviceBackend.VariableInfo(name='ratedcurrent', dependsfrom=['ratedvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='ratedbatteryvoltage', dependsfrom=['ratedvoltage'], timeout=inf),
-        DeviceBackend.VariableInfo(name='ratedfrequency', dependsfrom=['ratedvoltage'], timeout=inf),
+        DeviceBackend.VariableInfo(name='ratedvoltage', timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='ratedcurrent', dependsfrom=['ratedvoltage'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='ratedbatteryvoltage', dependsfrom=['ratedvoltage'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='ratedfrequency', dependsfrom=['ratedvoltage'], timeout=inf, vartype=VariableType.FLOAT),
 
         # query with b'QBYV\r'
-        DeviceBackend.VariableInfo(name='bypassvoltage.high', timeout=1.0),
-        DeviceBackend.VariableInfo(name='bypassvoltage.low', dependsfrom=['bypassvoltage.high'], timeout=1.0),
+        DeviceBackend.VariableInfo(name='bypassvoltage.high', timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='bypassvoltage.low', dependsfrom=['bypassvoltage.high'], timeout=1.0, vartype=VariableType.FLOAT),
 
         # query with b'QBYF\r'
-        DeviceBackend.VariableInfo(name='bypassfrequency.high', timeout=1.0),
+        DeviceBackend.VariableInfo(name='bypassfrequency.high', timeout=1.0, vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='bypassfrequency.low', dependsfrom=['bypassfrequency.high'],
-                                   timeout=1.0),
+                                   timeout=1.0, vartype=VariableType.FLOAT),
 
         # query with b'QFLAG\r'
-        DeviceBackend.VariableInfo(name='flag.bypassmodealarm', timeout=1.0),
-        DeviceBackend.VariableInfo(name='flag.batterymodealarm', dependsfrom=['flag.bypassmodealarm'], timeout=inf),
-        DeviceBackend.VariableInfo(name='flag.autostartenabled', dependsfrom=['flag.bypassmodealarm'], timeout=inf),
-        DeviceBackend.VariableInfo(name='flag.bypassenabled', dependsfrom=['flag.bypassmodealarm'], timeout=inf),
-        DeviceBackend.VariableInfo(name='flag.warningalarm', dependsfrom=['flag.bypassmodealarm'], timeout=inf),
+        DeviceBackend.VariableInfo(name='flag.bypassmodealarm', timeout=1.0, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='flag.batterymodealarm', dependsfrom=['flag.bypassmodealarm'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='flag.autostartenabled', dependsfrom=['flag.bypassmodealarm'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='flag.bypassenabled', dependsfrom=['flag.bypassmodealarm'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='flag.warningalarm', dependsfrom=['flag.bypassmodealarm'], timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='flag.batteryprotectenabled', dependsfrom=['flag.bypassmodealarm'],
-                                   timeout=inf),
-        DeviceBackend.VariableInfo(name='flag.convertermodeenabled', dependsfrom=['flag.bypassmodealarm'], timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='flag.convertermodeenabled', dependsfrom=['flag.bypassmodealarm'], timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='flag.batteryopenstatuscheckenabled', dependsfrom=['flag.bypassmodealarm'],
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='flag.bypassforbiddingenabled', dependsfrom=['flag.bypassmodealarm'],
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='flag.batterylowprotectenabled', dependsfrom=['flag.bypassmodealarm'],
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='flag.invertershortclearenabled', dependsfrom=['flag.bypassmodealarm'],
-                                   timeout=inf),
-        DeviceBackend.VariableInfo(name='flag.hotstandbymaster', dependsfrom=['flag.bypassmodealarm'], timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='flag.hotstandbymaster', dependsfrom=['flag.bypassmodealarm'], timeout=inf, vartype=VariableType.BOOL),
 
         # query with b'QFLAG2\r'
-        DeviceBackend.VariableInfo(name='flag.thdisetting', timeout=1.0),
-        DeviceBackend.VariableInfo(name='flag.standardmodelsetting', dependsfrom=['flag.thdisetting'], timeout=inf),
-        DeviceBackend.VariableInfo(name='flag.eepromversion', dependsfrom=['flag.thdisetting'], timeout=inf),
+        DeviceBackend.VariableInfo(name='flag.thdisetting', timeout=1.0, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='flag.standardmodelsetting', dependsfrom=['flag.thdisetting'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='flag.eepromversion', dependsfrom=['flag.thdisetting'], timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='flag.maincapacityovertempcounter', dependsfrom=['flag.thdisetting'],
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
 
         # query with b'QVFW\r'
-        DeviceBackend.VariableInfo(name='firmwareversion', timeout=inf),
+        DeviceBackend.VariableInfo(name='firmwareversion', timeout=inf, vartype=VariableType.STR),
 
         # query with b'QID\r'
-        DeviceBackend.VariableInfo(name='hardwareversion', timeout=inf),
+        DeviceBackend.VariableInfo(name='hardwareversion', timeout=inf, vartype=VariableType.STR),
 
         # query with b'QBV\r'
-        DeviceBackend.VariableInfo(name='batteryvoltage_2', timeout=1.0),
+        DeviceBackend.VariableInfo(name='batteryvoltage_2', timeout=1.0, vartype=VariableType.FLOAT),
         # is this equal to the value read by b'QGS\r'?
-        DeviceBackend.VariableInfo(name='batterycount_2', dependsfrom=['batteryvoltage_2'], timeout=inf),
-        DeviceBackend.VariableInfo(name='batterygroupcount', dependsfrom=['batteryvoltage_2'], timeout=inf),
-        DeviceBackend.VariableInfo(name='batterycapacity', dependsfrom=['batteryvoltage_2'], timeout=inf),
-        DeviceBackend.VariableInfo(name='batteryremaintime', dependsfrom=['batteryvoltage_2'], timeout=inf),
+        DeviceBackend.VariableInfo(name='batterycount_2', dependsfrom=['batteryvoltage_2'], timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='batterygroupcount', dependsfrom=['batteryvoltage_2'], timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='batterycapacity', dependsfrom=['batteryvoltage_2'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='batteryremaintime', dependsfrom=['batteryvoltage_2'], timeout=inf, vartype=VariableType.FLOAT),
 
         # query with b'QLDL\r'
-        DeviceBackend.VariableInfo(name='loadlevel_wattpercent', timeout=1.0),
-        DeviceBackend.VariableInfo(name='loadlevel_vapercent', dependsfrom=['loadlevel_wattpercent'], timeout=inf),
+        DeviceBackend.VariableInfo(name='loadlevel_wattpercent', timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='loadlevel_vapercent', dependsfrom=['loadlevel_wattpercent'], timeout=inf, vartype=VariableType.FLOAT),
 
         # query with b'QTPR\r'
-        DeviceBackend.VariableInfo(name='temperature.pfc', timeout=1.0),
-        DeviceBackend.VariableInfo(name='temperature.ambient', dependsfrom=['temperature.pfc'], timeout=inf),
-        DeviceBackend.VariableInfo(name='temperature.charger', dependsfrom=['temperature.pfc'], timeout=inf),
+        DeviceBackend.VariableInfo(name='temperature.pfc', timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='temperature.ambient', dependsfrom=['temperature.pfc'], timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='temperature.charger', dependsfrom=['temperature.pfc'], timeout=inf, vartype=VariableType.FLOAT),
 
         # query with b'QBAT\r'
-        DeviceBackend.VariableInfo(name='batterycapacity_ah', timeout=1.0),
-        DeviceBackend.VariableInfo(name='batteryremainingtimefactor', dependsfrom=['batterycapacity_ah'], timeout=inf),
+        DeviceBackend.VariableInfo(name='batterycapacity_ah', timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='batteryremainingtimefactor', dependsfrom=['batterycapacity_ah'], timeout=inf, vartype=VariableType.FLOAT),
 
 
     ]

@@ -2,7 +2,7 @@ import struct
 import time
 from typing import Sequence, Any, List, Tuple
 
-from ...device.backend import DeviceBackend
+from ...device.backend import DeviceBackend, VariableType
 from ...utils.modbus import ModbusTCP
 
 
@@ -19,38 +19,38 @@ class GeniXBackend(DeviceBackend, ModbusTCP):
         goingtofull = 'ramping up...'
         unknown = 'unknown'
 
-    varinfo = [DeviceBackend.VariableInfo('power', dependsfrom=[], timeout=10),
-               DeviceBackend.VariableInfo('ht', dependsfrom=['power']),
-               DeviceBackend.VariableInfo('current', dependsfrom=['power']),
-               DeviceBackend.VariableInfo('tubetime', timeout=1, dependsfrom=['tube_temperature']),
-               DeviceBackend.VariableInfo('statusbits', timeout=0.5),
-               DeviceBackend.VariableInfo('shutter', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('remote_mode', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('xrays', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('conditions_auto', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('tube_power', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('faults', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('xray_light_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('shutter_light_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('sensor2_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('tube_position_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('vacuum_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('waterflow_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('safety_shutter_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('temperature_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('sensor1_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('relay_interlock_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('door_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('filament_fault', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('tube_warmup_needed', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('interlock', dependsfrom=['interlock_lowlevel']),
-               DeviceBackend.VariableInfo('overridden', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('warmingup', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('goingtostandby', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('rampingup', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('poweringdown', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('interlock_lowlevel', dependsfrom=['statusbits']),
-               DeviceBackend.VariableInfo('tube_temperature', timeout=1),
+    varinfo = [DeviceBackend.VariableInfo('power', dependsfrom=[], timeout=10, vartype=VariableType.FLOAT),
+               DeviceBackend.VariableInfo('ht', dependsfrom=['power'], vartype=VariableType.FLOAT),
+               DeviceBackend.VariableInfo('current', dependsfrom=['power'], vartype=VariableType.FLOAT),
+               DeviceBackend.VariableInfo('tubetime', timeout=1, dependsfrom=['tube_temperature'], vartype=VariableType.FLOAT),
+               DeviceBackend.VariableInfo('statusbits', timeout=0.5, vartype=VariableType.INT),
+               DeviceBackend.VariableInfo('shutter', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('remote_mode', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('xrays', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('conditions_auto', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('tube_power', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('faults', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('xray_light_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('shutter_light_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('sensor2_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('tube_position_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('vacuum_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('waterflow_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('safety_shutter_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('temperature_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('sensor1_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('relay_interlock_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('door_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('filament_fault', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('tube_warmup_needed', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('interlock', dependsfrom=['interlock_lowlevel'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('overridden', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('warmingup', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('goingtostandby', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('rampingup', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('poweringdown', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('interlock_lowlevel', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
+               DeviceBackend.VariableInfo('tube_temperature', timeout=1, vartype=VariableType.FLOAT),
                ]
 
     def _query(self, variablename: str):

@@ -1,7 +1,7 @@
 from math import inf
 from typing import Sequence, Any, Tuple, List
 
-from ...device.backend import DeviceBackend
+from ...device.backend import DeviceBackend, VariableType
 
 
 class Keen800Backend(DeviceBackend):
@@ -10,32 +10,32 @@ class Keen800Backend(DeviceBackend):
         BatteryPower = 'battery'
 
     varinfo = [
-        DeviceBackend.VariableInfo(name='inputvoltage', dependsfrom=[], urgent=False, timeout=1.0),
-        DeviceBackend.VariableInfo(name='inputfaultvoltage', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='outputvoltage', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='outputcurrentpercentage', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='inputfrequency', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
+        DeviceBackend.VariableInfo(name='inputvoltage', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='inputfaultvoltage', dependsfrom=['inputvoltage'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='outputvoltage', dependsfrom=['inputvoltage'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='outputcurrentpercentage', dependsfrom=['inputvoltage'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='inputfrequency', dependsfrom=['inputvoltage'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='batteryvoltage', dependsfrom=['inputvoltage'], urgent=False,
-                                   timeout=inf),
-        DeviceBackend.VariableInfo(name='temperature', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='utilityfail', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
+                                   timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='temperature', dependsfrom=['inputvoltage'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='utilityfail', dependsfrom=['inputvoltage'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='batterylow', dependsfrom=['inputvoltage'], urgent=False,
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='bypassactive', dependsfrom=['inputvoltage'], urgent=False,
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='upsfailed', dependsfrom=['inputvoltage'], urgent=False,
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='standbyups', dependsfrom=['inputvoltage'], urgent=False,
-                                   timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='testinprogress', dependsfrom=['inputvoltage'], urgent=False,
-                                   timeout=inf),
-        DeviceBackend.VariableInfo(name='shutdownactive', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='beeperon', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ratedvoltage', dependsfrom=[], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ratedcurrent', dependsfrom=['ratedvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ratedbatteryvoltage', dependsfrom=['ratedvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='ratedfrequency', dependsfrom=['ratedvoltage'], urgent=False, timeout=inf),
-        DeviceBackend.VariableInfo(name='statusbits', dependsfrom=['inputvoltage'], urgent=False, timeout=inf),
+                                   timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='shutdownactive', dependsfrom=['inputvoltage'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='beeperon', dependsfrom=['inputvoltage'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='ratedvoltage', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='ratedcurrent', dependsfrom=['ratedvoltage'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='ratedbatteryvoltage', dependsfrom=['ratedvoltage'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='ratedfrequency', dependsfrom=['ratedvoltage'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='statusbits', dependsfrom=['inputvoltage'], urgent=False, timeout=inf, vartype=VariableType.INT),
 
     ]
 
