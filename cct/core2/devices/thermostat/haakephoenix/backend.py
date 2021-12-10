@@ -12,7 +12,7 @@ class HaakePhoenixBackend(DeviceBackend):
 
     varinfo = [
         DeviceBackend.VariableInfo(name='firmwareversion', dependsfrom=[], urgent=True, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='faultstatus', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='faultstatus', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.BYTES),
         DeviceBackend.VariableInfo(name='external_pt100_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='internal_pt100_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='cooling_error', dependsfrom=['faultstatus'], urgent=False, timeout=inf, vartype=VariableType.BOOL),
@@ -30,7 +30,7 @@ class HaakePhoenixBackend(DeviceBackend):
                                    timeout=inf, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='temperature_control', dependsfrom=['faultstatus'], urgent=False,
                                    timeout=inf, vartype=VariableType.BOOL),
-        DeviceBackend.VariableInfo(name='fuzzycontrol', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='fuzzycontrol', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
         DeviceBackend.VariableInfo(name='fuzzystatus', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.UNKNOWN),
         DeviceBackend.VariableInfo(name='temperature_internal', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='temperature_external', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
