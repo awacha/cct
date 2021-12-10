@@ -23,7 +23,7 @@ class GeniXBackend(DeviceBackend, ModbusTCP):
                DeviceBackend.VariableInfo('ht', dependsfrom=['power'], vartype=VariableType.FLOAT),
                DeviceBackend.VariableInfo('current', dependsfrom=['power'], vartype=VariableType.FLOAT),
                DeviceBackend.VariableInfo('tubetime', timeout=1, dependsfrom=['tube_temperature'], vartype=VariableType.FLOAT),
-               DeviceBackend.VariableInfo('statusbits', timeout=0.5, vartype=VariableType.STR),
+               DeviceBackend.VariableInfo('statusbits', timeout=0.5, vartype=VariableType.INT),
                DeviceBackend.VariableInfo('shutter', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
                DeviceBackend.VariableInfo('remote_mode', dependsfrom=['statusbits'], vartype=VariableType.BOOL),
                DeviceBackend.VariableInfo('xrays', dependsfrom=['statusbits'], vartype=VariableType.BOOL),

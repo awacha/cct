@@ -142,11 +142,11 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         DeviceBackend.VariableInfo(name='flag.hotstandbymaster', dependsfrom=['flag.bypassmodealarm'], timeout=inf, vartype=VariableType.BOOL),
 
         # query with b'QFLAG2\r'
-        DeviceBackend.VariableInfo(name='flag.thdisetting', timeout=1.0, vartype=VariableType.BOOL),
-        DeviceBackend.VariableInfo(name='flag.standardmodelsetting', dependsfrom=['flag.thdisetting'], timeout=inf, vartype=VariableType.BOOL),
-        DeviceBackend.VariableInfo(name='flag.eepromversion', dependsfrom=['flag.thdisetting'], timeout=inf, vartype=VariableType.BOOL),
+        DeviceBackend.VariableInfo(name='flag.thdisetting', timeout=1.0, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='flag.standardmodelsetting', dependsfrom=['flag.thdisetting'], timeout=inf, vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='flag.eepromversion', dependsfrom=['flag.thdisetting'], timeout=inf, vartype=VariableType.INT),
         DeviceBackend.VariableInfo(name='flag.maincapacityovertempcounter', dependsfrom=['flag.thdisetting'],
-                                   timeout=inf, vartype=VariableType.BOOL),
+                                   timeout=inf, vartype=VariableType.INT),
 
         # query with b'QVFW\r'
         DeviceBackend.VariableInfo(name='firmwareversion', timeout=inf, vartype=VariableType.STR),
