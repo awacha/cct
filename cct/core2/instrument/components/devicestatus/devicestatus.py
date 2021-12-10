@@ -2,8 +2,8 @@ from typing import Any, List, Tuple, Optional, Dict
 
 from PyQt5 import QtCore
 
-from .component import Component
-from ...devices.device.frontend import DeviceFrontend
+from ..component import Component
+from ....devices.device.frontend import DeviceFrontend
 
 
 class DeviceStatus(QtCore.QAbstractItemModel, Component):
