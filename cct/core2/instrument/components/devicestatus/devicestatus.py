@@ -1,9 +1,13 @@
 from typing import Any, List, Tuple, Optional, Dict
+import logging
 
 from PyQt5 import QtCore
 
 from ..component import Component
 from ....devices.device.frontend import DeviceFrontend
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class DeviceStatus(QtCore.QAbstractItemModel, Component):
@@ -24,11 +28,13 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
             self.onDeviceAdded(device.name)
 
     def stopComponent(self):
-        self.instrument.devicemanager.deviceAdded.disconnect(self.onDeviceAdded)
-        self.instrument.devicemanager.deviceRemoved.disconnect(self.onDeviceRemoved)
         self.beginResetModel()
+        for device in self._devicenames:
+            self.onDeviceRemoved(device, True)
         self._devicenames = []
         self.endResetModel()
+        self.instrument.devicemanager.deviceAdded.disconnect(self.onDeviceAdded)
+        self.instrument.devicemanager.deviceRemoved.disconnect(self.onDeviceRemoved)
 
     def panichandler(self):
         super().panichandler()
@@ -65,6 +71,7 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
             self.endRemoveRows()
 
     def onDeviceRemoved(self, name: str, expected: bool):
+        logger.debug(f'Device {name} removed')
         assert self._devicenames == sorted(self._devicenames)
         row = self._devicenames.index(name)
         self.beginRemoveRows(QtCore.QModelIndex(), row, row)
