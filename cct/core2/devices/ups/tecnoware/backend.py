@@ -54,7 +54,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         DeviceBackend.VariableInfo(name='nominalbatteryvoltage', dependsfrom=['modelname'], timeout=inf, vartype=VariableType.FLOAT),
 
         # query the following variables with b'QGS\r'
-        DeviceBackend.VariableInfo(name='inputvoltage', timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='inputvoltage', timeout=0.5, vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='inputfrequency', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='outputvoltage', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='outputfrequency', dependsfrom=['inputvoltage'], timeout=inf, vartype=VariableType.FLOAT),
@@ -163,7 +163,7 @@ class TecnowareEvoDSPPlusBackend(DeviceBackend):
         DeviceBackend.VariableInfo(name='batteryremaintime', dependsfrom=['batteryvoltage_2'], timeout=inf, vartype=VariableType.FLOAT),
 
         # query with b'QLDL\r'
-        DeviceBackend.VariableInfo(name='loadlevel_wattpercent', timeout=1.0, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='loadlevel_wattpercent', timeout=0.5, vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='loadlevel_vapercent', dependsfrom=['loadlevel_wattpercent'], timeout=inf, vartype=VariableType.FLOAT),
 
         # query with b'QTPR\r'
