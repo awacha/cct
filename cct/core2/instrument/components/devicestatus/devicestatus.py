@@ -140,6 +140,8 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
                 return self._devicenames[index.row()]
             elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
                 return self.instrument.devicemanager[self._devicenames[index.row()]].devicename
+            elif (index.column() == 0) and (role == QtCore.Qt.EditRole):
+                return self._devicenames[index.row()]
         else:
             device: DeviceFrontend = self.instrument.devicemanager[self._devicenames[index.parent().row()]]
             varnames = sorted(device.keys())
@@ -148,3 +150,5 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
                 return variable.name
             elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
                 return variable.value
+            elif (index.column() == 0) and (role == QtCore.Qt.EditRole):
+                return variable.name

@@ -1,1 +1,2 @@
 from .devicestatus import DeviceStatus
+from .devicestatuslogger import DeviceStatusLogger
