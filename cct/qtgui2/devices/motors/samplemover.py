@@ -21,11 +21,10 @@ class SampleMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.instrument.samplestore.sampleListChanged.connect(self.repopulateSampleList)
         self.movetoSampleToolButton.clicked.connect(self.moveToSample)
         self.movetoSampleXToolButton.clicked.connect(self.moveToSample)
         self.movetoSampleYToolButton.clicked.connect(self.moveToSample)
-        self.repopulateSampleList()
+        self.sampleNameComboBox.setModel(self.instrument.samplestore.sortedmodel)
 
     def moveToSample(self):
         if self.sampleNameComboBox.currentIndex() < 0:
@@ -56,10 +55,3 @@ class SampleMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.samplestore.movingFinished.disconnect(self.onMovingToSampleFinished)
         logger.debug('Moving to sample finished')
 
-    def repopulateSampleList(self):
-        previous = self.sampleNameComboBox.currentText()
-        self.sampleNameComboBox.blockSignals(True)
-        self.sampleNameComboBox.clear()
-        self.sampleNameComboBox.addItems(sorted([sample.title for sample in self.instrument.samplestore]))
-        self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(previous))
-        self.sampleNameComboBox.blockSignals(False)
