@@ -101,8 +101,9 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
                 f'{self.deviceNameComboBox.currentText()}/{self.variableNameComboBox.currentText()}: {ve}')
 
     def onRemoveEntryClicked(self):
-        while rowindexes := self.treeView.selectionModel().selectedRows(0):
-            self.devicelogger.removeRow(rowindexes[0].row(), QtCore.QModelIndex())
+        rowindexes = {index.row() for index in self.treeView.selectionModel().selectedRows(0)}
+        for row in reversed(sorted(rowindexes)):
+            self.devicelogger.removeRow(row, QtCore.QModelIndex())
 
     def onBrowseClicked(self):
         filename, filtr = QtWidgets.QFileDialog.getSaveFileName(
