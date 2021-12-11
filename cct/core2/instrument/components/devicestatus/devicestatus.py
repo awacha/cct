@@ -55,15 +55,16 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
 
     def onDeviceReadyOrLost(self):
         device: DeviceFrontend = self.sender()
+        logger.debug(f'Device {device.name} is ready: {device.ready}')
         if device.name not in self._devicenames:
             return
-        if (not self._deviceready[device.name]):
+        if (not self._deviceready[device.name]) and device.ready:
             # the device just became ready
             self.beginInsertRows(self.index(self._devicenames.index(device.name), 0, QtCore.QModelIndex()), 0,
                                  len(device) - 1)
             self._deviceready[device.name] = True
             self.endInsertRows()
-        else:
+        elif (self._deviceready[device.name]) and (not device.ready):
             # the device just became "unready": connection lost
             self.beginRemoveRows(self.index(self._devicenames.index(device.name), 0, QtCore.QModelIndex()), 0,
                                  len(device) - 1)

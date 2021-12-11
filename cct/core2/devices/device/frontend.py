@@ -302,7 +302,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     @property
     def ready(self) -> bool:
         """Check if all variables have been updated since the start of the device handler"""
-        return all([v.timestamp is not None for v in self._variables])
+        return all([v.timestamp is not None for v in self._variables]) and (self.connectionstate == DeviceConnectionState.Online)
 
     def __getitem__(self, item: str) -> Any:
         """Get the value of a variable.
