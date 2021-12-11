@@ -76,7 +76,7 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.batterycapacityLabel.setText(f'{newvalue:.0f} %')
         elif name == 'batteryremaintime':
             self.remainingtimeLabel.setText(f'{newvalue:.0f} min')
-        elif name == 'loadlevel_wattpercent':
+        elif name == 'outputloadpercentage':
             self.loadlevelLabel.setText(f'{newvalue:0} %')
         elif name == 'temperature.pfc':
             self.temperaturePFCLabel.setText(f'{newvalue:.0f}°C')
