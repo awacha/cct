@@ -47,8 +47,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         super().setupUi(Form)
         self.imageCountSpinBox.valueChanged.connect(self.onImageCountValueChanged)
         self.startStopPushButton.clicked.connect(self.onStartStopClicked)
-        self.instrument.samplestore.sampleListChanged.connect(self.repopulateSampleComboBox)
-        self.repopulateSampleComboBox()
+        self.sampleNameComboBox.setModel(self.instrument.samplestore.sortedmodel)
         self.prefixComboBox.clear()
         self.prefixComboBox.addItems(sorted(self.instrument.io.prefixes))
         self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText(self.instrument.config['path']['prefixes']['tst']))
@@ -217,21 +216,6 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             elif self.state == State.ClosingShutter:
                 return
             self.state = State.StopRequested
-
-    def repopulateSampleComboBox(self):
-        current = self.sampleNameComboBox.currentText()
-        self.sampleNameComboBox.clear()
-        if not list(self.instrument.samplestore):
-            self.sampleNameCheckBox.setChecked(False)
-            self.sampleNameCheckBox.setEnabled(False)
-            return
-        else:
-            self.sampleNameComboBox.setEnabled(True)
-        self.sampleNameComboBox.addItems(sorted([s.title for s in self.instrument.samplestore]))
-        self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(current))
-        if (self.sampleNameComboBox.currentIndex() < 0) and (self.instrument.samplestore.currentSample() is not None):
-            self.sampleNameComboBox.setCurrentIndex(
-                self.sampleNameComboBox.findText(self.instrument.samplestore.currentSample().title))
 
     def cleanupAfterExposure(self):
         self.state = State.Idle

@@ -47,28 +47,27 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.fitNegativeToolButton.clicked.connect(self.fitPeak)
         self.fitPositiveToolButton.clicked.connect(self.fitPeak)
         self.sampleNameComboBox.currentIndexChanged.connect(self.sampleChanged)
+        self.sampleNameComboBox.setModel(self.instrument.samplestore.sortedmodel)
         self.negativeValDoubleSpinBox.valueChanged.connect(self.setValuesFromSpinboxes)
         self.positiveValDoubleSpinBox.valueChanged.connect(self.setValuesFromSpinboxes)
         self.negativeErrDoubleSpinBox.valueChanged.connect(self.setValuesFromSpinboxes)
         self.positiveErrDoubleSpinBox.valueChanged.connect(self.setValuesFromSpinboxes)
-        self.instrument.samplestore.sampleListChanged.connect(self.repopulateSampleComboBox)
         self.updateCenterToolButton.clicked.connect(self.saveCenter)
         self.updateThicknessToolButton.clicked.connect(self.saveThickness)
         self.updateCenterToolButton.setIcon(
             QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
         self.updateThicknessToolButton.setIcon(
             QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
-        self.repopulateSampleComboBox()
         self.instrument.scan.lastscanchanged.connect(self.onLastScanChanged)
         if self.instrument.scan.firstscan() is None:
             self.scanIndexSpinBox.setEnabled(False)
         else:
             self.scanIndexSpinBox.setRange(self.instrument.scan.firstscan(), self.instrument.scan.lastscan())
-        self.derivativeToolButton.toggled.connect(self.replot)
+        self.derivativeToolButton.toggled.connect(self.signalNameChanged)
         if self.instrument.scan.lastscan() is not None:
             self.scanIndexSpinBox.setValue(self.instrument.scan.lastscan())
         self.signalNameComboBox.setCurrentIndex(0)
-        self.reloadToolButton.clicked.connect(self.replot)
+        self.reloadToolButton.clicked.connect(self.signalNameChanged)
         self.replot()
 
     def fitPeak(self):
@@ -131,15 +130,6 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             self.scanIndexSpinBox.setEnabled(False)
 
-    def repopulateSampleComboBox(self):
-        currentsample = self.sampleNameComboBox.currentText()
-        self.sampleNameComboBox.blockSignals(True)
-        self.sampleNameComboBox.clear()
-        self.sampleNameComboBox.addItems(sorted([sample.title for sample in self.instrument.samplestore]))
-        self.sampleNameComboBox.setCurrentIndex(self.sampleNameComboBox.findText(currentsample))
-        self.sampleNameComboBox.blockSignals(False)
-        self.sampleChanged()
-
     def setValuesFromSpinboxes(self):
         self.positive = (self.positiveValDoubleSpinBox.value(), self.positiveErrDoubleSpinBox.value())
         self.negative = (self.negativeValDoubleSpinBox.value(), self.negativeErrDoubleSpinBox.value())
@@ -177,6 +167,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def signalNameChanged(self):
         if self.signalNameComboBox.currentIndex() >= 0:
             self.replot()
+            self.figtoolbar.update()
 
     def replot(self):
         if self.scan is None:
