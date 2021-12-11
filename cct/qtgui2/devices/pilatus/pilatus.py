@@ -129,7 +129,7 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     label.setText(f'{value:.1f} %')
                     label.setAutoFillBackground(True)
                     pal = label.palette()
-                    pal.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if (value < lowlim) or (value > uplim) else 'green'))
+                    pal.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if (value < lowlim) or (value > uplim) else 'lightgreen'))
                     label.setPalette(pal)
         elif name in ['temperature', 'temperaturelimits']:
             try:
@@ -144,7 +144,7 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     label.setText(f'{value:.1f} °C')
                     label.setAutoFillBackground(True)
                     pal = label.palette()
-                    pal.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if (value < lowlim) or (value > uplim) else 'green'))
+                    pal.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if (value < lowlim) or (value > uplim) else 'lightgreen'))
                     label.setPalette(pal)
         elif name == 'cameradef':
             pass
@@ -168,7 +168,7 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self.remoteControlLabel.setText('YES' if haverights else 'NO')
                 self.remoteControlLabel.setAutoFillBackground(True)
                 pal = self.remoteControlLabel.palette()
-                pal.setColor(QtGui.QPalette.Window, QtGui.QColor('green' if haverights else 'red'))
+                pal.setColor(QtGui.QPalette.Window, QtGui.QColor('lightgreen' if haverights else 'red'))
                 self.remoteControlLabel.setPalette(pal)
         elif name == 'tau':
             self.tauLabel.setText(f'{newvalue*1e9:.1f} ns')
