@@ -1,7 +1,7 @@
+import datetime
 import logging
 import os
 from typing import Optional
-import datetime
 
 from PyQt5 import QtWidgets, QtCore
 
@@ -19,8 +19,8 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
     redoAvailable = QtCore.pyqtSignal(bool)
     copyAvailable = QtCore.pyqtSignal(bool)
     filename: Optional[str] = None
-    scriptEditor : ScriptEditor
-    syntaxhighlighter : ScriptSyntaxHighlighter
+    scriptEditor: ScriptEditor
+    syntaxhighlighter: ScriptSyntaxHighlighter
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -30,6 +30,8 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
         super().setupUi(Form)
         self.scriptEditor = ScriptEditor(self.splitter)
         self.scriptEditorVerticalLayout.addWidget(self.scriptEditor)
+        self.scriptEditor.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
+        self.splitter.setSizes([2*self.splitter.width()//3,self.splitter.width()//3])
         self.scriptEditor.document().modificationChanged.connect(self.modificationChanged)
         self.scriptEditor.undoAvailable.connect(self.undoAvailable)
         self.scriptEditor.redoAvailable.connect(self.redoAvailable)
@@ -96,7 +98,7 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
         self.outputPlainTextEdit.appendPlainText(f'{datetime.datetime.now()}: {message.strip()}')
         self.outputPlainTextEdit.ensureCursorVisible()
         if self.filename is not None:
-            with open(os.path.splitext(self.filename)[0]+'.log', 'a') as f:
+            with open(os.path.splitext(self.filename)[0] + '.log', 'a') as f:
                 f.write(f'{datetime.datetime.now()}: {message.strip()}\n')
 
     def isRunning(self) -> bool:

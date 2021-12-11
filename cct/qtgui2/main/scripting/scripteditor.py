@@ -1,12 +1,12 @@
 import logging
+import math
 from typing import Optional
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+
 from .linenumbersbar import LineNumbersBar
-import math
 
-
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
@@ -38,10 +38,13 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         while block.isValid() and (top <= paintevent.rect().bottom()):
             if block.isVisible() and (bottom >= paintevent.rect().top()):
                 painter.setPen(QtCore.Qt.black)
-                painter.drawText(0, top, self.linenumbersbar.width(), self.fontMetrics().height(), QtCore.Qt.AlignRight, str(block.blockNumber()+1))
+                painter.drawText(0, top, self.linenumbersbar.width(), self.fontMetrics().height(), QtCore.Qt.AlignRight,
+                                 str(block.blockNumber() + 1))
                 if (block.blockNumber() == thisblocknumber) and self.isReadOnly():
-                    img = QtGui.QIcon.fromTheme('media-playback-start').pixmap(QtCore.QSize(self.fontMetrics().height(), self.fontMetrics().height())).toImage()
-                    painter.drawImage(QtCore.QRect(0, top, self.fontMetrics().height(), self.fontMetrics().height()), img)
+                    img = QtGui.QIcon.fromTheme('media-playback-start').pixmap(
+                        QtCore.QSize(self.fontMetrics().height(), self.fontMetrics().height())).toImage()
+                    painter.drawImage(QtCore.QRect(0, top, self.fontMetrics().height(), self.fontMetrics().height()),
+                                      img)
             block = block.next()
             top = bottom
             bottom = top + round(self.blockBoundingRect(block).height())
@@ -55,7 +58,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         self.linenumbersbar.setGeometry(QtCore.QRect(cr.left(), cr.top(), self.linenumbersbarAreaWidth(), cr.height()))
         super().resizeEvent(event)
 
-    def updateLineNumbersBarAreaWidth(self, blockcount:int):
+    def updateLineNumbersBarAreaWidth(self, blockcount: int):
         self.setViewportMargins(self.linenumbersbarAreaWidth(), 0, 0, 0)
 
     def highlightCurrentLine(self):
@@ -72,7 +75,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
 
     def updateLineNumbersBar(self, rect: QtCore.QRect, dy: int):
         if dy:
-            self.linenumbersbar.scroll(0,dy)
+            self.linenumbersbar.scroll(0, dy)
         else:
             self.linenumbersbar.update(0, rect.y(), self.linenumbersbar.width(), rect.height())
         if rect.contains(self.viewport().rect()):
@@ -84,7 +87,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         selection.format.setBackground(color)
         selection.format.setForeground(QtGui.QColor('black'))
         selection.format.setProperty(QtGui.QTextFormat.FullWidthSelection, True)
-        self.lastRunCursor =QtGui.QTextCursor(self.document().findBlockByNumber(line))
+        self.lastRunCursor = QtGui.QTextCursor(self.document().findBlockByNumber(line))
         selection.cursor = self.lastRunCursor
         selection.cursor.clearSelection()
         self.setExtraSelections([selection])
