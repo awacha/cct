@@ -1,5 +1,6 @@
 import logging
 
+import pkg_resources
 from PyQt5 import QtWidgets, QtGui
 
 from .logindialog_ui import Ui_Dialog
@@ -16,6 +17,7 @@ class LoginDialog(QtWidgets.QDialog, Ui_Dialog):
 
     def setupUi(self, Dialog):
         super().setupUi(Dialog)
+        self.setWindowTitle(f'CCT v{pkg_resources.get_distribution("cct").version} login')
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setText('Login')
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setIcon(QtGui.QIcon.fromTheme('user-info'))
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).setIcon(QtGui.QIcon.fromTheme('system-exit'))
