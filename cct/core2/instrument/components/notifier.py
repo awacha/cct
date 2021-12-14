@@ -256,6 +256,9 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
 
     def emit(self, record: logging.LogRecord):
         """Format the log message for an e-mail body and send an e-mail"""
+        if not record.name.startswith('cct'):
+            # this is a log message from somewhere else, e.g. matplotlib
+            return
         try:
             if (self.smtpserver is None) or (self.fromaddress is None):
                 return
