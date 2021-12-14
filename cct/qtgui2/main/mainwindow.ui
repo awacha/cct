@@ -298,6 +298,7 @@
     <addaction name="actionTecnowareUPS"/>
     <addaction name="separator"/>
     <addaction name="actionDevice_connections"/>
+    <addaction name="actionDevice_loggers"/>
    </widget>
    <widget class="QMenu" name="menu_Measurement">
     <property name="title">
@@ -864,6 +865,14 @@
    </property>
    <property name="toolTip">
     <string>Set up notification</string>
+   </property>
+  </action>
+  <action name="actionDevice_loggers">
+   <property name="text">
+    <string>Device loggers</string>
+   </property>
+   <property name="toolTip">
+    <string>Manage device variable loggers</string>
    </property>
   </action>
  </widget>

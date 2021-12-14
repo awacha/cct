@@ -395,7 +395,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         return 2
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return len(self._variables)
+        return len(self._variables) if self._variables is not None else 0
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
         return self.createIndex(row, column, None)

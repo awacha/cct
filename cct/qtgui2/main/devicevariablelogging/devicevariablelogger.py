@@ -1,12 +1,14 @@
+import itertools
+
 from PyQt5 import QtWidgets, QtCore
+from matplotlib.axes import Axes
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
+from matplotlib.figure import Figure
+
 from .devicevariablelogger_ui import Ui_Form
+from ...utils.comboboxdelegate import ComboBoxDelegate
 from ....core2.instrument.components.devicestatus.devicestatuslogger import DeviceStatusLogger
 from ....core2.instrument.instrument import Instrument
-from ...utils.comboboxdelegate import ComboBoxDelegate
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
-from matplotlib.axes import Axes
-import itertools
 
 
 class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
@@ -44,13 +46,29 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
         self.destroyToolButton.clicked.connect(self.devicelogger.deleteLater)
         self.figure = Figure(figsize=(6, 3), constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
-        self.canvas.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding))
+        self.canvas.setSizePolicy(
+            QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding))
         self.figtoolbar = NavigationToolbar2QT(self.canvas, self)
         self.figureVerticalLayout.addWidget(self.figtoolbar, 0)
         self.figureVerticalLayout.addWidget(self.canvas, 1)
+        self.groupBox.setTitle(self.devicelogger.name())
+        self.devicelogger.nameChanged.connect(self.groupBox.setTitle)
+        self.devicelogger.fileNameChanged.connect(self.onFileNameChanged)
+        self.devicelogger.nrecordChanged.connect(self.onNrecordChanged)
         gs = self.figure.add_gridspec(1, 1)
-        self.axes = self.figure.add_subplot(gs[:,:])
+        self.axes = self.figure.add_subplot(gs[:, :])
         self.onDeviceNameChanged()
+
+    def onFileNameChanged(self, newfilename: str):
+        self.fileNameLineEdit.blockSignals(True)
+        self.fileNameLineEdit.setText(newfilename)
+        self.fileNameLineEdit.blockSignals(False)
+
+    def onPeriodChanged(self, newperiod: float):
+        pass
+
+    def onNrecordChanged(self, nrecord: int):
+        pass
 
     def onDeviceNameChanged(self):
         if self.deviceNameComboBox.currentIndex() < 0:
@@ -65,7 +83,7 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
         self.axes.clear()
         t = data['Time']
         for name, marker in zip(data.dtype.names[1:], itertools.cycle('osvd*^<>')):
-            self.axes.plot(t, data[name], marker+'-', label=name)
+            self.axes.plot(t, data[name], marker + '-', label=name)
         self.axes.set_xlabel('Time (sec)')
         self.axes.grid(True, which='both')
         self.axes.legend(loc='best')
@@ -77,14 +95,16 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
     def onDeviceLoggerStarted(self):
         self.recordToolButton.blockSignals(True)
         self.recordToolButton.setChecked(True)
-        for widget in [self.addEntryToolButton, self.removeEntryToolButton, self.clearAllEntriesToolButton, self.fileNameToolButton, self.fileNameLineEdit]:
+        for widget in [self.addEntryToolButton, self.removeEntryToolButton, self.clearAllEntriesToolButton,
+                       self.fileNameToolButton, self.fileNameLineEdit]:
             widget.setEnabled(False)
         self.recordToolButton.blockSignals(False)
 
     def onDeviceLoggerStopped(self):
         self.recordToolButton.blockSignals(True)
         self.recordToolButton.setChecked(False)
-        for widget in [self.addEntryToolButton, self.removeEntryToolButton, self.clearAllEntriesToolButton, self.fileNameLineEdit, self.fileNameToolButton]:
+        for widget in [self.addEntryToolButton, self.removeEntryToolButton, self.clearAllEntriesToolButton,
+                       self.fileNameLineEdit, self.fileNameToolButton]:
             widget.setEnabled(True)
         self.recordToolButton.blockSignals(False)
 
@@ -95,7 +115,7 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
             self.devicelogger.addRecordedVariable(
                 self.deviceNameComboBox.currentText(), self.variableNameComboBox.currentText())
         except ValueError as ve:
-           QtWidgets.QMessageBox.critical(
+            QtWidgets.QMessageBox.critical(
                 self, f'Cannot add variable',
                 f'Error while adding variable '
                 f'{self.deviceNameComboBox.currentText()}/{self.variableNameComboBox.currentText()}: {ve}')
@@ -124,4 +144,3 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
             self.devicelogger.startRecording()
         else:
             self.devicelogger.stopRecording()
-

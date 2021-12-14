@@ -28,6 +28,7 @@ class RecordedVariable:
 
 
 class DeviceStatusLogger(QtCore.QAbstractItemModel):
+    name: str
     _filename: Optional[str] = None
     _period: float = 5.0
     _variables: List[RecordedVariable]
@@ -43,12 +44,17 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
     recordingStarted = QtCore.pyqtSignal()
     recordingStopped = QtCore.pyqtSignal()
     newData = QtCore.pyqtSignal(int)
+    fileNameChanged = QtCore.pyqtSignal(str)
+    periodChanged = QtCore.pyqtSignal(float)
+    nrecordChanged = QtCore.pyqtSignal(int)
+    nameChanged = QtCore.pyqtSignal(str)
 
-    def __init__(self, devicemanager: "DeviceManager", filename: Optional[str] = None, period: float = 5.0):
+    def __init__(self, devicemanager: "DeviceManager", filename: Optional[str] = None, period: float = 5.0, name: Optional[str] = None):
         self._filename = filename
         self._period = period
         self._variables = []
         self._devicemanager = devicemanager
+        self._name = name if name is not None else f'Log{time.monotonic()}'
         super().__init__()
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
@@ -182,21 +188,53 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
         return self._record is not None
 
     def setFileName(self, filename: str):
+        if self.isRecording():
+            raise ValueError('Cannot set filename while logger is running.')
         self._filename = filename
+        self.fileNameChanged.emit(self._filename)
 
     def fileName(self) -> str:
         return self._filename
 
-    def addRecordedVariable(self, devicename: str, variablename: str, scaling: float = 1.0):
-        dev: DeviceFrontend = self._devicemanager[devicename]
-        var: Variable = dev.getVariable(variablename)
-        if var.vartype in [VariableType.FLOAT,
+    def period(self) -> float:
+        return self._period
+
+    def setPeriod(self, period: float):
+        if self.isRecording():
+            raise ValueError('Cannot set period while logger is running.')
+        self._period = period
+        self.periodChanged.emit(self._period)
+
+    def name(self) -> str:
+        return self._name
+
+    def setName(self, name: str):
+        if self.isRecording():
+            raise ValueError('Cannot set name while logger is running.')
+        self._name = name
+        self.nameChanged.emit(self._name)
+
+    def nrecord(self) -> int:
+        return self._nrecord
+
+    def setNrecord(self, nrecord: int):
+        if self.isRecording():
+            raise ValueError('Cannot set nrecord while logger is running.')
+        self._nrecord = nrecord
+        self.nrecordChanged.emit(self._nrecord)
+
+    def addRecordedVariable(self, devicename: str, variablename: str, scaling: float = 1.0, vartype: Optional[VariableType]=None):
+        if vartype is None:
+            dev: DeviceFrontend = self._devicemanager[devicename]
+            var: Variable = dev.getVariable(variablename)
+            vartype = var.vartype
+        if vartype in [VariableType.FLOAT,
                            VariableType.INT, VariableType.BOOL]:
             self.beginInsertRows(QtCore.QModelIndex(), len(self._variables), len(self._variables))
-            self._variables.append(RecordedVariable(devicename, variablename, var.vartype, scaling))
+            self._variables.append(RecordedVariable(devicename, variablename, vartype, scaling))
             self.endInsertRows()
         else:
-            raise ValueError(f'Cannot record variable of type {var.vartype.name}')
+            raise ValueError(f'Cannot record variable of type {vartype.name}')
 
     def onVariableChanged(self, name: str, newvalue: str, oldvalue: str):
         device = self.sender()
@@ -212,7 +250,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
             for v in self._variables:
                 try:
                     val = self._devicemanager[v.devicename][v.variablename]
-                except KeyError:
+                except (KeyError, DeviceFrontend.DeviceError):
                     val = None
                 if val is None:
                     self._record[self._recordpointer][v.devicename + '/' + v.variablename] = npma.masked
@@ -241,7 +279,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
             self.writeRecord()
 
     def writeRecord(self):
-        if self._filename is None:
+        if (self._filename is None) or (not self._filename):
             self._savepointer = self._recordpointer  # emulate that the data has been saved
             return
         if not os.path.exists(self._filename):
@@ -265,3 +303,9 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
 
     def record(self) -> Optional[npma.masked_array]:
         return self._record
+
+    def __len__(self):
+        return len(self._variables)
+
+    def variables(self) -> List[Tuple[str, str, str, float]]:
+        return [(v.devicename, v.variablename, v.vartype.name, v.scaling) for v in self._variables]

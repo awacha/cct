@@ -32,6 +32,7 @@ from ..measurement.simpleexposure.simpleexposure import SimpleExposure
 from ..measurement.transmission import TransmissionUi
 from ..setup.calibrants.calibrants import Calibrants
 from ..setup.calibration.calibration import Calibration
+from ..setup.deviceloggers.devicelogmanager import DeviceLogManagerUI
 from ..setup.geometry.geometry import GeometryEditor
 from ..setup.notifier.notifier import NotifierSetup
 from ..setup.projectmanager.projectmanager import ProjectManager
@@ -95,6 +96,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionPeristaltic_pump': LeadFluid_BT100S,
         'actionTecnowareUPS': TecnowareUPS,  # ToDo: group similar instruments
         'actionNotification': NotifierSetup,
+        'actionDevice_loggers': DeviceLogManagerUI,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]

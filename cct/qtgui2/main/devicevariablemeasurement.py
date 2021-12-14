@@ -13,10 +13,10 @@ logger.setLevel(logging.DEBUG)
 
 
 class DeviceVariableMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    loggers = List[DeviceStatusLogger]
+    loggerwidgets = List[DeviceVariableLoggerUI]
 
     def __init__(self, **kwargs):
-        self.loggers = []
+        self.loggerwidgets = []
         super().__init__(**kwargs)
         self.setupUi(self)
 
@@ -27,49 +27,66 @@ class DeviceVariableMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_For
         self.startAllToolButton.clicked.connect(self.startAll)
         self.stopAllToolButton.clicked.connect(self.stopAll)
         self.scrollAreaWidgetContents.setLayout(QtWidgets.QVBoxLayout())
+        self.instrument.devicelogmanager.rowsInserted.connect(self.onRowsInserted)
+        self.instrument.devicelogmanager.rowsRemoved.connect(self.onRowsRemoved)
+        self.instrument.devicelogmanager.modelReset.connect(self.onModelReset)
+        self.onModelReset()
+
+    def onRowsInserted(self, parent, first, last):
+        layout: QtWidgets.QVBoxLayout = self.scrollArea.widget().layout()
+        for i in range(first, last+1):
+            widget = DeviceVariableLoggerUI(instrument=self.instrument, devicelogger=self.instrument.devicelogmanager[i])
+            layout.insertWidget(i, widget)
+
+    def onRowsRemoved(self, parent, first, last):
+        pass  # the widget should be destroyed when the DeviceStatusLogger instance is destroyed
+
+    def onModelReset(self):
+        self.checkForDestroyedWidgets()
+        for widget in self.loggerwidgets:
+            try:
+                widget.deleteLater()
+            except RuntimeError:
+                pass
+        for widget in self.scrollArea.widget().layout().children():
+            self.scrollArea.widget().layout().removeWidget(widget)
+        self.loggerwidgets = []
+        logger.debug(f'Calling onRowsInserted, rowcount is {self.instrument.devicelogmanager.rowCount(QtCore.QModelIndex())}')
+        self.onRowsInserted(QtCore.QModelIndex(), 0, self.instrument.devicelogmanager.rowCount(QtCore.QModelIndex())-1)
 
     def startAll(self):
-        for l in self.loggers:
-            try:
-                l.startRecording()
-            except RuntimeError:
-                pass
+        self.instrument.devicelogmanager.startAll()
 
     def stopAll(self):
-        for l in self.loggers:
-            try:
-                l.stopRecording()
-            except RuntimeError:
-                pass
+        self.instrument.devicelogmanager.stopAll()
 
     def onAddClicked(self):
-        l = DeviceStatusLogger(self.instrument.devicemanager)
+        self.instrument.devicelogmanager.insertRow(len(self.instrument.devicelogmanager), QtCore.QModelIndex())
+        lgr = self.instrument.devicelogmanager[len(self.instrument.devicelogmanager)-1]
         for rowindex in self.treeView.selectionModel().selectedRows(0):
             if not rowindex.parent().isValid():
                 continue
-            logger.debug(f'')
             logger.debug(
                 f'Adding logger for variable {rowindex.parent().data(QtCore.Qt.EditRole)}/{rowindex.data((QtCore.Qt.EditRole))}')
             try:
-                l.addRecordedVariable(rowindex.parent().data(QtCore.Qt.EditRole), rowindex.data(QtCore.Qt.EditRole))
+                lgr.addRecordedVariable(rowindex.parent().data(QtCore.Qt.EditRole), rowindex.data(QtCore.Qt.EditRole))
             except ValueError as ve:
                 QtWidgets.QMessageBox.critical(
                     self, f'Cannot add variable',
                     f'Error while adding variable '
                     f'{rowindex.parent().data(QtCore.Qt.EditRole)}/{rowindex.data(QtCore.Qt.EditRole)}: {ve}')
-        l.destroyed.connect(self.onLoggerDestroyed)
-        widget = DeviceVariableLoggerUI(instrument=self.instrument, devicelogger=l)
-        self.loggers.append(l)
-        self.scrollArea.widget().layout().addWidget(widget)
 
     def onLoggerDestroyed(self):
+        self.checkForDestroyedWidgets()
+
+    def checkForDestroyedWidgets(self):
         newloggers = []
-        for l in self.loggers:
+        for lw in self.loggerwidgets:
             try:
-                l.objectName()
+                lw.objectName()
             except RuntimeError:
                 # wrapped C/C++ object has been deleted
                 pass
             else:
-                newloggers.append(l)
-        self.loggers = newloggers
+                newloggers.append(lw)
+        self.loggerwidgets = newloggers

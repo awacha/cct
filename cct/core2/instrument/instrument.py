@@ -9,7 +9,7 @@ from .components.calibrants.calibrants import CalibrantStore
 from .components.component import Component
 from .components.datareduction.datareduction import DataReduction
 from .components.devicemanager import DeviceManager
-from .components.devicestatus import DeviceStatus
+from .components.devicestatus import DeviceStatus, DeviceLogManager
 from .components.expose import Exposer
 from .components.geometry.geometry import Geometry
 from .components.interpreter import Interpreter
@@ -36,6 +36,7 @@ class Instrument(QtCore.QObject):
     samplestore: SampleStore
     motors: Motors
     devicemanager: DeviceManager
+    devicelogmanager: DeviceLogManager
     devicestatus: DeviceStatus
     geometry: Geometry
     calibrants: CalibrantStore
@@ -93,6 +94,7 @@ class Instrument(QtCore.QObject):
             ('transmission', TransmissionMeasurement),
             ('sensors', Sensors),
             ('notifier', Notifier),
+            ('devicelogmanager', DeviceLogManager),
         ]:
             ### NOTE! When you add a new component, add a corresponding entry in the panic() method as well!
             comp = componentclass(config=self.config, instrument=self)
@@ -214,7 +216,7 @@ class Instrument(QtCore.QObject):
             ['exposer'],
             ['beamstop', 'samplestore'],
             ['motors', 'sensors'],
-            ['devicestatus'],
+            ['devicestatus', 'devicelogmanager'],
             ['devicemanager'],
             ['projects'],
             ['calibrants', 'auth', 'io', 'geometry', 'datareduction'],
