@@ -102,7 +102,7 @@ class Interpreter(QtCore.QObject, Component):
                 self.advanceToNextCommand()
             return
         if gosub:
-            self.callstack.insert(0, self.pointer)
+            self.callstack.append(self.pointer)
         linenumbers = [i for i in range(len(self.script)) if
                        isinstance(self.script[i], Label) and self.script[i].argumentstring == label]
         if not linenumbers:
