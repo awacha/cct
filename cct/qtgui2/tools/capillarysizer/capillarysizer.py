@@ -147,7 +147,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.sampleNameComboBox.currentIndex() < 0:
             return
         sample = self.instrument.samplestore[self.sampleNameComboBox.currentText()]
-        if self.instrument.samplestore.hasMotors():
+        if self.instrument.samplestore.hasMotors() and (self.scan is not None):
             if self.instrument.samplestore.xmotorname() == self.scan.motorname:
                 self.oldPositionLabel.setText(f'{sample.positionx[0]:.4f} \xb1 {sample.positionx[1]:.4f}')
             elif self.instrument.samplestore.ymotorname() == self.scan.motorname:

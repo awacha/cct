@@ -179,7 +179,10 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.updateSampleInStore(attribute, self.sender().text())
 
     def updateSampleInStore(self, attribute: str, newvalue: Any):
-        self.instrument.samplestore.updateSample(self.currentSampleName(), attribute, newvalue)
+        try:
+            self.instrument.samplestore.updateSample(self.currentSampleName(), attribute, newvalue)
+        except Exception as exc:
+            QtWidgets.QMessageBox.critical(self, 'Error', f'Error while updating the sample: {exc}')
 
     def onSampleChangedInStore(self, samplename: str, attribute: str, newvalue: Any):
         logger.debug(f'Sample {samplename=} changed in the store: {attribute=} is now {newvalue=}. Current sample name: {self.currentSampleName()}')
