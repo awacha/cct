@@ -12,7 +12,7 @@ from ...utils.filebrowsers import browseMask
 from ....core2.dataclasses.sample import Sample
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ProxyModel(QtCore.QSortFilterProxyModel):
@@ -161,6 +161,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.updateSampleInStore(attribute, datetime.date(date.year(), date.month(), date.day()))
 
     def onComboBoxCurrentIndexChanged(self, currentIndex: int):
+        logger.debug(f'onComboBoxCurrentIndexChanged. Current text: {self.sender().currentText()}. Sender: {self.sender().objectName()}')
         attribute = self.attributeForWidget(self.sender())
         if self.sender() is self.situationComboBox:
             self.updateSampleInStore(attribute, Sample.Situations(self.sender().currentText()))
