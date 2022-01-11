@@ -230,43 +230,47 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             for i, widget in enumerate(self.widgetsForAttribute(attribute)):
                 widget.setEnabled((sample is not None) and (not sample.isLocked(attribute)))
                 widget.blockSignals(True)
-                if isinstance(widget, QtWidgets.QLineEdit):
-                    widget.setText(value if value is not None else '')
-                elif isinstance(widget, QtWidgets.QPlainTextEdit):
-                    widget.setPlainText(value if value is not None else '')
-                elif isinstance(widget, QtWidgets.QComboBox):
-                    if value is None:
-                        widget.setCurrentIndex(-1)
-                        continue
-                    elif not isinstance(value, str):
-                        # should be an Enum element
-                        value = value.value
-                    widget.setCurrentIndex(widget.findText(value))
-                elif isinstance(widget, QtWidgets.QDoubleSpinBox):
-                    if isinstance(value, tuple):
-                        widget.setValue(value[i])
+                try:
+                    if isinstance(widget, QtWidgets.QLineEdit):
+                        widget.setText(value if value is not None else '')
+                    elif isinstance(widget, QtWidgets.QPlainTextEdit):
+                        widget.setPlainText(value if value is not None else '')
+                    elif isinstance(widget, QtWidgets.QComboBox):
+                        if value is None:
+                            widget.setCurrentIndex(-1)
+                            continue
+                        elif not isinstance(value, str):
+                            # should be an Enum element
+                            value = value.value
+                        widget.setCurrentIndex(widget.findText(value))
+                    elif isinstance(widget, QtWidgets.QDoubleSpinBox):
+                        if isinstance(value, tuple):
+                            widget.setValue(value[i])
+                        else:
+                            widget.setValue(value if value is not None else 0.0)
+                    elif isinstance(widget, QtWidgets.QDateEdit):
+                        if value is None:
+                            widget.setDate(QtCore.QDate.currentDate())
+                        else:
+                            assert isinstance(value, datetime.date)
+                            widget.setDate(QtCore.QDate(value.year, value.month, value.day))
                     else:
-                        widget.setValue(value if value is not None else 0.0)
-                elif isinstance(widget, QtWidgets.QDateEdit):
-                    if value is None:
-                        widget.setDate(QtCore.QDate.currentDate())
-                    else:
-                        assert isinstance(value, datetime.date)
-                        widget.setDate(QtCore.QDate(value.year, value.month, value.day))
-                else:
-                    assert False
-                widget.blockSignals(False)
+                        assert False
+                finally:
+                    widget.blockSignals(False)
             self.updateLockButtonState(sample, attribute)
 
     def updateLockButtonState(self, sample: Optional[Sample], attribute: str):
         ltb = self.lockToolButton(attribute)
         ltb.setEnabled(sample is not None)
         ltb.blockSignals(True)
-        ltb.setChecked(sample.isLocked(attribute) if sample is not None else False)
-        ltb.setIcon(
-            QtGui.QIcon.fromTheme(
-                'lock' if ((sample is not None) and sample.isLocked(attribute)) else 'unlock'))
-        ltb.blockSignals(False)
+        try:
+            ltb.setChecked(sample.isLocked(attribute) if sample is not None else False)
+            ltb.setIcon(
+                QtGui.QIcon.fromTheme(
+                    'lock' if ((sample is not None) and sample.isLocked(attribute)) else 'unlock'))
+        finally:
+            ltb.blockSignals(False)
 
     def onCurrentSelectionChanged(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
         self.updateEditWidgets(self.currentSample())
