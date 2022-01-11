@@ -1,4 +1,5 @@
 import datetime
+import enum
 import logging
 from typing import Tuple, List, Final, Dict, Optional, Any
 
@@ -203,7 +204,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                         widget.setCurrentIndex(-1)
                     elif (newvalue is None) and (widget.currentIndex() < 0):
                         pass
-                    elif widget.currentText() != newvalue.value:
+                    elif isinstance(newvalue, enum.Enum) and (widget.currentText() != newvalue.value):
                         widget.setCurrentIndex(widget.findText(newvalue.value))
                     else:
                         # must not fail: we can reach this line if no change is needed in the widget value
