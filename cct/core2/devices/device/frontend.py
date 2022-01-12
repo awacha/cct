@@ -115,6 +115,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         self.sensors = []
         self.name = name
         # initialize variables
+        self._variables = []
         self._queue_from_backend = Queue()
         self._queue_to_backend = Queue()
         self._host = host
@@ -302,7 +303,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     @property
     def ready(self) -> bool:
         """Check if all variables have been updated since the start of the device handler"""
-        return all([v.timestamp is not None for v in self._variables]) and (self.connectionstate == DeviceConnectionState.Online)
+        return (self._variables is not None) and all([v.timestamp is not None for v in self._variables]) and \
+               (self.connectionstate == DeviceConnectionState.Online)
 
     def __getitem__(self, item: str) -> Any:
         """Get the value of a variable.
@@ -314,7 +316,10 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         :raises DeviceError: if the variable has not been updated yet
         :raises KeyError: if the variable does not exist.
         """
-        var = [v for v in self._variables if v.name == item][0]
+        try:
+            var = [v for v in self._variables if v.name == item][0]
+        except IndexError:
+            raise KeyError(item)
         if var.timestamp is None:
             #            self._logger.debug('Available variables: \n'+'\n'.join(sorted([f'    {v.name}' for v in self._variables if v.timestamp is not None])))
             #            self._logger.debug('Not available variables: \n'+'\n'.join(sorted([f'    {v.name}' for v in self._variables if v.timestamp is None])))
