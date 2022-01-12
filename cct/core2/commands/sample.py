@@ -37,3 +37,7 @@ class SetSample(Command):
         else:
             self.message(f'Error while moving to sample {samplename}.')
             self.fail(samplename)
+
+    def stop(self):
+        self.instrument.samplestore.stopMotors()
+        self.message.emit('Stopping command on user request')

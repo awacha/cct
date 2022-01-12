@@ -10,7 +10,7 @@ from ..component import Component
 from ....commands import Command, Comment, Label
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ParsingError(Exception):
@@ -23,6 +23,7 @@ class Interpreter(QtCore.QObject, Component):
     pointer: Optional[int] = None  # points to the current command
     callstack: List[int] = None
     flags: InterpreterFlags
+    stopping: Optional[bool] = None
 
     scriptstarted = QtCore.pyqtSignal()
     message = QtCore.pyqtSignal(str)
@@ -134,6 +135,9 @@ class Interpreter(QtCore.QObject, Component):
         logger.debug(f'Finishedcommand: {finishedcommand.objectName()}')
         if isinstance(finishedcommand, Command):
             self._disconnectCommand(finishedcommand)
+        if self.pointer is None:
+            logger.warning('Script pointer is None!')
+            return
         self.pointer += 1
         if self.pointer >= len(self.script):
             # we reached the end of the script
