@@ -1,6 +1,9 @@
+from typing import List
+
 from PyQt5 import QtWidgets, QtCore
 from adjustText import adjust_text
 from matplotlib.axes import Axes
+from matplotlib.text import Text
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 
@@ -13,8 +16,14 @@ class SamplePositionChecker(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     canvas: FigureCanvasQTAgg
     figtoolbar: NavigationToolbar2QT
     axes: Axes
+    texts: List[Text]
+    xdata: List[float]
+    ydata: List[float]
 
     def __init__(self, **kwargs):
+        self.texts = []
+        self.xdata = []
+        self.ydata = []
         super().__init__(**kwargs)
         self.setupUi(self)
 
@@ -52,14 +61,14 @@ class SamplePositionChecker(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         selected = sorted([item.text() for item in items if item.checkState() == QtCore.Qt.Checked])
         self.axes.clear()
         samples = [self.instrument.samplestore[samplename] for samplename in selected]
-        xdata = [s.positionx[0] for s in samples]
-        ydata = [s.positiony[0] for s in samples]
+        self.xdata = [s.positionx[0] for s in samples]
+        self.ydata = [s.positiony[0] for s in samples]
         xerr = [s.positionx[1] for s in samples]
         yerr = [s.positiony[1] for s in samples]
-        self.axes.errorbar(xdata, ydata, yerr, xerr, 'b.')
-        texts = []
-        for x, y, title in zip(xdata, ydata, selected):
-            texts.append(self.axes.text(x, y, title, fontsize=self.labelSizeHorizontalSlider.value()))
+        self.axes.errorbar(self.xdata, self.ydata, yerr, xerr, 'b.')
+        self.texts = []
+        for x, y, title in zip(self.xdata, self.ydata, selected):
+            self.texts.append(self.axes.text(x, y, title, fontsize=self.labelSizeHorizontalSlider.value()))
         if self.instrument.samplestore.hasMotors():
             self.axes.set_xlabel(self.instrument.samplestore.xmotorname())
             self.axes.set_ylabel(self.instrument.samplestore.ymotorname())
@@ -69,10 +78,14 @@ class SamplePositionChecker(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axes.grid(True, which='both')
         self.axes.axis('equal')
         self.flipPlot()
-        adjust_text(texts, xdata, ydata, ax=self.axes, arrowprops={'arrowstyle': "-", "color": 'k', 'lw': 0.5})
-        self.canvas.draw_idle()
 
     def flipPlot(self):
-        self.axes.xaxis.set_inverted(self.rightToLeftToolButton.isChecked())
-        self.axes.yaxis.set_inverted(self.upsideDownToolButton.isChecked())
+        x1, x2, y1, y2 = self.axes.axis()
+        self.axes.axis(
+            xmin=max(x1,x2) if self.rightToLeftToolButton.isChecked() else min(x1, x2),
+            xmax=min(x1, x2) if self.rightToLeftToolButton.isChecked() else max(x1, x2),
+            ymin=max(y1, y2) if self.upsideDownToolButton.isChecked() else min(y1, y2),
+            ymax=min(y1, y2) if self.upsideDownToolButton.isChecked() else max(y1, y2))
+        self.canvas.draw()
+        adjust_text(self.texts, self.xdata, self.ydata, ax=self.axes)#, arrowprops={'arrowstyle': "-", "color": 'k', 'lw': 0.5})
         self.canvas.draw_idle()
