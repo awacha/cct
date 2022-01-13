@@ -112,21 +112,10 @@ class HeaderStore(ProcessingTask):
         except FileNotFoundError:
             pass
 
-        # if this is also unsuccessful, resort to a slower, recursive search
-        def findrecursive(folder:str, fn: str):
-            try:
-                return Header(filename=os.path.join(folder, fn))
-            except FileNotFoundError:
-                for d in [d for d in os.listdir(folder) if os.path.isdir(d)]:
-                    try:
-                        return findrecursive(d, fn)
-                    except FileNotFoundError:
-                        continue
-                raise FileNotFoundError(fn)
-        try:
-            return jobid, findrecursive(rootdir, filename)
-        except FileNotFoundError:
-            return jobid, None
+        for folder, dirs, files in os.walk(rootdir):
+            if filename in files:
+                return jobid, Header(filename=os.path.join(folder, filename))
+        return jobid, None
 
     def onAllBackgroundTasksFinished(self):
         self.beginResetModel()
