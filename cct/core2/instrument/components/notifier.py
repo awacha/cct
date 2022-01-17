@@ -3,7 +3,7 @@ import logging
 import re
 import smtplib
 import traceback
-from typing import Sequence, Optional, List, Any
+from typing import Sequence, Optional, List, Any, Tuple
 
 import dbus
 import pkg_resources
@@ -33,10 +33,14 @@ class NotificationAddress:
 
 class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
     _data: List[NotificationAddress]
-
+    email_ratelimit_interval: float = 10.0  # seconds
+    email_ratelimit_buffer: List[Tuple[email.message.EmailMessage, List[str]]]
+    email_timer_handle: Optional[int] = None
+    email_ratelimit_buffer_maxlength = 1000
     re_valid_email = re.compile(r'(?P<username>[-a-zA-Z_.0-9]+)@(?P<hostname>[-a-zA-Z0-9._]+)')
 
     def __init__(self, **kwargs):
+        self.email_ratelimit_buffer = []
         self._data = []
         super().__init__(**kwargs)
         logging.Handler.__init__(self)
@@ -129,20 +133,11 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         if not m:
             print(f'Malformed smtp host: {self.smtpserver}')
             return
-        print(f'Host: {m["host"]}, port: {m["port"]}')
-        s = smtplib.SMTP(m['host'], int(m['port']) if m['port'] is not None else None)
-        try:
-            for addressee in emailaddresses:
-                print(f'Sending e-mail to "{addressee}"')
-                msg = email.message.EmailMessage()
-                msg.set_content(body)
-                msg['Subject'] = title
-                msg['From'] = f'SAXS instrument control <{self.fromaddress}>'
-                msg['To'] = addressee
-                s.send_message(msg, self.fromaddress, addressee)
-                logger.debug(f'E-mail message sent to {addressee}')
-        finally:
-            s.quit()
+        msg = email.message.EmailMessage()
+        msg.set_content(body)
+        msg['Subject'] = title
+        msg['From'] = f'SAXS instrument control <{self.fromaddress}>'
+        self.queue_email(msg, emailaddresses)
 
     def panichandler(self):
         try:
@@ -152,12 +147,63 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
             self.notify_email(
                 f'[PANIC] Panic in the SAXS instrument',
                 f'There was a panic incident in the SAXS instrument. The reason: {self.instrument.panicreason}.',
-                set([n.emailaddress for n in self._data if (n.emailaddress is not None) and (n.panic)] + [self.instrument.auth.currentUser().email])
+                set([n.emailaddress for n in self._data if (n.emailaddress is not None) and (n.panic)] + [
+                    self.instrument.auth.currentUser().email])
             )
         except:
             print(traceback.format_exc())
         self._panicking = self.PanicState.Panicked
         QtCore.QTimer.singleShot(1, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)
+
+    def queue_email(self, message: email.message.EmailMessage, addressee: List[str]):
+        if len(self.email_ratelimit_buffer) >= self.email_ratelimit_buffer_maxlength:
+            self.email_ratelimit_buffer = []
+            self.instrument.panic('E-mail send buffer overflow, messages lost.')
+        else:
+            self.email_ratelimit_buffer.append((message, addressee))
+        if self.email_timer_handle is None:
+            self.email_timer_handle = self.startTimer(0, QtCore.Qt.PreciseTimer)
+
+    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
+        """Send an e-mail waiting in the queue
+        :param event: the timer event
+        :type event: QtCore.QTimerEvent
+        """
+        if not self.email_ratelimit_buffer:
+            # if no e-mails are pending in the buffer (should not happen normally, but who knows)
+            self.killTimer(self.email_timer_handle)
+            self.email_timer_handle = None
+            return
+        # try to get the SMTP server
+        m = re.match(r'(?P<host>[^:]+)(?::(?P<port>\d+))?', self.smtpserver)
+        if not m:
+            # Invalid SMTP host: empty the buffer, stop the timer
+            print(f'Malformed smtp host: {self.smtpserver}')
+            self.email_ratelimit_buffer = []
+            self.killTimer(self.email_timer_handle)
+            self.email_timer_handle = None
+            return
+        s = None
+        try:
+            # connect to the SMTP server
+            s = smtplib.SMTP(m['host'], int(m['port']) if m['port'] is not None else None)
+            # send a single message
+            msg, emailaddresses = self.email_ratelimit_buffer.pop(0)
+            for addressee in emailaddresses:
+                print(f'Sending e-mail to "{addressee}"')
+                msg['To'] = addressee
+                s.send_message(msg, self.fromaddress, addressee)
+        except:
+            # print the exception: any unhandled exceptions may result in an infinite loop
+            traceback.print_exc()
+        finally:
+            if s is not None:
+                s.quit()
+        # we always kill the timer and reinitialize if needed.
+        self.killTimer(self.email_timer_handle)
+        self.email_timer_handle = None
+        if self.email_ratelimit_buffer:
+            self.email_timer_handle = self.startTimer(int(self.email_ratelimit_interval*1000), QtCore.Qt.PreciseTimer)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         if (not isinstance(parent, QtCore.QModelIndex)) or (not parent.isValid()):
@@ -236,7 +282,9 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
         if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
-            return ['Name', 'E-mail address', 'Notify on panic?', 'Send runtime notifications?', 'Log level to notify on'][section]
+            return \
+            ['Name', 'E-mail address', 'Notify on panic?', 'Send runtime notifications?', 'Log level to notify on'][
+                section]
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if (index.column() == 0) and (role == QtCore.Qt.EditRole):
@@ -262,7 +310,8 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         try:
             if (self.smtpserver is None) or (self.fromaddress is None):
                 return
-            emailaddresses = [n.emailaddress for n in self._data if (n.loglevel <= record.levelno) and (n.emailaddress is not None)]
+            emailaddresses = [n.emailaddress for n in self._data if
+                              (n.loglevel <= record.levelno) and (n.emailaddress is not None)]
             if not emailaddresses:
                 # speed up
                 return
@@ -284,7 +333,8 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
     def notify(self, title: str, body: str):
         """Send notification to desktop and the current user"""
         self.notify_desktop(title, body)
-        emails = set([n.emailaddress for n in self._data if (n.runtime) and (n.emailaddress is not None)] + [self.instrument.auth.currentUser().email])
+        emails = set([n.emailaddress for n in self._data if (n.runtime) and (n.emailaddress is not None)] + [
+            self.instrument.auth.currentUser().email])
         self.notify_email(title, body, emailaddresses=list(emails))
 
     def startComponent(self):
