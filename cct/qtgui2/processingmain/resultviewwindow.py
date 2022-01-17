@@ -17,6 +17,9 @@ class ResultViewWindow(ProcessingWindow):
             # this takes priority over 'samplename' and 'distancekey'
             self.resultitems = kwargs.pop('resultitems')
         super().__init__(**kwargs)
+        self.setObjectName('Form')
+        self.resize(100,100)
+        self.show()
         self.project.resultItemChanged.connect(self._onResultItemChanged)
 
     def _onResultItemChanged(self, samplename: str, distancekey: str):

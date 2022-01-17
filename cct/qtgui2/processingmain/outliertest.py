@@ -147,38 +147,14 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
     def showImage(self):
         for index in self.treeView.selectionModel().selectedRows(0):
             header = index.data(QtCore.Qt.UserRole)
-            samplename = header.title
-            distkey = f'{header.distance[0]:.2f}'
             self.mainwindow.createViewWindow(
-                ShowImageWindow(
-                    project=self.project, mainwindow=self.mainwindow,
-                    samplename=samplename, distancekey=distkey, closable=True),
-                handlestring=f"ShowImage(samplename='{samplename}', distancekey='{distkey}')")
+                ShowImageWindow, items=[('', str(header.fsn))])
 
     def showCurve(self):
         fsns = sorted([index.data(QtCore.Qt.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)])
-        scw = ShowCurveWindow(
-                project=self.project, mainwindow=self.mainwindow,
-                resultitems=[], closable=True)
-        plottedcurves = []
-        for fsn in fsns:
-            for curvesgroupname in ['allcurves', 'curves']:
-                try:
-                    scw.plotCurve.addCurve(self.project.settings.h5io.readCurve(f'Samples/{self.samplename}/{self.distancekey}/{curvesgroupname}/{fsn}'), label=f'#{fsn}')
-                    plottedcurves.append(fsn)
-                    break
-                except KeyError:
-                    continue
-            else:
-                continue
-                #QtWidgets.QMessageBox.critical(self, 'Curve not found', f'Curve for FSN {fsn} not found.')
-        if not plottedcurves:
-            scw.destroy(True, True)
+        if not fsns:
             return
-        scw.plotCurve.replot()
-        self.mainwindow.createViewWindow(
-            scw,
-            handlestring=f"ShowCurve(fsns={fsns})")
+        self.mainwindow.createViewWindow(ShowCurveWindow, [('', str(fsn)) for fsn in fsns])
 
     def onResultItemChanged(self, samplename: str, distkey: str):
         self.outliertestresults = self.project.settings.h5io.readOutlierTest(f'Samples/{self.samplename}/{self.distancekey}')

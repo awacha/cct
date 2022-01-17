@@ -8,7 +8,7 @@ class ShowAnisotropyWindow(ResultViewWindow):
     anisotropyWidget: AnisotropyEvaluator = None
 
     def setupUi(self, Form: QtWidgets.QWidget):
-        self.anisotropyWidget = AnisotropyEvaluator(self, mainwindow = self.mainwindow)
+        self.anisotropyWidget = AnisotropyEvaluator(self, mainwindow=self.mainwindow)
         layout = QtWidgets.QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0, )
         self.setLayout(layout)

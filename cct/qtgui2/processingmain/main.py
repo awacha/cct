@@ -228,15 +228,18 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             self.viewwindows[handlestring] = windowclass(
                 project=self.project, mainwindow=self, resultitems=items,
                 closable=True)
-            subwindow = self.mdiArea.addSubWindow(self.viewwindows[handlestring])
+            subwindow = QtWidgets.QMdiSubWindow()
+            subwindow.setWidget(self.viewwindows[handlestring])
+            self.mdiArea.addSubWindow(subwindow)
+            subwindow.setWindowIcon(self.viewwindows[handlestring].windowIcon())
             self.viewwindows[handlestring].setObjectName(
                 self.viewwindows[handlestring].objectName() + f'__{time.monotonic()}')
             self.viewwindows[handlestring].destroyed.connect(self.onWidgetDestroyed)
-            subwindow.setWindowIcon(self.viewwindows[handlestring].windowIcon())
-        self.viewwindows[handlestring].raise_()
-        self.viewwindows[handlestring].showNormal()
+            subwindow.show()
+        self.viewwindows[handlestring].window().raise_()
+        self.viewwindows[handlestring].window().showNormal()
         if geometry is not None:
-            self.viewwindows[handlestring].restoreGeometry(geometry)
+            self.viewwindows[handlestring].window().restoreGeometry(geometry)
         return self.viewwindows[handlestring]
 
     def onWidgetDestroyed(self, object: QtWidgets.QWidget):
@@ -273,6 +276,10 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 g.attrs['hidden'] = subwindow.isHidden()
                 g.attrs['fullscreen'] = subwindow.isFullScreen()
                 g.attrs['shaded'] = subwindow.isShaded()
+                g.attrs['x'] = subwindow.x()
+                g.attrs['y'] = subwindow.y()
+                g.attrs['width'] = subwindow.width()
+                g.attrs['height'] = subwindow.height()
             for name, vw in self.viewwindows.items():
                 g = wg.create_group(f'R:{name}')
                 subwindow = vw.parent()
@@ -284,7 +291,12 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 g.attrs['fullscreen'] = subwindow.isFullScreen()
                 g.attrs['shaded'] = subwindow.isShaded()
                 g.attrs['class'] = type(vw).__name__
+                g.attrs['x'] = subwindow.x()
+                g.attrs['y'] = subwindow.y()
+                g.attrs['width'] = subwindow.width()
+                g.attrs['height'] = subwindow.height()
                 g.create_dataset('items', data=[(sn.encode('utf-8'), dk.encode('utf-8')) for sn, dk in vw.resultitems])
+        logger.info('Saved window geometries')
 
     def loadWindowGeometry(self):
         logger.debug('Loading window geometry')
@@ -305,7 +317,11 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                             'minimized': grp[label].attrs['minimized'],
                             'maximized': grp[label].attrs['maximized'],
                             'fullscreen': grp[label].attrs['fullscreen'],
-                            'basewindow': True
+                            'basewindow': True,
+                            'x': grp[label].attrs['x'] if 'x' in grp[label].attrs else None,
+                            'y': grp[label].attrs['y'] if 'y' in grp[label].attrs else None,
+                            'width': grp[label].attrs['width'] if 'width' in grp[label].attrs else None,
+                            'height': grp[label].attrs['height'] if 'height' in grp[label].attrs else None,
                         }
                     except (KeyError, TypeError):
                         logger.warning(f'Cannot find geometry for window {label}')
@@ -332,7 +348,11 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                         'minimized': grp[key].attrs['minimized'],
                         'maximized': grp[key].attrs['maximized'],
                         'fullscreen': grp[key].attrs['fullscreen'],
-                        'basewindow': False
+                        'basewindow': False,
+                        'x': grp[label].attrs['x'] if 'x' in grp[label].attrs else None,
+                        'y': grp[label].attrs['y'] if 'y' in grp[label].attrs else None,
+                        'width': grp[label].attrs['width'] if 'width' in grp[label].attrs else None,
+                        'height': grp[label].attrs['height'] if 'height' in grp[label].attrs else None,
                     }
         except KeyError:
             logger.debug('Cannot load geometry information from H5 file.')
@@ -346,27 +366,39 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 win = self.createViewWindow(resultviewwindows[label]['class'], resultviewwindows[label]['items'])
             # get the subwindow
             subwindow: QtWidgets.QMdiSubWindow = win.parent()
-            # restore the size and position of the subwindow
-            logger.debug(f'Restoring geometry of window {label}')
-            subwindow.restoreGeometry(windowstate[label]['geometry'])
             # set window state: normal, minimized, maximized, full screen, shaded etc.
-            logger.debug(f'Window {label} is hidden: {windowstate[label]["hidden"]}')
-            subwindow.setHidden(windowstate[label]['hidden'])
+            if windowstate[label]['hidden']:
+                logger.warning(f'Window {label} is hidden: {windowstate[label]["hidden"]}')
+                subwindow.setHidden(windowstate[label]['hidden'])
+            else:
+                subwindow.show()
             if windowstate[label]['shaded']:
-                logger.debug(f'Shading window {label}')
+                logger.warning(f'Shading window {label}')
                 subwindow.showShaded()
             elif windowstate[label]['minimized']:
-                logger.debug(f'Minimizing window {label}')
+                logger.warning(f'Minimizing window {label}')
                 subwindow.showMinimized()
             elif windowstate[label]['maximized']:
-                logger.debug(f'Maximizing window {label}')
+                logger.warning(f'Maximizing window {label}')
                 subwindow.showMaximized()
             elif windowstate[label]['fullscreen']:
-                logger.debug(f'Setting window {label} full screen')
+                logger.warning(f'Setting window {label} full screen')
                 subwindow.showFullScreen()
             elif not windowstate[label]['hidden']:
-                logger.debug(f'Showing window {label} as normal')
+                logger.info(f'Showing window {label} as normal')
                 subwindow.showNormal()
+            # restore the size and position of the subwindow
+            if (windowstate[label]['x'] is None) and (windowstate[label]['y'] is None) and (windowstate[label]['width'] is None) and (windowstate[label]['height'] is None):
+                logger.error(f'Restoring geometry of window {label} FROM GEOMETRY')
+                subwindow.restoreGeometry(windowstate[label]['geometry'])
+            else:
+                logger.debug(f'Restoring geometry of window {label} FROM X, Y, WIDTH, HEIGHT')
+                if (windowstate[label]['x'] is not None) and (windowstate[label]['y'] is not None):
+                    subwindow.move(windowstate[label]['x'], windowstate[label]['y'])
+                    logger.debug(f'x={windowstate[label]["x"]}, y={windowstate[label]["y"]}')
+                if (windowstate[label]['width'] is not None) and (windowstate[label]['height'] is not None):
+                    subwindow.resize(windowstate[label]['width'], windowstate[label]['height'])
+                    logger.debug(f'width={windowstate[label]["width"]}, height={windowstate[label]["height"]}')
             # update the state of the corresponding action
             try:
                 wi = [wi_ for wi_ in self.windowinfo if wi_.attribute == label][0]

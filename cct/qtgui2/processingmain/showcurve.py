@@ -13,15 +13,26 @@ class ShowCurveWindow(ResultViewWindow):
         layout.setContentsMargins(0, 0, 0, 0, )
         self.setLayout(layout)
         layout.addWidget(self.plotCurve)
-        self.onResultItemChanged('', '')
+        self.onResultItemChanged('', '')  # at present only full redraw is supported
         self.plotCurve.setPixelMode(False)
         self.plotCurve.setShowErrorBars(False)
         self.setWindowIcon(QtGui.QIcon(':/icons/saxscurve.svg'))
 
     def onResultItemChanged(self, samplename: str, distancekey: str):
+        # full redraw every time. This is suboptimal, ToDo
         self.plotCurve.clear()
         for sn, dist in self.resultitems:
-            curve = self.project.settings.h5io.readCurve(f'Samples/{sn}/{dist}/curve')
-            self.plotCurve.addCurve(curve, label=f'{sn} @ {dist} mm')
+            if not sn:
+                try:
+                    ex = self.project.loader().loadExposure(self.project.settings.prefix, int(dist))
+                    curve = ex.radial_average(
+                        errorprop=self.project.settings.ierrorprop, qerrorprop=self.project.settings.qerrorprop)
+                    label = f'{ex.header.title}, #{ex.header.fsn}'
+                except Exception:
+                    continue
+            else:
+                curve = self.project.settings.h5io.readCurve(f'Samples/{sn}/{dist}/curve')
+                label = f'{sn} @ {dist} mm'
+            self.plotCurve.addCurve(curve, label=label)
         self.plotCurve.replot()
         self.setWindowTitle(f'Scattering curves')

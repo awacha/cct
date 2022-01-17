@@ -14,6 +14,7 @@ from PyQt5 import QtCore
 
 from .calculations.outliertest import OutlierMethod
 from .h5io import ProcessingH5File
+from .loader import Loader
 from ..algorithms.matrixaverager import ErrorPropagationMethod
 from ..dataclasses.exposure import QRangeMethod
 
@@ -51,6 +52,7 @@ class ProcessingSettings(QtCore.QObject):
 
     _manager: multiprocessing.managers.SyncManager
     _modified: bool = False
+    _loader: Optional[Loader] = None
 
     def __init__(self, filename: str):
         super().__init__()
@@ -330,3 +332,14 @@ class ProcessingSettings(QtCore.QObject):
     def emitSettingsChanged(self):
         self.save()
         self.settingsChanged.emit()
+
+    def loader(self) -> Loader:
+        if self._loader is None:
+            return Loader(self.rootpath, self.eval2dsubpath, self.masksubpath, self.fsndigits)
+        elif (self._loader.rootpath != self.rootpath) or (self._loader.eval2dsubpath != self.eval2dsubpath) or \
+                (self._loader.masksubpath != self.masksubpath) or (self._loader.fsndigits != self.fsndigits):
+            del self._loader
+            self._loader = None
+            return self.loader()
+        else:
+            return self._loader

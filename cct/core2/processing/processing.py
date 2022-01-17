@@ -1,20 +1,19 @@
-import itertools
-from typing import List, Optional, Tuple, Any
 import enum
 import logging
+from typing import List, Tuple, Any
 
 import h5py
-
-from .h5io import ProcessingH5File
-from .tasks.summarization import Summarization
 from PyQt5 import QtCore
-from .tasks.headers import HeaderStore
-from .tasks.subtraction import Subtraction
-from .tasks.resultsmodel import ResultsModel
-from .tasks.merging import Merging
-from .settings import ProcessingSettings
 
-logger=logging.getLogger(__name__)
+from .loader import Loader
+from .settings import ProcessingSettings
+from .tasks.headers import HeaderStore
+from .tasks.merging import Merging
+from .tasks.resultsmodel import ResultsModel
+from .tasks.subtraction import Subtraction
+from .tasks.summarization import Summarization
+
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
@@ -40,6 +39,7 @@ class Processing(QtCore.QAbstractItemModel):
     resultItemChanged = QtCore.pyqtSignal(str, str)
 
     """The main class of the processing subsystem"""
+
     def __init__(self, filename: str):
         super().__init__()
         self.settings = ProcessingSettings(filename)
@@ -135,8 +135,8 @@ class Processing(QtCore.QAbstractItemModel):
         return self.insertRows(row, 1, QtCore.QModelIndex())
 
     def insertRows(self, row: int, count: int, parent: QtCore.QModelIndex = ...) -> bool:
-        self.beginInsertRows(QtCore.QModelIndex(), row, row+count-1)
-        self.fsnranges = self.fsnranges[:row] + [(0,0)]*count + self.fsnranges[row:]
+        self.beginInsertRows(QtCore.QModelIndex(), row, row + count - 1)
+        self.fsnranges = self.fsnranges[:row] + [(0, 0)] * count + self.fsnranges[row:]
         self.endInsertRows()
         self.settings.emitSettingsChanged()
         return True
@@ -145,8 +145,8 @@ class Processing(QtCore.QAbstractItemModel):
         return self.removeRows(row, 1, QtCore.QModelIndex())
 
     def removeRows(self, row: int, count: int, parent: QtCore.QModelIndex = ...) -> bool:
-        self.beginRemoveRows(QtCore.QModelIndex(), row, row+count-1)
-        del self.fsnranges[row:row+count]
+        self.beginRemoveRows(QtCore.QModelIndex(), row, row + count - 1)
+        del self.fsnranges[row:row + count]
         self.endRemoveRows()
         self.settings.emitSettingsChanged()
         return True
@@ -184,17 +184,22 @@ class Processing(QtCore.QAbstractItemModel):
                         # do not copy links at this stage
                         return
                     if isinstance(h5.get(path, getclass=True), h5py.Group):
-                        grp=h5out.require_group(path)
-                        grp.attrs=h5.get(path).attrs
+                        grp = h5out.require_group(path)
+                        grp.attrs = h5.get(path).attrs
                     elif isinstance(h5.get(path, getclass=True), h5py.Dataset):
                         ds = h5.get(path)
-                        dsnew = h5out.create_dataset(path, shape=ds.shape, dtype=ds.dtype, data=np.array(ds), compression=ds.compression, compression_opts=ds.compression_opts)
-                        dsnew.attrs=ds.attrs
+                        dsnew = h5out.create_dataset(path, shape=ds.shape, dtype=ds.dtype, data=np.array(ds),
+                                                     compression=ds.compression, compression_opts=ds.compression_opts)
+                        dsnew.attrs = ds.attrs
                     else:
                         raise ValueError(path)
+
                 def copysoftlinks(path: str):
                     if isinstance(h5.get(path, getlink=True), h5py.SoftLink):
                         h5out[path] = h5py.SoftLink(h5.get(path, getlink=True).path)
+
                 h5.visit(copy)
                 h5.visit(copysoftlinks)
 
+    def loader(self) -> Loader:
+        return self.settings.loader()

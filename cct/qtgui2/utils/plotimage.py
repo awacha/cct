@@ -209,13 +209,17 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
                 self._cmapaxis.remove()
                 self._cmapaxis = None
         else:
-            if self._cmapaxis is None:
-                self._cmapaxis = self.figure.colorbar(
-                    self._imghandle,
-                    cax=self._cmapaxis.ax if self._cmapaxis is not None else None,
-                    ax=None if self._cmapaxis is not None else self.axes,
-                )
-            self._cmapaxis.ax.set_visible(self.showColourBarToolButton.isChecked())
+            try:
+                if self._cmapaxis is None:
+                    self._cmapaxis = self.figure.colorbar(
+                        self._imghandle,
+                        cax=self._cmapaxis.ax if self._cmapaxis is not None else None,
+                        ax=None if self._cmapaxis is not None else self.axes,
+                    )
+                self._cmapaxis.ax.set_visible(self.showColourBarToolButton.isChecked())
+            except ZeroDivisionError:
+                self._cmapaxis = None
+                pass
         self.axes.set_anchor((0.5, 0.5))
         if self._cmapaxis is not None:
             self._cmapaxis.ax.set_anchor((0, 0.5))
