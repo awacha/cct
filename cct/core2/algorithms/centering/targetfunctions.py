@@ -90,11 +90,18 @@ def momentofinertia(beampos, matrix, mask, rmin, rmax):
 def azimuthal(beampos, matrix, mask, rmin, rmax):
     msk = maskforannulus(mask, beampos[0], beampos[1], rmin, rmax)
     phi, intensity, area = fastazimavg(matrix, msk, beampos[0], beampos[1], int((rmin + rmax) * np.pi / 2))
-    return intensity[area > 0].std()
+    binarea_q1, binarea_q3 = np.percentile(area, [25, 75])
+    binok = np.logical_and(area >= binarea_q1 - (binarea_q3 - binarea_q1)*1.5,
+                           area <= binarea_q3 + (binarea_q3 - binarea_q1)*1.5)
+    return intensity[np.logical_and(binok, area > 0)].std()
 
 
 def azimuthal_fold(beampos, matrix, mask, rmin, rmax):
     msk = maskforannulus(mask, beampos[0], beampos[1], rmin, rmax)
     phi, intensity, area = fastazimavg(matrix, msk, beampos[0], beampos[1], int((rmin + rmax) * np.pi / 4) * 2)
-    diff = intensity[:len(intensity) // 2] - intensity[len(intensity) // 2:]
-    return diff[np.isfinite(diff)].mean()
+    binarea_q1, binarea_q3 = np.percentile(area, [25, 75])
+    binok = np.logical_and(area >= binarea_q1 - (binarea_q3 - binarea_q1)*1.5,
+                           area <= binarea_q3 + (binarea_q3 - binarea_q1)*1.5)
+    binok_folded = np.logical_and(binok[:len(binok) // 2], binok[len(binok) // 2:])
+    diff = np.abs(intensity[:len(intensity) // 2] - intensity[len(intensity) // 2:])
+    return diff[np.logical_and(np.isfinite(diff), binok_folded)].mean()
