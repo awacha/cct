@@ -113,7 +113,8 @@ class IO(QtCore.QObject, Component):
             self._lastfsn[prefix] = fsn
             self.lastFSNChanged.emit(prefix, fsn)
         else:
-            raise RuntimeError(
+            # sometimes multiple exposures made in short periods can mix up
+            logger.warning(
                 f'Exposure received for prefix {prefix} with fsn {fsn}, which is greater than the current '
                 f'highest fsn on file: {self._lastfsn[prefix]}')
         if prefix not in self._nextfsn:
