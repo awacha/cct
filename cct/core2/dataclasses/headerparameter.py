@@ -3,6 +3,7 @@ import itertools
 import logging
 from numbers import Real
 from typing import List, Tuple, Union, Optional, Any
+import numpy as np
 
 import dateutil.parser
 
@@ -76,7 +77,7 @@ class ValueAndUncertaintyHeaderParameter(HeaderParameter):
         return tuple([float(x) for x in super().__get__(instance, owner)])
 
     def __set__(self, instance, value: Tuple[float, Optional[float]]):
-        if isinstance(value, Real):
+        if isinstance(value, Real) or isinstance(value, np.number):
             value = float(value)
         elif (isinstance(value, tuple) and isinstance(value[0], Real) and isinstance(value[1], Real) and
               len(value) == 2):
