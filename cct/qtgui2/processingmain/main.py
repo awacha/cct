@@ -260,11 +260,14 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             logger.warning(f'Widget {object.objectName()=} destroyed but could not remove')
         for subwin in self.mdiArea.subWindowList():
             try:
-                subwin.widget().objectName()
+                if subwin.widget() is not None:
+                    subwin.widget().objectName()
             except RuntimeError:
                 logger.debug(f'Destroying subwindow {subwin.objectName()}, since its child widget is no longer '
                              f'available (wrapped C/C++ object has been deleted)')
                 subwin.setWidget(None)
+                subwin.destroy(True, True)
+                continue
             if (subwin.widget() is None) or (subwin.widget()):
                 logger.debug('Destroying an empty subwindow.')
                 subwin.destroy(True, True)
