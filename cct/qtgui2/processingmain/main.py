@@ -283,6 +283,9 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             for name, vw in self.viewwindows.items():
                 g = wg.create_group(f'R:{name}')
                 subwindow = vw.parent()
+                if subwindow.isHidden():
+                    # do not save hidden subwindows
+                    del wg[f'R:{name}']
                 assert isinstance(subwindow, QtWidgets.QMdiSubWindow)
                 g.attrs['geometry'] = subwindow.saveGeometry()
                 g.attrs['minimized'] = subwindow.isMinimized()
@@ -361,9 +364,12 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             logger.debug(f'Updating window state for window {label}')
             if windowstate[label]['basewindow']:
                 win = getattr(self, label)
-            else:
-                # create the result view window
+            elif not windowstate[label]['hidden']:
+                # create the result view window. Do not create hidden result windows!
                 win = self.createViewWindow(resultviewwindows[label]['class'], resultviewwindows[label]['items'])
+            else:
+                # do nothing, hidden result windows are not created because they cannot be re-shown from the GUI
+                continue
             # get the subwindow
             subwindow: QtWidgets.QMdiSubWindow = win.parent()
             # set window state: normal, minimized, maximized, full screen, shaded etc.

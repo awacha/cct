@@ -1,5 +1,5 @@
-from typing import Tuple, List
 import logging
+from typing import Tuple, List
 
 from .processingwindow import ProcessingWindow
 
@@ -9,6 +9,7 @@ logger.setLevel(logging.DEBUG)
 
 class ResultViewWindow(ProcessingWindow):
     resultitems: List[Tuple[str, str]]
+    closable = True
 
     def __init__(self, **kwargs):
         if ('samplename' in kwargs) and ('distancekey' in kwargs):
@@ -18,7 +19,7 @@ class ResultViewWindow(ProcessingWindow):
             self.resultitems = kwargs.pop('resultitems')
         super().__init__(**kwargs)
         self.setObjectName('Form')
-        self.resize(100,100)
+        self.resize(100, 100)
         self.show()
         self.project.resultItemChanged.connect(self._onResultItemChanged)
 
