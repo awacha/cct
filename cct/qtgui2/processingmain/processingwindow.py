@@ -1,8 +1,12 @@
 import weakref
+import logging
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 from ...core2.processing.processing import Processing
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class ProcessingWindow(QtWidgets.QWidget):
@@ -23,12 +27,15 @@ class ProcessingWindow(QtWidgets.QWidget):
 
     def closeEvent(self, closeEvent: QtGui.QCloseEvent) -> None:
         if self.closable:
+            logger.debug(f'Closing a processing window {self.objectName()=}')
             closeEvent.accept()
         else:
+            logger.debug(f'Minimizing a processing window instead of closing {self.objectName()=}')
             self.showMinimized()
             closeEvent.ignore()
 
     def onDestroyed(self, object: QtCore.QObject):
+        logger.debug('A processing window has been destroyed')
         pass
 
 
