@@ -1,4 +1,4 @@
-import email
+import email, email.utils, email.message
 import logging
 import re
 import smtplib
@@ -136,7 +136,9 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         msg = email.message.EmailMessage()
         msg.set_content(body)
         msg['Subject'] = title
-        msg['From'] = f'SAXS instrument control <{self.fromaddress}>'
+        msg['From'] = email.utils.formataddr(('SAXS instrument control', self.fromaddress))
+        msg['Message-ID'] = email.utils.make_msgid()
+        msg['Date'] = email.utils.localtime()
         self.queue_email(msg, emailaddresses)
 
     def panichandler(self):
