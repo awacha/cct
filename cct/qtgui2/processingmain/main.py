@@ -236,10 +236,10 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.viewwindows[handlestring].objectName() + f'__{time.monotonic()}')
             self.viewwindows[handlestring].destroyed.connect(self.onWidgetDestroyed)
             subwindow.show()
-        self.viewwindows[handlestring].window().raise_()
-        self.viewwindows[handlestring].window().showNormal()
+        self.viewwindows[handlestring].parent().raise_()
+        self.viewwindows[handlestring].parent().showNormal()
         if geometry is not None:
-            self.viewwindows[handlestring].window().restoreGeometry(geometry)
+            self.viewwindows[handlestring].parent().restoreGeometry(geometry)
         return self.viewwindows[handlestring]
 
     def onWidgetDestroyed(self, object: QtWidgets.QWidget):
