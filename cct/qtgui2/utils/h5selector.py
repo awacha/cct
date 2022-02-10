@@ -6,6 +6,7 @@ from PyQt5 import QtWidgets, QtCore
 from .h5selector_ui import Ui_Form
 from ...core2.dataclasses import Exposure
 from ...core2.instrument.instrument import Instrument
+from ..utils.filebrowsers import getOpenFile
 
 
 class H5Selector(QtWidgets.QWidget, Ui_Form):
@@ -25,8 +26,8 @@ class H5Selector(QtWidgets.QWidget, Ui_Form):
         self.distanceComboBox.currentIndexChanged.connect(self.distanceSelected)
 
     def browseH5FileName(self):
-        filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(
-            self, "Select a HDF5 file", "", "HDF5 files (*.h5);;All files (*)", 'HDF5 files (*.h5)')
+        filename = getOpenFile(
+            self, "Select a HDF5 file", "", "HDF5 files (*.h5);;All files (*)",)
         if not filename:
             return
         try:

@@ -8,6 +8,7 @@ from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.components.calibrants.calibrant import Calibrant
 from ....core2.instrument.components.calibrants.intensity import IntensityCalibrant
 from ....core2.instrument.components.calibrants.q import QCalibrant
+from ...utils.filebrowsers import getOpenFile
 
 
 class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
@@ -32,10 +33,9 @@ class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         current = self.calibrantsTreeView.selectionModel().currentIndex().internalPointer()
         if not isinstance(current, IntensityCalibrant):
             return
-        filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(
+        filename = getOpenFile(
             self, 'Select a scattering curve file', '',
-            'ASCII files (*.txt; *.dat);;All files (*)',
-            'ASCII files (*.txt; *.dat)'
+            'ASCII files (*.txt; *.dat);;All files (*)'
         )
         if not filename:
             return

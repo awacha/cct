@@ -1,21 +1,23 @@
+import logging
 import os
 from typing import List, Optional
 
-from PyQt5 import QtCore, QtWidgets
-import logging
 import openpyxl
+from PyQt5 import QtCore, QtWidgets
 
 from .outliertest import OutlierTestWindow
 from .processingwindow import ProcessingWindow
 from .results_ui import Ui_Form
-from .showimage import ShowImageWindow
-from .showcurve import ShowCurveWindow
 from .showanisotropy import ShowAnisotropyWindow
-from ...core2.processing.calculations.resultsentry import SampleDistanceEntry, CurveFileType, PatternFileType, CorMatFileType, SampleDistanceEntryType
+from .showcurve import ShowCurveWindow
+from .showimage import ShowImageWindow
 from .transmission import TransmissionWindow
 from .vacuum import VacuumWindow
+from ..utils.filebrowsers import getDirectory, getSaveFile
+from ...core2.processing.calculations.resultsentry import SampleDistanceEntry, CurveFileType, PatternFileType, \
+    CorMatFileType, SampleDistanceEntryType
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
@@ -35,17 +37,18 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         self.anisotropyPushButton.clicked.connect(self.showAnisotropy)
         for action in [self.actionASCII_txt, self.actionATSAS, self.actionRSR, self.actionExcel, self.actionPDH]:
             self.exportCurvesToolButton.addAction(action)
-#            action.triggered.connect(self.exportCurves)
+        #            action.triggered.connect(self.exportCurves)
         self.exportCurvesToolButton.setDefaultAction(self.actionASCII_txt)
         self.exportCurvesToolButton.triggered.connect(self.exportCurves)
         for action in [self.actionCmatNumpy_NPZ, self.actionCmatMatlab, self.actionCmatASCII, self.actionCmatAsciiGZip]:
             self.exportOutliersToolButton.addAction(action)
-#            action.triggered.connect(self.exportOutlierTestResults)
+        #            action.triggered.connect(self.exportOutlierTestResults)
         self.exportOutliersToolButton.setDefaultAction(self.actionCmatNumpy_NPZ)
         self.exportOutliersToolButton.triggered.connect(self.exportOutlierTestResults)
-        for action in [self.actionPatternNumpy_NPZ, self.actionPatternMatlab, self.actionPatternASCII, self.actionPatternAsciiGZip]:
+        for action in [self.actionPatternNumpy_NPZ, self.actionPatternMatlab, self.actionPatternASCII,
+                       self.actionPatternAsciiGZip]:
             self.exportPatternsToolButton.addAction(action)
-#            action.triggered.connect(self.exportPatterns)
+        #            action.triggered.connect(self.exportPatterns)
         self.exportPatternsToolButton.setDefaultAction(self.actionPatternNumpy_NPZ)
         self.exportPatternsToolButton.triggered.connect(self.exportPatterns)
         self.timeBudgetPushButton.clicked.connect(self.showTimeBudget)
@@ -61,7 +64,8 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         self.project.results.reload()
 
     def removeSelectedResult(self):
-        sdes:List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in self.treeView.selectionModel().selectedRows(0)]
+        sdes: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in
+                                           self.treeView.selectionModel().selectedRows(0)]
         samples_dists = {(sde.samplename, sde.distancekey) for sde in sdes}
         for samplename, distkey in samples_dists:
             self.project.settings.h5io.removeDistance(samplename, distkey)
@@ -142,18 +146,22 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
             action = self.exportPatternsToolButton.defaultAction()
         logger.debug(f'Export pattern action: {action.objectName()}')
         self.exportPatternsToolButton.setDefaultAction(action)
-        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in self.treeView.selectionModel().selectedRows(0)]
-        items = [it for it in items if it.entrytype in [SampleDistanceEntryType.Primary, SampleDistanceEntryType.Subtracted]]
+        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in
+                                            self.treeView.selectionModel().selectedRows(0)]
+        items = [it for it in items if
+                 it.entrytype in [SampleDistanceEntryType.Primary, SampleDistanceEntryType.Subtracted]]
         if not items:
             return
-        outputfolder = QtWidgets.QFileDialog.getExistingDirectory(self, 'Write scattering patterns to directory:')
+        outputfolder = getDirectory(self, 'Write scattering patterns to directory')
+        if not outputfolder:
+            return
         for item in items:
             basename = f'{item.samplename}_{item.distancekey}'
             filetype = {self.actionPatternASCII: PatternFileType.ASCII,
                         self.actionPatternAsciiGZip: PatternFileType.ASCIIGZIP,
                         self.actionPatternMatlab: PatternFileType.MATLAB,
                         self.actionPatternNumpy_NPZ: PatternFileType.NUMPY}[action]
-            item.writePattern(os.path.join(outputfolder, basename+filetype.value[-1]), filetype)
+            item.writePattern(os.path.join(outputfolder, basename + filetype.value[-1]), filetype)
 
     def exportOutlierTestResults(self, action: Optional[QtWidgets.QAction] = None):
         if action is None:
@@ -163,18 +171,21 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
             action = self.exportOutliersToolButton.defaultAction()
         logger.debug(f'Outlier test export action: {action.objectName()}')
         self.exportOutliersToolButton.setDefaultAction(action)
-        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in self.treeView.selectionModel().selectedRows(0)]
+        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in
+                                            self.treeView.selectionModel().selectedRows(0)]
         items = [it for it in items if it.entrytype == SampleDistanceEntryType.Primary]
         if not items:
             return
-        outputfolder = QtWidgets.QFileDialog.getExistingDirectory(self, 'Write correlation matrices to directory:')
+        outputfolder = getDirectory(self, 'Write correlation matrices to directory:')
+        if not outputfolder:
+            return
         for item in items:
             basename = f'cmat_{item.samplename}_{item.distancekey}'
             filetype = {self.actionCmatASCII: CorMatFileType.ASCII,
                         self.actionCmatAsciiGZip: CorMatFileType.ASCIIGZIP,
                         self.actionCmatMatlab: CorMatFileType.MATLAB,
                         self.actionCmatNumpy_NPZ: CorMatFileType.NUMPY}[action]
-            item.writeCorMat(os.path.join(outputfolder, basename+filetype.value[-1]), filetype)
+            item.writeCorMat(os.path.join(outputfolder, basename + filetype.value[-1]), filetype)
 
     def exportCurves(self, action: Optional[QtWidgets.QAction] = None):
         if action is None:
@@ -182,44 +193,43 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         if not isinstance(action, QtWidgets.QAction):
             action = self.exportCurvesToolButton.defaultAction()
         self.exportCurvesToolButton.setDefaultAction(action)
-        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in self.treeView.selectionModel().selectedRows(0)]
+        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in
+                                            self.treeView.selectionModel().selectedRows(0)]
         if not items:
             return
         if action == self.actionExcel:
-            xlsxfile, filter_ = QtWidgets.QFileDialog.getSaveFileName(
+            xlsxfile = getSaveFile(
                 self, 'Select Excel Workbook file name...', '',
-                'Microsoft(R) Excel(TM) Workbook files (*.xlsx);;All files (*)',
-                'Microsoft(R) Excel(TM) Workbook files (*.xlsx)')
+                'Microsoft(R) Excel(TM) Workbook files (*.xlsx);;All files (*)', '.xlsx')
             if not xlsxfile:
                 return
-            if not xlsxfile.lower().endswith('.xlsx'):
-                # append proper file ending
-                xlsxfile = xlsxfile+'.xlsx'
             wb = openpyxl.Workbook()
             wb.remove(wb.active)
-            wsnamecounter= {}
+            wsnamecounter = {}
             for item in items:
                 wsname = f'{item.samplename}_{item.distancekey}'
                 if len(wsname) >= 31:
                     # some programs cannot open workbooks with too long sheet names
-                    wsname=wsname[:29]
+                    wsname = wsname[:29]
                     if wsname in wsnamecounter:
-                        wsname=wsname+str(wsnamecounter[wsname])
-                        wsnamecounter[wsname]+=1
+                        wsname = wsname + str(wsnamecounter[wsname])
+                        wsnamecounter[wsname] += 1
                     else:
-                        wsnamecounter[wsname]=1
+                        wsnamecounter[wsname] = 1
                 ws = wb.create_sheet(wsname)
                 item.writeCurveToXLSX(ws, ws.cell(row=1, column=1))
             wb.save(xlsxfile)
         else:
-            outputfolder = QtWidgets.QFileDialog.getExistingDirectory(self, 'Write scattering curves to directory:')
+            outputfolder = getDirectory(self, 'Write scattering curves to directory:')
+            if not outputfolder:
+                return
             for item in items:
                 basename = f'{item.samplename}_{item.distancekey}'
                 filetype = {self.actionASCII_txt: CurveFileType.ASCII,
                             self.actionATSAS: CurveFileType.ATSAS,
                             self.actionPDH: CurveFileType.PDH,
                             self.actionRSR: CurveFileType.RSR}[action]
-                item.writeCurve(os.path.join(outputfolder, basename+filetype.value[-1]), filetype)
+                item.writeCurve(os.path.join(outputfolder, basename + filetype.value[-1]), filetype)
 
     def exportReport(self):
         pass

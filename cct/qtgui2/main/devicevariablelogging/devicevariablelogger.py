@@ -7,6 +7,7 @@ from matplotlib.figure import Figure
 
 from .devicevariablelogger_ui import Ui_Form
 from ...utils.comboboxdelegate import ComboBoxDelegate
+from ...utils.filebrowsers import getSaveFile
 from ....core2.instrument.components.devicestatus.devicestatuslogger import DeviceStatusLogger
 from ....core2.instrument.instrument import Instrument
 
@@ -126,8 +127,7 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
             self.devicelogger.removeRow(row, QtCore.QModelIndex())
 
     def onBrowseClicked(self):
-        filename, filtr = QtWidgets.QFileDialog.getSaveFileName(
-            self, 'Select file to save record', '', 'All files (*)', 'All files (*)')
+        filename = getSaveFile(self, 'Select file to save record', '', 'Log files (*.txt *.log);;All files (*)', '.log')
         if not filename:
             return
         self.fileNameLineEdit.setText(filename)

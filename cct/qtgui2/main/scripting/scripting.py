@@ -8,6 +8,7 @@ from PyQt5 import QtWidgets, QtGui
 from .script import ScriptUI
 from .wizard.sequencewizard import SequenceWizard
 from .scripting_ui import Ui_Form
+from ...utils.filebrowsers import getOpenFile, getSaveFile
 from ....core2.instrument.components.interpreter import ParsingError
 from ....core2.instrument.instrument import Instrument
 from ....core2.commands import Command
@@ -196,9 +197,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         return s
 
     def openScript(self):
-        filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(self, 'Load a script...', '',
-                                                                  'CCT script files (*.cct);;All files (*)',
-                                                                  'CCT script files (*.cct)')
+        filename = getOpenFile(self, 'Load a script...', '', 'CCT script files (*.cct);;All files (*)')
         if not filename:
             return
         sui = ScriptUI()

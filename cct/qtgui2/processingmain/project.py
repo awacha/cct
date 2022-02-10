@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets
 from .project_ui import Ui_Form
 from .processingwindow import ProcessingWindow
+from ..utils.filebrowsers import getDirectory
 
 
 class ProjectWindow(ProcessingWindow, Ui_Form):
@@ -44,10 +45,8 @@ class ProjectWindow(ProcessingWindow, Ui_Form):
         self.project.modelReset()
 
     def browseRootPath(self):
-        fn = QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Select measurement root directory', '')
-        if not fn:
+        dn = getDirectory(self, 'Select measurement root directory', '')
+        if not dn:
             return
-        else:
-            self.rootPathLineEdit.setText(fn)
-            self.rootPathLineEdit.editingFinished.emit()
+        self.rootPathLineEdit.setText(dn)
+        self.rootPathLineEdit.editingFinished.emit()

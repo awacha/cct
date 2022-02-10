@@ -15,6 +15,7 @@ from ...utils.fsnselector import FSNSelector
 from ...utils.h5selector import H5Selector
 from ...utils.plotcurve import PlotCurve
 from ...utils.plotimage import PlotImage
+from ...utils.filebrowsers import browseMask, getSaveFile
 from ...utils.window import WindowRequiresDevices
 from ....core2.dataclasses import Exposure
 from .maskoperations import maskCircle, maskRectangle, maskPolygon, mm_mask, mm_flip, mm_unmask
@@ -129,9 +130,7 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onLoadMask(self):
         if not self.confirmChanges():
             return
-        filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Load a mask file...', self.windowFilePath(),
-            'Mask files (*.mat);;All files (*)', 'Mask files (*.mat)')
+        filename = browseMask(self)
         if not filename:
             return
         mat = scipy.io.loadmat(filename)
@@ -150,10 +149,10 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.setWindowModified(False)
 
     def onSaveMaskAs(self):
-        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(
+        filename = getSaveFile(
             self, 'Save the mask...', self.windowFilePath(),
             'Mask files (*.mat);;All files (*)',
-            'Mask files (*.mat)')
+            '.mat')
         if not filename:
             return
         self.setWindowFilePath(filename)

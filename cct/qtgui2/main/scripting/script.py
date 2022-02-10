@@ -8,6 +8,7 @@ from PyQt5 import QtWidgets, QtCore
 from .script_ui import Ui_Form
 from .scripteditor import ScriptEditor
 from .syntaxhighlighter import ScriptSyntaxHighlighter
+from ...utils.filebrowsers import getSaveFile
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -31,7 +32,7 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
         self.scriptEditor = ScriptEditor(self.splitter)
         self.scriptEditorVerticalLayout.addWidget(self.scriptEditor)
         self.scriptEditor.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
-        self.splitter.setSizes([2*self.splitter.width()//3,self.splitter.width()//3])
+        self.splitter.setSizes([2 * self.splitter.width() // 3, self.splitter.width() // 3])
         self.scriptEditor.document().modificationChanged.connect(self.modificationChanged)
         self.scriptEditor.undoAvailable.connect(self.undoAvailable)
         self.scriptEditor.redoAvailable.connect(self.redoAvailable)
@@ -77,9 +78,7 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
         logger.info(f'Script saved to {self.filename}')
 
     def saveas(self):
-        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save script to file', '',
-                                                                  'CCT script files (*.cct);;All files (*)',
-                                                                  'CCT script fiels (*.cct)')
+        filename = getSaveFile(self, 'Save script to file', '', 'CCT script files (*.cct);;All files (*)', defaultsuffix='.cct')
         if not filename:
             return
         self.filename = filename

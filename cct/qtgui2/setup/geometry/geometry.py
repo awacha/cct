@@ -8,6 +8,7 @@ from matplotlib.figure import Figure
 from .geometry_ui import Ui_Form
 from .spacerselector import SpacerSelectorDialog
 from ...utils.window import WindowRequiresDevices
+from ...utils.filebrowsers import browseMask
 from ....core2.instrument.components.geometry.choices import ComponentType, GeometryChoices
 from ....core2.instrument.components.geometry.optimizer import GeometryOptimizer, GeometryPreset
 from ....core2.instrument.components.geometry.presetstore import PresetStore
@@ -124,7 +125,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.updateSetupParametersPushButton.clicked.connect(self.updateSetupParameters)
 
     def onBrowseMask(self):
-        filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select a mask file', '', 'Mask files (*.mat *.npz);;All files (*)', 'Mask files (*.mat *.npz)')
+        filename = browseMask(self)
         if not filename:
             return
         self.maskFileNameLineEdit.setText(filename)

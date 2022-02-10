@@ -18,6 +18,7 @@ from .resultviewwindow import ResultViewWindow
 from .settings import SettingsWindow
 from .subtraction import SubtractionWindow
 from ...core2.processing.processing import Processing
+from ..utils.filebrowsers import getOpenFile, getSaveFile
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -98,14 +99,11 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def newProject(self):
         self.closeProject()
-        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(
+        filename = getSaveFile(
             self, 'Save the new CPT project to', '',
-            'CPT4 project files (*.cpt4);;Old-style CPT project files (*.cpt *.cpt2);;All files (*)',
-            'CPT4 project files (*.cpt4)')
+            'CPT4 project files (*.cpt4);;Old-style CPT project files (*.cpt *.cpt2);;All files (*)', '.cpt4')
         if not filename:
             return
-        if not filename.lower().endswith('.cpt4'):
-            filename = filename + '.cpt4'
         self.project = Processing(filename)
         self.createProjectWindows()
         self.setWindowFilePath(self.project.settings.filename)
@@ -136,10 +134,9 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
     @QtCore.pyqtSlot()
     def openProject(self, filename: Optional[str] = None):
         if filename is None:
-            filename, filter_ = QtWidgets.QFileDialog.getOpenFileName(
-                self, 'Open a CPT project file', '',
-                'CPT4 project files (*.cpt4);;Old-style CPT project files (*.cpt *.cpt2);;All files (*)',
-                'CPT4 project files (*.cpt4)')
+            filename = getOpenFile(
+                self, 'Open a CPT project file...', '',
+                'CPT4 project files (*.cpt4);;Old-style CPT project files (*.cpt *.cpt2);;All files (*)')
             if not filename:
                 return
         logger.debug(f'Loading project from file {filename}')
@@ -154,10 +151,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.addNewRecentFile(filename)
 
     def saveProjectAs(self) -> bool:  # True if saved successfully
-        filename, filter_ = QtWidgets.QFileDialog.getSaveFileName(
-            self, 'Select a file to save the project to', '',
-            'CPT4 project files (*.cpt4);;All files (*)',
-            'CPT4 project files (*.cpt4)')
+        filename = getSaveFile(self, 'Save the project to...', '', 'CPT4 project files (*.cpt4);;All files (*)', '.cpt4')
         if not filename:
             return False
         self.setWindowFilePath(filename)

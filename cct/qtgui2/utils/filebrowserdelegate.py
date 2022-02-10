@@ -4,6 +4,8 @@ from typing import Optional
 from PyQt5 import QtWidgets, QtCore, QtGui
 import logging
 
+from .filebrowsers import getSaveFile, getOpenFile, getDirectory
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -100,12 +102,12 @@ class FileSelectorDelegate(QtWidgets.QStyledItemDelegate):
         assert isinstance(toolbutton, QtWidgets.QToolButton)
         assert toolbutton is self.sender()
         if self.mode() is self.Mode.OpenFile:
-            filename, fltr = QtWidgets.QFileDialog.getOpenFileName(widget, self.caption(), lineedit.text(), self.filter(), self.defaultfilter())
+            filename = getOpenFile(widget, self.caption(), lineedit.text(), self.filter())
         elif self.mode() is self.Mode.SaveFile:
-            filename, fltr = QtWidgets.QFileDialog.getSaveFileName(widget, self.caption(), lineedit.text(), self.filter(), self.defaultfilter())
+            filename = getSaveFile(widget, self.caption(), lineedit.text(), self.filter())
         else:
             assert self.mode() is self.Mode.ExistingDirectory
-            filename, fltr = QtWidgets.QFileDialog.getExistingDirectory(widget, self.caption(), lineedit)
+            filename = getDirectory(widget, self.caption(), lineedit.text())
         if not filename:
             return
         else:
