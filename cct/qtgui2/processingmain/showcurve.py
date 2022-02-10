@@ -36,3 +36,6 @@ class ShowCurveWindow(ResultViewWindow):
             self.plotCurve.addCurve(curve, label=label)
         self.plotCurve.replot()
         self.setWindowTitle(f'Scattering curves')
+
+    def clear(self):
+        self.plotCurve.clear()

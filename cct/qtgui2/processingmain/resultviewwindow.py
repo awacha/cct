@@ -26,10 +26,19 @@ class ResultViewWindow(ProcessingWindow):
     def _onResultItemChanged(self, samplename: str, distancekey: str):
         logger.debug(f'_onResultItemChanged in ResultViewWindow with resultitems {self.resultitems}')
         if (samplename, distancekey) in self.resultitems:
-            logging.debug(f'ACCEPTED _onResultItemChanged({samplename}, {distancekey})')
-            self.onResultItemChanged(samplename, distancekey)
+            if (samplename, distancekey) in self.project.results:
+                logging.debug(f'ACCEPTED _onResultItemChanged({samplename}, {distancekey})')
+                self.onResultItemChanged(samplename, distancekey)
+            else:
+                self.clear()
         else:
             logging.debug(f'SKIPPED _onResultItemChanged({samplename}, {distancekey})')
 
     def onResultItemChanged(self, samplename: str, distancekey: str):
         raise NotImplementedError
+
+    def clear(self):
+        """Clear the display"""
+        self.close()
+        self.destroy()
+        self.deleteLater()

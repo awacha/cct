@@ -114,3 +114,15 @@ class ResultsModel(ProcessingTask):
     def get(self, samplename: str, distkey: str) -> SampleDistanceEntry:
         return [sde for sde in self._data if sde.samplename == samplename and sde.distancekey == distkey][0]
 
+    def remove(self, samplename:str, distancekey:str):
+        rows = [i for i, sde in enumerate(self._data) if sde.samplename == samplename and sde.distancekey == distancekey]
+        if not rows:
+            raise ValueError(f'Cannot remove {samplename}@{distancekey}: no such measurement')
+        assert len(rows) == 1
+        row = rows[0]
+        self.beginRemoveRows(QtCore.QModelIndex(), row, row)
+        self.settings.h5io.removeDistance(samplename, distancekey)
+
+    def __contains__(self, item: Tuple[str, str]) -> bool:
+        return item in self.settings.h5io
+

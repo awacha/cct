@@ -21,3 +21,9 @@ class ShowAnisotropyWindow(ResultViewWindow):
         self.anisotropyWidget.setExposure(
             self.project.settings.h5io.readExposure(f'Samples/{samplename}/{distancekey}'))
         self.setWindowTitle(f'Anisotropy of {samplename} @ {distancekey} mm')
+
+    def clear(self):
+        self.anisotropyWidget.destroy()
+        self.anisotropyWidget.deleteLater()
+        self.anisotropyWidget = AnisotropyEvaluator(self, mainwindow=self.mainwindow)
+        self.layout().addWidget(self.anisotropyWidget)

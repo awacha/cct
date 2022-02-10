@@ -122,16 +122,25 @@ class ProcessingH5File:
             except KeyError:
                 return []
 
-    def addDistance(self, samplename: str, distance: float):
+    def addDistance(self, samplename: str, distance: Union[float, str]):
+        if isinstance(distance, float):
+            distance = f'{distance:.2f}'
         with self.writer() as h5file:
-            h5file.require_group(f'Samples/{samplename}/{distance:.2f}')
+            h5file.require_group(f'Samples/{samplename}/{distance}')
 
-    def removeDistance(self, samplename: str, distance: float):
+    def removeDistance(self, samplename: str, distance: Union[float, str]):
+        if isinstance(distance, float):
+            distance = f'{distance:.2f}'
         with self.writer() as h5file:
             try:
-                del h5file[f'Samples/{samplename}/{distance:.2f}']
+                del h5file[f'Samples/{samplename}/{distance}']
             except KeyError:
                 pass
+
+    def pruneSamplesWithNoDistances(self):
+        for samplename in self.samplenames():
+            if not self.distancekeys(samplename):
+                self.removeSample(samplename)
 
     def writeExposure(self, exposure: Exposure, group: h5py.Group):
         for key in ['image', 'image_uncertainty']:
@@ -321,3 +330,11 @@ class ProcessingH5File:
     def readHeaderDict(self, group: str) -> Dict[str, Any]:
         with self.reader(group) as grp:
             return dict(**grp.attrs)
+
+    def clear(self):
+        for sample in self.samplenames():
+            self.removeSample(sample)
+
+    def __contains__(self, item: Tuple[str, str]) -> bool:
+        with self.reader('Samples') as grp:
+            return (item[0] in grp) and (item[1] in grp[item[0]])

@@ -438,7 +438,36 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="removeSelectedResultPushButton">
+       <property name="toolTip">
+        <string>Remove the selected entries from the HDF5 file</string>
+       </property>
+       <property name="text">
+        <string>Remove</string>
+       </property>
+       <property name="icon">
+        <iconset theme="list-remove"/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="cleanResultsPushButton">
+       <property name="toolTip">
+        <string>Remove all entries from the HDF5 file</string>
+       </property>
+       <property name="text">
+        <string>Clean</string>
+       </property>
+       <property name="icon">
+        <iconset theme="edit-clear-all"/>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="reloadPushButton">
+       <property name="toolTip">
+        <string>Reload results from the HDF5 file</string>
+       </property>
        <property name="text">
         <string>Reload</string>
        </property>
@@ -617,7 +646,12 @@
   <tabstop>transmissionPushButton</tabstop>
   <tabstop>timeBudgetPushButton</tabstop>
   <tabstop>vacuumFluxPushButton</tabstop>
+  <tabstop>exportOutliersToolButton</tabstop>
+  <tabstop>exportPatternsToolButton</tabstop>
+  <tabstop>exportCurvesToolButton</tabstop>
   <tabstop>exportReportPushButton</tabstop>
+  <tabstop>removeSelectedResultPushButton</tabstop>
+  <tabstop>cleanResultsPushButton</tabstop>
   <tabstop>reloadPushButton</tabstop>
  </tabstops>
  <resources>

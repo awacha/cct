@@ -52,7 +52,21 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         self.transmissionPushButton.clicked.connect(self.showTransmission)
         self.vacuumFluxPushButton.clicked.connect(self.showVacuum)
         self.exportReportPushButton.clicked.connect(self.exportReport)
+        self.cleanResultsPushButton.clicked.connect(self.cleanResults)
+        self.removeSelectedResultPushButton.clicked.connect(self.removeSelectedResult)
         self.resizeColumns()
+
+    def cleanResults(self):
+        self.project.settings.h5io.clear()
+        self.project.results.reload()
+
+    def removeSelectedResult(self):
+        sdes:List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in self.treeView.selectionModel().selectedRows(0)]
+        samples_dists = {(sde.samplename, sde.distancekey) for sde in sdes}
+        for samplename, distkey in samples_dists:
+            self.project.settings.h5io.removeDistance(samplename, distkey)
+        self.project.settings.h5io.pruneSamplesWithNoDistances()
+        self.project.results.reload()
 
     def openOutlierTest(self):
         for index in self.treeView.selectionModel().selectedRows(0):

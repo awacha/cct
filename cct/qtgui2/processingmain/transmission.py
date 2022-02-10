@@ -17,8 +17,12 @@ class TransmissionWindow(ResultViewWindow, Ui_Form):
     def repopulateTreeWidget(self):
         self.treeWidget.clear()
         items = []
-        for samplename, distkey in self.resultitems:
-            sde = self.project.results.get(samplename, distkey)
+        for samplename, distkey in self.resultitems[:]:
+            try:
+                sde = self.project.results.get(samplename, distkey)
+            except IndexError:
+                self.resultitems.remove((samplename, distkey))
+                continue
             transm = sde.header.transmission
             thickness = sde.header.thickness
             if transm[0] >= 1:
@@ -48,4 +52,6 @@ class TransmissionWindow(ResultViewWindow, Ui_Form):
         for i in range(self.treeWidget.columnCount()):
             self.treeWidget.resizeColumnToContents(i)
 
+    def clear(self):
+        self.repopulateTreeWidget()
 
