@@ -11,7 +11,7 @@ from .syntaxhighlighter import ScriptSyntaxHighlighter
 from ...utils.filebrowsers import getSaveFile
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ScriptUI(QtWidgets.QWidget, Ui_Form):
@@ -79,9 +79,12 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
 
     def saveas(self):
         filename = getSaveFile(self, 'Save script to file', '', 'CCT script files (*.cct);;All files (*)', defaultsuffix='.cct')
+        logger.debug(f'Got filename: {filename}')
         if not filename:
             return
+        logger.debug(f'Setting filename {filename}')
         self.filename = filename
+        logger.debug('Saving...')
         self.save()
 
     def getTitle(self) -> str:
