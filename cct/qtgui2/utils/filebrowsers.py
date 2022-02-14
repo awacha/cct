@@ -37,7 +37,7 @@ def browseFile(mode: FileBrowserMode, parent: QtWidgets.QWidget, caption: str,
             fd.setAcceptMode(QtWidgets.QFileDialog.AcceptOpen)
         else:
             raise ValueError(f'Invalid file browser mode: {mode}')
-        if (result := fd.exec()) != QtWidgets.QFileDialog.Accept:
+        if (result := fd.exec()) != QtWidgets.QFileDialog.Accepted:
             logger.debug(f'File dialog return value: {result}')
             return None
         elif mode == FileBrowserMode.OpenFiles:
