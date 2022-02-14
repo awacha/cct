@@ -1,7 +1,11 @@
 import enum
+import logging
 from typing import Optional, List, Union
 
 from PyQt5 import QtWidgets
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class FileBrowserMode(enum.Enum):
@@ -9,8 +13,6 @@ class FileBrowserMode(enum.Enum):
     OpenFiles = enum.auto()
     Directory = enum.auto()
     SaveFile = enum.auto()
-
-
 
 
 def browseFile(mode: FileBrowserMode, parent: QtWidgets.QWidget, caption: str,
@@ -35,7 +37,8 @@ def browseFile(mode: FileBrowserMode, parent: QtWidgets.QWidget, caption: str,
             fd.setAcceptMode(QtWidgets.QFileDialog.AcceptOpen)
         else:
             raise ValueError(f'Invalid file browser mode: {mode}')
-        if fd.exec() != QtWidgets.QFileDialog.Accept:
+        if (result := fd.exec()) != QtWidgets.QFileDialog.Accept:
+            logger.debug(f'File dialog return value: {result}')
             return None
         elif mode == FileBrowserMode.OpenFiles:
             return list(fd.selectedFiles())

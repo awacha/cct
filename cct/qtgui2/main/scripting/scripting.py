@@ -198,6 +198,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
 
     def openScript(self):
         filename = getOpenFile(self, 'Load a script...', '', 'CCT script files (*.cct);;All files (*)')
+        logger.debug(f'Got filename: {filename}')
         if not filename:
             return
         sui = ScriptUI()
