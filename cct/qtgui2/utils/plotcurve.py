@@ -34,7 +34,7 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         self.figure = Figure(figsize=self._figsize, constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.navigationToolbar = NavigationToolbar2QT(self.canvas, self)
-        self.axes = self.figure.add_subplot(self.figure.add_gridspec(1,1)[:,:])
+        self.axes = self.figure.add_subplot(self.figure.add_gridspec(1, 1)[:, :])
         self.figureVerticalLayout.addWidget(self.navigationToolbar)
         self.figureVerticalLayout.addWidget(self.canvas)
         self.pixelOrQToolButton.toggled.connect(self.pixelOrQChanged)
@@ -142,7 +142,7 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
             self.axes.set_xscale('linear')
             self.axes.set_yscale('linear')
         elif self.plotTypeComboBox.currentText() == 'Guinier':  # Guinier plot
-            self.axes.set_xscale('function', (lambda q:q**2, lambda q2:q2**0.5))
+            self.axes.set_xscale('function', functions=(lambda q: q ** 2, lambda q2: q2 ** 0.5))
             self.axes.set_yscale('log')
         elif self.plotTypeComboBox.currentText() == 'Kratky':  # Kratky plot
             self.axes.set_xscale('linear')
@@ -159,8 +159,10 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         if self.showGridToolButton.isChecked():
             self.axes.grid(True, which='both')
 
-        self.axes.set_xlabel(r'$q$ (nm$^{-1}$)' if self.pixelOrQToolButton.isChecked() else 'Distance from origin (pixel)')
-        self.axes.set_ylabel(r'$d\Sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)' if self.pixelOrQToolButton.isChecked() else 'Intensity')
+        self.axes.set_xlabel(
+            r'$q$ (nm$^{-1}$)' if self.pixelOrQToolButton.isChecked() else 'Distance from origin (pixel)')
+        self.axes.set_ylabel(
+            r'$d\Sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)' if self.pixelOrQToolButton.isChecked() else 'Intensity')
         # ToDo: draw logo
         self.canvas.draw_idle()
         self.navigationToolbar.update()
