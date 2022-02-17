@@ -44,9 +44,12 @@ class GuinierScale(ScaleBase):
 
 
 class GuinierForwardTransform(Transform):
+    def transform(self, values):
+        logger.debug(f'GuinierForwardTransform {values}')
+        return super().transform(values)
+
     def transform_non_affine(self, values):
         with np.errstate(divide='ignore', invalid='ignore'):
-            logger.debug(f'GuinierForwardTransform {values}')
             return np.ma.power(values, 2)
 
     def inverted(self):
@@ -54,9 +57,12 @@ class GuinierForwardTransform(Transform):
 
 
 class GuinierBackwardTransform(Transform):
+    def transform(self, values):
+        logger.debug(f'GuinierBackwardTransform {values}')
+        return super().transform(values)
+
     def transform_non_affine(self, values):
         with np.errstate(divide='ignore', invalid='ignore'):
-            logger.debug(f'GuinierBackwardTransform {values}')
             return np.ma.power(values, 0.5)
 
     def inverted(self):
