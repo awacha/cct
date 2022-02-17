@@ -11,7 +11,7 @@ from .syntaxhighlighter import ScriptSyntaxHighlighter
 from ...utils.filebrowsers import getSaveFile
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ScriptUI(QtWidgets.QWidget, Ui_Form):

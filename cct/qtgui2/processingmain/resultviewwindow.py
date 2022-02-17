@@ -4,7 +4,7 @@ from typing import Tuple, List
 from .processingwindow import ProcessingWindow
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ResultViewWindow(ProcessingWindow):

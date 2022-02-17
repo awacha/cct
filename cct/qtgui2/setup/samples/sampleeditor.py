@@ -5,18 +5,18 @@ from typing import Tuple, List, Final, Dict, Optional, Any
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-from .sampleeditor_ui import Ui_Form
 from .delegates import SampleEditorDelegate
-from ...utils.window import WindowRequiresDevices
+from .sampleeditor_ui import Ui_Form
 from ...utils.filebrowsers import browseMask
+from ...utils.window import WindowRequiresDevices
 from ....core2.dataclasses.sample import Sample
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ProxyModel(QtCore.QSortFilterProxyModel):
-    simplemode: bool=False
+    simplemode: bool = False
 
     def filterAcceptsColumn(self, source_column: int, source_parent: QtCore.QModelIndex) -> bool:
         return (not self.simplemode) or (source_column == 0)
@@ -130,7 +130,8 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if not self.treeView.selectionModel().currentIndex().isValid():
             return None
         logger.debug(f'Current sample row: {self.treeView.selectionModel().currentIndex().row()}')
-        return self.instrument.samplestore[self.treeView.model().mapToSource(self.treeView.selectionModel().currentIndex()).row()]
+        return self.instrument.samplestore[
+            self.treeView.model().mapToSource(self.treeView.selectionModel().currentIndex()).row()]
 
     def currentSampleName(self) -> Optional[str]:
         sam = self.currentSample()
@@ -161,7 +162,8 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.updateSampleInStore(attribute, datetime.date(date.year(), date.month(), date.day()))
 
     def onComboBoxCurrentIndexChanged(self, currentIndex: int):
-        logger.debug(f'onComboBoxCurrentIndexChanged. Current text: {self.sender().currentText()}. Sender: {self.sender().objectName()}')
+        logger.debug(
+            f'onComboBoxCurrentIndexChanged. Current text: {self.sender().currentText()}. Sender: {self.sender().objectName()}')
         attribute = self.attributeForWidget(self.sender())
         if self.sender() is self.situationComboBox:
             self.updateSampleInStore(attribute, Sample.Situations(self.sender().currentText()))
@@ -187,7 +189,8 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             QtWidgets.QMessageBox.critical(self, 'Error', f'Error while updating the sample: {exc}')
 
     def onSampleChangedInStore(self, samplename: str, attribute: str, newvalue: Any):
-        logger.debug(f'Sample {samplename=} changed in the store: {attribute=} is now {newvalue=}. Current sample name: {self.currentSampleName()}')
+        logger.debug(
+            f'Sample {samplename=} changed in the store: {attribute=} is now {newvalue=}. Current sample name: {self.currentSampleName()}')
         if samplename != self.currentSampleName():
             return
         for i, widget in enumerate(self.widgetsForAttribute(attribute)):
@@ -210,7 +213,8 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     else:
                         # must not fail: we can reach this line if no change is needed in the widget value
                         pass
-                elif isinstance(widget, QtWidgets.QDoubleSpinBox) and isinstance(newvalue, tuple) and (len(newvalue) == 2) and (widget.value() != newvalue[i]):
+                elif isinstance(widget, QtWidgets.QDoubleSpinBox) and isinstance(newvalue, tuple) and (
+                        len(newvalue) == 2) and (widget.value() != newvalue[i]):
                     widget.setValue(newvalue[i])
                 else:
                     # must not fail: we can reach this line if no change is needed in the widget value
@@ -286,4 +290,3 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def attributeForWidget(self, widget: QtWidgets.QWidget) -> str:
         return [attr for attr, wnames in self._param2widgets.items() if widget.objectName() in wnames][0]
-

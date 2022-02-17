@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class StartStopDelegate(QtWidgets.QStyledItemDelegate):

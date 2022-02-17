@@ -10,7 +10,7 @@ from ..component import Component
 from ....commands import Command, Comment, Label
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ParsingError(Exception):

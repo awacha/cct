@@ -18,11 +18,11 @@ class PilatusDetector(DeviceFrontend):
     devicename = 'PilatusDetector'
     devicetype = 'detector'
     backendclass = PilatusBackend
-    loglevel = logging.DEBUG
+    loglevel = logging.INFO
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._backendlogger.setLevel(logging.DEBUG)
+        self._backendlogger.setLevel(self.loglevel)
         self.sensors = [Thermometer(f'Power board temperature', self.name, 0, '°C', paniconerror=True),
                         Thermometer(f'Base plate temperature', self.name, 1, '°C', paniconerror=True),
                         Thermometer(f'Sensor temperature', self.name, 2, '°C', paniconerror=True),

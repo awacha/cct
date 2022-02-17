@@ -8,7 +8,7 @@ from ....devices.device.variable import VariableType
 from ..component import Component
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DeviceLogManager(QtCore.QAbstractItemModel, Component):

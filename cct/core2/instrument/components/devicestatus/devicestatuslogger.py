@@ -11,7 +11,7 @@ from ....devices.device.frontend import DeviceFrontend
 from ....devices.device.variable import Variable, VariableType
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class RecordedVariable:

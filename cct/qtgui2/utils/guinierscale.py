@@ -10,7 +10,7 @@ from matplotlib.scale import ScaleBase
 from matplotlib.transforms import Transform
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class GuinierScale(ScaleBase):

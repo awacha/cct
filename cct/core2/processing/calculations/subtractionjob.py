@@ -16,7 +16,7 @@ from ...dataclasses.sample import Sample
 from ...algorithms.matrixaverager import ErrorPropagationMethod
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SubtractionError(BackgroundProcessError):

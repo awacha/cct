@@ -12,7 +12,7 @@ from PyQt5 import QtCore
 from .component import Component
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class NotificationAddress:

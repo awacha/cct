@@ -11,7 +11,7 @@ from .commandargument import FloatArgument, StringArgument, IntArgument
 from ..devices.peristalticpump.leadfluid.frontend import BT100S, ControlMode
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class PeristalticPumpDispense(Command):

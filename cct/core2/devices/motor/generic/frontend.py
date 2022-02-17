@@ -7,7 +7,7 @@ from PyQt5 import QtCore
 from ...device.frontend import DeviceFrontend
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class MotorController(DeviceFrontend):

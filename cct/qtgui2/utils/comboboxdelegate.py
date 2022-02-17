@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets, QtCore
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ComboBoxDelegate(QtWidgets.QStyledItemDelegate):

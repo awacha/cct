@@ -7,7 +7,7 @@ import logging
 from .filebrowsers import getSaveFile, getOpenFile, getDirectory
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class FileSelectorDelegate(QtWidgets.QStyledItemDelegate):

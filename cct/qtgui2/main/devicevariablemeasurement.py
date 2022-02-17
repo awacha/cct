@@ -9,7 +9,7 @@ from ..utils.window import WindowRequiresDevices
 from ...core2.instrument.components.devicestatus import DeviceStatusLogger
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class DeviceVariableMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

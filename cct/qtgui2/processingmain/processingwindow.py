@@ -6,7 +6,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from ...core2.processing.processing import Processing
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ProcessingWindow(QtWidgets.QWidget):

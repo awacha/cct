@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtProperty
 from ....config import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class GeometryPreset(QtCore.QObject):
