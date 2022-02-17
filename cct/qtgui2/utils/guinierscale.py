@@ -2,10 +2,15 @@
 """
 Matplotlib scale for Guinier plots
 """
+import logging
+
 import matplotlib.ticker
+import numpy as np
 from matplotlib.scale import ScaleBase
 from matplotlib.transforms import Transform
-import numpy as np
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class GuinierScale(ScaleBase):
@@ -22,9 +27,10 @@ class GuinierScale(ScaleBase):
         return self._transform
 
     def limit_range_for_scale(self, vmin, vmax, minpos):
-        if not np.isfinite(minpos) or minpos<=0:
+        logger.debug(f'limit_range_for_scale({vmin=}, {vmax=}, {minpos=}')
+        if not np.isfinite(minpos) or minpos <= 0:
             minpos = 1e-7
-        return max(vmin, minpos), vmax
+        return (minpos if vmin <= 0 else vmin), (minpos if vmax <= 0 else vmax)
 
     def set_default_locators_and_formatters(self, axis):
         axis.set_major_locator(matplotlib.ticker.AutoLocator())
@@ -40,6 +46,7 @@ class GuinierScale(ScaleBase):
 class GuinierForwardTransform(Transform):
     def transform_non_affine(self, values):
         with np.errstate(divide='ignore', invalid='ignore'):
+            logger.debug(f'GuinierForwardTransform {values}')
             return np.ma.power(values, 2)
 
     def inverted(self):
@@ -49,6 +56,7 @@ class GuinierForwardTransform(Transform):
 class GuinierBackwardTransform(Transform):
     def transform_non_affine(self, values):
         with np.errstate(divide='ignore', invalid='ignore'):
+            logger.debug(f'GuinierBackwardTransform {values}')
             return np.ma.power(values, 0.5)
 
     def inverted(self):
