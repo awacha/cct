@@ -44,6 +44,9 @@ class GuinierScale(ScaleBase):
 
 
 class GuinierForwardTransform(Transform):
+    input_dims = 1
+    output_dims = 1
+
     def transform(self, values):
         logger.debug(f'GuinierForwardTransform {values}, {self.input_dims=}')
         return super().transform(values)
@@ -57,6 +60,9 @@ class GuinierForwardTransform(Transform):
 
 
 class GuinierBackwardTransform(Transform):
+    input_dims = 1
+    output_dims = 1
+
     def transform(self, values):
         logger.debug(f'GuinierBackwardTransform {values}, {self.input_dims=}')
         return super().transform(values)
