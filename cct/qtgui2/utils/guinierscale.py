@@ -28,14 +28,7 @@ class GuinierScale(ScaleBase):
         return self._transform
 
     def limit_range_for_scale(self, vmin, vmax, minpos):
-        logger.debug(f'limit_range_for_scale({vmin=}, {vmax=}, {minpos=}')
-        print(f'limit_range_for_scale({vmin=}, {vmax=}, {minpos=}')
-        if not np.isfinite(minpos) or minpos <= 0:
-            print('!!!!!')
-            minpos = self._default_minpos
-        vmin = (minpos if vmin <= 0 else vmin)
-
-        return vmin, (minpos if vmax <= 0 else vmax)
+        return vmin, vmax
 
     def set_default_locators_and_formatters(self, axis):
         axis.set_major_locator(matplotlib.ticker.AutoLocator())
@@ -52,13 +45,9 @@ class GuinierForwardTransform(Transform):
     input_dims = 1
     output_dims = 1
 
-    def transform(self, values):
-        print(f'GuinierForwardTransform {values}, {self.input_dims=}')
-        return super().transform(values)
-
     def transform_non_affine(self, values):
         transformed = np.zeros_like(values)
-        idxnonfinite = np.isfinite(values)
+        idxnonfinite = ~np.isfinite(values)
         idxnonnegative = np.logical_and(~idxnonfinite, values >= 0)
         idxnegative = np.logical_and(~idxnonfinite, values < 0)
         transformed[idxnonfinite] = np.nan
@@ -74,13 +63,9 @@ class GuinierBackwardTransform(Transform):
     input_dims = 1
     output_dims = 1
 
-    def transform(self, values):
-        print(f'GuinierBackwardTransform {values}, {self.input_dims=}')
-        return super().transform(values)
-
     def transform_non_affine(self, values):
         transformed = np.zeros_like(values)
-        idxnonfinite = np.isfinite(values)
+        idxnonfinite = ~np.isfinite(values)
         idxnonnegative = np.logical_and(~idxnonfinite, values >= 0)
         idxnegative = np.logical_and(~idxnonfinite, values < 0)
         transformed[idxnonfinite] = np.nan
