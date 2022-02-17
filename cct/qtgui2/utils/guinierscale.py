@@ -12,7 +12,7 @@ class GuinierScale(ScaleBase):
     """
     Horizontal scale for Guinier plots, i.e. log(I) vs. q^2
     """
-    name = 'Guinier'
+    name = 'guinier'
 
     def __init__(self, axis):
         super().__init__(axis)

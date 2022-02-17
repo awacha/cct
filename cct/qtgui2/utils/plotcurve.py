@@ -142,7 +142,7 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
             self.axes.set_xscale('linear')
             self.axes.set_yscale('linear')
         elif self.plotTypeComboBox.currentText() == 'Guinier':  # Guinier plot
-            self.axes.set_xscale('Guinier')
+            self.axes.set_xscale('guinier')
             self.axes.set_yscale('log')
         elif self.plotTypeComboBox.currentText() == 'Kratky':  # Kratky plot
             self.axes.set_xscale('linear')
