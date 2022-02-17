@@ -19,7 +19,8 @@ class GuinierScale(ScaleBase):
     """
     name = 'guinier'
 
-    def __init__(self, axis):
+    def __init__(self, axis, *, minpos=1e-7):
+        self._default_minpos = minpos
         super().__init__(axis)
         self._transform = GuinierForwardTransform()
 
@@ -28,9 +29,13 @@ class GuinierScale(ScaleBase):
 
     def limit_range_for_scale(self, vmin, vmax, minpos):
         logger.debug(f'limit_range_for_scale({vmin=}, {vmax=}, {minpos=}')
+        print(f'limit_range_for_scale({vmin=}, {vmax=}, {minpos=}')
         if not np.isfinite(minpos) or minpos <= 0:
-            minpos = 1e-7
-        return (minpos if vmin <= 0 else vmin), (minpos if vmax <= 0 else vmax)
+            print('!!!!!')
+            minpos = self._default_minpos
+        vmin = (minpos if vmin <= 0 else vmin)
+
+        return vmin, (minpos if vmax <= 0 else vmax)
 
     def set_default_locators_and_formatters(self, axis):
         axis.set_major_locator(matplotlib.ticker.AutoLocator())
@@ -48,12 +53,18 @@ class GuinierForwardTransform(Transform):
     output_dims = 1
 
     def transform(self, values):
-        logger.debug(f'GuinierForwardTransform {values}, {self.input_dims=}')
+        print(f'GuinierForwardTransform {values}, {self.input_dims=}')
         return super().transform(values)
 
     def transform_non_affine(self, values):
-        with np.errstate(divide='ignore', invalid='ignore'):
-            return np.ma.power(values, 2)
+        transformed = np.zeros_like(values)
+        idxnonfinite = np.isfinite(values)
+        idxnonnegative = np.logical_and(~idxnonfinite, values >= 0)
+        idxnegative = np.logical_and(~idxnonfinite, values < 0)
+        transformed[idxnonfinite] = np.nan
+        transformed[idxnonnegative] = values[idxnonnegative] ** 2
+        transformed[idxnegative] = - values[idxnegative] ** 2
+        return transformed
 
     def inverted(self):
         return GuinierBackwardTransform()
@@ -64,12 +75,18 @@ class GuinierBackwardTransform(Transform):
     output_dims = 1
 
     def transform(self, values):
-        logger.debug(f'GuinierBackwardTransform {values}, {self.input_dims=}')
+        print(f'GuinierBackwardTransform {values}, {self.input_dims=}')
         return super().transform(values)
 
     def transform_non_affine(self, values):
-        with np.errstate(divide='ignore', invalid='ignore'):
-            return np.ma.power(values, 0.5)
+        transformed = np.zeros_like(values)
+        idxnonfinite = np.isfinite(values)
+        idxnonnegative = np.logical_and(~idxnonfinite, values >= 0)
+        idxnegative = np.logical_and(~idxnonfinite, values < 0)
+        transformed[idxnonfinite] = np.nan
+        transformed[idxnonnegative] = values[idxnonnegative] ** 0.5
+        transformed[idxnegative] = - (-values[idxnegative]) ** 0.5
+        return transformed
 
     def inverted(self):
         return GuinierForwardTransform()
