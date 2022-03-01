@@ -59,6 +59,7 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
         gs = self.figure.add_gridspec(1, 1)
         self.axes = self.figure.add_subplot(gs[:, :])
         self.onDeviceNameChanged()
+        self.plotToolButton.toggled.connect(self.onNewData)
 
     def onFileNameChanged(self, newfilename: str):
         self.fileNameLineEdit.blockSignals(True)
@@ -80,6 +81,8 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
             self.variableNameComboBox.setModel(None)
 
     def onNewData(self, recordptr: int):
+        if not self.plotToolButton.isChecked():
+            return
         data = self.devicelogger.record()
         self.axes.clear()
         t = data['Time']

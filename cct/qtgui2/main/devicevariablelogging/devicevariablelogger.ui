@@ -23,6 +23,13 @@
       <string>GroupBox</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
+      <item row="1" column="1">
+       <widget class="QComboBox" name="variableNameComboBox">
+        <property name="toolTip">
+         <string>Name of the variable</string>
+        </property>
+       </widget>
+      </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_3">
         <property name="sizePolicy">
@@ -96,13 +103,6 @@
         </property>
         <property name="toolTip">
          <string>Name of the device</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QComboBox" name="variableNameComboBox">
-        <property name="toolTip">
-         <string>Name of the variable</string>
         </property>
        </widget>
       </item>
@@ -216,6 +216,22 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QToolButton" name="plotToolButton">
+          <property name="toolTip">
+           <string>Periodically refresh the plot when new data is received</string>
+          </property>
+          <property name="text">
+           <string>Automatic plotting</string>
+          </property>
+          <property name="icon">
+           <iconset theme="view-refresh"/>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
      </layout>
@@ -224,11 +240,17 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>deviceNameComboBox</tabstop>
+  <tabstop>variableNameComboBox</tabstop>
+  <tabstop>fileNameLineEdit</tabstop>
+  <tabstop>fileNameToolButton</tabstop>
+  <tabstop>treeView</tabstop>
   <tabstop>addEntryToolButton</tabstop>
   <tabstop>removeEntryToolButton</tabstop>
   <tabstop>clearAllEntriesToolButton</tabstop>
   <tabstop>recordToolButton</tabstop>
   <tabstop>destroyToolButton</tabstop>
+  <tabstop>plotToolButton</tabstop>
  </tabstops>
  <resources/>
  <connections/>
