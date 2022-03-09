@@ -1,7 +1,7 @@
 import logging
 import colorlog
 
-logging.STRONGINFO = logging.DEBUG + 5
+logging.STRONGINFO = logging.INFO + 5
 logging.addLevelName(logging.STRONGINFO, 'STRONGINFO')
 
 
