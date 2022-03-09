@@ -32,8 +32,10 @@ class LogViewerText(QtWidgets.QPlainTextEdit, logging.Handler):
 
         if record.levelno < logging.INFO:
             cursor.insertText(msg, self.debugformat)
-        elif record.levelno < logging.WARNING:
+        elif record.levelno < logging.STRONGINFO:
             cursor.insertText(msg, self.infoformat)
+        elif record.levelno < logging.WARNING:
+            cursor.insertText(msg, self.stronginfoformat)
         elif record.levelno < logging.ERROR:
             cursor.insertText(msg, self.warningformat)
         elif record.levelno < logging.CRITICAL:
