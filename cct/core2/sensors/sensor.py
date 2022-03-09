@@ -7,7 +7,7 @@ import numpy as np
 from PyQt5 import QtCore
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ErrorState(enum.Enum):
