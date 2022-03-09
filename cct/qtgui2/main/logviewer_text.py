@@ -19,6 +19,9 @@ class LogViewerText(QtWidgets.QPlainTextEdit, logging.Handler):
         self.criticalformat = QtGui.QTextCharFormat()
         self.criticalformat.setForeground(QtCore.Qt.black)
         self.criticalformat.setBackground(QtCore.Qt.red)
+        self.stronginfoformat = QtGui.QTextCharFormat()
+        self.stronginfoformat.setForeground(QtCore.Qt.black)
+        self.stronginfoformat.setBackground(QtCore.Qt.green)
         self.infoformat = QtGui.QTextCharFormat()
         self.setReadOnly(True)
 

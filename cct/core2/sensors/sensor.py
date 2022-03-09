@@ -107,7 +107,7 @@ class Sensor(QtCore.QObject):
         else:
             if self._errorstate != ErrorState.OK:
                 self._errorstate = ErrorState.OK
-                logger.debug(f'Sensor {self.name} just became OK.')
+                logger.stronginfo(f'Sensor {self.name} just became OK.')
                 self.ok.emit()
                 return True
         logger.debug(f'Sensor {self.name} state did not change: currently {self._errorstate}')

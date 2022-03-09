@@ -267,7 +267,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
         if self._last_ready_time is None:
             # it was never successfully initialized, give up trying.
-            self._logger.info('Giving up trying to restart backend: it was never successfully initialized.')
+            self._logger.warning('Giving up trying to restart backend: it was never successfully initialized.')
             self._backend = None  # we won't retry.
             self.connectionstate = DeviceConnectionState.Offline
             try:

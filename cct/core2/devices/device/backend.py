@@ -8,6 +8,7 @@ import traceback
 from multiprocessing import Queue
 from typing import List, Any, Tuple, Dict, Optional, Sequence, final
 
+from ... import stronginfo
 from .message import Message
 from .telemetry import TelemetryInformation
 from .variable import Variable, VariableType
@@ -636,7 +637,7 @@ class DeviceBackend:
         finally:
             if self.checkIfJustBecameReady():
                 self.variablesready = True
-                self.info(f'All variables ready.')
+                self.log(logging.STRONGINFO, f'All variables ready.')
                 self.messageToFrontend('ready')
                 self.updateVariable('__status__', 'idle')
                 self.onVariablesReady()
