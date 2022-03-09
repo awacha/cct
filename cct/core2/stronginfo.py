@@ -9,6 +9,7 @@ def logStrongInfo(msg, *args, **kwargs):
     """Log a message with severity 'STRONGINFO' on the root logger. If the logger has
     no handlers, call basicConfig() to add a console handler with a pre-defined
     format."""
+    print(f'LOGSTRONGINFO: {msg=}, {args=}, {kwargs=}')
     return logging.log(logging.STRONGINFO, msg, *args, **kwargs)
 
 
@@ -23,6 +24,7 @@ def logStrongInfoMethod(self, msg, *args, **kwargs):
 
     logger.stronginfo("Houston, we have a %s", "interesting problem", exc_info=1)
     """
+    print(f'LOGSTRONGINFOMethod: {msg=}, {args=}, {kwargs=}')
     return self.log(logging.STRONGINFO, msg, *args, **kwargs)
 
 
