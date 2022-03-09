@@ -35,7 +35,7 @@ class SetSample(Command):
             self.instrument.samplestore.setCurrentSample(samplename)
             self.finish(samplename)
         else:
-            self.message(f'Error while moving to sample {samplename}.')
+            self.message.emit(f'Error while moving to sample {samplename}.')
             self.fail(samplename)
 
     def stop(self):
