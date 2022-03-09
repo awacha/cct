@@ -90,7 +90,11 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         device: DeviceFrontend = self.sender()
         variablenames = sorted(device.keys())
-        parent = self.index(self._devicenames.index(device.name), 0, QtCore.QModelIndex())
+        try:
+            parent = self.index(self._devicenames.index(device.name), 0, QtCore.QModelIndex())
+        except ValueError:
+            # this happens when the device.name is not known: the status logger is being disconnected
+            return
         index = self.index(variablenames.index(name), 1, parent)
         self.dataChanged.emit(index, index)
 
