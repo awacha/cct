@@ -7,7 +7,7 @@ import numpy as np
 from PyQt5 import QtCore
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ErrorState(enum.Enum):
@@ -77,31 +77,31 @@ class Sensor(QtCore.QObject):
         if np.isnan(self._value):
             if self._errorstate != ErrorState.Unknown:
                 self._errorstate = ErrorState.Unknown
-                logger.debug(f'Sensor {self.name} just became UNKNOWN.')
+                logger.warning(f'Sensor {self.name} just became UNKNOWN.')
                 self.unknown.emit()
                 return False
         elif (self.lowerrorlimit is not None) and (self._value < self.lowerrorlimit):
             if self._errorstate != ErrorState.Error:
                 self._errorstate = ErrorState.Error
-                logger.debug(f'Sensor {self.name} just became ERROR.')
+                logger.error(f'Sensor {self.name} just became ERROR (lower limit).')
                 self.error.emit()
                 return False
         elif (self.higherrorlimit is not None) and (self._value > self.higherrorlimit):
             if self._errorstate != ErrorState.Error:
                 self._errorstate = ErrorState.Error
-                logger.debug(f'Sensor {self.name} just became ERROR.')
+                logger.error(f'Sensor {self.name} just became ERROR (upper limit).')
                 self.error.emit()
                 return False
         elif (self.lowwarnlimit is not None) and (self._value < self.lowwarnlimit):
             if self._errorstate != ErrorState.Warning:
                 self._errorstate = ErrorState.Warning
-                logger.debug(f'Sensor {self.name} just became WARNING.')
+                logger.warning(f'Sensor {self.name} just became WARNING (lower limit).')
                 self.warning.emit()
                 return False
         elif (self.highwarnlimit is not None) and (self._value > self.highwarnlimit):
             if self._errorstate != ErrorState.Warning:
                 self._errorstate = ErrorState.Warning
-                logger.debug(f'Sensor {self.name} just became WARNING.')
+                logger.warning(f'Sensor {self.name} just became WARNING (upper limit).')
                 self.warning.emit()
                 return False
         else:
