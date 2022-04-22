@@ -194,4 +194,5 @@ class Geometry(QtCore.QObject, Component):
         for key in ['l1_elements', 'l2_elements', 'pinhole_1', 'pinhole_2', 'pinhole_3', 'flightpipes', 'beamstop',
                     'l1', 'l2', 'ph3todetector', 'dbeam_at_ph3', 'dbeam_at_bs', 'dbeam_at_sample', 'dparasitic_at_bs',
                     'qmin', 'intensity']:
+            logger.debug(f'Updating geometry from optimizer results: {key} <- {optresult[key]}')
             self.config['geometry'][key] = optresult[key]
