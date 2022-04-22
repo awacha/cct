@@ -196,3 +196,6 @@ class Geometry(QtCore.QObject, Component):
                     'qmin', 'intensity']:
             logger.debug(f'Updating geometry from optimizer results: {key} <- {optresult[key]}')
             self.config['geometry'][key] = optresult[key]
+        self.config['geometry']['dist_sample_det'] = optresult['sd']
+        self.config['geometry']['dist_sample_det.err'] = 0.0
+        self.config['geometry']['description'] = ''
