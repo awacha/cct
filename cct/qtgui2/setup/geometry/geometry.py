@@ -64,7 +64,9 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.addChoiceToolButton.clicked.connect(self.addChoice)
         self.removeChoiceToolButton.clicked.connect(self.removeChoice)
         self.choicesTreeView.selectionModel().currentChanged.connect(self.onChoicesTreeViewCurrentChanged)
-        self.optimizationTreeView.setModel(self._optimizerstore)
+        sortmodel = QtCore.QSortFilterProxyModel()
+        sortmodel.setSourceModel(self._optimizerstore)
+        self.optimizationTreeView.setModel(sortmodel)
         for name, path in self._widgetname2configpath.items():
             obj = getattr(self, name)
             assert isinstance(obj, QtWidgets.QWidget)
@@ -174,8 +176,6 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             f'Searching for geometries finished in {elapsedtime // 60:.0f} minutes {elapsedtime % 60:.2f} seconds, '
             f'found {self._optimizerstore.rowCount()} compatible geometries.'
         )
-        logger.debug('Sorting...')
-        self._optimizerstore.sort(self.optimizationTreeView.header().sortIndicatorSection(), self.optimizationTreeView.header().sortIndicatorOrder())
         logger.debug('Plotting...')
         self.figure.clear()
         axes = self.figure.add_subplot(1, 1, 1)

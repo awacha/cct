@@ -103,7 +103,7 @@ class Geometry(QtCore.QObject, Component):
                 self.saveGeometry(os.path.join('geo', filename + '.geoj'), geoconf)
                 self.saveGeometry(os.path.join('geo', filename + '.geop'), geoconf)
 
-    #        del self.config['geometry']['presets']
+            del self.config['geometry']['presets']
         self.recalculateDerivedParameters()
 
     def onConfigChanged(self, path, value):
