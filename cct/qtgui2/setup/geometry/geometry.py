@@ -15,7 +15,7 @@ from ....core2.instrument.components.geometry.optimizerstore import OptimizerSto
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
@@ -320,6 +320,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.instrument.geometry.choices.removeRow(current.row(), current.parent())
 
     def onConfigChanged(self, path: Tuple[str, ...], newvalue: Any):
+        logger.debug(f'onConfigChanged({path}, {newvalue})')
         if path[0] != 'geometry':
             return
         elif path in [('geometry', 'l1_elements'), ('geometry', 'l2_elements'), ('geometry', 'flightpipes')]:
