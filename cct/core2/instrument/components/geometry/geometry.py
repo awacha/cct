@@ -141,7 +141,7 @@ class Geometry(QtCore.QObject, Component):
         """Save the current settings under a preset name"""
         if configdict is None:
             configdict = self.config['geometry']
-        dic = {configdict[key] for key in [
+        dic = {key:configdict[key] for key in [
             'l1_elements', 'l2_elements',
             'pinhole_1', 'pinhole_2', 'pinhole_3', 'flightpipes', 'beamstop', 'dist_sample_det', 'dist_sample_det.err',
             'beamposx', 'beamposx.err', 'beamposy', 'beamposy.err', 'mask', 'description', 'l1base', 'l2base',
