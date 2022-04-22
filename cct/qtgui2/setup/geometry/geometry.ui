@@ -1050,19 +1050,6 @@ p, li { white-space: pre-wrap; }
               </property>
              </widget>
             </item>
-            <item row="9" column="0" colspan="2">
-             <spacer name="verticalSpacer_2">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
             <item row="0" column="1">
              <widget class="QLabel" name="relativeintensityLabel">
               <property name="text">
@@ -1105,45 +1092,58 @@ p, li { white-space: pre-wrap; }
               </property>
              </widget>
             </item>
-            <item row="8" column="0">
-             <widget class="QGroupBox" name="groupBox">
-              <property name="title">
-               <string>Load/save</string>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBox">
+           <property name="title">
+            <string>Load/save</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_7">
+            <item>
+             <widget class="QPushButton" name="savePresetPushButton">
+              <property name="toolTip">
+               <string>Save a geometry preset to a file</string>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_7">
-               <item>
-                <widget class="QPushButton" name="savePresetPushButton">
-                 <property name="toolTip">
-                  <string>Save a geometry preset to a file</string>
-                 </property>
-                 <property name="text">
-                  <string>Save geometry preset...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset theme="document-save-as">
-                   <normaloff>.</normaloff>.</iconset>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="loadPresetPushButton">
-                 <property name="toolTip">
-                  <string>Load a geometry preset from a file</string>
-                 </property>
-                 <property name="text">
-                  <string>Load geometry preset...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset theme="document-open">
-                   <normaloff>.</normaloff>.</iconset>
-                 </property>
-                </widget>
-               </item>
-              </layout>
+              <property name="text">
+               <string>Save geometry preset...</string>
+              </property>
+              <property name="icon">
+               <iconset theme="document-save-as">
+                <normaloff>.</normaloff>.</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="loadPresetPushButton">
+              <property name="toolTip">
+               <string>Load a geometry preset from a file</string>
+              </property>
+              <property name="text">
+               <string>Load geometry preset...</string>
+              </property>
+              <property name="icon">
+               <iconset theme="document-open">
+                <normaloff>.</normaloff>.</iconset>
+              </property>
              </widget>
             </item>
            </layout>
           </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </item>
