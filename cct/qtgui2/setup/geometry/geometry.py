@@ -113,7 +113,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         filename = getSaveFile(self, 'Save geometry to a file', defaultsuffix='.geo', filters='Geometry files (*.geop;*.geoj);;Geometry pickle files (*.geop);;Geometry JSON files (*.geoj);;All files (*)')
         if not filename:
             return
-        self.instrument.geometry.loadGeometry(filename)
+        self.instrument.geometry.saveGeometry(filename)
 
     def onBrowseMask(self):
         filename = browseMask(self)
@@ -321,7 +321,6 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             except IndexError:
                 return
             widget = getattr(self, widgetname)
-            assert isinstance(widget, QtWidgets.QDoubleSpinBox)
             widget.blockSignals(True)
             try:
                 if isinstance(widget, QtWidgets.QDoubleSpinBox):
