@@ -99,7 +99,8 @@ class Geometry(QtCore.QObject, Component):
                 geoconf['beamposy.err'] = presetconf['beamposy'][1]
                 geoconf['mask'] = presetconf['mask']
                 geoconf['description'] = presetconf['description']
-                self.saveGeometry(os.path.join('geo', filename + '.json'), geoconf)
+                self.saveGeometry(os.path.join('geo', filename + '.geoj'), geoconf)
+                self.saveGeometry(os.path.join('geo', filename + '.geop'), geoconf)
 
     #        del self.config['geometry']['presets']
 
