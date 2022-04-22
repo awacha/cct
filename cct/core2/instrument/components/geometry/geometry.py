@@ -92,16 +92,16 @@ class Geometry(QtCore.QObject, Component):
                 geoconf['beamstop'] = presetconf['beamstop']
                 geoconf['flightpipes'] = presetconf['flightpipes']
                 geoconf['dist_sample_det'] = presetconf['dist_sample_det'][0]
-                geoconf['dist_sample_det.err'] = presetconf['dist_sample_det.err'][1]
+                geoconf['dist_sample_det.err'] = presetconf['dist_sample_det'][1]
                 geoconf['beamposx'] = presetconf['beamposx'][0]
                 geoconf['beamposx.err'] = presetconf['beamposx'][1]
                 geoconf['beamposy'] = presetconf['beamposy'][0]
                 geoconf['beamposy.err'] = presetconf['beamposy'][1]
                 geoconf['mask'] = presetconf['mask']
                 geoconf['description'] = presetconf['description']
-                self.saveGeometry(os.path.join('geo',filename+'.json'), geoconf)
-#        del self.config['geometry']['presets']
+                self.saveGeometry(os.path.join('geo', filename + '.json'), geoconf)
 
+    #        del self.config['geometry']['presets']
 
     def onConfigChanged(self, path, value):
         if path[0] != 'geometry':
