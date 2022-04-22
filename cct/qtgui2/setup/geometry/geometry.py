@@ -66,6 +66,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.choicesTreeView.selectionModel().currentChanged.connect(self.onChoicesTreeViewCurrentChanged)
         sortmodel = QtCore.QSortFilterProxyModel()
         sortmodel.setSourceModel(self._optimizerstore)
+        sortmodel.setSortRole(QtCore.Qt.EditRole)
         self.optimizationTreeView.setModel(sortmodel)
         for name, path in self._widgetname2configpath.items():
             obj = getattr(self, name)
@@ -179,8 +180,8 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         logger.debug('Plotting...')
         self.figure.clear()
         axes = self.figure.add_subplot(1, 1, 1)
-        qmin = [p.qmin for p in self._optimizerstore]
-        intensity = [p.intensity for p in self._optimizerstore]
+        qmin = [p["qmin"] for p in self._optimizerstore]
+        intensity = [p["intensity"] for p in self._optimizerstore]
         axes.plot(qmin, intensity, '.')
         axes.set_xlabel('Lowest q (nm$^{-1}$)')
         axes.set_ylabel('Intensity (\u03bcm$^4$ mm$^{-2}$)')
