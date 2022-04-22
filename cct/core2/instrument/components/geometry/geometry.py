@@ -177,15 +177,14 @@ class Geometry(QtCore.QObject, Component):
     def l1(self, geometrydict: Optional[Dict[str, Any]] = None) -> float:
         if geometrydict is None:
             geometrydict = self.config['geometry']
-        print(geometrydict)
         return geometrydict['l1base'] + geometrydict['isoKFspacer'] * len(geometrydict['l1_elements']) + sum(
-            'l1_elements')
+            geometrydict['l1_elements'])
 
     def l2(self, geometrydict: Optional[Dict[str, Any]] = None) -> float:
         if geometrydict is None:
             geometrydict = self.config['geometry']
         return geometrydict['l2base'] + geometrydict['isoKFspacer'] * len(geometrydict['l2_elements']) + sum(
-            'l2_elements')
+            geometrydict['l2_elements'])
 
     def updateFromOptimizerResult(self, optresult: Dict[str, Any]):
         for key in ['l1_elements', 'l2_elements', 'pinhole_1', 'pinhole_2', 'pinhole_3', 'flightpipes', 'beamstop',
