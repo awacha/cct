@@ -134,8 +134,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.maskFileNameLineEdit.editingFinished.emit()
 
     def updateSetupParameters(self):
-        current = self.optimizationTreeView.currentIndex().row()
-        dic = self._optimizerstore[current]
+        dic = self.optimizationTreeView.model().data(self.optimizationTreeView.currentIndex(), role = QtCore.Qt.UserRole)
         self.instrument.geometry.updateFromOptimizerResult(dic)
 
     def onOptimizationSelectionChanged(self, selected: Sequence[QtCore.QModelIndex],

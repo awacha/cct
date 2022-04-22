@@ -17,7 +17,9 @@ class OptimizerStore(QtCore.QAbstractItemModel):
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         columnlabel = self.headerData(index.column(), QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
         preset = self._presets[index.row()]
-        if columnlabel == 'Intensity':
+        if role == QtCore.Qt.UserRole:
+            return preset
+        elif columnlabel == 'Intensity':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["intensity"]:.0f}'
             elif role == QtCore.Qt.EditRole:
