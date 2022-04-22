@@ -20,43 +20,63 @@ class OptimizerStore(QtCore.QAbstractItemModel):
         if columnlabel == 'Intensity':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["intensity"]:.0f}'
+            elif role == QtCore.Qt.EditRole:
+                return preset["intensity"]
         elif columnlabel == 'Qmin':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["qmin"]:.4f}'
             elif role == QtCore.Qt.ToolTipRole:
-                return f'Qmin: {preset["qmin"]:.4f} 1/nm, corresponding to Dmax: {2 * np.pi / preset.qmin:.0f} nm periodic distance and Rgmax {1 / preset["qmin"]:.0f} nm radius of gyration.'
+                return f'Qmin: {preset["qmin"]:.4f} 1/nm, corresponding to Dmax: {2 * np.pi / preset["qmin"]:.0f} nm periodic distance and Rgmax {1 / preset["qmin"]:.0f} nm radius of gyration.'
+            elif role == QtCore.Qt.EditRole:
+                return preset["qmin"]
         elif columnlabel == 'Sample':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["dbeam_at_sample"]:.2f}'
             elif role == QtCore.Qt.ToolTipRole:
                 return f'Beam diameter at sample: {preset["dbeam_at_sample"]:.2f} mm'
+            elif role == QtCore.Qt.EditRole:
+                return preset["dbeam_at_sample"]
         elif columnlabel == 'Beamstop':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["beamstop"]:.2f}'
+            elif role == QtCore.Qt.EditRole:
+                return preset["beamstop"]
         elif columnlabel == 'PH#1-PH#2':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["l1"]:.0f}'
             elif role == QtCore.Qt.ToolTipRole:
                 return 'Spacers needed: ' + ' + '.join([f'{x:.0f} mm' for x in sorted(preset['l1_elements'])])
+            elif role == QtCore.Qt.EditRole:
+                return preset["l1"]
         elif columnlabel == 'PH#2-PH#3':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["l2"]:.0f}'
             elif role == QtCore.Qt.ToolTipRole:
                 return 'Spacers needed: ' + ' + '.join([f'{x:.0f} mm' for x in sorted(preset['l2_elements'])])
+            elif role == QtCore.Qt.EditRole:
+                return preset["l2"]
         elif columnlabel == 'S-D':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["sd"]:.2f}'
             elif role == QtCore.Qt.ToolTipRole:
                 return 'Flight pipes needed: ' + ' + '.join([f'{x:.0f} mm' for x in sorted(preset["flightpipes"])])
+            elif role == QtCore.Qt.EditRole:
+                return preset["sd"]
         elif columnlabel == 'PH#1':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["pinhole_1"]:.0f}'
+            elif role == QtCore.Qt.EditRole:
+                return preset["pinhole_1"]
         elif columnlabel == 'PH#2':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["pinhole_2"]:.0f}'
+            elif role == QtCore.Qt.EditRole:
+                return preset["pinhole_2"]
         elif columnlabel == 'PH#3':
             if role == QtCore.Qt.DisplayRole:
                 return f'{preset["pinhole_3"]:.0f}'
+            elif role == QtCore.Qt.EditRole:
+                return preset["pinhole_3"]
         else:
             assert False
 
