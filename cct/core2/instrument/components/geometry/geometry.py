@@ -149,7 +149,7 @@ class Geometry(QtCore.QObject, Component):
             'isoKFspacer', 'ph3tosample', 'beamstoptodetector', 'ph3toflightpipes', 'pixelsize', 'pixelsize.err',
             'wavelength', 'wavelength.err', 'sourcetoph1', 'lastflightpipetodetector']}
         if filename.lower().endswith('.geoj'):
-            with open(filename, 'wb') as f:
+            with open(filename, 'wt') as f:
                 json.dump(dic, f)
         elif filename.lower().endswith('.geop'):
             with open(filename, 'wb') as f:
@@ -161,7 +161,7 @@ class Geometry(QtCore.QObject, Component):
     def loadGeometry(self, filename: str):
         """Load the geometry from a file"""
         if filename.lower().endswith('.geoj'):
-            with open(filename, 'rb') as f:
+            with open(filename, 'rt') as f:
                 dic = json.load(f)
         elif filename.lower().endswith('.geop'):
             with open(filename, 'rb') as f:
