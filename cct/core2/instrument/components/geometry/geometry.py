@@ -1,199 +1,189 @@
+import json
 import logging
+import os
+import pickle
 from typing import Any, Optional, Final, List, Dict, Union
 
+import numpy as np
 from PyQt5 import QtCore
 
 from .choices import GeometryChoices
-from .preset import GeometryPreset
 from ..component import Component
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Geometry(QtCore.QAbstractItemModel, Component):
+class Geometry(QtCore.QObject, Component):
     """Describes current and possible geometries
 
-    Geometry settings are stored as "presets", this class also presents a flat Qt item model of them. The first preset
-    is special: it is always the *current* one, therefore it cannot be deleted, nor its name changed.
-
     The current values of the geometry settings are stored in config['geometry'], to be accessed there by the rest of
-    the program. Additionally, there is an entry in config['geometry']['presets'] for each preset. Activating a preset
-    simply means the copying of the values of the desired preset to the corresponding entries in config['geometry'].
-    Changing geometry parameters does not update the stored preset values.
-
+    the program.
     """
     choices: GeometryChoices
-    currentPresetChanged = QtCore.pyqtSignal(str, object)
-    presets: Dict[str, GeometryPreset]
-    currentpreset: GeometryPreset
 
     def __init__(self, **kwargs):
         self.presets = {}
         super().__init__(**kwargs)  # this implies self.loadFromConfig()
-        if 'presets' not in self.config['geometry']:
-            self.config['geometry']['presets'] = {}
         self.choices = GeometryChoices(config=self.config)
+        # if some values are missing, add them
+        for parameter, defaultvalue in [
+            ('l1_elements', []),
+            ('l2_elements', []),
+            ('pinhole_1', 0.0),
+            ('pinhole_2', 0.0),
+            ('pinhole_3', 0.0),
+            ('flightpipes', []),
+            ('beamstop', 4.0),
+            ('l1base', 104.0),
+            ('l2base', 104.0),
+            ('isoKFspacer', 4.0),
+            ('ph3toflightpipes', 304.0),
+            ('lastflightpipetodetector', 89.0),
+            ('ph3tosample', 126.0),
+            ('beamstoptodetector', 78.0),
+            ('wavelength', 0.1542),
+            ('wavelength.err', 0.0),
+            ('sourcetoph1', 200.0),
+            ('dist_sample_det', 100.0),
+            ('dist_sample_det.err', 0.1),
+            ('beamposx', 300.0),
+            ('beamposx.err', 1.0),
+            ('beamposy', 240.0),
+            ('beamposy.err', 1.0),
+            ('mask', 'mask.mat'),
+            ('description', 'Unspecified geometry'),
+            ('pixelsize', 0.172),
+            ('pixelsize.err', 0.0002),
+        ]:
+            if parameter not in self.config['geometry']:
+                self.config['geometry'][parameter] = defaultvalue
 
-    def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return len(self.presets)
+        # remove obsolete parameters
+        for parameter in [
+            'dist_source_ph1',  # -> sourcetoph1
+            'dist_ph3_sample',  # -> ph3tosample
+            'dist_det_beamstop',  # -> beamstoptodetector
+            'pinhole1',  # -> pinhole_1
+            'pinhole2',  # -> pinhole_2
+            'pinhole3',  # -> pinhole_3
+        ]:
+            if parameter in self.config['geometry']:
+                del self.config['geometry'][parameter]
 
-    def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return 1
+        if 'presets' in self.config['geometry']:
+            logger.info('Converting presets to external files.')
+            # presets are obsolete, write simple geometry files
+            os.makedirs('geo', exist_ok=True)
+            for presetname in self.config['geometry']['presets']:
+                presetconf = self.config['geometry']['presets'][presetname]
+                filename = presetname
+                for forbiddenchar in " <>:\"/\\|?*'":
+                    filename = filename.replace(forbiddenchar, '_')
+                geoconf = self.config['geometry'].asdict()
+                del geoconf['choices']
+                del geoconf['presets']
+                geoconf['l1_elements'] = presetconf['l1_elements']
+                geoconf['l2_elements'] = presetconf['l2_elements']
+                geoconf['pinhole_1'] = presetconf['pinhole1']
+                geoconf['pinhole_2'] = presetconf['pinhole2']
+                geoconf['pinhole_3'] = presetconf['pinhole3']
+                geoconf['beamstop'] = presetconf['beamstop']
+                geoconf['flightpipes'] = presetconf['flightpipes']
+                geoconf['dist_sample_det'] = presetconf['dist_sample_det'][0]
+                geoconf['dist_sample_det.err'] = presetconf['dist_sample_det.err'][1]
+                geoconf['beamposx'] = presetconf['beamposx'][0]
+                geoconf['beamposx.err'] = presetconf['beamposx'][1]
+                geoconf['beamposy'] = presetconf['beamposy'][0]
+                geoconf['beamposy.err'] = presetconf['beamposy'][1]
+                geoconf['mask'] = presetconf['mask']
+                geoconf['description'] = presetconf['description']
+                self.saveGeometry(os.path.join('geo',filename+'.json'), geoconf)
+#        del self.config['geometry']['presets']
 
-    def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
-        return QtCore.QModelIndex()
-
-    def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
-        return self.createIndex(row, column, None)
-
-    def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | \
-               QtCore.Qt.ItemIsSelectable
-
-    def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
-        if (role == QtCore.Qt.DisplayRole) or (role == QtCore.Qt.EditRole):
-            return sorted(self.presets.keys())[index.row()]
-        return None
-
-    def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
-        oldname = sorted(self.presets.keys())[index.row()]
-        self.saveToConfig()
-        return self.renamePreset(oldname, value)
-
-    def renamePreset(self, oldname: str, newname: str) -> bool:
-        if oldname == newname:
-            return False
-        if newname in self.presetNames():
-            raise ValueError(f'Cannot rename preset "{oldname}" to an already existing name "{newname}"')
-        self.beginResetModel()
-        data = self.presets[oldname]
-        self.presets[str(newname)] = data
-        del self.presets[oldname]
-        self.endResetModel()
-        self.saveToConfig()
-        return True
-
-    def savePreset(self, name: str):
-        """Save the current settings under a preset name"""
-        self.presets[name] = self.currentpreset
-        logger.info(f'Saved current geometry preset under name {name}')
-
-    def addPreset(self, name: str, preset: Optional[GeometryPreset] = None) -> str:
-        if name in self.presetNames():
-            i = 1
-            while f'{name}{i}' in self.presets:
-                i += 1
-            name = f'{name}{i}'
-        if preset is None:
-            preset = GeometryPreset(self.config)
-        self.beginResetModel()
-        self.presets[name] = preset
-        self.endResetModel()
-        logger.info(f'Added a new geometry preset {name}')
-        self.saveToConfig()
-        return name
-
-    def removePreset(self, name: str):
-        if name not in self.presets:
-            raise ValueError(f'Cannot remove nonexistent preset {name}')
-        self.beginResetModel()
-        del self.presets[name]
-        self.endResetModel()
-        self.saveToConfig()
-        logger.info(f'Removed geometry preset {name}.')
 
     def onConfigChanged(self, path, value):
-        if path[:2] == ('geometry', 'presets'):
-            self.beginResetModel()
-            self.endResetModel()
-        logger.debug(path)
+        if path[0] != 'geometry':
+            return
+        if path[1] in ['l1_elements', 'l2_elements', 'l1base', 'isoKFspacer', 'pinhole_1', 'pinhole_2', 'pinhole_3',
+                       'dist_sample_det', 'ph3tosample', 'beamstoptodetector', 'beamstop', 'wavelength']:
+            self.recalculateDerivedParameters()
 
-    def onCurrentPresetChanged(self, propertyname: str, newvalue: str):
-        self.saveToConfig()
-        self.currentPresetChanged.emit(propertyname, newvalue)
+    def recalculateDerivedParameters(self):
+        l1 = self.config['geometry']['l1'] = \
+            len(self.config['geometry']['l1_elements']) * self.config['geometry']['isoKFspacer'] + \
+            sum(self.config['geometry']['l1_elements']) + self.config['geometry']['l1base']
+        l2 = self.config['geometry']['l2'] = \
+            len(self.config['geometry']['l2_elements']) * self.config['geometry']['isoKFspacer'] + \
+            sum(self.config['geometry']['l2_elements']) + self.config['geometry']['l2base']
+        ph1 = self.config['geometry']['pinhole_1']
+        ph2 = self.config['geometry']['pinhole_2']
+        ph3 = self.config['geometry']['pinhole_3']
 
-    def loadFromConfig(self):
-        """Load presets and current state from the config"""
-        if 'presets' not in self.config['geometry']:
-            # initialize 'presets' dictionary if it does not exist.
-            self.config['geometry']['presets'] = {}
+        sd = self.config['geometry']['dist_sample_det']
+        ph3tosample = self.config['geometry']['ph3tosample']
+        ph3todetector = ph3tosample + sd
+        beamstoptodetector = self.config['geometry']['beamstoptodetector']
+        ph3tobeamstop = ph3todetector - beamstoptodetector
+        beamstopradius = self.config['geometry']['beamstop']
+        self.config['geometry']['intensity'] = ph1 ** 2 * ph2 ** 2 / l1 ** 2
+        self.config['geometry']['dbeam_at_ph3'] = ((ph1 + ph2) * (l1 + l2) / l1 - ph1) / 1000
+        dbeamsample = self.config['geometry']['dbeam_at_sample'] = ((ph1 + ph2) * (
+                l1 + l2 + ph3tosample) / l1 - ph1) / 1000
+        self.config['geometry']['dbeam_at_bs'] = ((ph1 + ph2) * (1 + l2 + ph3tobeamstop) / l1 - ph1) / 1000
+        self.config['geometry']['dparasitic_at_bs'] = ((ph2 + ph3) * (l2 + ph3tobeamstop) / l2 - ph2) / 1000
+        beamstopshadowradius = ((dbeamsample + beamstopradius) * sd / (sd - beamstoptodetector) - dbeamsample) * 0.5
+        self.config['geometry']['qmin'] = 4 * np.pi * np.sin(0.5 * np.arctan(beamstopshadowradius / sd)) / \
+                                          self.config['geometry']['wavelength']
 
-        # construct the current preset from geometrical data
-        currpres = GeometryPreset(
-            self.config,
-            self.config['geometry'].setdefault('l1_elements', []),
-            self.config['geometry'].setdefault('l2_elements', []),
-            self.config['geometry'].setdefault('pinhole_1', 0.0),
-            self.config['geometry'].setdefault('pinhole_2', 0.0),
-            self.config['geometry'].setdefault('pinhole_3', 0.0),
-            self.config['geometry'].setdefault('flightpipes', []),
-            self.config['geometry'].setdefault('beamstop', 0.0),
-            (self.config['geometry'].setdefault('dist_sample_det', 0.0),
-             self.config['geometry'].setdefault('dist_sample_det.err', 0.0)),
-            (self.config['geometry'].setdefault('beamposx', 0.0),
-             self.config['geometry'].setdefault('beamposx.err', 0.0)),
-            (self.config['geometry'].setdefault('beamposy', 0.0),
-             self.config['geometry'].setdefault('beamposy.err', 0.0)),
-            self.config['geometry'].setdefault('mask', ''),
-            self.config['geometry'].setdefault('description', 'Dummy preset'),
-        )
+    def saveGeometry(self, filename: str, configdict: Optional[Dict[str, Any]] = None):
+        """Save the current settings under a preset name"""
+        if configdict is None:
+            configdict = self.config['geometry']
+        dic = {configdict[key] for key in [
+            'dist_source_ph1', 'dist_ph3_sample', 'dist_det_beamstop', 'l1_elements', 'l2_elements',
+            'pinhole_1', 'pinhole_2', 'pinhole_3', 'flightpipes', 'beamstop', 'dist_sample_det', 'dist_sample_det.err',
+            'beamposx', 'beamposx.err', 'beamposy', 'beamposy.err', 'mask', 'description', 'l1base', 'l2base',
+            'isoKFspacer', 'ph3tosample', 'beamstoptodetector', 'ph3toflightpipes', 'pixelsize', 'pixelsize.err',
+            'wavelength', 'wavelength.err', 'sourcetoph1', 'lastflightpipetodetector']}
+        if filename.lower().endswith('.geoj'):
+            with open(filename, 'wb') as f:
+                json.dump(dic, f)
+        elif filename.lower().endswith('.geop'):
+            with open(filename, 'wb') as f:
+                pickle.dump(dic, f)
+        else:
+            raise ValueError(f'Unknown file extension: {os.path.splitext(filename)[-1]}')
+        logger.info(f'Saved current geometry to file {filename}.')
 
-        if hasattr(self, 'currentpreset'):
-            # if we already have a current preset, disconnect from it and safely delete.
-            self.currentpreset.changed.disconnect(self.onCurrentPresetChanged)
-            self.currentpreset.deleteLater()
-            del self.currentpreset
-        # delete the presets list
-        self.presets = {}
-        # load the presets
-        for name in self.config['geometry']['presets']:
-            self.presets[name] = GeometryPreset.fromDict(self.config, self.config['geometry']['presets'][name])
-            # check if this is the current preset
-            logger.debug(f'Comparing preset {name} to current preset.')
-            if (self.presets[name] == currpres) and (not hasattr(self, 'currentpreset')):
-                self.currentpreset = self.presets[name]
-                self.currentpreset.changed.connect(self.onCurrentPresetChanged)
-        if not hasattr(self, 'currentpreset'):
-            # none of the presets was equal to the current settings
-            self.currentpreset = currpres
-            self.addPreset('Current', currpres)
-            self.currentpreset.changed.connect(self.onCurrentPresetChanged)
+    def loadGeometry(self, filename: str):
+        """Load the geometry from a file"""
+        if filename.lower().endswith('.geoj'):
+            with open(filename, 'rb') as f:
+                dic = json.load(f)
+        elif filename.lower().endswith('.geop'):
+            with open(filename, 'rb') as f:
+                dic = pickle.load(f)
+        else:
+            raise ValueError(f'Unknown file extension: {os.path.splitext(filename)[-1]}')
+        for key in dic:
+            self.config['geometry'][key] = dic[key]
+        logger.info(f'Loaded geometry from file {filename}.')
 
-    def saveToConfig(self):
-        """Save the geometry values of the current preset to the config"""
-        self.config['geometry']['l1_elements'] = list(self.currentpreset.l1_elements)
-        self.config['geometry']['l2_elements'] = list(self.currentpreset.l2_elements)
-        self.config['geometry']['flightpipes'] = list(self.currentpreset.flightpipes)
-        self.config['geometry']['pinhole_1'] = self.currentpreset.pinhole1
-        self.config['geometry']['pinhole_2'] = self.currentpreset.pinhole2
-        self.config['geometry']['pinhole_3'] = self.currentpreset.pinhole3
-        self.config['geometry']['beamstop'] = self.currentpreset.beamstop
-        self.config['geometry']['dist_sample_det'] = self.currentpreset.dist_sample_det[0]
-        self.config['geometry']['dist_sample_det.err'] = self.currentpreset.dist_sample_det[1]
-        self.config['geometry']['beamposx'] = self.currentpreset.beamposx[0]
-        self.config['geometry']['beamposx.err'] = self.currentpreset.beamposx[1]
-        self.config['geometry']['beamposy'] = self.currentpreset.beamposy[0]
-        self.config['geometry']['beamposy.err'] = self.currentpreset.beamposy[1]
-        self.config['geometry']['mask'] = self.currentpreset.mask
-        self.config['geometry']['description'] = self.currentpreset.description
-        for preset in self.presets:
-            self.config['geometry']['presets'][preset] = self.presets[preset].toDict()
-        for name in list(self.config['geometry']['presets']):
-            if name not in self.presets:
-                del self.config['geometry']['presets'][name]
+    def l1(self, geometrydict: Optional[Dict[str, Any]] = None) -> float:
+        if geometrydict is None:
+            geometrydict = self.config['geometry']
+        return geometrydict['l1base'] + geometrydict['isoKFspacer'] * len(geometrydict['l1_elements']) + sum(
+            'l1_elements')
 
-    def setCurrentPreset(self, preset: Union[GeometryPreset, str]):
-        if isinstance(preset, str):
-            preset = self.presets[preset]
-        assert isinstance(preset, GeometryPreset)
-        self.currentpreset.changed.disconnect(self.onCurrentPresetChanged)
-        self.currentpreset = preset
-        self.currentpreset.changed.connect(self.onCurrentPresetChanged)
-        dic = self.currentpreset.toDict()
-        for key in list(dic.keys()):
-            self.currentPresetChanged.emit(key, getattr(self.currentpreset, key))
-        self.saveToConfig()
+    def l2(self, geometrydict: Optional[Dict[str, Any]] = None) -> float:
+        if geometrydict is None:
+            geometrydict = self.config['geometry']
+        return geometrydict['l2base'] + geometrydict['isoKFspacer'] * len(geometrydict['l2_elements']) + sum(
+            'l2_elements')
 
-    def presetNames(self) -> List[str]:
-        return list(self.config['geometry']['presets'].keys())
+    def updateFromOptimizerResult(self, optresult: Dict[str, Any]):
+        for key in ['l1_elements', 'l2_elements', 'pinhole_1', 'pinhole_2', 'pinhole_3', 'flightpipes', 'beamstop',
+                    'l1', 'l2', 'ph3todetector', 'dbeam_at_ph3', 'dbeam_at_bs', 'dbeam_at_sample', 'dparasitic_at_bs',
+                    'qmin', 'intensity']:
+            self.config['geometry'][key] = optresult[key]

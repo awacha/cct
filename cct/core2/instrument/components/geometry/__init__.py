@@ -1,8 +1,7 @@
-from . import preset, choices, geometry, presetstore, optimizer
-from .preset import GeometryPreset
+from . import choices, geometry, optimizerstore, optimizer
 from .choices import GeometryChoices
 from .geometry import Geometry
-from .presetstore import PresetStore
+from .optimizerstore import OptimizerStore
 from .optimizer import GeometryOptimizer
 
 

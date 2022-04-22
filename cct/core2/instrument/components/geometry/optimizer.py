@@ -3,12 +3,11 @@ import logging
 import queue
 import time
 from multiprocessing import Process, Queue, Event
-from typing import Sequence, Optional, Dict, Tuple
+from typing import Sequence, Optional, Dict, Tuple, Any
 
 import numpy as np
 from PyQt5 import QtCore
 
-from .preset import GeometryPreset
 from ....config import Config
 
 logger = logging.getLogger(__name__)
@@ -35,25 +34,25 @@ def yieldflightpipes(flightpipes: Sequence[float]):
             yield counts, uniquepipes
 
 
-def _worker(stopevent: Event, outqueue: Queue, config: Dict, maxsamplediameter: Tuple[float, float], qmin: Tuple[float, float], l1min: float = 0.0,
+def _worker(stopevent: Event, outqueue: Queue, geoconfig: Dict, maxsamplediameter: Tuple[float, float], qmin: Tuple[float, float], l1min: float = 0.0,
             l2min: float = 0.0,
             lmax: float = 0.0):
-    isoKFringwidth = config['geometry']['isoKFspacer']
-    l1base = config['geometry']['l1base']
-    l2base = config['geometry']['l2base']
-    ph3toflightpipes = config['geometry']['ph3toflightpipes']
-    lastflightpipetodetector = config['geometry']['lastflightpipetodetector']
-    ph3tosample = config['geometry']['ph3tosample']
-    beamstoptodetector = config['geometry']['beamstoptodetector']
-    wavelength = config['geometry']['wavelength']
+    isoKFringwidth = geoconfig['isoKFspacer']
+    l1base = geoconfig['l1base']
+    l2base = geoconfig['l2base']
+    ph3toflightpipes = geoconfig['ph3toflightpipes']
+    lastflightpipetodetector = geoconfig['lastflightpipetodetector']
+    ph3tosample = geoconfig['ph3tosample']
+    beamstoptodetector = geoconfig['beamstoptodetector']
+    wavelength = geoconfig['wavelength']
     for ph1, ph2, ph3, bs, (l1_elementcount, l2_elementcount, spacers), (
             flightpipe_elementcount, flightpipes) in itertools.product(
-        config['geometry']['choices']['pinholes'][1],
-        config['geometry']['choices']['pinholes'][2],
-        config['geometry']['choices']['pinholes'][3],
-        config['geometry']['choices']['beamstops'],
-        yieldspacers(config['geometry']['choices']['spacers']),
-        yieldflightpipes(config['geometry']['choices']['flightpipes'])
+        geoconfig['choices']['pinholes'][1],
+        geoconfig['choices']['pinholes'][2],
+        geoconfig['choices']['pinholes'][3],
+        geoconfig['choices']['beamstops'],
+        yieldspacers(geoconfig['choices']['spacers']),
+        yieldflightpipes(geoconfig['choices']['flightpipes'])
     ):
         if stopevent.is_set():
             break
@@ -73,15 +72,15 @@ def _worker(stopevent: Event, outqueue: Queue, config: Dict, maxsamplediameter: 
             continue
 
         # 1) check if ph3 cuts into the main beam
-        if (ph1 + ph2) * (l1 + l2) / l1 - ph1 >= ph3:
+        if (dbeam_at_ph3:=(ph1 + ph2) * (l1 + l2) / l1 - ph1) >= ph3:
             # yes, it does
             continue
         # 2) check if the direct beam is larger than the beamstop
-        if (ph1 + ph2) * (l1 + l2 + ph3todetector - beamstoptodetector) / l1 - ph1 >= bs * 1000:
+        if (dbeam_at_bs:=(ph1 + ph2) * (l1 + l2 + ph3todetector - beamstoptodetector) / l1 - ph1) >= bs * 1000:
             # yes, it is
             continue
         # 3) check if there is parasitic scattering around the beamstop
-        if (ph2 + ph3) * (l2 + ph3todetector - beamstoptodetector) / l2 - ph2 >= bs * 1000:
+        if (dparasitic_at_bs:=(ph2 + ph3) * (l2 + ph3todetector - beamstoptodetector) / l2 - ph2) >= bs * 1000:
             # yes, there is
             continue
         # 4) check if the beam is not too large at the sample
@@ -100,17 +99,30 @@ def _worker(stopevent: Event, outqueue: Queue, config: Dict, maxsamplediameter: 
             # not reached or too fine
             continue
         # otherwise we have found a good solution. Maybe not the best one though
-        outqueue.put((
-            list(itertools.chain(*[itertools.repeat(el, ec) for el, ec in zip(spacers, l1_elementcount)])),
-            list(itertools.chain(*[itertools.repeat(el, ec) for el, ec in zip(spacers, l2_elementcount)])),
-            ph1, ph2, ph3,
-            list(itertools.chain(
+        outqueue.put({
+            'l1_elements': list(itertools.chain(*[itertools.repeat(el, ec) for el, ec in zip(spacers, l1_elementcount)])),
+            'l2_elements': list(itertools.chain(*[itertools.repeat(el, ec) for el, ec in zip(spacers, l2_elementcount)])),
+            'pinhole_1': ph1,
+            'pinhole_2': ph2,
+            'pinhole_3': ph3,
+            'flightpipes': list(itertools.chain(
                 *[itertools.repeat(fp, fpc) for fp, fpc in zip(flightpipes, flightpipe_elementcount)])),
-            bs))
+            'beamstop': bs,
+            'l1': l1,
+            'l2': l2,
+            'ph3todetector': ph3todetector,
+            'sd': sd,
+            'dbeam_at_ph3': dbeam_at_ph3/1000.,  # um -> mm
+            'dbeam_at_bs': dbeam_at_bs/1000.,  # um -> mm
+            'dparasitic_at_bs': dparasitic_at_bs/1000.,  # um -> mm
+            'dbeam_at_sample': dbeamatsample,  # already in mm
+            'qmin': thisqmin,  # 1/[wavelength unit]
+            'intensity': ph1**2*ph2**2/l1**2,  # um^4/mm^2
+        })
 
 
 class GeometryOptimizer(QtCore.QObject):
-    config: Config
+    geoconfig: Dict[str, Any] 
     process: Optional[Process] = None
     queue: Optional[Queue] = None
     timerid: Optional[int] = None
@@ -122,7 +134,7 @@ class GeometryOptimizer(QtCore.QObject):
 
     def __init__(self, config: Config):
         super().__init__()
-        self.config = config
+        self.geoconfig = config['geometry'].asdict()
         self.queue = None
         self.process = None
         self.timerid = None
@@ -134,7 +146,7 @@ class GeometryOptimizer(QtCore.QObject):
         self.queue = Queue()
         self.process = Process(target=_worker, name='optimization worker',
                                args=(
-                               self.stopevent, self.queue, self.config.asdict(), maxsamplediameter, qmin, l1min, l2min,
+                               self.stopevent, self.queue, self.geoconfig, maxsamplediameter, qmin, l1min, l2min,
                                lmax))
         self.stopevent.clear()
         self.process.start()
@@ -144,11 +156,10 @@ class GeometryOptimizer(QtCore.QObject):
     def timerEvent(self, timerevent: QtCore.QTimerEvent) -> None:
         while True:
             try:
-                l1parts, l2parts, ph1, ph2, ph3, flightpipes, beamstop = self.queue.get_nowait()
+                optresult = self.queue.get_nowait()
             except queue.Empty:
                 break
-            preset = GeometryPreset(self.config, l1parts, l2parts, ph1, ph2, ph3, flightpipes, beamstop, None)
-            self.geometryFound.emit(preset)
+            self.geometryFound.emit(optresult)
         if (not self.process.is_alive()) and (self.queue.empty()):
             self.process.join()
             self.killTimer(self.timerid)

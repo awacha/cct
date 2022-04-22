@@ -8,10 +8,11 @@ from matplotlib.figure import Figure
 from .geometry_ui import Ui_Form
 from .spacerselector import SpacerSelectorDialog
 from ...utils.window import WindowRequiresDevices
-from ...utils.filebrowsers import browseMask
+from ...utils.filebrowsers import browseMask, getOpenFile, getSaveFile
 from ....core2.instrument.components.geometry.choices import ComponentType, GeometryChoices
-from ....core2.instrument.components.geometry.optimizer import GeometryOptimizer, GeometryPreset
-from ....core2.instrument.components.geometry.presetstore import PresetStore
+from ....core2.instrument.components.geometry.optimizer import GeometryOptimizer
+from ....core2.instrument.components.geometry.optimizerstore import OptimizerStore
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,7 +20,7 @@ logger.setLevel(logging.INFO)
 
 class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     _optimizer: Optional[GeometryOptimizer] = None
-    _optpresets: PresetStore
+    _optimizerstore: OptimizerStore
     _spacerselectordialog: Optional[SpacerSelectorDialog] = None
     figure: Figure
     canvas: FigureCanvasQTAgg
@@ -38,79 +39,55 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         'sealingRingWidthDoubleSpinBox': ('geometry', 'isoKFspacer'),
         'L1WithoutSpacersDoubleSpinBox': ('geometry', 'l1base'),
         'L2WithoutSpacersDoubleSpinBox': ('geometry', 'l2base'),
-    }
-
-    _geometryproperty2widgetname: Dict[str, Tuple[str, ...]] = {
-        #        'l1_elements': (None,),  # these are handled separately
-        #        'l2_elements': (None,),  # these are handled separately
-        'pinhole1': ('D1DoubleSpinBox',),
-        'pinhole2': ('D2DoubleSpinBox',),
-        'pinhole3': ('D3DoubleSpinBox',),
-        'beamstop': ('DBSDoubleSpinBox',),
-        'description': ('descriptionPlainTextEdit',),
-        'dist_sample_det': ('sdValDoubleSpinBox', 'sdErrDoubleSpinBox'),
-        'beamposx': ('beamPosXValDoubleSpinBox', 'beamPosXErrDoubleSpinBox'),
-        'beamposy': ('beamPosYValDoubleSpinBox', 'beamPosYErrDoubleSpinBox'),
-        'mask': ('maskFileNameLineEdit',),
+        'D1DoubleSpinBox': ('geometry', 'pinhole_1'),
+        'D2DoubleSpinBox': ('geometry', 'pinhole_2'),
+        'D3DoubleSpinBox': ('geometry', 'pinhole_3'),
+        'DBSDoubleSpinBox': ('geometry', 'beamstop'),
+        'descriptionPlainTextEdit': ('geometry', 'description'),
+        'sdValDoubleSpinBox': ('geometry', 'dist_sample_det'),
+        'sdErrDoubleSpinBox': ('geometry', 'dist_sample_det.err'),
+        'beamPosXValDoubleSpinBox': ('geometry', 'beamposx'),
+        'beamPosXErrDoubleSpinBox': ('geometry', 'beamposx.err'),
+        'beamPosYValDoubleSpinBox': ('geometry', 'beamposy'),
+        'beamPosYErrDoubleSpinBox': ('geometry', 'beamposy.err'),
+        'maskFileNameLineEdit': ('geometry', 'mask'),
     }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._optimizerstore = OptimizerStore()
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self._optpresets = PresetStore()
         self.choicesTreeView.setModel(self.instrument.geometry.choices)
         self.addChoiceToolButton.clicked.connect(self.addChoice)
         self.removeChoiceToolButton.clicked.connect(self.removeChoice)
         self.choicesTreeView.selectionModel().currentChanged.connect(self.onChoicesTreeViewCurrentChanged)
-        self.optimizationTreeView.setModel(self._optpresets)
-        self.presetsListView.setModel(self.instrument.geometry)
+        self.optimizationTreeView.setModel(self._optimizerstore)
         for name, path in self._widgetname2configpath.items():
             obj = getattr(self, name)
-            assert isinstance(obj, QtWidgets.QDoubleSpinBox)
+            assert isinstance(obj, QtWidgets.QWidget)
             try:
-                obj.setValue(float(self.instrument.config[path]))
+                value = self.instrument.config[path]
             except KeyError:
                 pass
-            obj.valueChanged.connect(self.onDoubleSpinBoxValueChanged)
-        for propertyname, widgetnames in self._geometryproperty2widgetname.items():
-            widgets = [getattr(self, wn) for wn in widgetnames]
-            if len(widgets) == 1 and isinstance(widgets[0], QtWidgets.QDoubleSpinBox):
-                logger.debug(f'Property name is {propertyname}, widget names are {widgetnames}, value is {getattr(self.instrument.geometry.currentpreset, propertyname)}')
-                widgets[0].setValue(getattr(self.instrument.geometry.currentpreset, propertyname))
-                widgets[0].valueChanged.connect(self.onGeometryParameterChangedInUI)
-            elif len(widgets) == 1 and isinstance(widgets[0], QtWidgets.QLineEdit):
-                widgets[0].setText(getattr(self.instrument.geometry.currentpreset, propertyname))
-                widgets[0].editingFinished.connect(self.onGeometryParameterChangedInUI)
-            elif len(widgets) == 1 and isinstance(widgets[0], QtWidgets.QPlainTextEdit):
-                widgets[0].setPlainText(getattr(self.instrument.geometry.currentpreset, propertyname))
-                widgets[0].textChanged.connect(self.onGeometryParameterChangedInUI)
-            elif len(widgets) == 2 and isinstance(widgets[0], QtWidgets.QDoubleSpinBox) and isinstance(widgets[1],
-                                                                                                       QtWidgets.QDoubleSpinBox):
-                value = getattr(self.instrument.geometry.currentpreset, propertyname)
-                assert isinstance(value, tuple) and len(value) == 2 and isinstance(value[0], float) and isinstance(
-                    value[1], float)
-                widgets[0].setValue(value[0])
-                widgets[1].setValue(value[1])
-                widgets[0].valueChanged.connect(self.onGeometryParameterChangedInUI)
-                widgets[1].valueChanged.connect(self.onGeometryParameterChangedInUI)
+            if isinstance(obj, QtWidgets.QDoubleSpinBox):
+                obj.setValue(float(value))
+                obj.valueChanged.connect(self.onDoubleSpinBoxValueChanged)
+            elif isinstance(obj, QtWidgets.QLineEdit):
+                obj.setText(value)
+                obj.editingFinished.connect(self.onLineEditChanged)
+            elif isinstance(obj, QtWidgets.QPlainTextEdit):
+                obj.setPlainText(value)
+                obj.textChanged.connect(self.onPlainTextEditChanged)
             else:
                 assert False
+
         self.recalculateCollimationProperties()
         self.l1EditToolButton.clicked.connect(self.editSpacers)
         self.l2EditToolButton.clicked.connect(self.editSpacers)
         self.flightpipesToolButton.clicked.connect(self.editSpacers)
-        self.addPresetToolButton.clicked.connect(self.addPreset)
-        self.savePresetToolButton.clicked.connect(self.savePreset)
-        self.removePresetToolButton.clicked.connect(self.removePreset)
-        self.loadPresetToolButton.clicked.connect(self.loadPreset)
-        self.loadPresetToolButton.setEnabled(False)
-        self.removePresetToolButton.setEnabled(False)
-        self.savePresetToolButton.setEnabled(False)
-        self.presetsListView.selectionModel().currentChanged.connect(self.currentSelectedPresetChanged)
-        self.instrument.geometry.currentPresetChanged.connect(self.onGeometryChanged)
         self.optimizePushButton.clicked.connect(self.doOptimization)
         self.updateL1L2Labels()
         self.progressBar.setVisible(False)
@@ -123,6 +100,20 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.optimizationTreeView.selectionModel().selectionChanged.connect(self.onOptimizationSelectionChanged)
         self.browseMaskPushButton.clicked.connect(self.onBrowseMask)
         self.updateSetupParametersPushButton.clicked.connect(self.updateSetupParameters)
+        self.loadPresetPushButton.clicked.connect(self.onLoadPreset)
+        self.savePresetPushButton.clicked.connect(self.onSavePreset)
+
+    def onLoadPreset(self):
+        filename = getOpenFile(self, 'Load geometry from a file', filters='Geometry files (*.geop;*.geoj);;Geometry pickle files (*.geop);;Geometry JSON files (*.geoj);;All files (*)')
+        if not filename:
+            return
+        self.instrument.geometry.loadGeometry(filename)
+
+    def onSavePreset(self):
+        filename = getSaveFile(self, 'Save geometry to a file', defaultsuffix='.geo', filters='Geometry files (*.geop;*.geoj);;Geometry pickle files (*.geop);;Geometry JSON files (*.geoj);;All files (*)')
+        if not filename:
+            return
+        self.instrument.geometry.loadGeometry(filename)
 
     def onBrowseMask(self):
         filename = browseMask(self)
@@ -133,7 +124,8 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def updateSetupParameters(self):
         current = self.optimizationTreeView.currentIndex().row()
-        self.instrument.geometry.setCurrentPreset(self._optpresets[current])
+        dic = self._optimizerstore[current]
+        self.instrument.geometry.updateFromOptimizerResult(dic)
 
     def onOptimizationSelectionChanged(self, selected: Sequence[QtCore.QModelIndex],
                                        deselected: Sequence[QtCore.QModelIndex]):
@@ -150,7 +142,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self._optimizer.finished.connect(self.onOptimizationFinished)
         self._optimizer.geometryFound.connect(self.onOptimizationGeometryFound)
         logger.info('Starting geometry search')
-        self._optpresets.clear()
+        self._optimizerstore.clear()
         self._optimizer.start(
             (self.minMaxSampleSizeDoubleSpinBox.value(), self.maxMaxSampleSizeDoubleSpinBox.value()),
             (self.optQMinMinDoubleSpinBox.value(), self.optQMinMaxDoubleSpinBox.value()),
@@ -160,8 +152,8 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.optimizePushButton.setText('Stop')
         self.optimizePushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/stop.svg")))
 
-    def onOptimizationGeometryFound(self, preset: GeometryPreset):
-        self._optpresets.addPreset(preset)
+    def onOptimizationGeometryFound(self, optresult: Dict[str, Any]):
+        self._optimizerstore.addOptResult(optresult)
 
     def onOptimizationFinished(self, elapsedtime: float):
         self._optimizer.deleteLater()
@@ -175,7 +167,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             f'found {self._optpresets.rowCount()} compatible geometries.'
         )
         logger.debug('Sorting...')
-        self._optpresets.sort(self.optimizationTreeView.header().sortIndicatorSection(), self.optimizationTreeView.header().sortIndicatorOrder())
+        self._optimizerstore.sort(self.optimizationTreeView.header().sortIndicatorSection(), self.optimizationTreeView.header().sortIndicatorOrder())
         logger.debug('Plotting...')
         self.figure.clear()
         axes = self.figure.add_subplot(1, 1, 1)
@@ -190,46 +182,6 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.optimizePushButton.setText('Find optimum')
         self.optimizePushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/start.svg")))
 
-    def onGeometryChanged(self, propertyname: Optional[str] = None, value: Any = None):
-        logger.debug(f'Geometry changed. {propertyname=}, {value=}')
-        if propertyname in ['l1_elements', 'l2_elements', 'flightpipes']:
-            self.updateL1L2Labels()
-        elif propertyname is not None:
-            widgetnames = [wns for pn, wns in self._geometryproperty2widgetname.items() if pn == propertyname][0]
-            widgets = [getattr(self, wn) for wn in widgetnames]
-            for w in widgets:
-                assert isinstance(w, QtWidgets.QWidget)
-                w.blockSignals(True)
-            try:
-                if (len(widgets) == 2) and isinstance(widgets[0], QtWidgets.QDoubleSpinBox) and isinstance(widgets[1],
-                                                                                                           QtWidgets.QDoubleSpinBox):
-                    assert isinstance(value, tuple) and len(value) == 2 and isinstance(value[0], float) and isinstance(
-                        value[1], float)
-                    if widgets[0].value() != value[0]:
-                        widgets[0].setValue(value[0])
-                    if widgets[1].value() != value[1]:
-                        widgets[1].setValue(value[1])
-                elif len(widgets) == 1:
-                    widget = widgets[0]
-                    if isinstance(widget, QtWidgets.QDoubleSpinBox):
-                        assert isinstance(value, float)
-                        if widget.value() != value:
-                            widget.setValue(value)
-                    elif isinstance(widget, QtWidgets.QPlainTextEdit):
-                        assert isinstance(value, str)
-                        if widget.toPlainText() != value:
-                            widget.setPlainText(value)
-                    elif isinstance(widget, QtWidgets.QLineEdit):
-                        assert isinstance(value, str)
-                        if widget.text() != value:
-                            widget.setText(value)
-                    else:
-                        assert False
-            finally:
-                for w in widgets:
-                    w.blockSignals(False)
-        self.recalculateCollimationProperties()
-
     @staticmethod
     def setLabelBackground(label: QtWidgets.QLabel, good: bool):
         pal = label.palette()
@@ -238,67 +190,31 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         label.setAutoFillBackground(True)
 
     def recalculateCollimationProperties(self):
-        self.relativeintensityLabel.setText(f'{self.instrument.geometry.currentpreset.intensity:.4f}')
-        self.qMinLabel.setText(f'{self.instrument.geometry.currentpreset.qmin:.4f}')
-        self.maxRgLabel.setText(f'{self.instrument.geometry.currentpreset.Rgmax:.4f}')
+        self.relativeintensityLabel.setText(f'{self.instrument.config["geometry"]["intensity"]:.4f}')
+        self.qMinLabel.setText(f'{self.instrument.config["geometry"]["qmin"]:.4f}')
+        self.maxRgLabel.setText(f'{1/self.instrument.config["geometry"]["qmin"]:.4f}')
+        parasiticscattering_around_bs = self.instrument.config["geometry"]["dparasitic_at_bs"] > self.instrument.config["geometry"]["beamstop"]
         self.parasiticScatteringLabel.setText(
-            'Not expected' if self.instrument.geometry.currentpreset.is_beamstop_large_enough_parasitic else 'Expected')
-        self.setLabelBackground(self.parasiticScatteringLabel, self.instrument.geometry.currentpreset.is_beamstop_large_enough_parasitic)
+            'Expected' if parasiticscattering_around_bs else 'Not Expected')
+        self.setLabelBackground(self.parasiticScatteringLabel, not parasiticscattering_around_bs)
+        directbeam_around_bs = self.instrument.config['geometry']['dbeam_at_bs'] > self.instrument.config['geometry']['beamstop']
         self.directBeamHitsDetectorLabel.setText(
-            'No' if self.instrument.geometry.currentpreset.is_beamstop_large_enough_direct else 'YES!!!')
-        self.setLabelBackground(self.directBeamHitsDetectorLabel, self.instrument.geometry.currentpreset.is_beamstop_large_enough_direct)
-        self.sampleSizeLabel.setText(f'{self.instrument.geometry.currentpreset.dsample:.2f}')
-        self.beamStopSizeLabel.setText(f'{self.instrument.geometry.currentpreset.dbeamstop:.2f}')
+            'YES!!!' if directbeam_around_bs else 'No')
+        self.setLabelBackground(self.directBeamHitsDetectorLabel, not directbeam_around_bs)
+        self.sampleSizeLabel.setText(f'{self.instrument.config["geometry"]["dbeam_at_sample"]:.2f}')
+        self.beamStopSizeLabel.setText(f'{self.instrument.config["geometry"]["dbeam_at_bs"]:.2f}')
+        ph3_cuts_beam = self.instrument.config["geometry"]["dbeam_at_ph3"] > self.instrument.config["geometry"]["pinhole_3"]/1000.0
         self.pinhole3LargeEnoughLabel.setText(
-            'Yes' if self.instrument.geometry.currentpreset.is_pinhole3_large_enough else 'NO!!!')
-        self.setLabelBackground(self.pinhole3LargeEnoughLabel, self.instrument.geometry.currentpreset.is_pinhole3_large_enough)
-
-    def onGeometryParameterChangedInUI(self):
-        widget = self.sender()
-        propertyname = [pn for pn, wns in self._geometryproperty2widgetname.items() if widget.objectName() in wns][0]
-        if isinstance(widget, QtWidgets.QDoubleSpinBox):
-            prevvalue = getattr(self.instrument.geometry.currentpreset, propertyname)
-            if len(self._geometryproperty2widgetname[propertyname]) == 2:
-                if widget.objectName().endswith('ValDoubleSpinBox'):
-                    newvalue = (widget.value(), prevvalue[1])
-                elif widget.objectName().endswith('ErrDoubleSpinBox'):
-                    newvalue = (prevvalue[0], widget.value())
-                else:
-                    assert False
-            else:
-                newvalue = widget.value()
-            setattr(self.instrument.geometry.currentpreset, propertyname, newvalue)
-        elif isinstance(widget, QtWidgets.QPlainTextEdit):
-            setattr(self.instrument.geometry.currentpreset, propertyname, widget.toPlainText())
-        elif isinstance(widget, QtWidgets.QLineEdit):
-            setattr(self.instrument.geometry.currentpreset, propertyname, widget.text())
-        else:
-            assert False
-
-    def currentSelectedPresetChanged(self, selected: QtCore.QModelIndex, previous: QtCore.QModelIndex):
-        self.savePresetToolButton.setEnabled(selected.isValid())
-        self.loadPresetToolButton.setEnabled(selected.isValid())
-        self.removePresetToolButton.setEnabled(selected.isValid())
-
-    def addPreset(self):
-        self.instrument.geometry.addPreset('Untitled')
-
-    def removePreset(self):
-        self.instrument.geometry.removePreset(self.presetsListView.currentIndex().data(QtCore.Qt.DisplayRole))
-
-    def savePreset(self):
-        self.instrument.geometry.savePreset(self.presetsListView.currentIndex().data(QtCore.Qt.DisplayRole))
-
-    def loadPreset(self):
-        self.instrument.geometry.setCurrentPreset(self.presetsListView.currentIndex().data(QtCore.Qt.DisplayRole))
+            'NO!!!' if ph3_cuts_beam else 'Yes')
+        self.setLabelBackground(self.pinhole3LargeEnoughLabel, not ph3_cuts_beam)
 
     def updateL1L2Labels(self):
-        self.l1Label.setText(f'{self.instrument.geometry.currentpreset.l1:.2f}')
-        self.l2Label.setText(f'{self.instrument.geometry.currentpreset.l2:.2f}')
+        self.l1Label.setText(f'{self.instrument.geometry.l1():.2f}')
+        self.l2Label.setText(f'{self.instrument.geometry.l2():.2f}')
         self.flightpipesLabel.setText(
-            ' + '.join([f'{x:.0f} mm' for x in self.instrument.geometry.currentpreset.flightpipes]))
-        self.l1Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.geometry.currentpreset.l1_elements]))
-        self.l2Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.geometry.currentpreset.l2_elements]))
+            ' + '.join([f'{x:.0f} mm' for x in self.instrument.config['geometry']['flightpipes']]))
+        self.l1Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.config['geometry']['l1_elements']]))
+        self.l2Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.config['geometry']['l2_elements']]))
 
     def editSpacers(self):
         assert self.sender() in [self.l1EditToolButton, self.l2EditToolButton, self.flightpipesToolButton]
@@ -344,6 +260,20 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         assert all([isinstance(k, str) for k in path])
         self.instrument.config[path] = newvalue
 
+    def onLineEditChanged(self):
+        w = self.sender()
+        path = [p for wn, p in self._widgetname2configpath.items() if wn == w.objectName()][0]
+        assert isinstance(path, tuple)
+        assert all([isinstance(k, str) for k in path])
+        self.instrument.config[path] = w.text()
+
+    def onPlainTextEditChanged(self):
+        w = self.sender()
+        path = [p for wn, p in self._widgetname2configpath.items() if wn == w.objectName()][0]
+        assert isinstance(path, tuple)
+        assert all([isinstance(k, str) for k in path])
+        self.instrument.config[path] = w.toPlainText()
+
     def onChoicesTreeViewCurrentChanged(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
         if not current.isValid():
             logger.debug('Current index is not valid')
@@ -381,15 +311,27 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.instrument.geometry.choices.removeRow(current.row(), current.parent())
 
     def onConfigChanged(self, path: Tuple[str, ...], newvalue: Any):
-        try:
-            widgetname = [wn for wn, p in self._widgetname2configpath.items() if p == path][0]
-        except IndexError:
+        if path[0] != 'geometry':
             return
-        widget = getattr(self, widgetname)
-        assert isinstance(widget, QtWidgets.QDoubleSpinBox)
-        widget.blockSignals(True)
-        try:
-            widget.setValue(newvalue)
-        finally:
-            widget.blockSignals(False)
+        elif path in [('geometry', 'l1_elements'), ('geometry', 'l2_elements'), ('geometry', 'flightpipes')]:
+            self.updateL1L2Labels()
+        else:
+            try:
+                widgetname = [wn for wn, p in self._widgetname2configpath.items() if p == path][0]
+            except IndexError:
+                return
+            widget = getattr(self, widgetname)
+            assert isinstance(widget, QtWidgets.QDoubleSpinBox)
+            widget.blockSignals(True)
+            try:
+                if isinstance(widget, QtWidgets.QDoubleSpinBox):
+                    widget.setValue(newvalue)
+                elif isinstance(widget, QtWidgets.QPlainTextEdit):
+                    widget.setPlainText(newvalue)
+                elif isinstance(widget, QtWidgets.QLineEdit):
+                    widget.setText(newvalue)
+                else:
+                    assert False
+            finally:
+                widget.blockSignals(False)
         self.recalculateCollimationProperties()
