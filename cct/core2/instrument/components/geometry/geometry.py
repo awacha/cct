@@ -134,7 +134,7 @@ class Geometry(QtCore.QObject, Component):
         self.config['geometry']['dbeam_at_ph3'] = ((ph1 + ph2) * (l1 + l2) / l1 - ph1) / 1000
         dbeamsample = self.config['geometry']['dbeam_at_sample'] = ((ph1 + ph2) * (
                 l1 + l2 + ph3tosample) / l1 - ph1) / 1000
-        self.config['geometry']['dbeam_at_bs'] = ((ph1 + ph2) * (1 + l2 + ph3tobeamstop) / l1 - ph1) / 1000
+        self.config['geometry']['dbeam_at_bs'] = ((ph1 + ph2) * (l1 + l2 + ph3tobeamstop) / l1 - ph1) / 1000
         self.config['geometry']['dparasitic_at_bs'] = ((ph2 + ph3) * (l2 + ph3tobeamstop) / l2 - ph2) / 1000
         beamstopshadowradius = ((dbeamsample + beamstopradius) * sd / (sd - beamstoptodetector) - dbeamsample) * 0.5
         try:
