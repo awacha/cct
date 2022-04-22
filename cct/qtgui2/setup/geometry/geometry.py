@@ -172,15 +172,15 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         QtWidgets.QMessageBox.information(
             self, 'Geometry search finished',
             f'Searching for geometries finished in {elapsedtime // 60:.0f} minutes {elapsedtime % 60:.2f} seconds, '
-            f'found {self._optpresets.rowCount()} compatible geometries.'
+            f'found {self._optimizerstore.rowCount()} compatible geometries.'
         )
         logger.debug('Sorting...')
         self._optimizerstore.sort(self.optimizationTreeView.header().sortIndicatorSection(), self.optimizationTreeView.header().sortIndicatorOrder())
         logger.debug('Plotting...')
         self.figure.clear()
         axes = self.figure.add_subplot(1, 1, 1)
-        qmin = [p.qmin for p in self._optpresets]
-        intensity = [p.intensity for p in self._optpresets]
+        qmin = [p.qmin for p in self._optimizerstore]
+        intensity = [p.intensity for p in self._optimizerstore]
         axes.plot(qmin, intensity, '.')
         axes.set_xlabel('Lowest q (nm$^{-1}$)')
         axes.set_ylabel('Intensity (\u03bcm$^4$ mm$^{-2}$)')
