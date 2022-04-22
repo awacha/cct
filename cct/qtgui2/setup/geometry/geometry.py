@@ -104,13 +104,21 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.savePresetPushButton.clicked.connect(self.onSavePreset)
 
     def onLoadPreset(self):
-        filename = getOpenFile(self, 'Load geometry from a file', filters='Geometry files (*.geop;*.geoj);;Geometry pickle files (*.geop);;Geometry JSON files (*.geoj);;All files (*)')
+        filename = getOpenFile(self, 'Load geometry from a file',
+                               filters='Geometry files (*.geop *.geoj);;'
+                                       'Geometry pickle files (*.geop);;'
+                                       'Geometry JSON files (*.geoj);;'
+                                       'All files (*)')
         if not filename:
             return
         self.instrument.geometry.loadGeometry(filename)
 
     def onSavePreset(self):
-        filename = getSaveFile(self, 'Save geometry to a file', defaultsuffix='.geo', filters='Geometry files (*.geop;*.geoj);;Geometry pickle files (*.geop);;Geometry JSON files (*.geoj);;All files (*)')
+        filename = getSaveFile(self, 'Save geometry to a file', defaultsuffix='.geo',
+                               filters='Geometry files (*.geop *.geoj);;'
+                                       'Geometry pickle files (*.geop);;'
+                                       'Geometry JSON files (*.geoj);;'
+                                       'All files (*)')
         if not filename:
             return
         self.instrument.geometry.saveGeometry(filename)
