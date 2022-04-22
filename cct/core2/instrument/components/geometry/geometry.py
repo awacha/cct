@@ -142,7 +142,7 @@ class Geometry(QtCore.QObject, Component):
         if configdict is None:
             configdict = self.config['geometry']
         dic = {configdict[key] for key in [
-            'dist_source_ph1', 'dist_ph3_sample', 'dist_det_beamstop', 'l1_elements', 'l2_elements',
+            'l1_elements', 'l2_elements',
             'pinhole_1', 'pinhole_2', 'pinhole_3', 'flightpipes', 'beamstop', 'dist_sample_det', 'dist_sample_det.err',
             'beamposx', 'beamposx.err', 'beamposy', 'beamposy.err', 'mask', 'description', 'l1base', 'l2base',
             'isoKFspacer', 'ph3tosample', 'beamstoptodetector', 'ph3toflightpipes', 'pixelsize', 'pixelsize.err',
