@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1231</width>
-    <height>526</height>
+    <height>619</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -410,36 +410,43 @@ p, li { white-space: pre-wrap; }
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="groupBox">
+          <widget class="QGroupBox" name="groupBox_2">
            <property name="title">
-            <string>Load/save</string>
+            <string>Components</string>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <layout class="QVBoxLayout" name="verticalLayout_8">
             <item>
-             <widget class="QPushButton" name="loadPresetPushButton">
-              <property name="toolTip">
-               <string>Load a geometry preset from a file</string>
-              </property>
-              <property name="text">
-               <string>Load geometry preset...</string>
-              </property>
-              <property name="icon">
-               <iconset theme="document-open"/>
-              </property>
+             <widget class="QTreeView" name="choicesTreeView">
+              <attribute name="headerVisible">
+               <bool>false</bool>
+              </attribute>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="savePresetPushButton">
-              <property name="toolTip">
-               <string>Save a geometry preset to a file</string>
-              </property>
-              <property name="text">
-               <string>Save geometry preset...</string>
-              </property>
-              <property name="icon">
-               <iconset theme="document-save-as"/>
-              </property>
-             </widget>
+             <layout class="QHBoxLayout" name="horizontalLayout_3">
+              <item>
+               <widget class="QToolButton" name="addChoiceToolButton">
+                <property name="text">
+                 <string>Add</string>
+                </property>
+                <property name="icon">
+                 <iconset theme="list-add">
+                  <normaloff>../../../../../../Downloads/cct/cct/qtgui2/setup/geometry</normaloff>../../../../../../Downloads/cct/cct/qtgui2/setup/geometry</iconset>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="removeChoiceToolButton">
+                <property name="text">
+                 <string>Remove</string>
+                </property>
+                <property name="icon">
+                 <iconset theme="list-remove">
+                  <normaloff>../../../../../../Downloads/cct/cct/qtgui2/setup/geometry</normaloff>../../../../../../Downloads/cct/cct/qtgui2/setup/geometry</iconset>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </widget>
@@ -973,52 +980,10 @@ p, li { white-space: pre-wrap; }
             <string>Current characteristics</string>
            </property>
            <layout class="QGridLayout" name="gridLayout_5">
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_27">
-              <property name="text">
-               <string>Relative intensity:</string>
-              </property>
-             </widget>
-            </item>
             <item row="5" column="0">
              <widget class="QLabel" name="label_28">
               <property name="text">
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;3&lt;span style=&quot; vertical-align:super;&quot;&gt;rd&lt;/span&gt; pinhole large enough:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="1">
-             <widget class="QLabel" name="beamStopSizeLabel">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QLabel" name="maxRgLabel">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_31">
-              <property name="text">
-               <string>Parasitic scattering around beamstop:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_32">
-              <property name="text">
-               <string>Direct beam hits the detector:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLabel" name="qMinLabel">
-              <property name="text">
-               <string/>
               </property>
              </widget>
             </item>
@@ -1029,13 +994,6 @@ p, li { white-space: pre-wrap; }
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QLabel" name="relativeintensityLabel">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
             <item row="7" column="0">
              <widget class="QLabel" name="label_34">
               <property name="text">
@@ -1043,10 +1001,10 @@ p, li { white-space: pre-wrap; }
               </property>
              </widget>
             </item>
-            <item row="3" column="1">
-             <widget class="QLabel" name="parasiticScatteringLabel">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_27">
               <property name="text">
-               <string/>
+               <string>Relative intensity:</string>
               </property>
              </widget>
             </item>
@@ -1064,17 +1022,24 @@ p, li { white-space: pre-wrap; }
               </property>
              </widget>
             </item>
-            <item row="6" column="0">
-             <widget class="QLabel" name="label_33">
-              <property name="text">
-               <string>Beam diameter at sample (mm):</string>
-              </property>
-             </widget>
-            </item>
             <item row="6" column="1">
              <widget class="QLabel" name="sampleSizeLabel">
               <property name="text">
                <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="QLabel" name="beamStopSizeLabel">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_32">
+              <property name="text">
+               <string>Direct beam hits the detector:</string>
               </property>
              </widget>
             </item>
@@ -1085,7 +1050,7 @@ p, li { white-space: pre-wrap; }
               </property>
              </widget>
             </item>
-            <item row="8" column="0" colspan="2">
+            <item row="9" column="0" colspan="2">
              <spacer name="verticalSpacer_2">
               <property name="orientation">
                <enum>Qt::Vertical</enum>
@@ -1097,6 +1062,85 @@ p, li { white-space: pre-wrap; }
                </size>
               </property>
              </spacer>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLabel" name="relativeintensityLabel">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLabel" name="parasiticScatteringLabel">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_31">
+              <property name="text">
+               <string>Parasitic scattering around beamstop:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLabel" name="maxRgLabel">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLabel" name="qMinLabel">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_33">
+              <property name="text">
+               <string>Beam diameter at sample (mm):</string>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="0">
+             <widget class="QGroupBox" name="groupBox">
+              <property name="title">
+               <string>Load/save</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_7">
+               <item>
+                <widget class="QPushButton" name="savePresetPushButton">
+                 <property name="toolTip">
+                  <string>Save a geometry preset to a file</string>
+                 </property>
+                 <property name="text">
+                  <string>Save geometry preset...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset theme="document-save-as">
+                   <normaloff>.</normaloff>.</iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="loadPresetPushButton">
+                 <property name="toolTip">
+                  <string>Load a geometry preset from a file</string>
+                 </property>
+                 <property name="text">
+                  <string>Load geometry preset...</string>
+                 </property>
+                 <property name="icon">
+                  <iconset theme="document-open">
+                   <normaloff>.</normaloff>.</iconset>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -1433,7 +1477,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>L1WithoutSpacersDoubleSpinBox</tabstop>
   <tabstop>L2WithoutSpacersDoubleSpinBox</tabstop>
   <tabstop>loadPresetPushButton</tabstop>
-  <tabstop>savePresetPushButton</tabstop>
   <tabstop>l1EditToolButton</tabstop>
   <tabstop>l2EditToolButton</tabstop>
   <tabstop>D1DoubleSpinBox</tabstop>
