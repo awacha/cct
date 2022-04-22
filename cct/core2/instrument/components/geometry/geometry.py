@@ -11,7 +11,7 @@ from .choices import GeometryChoices
 from ..component import Component
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Geometry(QtCore.QObject, Component):
@@ -76,6 +76,7 @@ class Geometry(QtCore.QObject, Component):
             # presets are obsolete, write simple geometry files
             os.makedirs('geo', exist_ok=True)
             for presetname in self.config['geometry']['presets']:
+                logger.debug(f'Converting preset {presetname}')
                 presetconf = self.config['geometry']['presets'][presetname]
                 filename = presetname
                 for forbiddenchar in " <>:\"/\\|?*'":
