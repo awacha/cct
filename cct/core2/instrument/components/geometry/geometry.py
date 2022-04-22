@@ -103,6 +103,7 @@ class Geometry(QtCore.QObject, Component):
                 self.saveGeometry(os.path.join('geo', filename + '.geop'), geoconf)
 
     #        del self.config['geometry']['presets']
+        self.recalculateDerivedParameters()
 
     def onConfigChanged(self, path, value):
         if path[0] != 'geometry':
@@ -170,6 +171,7 @@ class Geometry(QtCore.QObject, Component):
             raise ValueError(f'Unknown file extension: {os.path.splitext(filename)[-1]}')
         for key in dic:
             self.config['geometry'][key] = dic[key]
+        self.recalculateDerivedParameters()
         logger.info(f'Loaded geometry from file {filename}.')
 
     def l1(self, geometrydict: Optional[Dict[str, Any]] = None) -> float:
