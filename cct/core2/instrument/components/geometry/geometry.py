@@ -177,6 +177,7 @@ class Geometry(QtCore.QObject, Component):
     def l1(self, geometrydict: Optional[Dict[str, Any]] = None) -> float:
         if geometrydict is None:
             geometrydict = self.config['geometry']
+        print(geometrydict)
         return geometrydict['l1base'] + geometrydict['isoKFspacer'] * len(geometrydict['l1_elements']) + sum(
             'l1_elements')
 
