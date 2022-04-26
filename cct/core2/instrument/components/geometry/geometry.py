@@ -213,5 +213,5 @@ class Geometry(QtCore.QObject, Component):
                            ('dist_sample_det.val', 'dist_sample_det'),
                            ('truedistance', 'dist_sample_det'),
                            ('truedistance.err', 'dist_sample_det.err')]:
-            dic[alias] = self.config['geometry'][key]
+            dic[key] = self.config['geometry'][alias]
         return dic
