@@ -24,7 +24,6 @@ class Geometry(QtCore.QObject, Component):
     choices: GeometryChoices
 
     def __init__(self, **kwargs):
-        self.presets = {}
         super().__init__(**kwargs)  # this implies self.loadFromConfig()
         self.choices = GeometryChoices(config=self.config)
         # if some values are missing, add them
@@ -199,3 +198,20 @@ class Geometry(QtCore.QObject, Component):
         self.config['geometry']['dist_sample_det'] = optresult['sd']
         self.config['geometry']['dist_sample_det.err'] = 0.0
         self.config['geometry']['description'] = ''
+
+    def getHeaderEntry(self) -> Dict[str, Any]:
+        dic = {}
+        for key in ['dist_saample_det', 'dist_sample_det.err', 'pinhole_1', 'pinhole_2', 'pinhole_3', 'description',
+                    'beamstop', 'wavelength', 'wavelength.err', 'beamposx', 'beamposy', 'beamposx.err', 'beamposy.err',
+                    'mask', 'pixelsize', 'pixelsize.err']:
+            dic[key] = self.config['geometry'][key]
+        for key, alias in [('dist_source_ph1', 'sourcetoph1'),
+                           ('dist_ph1_ph2', 'l1'),
+                           ('dist_ph2_ph3', 'l2'),
+                           ('dist_ph3_sample', 'ph3tosample'),
+                           ('dist_det_beamstop', 'beamstoptodetector'),
+                           ('dist_sample_det.val', 'dist_sample_det'),
+                           ('truedistance', 'dist_sample_det'),
+                           ('truedistance.err', 'dist_sample_det.err')]:
+            dic[alias] = self.config['geometry'][key]
+        return dic

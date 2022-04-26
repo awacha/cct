@@ -232,13 +232,13 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.instrument.geometry.choices.flightpipes) if self.sender() is self.flightpipesToolButton else list(
             self.instrument.geometry.choices.spacers)
         if self.sender() in [self.l1EditToolButton, self.l2EditToolButton]:
-            this = self.instrument.geometry.currentpreset.l2_elements if self.sender() == self.l2EditToolButton else self.instrument.geometry.currentpreset.l1_elements
-            other = self.instrument.geometry.currentpreset.l1_elements if self.sender() == self.l2EditToolButton else self.instrument.geometry.currentpreset.l2_elements
+            this = self.instrument.config['geometry']['l2_elements'] if self.sender() == self.l2EditToolButton else self.instrument.config['geometry']['l1_elements']
+            other = self.instrument.config['geometry']['l1_elements'] if self.sender() == self.l2EditToolButton else self.instrument.config['geometry']['l2_elements']
             for spacer in other:
                 allspacers.remove(spacer)
             target = SpacerSelectorDialog.TargetTypes.L1 if self.sender() == self.l1EditToolButton else SpacerSelectorDialog.TargetTypes.L2
         elif self.sender() == self.flightpipesToolButton:
-            this = self.instrument.geometry.currentpreset.flightpipes
+            this = self.instrument.config['geometry']['flightpipes']
             target = SpacerSelectorDialog.TargetTypes.FlightPipes
         else:
             assert False
@@ -249,11 +249,11 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def spacerSelectorFinished(self, result: int):
         if result == QtWidgets.QDialog.Accepted:
             if self._spacerselectordialog.target == SpacerSelectorDialog.TargetTypes.L2:
-                self.instrument.geometry.currentpreset.l2_elements = self._spacerselectordialog.selectedSpacers()
+                self.instrument.config['geometry']['l2_elements'] = self._spacerselectordialog.selectedSpacers()
             elif self._spacerselectordialog.target == SpacerSelectorDialog.TargetTypes.L1:
-                self.instrument.geometry.currentpreset.l1_elements = self._spacerselectordialog.selectedSpacers()
+                self.instrument.config['geometry']['l1_elements'] = self._spacerselectordialog.selectedSpacers()
             elif self._spacerselectordialog.target == SpacerSelectorDialog.TargetTypes.FlightPipes:
-                self.instrument.geometry.currentpreset.flightpipes = self._spacerselectordialog.selectedSpacers()
+                self.instrument.config['geometry']['flightpipes'] = self._spacerselectordialog.selectedSpacers()
             else:
                 assert False
         self._spacerselectordialog.close()

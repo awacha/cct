@@ -287,7 +287,7 @@ class Exposer(QtCore.QObject, Component):
                 'date': datetime.datetime.now(),
                 'enddate': datetime.datetime.now(),
             },
-            'geometry': self.instrument.geometry.currentpreset.getHeaderEntry(),
+            'geometry': self.instrument.geometry.getHeaderEntry(),
             'sample': sample.todict() if sample is not None else {},
             'motors': self.instrument.motors.getHeaderEntry(),
             'devices': {dev.devicename: dev.toDict() for dev in self.instrument.devicemanager if dev.isOnline()},
