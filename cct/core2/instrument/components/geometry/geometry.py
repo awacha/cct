@@ -201,7 +201,7 @@ class Geometry(QtCore.QObject, Component):
 
     def getHeaderEntry(self) -> Dict[str, Any]:
         dic = {}
-        for key in ['dist_saample_det', 'dist_sample_det.err', 'pinhole_1', 'pinhole_2', 'pinhole_3', 'description',
+        for key in ['dist_sample_det', 'dist_sample_det.err', 'pinhole_1', 'pinhole_2', 'pinhole_3', 'description',
                     'beamstop', 'wavelength', 'wavelength.err', 'beamposx', 'beamposy', 'beamposx.err', 'beamposy.err',
                     'mask', 'pixelsize', 'pixelsize.err']:
             dic[key] = self.config['geometry'][key]
