@@ -333,11 +333,14 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             widget.blockSignals(True)
             try:
                 if isinstance(widget, QtWidgets.QDoubleSpinBox):
-                    widget.setValue(newvalue)
+                    if widget.value() != newvalue:
+                        widget.setValue(newvalue)
                 elif isinstance(widget, QtWidgets.QPlainTextEdit):
-                    widget.setPlainText(newvalue)
+                    if widget.toPlainText() != newvalue:
+                        widget.setPlainText(newvalue)
                 elif isinstance(widget, QtWidgets.QLineEdit):
-                    widget.setText(newvalue)
+                    if widget.text() != newvalue:
+                        widget.setText(newvalue)
                 else:
                     assert False
             finally:
