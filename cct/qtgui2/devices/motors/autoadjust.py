@@ -8,7 +8,7 @@ from ....core2.instrument.components.motors.motor import Motor
 from .autoadjust_ui import Ui_Form
 
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class AdjustingState(enum.Enum):
@@ -144,13 +144,13 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             logger.debug(f'Stopped on left limit switch at position {motor.where()}')
             self.state = AdjustingState.MoveByBufferDistance
             self.leftposition = motor.where()
-            logger.debug(f'Moving right by bufferdistance {self.bufferDistanceDoubleSpinBox.value()}')
+            logger.debug(f'Moving right by bufferdistance {self.bufferDistanceDoubleSpinBox.value()}. Should arrive at {motor.where() + self.bufferDistanceDoubleSpinBox.value():.6f}')
             motor.moveRel(self.bufferDistanceDoubleSpinBox.value())
             logger.debug(f'Moverel issued.')
         elif self.state == AdjustingState.MoveByBufferDistance:
             if not success:
                 QtWidgets.QMessageBox.critical(
-                    self, 'Error', f'Cannot move right by buffer distance {self.bufferDistanceDoubleSpinBox.value()}')
+                    self, 'Error', f'Cannot move right by buffer distance {self.bufferDistanceDoubleSpinBox.value()}. End position is: {endposition:.6f}. ')
                 self.finalize()
                 return
             logger.debug('Moving by buffer distance done.')
