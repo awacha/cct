@@ -214,7 +214,14 @@ class HaakePhoenixBackend(DeviceBackend):
                 if self.panicking == self.PanicState.Panicking:
                     super().doPanic()
         else:
-            self.error(f'Cannot interpret message: {message}. Sent message was: {sentmessage}')
+            qmsg = self.querymessages[sentmessage]
+            if qmsg is not None:
+                try:
+                    var = [v for v in self.querymessages if self.querymessages[v] == sentmessage][0]
+                except IndexError:
+                    self.error(f'Cannot interpret message: {message}. Sent message was: {sentmessage}')
+                self.getVariable(var).lastquery = None
+            self.warning(f'Cannot interpret message: {message}. Sent message was: {sentmessage}. Requeued query for variable {var}')
 
     def issueCommand(self, name: str, args: Sequence[Any]):
         if name == 'start':
