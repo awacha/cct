@@ -90,7 +90,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.startPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/stop.svg")))
             self.oldposition = self.motor().where()
             self.state = AdjustingState.InitialMovingRightToUnsetLeftSwitch
-            if self.motor().isAtLeftLimit():
+            if self.motor().isAtLeftHardLimit():
                 self.initialrightshift = 0.1*(self.motor()['softright'] - self.motor()['softleft'])
                 self.motor().moveRel(self.initialrightshift)
             else:
