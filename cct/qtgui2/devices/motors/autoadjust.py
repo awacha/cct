@@ -86,12 +86,6 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     self, 'Error', 'Cannot start auto-adjustment: motor is moving.'
                 )
                 return
-            elif self.motor()['leftswitchstatus']:
-                QtWidgets.QMessageBox.critical(
-                    self, 'Error',
-                    'Cannot start auto-adjustment when the left switch is active. '
-                    'Move the motor right by a small amount and try again.'
-                )
             self.startPushButton.setText('Stop')
             self.startPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/stop.svg")))
             self.oldposition = self.motor().where()
