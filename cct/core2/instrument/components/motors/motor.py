@@ -192,3 +192,9 @@ class Motor(QtCore.QObject):
 
     def unitConverter(self) -> UnitConverter:
         return self.controller.unitConverter(self.axis)
+
+    def isAtRightLimit(self) -> bool:
+        return self.where() >= self['softright']
+
+    def isAtLeftLimit(self) -> bool:
+        return self.where() <= self['softleft']
