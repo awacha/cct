@@ -405,10 +405,10 @@ class DeviceBackend:
 
     @final
     async def _dosend(self, message: bytes, nreplies: int):
-        self.streamwriter.write(message)
-        if self.lastsendtime is not None:
+        if (self.lastsendtime is not None) and (self.delaybetweensends > 0):
             # ensure a delay between two sends
-            time.sleep(max(time.monotonic()-self.lastsendtime - self.delaybetweensends, 0))
+            time.sleep(max(time.monotonic() - self.lastsendtime - self.delaybetweensends, 0))
+        self.streamwriter.write(message)
         self.lastsendtime = time.monotonic()
         if self.telemetryInformation is not None:
             self.telemetryInformation.setCommunicating(True)
