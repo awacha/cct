@@ -1,4 +1,5 @@
 import datetime
+import logging
 from typing import Any
 
 from PyQt5 import QtCore
@@ -14,6 +15,7 @@ class HaakePhoenix(DeviceFrontend):
     devicetype = 'thermostat'
     temperatureChanged = QtCore.pyqtSignal(float)
     startStop = QtCore.pyqtSignal(bool)
+    loglevel = logging.DEBUG
 
     def __init__(self, name: str, host: str, port: int, **kwargs):
         super().__init__(name, host, port, **kwargs)

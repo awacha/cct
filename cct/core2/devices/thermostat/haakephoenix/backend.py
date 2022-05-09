@@ -65,7 +65,7 @@ class HaakePhoenixBackend(DeviceBackend):
                 self.getVariable('fuzzycontrol').lastquery = None
         elif variablename == 'fuzzystatus':
             try:
-                if self['firmwareversion'].startswith('2P/'):
+                if self['firmwareversion'].startswith('2P/H'):
                     self.enqueueHardwareMessage(b'R FE\r')
                 else:
                     self.updateVariable('fuzzystatus', False)
@@ -312,3 +312,7 @@ class HaakePhoenixBackend(DeviceBackend):
             self.enqueueHardwareMessage(b'W TS 0\r')
         else:
             super().doPanic()
+
+    def _dosend(self, message: bytes, nreplies: int):
+        self.debug(f'Sending message *{message}* to Haake Phoenix hardware, expecting {nreplies} replies.')
+        super()._dosend(message, nreplies)
