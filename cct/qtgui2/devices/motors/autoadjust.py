@@ -130,12 +130,15 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.progressBar.setFormat(f'Moving motor {self.motor().name} to {endposition:.4f}')
 
     def onMotorStopped(self, success: bool, endposition: float):
+        logger.debug(f'onMotorStopped({success=}, {endposition=::6f})')
         motor = self.motor()
         #assert self.sender() is motor
         if self.state == AdjustingState.Stopping:
+            logger.debug('Motor stopped on user request')
             self.finalize()
             return
         elif self.state == AdjustingState.MovingLeft:
+            logger.debug('Moving left finished')
             if success or (not motor['leftswitchstatus']):
                 QtWidgets.QMessageBox.critical(self, 'Error', 'Left switch not hit.')
                 self.finalize()
@@ -148,6 +151,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             motor.moveRel(self.bufferDistanceDoubleSpinBox.value())
             logger.debug(f'Moverel issued.')
         elif self.state == AdjustingState.MoveByBufferDistance:
+            logger.debug('Moving by buffer distance finished.')
             if not success:
                 QtWidgets.QMessageBox.critical(
                     self, 'Error', f'Cannot move right by buffer distance {self.bufferDistanceDoubleSpinBox.value()}. End position is: {endposition:.6f}. ')
@@ -157,6 +161,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             motor.setPosition(motor['softleft'])
             self.state = AdjustingState.WaitForFinalSetPositionResult
         elif self.state == AdjustingState.MovingRight:
+            logger.debug('Moving right finished.')
             if not success:
                 QtWidgets.QMessageBox.critical(self, 'Error', f'Cannot reach original position.')
                 self.finalize()
@@ -166,6 +171,8 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self, 'Success', f'Motor auto-adjustment successful. Delta is {self.delta}.')
             logger.info(f'Auto-adjusted motor {motor.name} finished successfully. Delta is {self.delta}')
             self.finalize()
+        else:
+            raise RuntimeError(f'Invalid state: {self.state}')
 
     def finalize(self):
         self.state = AdjustingState.Idle
@@ -178,3 +185,4 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.startPushButton.setText('Start')
         self.startPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
         self.resize(self.minimumSizeHint())
+        logger.debug('Finalization done.')
