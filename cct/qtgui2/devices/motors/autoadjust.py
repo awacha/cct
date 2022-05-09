@@ -89,7 +89,6 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     'Cannot start auto-adjustment when the left switch is active. '
                     'Move the motor right by a small amount and try again.'
                 )
-
             self.oldposition = self.motor().where()
             self.motor().setPosition(self.motor()['softright'])
             self.state = AdjustingState.WaitForInitialSetPositionResult
@@ -99,6 +98,8 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         elif self.startPushButton.text() == 'Stop':
             self.state = AdjustingState.Stopping
             self.motor().stop()
+        else:
+            assert False
 
     def onMotorChanged(self):
         if self.motorname is not None:
@@ -138,7 +139,10 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         logger.debug(f'onMotorStopped({success=}, {endposition=:.6f})')
         motor = self.motor()
         #assert self.sender() is motor
-        if self.state == AdjustingState.Stopping:
+        if self.state == AdjustingState.Idle:
+            # do nothing: the motor is connected even if no adjustment sequence is running.
+            return
+        elif self.state == AdjustingState.Stopping:
             logger.debug('Motor stopped on user request')
             self.finalize()
             return
