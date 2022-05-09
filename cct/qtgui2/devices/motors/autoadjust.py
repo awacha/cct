@@ -130,7 +130,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.progressBar.setFormat(f'Moving motor {self.motor().name} to {endposition:.4f}')
 
     def onMotorStopped(self, success: bool, endposition: float):
-        logger.debug(f'onMotorStopped({success=}, {endposition=::6f})')
+        logger.debug(f'onMotorStopped({success=}, {endposition=:.6f})')
         motor = self.motor()
         #assert self.sender() is motor
         if self.state == AdjustingState.Stopping:
