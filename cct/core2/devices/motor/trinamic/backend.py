@@ -641,7 +641,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
 
         To minimize dead time, we want to detect motor stop very quickly and very accurately.
         """
-        self.debug(f'checkMotion({axis=})')
+        #self.debug(f'checkMotion({axis=})')
         if axis not in self.motionstatus:
             self.debug('Motor #{axis} is not moving.')
             return False  # the motor is not moving, and we do not need to do anything about it.
@@ -711,7 +711,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
             self.motionEnded(axis, False)
             return False
 
-        self.debug('Still moving.')
+        #self.debug('Still moving.')
         return True
 
     def onVariablesReady(self):
