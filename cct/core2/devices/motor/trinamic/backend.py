@@ -641,12 +641,15 @@ class TrinamicMotorControllerBackend(DeviceBackend):
 
         To minimize dead time, we want to detect motor stop very quickly and very accurately.
         """
+        self.debug(f'checkMotion({axis=})')
         if axis not in self.motionstatus:
+            self.debug('Motor #{axis} is not moving.')
             return False  # the motor is not moving, and we do not need to do anything about it.
 
         if self.motionstatus[axis].cmdacktime is None:
             # we did not yet get the acknowledgement message for the MoveTo command from the controller, assume that the
             # motor is moving
+            self.debug('Motor #{axis} is moving: MoveTo command not yet acknowledged by the controller.')
             return True  # the motor is assumed to be moving (or will be moving shortly)
 
         if self.motionstatus[axis].targetposition is None:
@@ -656,7 +659,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 self.motionstatus[axis].targetposition = targetposition.value
                 # we don't need to query it too fast
                 targetposition.setTimeout(None)
-
+                self.debug(f'Target position obtained, it is {self.motionstatus[axis].targetposition:.6f}')
         # note that the variables can be outdated. Before making decisions based on their values, make sure that
         # we have a recent enough value, i.e. after the start of the motion
 
@@ -674,7 +677,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 (actualposition.value == self.motionstatus[axis].targetposition) and
                 (targetpositionreached.value is True)):
             # successful motor stop
-            #self.debug('Stop condition #1 (target reached) met.')
+            self.debug('Stop condition #1 (target reached) met.')
             self.motionEnded(axis, True)
             return False  # motor stopped
 
@@ -695,7 +698,7 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 (actualspeed.timestamp > self.motionstatus[axis].cmdacktime) and
                 (switchstatus.timestamp > self.motionstatus[axis].cmdacktime) and
                 (switchstatus.value is True) and switchenabled):
-            #self.debug('Stop condition #2 (end switch) met.')
+            self.debug('Stop condition #2 (end switch) met.')
             self.motionEnded(axis, False)
             return False
 
@@ -704,11 +707,11 @@ class TrinamicMotorControllerBackend(DeviceBackend):
                 (actualspeed.timestamp > self.motionstatus[axis].stopcmdacktime) and
                 (actualspeed.value == 0)):
             # motor stop by user break
-            #self.debug('Stop condition #3 (user stop) met.')
+            self.debug('Stop condition #3 (user stop) met.')
             self.motionEnded(axis, False)
             return False
 
-        #        self.debug('Still moving.')
+        self.debug('Still moving.')
         return True
 
     def onVariablesReady(self):
