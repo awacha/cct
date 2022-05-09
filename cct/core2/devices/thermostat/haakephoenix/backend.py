@@ -313,6 +313,6 @@ class HaakePhoenixBackend(DeviceBackend):
         else:
             super().doPanic()
 
-    def _dosend(self, message: bytes, nreplies: int):
+    async def _dosend(self, message: bytes, nreplies: int):
         self.debug(f'Sending message *{message}* to Haake Phoenix hardware, expecting {nreplies} replies.')
-        super()._dosend(message, nreplies)
+        await super()._dosend(message, nreplies)
