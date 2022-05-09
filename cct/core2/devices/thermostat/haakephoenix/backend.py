@@ -110,7 +110,7 @@ class HaakePhoenixBackend(DeviceBackend):
         return msgs[:-1], msgs[-1]
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
-        time.sleep(0.1)  # the circulator does not like too frequent messaging. This is an ugly hack, I know!
+        time.sleep(0.3)  # the circulator does not like too frequent messaging. This is an ugly hack, I know!
         self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
         if message.startswith(b'F001'):
             self.error(f'Unknown command reported by the circulator. Last command: {sentmessage}')

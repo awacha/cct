@@ -15,7 +15,7 @@ class HaakePhoenix(DeviceFrontend):
     devicetype = 'thermostat'
     temperatureChanged = QtCore.pyqtSignal(float)
     startStop = QtCore.pyqtSignal(bool)
-    loglevel = logging.DEBUG
+    loglevel = logging.INFO
 
     def __init__(self, name: str, host: str, port: int, **kwargs):
         super().__init__(name, host, port, **kwargs)
