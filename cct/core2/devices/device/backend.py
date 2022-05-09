@@ -189,6 +189,7 @@ class DeviceBackend:
         except Exception as exc:
             self.error(f'Connection error to device: {repr(exc)}')
             self.messageToFrontend('end', expected=False)
+            return
         # flush the incoming stream: remove residual data
         done, pending = await asyncio.wait(
             [asyncio.create_task(self.streamreader.read(), name='flush'),

@@ -51,7 +51,7 @@ class HaakePhoenixBackend(DeviceBackend):
         DeviceBackend.VariableInfo(name='pump_power', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
     ]
     outstandingqueryfailtimeout = 10.0
-    delaybetweensends = 0.1
+    delaybetweensends = 0.5
 
 
     def _query(self, variablename: str):
