@@ -125,6 +125,7 @@ class DeviceBackend:
     messageretries: int = 0
     messagemaxretries: int = 10
     outstandingqueryfailtimeout: float = 5.0
+    delaybetweensends: float = 0.0
 
     lastmessage: Optional[Tuple[bytes, int]] = None
     telemetryPeriod: float = 5.0  # telemetry period in seconds
@@ -404,6 +405,9 @@ class DeviceBackend:
     @final
     async def _dosend(self, message: bytes, nreplies: int):
         self.streamwriter.write(message)
+        if self.lastsendtime is not None:
+            # ensure a delay between two sends
+            time.sleep(max(time.monotonic()-self.lastsendtime - self.delaybetweensends, 0))
         self.lastsendtime = time.monotonic()
         if self.telemetryInformation is not None:
             self.telemetryInformation.setCommunicating(True)

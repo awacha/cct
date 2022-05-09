@@ -50,6 +50,9 @@ class HaakePhoenixBackend(DeviceBackend):
         DeviceBackend.VariableInfo(name='cooling_on', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.BOOL),
         DeviceBackend.VariableInfo(name='pump_power', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
     ]
+    outstandingqueryfailtimeout = 10.0
+    delaybetweensends = 0.1
+
 
     def _query(self, variablename: str):
         if variablename == 'firmwareversion':
@@ -110,7 +113,6 @@ class HaakePhoenixBackend(DeviceBackend):
         return msgs[:-1], msgs[-1]
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
-        time.sleep(0.05)  # the circulator does not like too frequent messaging. This is an ugly hack, I know!
         self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
         if message.startswith(b'F001'):
             self.error(f'Unknown command reported by the circulator. Last command: {sentmessage}')
