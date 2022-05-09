@@ -109,7 +109,7 @@ class HaakePhoenixBackend(DeviceBackend):
         return msgs[:-1], msgs[-1]
 
     def interpretMessage(self, message: bytes, sentmessage: bytes):
-        #        self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
+        self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
         if message.startswith(b'F001'):
             self.error(f'Unknown command reported by the circulator. Last command: {sentmessage}')
         elif message.startswith(b'F123'):
