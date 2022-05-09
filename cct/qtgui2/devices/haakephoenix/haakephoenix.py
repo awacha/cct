@@ -6,6 +6,7 @@ from .haakephoenix_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 from ....core2.devices.thermostat.haakephoenix.backend import HaakePhoenixBackend
 from ....core2.devices.thermostat.haakephoenix.frontend import HaakePhoenix
+from ....core2.devices.device.frontend import DeviceFrontend
 
 
 class HaakePhoenixDevice(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
@@ -35,9 +36,18 @@ class HaakePhoenixDevice(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         widget.setAutoFillBackground(True)
         if label is not None:
             widget.setText(label)
-        self.lowLimitDoubleSpinBox.setValue(self.device()['lowlimit'])
-        self.highLimitDoubleSpinBox.setValue(self.device()['highlimit'])
-        self.setPointDoubleSpinBox.setValue(self.device()['setpoint'])
+        try:
+            self.lowLimitDoubleSpinBox.setValue(self.device()['lowlimit'])
+        except DeviceFrontend.DeviceError:
+            pass
+        try:
+            self.highLimitDoubleSpinBox.setValue(self.device()['highlimit'])
+        except DeviceFrontend.DeviceError:
+            pass
+        try:
+            self.setPointDoubleSpinBox.setValue(self.device()['setpoint'])
+        except DeviceFrontend.DeviceError:
+            pass
 
     def updateHighLimit(self):
         self.device().setHighLimit(self.highLimitDoubleSpinBox.value())
