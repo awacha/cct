@@ -146,7 +146,8 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         )
 
     def motorToPeak(self):
-        self.instrument.motors[self.scan.motorname].moveTo(self.peakposition())
+        if self.peakposition() is not None:
+            self.instrument.motors[self.scan.motorname].moveTo(self.peakposition())
 
     def motorToCursor(self):
         self.instrument.motors[self.scan.motorname].moveTo(
