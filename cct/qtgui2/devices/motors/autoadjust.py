@@ -111,23 +111,28 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def onMotorPositionChanged(self, newposition: float):
         if (self.state == AdjustingState.WaitForInitialSetPositionResult) and \
-                (newposition == self.motor()['softright']):
+                (newposition >= self.motor()['softright']):
             logger.debug('AutoAdjust #1 acknowledged. Now moving left.')
             self.state = AdjustingState.MovingLeft
             self.motor().moveTo(self.motor()['softleft'])
         elif (self.state == AdjustingState.WaitForFinalSetPositionResult) and \
-                (newposition == self.motor()['softleft']):
+                (newposition <= self.motor()['softleft']):
             self.state = AdjustingState.MovingRight
             self.delta = (self.motor()['softright'] - self.leftposition - self.bufferDistanceDoubleSpinBox.value() + \
                           self.motor()['softleft'] - self.oldposition)
             self.motor().moveTo(self.oldposition + self.delta)
+        else:
+            logger.debug(f'Doing nothing in onMotorPositionChanged({newposition=:.6f}): {self.state=}')
 
     def onMotorMoving(self, position: float, startposition: float, endposition: float):
+        logger.debug(f'onMotorMoving({position=:.6f}, {startposition=:.6f}, {endposition=:.6f}')
         if self.state in [AdjustingState.MovingLeft, AdjustingState.MovingRight, AdjustingState.MoveByBufferDistance]:
             self.progressBar.setVisible(True)
             self.progressBar.setRange(0, 1000)
             self.progressBar.setValue(int(1000*(position-startposition) / (endposition-startposition)))
             self.progressBar.setFormat(f'Moving motor {self.motor().name} to {endposition:.4f}')
+        else:
+            logger.debug(f'Doing nothing in onMotorMoving(): in state {self.state}')
 
     def onMotorStopped(self, success: bool, endposition: float):
         logger.debug(f'onMotorStopped({success=}, {endposition=:.6f})')
