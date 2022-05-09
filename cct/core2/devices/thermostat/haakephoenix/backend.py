@@ -53,60 +53,53 @@ class HaakePhoenixBackend(DeviceBackend):
     outstandingqueryfailtimeout = 10.0
     delaybetweensends = 0.5
 
+    querymessages = {'firmwareversion': b'R V1\r',
+                     'faultstatus': b'R BS\r',
+                     'fuzzycontrol': None,
+                     'fuzzystatus': None,
+                     'temperature_internal': b'R T1\r',
+                     'temperature_external': b'R T3\r',
+                     'setpoint': b'R SW\r',
+                     'highlimit': b'R HL\r',
+                     'lowlimit': b'R LL\r',
+                     'diffcontrol_on': b'R FR\r',
+                     'autostart': b'R ZA\r',
+                     'fuzzyid': b'R ZI\r',
+                     'beep': b'R ZB\r',
+                     'time': b'R XT\r',
+                     'date': b'R XD\r',
+                     'watchdog_on': b'R WD\r',
+                     'watchdog_setpoint': b'R WS\r',
+                     'cooling_on': b'R CC\r',
+                     'pump_power': b'R PF\r',
+                     }
+
 
     def _query(self, variablename: str):
-        if variablename == 'firmwareversion':
-            self.enqueueHardwareMessage(b'R V1\r')
-        elif variablename == 'faultstatus':
-            self.enqueueHardwareMessage(b'R BS\r')
-        elif variablename == 'fuzzycontrol':
+        qmsg = self.querymessages[variablename]
+        if (variablename == 'fuzzycontrol') and (qmsg is None):
             try:
                 if self['firmwareversion'].startswith('2P/H'):
-                    self.enqueueHardwareMessage(b'R FB\r')
+                    self.querymessages['fuzzycontrol'] = b'R FB\r'
+                    qmsg = b'R FB\r'
                 else:
                     self.updateVariable('fuzzycontrol', 'not supported')
             except KeyError:
                 self.getVariable('fuzzycontrol').lastquery = None
-        elif variablename == 'fuzzystatus':
+        elif (variablename == 'fuzzystatus') and (qmsg is None):
             try:
                 if self['firmwareversion'].startswith('2P/H'):
-                    self.enqueueHardwareMessage(b'R FE\r')
+                    self.querymessages['fuzzystatus'] = b'R FE\r'
+                    qmsg = b'R FE\r'
                 else:
                     self.updateVariable('fuzzystatus', False)
             except KeyError:
                 self.getVariable('fuzzystatus').lastquery = None
-        elif variablename == 'temperature_internal':
-            self.enqueueHardwareMessage(b'R T1\r')
-        elif variablename == 'temperature_external':
-            self.enqueueHardwareMessage(b'R T3\r')
-        elif variablename == 'setpoint':
-            self.enqueueHardwareMessage(b'R SW\r')
-        elif variablename == 'highlimit':
-            self.enqueueHardwareMessage(b'R HL\r')
-        elif variablename == 'lowlimit':
-            self.enqueueHardwareMessage(b'R LL\r')
-        elif variablename == 'diffcontrol_on':
-            self.enqueueHardwareMessage(b'R FR\r')
-        elif variablename == 'autostart':
-            self.enqueueHardwareMessage(b'R ZA\r')
-        elif variablename == 'fuzzyid':
-            self.enqueueHardwareMessage(b'R ZI\r')
-        elif variablename == 'beep':
-            self.enqueueHardwareMessage(b'R ZB\r')
-        elif variablename == 'time':
-            self.enqueueHardwareMessage(b'R XT\r')
-        elif variablename == 'date':
-            self.enqueueHardwareMessage(b'R XD\r')
-        elif variablename == 'watchdog_on':
-            self.enqueueHardwareMessage(b'R WD\r')
-        elif variablename == 'watchdog_setpoint':
-            self.enqueueHardwareMessage(b'R WS\r')
-        elif variablename == 'cooling_on':
-            self.enqueueHardwareMessage(b'R CC\r')
-        elif variablename == 'pump_power':
-            self.enqueueHardwareMessage(b'R PF\r')
+        if qmsg is None:
+            self.debug(f'Variable {variablename} cannot be queried (yet).')
+            self.getVariable(variablename).lastquery = None
         else:
-            self.error(f'Unknown variable: {variablename}')
+            self.enqueueHardwareMessage(qmsg)
 
     def _cutmessages(self, message: bytes) -> Tuple[List[bytes], bytes]:
         msgs = message.split(b'\r')
@@ -116,6 +109,12 @@ class HaakePhoenixBackend(DeviceBackend):
         self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
         if message.startswith(b'F001'):
             self.error(f'Unknown command reported by the circulator. Last command: {sentmessage}')
+            try:
+                var = [v for v in self.querymessages if self.querymessages[v] == sentmessage][0]
+            except IndexError:
+                pass
+            else:
+                self.getVariable(var).lastquery = None  # will be queried again
         elif message.startswith(b'F123'):
             self.error(f'Range error reported by the circulator. Last command: {sentmessage}')
 #        elif message.startswith(b'FE00'):
