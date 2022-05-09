@@ -9,7 +9,7 @@ from ..generic.frontend import MotorController
 class TrinamicMotor(MotorController):
     _converters: Tuple[UnitConverter, ...]
     backendclass: TrinamicMotorControllerBackend
-    loglevel = logging.DEBUG
+    loglevel = logging.INFO
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
