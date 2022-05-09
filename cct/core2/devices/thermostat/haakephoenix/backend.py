@@ -108,11 +108,10 @@ class HaakePhoenixBackend(DeviceBackend):
     def interpretMessage(self, message: bytes, sentmessage: bytes):
         self.debug(f'Interpreting message: {message.decode("ascii")} (sent: {sentmessage.decode("ascii")[:-1]})')
         if message.startswith(b'F001'):
-            self.error(f'Unknown command reported by the circulator. Last command: {sentmessage}')
             try:
                 var = [v for v in self.querymessages if self.querymessages[v] == sentmessage][0]
             except IndexError:
-                pass
+                self.error(f'Unknown command reported by the circulator. Last command: {sentmessage}')
             else:
                 self.getVariable(var).lastquery = None  # will be queried again
         elif message.startswith(b'F123'):
