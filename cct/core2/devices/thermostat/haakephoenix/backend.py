@@ -51,7 +51,7 @@ class HaakePhoenixBackend(DeviceBackend):
         DeviceBackend.VariableInfo(name='pump_power', dependsfrom=[], urgent=False, timeout=1.0, vartype=VariableType.FLOAT),
     ]
     outstandingqueryfailtimeout = 10.0
-    delaybetweensends = 0.5
+    delaybetweensends = 0.01
 
     querymessages = {'firmwareversion': b'R V1\r',
                      'faultstatus': b'R BS\r',
