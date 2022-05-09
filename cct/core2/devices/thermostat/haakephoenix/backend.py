@@ -114,8 +114,8 @@ class HaakePhoenixBackend(DeviceBackend):
             self.error(f'Unknown command reported by the circulator. Last command: {sentmessage}')
         elif message.startswith(b'F123'):
             self.error(f'Range error reported by the circulator. Last command: {sentmessage}')
-        elif message.startswith(b'FE00'):
-            self.error(f'Received FE00 from the circulator. Last command: {sentmessage}')
+#        elif message.startswith(b'FE00'):
+#            self.error(f'Received FE00 from the circulator. Last command: {sentmessage}')
         elif sentmessage == b'R V1\r':
             self.updateVariable('firmwareversion', message.decode('ascii'))
         elif message.startswith(b'BS'):  # reply to "R BS"
