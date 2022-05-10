@@ -151,6 +151,7 @@ class Config(QtCore.QObject):
             cnf.changed.disconnect(self._subConfigChanged)
         else:
             # extend the path with the key and re-emit the signal.
+            logger.debug(f'Config change in subconfig "{key}", path {path}. Emitting `changed` signal with path "{key}"')
             self.changed.emit((key,) + path, newvalue)
         self.autosave()
 
