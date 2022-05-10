@@ -58,7 +58,7 @@ class Config(QtCore.QObject):
     def onChanged(self, path: Tuple[str, ...], value: Any):
         self.autosave()
 
-    def __setitem__(self, key: Union[str, Tuple[str]], value: Any):
+    def __setitem__(self, key: Union[int, str, Tuple[Union[str, int]]], value: Any):
         if isinstance(key, tuple) and len(key) > 1:
             subconfig = self._data[key[0]]
             assert isinstance(subconfig, Config)
@@ -149,7 +149,8 @@ class Config(QtCore.QObject):
             key = [k for k in self.keys() if self[k] is cnf][0]
         except IndexError:
             # this `Config` instance does not belong to us, disconnect the signal.
-            logger.warning('Disconnecting stale `changed` signal handler')
+            logger.warning(f'Disconnecting stale `changed` signal handler. Keys in stale config: {list(cnf.keys())}')
+            assert False
             cnf.changed.disconnect(self._subConfigChanged)
         else:
             # extend the path with the key and re-emit the signal.
