@@ -136,12 +136,12 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
     started = QtCore.pyqtSignal()
 
     def __init__(self, **kwargs):
+        self._data = []
         super().__init__(**kwargs)
         if 'transmission' not in self.config:
             self.config['transmission'] = {}
         if 'sd_from_error_propagation' not in self.config['transmission']:
             self.config['transmission']['sd_from_error_propagation'] = True
-        self._data = []
 
     def setStatus(self, status: TransmissionMeasurementStatus):
         logger.debug(f'Transmission status: {status}')
