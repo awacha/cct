@@ -842,14 +842,13 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                 logger.error(f'Cannot save trnasmission of sample {self._data[i].samplename}: {exc}')
 
     def setErrorPropagationMode(self, sd_from_error_propagation: bool):
-        logger.debug(f'setErrorPropagationMode({sd_from_error_propagation})')
         self.instrument.config['transmission']['sd_from_error_propagation'] = sd_from_error_propagation
-        logger.debug(f'{type(self.instrument.config["transmission"])}')
+        self.dataChanged.emit(self.index(0, 0, QtCore.QModelIndex()),
+                              self.index(self.rowCount(QtCore.QModelIndex()),
+                                         self.columnCount(QtCore.QModelIndex())))
 
     def onConfigChanged(self, path, value):
-        logger.debug(f'onConfigChanged({path}, {value})')
         if path == ('transmission', 'sd_from_error_propagation'):
-            logger.debug('Emitting data changed signal.')
             self.dataChanged.emit(self.index(0, 0, QtCore.QModelIndex()),
                                   self.index(self.rowCount(QtCore.QModelIndex()),
                                              self.columnCount(QtCore.QModelIndex())))
