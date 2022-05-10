@@ -33,7 +33,15 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.transmission.finished.connect(self.onTransmissionFinished)
         self.instrument.transmission.progress.connect(self.onTransmissionProgress)
         self.instrument.transmission.sampleStarted.connect(self.onTransmissionSampleStarted)
+        self.oldstyleCheckBox.toggled.connect(self.errorPropagationModeChanged)
+        self.saveResultsPushButton.clicked.connect(self.forceSaveResults)
         self.resize(self.minimumSize())
+
+    def forceSaveResults(self):
+        self.instrument.transmission.saveAllResults()
+
+    def errorPropagationModeChanged(self, checked: bool):
+        self.instrument.transmission.setErrorPropagationMode(not checked)
 
     def onAddSamplesClicked(self):
         samples = [index.data(QtCore.Qt.DisplayRole) for index in self.sampleListView.selectedIndexes()]

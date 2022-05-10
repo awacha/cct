@@ -2,7 +2,7 @@ import enum
 import logging
 import pickle
 import traceback
-from typing import List, Tuple, Any, Optional, Iterable
+from typing import List, Tuple, Any, Optional, Iterable, Union
 
 import numpy as np
 from PyQt5 import QtCore, QtGui
@@ -40,31 +40,38 @@ class TransmissionData:
     def addSample(self, value: float):
         self.samplecounts.append(value)
 
-    def transmission(self) -> Optional[Tuple[float, float]]:
-        empty = self.empty()
-        dark = self.dark()
-        sample = self.sample()
-        if (empty is None) or (dark is None) or (sample is None):
-            return None
-        empty = (empty[0] - dark[0]), (empty[1] ** 2 + dark[1] ** 2) ** 0.5
-        sample = (sample[0] - dark[0]), (sample[1] ** 2 + dark[1] ** 2) ** 0.5
-        return sample[0] / empty[0], (
-                sample[1] ** 2 / empty[0] ** 2 + empty[1] ** 2 * sample[0] ** 2 / empty[0] ** 4) ** 0.5
+    def transmission(self, sd_from_error_propagation: bool=True) -> Optional[Tuple[float, float]]:
+        if sd_from_error_propagation:
+            empty = self.empty()
+            dark = self.dark()
+            sample = self.sample()
+            if (empty is None) or (dark is None) or (sample is None):
+                return None
+            empty = (empty[0] - dark[0]), (empty[1] ** 2 + dark[1] ** 2) ** 0.5
+            sample = (sample[0] - dark[0]), (sample[1] ** 2 + dark[1] ** 2) ** 0.5
+            return sample[0] / empty[0], (
+                    sample[1] ** 2 / empty[0] ** 2 + empty[1] ** 2 * sample[0] ** 2 / empty[0] ** 4) ** 0.5
+        else:
+            # calculate the transmission from the standard deviation of several attempts
+            if not ((len(self.emptycounts) == len(self.darkcounts)) and (len(self.samplecounts) == len(self.darkcounts))):
+                raise ValueError('The number of measurements from dark, empty and sample are not the same!')
+            t = [(s-d)/(e-d) for d,e,s in zip(self.darkcounts, self.emptycounts, self.samplecounts)]
+            return float(np.nanmean(t)), float(np.nanstd(t))
 
     def dark(self) -> Optional[Tuple[float, float]]:
         if not self.darkcounts:
             return None
-        return np.mean(self.darkcounts), np.std(self.darkcounts)
+        return float(np.mean(self.darkcounts)), float(np.std(self.darkcounts))
 
     def empty(self) -> Optional[Tuple[float, float]]:
         if not self.emptycounts:
             return None
-        return np.mean(self.emptycounts), np.std(self.emptycounts)
+        return float(np.mean(self.emptycounts)), float(np.std(self.emptycounts))
 
     def sample(self) -> Optional[Tuple[float, float]]:
         if not self.samplecounts:
             return None
-        return np.mean(self.samplecounts), np.std(self.samplecounts)
+        return float(np.mean(self.samplecounts)), float(np.std(self.samplecounts))
 
     def clear(self):
         self.samplecounts = []
@@ -130,6 +137,10 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        if 'transmission' not in self.config:
+            self.config['transmission'] = {}
+        if 'sd_from_error_propagation' not in self.config['transmission']:
+            self.config['transmission']['sd_from_error_propagation'] = True
         self._data = []
 
     def setStatus(self, status: TransmissionMeasurementStatus):
@@ -180,10 +191,10 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             value = data.sample()
             return '--' if value is None else f'{value[0]:.1f} \xb1 {value[1]:.1f}'
         elif (index.column() == 4) and (role == QtCore.Qt.DisplayRole):
-            value = data.transmission()
+            value = data.transmission(self.config['transmission']['sd_from_error_propagation'])
             return '--' if value is None else f'{value[0]:.4f} \xb1 {value[1]:.4f}'
         elif (index.column() == 5) and (role == QtCore.Qt.DisplayRole):
-            transm = data.transmission()
+            transm = data.transmission(self.config['transmission']['sd_from_error_propagation'])
             if transm is None:
                 return '--'
             mud = -np.log(transm[0]), np.abs(transm[1] / transm[0])
@@ -194,7 +205,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                     sample.thickness[0] ** 4) ** 0.5
             return f'{mu[0]:.4f} \xb1 {mu[1]:.4f}'
         elif (index.column() == 6) and (role == QtCore.Qt.DisplayRole):
-            transm = data.transmission()
+            transm = data.transmission(self.config['transmission']['sd_from_error_propagation'])
             if transm is None:
                 return '--'
             mud = -np.log(transm[0]), np.abs(transm[1] / transm[0])
@@ -635,13 +646,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                     self.moveSample()
                 else:
                     # we are just ready with exposing the sample. Save the transmission if possible.
-                    transm = currenttask.transmission()
-                    logger.info(f'Transmission for sample {currenttask.samplename} measured: '
-                                f'{transm[0]:.4f} \xb1 {transm[1]:.4f}')
-                    try:
-                        self.samplestore.updateSample(currenttask.samplename, 'transmission', transm)
-                    except ValueError as ve:
-                        logger.error(f'Cannot set transmission of sample {currenttask.samplename}: {str(ve)}')
+                    self.saveTransmissionResult(self.currentlymeasuredsample)
                     # go to the next sample
                     if self.currentlymeasuredsample >= (len(self._data) - 1):
                         # no more samples to measure
@@ -682,6 +687,21 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             # shutter remained open when requested to be closed or could not open: this is an error
             self._disconnectSource()
             self.finish(False, "Shutter error")
+
+    def saveTransmissionResult(self, samplename: Union[str, int]):
+        if isinstance(samplename, str):
+            sampleindex = [i for i in range(len(self._data)) if self._data[i].samplename == samplename][0]
+        elif isinstance(samplename, int):
+            sampleindex = samplename
+            samplename = self._data[sampleindex].samplename
+        currenttask = self._data[sampleindex]
+        transm = currenttask.transmission(self.config['transmission']['sd_from_error_propagation'])
+        logger.info(f'Transmission for sample {samplename} is: '
+                    f'{transm[0]:.4f} \xb1 {transm[1]:.4f}')
+        try:
+            self.samplestore.updateSample(samplename, 'transmission', transm)
+        except ValueError as ve:
+            logger.error(f'Cannot set transmission of sample {samplename}: {str(ve)}')
 
     def onImageReceived(self, exposure: Exposure):
         if self.finishIfUserStop():
@@ -813,3 +833,19 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             super().panichandler()
         else:
             self.stopMeasurement()
+
+    def saveAllResults(self):
+        for i in range(len(self._data)):
+            try:
+                self.saveTransmissionResult(i)
+            except Exception as exc:
+                logger.error(f'Cannot save trnasmission of sample {self._data[i].samplename}: {exc}')
+
+    def setErrorPropagationMode(self, sd_from_error_propagation: bool):
+        self.config['transmission']['sd_from_error_propagation'] = sd_from_error_propagation
+
+    def onConfigChanged(self, path, value):
+        if path == ('transmission', 'sd_from_error_propagation'):
+            self.dataChanged.emit(self.index(0, 0, QtCore.QModelIndex()),
+                                  self.index(self.rowCount(QtCore.QModelIndex()),
+                                             self.columnCount(QtCore.QModelIndex())))
