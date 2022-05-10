@@ -77,11 +77,13 @@ class Config(QtCore.QObject):
                 self.changed.emit((key,), value)
             else:
                 # key already present, see if they are different
-                if (not isinstance(self._data[key], type(value))) or (self._data[key] != value):
+                if not (isinstance(self._data[key], type(value)) and (self._data[key] == value)):
                     self._data[key] = value
                     # value changed, emit the signal
+                    logger.debug(f'Key value changed, emitting change signal.')
                     self.changed.emit((key, ), value)
                 else:
+                    logger.debug(f'No need to change key {key}: type and value are the same')
                     pass
         else:
             # convert it to a Config instance
