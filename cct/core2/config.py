@@ -9,7 +9,7 @@ from PyQt5 import QtCore
 PathLike = Union[os.PathLike, str, pathlib.Path]
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Config(QtCore.QObject):
@@ -67,6 +67,7 @@ class Config(QtCore.QObject):
             key = key[0]
         elif isinstance(key, tuple) and len(key) == 0:
             raise ValueError('Empty tuples cannot be Config keys!')
+        assert isinstance(key, str)
         if not isinstance(value, dict):
             if key not in self._data:
                 self._data[key] = value
@@ -146,6 +147,7 @@ class Config(QtCore.QObject):
             key = [k for k in self.keys() if self[k] is cnf][0]
         except IndexError:
             # this `Config` instance does not belong to us, disconnect the signal.
+            logger.warning('Disconnecting stale `changed` signal handler')
             cnf.changed.disconnect(self._subConfigChanged)
         else:
             # extend the path with the key and re-emit the signal.
