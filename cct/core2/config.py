@@ -153,7 +153,6 @@ class Config(QtCore.QObject):
         except IndexError:
             # this `Config` instance does not belong to us, disconnect the signal.
             logger.warning(f'Disconnecting stale `changed` signal handler. Keys in stale config: {list(cnf.keys())}')
-            assert False
             cnf.changed.disconnect(self._subConfigChanged)
         else:
             # extend the path with the key and re-emit the signal.

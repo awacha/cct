@@ -843,7 +843,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
 
     def setErrorPropagationMode(self, sd_from_error_propagation: bool):
         logger.debug(f'setErrorPropagationMode({sd_from_error_propagation})')
-        self.config['transmission']['sd_from_error_propagation'] = sd_from_error_propagation
+        self.instrument.config['transmission']['sd_from_error_propagation'] = sd_from_error_propagation
 
     def onConfigChanged(self, path, value):
         logger.debug(f'onConfigChanged({path}, {value})')
