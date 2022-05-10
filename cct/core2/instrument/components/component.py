@@ -7,7 +7,7 @@ from PyQt5 import QtCore
 from ...config import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Component:
@@ -30,6 +30,7 @@ class Component:
     def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PyQt5/multiinheritance.html
         self.config = kwargs['config']
         if isinstance(self.config, Config):
+            logger.debug('Connecting configChanged signal')
             self.config.changed.connect(self.onConfigChanged)
         if kwargs['instrument'] is not None:
             self.instrument = weakref.proxy(kwargs['instrument'])
