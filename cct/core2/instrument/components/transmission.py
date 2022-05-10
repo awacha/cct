@@ -16,7 +16,7 @@ from ...devices.xraysource.genix.frontend import GeniX, GeniXBackend
 from ...algorithms.orderforleastmotormovement import orderForLeastMotorMovement
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class TransmissionData:
