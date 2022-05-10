@@ -59,6 +59,7 @@ class Config(QtCore.QObject):
         self.autosave()
 
     def __setitem__(self, key: Union[int, str, Tuple[Union[str, int]]], value: Any):
+        logger.debug(f'Config.__setitem__({key}, {value})')
         if isinstance(key, tuple) and len(key) > 1:
             subconfig = self._data[key[0]]
             assert isinstance(subconfig, Config)
