@@ -67,9 +67,9 @@ class Config(QtCore.QObject):
             key = key[0]
         elif isinstance(key, tuple) and len(key) == 0:
             raise ValueError('Empty tuples cannot be Config keys!')
-        elif not isinstance(key, str):
+        elif not isinstance(key, (str, int)):
             logger.error(f'Funny key type: {key}, {type(key)}')
-            assert isinstance(key, str)
+            assert False
         if not isinstance(value, dict):
             if key not in self._data:
                 self._data[key] = value
