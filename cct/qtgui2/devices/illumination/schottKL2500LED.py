@@ -21,7 +21,7 @@ class SchottKL2500LEDUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         super().setupUi(Form)
         self.brightnessHorizontalSlider.valueChanged.connect(self.onSliderChanged)
         self.brightnessHorizontalSlider.setMinimum(0)
-        self.brightnessHorizontalSlider.setMaximum(KL2500LED.maximumBrightness)
+        self.brightnessHorizontalSlider.setMaximum(self.device().maximumBrightness)
         self.shutterPushButton.toggled.connect(self.onShutterToggled)
         self.frontPanelLockoutPushButton.toggled.connect(self.onFrontPanelLockoutToggled)
 
