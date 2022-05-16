@@ -18,6 +18,7 @@ from .scripting import Scripting
 from ..devices.connectioneditor.connectioneditor import ConnectionEditor
 from ..devices.genix.genix import GeniXTool
 from ..devices.haakephoenix.haakephoenix import HaakePhoenixDevice
+from ..devices.illumination.schottKL2500LED import SchottKL2500LEDUI
 from ..devices.motors.motorview import MotorView
 from ..devices.peristalticpump.leadfluid import LeadFluid_BT100S
 from ..devices.pilatus.pilatus import PilatusDetectorUI
@@ -97,6 +98,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionTecnowareUPS': TecnowareUPS,  # ToDo: group similar instruments
         'actionNotification': NotifierSetup,
         'actionDevice_loggers': DeviceLogManagerUI,
+        'actionSchott_KL2500LED': SchottKL2500LEDUI,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]

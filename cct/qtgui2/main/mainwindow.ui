@@ -257,7 +257,7 @@
      <x>0</x>
      <y>0</y>
      <width>1966</width>
-     <height>25</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -296,6 +296,7 @@
     <addaction name="actionPeristaltic_pump"/>
     <addaction name="actionKeen800UPS"/>
     <addaction name="actionTecnowareUPS"/>
+    <addaction name="actionSchott_KL2500LED"/>
     <addaction name="separator"/>
     <addaction name="actionDevice_connections"/>
     <addaction name="actionDevice_loggers"/>
@@ -873,6 +874,18 @@
    </property>
    <property name="toolTip">
     <string>Manage device variable loggers</string>
+   </property>
+  </action>
+  <action name="actionSchott_KL2500LED">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/illumination.svg</normaloff>:/icons/illumination.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Schott KL2500LED</string>
+   </property>
+   <property name="toolTip">
+    <string>Control a Schott KL2500LED light source</string>
    </property>
   </action>
  </widget>
