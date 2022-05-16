@@ -1,15 +1,19 @@
 from typing import Any
+import logging
 
 from PyQt5 import QtWidgets
 from ...utils.window import WindowRequiresDevices
 from .schottKL2500LED_ui import Ui_Form
 from ....core2.devices.illumination.schott.frontend import KL2500LED
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 
 class SchottKL2500LEDUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     required_devicenames = ['KL2500LED']
 
-    def __int__(self, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
 
