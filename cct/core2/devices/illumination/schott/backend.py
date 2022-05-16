@@ -65,12 +65,16 @@ class SchottKL2500LEDBackend(DeviceBackend):
             self.updateVariable('temperature', int(message[3:].decode('ascii'), base=16)*0.0625 - 273.15)
         else:
             raise RuntimeError(f'Reply received from illumination unit for unknown command: {message}')
-        if (self['brightness'] > 0) and not self['shutter']:
-            self.updateVariable('__status__', self.Status.LightsOn)
-        elif (self['brightness'] == 0):
-            self.updateVariable('__status__', self.Status.LightsOff)
-        elif self['shutter']:
-            self.updateVariable('__status__', self.Status.ShutterClosed)
+        try:
+            if (self['brightness'] > 0) and not self['shutter']:
+                self.updateVariable('__status__', self.Status.LightsOn)
+            elif (self['brightness'] == 0):
+                self.updateVariable('__status__', self.Status.LightsOff)
+            elif self['shutter']:
+                self.updateVariable('__status__', self.Status.ShutterClosed)
+        except KeyError:
+            # can happen if not queried yet.
+            pass
 
     def issueCommand(self, name: str, args: Sequence[Any]):
         if name == 'shutter':
