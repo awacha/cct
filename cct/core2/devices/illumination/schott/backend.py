@@ -24,17 +24,17 @@ class SchottKL2500LEDBackend(DeviceBackend):
 
     def _query(self, variablename: str):
         if variablename == 'brightness':
-            self.enqueueHardwareMessage(b'0BR?;')
+            self.enqueueHardwareMessage(b'0BR?;\r')
         elif variablename == 'hardwareversion':
-            self.enqueueHardwareMessage(b'0ID?;')
+            self.enqueueHardwareMessage(b'0ID?;\r')
         elif variablename == 'frontpanellockout':
-            self.enqueueHardwareMessage(b'0LK?;')
+            self.enqueueHardwareMessage(b'0LK?;\r')
         elif variablename == 'protocolversion':
-            self.enqueueHardwareMessage(b'0PV?;')
+            self.enqueueHardwareMessage(b'0PV?;\r')
         elif variablename == 'shutter':
-            self.enqueueHardwareMessage(b'0SH?;')
+            self.enqueueHardwareMessage(b'0SH?;\r')
         elif variablename == 'temperature':
-            self.enqueueHardwareMessage(b'0TX?;')
+            self.enqueueHardwareMessage(b'0TX?;\r')
         else:
             raise ValueError(f'Invalid variable {variablename}')
 
@@ -75,10 +75,10 @@ class SchottKL2500LEDBackend(DeviceBackend):
     def issueCommand(self, name: str, args: Sequence[Any]):
         if name == 'shutter':
             if args[0]:
-                self.enqueueHardwareMessage(b'0SH0001;')
+                self.enqueueHardwareMessage(b'0SH0001;\r')
                 self.commandFinished(name, 'Closing shutter')
             else:
-                self.enqueueHardwareMessage(b'0SH0000;')
+                self.enqueueHardwareMessage(b'0SH0000;\r')
                 self.commandFinished(name, 'Opening shutter')
         elif name == 'set_brightness':
             value = int(args[0])
@@ -88,14 +88,14 @@ class SchottKL2500LEDBackend(DeviceBackend):
                 self.enqueueHardwareMessage(f'0BR{value:04X};'.encode('ascii'))
             self.commandFinished(name, f'Brightness set to {value}')
         elif name == 'set_full_brightness':
-            self.enqueueHardwareMessage(b'0BRFFFF;')
+            self.enqueueHardwareMessage(b'0BRFFFF;\r')
             self.commandFinished(name, 'Full brightness selected')
         elif name == 'frontpanellockout':
             if args[0]:
-                self.enqueueHardwareMessage(b'0LK0001;')
+                self.enqueueHardwareMessage(b'0LK0001;\r')
                 self.commandFinished(name, 'Activating front panel lockout.')
             elif args[1]:
-                self.enqueueHardwareMessage(b'0LK0000;')
+                self.enqueueHardwareMessage(b'0LK0000;\r')
                 self.commandFinished(name, 'Deactivating front panel lockout.')
         else:
             self.commandFinished(name, 'Unknown command')
@@ -103,7 +103,7 @@ class SchottKL2500LEDBackend(DeviceBackend):
     def doPanic(self):
         self.panicking = self.PanicState.Panicking
         if self['__status__'] == self.Status.Running:
-            self.enqueueHardwareMessage(b'0BR0000;')
-            self.enqueueHardwareMessage(b'0LK0000;')
+            self.enqueueHardwareMessage(b'0BR0000;\r')
+            self.enqueueHardwareMessage(b'0LK0000;\r')
         else:
             super().doPanic()
