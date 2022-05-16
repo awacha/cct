@@ -63,6 +63,8 @@ class SchottKL2500LEDBackend(DeviceBackend):
             self.updateVariable('shutter', bool(int(message[3:].decode('ascii'), base=16)))
         elif message[1:3] == b'TX':
             self.updateVariable('temperature', int(message[3:].decode('ascii'), base=16)*0.0625 - 273.15)
+        elif message[1:3] == b'ID':
+            self.updateVariable('hardwareversion', message[3:].decode('ascii'))
         else:
             raise RuntimeError(f'Reply received from illumination unit for unknown command: {message}')
         try:
