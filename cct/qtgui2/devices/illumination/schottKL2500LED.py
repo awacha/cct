@@ -24,6 +24,8 @@ class SchottKL2500LEDUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.brightnessHorizontalSlider.setMaximum(self.device().maximumBrightness)
         self.shutterPushButton.toggled.connect(self.onShutterToggled)
         self.frontPanelLockoutPushButton.toggled.connect(self.onFrontPanelLockoutToggled)
+        for variable in self.device().keys():
+            self.onVariableChanged(variable, self.device()[variable], self.device()[variable])
 
     def device(self) -> KL2500LED:
         dev = [d for d in self.instrument.devicemanager if d.devicename == 'KL2500LED'][0]
