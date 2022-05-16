@@ -1,1 +1,1 @@
-from . import device, motor, xraysource, detector, vacuumgauge, thermostat, thermometer, ups
+from . import device, motor, xraysource, detector, vacuumgauge, thermostat, thermometer, ups, illumination

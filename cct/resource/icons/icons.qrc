@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>illumination.svg</file>
     <file>notification.svg</file>
     <file>cpt4logo.svg</file>
     <file>peristaltic_pump.svg</file>
