@@ -16,7 +16,7 @@ from ...dataclasses import Exposure, Header
 from ...config import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 def mywalkdir(root: str):
@@ -78,13 +78,16 @@ class IO(QtCore.QObject, Component):
             # find all subdirectories in `directory`, including `directory`
             # itself
             directory = self.getSubDir(subdir)
+            logger.debug(f'Reindexing subdirectory {directory}')
             filename_regex = re.compile(rf'^(?P<prefix>\w+)_(?P<fsn>\d+)\.{extension}$')
             for folder, subdirs, files in mywalkdir(str(directory)):
+                logger.debug(f'Looking in folder {folder}')
                 # find all files
                 matchlist = [m for m in [filename_regex.match(f) for f in files] if m is not None]
                 # find all file prefixes, like 'crd', 'tst', 'tra', 'scn', etc.
                 prefixes = {m.group('prefix') for m in matchlist}
                 for prefix in prefixes:
+                    logger.debug(f'Checking prefix {prefix}')
                     if prefix not in self._lastfsn:
                         self._lastfsn[prefix] = None
                     # find the highest available FSN of the current prefix in
@@ -104,6 +107,7 @@ class IO(QtCore.QObject, Component):
         for prefix in self._lastfsn:
             self._nextfsn[prefix] = self._lastfsn[prefix] + 1 if self._lastfsn[prefix] is not None else 0
             self.nextFSNChanged.emit(prefix, self._nextfsn[prefix])
+        logger.info('Reindexing done.')
 
     def imageReceived(self, prefix:str, fsn: int):
         if prefix not in self._lastfsn:
