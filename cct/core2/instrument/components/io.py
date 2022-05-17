@@ -84,7 +84,7 @@ class IO(QtCore.QObject, Component):
             directory = self.getSubDir(subdir)
             logger.debug(f'Reindexing subdirectory {directory}')
             filename_regex = re.compile(rf'^(?P<prefix>\w+)_(?P<fsn>\d+)\.{extension}$')
-            for folder, subdirs, files in mywalkdir(str(directory)):
+            for folder, subdirs, files in os.walk(str(directory)):
                 logger.debug(f'Looking in folder {folder}')
                 # find all files
                 matchlist = [m for m in [filename_regex.match(f) for f in files] if m is not None]
