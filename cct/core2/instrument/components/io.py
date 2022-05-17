@@ -24,6 +24,7 @@ def mywalkdir(root: str):
 
     Caveat: directory entries containing '.' are assumed to be files!
     """
+    logger.debug(f'Entering mywalkdir with root {root}')
     try:
         filelist = os.listdir(root)
     except FileNotFoundError:
@@ -31,9 +32,12 @@ def mywalkdir(root: str):
     possibledirs = [f for f in filelist if ('.' not in f)]
     dirs = [d for d in possibledirs if os.path.isdir(os.path.join(root, d))]
     files = [f for f in filelist if f not in dirs]
+    logger.debug(f'Yielding {root} from mywalkdir')
     yield root, dirs, files
+    logger.debug(f'Yielding subdirectories from mywalkdir(root={root})')
     for dir_ in dirs:
         yield from mywalkdir(os.path.join(root, dir_))
+    logger.debug(f'Exiting mywalkdir(root={root}')
 
 
 class IO(QtCore.QObject, Component):
@@ -97,7 +101,7 @@ class IO(QtCore.QObject, Component):
                     if self._lastfsn[prefix] is None or (maxfsn > self._lastfsn[prefix]):
                         logger.debug(f'Updating lastfsn for prefix {prefix} to {maxfsn}')
                         self._lastfsn[prefix] = maxfsn
-                logger.debug('All prefixes done in this folder ({folder})')
+                logger.debug(f'All prefixes done in this folder ({folder})')
             logger.debug('All folders done.')
 
         logger.debug('Creating empty prefixes')
