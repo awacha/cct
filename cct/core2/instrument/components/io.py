@@ -93,9 +93,14 @@ class IO(QtCore.QObject, Component):
                     # find the highest available FSN of the current prefix in
                     # this directory
                     maxfsn = max([int(m.group('fsn')) for m in matchlist if m.group('prefix') == prefix])
+                    logger.debug(f'Maxfsn is {maxfsn}')
                     if self._lastfsn[prefix] is None or (maxfsn > self._lastfsn[prefix]):
+                        logger.debug(f'Updating lastfsn for prefix {prefix} to {maxfsn}')
                         self._lastfsn[prefix] = maxfsn
+                logger.debug('All prefixes done in this folder ({folder})')
+            logger.debug('All folders done.')
 
+        logger.debug('Creating empty prefixes')
         # add known prefixes to self._lastfsn if they were not yet added.
         for prefix in self.config['path']['prefixes'].values():
             if prefix not in self._lastfsn:
@@ -104,6 +109,7 @@ class IO(QtCore.QObject, Component):
                 self.lastFSNChanged.emit(prefix, self._lastfsn[prefix])
 
         # update self._nextfsn
+        logger.debug('Updating nextfsn.')
         for prefix in self._lastfsn:
             self._nextfsn[prefix] = self._lastfsn[prefix] + 1 if self._lastfsn[prefix] is not None else 0
             self.nextFSNChanged.emit(prefix, self._nextfsn[prefix])
