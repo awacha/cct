@@ -107,30 +107,35 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
     def onScriptStarted(self):
         self.startStopToolButton.setText('Stop')
         self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
-        self.currentScript().outputPlainTextEdit.setVisible(True)
-        self.currentScript().addMessage('Script started')
+        if self.currentScript() is not None:
+            self.currentScript().outputPlainTextEdit.setVisible(True)
+            self.currentScript().addMessage('Script started')
 
     def onScriptFinished(self, success: bool, message: str):
-        if success:
-            self.currentScript().addMessage(f'Script finished successfully with message "{message}".')
-        else:
-            self.currentScript().addMessage(f'Script failed with message "{message}".')
+        if self.currentScript() is not None:
+            if success:
+                self.currentScript().addMessage(f'Script finished successfully with message "{message}".')
+            else:
+                self.currentScript().addMessage(f'Script failed with message "{message}".')
         self.startStopToolButton.setText('Start')
         self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
         if not success:
             QtWidgets.QMessageBox.critical(self, 'Script failed', f'Script failed with message: {message}')
         sui = self.runningScript()
-        sui.scriptEditor.setReadOnly(False)
-        sui.scriptEditor.highlightCurrentLine()
+        if sui is not None:
+            sui.scriptEditor.setReadOnly(False)
+            sui.scriptEditor.highlightCurrentLine()
 
     def onClipboardDataChanged(self):
-        self.pasteToolButton.setEnabled(self.currentScript().canPaste())
+        if self.currentScript() is not None:
+            self.pasteToolButton.setEnabled(self.currentScript().canPaste())
 
     def currentTabChanged(self, index: int):
         scriptui = self.currentScript()
-        self.undoToolButton.setEnabled(scriptui.canUndo())
-        self.redoToolButton.setEnabled(scriptui.canRedo())
-        self.pasteToolButton.setEnabled(scriptui.canPaste())
+        if scriptui is not None:
+            self.undoToolButton.setEnabled(scriptui.canUndo())
+            self.redoToolButton.setEnabled(scriptui.canRedo())
+            self.pasteToolButton.setEnabled(scriptui.canPaste())
 
     def tabCloseRequested(self, index: int):
         if self.scripts[index].isRunning():
@@ -157,6 +162,10 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
                 QtWidgets.QMessageBox.critical('Parsing error',
                                                f'Line {pe.args[0] + 1} is invalid. Error message: {pe.args[1]}')
                 return
+            except AttributeError:
+                # can happen if self.currentScript() is None: then .text() will not be available
+                if self.currentScript() is not None:
+                    raise
             self.instrument.interpreter.execute()
         elif self.startStopToolButton.text() == 'Stop':
             self.instrument.interpreter.stop()
@@ -209,28 +218,59 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         self._createTab(sui)
 
     def saveScript(self):
-        self.currentScript().save()
+        try:
+            self.currentScript().save()
+        except AttributeError:
+            if self.currentScript() is not None:
+                raise
 
     def saveScriptAs(self):
-        self.currentScript().saveas()
+        try:
+            self.currentScript().saveas()
+        except AttributeError:
+            if self.currentScript() is not None:
+                raise
 
     def undo(self):
-        self.currentScript().undo()
+        try:
+            self.currentScript().undo()
+        except AttributeError:
+            if self.currentScript() is not None:
+                raise
 
     def redo(self):
-        self.currentScript().redo()
+        try:
+            self.currentScript().redo()
+        except AttributeError:
+            if self.currentScript() is not None:
+                raise
 
     def editCopy(self):
-        self.currentScript().editCopy()
+        try:
+            self.currentScript().editCopy()
+        except AttributeError:
+            if self.currentScript() is not None:
+                raise
 
     def editCut(self):
-        self.currentScript().editCut()
+        try:
+            self.currentScript().editCut()
+        except AttributeError:
+            if self.currentScript() is not None:
+                raise
 
     def editPaste(self):
-        self.currentScript().editPaste()
+        try:
+            self.currentScript().editPaste()
+        except AttributeError:
+            if self.currentScript() is not None:
+                raise
 
-    def currentScript(self) -> ScriptUI:
-        return self.scripts[self.tabWidget.currentIndex()]
+    def currentScript(self) -> Optional[ScriptUI]:
+        try:
+            return self.scripts[self.tabWidget.currentIndex()]
+        except IndexError:
+            return None
 
     def _createTab(self, script: ScriptUI):
         self.scripts.append(script)
