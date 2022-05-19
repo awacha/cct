@@ -5,6 +5,7 @@ from PyQt5 import QtWidgets, QtGui
 from .shutter_ui import Ui_Frame
 from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.instrument import Instrument
+from ....core2.devices import DeviceType
 from ....core2.devices.xraysource.genix.frontend import GeniX
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ logger.setLevel(logging.INFO)
 
 
 class ShutterIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
-    required_devicetypes = ['source']
+    required_devicetypes = [DeviceType.Source]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

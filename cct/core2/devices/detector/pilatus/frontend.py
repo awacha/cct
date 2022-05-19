@@ -3,7 +3,7 @@ import logging
 from typing import Tuple, Any
 
 from .backend import PilatusBackend
-from ...device.frontend import DeviceFrontend
+from ...device.frontend import DeviceFrontend, DeviceType
 from ....sensors.hygrometer import Hygrometer
 from ....sensors.thermometer import Thermometer
 
@@ -16,7 +16,8 @@ class PilatusGain(enum.Enum):
 
 class PilatusDetector(DeviceFrontend):
     devicename = 'PilatusDetector'
-    devicetype = 'detector'
+    devicetype = DeviceType.Detector
+    vendor = 'Dectris Ltd.'
     backendclass = PilatusBackend
     loglevel = logging.INFO
 

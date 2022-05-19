@@ -4,7 +4,7 @@ from typing import Tuple, Any, List, Optional
 
 from PyQt5 import QtCore
 
-from ...device.frontend import DeviceFrontend
+from ...device.frontend import DeviceFrontend, DeviceType
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,7 +14,7 @@ class MotorController(DeviceFrontend):
     Naxes: int
     moveStarted = QtCore.pyqtSignal(int, float)
     moveEnded = QtCore.pyqtSignal(int, bool, float)
-    devicetype = 'motorcontroller'
+    devicetype = DeviceType.MotorController
     devicename = ''
 
     def __init__(self, name: str, host: str, port: int):

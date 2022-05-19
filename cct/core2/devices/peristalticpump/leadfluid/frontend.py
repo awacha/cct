@@ -3,7 +3,7 @@ import logging
 from typing import Any
 
 from .backend import BT100SBackend
-from ...device.frontend import DeviceFrontend
+from ...device.frontend import DeviceFrontend, DeviceType
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,9 +19,10 @@ class ControlMode(enum.Enum):
 
 class BT100S(DeviceFrontend):
     Status = BT100SBackend.Status
-    devicetype = 'peristalticpump'
+    devicetype = DeviceType.PeristalticPump
     devicename = 'BT100S'
     backendclass = BT100SBackend
+    vendor = 'LeadFluid Ltd.'
 
     def setRotationSpeed(self, speed: float):
         self.issueCommand('setspeed', speed)

@@ -7,6 +7,7 @@ from ....sensors.thermometer import Thermometer
 
 class Keen800(UPS):
     devicename = 'Keen800'
+    vendor = 'Keen'
     backendclass = Keen800Backend
 
     def __init__(self, name: str, host: str, port: int, **kwargs):

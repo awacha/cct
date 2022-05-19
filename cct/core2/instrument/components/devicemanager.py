@@ -1,11 +1,12 @@
 import logging
-from typing import List, Any, Type, Iterator
+import warnings
+from typing import List, Any, Type, Iterator, Union
 
 from PyQt5 import QtCore
 
 from .auth import Privilege, needsprivilege
 from .component import Component
-from ...devices.device.frontend import DeviceFrontend
+from ...devices.device.frontend import DeviceFrontend, DeviceType
 from ...devices.motor.generic.frontend import MotorController
 from ....utils import getIconFromTheme
 
@@ -137,33 +138,36 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
 
     def detector(self) -> DeviceFrontend:
         """Get the first available detector"""
-        return [d for d in self._devices if d.devicetype == 'detector'][0]
+        return [d for d in self._devices if d.devicetype == DeviceType.Detector][0]
 
     def source(self) -> DeviceFrontend:
         """Get the first available X-ray source"""
-        return [d for d in self._devices if d.devicetype == 'source'][0]
+        return [d for d in self._devices if d.devicetype == DeviceType.Source][0]
 
     def vacuum(self) -> DeviceFrontend:
         """Get the first available vacuum gauge"""
-        return [d for d in self._devices if d.devicetype == 'vacuumgauge'][0]
+        return [d for d in self._devices if d.devicetype == DeviceType.VacuumGauge][0]
 
     def temperature(self) -> DeviceFrontend:
         """Get the first available thermostat"""
-        return [d for d in self._devices if d.devicetype == 'thermostat'][0]
+        return [d for d in self._devices if d.devicetype == DeviceType.Thermostat][0]
 
     def motorcontrollers(self) -> List[MotorController]:
         """Get all motor controllers"""
-        return [d for d in self._devices if d.devicetype == 'motorcontroller']
+        return [d for d in self._devices if d.devicetype == DeviceType.MotorController]
 
     def peristalticpump(self) -> DeviceFrontend:
         """Get the first available peristaltic pump"""
-        return [d for d in self._devices if d.devicetype == 'peristalticpump'][0]
+        return [d for d in self._devices if d.devicetype == DeviceType.PeristalticPump][0]
 
     def ups(self) -> DeviceFrontend:
         """Get the first available ups"""
-        return [d for d in self._devices if d.devicetype == 'ups'][0]
+        return [d for d in self._devices if d.devicetype == DeviceType.UPS][0]
 
-    def devicesOfType(self, devicetype: str, online: bool = True) -> List[DeviceFrontend]:
+    def devicesOfType(self, devicetype: Union[str, DeviceType], online: bool = True) -> List[DeviceFrontend]:
+        if isinstance(devicetype, str):
+            warnings.warn('String devicetypes are deprecated, use DeviceType enum members instead!', DeprecationWarning)
+            devicetype = DeviceType(devicetype)
         return [d for d in self._devices if (d.devicetype == devicetype) and (online or d.isOnline())]
 
     # ----------------------------- Adding and removing devices ------------------------------------------------------------
@@ -263,7 +267,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
             return dev.name
         elif (role == QtCore.Qt.DisplayRole) and (index.column() == 1):
             try:
-                return dev.devicetype
+                return dev.devicetype.value
             except IndexError:
                 return '-- invalid driver class --'
         elif (role == QtCore.Qt.DisplayRole) and (index.column() == 2):

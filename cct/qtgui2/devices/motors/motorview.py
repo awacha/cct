@@ -14,6 +14,7 @@ from ...utils.window import WindowRequiresDevices
 from ...devices.beamstop import BeamstopIndicator
 from .beamstopcalibrator import BeamStopCalibrator
 from ....core2.instrument.components.auth.privilege import Privilege
+from ....core2.devices import DeviceType
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -23,7 +24,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     motorCalibrationDialog: Optional[MotorCalibrationDialog] = None
     motorConfigurationDialog: Optional[AdvancedMotorConfig] = None
     connect_all_motors = True
-    required_devicetypes = ['motorcontroller']
+    required_devicetypes = [DeviceType.MotorController]
 
     # component widgets
     motormover: MotorMover

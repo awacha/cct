@@ -10,6 +10,7 @@ class TrinamicMotor(MotorController):
     _converters: Tuple[UnitConverter, ...]
     backendclass: TrinamicMotorControllerBackend
     loglevel = logging.INFO
+    vendor = 'Trinamic Ltd.'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

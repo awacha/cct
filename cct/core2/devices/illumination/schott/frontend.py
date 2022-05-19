@@ -2,11 +2,12 @@ from typing import Any
 
 from .backend import SchottKL2500LEDBackend
 from ....sensors.thermometer import Thermometer
-from ...device.frontend import DeviceFrontend
+from ...device.frontend import DeviceFrontend, DeviceType
 
 
 class KL2500LED(DeviceFrontend):
-    devicetype = 'illumination'
+    devicetype = DeviceType.Illumination
+    vendor = 'Schott Ltd.'
     devicename = 'KL2500LED'
     backendclass = SchottKL2500LEDBackend
 

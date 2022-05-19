@@ -1,11 +1,11 @@
 from typing import Any
 
-from ...device.frontend import DeviceFrontend
+from ...device.frontend import DeviceFrontend, DeviceType
 from PyQt5 import QtCore
 
 
 class VacuumGauge(DeviceFrontend):
-    devicetype = 'vacuumgauge'
+    devicetype = DeviceType.VacuumGauge
     pressureChanged = QtCore.pyqtSignal(float)
 
     def pressure(self) -> float:

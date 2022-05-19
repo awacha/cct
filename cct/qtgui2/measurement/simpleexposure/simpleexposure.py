@@ -4,6 +4,7 @@ import logging
 from PyQt5 import QtWidgets, QtGui
 from .simpleexposure_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
+from ....core2.devices import DeviceType
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -35,7 +36,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         4: jump to 5
     """
 
-    required_devicetypes = ['detector']
+    required_devicetypes = [DeviceType.Detector]
     state: State = State.Idle
     imagesrequired: int=0
 

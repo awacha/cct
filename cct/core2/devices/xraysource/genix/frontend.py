@@ -4,13 +4,14 @@ from typing import Any
 from PyQt5 import QtCore
 
 from .backend import GeniXBackend
-from ...device.frontend import DeviceFrontend
+from ...device.frontend import DeviceFrontend, DeviceType
 
 
 class GeniX(DeviceFrontend):
     Status = GeniXBackend.Status
-    devicetype = 'source'
+    devicetype = DeviceType.Source
     devicename = 'GeniX'
+    vendor = 'Xenocs SA'
     backendclass = GeniXBackend
     loglevel = logging.DEBUG
 

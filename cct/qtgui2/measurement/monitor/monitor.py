@@ -14,7 +14,7 @@ from .monitor_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 from ...utils.plotimage import PlotImage
 from ....core2.devices.xraysource import GeniX
-from ....core2.devices.device.frontend import DeviceFrontend
+from ....core2.devices import DeviceFrontend, DeviceType
 from ....core2.dataclasses import Exposure
 from ....core2.algorithms.beamweighting import beamweights
 
@@ -23,7 +23,7 @@ logger.setLevel(logging.INFO)
 
 
 class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicetypes = ['source', 'detector']
+    required_devicetypes = [DeviceType.Source, DeviceType.Detector]
     figureIntensity: Figure
     figurePosition: Figure
     canvasIntensity: FigureCanvasQTAgg
@@ -293,7 +293,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         assert isinstance(self.sender(), DeviceFrontend)
-        if (self.sender().devicetype == 'source') and (name == 'shutter'):
+        if (self.sender().devicetype == DeviceType.Source) and (name == 'shutter'):
             self.shutterToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/beamshutter_open.svg' if newvalue else ':/icons/beamshutter_closed.svg')))
             self.shutterToolButton.setText("Close shutter" if newvalue else "Open shutter")
             self.shutterToolButton.blockSignals(True)

@@ -7,6 +7,7 @@ from ....sensors.manometer import Manometer
 
 class TPG201(VacuumGauge):
     devicename = 'TPG201'
+    vendor = 'Thyracont GmbH'
     backendclass = TPG201Backend
 
     def __init__(self, name: str, host: str, port: int, **kwargs):

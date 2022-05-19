@@ -4,7 +4,7 @@ from typing import List, Optional, Any, Tuple, final, Union
 
 from PyQt5 import QtWidgets, QtGui
 
-from ...core2.devices.device.frontend import DeviceFrontend
+from ...core2.devices import DeviceFrontend, DeviceType
 from ...core2.devices.device.telemetry import TelemetryInformation
 from ...core2.instrument.components.auth import Privilege
 from ...core2.instrument.components.motors import Motor, MotorRole, MotorDirection
@@ -56,7 +56,7 @@ class WindowRequiresDevices:
     connect_all_motors: bool = False  # regardless of requirements, always connect all available motors
     required_devicenames: Optional[List[str]] = None  # list of the names of required devices
     required_devicetypes: Optional[
-        List[str]] = None  # list of required device types: at least one device of each type must be present
+        List[DeviceType]] = None  # list of required device types: at least one device of each type must be present
     required_motors: Optional[
         List[Tuple[MotorRole, MotorDirection]]] = None  # list of required motor roles and directions
     required_privileges: Optional[List[Privilege]] = None  # list of required privileges
@@ -85,7 +85,7 @@ class WindowRequiresDevices:
             self.required_motors = []
         logger.debug('Initializing a device- and motor-requiring window.')
         logger.debug(f'required device names: {self.required_devicenames}')
-        logger.debug(f'required device types: {self.required_devicetypes}')
+        logger.debug(f'required device types: {[dt.name for dt in self.required_devicetypes]}')
         logger.debug(f'required motors: {self.required_motors}')
         if 'instrument' in kwargs:
             # this check allows off-line usage of the widget, i.e. without a valid 'instrument' instance.

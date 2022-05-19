@@ -7,6 +7,7 @@ from PyQt5 import QtWidgets, QtGui
 from .scan_ui import Ui_Form
 from ...utils.plotscan import PlotScan
 from ...utils.window import WindowRequiresDevices
+from ....core2.devices import DeviceType
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,7 +20,7 @@ class RangeType(enum.Enum):
 
 
 class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicetypes = ['source', 'detector']
+    required_devicetypes = [DeviceType.Source, DeviceType.Detector]
     motorname: Optional[str] = None
     scangraph: Optional[PlotScan] = None
 

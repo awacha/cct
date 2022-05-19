@@ -4,7 +4,7 @@ from typing import Any
 from PyQt5 import QtCore
 
 from .backend import SE521Backend
-from ...device.frontend import DeviceFrontend
+from ...device.frontend import DeviceFrontend, DeviceType
 from ....sensors.thermometer import Thermometer
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,8 @@ logger.setLevel(logging.INFO)
 class SE521(DeviceFrontend):
     backendclass = SE521Backend
     devicename = 'SE521'
-    devicetype = 'thermometer'
+    vendor = 'Thermosense'
+    devicetype = DeviceType.Thermometer
     temperatureChanged = QtCore.pyqtSignal(int, float)
 
     def __init__(self, name: str, host: str, port: int, **kwargs):

@@ -4,13 +4,14 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 from .transmission_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
+from ....core2.devices import DeviceType
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
-    required_devicetypes = ['source', 'detector']
+    required_devicetypes = [DeviceType.Source, DeviceType.Detector]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

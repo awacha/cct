@@ -5,17 +5,19 @@ from typing import Any
 from PyQt5 import QtCore
 
 from .backend import HaakePhoenixBackend
-from ...device.frontend import DeviceFrontend
+from ...device.frontend import DeviceFrontend, DeviceType
 from ....sensors.thermometer import Thermometer
 
 
 class HaakePhoenix(DeviceFrontend):
     backendclass = HaakePhoenixBackend
     devicename = 'HaakePhoenix'
-    devicetype = 'thermostat'
+    devicetype = DeviceType.Thermostat
+    vendor = 'Haake'
     temperatureChanged = QtCore.pyqtSignal(float)
     startStop = QtCore.pyqtSignal(bool)
     loglevel = logging.INFO
+
     def __init__(self, name: str, host: str, port: int, **kwargs):
         super().__init__(name, host, port, **kwargs)
         self.sensors = [Thermometer(f'temperature', self.name, 0, '°C'),

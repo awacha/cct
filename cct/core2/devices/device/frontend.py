@@ -15,6 +15,19 @@ from ...algorithms.queuewaiter import QueueWaiter
 from ...sensors.sensor import Sensor
 
 
+class DeviceType(enum.Enum):
+    Unknown = 'unknown'
+    Source = 'source'
+    Detector = 'detector'
+    MotorController = 'motorcontroller'
+    Thermostat = 'thermostat'
+    VacuumGauge = 'vacuumgauge'
+    Thermometer = 'thermometer'
+    PeristalticPump = 'peristalticpump'
+    Illumination = 'illumination'
+    UPS = 'ups'
+
+
 class DeviceConnectionState(enum.Enum):
     Offline = 0
     Initializing = 1
@@ -27,8 +40,9 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     backend"""
 
     # redefine these attributes in subclasses:
-    devicetype: str = 'unknown'  # source, detector, motorcontroller, thermostat, vacuumgauge etc.
+    devicetype: DeviceType = DeviceType.Unknown  # source, detector, motorcontroller, thermostat, vacuumgauge etc.
     devicename: str = None  # unique identifier of the device make/model
+    vendor: str = 'Unknown'  # device vendor name
     backendclass: Type[DeviceBackend]
 
     currentMessage: Optional[Message] = None
