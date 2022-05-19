@@ -44,6 +44,7 @@ from ..tools.capillarysizer import CapillarySizer
 from ..tools.maskeditor.maskeditor import MaskEditor
 from ..tools.samplepositionchecker import SamplePositionChecker
 from ..tools.sensors.sensors import SensorsWindow
+from ..utils.anisotropy import AnisotropyEvaluator
 from ..utils.plotcurve import PlotCurve
 from ..utils.plotimage import PlotImage
 from ..utils.window import WindowRequiresDevices
@@ -99,6 +100,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionNotification': NotifierSetup,
         'actionDevice_loggers': DeviceLogManagerUI,
         'actionSchott_KL2500LED': SchottKL2500LEDUI,
+        'actionAnisotropy': AnisotropyEvaluator,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]

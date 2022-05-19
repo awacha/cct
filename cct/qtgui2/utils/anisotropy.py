@@ -31,7 +31,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     exposure: Exposure
 
     def __init__(self, *args, **kwargs):
-        QtWidgets.QMainWindow.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._circles = []
         self._slicelines = []
         self._slicearcs = []
