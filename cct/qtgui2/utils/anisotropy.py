@@ -162,8 +162,8 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         points = np.zeros((101, 2), np.double)
         points[0, :] = 0
         phi = np.linspace(phimin, phimax, 100) * np.pi / 180.
-        points[1:101, 0] = qmax * np.sin(phi)
-        points[1:101, 1] = qmax * np.cos(phi)
+        points[1:101, 0] = qmax * np.cos(phi)
+        points[1:101, 1] = - qmax * np.sin(phi)
         self._slicearcs.extend([
             Polygon(points, closed=True, color=line2d.get_color(), zorder=100, alpha=0.5, linewidth=1, fill=True),
             Polygon(-points, closed=True, color=line2d.get_color(), zorder=100, alpha=0.5, linewidth=1, fill=True)
