@@ -437,7 +437,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         model = QtCore.QSortFilterProxyModel()
         model.setSourceModel(self)
         model.sort(0, QtCore.Qt.AscendingOrder)
-        model.setFilterRegExp(QtCore.QRegExp(f"^{category.value}$", QtCore.Qt.CaseSensitive, QtCore.QRegExp.FixedString))
+        model.setFilterRegExp(QtCore.QRegExp(f"^{category.value}$", QtCore.Qt.CaseSensitive, QtCore.QRegExp.RegExp))
         model.setFilterKeyColumn([i for i in range(len(self._columns)) if self._columns[i][0] == 'category'][0])
         model.setFilterRole(QtCore.Qt.DisplayRole)
         return model
