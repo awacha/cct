@@ -469,13 +469,6 @@
     <layout class="QHBoxLayout" name="fsnSelectorHorizontalLayout"/>
    </item>
    <item>
-    <widget class="Line" name="line_4">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item>
     <widget class="QSplitter" name="splitter">
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>

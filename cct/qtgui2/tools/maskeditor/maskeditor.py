@@ -70,7 +70,7 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.h5selector = H5Selector(self)
         self.h5selector.datasetSelected.connect(self.onH5DatasetSelected)
         frame2.layout().addWidget(self.h5selector)
-        frame2.layout().addStretch(1)
+        self.fsnSelectorHorizontalLayout.addStretch(1)
         bg1 = QtWidgets.QButtonGroup(self)
         for button in [self.maskToolButton, self.unMaskToolButton, self.flipMaskToolButton]:
             bg1.addButton(button)
