@@ -14,12 +14,12 @@
    <string>Evaluate anisotropy</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../../resource/icons/icons.qrc">
+   <iconset resource="../../resource/icons/icons.qrc">
     <normaloff>:/icons/anisotropy.svg</normaloff>:/icons/anisotropy.svg</iconset>
   </property>
  </widget>
  <resources>
-  <include location="../../../resource/icons/icons.qrc"/>
+  <include location="../../resource/icons/icons.qrc"/>
  </resources>
  <connections/>
 </ui>

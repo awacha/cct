@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 from matplotlib.axes import Axes
 from matplotlib.patches import Circle, Polygon
 from matplotlib.widgets import SpanSelector
@@ -51,17 +51,36 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axes_slice = self.plotimage.figure.add_subplot(2, 2, 4)
         self.vboxLayout = QtWidgets.QVBoxLayout()
         self.vboxLayout.setContentsMargins(0, 0, 0, 0)
+        self.selectorGrid = QtWidgets.QGridLayout()
+        self.vboxLayout.addLayout(self.selectorGrid)
         self.setLayout(self.vboxLayout)
         if self.instrument is not None:
             self.fsnSelector = FSNSelector(self)
-            self.vboxLayout.addWidget(self.fsnSelector)
+            self.fsnSelectorLabel = QtWidgets.QLabel("Select by file sequence:", self)
+            self.selectorGrid.addWidget(self.fsnSelectorLabel, 0, 0, 1, 1)
+            self.selectorGrid.addWidget(self.fsnSelector, 0, 1, 1, 1, QtCore.Qt.AlignLeft)
             self.fsnSelector.fsnSelected.connect(self.onFSNSelected)
         self.h5Selector = H5Selector(self)
+        self.h5SelectorLabel = QtWidgets.QLabel("Select from a h5 file:", self)
+        self.selectorGrid.addWidget(self.h5SelectorLabel, 1, 0, 1, 1)
+        self.selectorGrid.addWidget(self.h5Selector, 1, 1, 1, 1, QtCore.Qt.AlignLeft)
         self.vboxLayout.addWidget(self.h5Selector)
         self.h5Selector.datasetSelected.connect(self.onH5Selected)
         self.vboxLayout.addWidget(self.plotimage, stretch=1)
         self.plotimage.figure.tight_layout()
         self.plotimage.canvas.draw()
+
+    def enableH5Selector(self, enable: bool = True):
+        self.h5Selector.setEnabled(enable)
+        self.h5SelectorLabel.setEnabled(enable)
+        self.h5Selector.setVisible(enable)
+        self.h5SelectorLabel.setVisible(enable)
+
+    def enableFSNSelector(self, enable: bool = True):
+        self.fsnSelector.setEnabled(enable)
+        self.fsnSelectorLabel.setEnabled(enable)
+        self.fsnSelector.setVisible(enable)
+        self.fsnSelectorLabel.setVisible(enable)
 
     def onFSNSelected(self, prefix: str, fsn: int):
         self.setExposure(self.fsnSelector.loadExposure())

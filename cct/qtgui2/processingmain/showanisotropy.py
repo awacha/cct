@@ -14,7 +14,8 @@ class ShowAnisotropyWindow(ResultViewWindow):
         self.setLayout(layout)
         layout.addWidget(self.anisotropyWidget)
         self.onResultItemChanged(self.resultitems[0][0], self.resultitems[0][1])
-        self.anisotropyWidget.h5Selector.hide()
+        self.anisotropyWidget.enableH5Selector(False)
+        self.anisotropyWidget.enableFSNSelector(False)
         self.setWindowIcon(QtGui.QIcon(':/icons/anisotropy.svg'))
 
     def onResultItemChanged(self, samplename: str, distancekey: str):
