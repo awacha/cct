@@ -644,7 +644,9 @@ class DeviceBackend:
                 self.variablesready = True
                 self.log(logging.STRONGINFO, f'All variables ready.')
                 self.messageToFrontend('ready')
-                self.updateVariable('__status__', 'idle')
+                if self['__status__'] is None:
+                    # only update the '__status__' variable if it has not yet been initialized by some query.
+                    self.updateVariable('__status__', 'idle')
                 self.onVariablesReady()
 
     def checkIfJustBecameReady(self) -> bool:
