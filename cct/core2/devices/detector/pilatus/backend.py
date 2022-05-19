@@ -442,3 +442,6 @@ class PilatusBackend(DeviceBackend):
             self.error(f'Panicking in state {self["__status__"]}')
             super().doPanic()
 
+    def onVariablesReady(self):
+        self.updateVariable('__status__', self.Status.Idle)
+        super().onVariablesReady()
