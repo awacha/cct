@@ -55,7 +55,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.instrument is not None:
             self.fsnSelector = FSNSelector(self)
             self.vboxLayout.addWidget(self.fsnSelector)
-            self.fsnSelector.FSNSelected.connect(self.onFSNSelected)
+            self.fsnSelector.fsnSelected.connect(self.onFSNSelected)
         self.h5Selector = H5Selector(self)
         self.vboxLayout.addWidget(self.h5Selector)
         self.h5Selector.datasetSelected.connect(self.onH5Selected)
