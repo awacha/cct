@@ -5,6 +5,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from .transmission_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 from ....core2.devices import DeviceType
+from ....core2.dataclasses.sample import Sample
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -24,7 +25,7 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.addSamplesPushButton.clicked.connect(self.onAddSamplesClicked)
         self.removeSamplesPushButton.clicked.connect(self.onRemoveSamplesClicked)
         self.clearSampleListPushButton.clicked.connect(self.onClearTransmissionList)
-        self.emptySampleComboBox.setModel(self.instrument.samplestore.sortedmodel)
+        self.emptySampleComboBox.setModel(self.instrument.samplestore.sortedSamplesOfCategory(Sample.Categories.Empty_beam))
         self.emptySampleComboBox.setModelColumn(0)
         self.startStopPushButton.clicked.connect(self.onStartStopClicked)
         self.sortSamplesByNamePushButton.clicked.connect(self.sortSamplesByName)

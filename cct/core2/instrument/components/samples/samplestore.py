@@ -432,3 +432,12 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         except KeyError:
             # either motor does not exist
             super().panichandler()
+
+    def sortedSamplesOfCategory(self, category: Sample.Categories) -> QtCore.QSortFilterProxyModel:
+        model = QtCore.QSortFilterProxyModel()
+        model.setSourceModel(self)
+        model.sort(0, QtCore.Qt.AscendingOrder)
+        model.setFilterRegExp(QtCore.QRegExp(f"^{category.value}$", QtCore.Qt.CaseSensitive, QtCore.QRegExp.FixedString))
+        model.setFilterKeyColumn([i for i in range(len(self._columns)) if self._columns[i][0] == 'category'][0])
+        model.setFilterRole(QtCore.Qt.DisplayRole)
+        return model
