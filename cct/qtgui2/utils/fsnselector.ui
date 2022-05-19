@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>314</width>
+    <width>321</width>
     <height>34</height>
    </rect>
   </property>
@@ -20,9 +20,6 @@
    <string>Form</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
-   <property name="spacing">
-    <number>0</number>
-   </property>
    <property name="leftMargin">
     <number>0</number>
    </property>
@@ -43,7 +40,17 @@
     </widget>
    </item>
    <item>
-    <widget class="QComboBox" name="comboBox"/>
+    <widget class="QComboBox" name="comboBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Select the measurement sequence by prefix (e.g. crd, tst, scn etc.)</string>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QLabel" name="label_2">
@@ -55,10 +62,13 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <property name="spacing">
-      <number>0</number>
+      <number>1</number>
      </property>
      <item>
       <widget class="QToolButton" name="firstToolButton">
+       <property name="toolTip">
+        <string>Go to the first exposure</string>
+       </property>
        <property name="text">
         <string>First</string>
        </property>
@@ -70,6 +80,15 @@
      </item>
      <item>
       <widget class="QSpinBox" name="spinBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="toolTip">
+        <string>Set the file sequence number here</string>
+       </property>
        <property name="wrapping">
         <bool>true</bool>
        </property>
@@ -80,6 +99,9 @@
      </item>
      <item>
       <widget class="QToolButton" name="lastToolButton">
+       <property name="toolTip">
+        <string>Go to the last exposure</string>
+       </property>
        <property name="text">
         <string>Last</string>
        </property>
@@ -99,11 +121,15 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="toolTip">
+      <string>Reload the current exposure</string>
+     </property>
      <property name="text">
       <string>Reload</string>
      </property>
      <property name="icon">
-      <iconset theme="view-refresh"/>
+      <iconset theme="view-refresh">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
