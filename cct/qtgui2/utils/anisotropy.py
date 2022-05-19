@@ -61,6 +61,8 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.selectorGrid.addWidget(self.fsnSelectorLabel, 0, 0, 1, 1)
             self.selectorGrid.addWidget(self.fsnSelector, 0, 1, 1, 1)
             self.fsnSelector.fsnSelected.connect(self.onFSNSelected)
+        else:
+            self.fsnSelector = None
         self.h5Selector = H5Selector(self)
         self.h5SelectorLabel = QtWidgets.QLabel("Select from a h5 file:", self)
         self.h5Selector.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
@@ -79,10 +81,11 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.h5SelectorLabel.setVisible(enable)
 
     def enableFSNSelector(self, enable: bool = True):
-        self.fsnSelector.setEnabled(enable)
-        self.fsnSelectorLabel.setEnabled(enable)
-        self.fsnSelector.setVisible(enable)
-        self.fsnSelectorLabel.setVisible(enable)
+        if self.fsnSelector is not None:
+            self.fsnSelector.setEnabled(enable)
+            self.fsnSelectorLabel.setEnabled(enable)
+            self.fsnSelector.setVisible(enable)
+            self.fsnSelectorLabel.setVisible(enable)
 
     def onFSNSelected(self, prefix: str, fsn: int):
         self.setExposure(self.fsnSelector.loadExposure())
