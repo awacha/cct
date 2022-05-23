@@ -41,7 +41,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         'transmission': ('transmissionValDoubleSpinBox', 'transmissionErrDoubleSpinBox', 'transmissionLockToolButton'),
         'project': ('projectComboBox', 'projectLockToolButton'),
         'maskoverride': ('maskOverrideLineEdit', 'maskOverrideLockToolButton'),
-        'preparetime': ('preparationDateDateEdit', 'preparationDateLockToolButton'),
+        'preparetime': ('preparationDateDateEdit', 'todayPushButton', 'preparationDateLockToolButton'),
     }
     sampleeditordelegate: SampleEditorDelegate
     proxymodel: ProxyModel
@@ -112,10 +112,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     @Slot()
     def addSample(self):
         samplename = self.instrument.samplestore.addSample()
-        self.treeView.selectionModel().setCurrentIndex(
-            self.treeView.model().mapFromSource(self.instrument.samplestore.indexForSample(samplename)),
-            QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Clear |
-            QtCore.QItemSelectionModel.Current | QtCore.QItemSelectionModel.Rows)
+        self.setCurrentSample(samplename)
 
     @Slot()
     def removeSample(self):
@@ -128,10 +125,17 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         title = self.currentSampleName()
         if title is None:
             return
-        self.instrument.samplestore.addSample(
+        newname = self.instrument.samplestore.addSample(
             self.instrument.samplestore.getFreeSampleName(title),
             self.currentSample()
         )
+        self.setCurrentSample(newname)
+
+    def setCurrentSample(self, name: str):
+        self.treeView.selectionModel().setCurrentIndex(
+            self.treeView.model().mapFromSource(self.instrument.samplestore.indexForSample(name)),
+            QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Clear |
+            QtCore.QItemSelectionModel.Current | QtCore.QItemSelectionModel.Rows)
 
     def currentSample(self) -> Optional[Sample]:
         if not self.treeView.selectionModel().currentIndex().isValid():
