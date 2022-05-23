@@ -1,6 +1,7 @@
 import itertools
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -61,17 +62,21 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
         self.onDeviceNameChanged()
         self.plotToolButton.toggled.connect(self.onNewData)
 
+    @Slot(str)
     def onFileNameChanged(self, newfilename: str):
         self.fileNameLineEdit.blockSignals(True)
         self.fileNameLineEdit.setText(newfilename)
         self.fileNameLineEdit.blockSignals(False)
 
+    @Slot(float)
     def onPeriodChanged(self, newperiod: float):
         pass
 
+    @Slot(int)
     def onNrecordChanged(self, nrecord: int):
         pass
 
+    @Slot()
     def onDeviceNameChanged(self):
         if self.deviceNameComboBox.currentIndex() < 0:
             self.variableNameComboBox.setModel(None)
@@ -80,6 +85,7 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
         except KeyError:
             self.variableNameComboBox.setModel(None)
 
+    @Slot(int)
     def onNewData(self, recordptr: int):
         if not self.plotToolButton.isChecked():
             return
@@ -93,9 +99,11 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
         self.axes.legend(loc='best')
         self.canvas.draw_idle()
 
+    @Slot()
     def onDeviceLoggerDestroyed(self):
         self.deleteLater()
 
+    @Slot()
     def onDeviceLoggerStarted(self):
         self.recordToolButton.blockSignals(True)
         self.recordToolButton.setChecked(True)
@@ -104,6 +112,7 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
             widget.setEnabled(False)
         self.recordToolButton.blockSignals(False)
 
+    @Slot()
     def onDeviceLoggerStopped(self):
         self.recordToolButton.blockSignals(True)
         self.recordToolButton.setChecked(False)
@@ -112,6 +121,7 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
             widget.setEnabled(True)
         self.recordToolButton.blockSignals(False)
 
+    @Slot()
     def onAddEntryClicked(self):
         if not ((self.deviceNameComboBox.currentIndex() >= 0) and (self.variableNameComboBox.currentIndex() >= 0)):
             return
@@ -124,11 +134,13 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
                 f'Error while adding variable '
                 f'{self.deviceNameComboBox.currentText()}/{self.variableNameComboBox.currentText()}: {ve}')
 
+    @Slot()
     def onRemoveEntryClicked(self):
         rowindexes = {index.row() for index in self.treeView.selectionModel().selectedRows(0)}
         for row in reversed(sorted(rowindexes)):
             self.devicelogger.removeRow(row, QtCore.QModelIndex())
 
+    @Slot()
     def onBrowseClicked(self):
         filename = getSaveFile(self, 'Select file to save record', '', 'Log files (*.txt *.log);;All files (*)', '.log')
         if not filename:
@@ -136,12 +148,15 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
         self.fileNameLineEdit.setText(filename)
         self.onFileNameLineEditChanged()
 
+    @Slot()
     def onFileNameLineEditChanged(self):
         self.devicelogger.setFileName(self.fileNameLineEdit.text())
 
+    @Slot()
     def onClearAllClicked(self):
         self.devicelogger.removeRows(0, self.devicelogger.rowCount(QtCore.QModelIndex()), QtCore.QModelIndex())
 
+    @Slot(bool)
     def onRecordToggled(self, checked: bool):
         if checked:
             self.devicelogger.startRecording()

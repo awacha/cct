@@ -2,6 +2,7 @@ from typing import Any
 import logging
 
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 from ...utils.window import WindowRequiresDevices
 from .schottKL2500LED_ui import Ui_Form
 from ....core2.devices.illumination.schott.frontend import KL2500LED
@@ -32,18 +33,22 @@ class SchottKL2500LEDUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         assert isinstance(dev, KL2500LED)
         return dev
 
+    @Slot(int)
     def onSliderChanged(self, value: int):
         self.device().setBrightness(value)
 
+    @Slot(bool)
     def onShutterToggled(self, active: bool):
         if active:
             self.device().closeShutter()
         else:
             self.device().openShutter()
 
+    @Slot(bool)
     def onFrontPanelLockoutToggled(self, active: bool):
         self.device().frontPanelLockout(active)
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name == 'brightness':
             self.brightnessLabel.setText(f'{newvalue}')

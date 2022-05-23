@@ -1,6 +1,7 @@
 from typing import Any, List, Optional
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 
 class Stack(QtCore.QObject):
@@ -10,8 +11,8 @@ class Stack(QtCore.QObject):
 
     Only the most recently put element can be removed, however.
     """
-    pointerChanged = QtCore.pyqtSignal(int)
-    stackChanged = QtCore.pyqtSignal()
+    pointerChanged = Signal(int)
+    stackChanged = Signal()
     _stack: List[Any]
     _pointer: int = -1
 

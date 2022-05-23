@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any
 
 import numpy as np
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,7 +24,7 @@ class Sensor(QtCore.QObject):
     quantityname: str
     devicename: str
     index: int
-    valueChanged = QtCore.pyqtSignal(float)
+    valueChanged = Signal(float)
     _value: float
     units: str
     lowwarnlimit: Optional[float] = None
@@ -33,10 +34,10 @@ class Sensor(QtCore.QObject):
     paniconerror: bool
     _errorstate: ErrorState = ErrorState.Unknown
 
-    warning = QtCore.pyqtSignal()
-    error = QtCore.pyqtSignal()
-    ok = QtCore.pyqtSignal()
-    unknown = QtCore.pyqtSignal()
+    warning = Signal()
+    error = Signal()
+    ok = Signal()
+    unknown = Signal()
 
     def __init__(self, name: str, devicename: str, index: int, units: str, lowwarnlimit: Optional[float] = None,
                  highwarnlimit: Optional[float] = None, lowerrorlimit: Optional[float] = None,

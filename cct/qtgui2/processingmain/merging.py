@@ -10,6 +10,7 @@ from .processingwindow import ProcessingWindow
 from .merging_ui import Ui_Form
 
 from PyQt5 import QtGui, QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -45,6 +46,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         self.canvas.draw_idle()
         self.treeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
 
+    @Slot(QtCore.QItemSelection, QtCore.QItemSelection)
     def onSelectionChanged(self, selected: Optional[QtCore.QItemSelection]=None, deselected: Optional[QtCore.QItemSelection]=None):
         self._resetaxes()
         try:
@@ -74,6 +76,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
             self.spanSelector = None
         self.canvas.draw_idle()
 
+    @Slot(float, float)
     def onSpanSelected(self, left: float, right: float):
         try:
             index = self.treeView.selectionModel().selectedRows(0)[0]
@@ -98,6 +101,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         self.axes.set_xlabel('$q$ (nm$^{-1}$)')
         self.axes.set_ylabel('Intensity')
 
+    @Slot()
     def addSample(self):
         samplename, ok = QtWidgets.QInputDialog.getItem(
             self,
@@ -109,6 +113,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
             self.treeView.expandAll()
             self.resizeTreeViewColumns()
 
+    @Slot()
     def removeSample(self):
         samples = []
         for index in self.treeView.selectionModel().selectedRows(column=0):
@@ -118,16 +123,19 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         for sample in samples:
             self.project.merging.removeSample(sample)
 
+    @Slot()
     def resizeTreeViewColumns(self):
         for c in range(self.treeView.model().columnCount(QtCore.QModelIndex())):
             self.treeView.resizeColumnToContents(c)
 
+    @Slot()
     def runClicked(self):
         if self.runPushButton.text() == 'Run':
             self.project.merging.start()
         else:
             self.project.merging.stop()
 
+    @Slot()
     def onMergingStarted(self):
         self.runPushButton.setText('Stop')
         self.runPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
@@ -135,6 +143,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         self.progressBar.setMinimum(0)
         self.progressBar.setMaximum(0)
 
+    @Slot()
     def onMergingStopped(self, success: bool):
         self.runPushButton.setText('Run')
         self.runPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
@@ -142,6 +151,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         if not success:
             QtWidgets.QMessageBox.critical(self, 'Merging stopped', 'Merging stopped unexpectedly.')
 
+    @Slot(int, int)
     def onProgress(self, current: int, total: int):
         self.progressBar.setMaximum(total)
         self.progressBar.setValue(current)

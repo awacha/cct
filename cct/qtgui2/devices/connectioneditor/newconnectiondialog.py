@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 from .newconnectiondialog_ui import Ui_Dialog
 from ....core2.devices.device.frontend import DeviceFrontend
 
@@ -18,6 +19,7 @@ class NewConnectionDialog(QtWidgets.QDialog, Ui_Dialog):
         self.portSpinBox.valueChanged.connect(self.check)
         self.check()
 
+    @Slot()
     def check(self):
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(
             bool(self.driverClassComboBox.currentText()) and

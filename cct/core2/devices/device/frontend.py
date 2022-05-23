@@ -6,6 +6,7 @@ from typing import Any, Type, List, Iterator, Dict, Optional, Tuple
 import time
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .backend import DeviceBackend
 from .message import Message
@@ -81,29 +82,29 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
     # the `variableChanged` signal is emitted whenever a value of a variable changes. Its arguments are the name,
     # new and previous value of the variable.
-    variableChanged = QtCore.pyqtSignal(str, object, object)
+    variableChanged = Signal(str, object, object)
 
     # `connectionEnded` is the last signal of a device, meaning that the connection to the hardware device is broken,
     # either intentionally (argument is True) or because of a communication error (argument is False).
-    connectionEnded = QtCore.pyqtSignal(bool)
+    connectionEnded = Signal(bool)
 
     # `deviceOffline` is emitted if contact is lost with the device. The device is temporarily not functional, until
     # the next `allVariablesReady` signal is received or `connectionEnded` is sent.
-    connectionLost = QtCore.pyqtSignal(bool)
+    connectionLost = Signal(bool)
 
     # Emitted when all variables have been successfully queried. The device is considered fully operational only after
     # this signal is emitted.
-    allVariablesReady = QtCore.pyqtSignal()
+    allVariablesReady = Signal()
 
     # Emitted when telemetry (debugging) information received from the backend.
-    telemetry = QtCore.pyqtSignal(TelemetryInformation)
+    telemetry = Signal(TelemetryInformation)
 
     # the panic signal signifies severe hardware error, requiring immediate user response. The device remains
     # operational
-    panic = QtCore.pyqtSignal(str)
+    panic = Signal(str)
 
     # Non-fatal error in the backend.
-    error = QtCore.pyqtSignal(str)
+    error = Signal(str)
 
     # Command result. Arguments:
     #   - bool: True if success, False if failed
@@ -111,15 +112,15 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     #   - str: error message if failed, result if successful
     # The backend should reply as soon as it receives the command, must not wait for the operation (e.g. exposure or
     # motor movement) to complete.
-    commandResult = QtCore.pyqtSignal(bool, str, str)
+    commandResult = Signal(bool, str, str)
 
     # State change: change in the __status__ variable
-    stateChanged = QtCore.pyqtSignal(str)  # the new value
+    stateChanged = Signal(str)  # the new value
 
     # Panic acknowledged signal: when a panic situation arises anywhere in the instrument, the panichandler() method
     # of each device is called. The device then needs to stop anything it is doing and shut down into a clean state.
     # When this is achieved, the panicAcknowledged() signal is emitted to notify the instrument.
-    panicAcknowledged = QtCore.pyqtSignal()
+    panicAcknowledged = Signal()
 
     class DeviceError(Exception):
         pass

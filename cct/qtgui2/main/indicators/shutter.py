@@ -2,6 +2,8 @@ from typing import Any
 import logging
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .shutter_ui import Ui_Frame
 from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.instrument import Instrument
@@ -24,12 +26,15 @@ class ShutterIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.toolButton.toggled.connect(self.onToolButtonToggled)
         self.setToolButtonState()
 
+    @Slot()
     def onConnectionLost(self):
         self.setToolButtonState()
 
+    @Slot(bool)
     def onConnectionEnded(self, expected: bool):
         self.setToolButtonState()
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if isinstance(self.sender(), GeniX):
             if name in ['interlock', 'shutter']:
@@ -67,6 +72,7 @@ class ShutterIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
             self.toolButton.setChecked(False)
             self.toolButton.blockSignals(False)
 
+    @Slot()
     def onToolButtonToggled(self):
         try:
             genix = self.instrument.devicemanager.source()

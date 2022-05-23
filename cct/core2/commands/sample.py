@@ -1,3 +1,5 @@
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .command import Command
 from .commandargument import StringArgument
 
@@ -24,11 +26,13 @@ class SetSample(Command):
             self.disconnectSampleStore()
             raise
 
+    @Slot(str, str, float, float, float)
     def onMovingToSample(self, samplename: str, motorname: str, where: float, start: float, end: float):
         self.progress.emit(
             f'Moving to sample {samplename}. Motor {motorname} is at {where:.3f}.',
             int(1000*(where-start)/(end-start)), 1000)
 
+    @Slot(bool, str)
     def onMovingFinished(self, success: bool, samplename: str):
         self.disconnectSampleStore()
         if success:

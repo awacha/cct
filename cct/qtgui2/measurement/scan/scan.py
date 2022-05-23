@@ -1,8 +1,9 @@
 import enum
-from typing import Optional
+from typing import Optional, Tuple
 import logging
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .scan_ui import Ui_Form
 from ...utils.plotscan import PlotScan
@@ -50,6 +51,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.startStopPushButton.clicked.connect(self.onStartStopClicked)
         self.shrinkWindow()
 
+    @Slot()
     def onRangeTypeSelected(self):
         if self.rangeTypeComboBox.currentIndex() < 0:
             return
@@ -70,6 +72,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def shrinkWindow(self):
         self.resize(self.minimumSizeHint())
 
+    @Slot()
     def onMotorChanged(self):
         if self.motorname is not None:
             self.disconnectMotor(self.instrument.motors[self.motorname])
@@ -84,6 +87,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                        self.commentLineEdit]:
             widget.setEnabled(True)
 
+    @Slot(float)
     def onMotorPositionChanged(self, newposition: float):
         if self.startStopPushButton.text() != 'Start':
             # scan is running, do not update motor limits in the input boxes
@@ -101,9 +105,11 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.rangeMinDoubleSpinBox.setRange(0, radius)
             self.rangeMaxDoubleSpinBox.setRange(0, radius)
 
+    @Slot()
     def onRangeChanged(self):
         self.onStepsChanged()
 
+    @Slot()
     def onStepsChanged(self):
         rt = RangeType(self.rangeTypeComboBox.currentText())
         length = (self.rangeMinDoubleSpinBox.value() * 2) if rt == RangeType.SymmetricRelative else (
@@ -120,9 +126,11 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             # do not monkey around with blocksignals: stepcount is the definitive
             self.stepCountSpinBox.setValue(stepcount)
 
+    @Slot()
     def onCommentChanged(self):
         self.startStopPushButton.setEnabled(bool(self.commentLineEdit.text()))
 
+    @Slot()
     def onStartStopClicked(self):
         if self.startStopPushButton.text() == 'Start':
             rt = RangeType(self.rangeTypeComboBox.currentText())
@@ -149,6 +157,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.startStopPushButton.setEnabled(False)
             self.instrument.scan.stopScan()
 
+    @Slot(int)
     def onScanStarted(self, scanindex: int):
         logger.debug('onScanStarted')
         for widget in [self.motorComboBox, self.rangeTypeComboBox, self.rangeMinDoubleSpinBox,
@@ -165,6 +174,7 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setRange(0, 0)
         self.progressBar.setFormat('Starting scan...')
 
+    @Slot(bool, int)
     def onScanEnded(self, success: bool,  scanindex: int):
         for widget in [self.motorComboBox, self.rangeTypeComboBox, self.rangeMinDoubleSpinBox,
                        self.rangeMaxDoubleSpinBox, self.stepCountSpinBox, self.stepSizeDoubleSpinBox,
@@ -189,7 +199,8 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.setIdle()
         self.shrinkWindow()
 
-    def onScanPointReceived(self, scanindex, currentpoint, maxpoints, readings):
+    @Slot(int, int, int, object)
+    def onScanPointReceived(self, scanindex:int, currentpoint:int, maxpoints:int, readings: Tuple[float, ...]):
         if (self.scangraph is None) and (currentpoint == 0):
             self.scangraph = self.mainwindow.addSubWindow(PlotScan, singleton=False)
             assert isinstance(self.scangraph, PlotScan)
@@ -204,7 +215,8 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             pass
 
-    def onScanProgress(self, start, end, current, message):
+    @Slot(float, float, float, str)
+    def onScanProgress(self, start: float, end: float, current: float, message: str):
         if end == start:
             self.progressBar.setRange(0, 0)
         else:

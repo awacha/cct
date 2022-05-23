@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any, List, Type, final, Tuple
 import logging
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .commandargument import CommandArgument
 
@@ -61,11 +62,11 @@ class Command(QtCore.QObject):
     arguments: List[CommandArgument]
     argumentstring: str
     description: str
-    failed = QtCore.pyqtSignal(str)
-    finished = QtCore.pyqtSignal(object)
-    progress = QtCore.pyqtSignal(str, int, int)  # message, current, total
-    message = QtCore.pyqtSignal(str)
-    goto = QtCore.pyqtSignal(str, bool)
+    failed = Signal(str)
+    finished = Signal(object)
+    progress = Signal(str, int, int)  # message, current, total
+    message = Signal(str)
+    goto = Signal(str, bool)
     parsed_arguments: Tuple[Any]
     _finished: bool = False
 

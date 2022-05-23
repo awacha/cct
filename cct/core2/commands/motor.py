@@ -1,5 +1,7 @@
 from typing import Any
 
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .command import Command, InstantCommand
 from .commandargument import StringArgument, FloatArgument
 
@@ -22,15 +24,19 @@ class MotorCommand(Command):
     def motor(self):
         return self.instrument.motors[self.motorname]
 
+    @Slot(float)
     def onMotorStarted(self, startposition: float):
         pass
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         pass
 
+    @Slot(float, float, float)
     def onMotorMoving(self, where: float, start: float, target: float):
         pass
 
+    @Slot(float)
     def onMotorPositionChanged(self, where: float):
         pass
 
@@ -49,9 +55,11 @@ class MoveTo(MotorCommand):
         elif self.name == 'moverel':
             self.motor().moveRel(position)
 
+    @Slot(float, float, float)
     def onMotorMoving(self, where: float, start: float, target: float):
         self.progress.emit(f'Moving motor {self.motorname}. Currently at {where:.4f}', int(1000*(where-start)/(target-start)), 1000)
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         self.disconnectMotor()
         if not success:

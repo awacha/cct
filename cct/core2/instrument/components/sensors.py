@@ -2,6 +2,8 @@ import logging
 from typing import Any, List, Iterator
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
+
 
 from .component import Component
 from ...devices.device.frontend import DeviceFrontend
@@ -62,6 +64,7 @@ class Sensors(QtCore.QAbstractItemModel, Component):
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
         return self.createIndex(row, column, None)
 
+    @Slot(str)
     def onDeviceAdded(self, name: str):
         device: DeviceFrontend = self.instrument.devicemanager[name]
         for sensor in device.sensors:
@@ -74,6 +77,7 @@ class Sensors(QtCore.QAbstractItemModel, Component):
             sensor.unknown.connect(self.onSensorUnknown)
             self.endInsertRows()
 
+    @Slot(str, bool)
     def onDeviceRemoved(self, name: str, expected: bool):
         while len(sensorstobedeleted := [s for s in self._data if s.devicename == name]):
             idx = self._data.index(sensorstobedeleted[0])
@@ -86,18 +90,21 @@ class Sensors(QtCore.QAbstractItemModel, Component):
             del self._data[idx]
             self.endRemoveRows()
 
+    @Slot(float)
     def onSensorValueChanged(self, newvalue: float):
         logger.debug(f'Sensor {self.sender().name} value changed to {self.sender().value()} =? {newvalue}')
         idx = self._data.index(self.sender())
         self.dataChanged.emit(self.index(idx, 0, QtCore.QModelIndex()),
                               self.index(idx, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
+    @Slot()
     def onSensorWarning(self):
         logger.debug(f'Sensor {self.sender().name} is {self.sender()._errorstate}')
         idx = self._data.index(self.sender())
         self.dataChanged.emit(self.index(idx, 0, QtCore.QModelIndex()),
                               self.index(idx, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
+    @Slot()
     def onSensorError(self):
         logger.error(f'Sensor {self.sender().name} is {self.sender()._errorstate}')
         if self.sender().paniconerror:
@@ -107,12 +114,14 @@ class Sensors(QtCore.QAbstractItemModel, Component):
         self.dataChanged.emit(self.index(idx, 0, QtCore.QModelIndex()),
                               self.index(idx, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
+    @Slot()
     def onSensorOk(self):
         logger.debug(f'Sensor {self.sender().name} is {self.sender()._errorstate}')
         idx = self._data.index(self.sender())
         self.dataChanged.emit(self.index(idx, 0, QtCore.QModelIndex()),
                               self.index(idx, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
+    @Slot()
     def onSensorUnknown(self):
         logger.debug(f'Sensor {self.sender().name} is {self.sender()._errorstate}')
         idx = self._data.index(self.sender())

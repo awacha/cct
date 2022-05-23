@@ -1,6 +1,8 @@
 import logging
 from typing import Tuple, List
 
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .processingwindow import ProcessingWindow
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,7 @@ class ResultViewWindow(ProcessingWindow):
         self.show()
         self.project.resultItemChanged.connect(self._onResultItemChanged)
 
+    @Slot(str, str)
     def _onResultItemChanged(self, samplename: str, distancekey: str):
         logger.debug(f'_onResultItemChanged in ResultViewWindow with resultitems {self.resultitems}')
         if (samplename, distancekey) in self.resultitems:
@@ -34,6 +37,7 @@ class ResultViewWindow(ProcessingWindow):
         else:
             logging.debug(f'SKIPPED _onResultItemChanged({samplename}, {distancekey})')
 
+    @Slot(str, str)
     def onResultItemChanged(self, samplename: str, distancekey: str):
         raise NotImplementedError
 

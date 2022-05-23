@@ -1,6 +1,7 @@
 from typing import Optional
 
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .calibrants_ui import Ui_Form
 from .peakeditor import PeakEditor
@@ -29,6 +30,7 @@ class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.browseDataFileToolButton.clicked.connect(self.browseForDataFile)
         self.editPeaksToolButton.clicked.connect(self.editPeaks)
 
+    @Slot()
     def browseForDataFile(self):
         current = self.calibrantsTreeView.selectionModel().currentIndex().internalPointer()
         if not isinstance(current, IntensityCalibrant):
@@ -42,6 +44,7 @@ class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         current.datafile = filename
         self.instrument.calibrants.saveToConfig()
 
+    @Slot()
     def editPeaks(self):
         assert self.peakeditor is None
         current = self.calibrantsTreeView.selectionModel().currentIndex().internalPointer()
@@ -53,7 +56,8 @@ class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.peakeditor.finished.connect(self.onPeakEditorFinished)
         self.peakeditor.open()
 
-    def onPeakEditorFinished(self, result):
+    @Slot(int)
+    def onPeakEditorFinished(self, result: int):
         if result == QtWidgets.QDialog.Accepted:
             current = self.calibrantsTreeView.selectionModel().currentIndex().internalPointer()
             assert isinstance(current, QCalibrant)
@@ -63,6 +67,7 @@ class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.peakeditor.deleteLater()
         self.peakeditor = None
 
+    @Slot()
     def onCalibrantSelectionChanged(self):
         currentindex = self.calibrantsTreeView.selectionModel().currentIndex()
         calibrant = currentindex.internalPointer()
@@ -71,11 +76,13 @@ class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.browseDataFileToolButton.setEnabled(isinstance(calibrant, IntensityCalibrant))
         self.editPeaksToolButton.setEnabled(isinstance(calibrant, QCalibrant))
 
+    @Slot()
     def expandTreeView(self):
         self.calibrantsTreeView.expandAll()
         for c in range(self.instrument.calibrants.columnCount()):
             self.calibrantsTreeView.resizeColumnToContents(c)
 
+    @Slot()
     def addCalibrant(self):
         currentindex = self.calibrantsTreeView.selectionModel().currentIndex()
         if not currentindex.isValid():
@@ -87,6 +94,7 @@ class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             assert False
 
+    @Slot()
     def removeCalibrant(self):
         currentindex = self.calibrantsTreeView.selectionModel().currentIndex()
         if not currentindex.isValid():

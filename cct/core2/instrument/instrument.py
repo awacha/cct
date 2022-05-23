@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Optional, List
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .components.auth import UserManager
 from .components.beamstop import BeamStop
@@ -49,8 +50,8 @@ class Instrument(QtCore.QObject):
     notifier: Notifier
     stopping: bool = False
     running: bool = False
-    shutdown = QtCore.pyqtSignal()
-    panicAcknowledged = QtCore.pyqtSignal()
+    shutdown = Signal()
+    panicAcknowledged = Signal()
     online: bool = False
     components: Dict[str, Component] = None
     _panic_components: Optional[List[List[str]]] = None
@@ -103,10 +104,12 @@ class Instrument(QtCore.QObject):
             comp.started.connect(self.onComponentStarted)
             comp.stopped.connect(self.onComponentStopped)
 
+    @Slot()
     def onComponentStarted(self):
         if all([c.running() for n, c in self.components.items()]):
             logger.info('All components are up and running.')
 
+    @Slot()
     def onComponentStopped(self):
         logger.debug(
             f'Currently running components: {", ".join(c for c in self.components if self.components[c].running())}')
@@ -116,6 +119,7 @@ class Instrument(QtCore.QObject):
             logger.debug('Emitting instrument shutdown signal.')
             self.shutdown.emit()
 
+    @Slot()
     def onComponentPanicAcknowledged(self):
         component: Component = self.sender()
         try:

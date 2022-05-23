@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import numpy.ma as npma
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from ....devices.device.frontend import DeviceFrontend
 from ....devices.device.variable import Variable, VariableType
@@ -41,13 +42,13 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
     _savepointer: Optional[int] = None
     _writeperiod: float = 10.0
 
-    recordingStarted = QtCore.pyqtSignal()
-    recordingStopped = QtCore.pyqtSignal()
-    newData = QtCore.pyqtSignal(int)
-    fileNameChanged = QtCore.pyqtSignal(str)
-    periodChanged = QtCore.pyqtSignal(float)
-    nrecordChanged = QtCore.pyqtSignal(int)
-    nameChanged = QtCore.pyqtSignal(str)
+    recordingStarted = Signal()
+    recordingStopped = Signal()
+    newData = Signal(int)
+    fileNameChanged = Signal(str)
+    periodChanged = Signal(float)
+    nrecordChanged = Signal(int)
+    nameChanged = Signal(str)
 
     def __init__(self, devicemanager: "DeviceManager", filename: Optional[str] = None, period: float = 5.0, name: Optional[str] = None):
         self._filename = filename
@@ -236,7 +237,8 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
         else:
             raise ValueError(f'Cannot record variable of type {vartype.name}')
 
-    def onVariableChanged(self, name: str, newvalue: str, oldvalue: str):
+    @Slot(str, object, object)
+    def onVariableChanged(self, name: str, newvalue: Any, oldvalue: Any):
         device = self.sender()
         devname = device.name
         if [v for v in self._variables if v.devicename == devname and v.variablename == name]:

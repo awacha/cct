@@ -5,6 +5,7 @@ import logging
 from typing import List, Any, Optional, Tuple
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .task import ProcessingTask, ProcessingSettings
 from ..calculations.subtractionjob import SubtractionScalingMode, SubtractionJob, SubtractionResult
@@ -44,7 +45,7 @@ class SubtractionData:
 
 class Subtraction(ProcessingTask):
     _data: List[SubtractionData] = None
-    itemChanged = QtCore.pyqtSignal(str, str)
+    itemChanged = Signal(str, str)
 
     def __init__(self, processing: "Processing", settings: ProcessingSettings):
         self._data = []

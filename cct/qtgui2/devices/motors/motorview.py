@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .motorconfig import AdvancedMotorConfig
 from .addmotordialog import AddMotorDialog
@@ -66,6 +67,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.beamStopCalibratorGroupBox.layout().addWidget(self.beamstopcalibrator)
         self.beamstopcalibrator.layout().setContentsMargins(0,0,0,0)
 
+    @Slot()
     def addMotor(self):
         if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
             QtWidgets.QMessageBox.critical(self, 'Insufficient privileges', 'Insufficient privileges to add a motor.')
@@ -74,6 +76,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.addMotorDialog.finished.connect(self.onAddMotorDialogFinished)
         self.addMotorDialog.show()
 
+    @Slot(bool)
     def onAddMotorDialogFinished(self, accepted: bool):
         if accepted:
             self.instrument.motors.addMotor(
@@ -91,6 +94,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.addMotorDialog.deleteLater()
         self.addMotorDialog = None
 
+    @Slot()
     def removeMotor(self):
         index = self.treeView.selectionModel().currentIndex()
         if not index.isValid():
@@ -101,6 +105,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             return
         self.instrument.motors.removeMotor(self.instrument.motors[index.row()].name)
 
+    @Slot()
     def configureMotor(self):
         if not self.instrument.auth.hasPrivilege(Privilege.MotorConfiguration):
             QtWidgets.QMessageBox.critical(
@@ -113,7 +118,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             return
         win.setMotor(self.instrument.motors[self.treeView.selectionModel().currentIndex().row()].name)
 
-
+    @Slot()
     def calibrateMotor(self):
         if not self.instrument.auth.hasPrivilege(Privilege.MotorCalibration):
             QtWidgets.QMessageBox.critical(
@@ -130,6 +135,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.motorCalibrationDialog.raise_()
             self.motorCalibrationDialog.setFocus()
 
+    @Slot(bool)
     def onMotorCalibrationDialogFinished(self, accepted: bool):
         if accepted:
             motor = self.instrument.motors[self.motorCalibrationDialog.motorname]
@@ -139,6 +145,7 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.motorCalibrationDialog.deleteLater()
         self.motorCalibrationDialog = None
 
+    @Slot()
     def autoAdjustMotor(self):
         if not self.treeView.selectionModel().currentIndex().isValid():
             return
@@ -150,5 +157,6 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             return
         win.setMotor(self.instrument.motors[self.treeView.selectionModel().currentIndex().row()].name)
 
-    def onCommandResult(self, name: str, success: str, message: str):
+    @Slot(bool, str, str)
+    def onCommandResult(self, success: bool, name: str, message: str):
         pass

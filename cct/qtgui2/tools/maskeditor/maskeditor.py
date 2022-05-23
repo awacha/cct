@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import scipy.io
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 from matplotlib.backend_bases import MouseEvent
 from matplotlib.path import Path
 from matplotlib.widgets import Cursor, EllipseSelector, RectangleSelector, LassoSelector, PolygonSelector
@@ -112,10 +113,12 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.undoStack.push(mask)
         return False
 
+    @Slot(str, int)
     def onFSNSelected(self, prefix: str, fsn: int):
         exposure = self.instrument.io.loadExposure(prefix, fsn, raw=True, check_local=True)
         self.setExposure(exposure)
 
+    @Slot(str, str, str)
     def onH5DatasetSelected(self, filename:str, samplename:str, distkey: str):
         exposure = self.h5selector.loadExposure()
         self.setExposure(exposure)
@@ -130,12 +133,14 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             return True
 
+    @Slot()
     def onNewMask(self):
         if self.confirmChanges():
             self.undoStack.push(np.ones(self.exposure.mask.shape, np.bool))
             self.setWindowModified(True)
             self.setWindowFilePath('')
 
+    @Slot()
     def onLoadMask(self):
         if not self.confirmChanges():
             return
@@ -148,6 +153,7 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.setWindowModified(False)
         self.setWindowFilePath(filename)
 
+    @Slot()
     def onSaveMask(self):
         if not self.windowFilePath():
             return self.onSaveMaskAs()
@@ -157,6 +163,7 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.io.invalidateMaskCache()
         self.setWindowModified(False)
 
+    @Slot()
     def onSaveMaskAs(self):
         filename = getSaveFile(
             self, 'Save the mask...', self.windowFilePath(),
@@ -167,12 +174,15 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.setWindowFilePath(filename)
         self.onSaveMask()
 
+    @Slot()
     def onUndo(self):
         self.undoStack.back()
 
+    @Slot()
     def onRedo(self):
         self.undoStack.forward()
 
+    @Slot()
     def selectModeChanged(self):
         # selection mode is changed
         self._pixelhuntcursor.set_active(self.selectByPixelToolButton.isChecked())
@@ -267,10 +277,12 @@ class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.areaselector.set_visible(False)
         self.selectModeChanged()  # create a new selector
 
+    @Slot()
     def onUndoStackChanged(self):
         self.undoToolButton.setEnabled(self.undoStack.canGoBack())
         self.redoToolButton.setEnabled(self.undoStack.canGoForward())
 
+    @Slot()
     def onUndoStackPointerChanged(self):
         self.undoToolButton.setEnabled(self.undoStack.canGoBack())
         self.redoToolButton.setEnabled(self.undoStack.canGoForward())

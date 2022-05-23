@@ -3,6 +3,9 @@ import time
 from typing import Any, Optional
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
+
+
 
 from .command import Command, InstantCommand
 from .commandargument import StringChoicesArgument, FloatArgument
@@ -25,15 +28,19 @@ class ThermostatCommand(Command):
         self.thermostat().commandResult.connect(self.onThermostatCommandResult)
         self.thermostat().variableChanged.connect(self.onThermostatVariableChanged)
 
+    @Slot(bool)
     def onThermostatStartStop(self, running: bool):
         pass
 
+    @Slot(float)
     def onThermostatTemperatureChanged(self, temperature: float):
         pass
 
+    @Slot(bool, str, str)
     def onThermostatCommandResult(self, success: bool, commandname: str, message: str):
         pass
 
+    @Slot(str, object, object)
     def onThermostatVariableChanged(self, name: str, newvalue: Any, previousvalue: Any):
         pass
 
@@ -82,6 +89,7 @@ class StartStop(ThermostatCommand):
             self.disconnectThermostat()
             raise
 
+    @Slot(bool)
     def onThermostatStartStop(self, running: bool):
         if self.requestedstate and running:
             self.message.emit('Thermostat started.')
@@ -95,6 +103,7 @@ class StartStop(ThermostatCommand):
             self.disconnectThermostat()
             self.fail('Cannot start/stop thermostat.')
 
+    @Slot(bool, str, str)
     def onThermostatCommandResult(self, success: bool, commandname: str, message: str):
         if commandname != self.sentcommand:
             logger.warning(f'Reply from an unexpected command {commandname} instead from {self.sentcommand}.')
@@ -136,12 +145,14 @@ class SetTemperature(ThermostatCommand):
             self.disconnectThermostat()
             raise
 
+    @Slot(str, object, object)
     def onThermostatVariableChanged(self, name: str, newvalue: Any, previousvalue: Any):
         if (name == 'setpoint') and (abs(newvalue - self.desiredsetpoint) < 0.01):
             self.finish(newvalue)
         else:
             pass
 
+    @Slot(bool, str, str)
     def onThermostatCommandResult(self, success: bool, commandname: str, message: str):
         if commandname != 'setpoint':
             logger.warning(f'Reply from an unexpected command {commandname} instead from {self.sentcommand}.')
@@ -178,6 +189,7 @@ class WaitTemperature(ThermostatCommand):
             self.progress.emit(f'Ensuring temperature stability. Remaining time: {remainingtime:.2f} seconds',
                                int(1000*(remainingtime/self.delay)), 1000)
 
+    @Slot(str, object, object)
     def onThermostatVariableChanged(self, name: str, newvalue: Any, previousvalue: Any):
         if name == 'setpoint':
             self.setpoint = newvalue

@@ -7,6 +7,7 @@ from typing import Sequence, Optional, Dict, Tuple, Any
 
 import numpy as np
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from ....config import Config
 
@@ -127,8 +128,8 @@ class GeometryOptimizer(QtCore.QObject):
     queue: Optional[Queue] = None
     timerid: Optional[int] = None
     starttime: Optional[float] = None
-    geometryFound = QtCore.pyqtSignal(object)
-    finished = QtCore.pyqtSignal(float,  # elapsed time
+    geometryFound = Signal(object)
+    finished = Signal(float,  # elapsed time
 
                                  )
 

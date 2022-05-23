@@ -3,6 +3,7 @@ import warnings
 from typing import List, Any, Type, Iterator, Union
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .auth import Privilege, needsprivilege
 from .component import Component
@@ -29,8 +30,8 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
 
     """
     _devices: List[DeviceFrontend]
-    deviceAdded = QtCore.pyqtSignal(str)
-    deviceRemoved = QtCore.pyqtSignal(str, bool)
+    deviceAdded = Signal(str)
+    deviceRemoved = Signal(str, bool)
 
     def __init__(self, **kwargs):
         self._devices = []
@@ -100,6 +101,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         dev.startBackend()
         self.dataChanged.emit(self.index(row, 0), self.index(row, 0), [QtCore.Qt.DecorationRole])
 
+    @Slot(bool)
     def onConnectionEnded(self, expected: bool):
         device = self.sender()
         assert isinstance(device, DeviceFrontend)
@@ -107,13 +109,16 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         if self.stopping and not self._devices:
             self.stopped.emit()
 
+    @Slot()
     def onConnectionLost(self):
         # do nothing, this is handled directly by those code pieces which depend on the devices
         pass
 
+    @Slot()
     def onError(self):
         pass
 
+    @Slot(str)
     def onPanic(self, reason: str):
         device:DeviceFrontend = self.sender()
         logger.error(f'Device {device.name} panicked! Reason: {reason}. Escalating...')
@@ -224,6 +229,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         self.endRemoveRows()
         self.saveToConfig()
 
+    @Slot()
     def onDeviceConnectionStatusChanged(self):
         device = self.sender()
         try:
@@ -299,6 +305,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
         return self.createIndex(row, column, None)
 
+    @Slot()
     def onDevicePanicAcknowledged(self):
         device: DeviceFrontend = self.sender()
         logger.info(f'Panic acknowledged by device {device.name}')

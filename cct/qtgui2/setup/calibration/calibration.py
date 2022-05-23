@@ -5,6 +5,7 @@ from typing import Optional, Tuple
 import numpy as np
 import scipy.odr
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import PickEvent
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
@@ -84,6 +85,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
 
         self.canvas.draw_idle()
 
+    @Slot(float)
     def beamPosUIEdit(self, value: float):
         if self.exposure is None:
             return
@@ -101,6 +103,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
             assert False
         self.updateBeamPosition(beamrow, beamcol)
 
+    @Slot()
     def saveParameter(self):
         if self.exposure is None:
             return
@@ -122,6 +125,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
             assert False
         self.sender().setEnabled(False)
 
+    @Slot()
     def addPair(self):
         twi = QtWidgets.QTreeWidgetItem()
         pixval = self.uncalibratedValDoubleSpinBox.value()
@@ -137,6 +141,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.pairsTreeWidget.resizeColumnToContents(1)
         self.calibrate()
 
+    @Slot()
     def removePair(self):
         for item in self.pairsTreeWidget.selectedItems():
             self.pairsTreeWidget.takeTopLevelItem(self.pairsTreeWidget.indexOfTopLevelItem(item))
@@ -220,6 +225,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.dist_sample_det = L
         self.plotCalibrationLine()
 
+    @Slot()
     def fitPeak(self):
         if (self.curve is None) or (self.exposure is None):
             return
@@ -241,6 +247,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.uncalibratedValDoubleSpinBox.setValue(parameters[1])
         self.uncalibratedErrDoubleSpinBox.setValue(covariance[1, 1] ** 0.5)
 
+    @Slot()
     def calibrantChanged(self):
         if self.calibrantComboBox.currentIndex() < 0:
             return
@@ -251,6 +258,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.peakComboBox.addItems([name for name, val, unc in calibrant.peaks])
         self.peakComboBox.setCurrentIndex(0)
 
+    @Slot()
     def onCalibrantPeakSelected(self):
         if self.calibrantComboBox.currentIndex() < 0:
             return
@@ -263,6 +271,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.calibratedValDoubleSpinBox.setValue(val)
         self.calibratedErrDoubleSpinBox.setValue(unc)
 
+    @Slot()
     def populateCalibrants(self):
         self.calibrantComboBox.clear()
         self.calibrantComboBox.addItems(sorted([c.name for c in self.instrument.calibrants.qcalibrants()]))
@@ -285,6 +294,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
             self.manualcursor.set_active(False)
             self.manualcursor = None
 
+    @Slot(str, int)
     def onFSNSelected(self, prefix: str, index: int):
         logger.debug(f'FSN selected: {prefix=} {index=}')
         self.setExposure(self.instrument.io.loadExposure(prefix, index, raw=True, check_local=True))
@@ -308,6 +318,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.saveBeamYToolButton.setEnabled(False)
         self.selectCalibrantForExposure()
 
+    @Slot()
     def findCenter(self):
         if (self.exposure is None) or (self.curve is None):
             return
@@ -334,6 +345,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.saveBeamXToolButton.setEnabled(True)
         self.saveBeamYToolButton.setEnabled(True)
 
+    @Slot()
     def manualCentering(self):
         if self.manualcursor is not None:
             return

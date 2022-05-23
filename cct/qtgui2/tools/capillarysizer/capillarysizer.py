@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Tuple
 
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 from matplotlib.axes import Axes, np
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -70,6 +71,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.reloadToolButton.clicked.connect(self.signalNameChanged)
         self.replot()
 
+    @Slot()
     def fitPeak(self):
         if self.line is None:
             return
@@ -122,6 +124,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.canvas.draw_idle()
         self.recalculate()
 
+    @Slot()
     def onLastScanChanged(self):
         if self.instrument.scan.firstscan() is not None:
             self.scanIndexSpinBox.setMaximum(self.instrument.scan.lastscan())
@@ -130,11 +133,13 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             self.scanIndexSpinBox.setEnabled(False)
 
+    @Slot()
     def setValuesFromSpinboxes(self):
         self.positive = (self.positiveValDoubleSpinBox.value(), self.positiveErrDoubleSpinBox.value())
         self.negative = (self.negativeValDoubleSpinBox.value(), self.negativeErrDoubleSpinBox.value())
         self.recalculate()
 
+    @Slot()
     def recalculate(self):
         positionval = 0.5 * (self.positive[0] + self.negative[0])
         positionerr = 0.5 * (self.positive[1] ** 2 + self.negative[1] ** 2) ** 0.5
@@ -143,6 +148,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.newPositionLabel.setText(f'{positionval:.4f} \xb1 {positionerr:.4f}')
         self.newThicknessLabel.setText(f'{thicknessval:.4f} \xb1 {thicknesserr:.4f} mm')
 
+    @Slot()
     def sampleChanged(self):
         if self.sampleNameComboBox.currentIndex() < 0:
             return
@@ -154,6 +160,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self.oldPositionLabel.setText(f'{sample.positiony[0]:.4f} \xb1 {sample.positiony[1]:.4f}')
         self.oldThicknessLabel.setText(f'{sample.thickness[0] * 10.0:.4f} \xb1 {sample.thickness[1] * 10.0:.4f} mm')
 
+    @Slot(int)
     def scanIndexChanged(self, value: int):
         self.scan = self.instrument.scan[value]
         self.signalNameComboBox.blockSignals(True)
@@ -164,11 +171,13 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.signalNameComboBox.blockSignals(False)
         self.signalNameChanged()
 
+    @Slot()
     def signalNameChanged(self):
         if self.signalNameComboBox.currentIndex() >= 0:
             self.replot()
             self.figtoolbar.update()
 
+    @Slot()
     def replot(self):
         if self.scan is None:
             return
@@ -198,6 +207,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axes.grid(True, which='both')
         self.canvas.draw_idle()
 
+    @Slot()
     def saveCenter(self):
         positionval = 0.5 * (self.positive[0] + self.negative[0])
         positionerr = 0.5 * (self.positive[1] ** 2 + self.negative[1] ** 2) ** 0.5
@@ -240,6 +250,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     f'Cannot set position for sample {self.sampleNameComboBox.currentText()}: this parameter has been set read-only!')
         self.sampleChanged()
 
+    @Slot()
     def saveThickness(self):
         thicknessval = abs(self.positive[0] - self.negative[0])
         thicknesserr = (self.positive[1] ** 2 + self.negative[1] ** 2) ** 0.5

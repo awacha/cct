@@ -1,6 +1,7 @@
 from typing import Tuple, List, Optional
 
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .peakeditor_ui import Ui_Dialog
 from .peakmodel import PeakModel, DoubleSpinBoxDelegate
@@ -23,9 +24,11 @@ class PeakEditor(QtWidgets.QDialog, Ui_Dialog):
         self.treeView.setItemDelegateForColumn(1, self.doubleSpinBoxDelegate)
         self.treeView.setItemDelegateForColumn(2, self.doubleSpinBoxDelegate)
 
+    @Slot()
     def addPeak(self):
         self.peakstore.insertRow(self.peakstore.rowCount(), QtCore.QModelIndex())
 
+    @Slot()
     def removePeak(self):
         current = self.treeView.selectionModel().currentIndex()
         if current.isValid():

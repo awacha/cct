@@ -3,6 +3,8 @@
 import math
 from typing import Optional, Any
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
+
 import time
 import logging
 
@@ -35,6 +37,7 @@ class IlluminationSetBrightness(Command):
         assert isinstance(dev, KL2500LED)
         return dev
 
+    @Slot(bool, str, object)
     def onCommandResult(self, success: bool, command: str, result: Any):
         if command != 'set_brightness':
             return

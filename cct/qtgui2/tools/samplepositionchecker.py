@@ -1,6 +1,7 @@
 from typing import List
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 from adjustText import adjust_text
 from matplotlib.axes import Axes
 from matplotlib.text import Text
@@ -45,6 +46,7 @@ class SamplePositionChecker(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.enableDragSamplesToolButton.setVisible(False)
         self.repopulateListWidget()
 
+    @Slot()
     def repopulateListWidget(self):
         items = [self.listWidget.item(row) for row in range(self.listWidget.count())]
         selected = [item.text() for item in items if item.checkState() == QtCore.Qt.Checked]
@@ -56,6 +58,7 @@ class SamplePositionChecker(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             item.setCheckState(QtCore.Qt.Checked if (item.text() in selected) else QtCore.Qt.Unchecked)
         self.listWidget.setMinimumWidth(self.listWidget.sizeHintForColumn(0))
 
+    @Slot()
     def replot(self):
         items = [self.listWidget.item(row) for row in range(self.listWidget.count())]
         selected = sorted([item.text() for item in items if item.checkState() == QtCore.Qt.Checked])
@@ -79,6 +82,7 @@ class SamplePositionChecker(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axes.axis('equal')
         self.flipPlot()
 
+    @Slot()
     def flipPlot(self):
         x1, x2, y1, y2 = self.axes.axis()
         self.axes.axis(

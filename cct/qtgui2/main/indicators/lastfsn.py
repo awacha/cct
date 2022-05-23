@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .lastfsn_ui import Ui_Frame
 from ....core2.instrument.instrument import Instrument
@@ -33,24 +34,29 @@ class LastFSNIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.prefixComboBox.blockSignals(False)
         self.prefixSelected()
 
-    def prefixSelected(self):
+    @Slot(int)
+    def prefixSelected(self, currentIndex: int):
         if self.prefixComboBox.currentIndex() < 0:
             return
         self.nextFSNLabel.setText(str(Instrument.instance().io.nextfsn(self.prefixComboBox.currentText(), 0)))
         self.lastFSNLabel.setText(str(Instrument.instance().io.lastfsn(self.prefixComboBox.currentText())))
 
-    def onNextFSNChanged(self, prefix, nextfsn):
+    @Slot(str, int)
+    def onNextFSNChanged(self, prefix:str, nextfsn:int):
         self.populatePrefixComboBox()
         if prefix == self.prefixComboBox.currentText():
             self.nextFSNLabel.setText(str(nextfsn))
 
-    def onLastFSNChanged(self, prefix, lastfsn):
+    @Slot(str, int)
+    def onLastFSNChanged(self, prefix:str, lastfsn:int):
         self.populatePrefixComboBox()
         if prefix == self.prefixComboBox.currentText():
             self.nextFSNLabel.setText(str(lastfsn))
 
-    def onNextScanChanged(self, nextscan):
+    @Slot(int)
+    def onNextScanChanged(self, nextscan:int):
         self.nextScanLabel.setText(str(nextscan))
 
-    def onLastScanChanged(self, lastscan):
+    @Slot(int)
+    def onLastScanChanged(self, lastscan:int):
         self.lastScanLabel.setText(str(lastscan))

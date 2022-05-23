@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .genix_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -65,6 +66,7 @@ class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.standbyPushButton.clicked.connect(self.onStandbyClicked)
         self.fullPowerPushButton.clicked.connect(self.onFullPowerClicked)
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name in self._var2widget:
             widget = getattr(self, self._var2widget[name])
@@ -107,31 +109,38 @@ class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.shutterPushButton.setChecked(self.genix()['shutter'])
             self.shutterPushButton.blockSignals(False)
 
+    @Slot()
     def onResetFaultsClicked(self):
         self.genix().resetFaults()
 
+    @Slot(bool)
     def onXraysOnToggled(self, state: bool):
         if state:
             self.genix().xraysOn()
         else:
             self.genix().xraysOff()
 
+    @Slot(bool)
     def onWarmUpToggled(self, state: bool):
         if state:
             self.genix().startWarmUp()
         else:
             self.genix().stopWarmUp()
 
+    @Slot(bool)
     def onShutterToggled(self, state: bool):
         logger.debug(f'onShutterToggled({state})')
         self.genix().moveShutter(state)
 
+    @Slot()
     def onPowerOffClicked(self):
         self.genix().powerDown()
 
+    @Slot()
     def onStandbyClicked(self):
         self.genix().standby()
 
+    @Slot()
     def onFullPowerClicked(self):
         self.genix().rampup()
 
@@ -140,6 +149,7 @@ class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         assert isinstance(device, GeniX)
         return device
 
-    def onCommandResult(self, name: str, success: str, message: str):
+    @Slot(bool, str, str)
+    def onCommandResult(self, success: bool, name: str, message: str):
         if not success:
             QtWidgets.QMessageBox.critical(self, 'Error', message)

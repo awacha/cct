@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import openpyxl
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .outliertest import OutlierTestWindow
 from .processingwindow import ProcessingWindow
@@ -59,10 +60,12 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         self.removeSelectedResultPushButton.clicked.connect(self.removeSelectedResult)
         self.resizeColumns()
 
+    @Slot()
     def cleanResults(self):
         self.project.settings.h5io.clear()
         self.project.results.reload()
 
+    @Slot()
     def removeSelectedResult(self):
         sdes: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in
                                            self.treeView.selectionModel().selectedRows(0)]
@@ -72,6 +75,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         self.project.settings.h5io.pruneSamplesWithNoDistances()
         self.project.results.reload()
 
+    @Slot()
     def openOutlierTest(self):
         for index in self.treeView.selectionModel().selectedRows(0):
             sde = index.data(QtCore.Qt.UserRole)
@@ -81,10 +85,12 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                 continue
             self.mainwindow.createViewWindow(OutlierTestWindow, [(sde.samplename, sde.distancekey)])
 
+    @Slot()
     def resizeColumns(self):
         for c in range(self.treeView.model().columnCount()):
             self.treeView.resizeColumnToContents(c)
 
+    @Slot()
     def showAnisotropy(self):
         logger.debug('showAnisotropy')
         for index in self.treeView.selectionModel().selectedRows(0):
@@ -94,6 +100,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                 continue
             self.mainwindow.createViewWindow(ShowAnisotropyWindow, [(sde.samplename, sde.distancekey)])
 
+    @Slot()
     def showImage(self):
         for index in self.treeView.selectionModel().selectedRows(0):
             sde = index.data(QtCore.Qt.UserRole)
@@ -101,6 +108,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                 continue
             self.mainwindow.createViewWindow(ShowImageWindow, [(sde.samplename, sde.distancekey)])
 
+    @Slot()
     def showCurve(self):
         items = []
         for index in self.treeView.selectionModel().selectedRows(0):
@@ -110,6 +118,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         if items:
             self.mainwindow.createViewWindow(ShowCurveWindow, items)
 
+    @Slot()
     def showTransmission(self):
         items = []
         for index in self.treeView.selectionModel().selectedRows(0):
@@ -122,9 +131,11 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         if items:
             self.mainwindow.createViewWindow(TransmissionWindow, items)
 
+    @Slot()
     def showTimeBudget(self):
         pass
 
+    @Slot()
     def showVacuum(self):
         items = []
         for index in self.treeView.selectionModel().selectedRows(0):
@@ -139,6 +150,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         if items:
             self.mainwindow.createViewWindow(VacuumWindow, items)
 
+    @Slot(QtWidgets.QAction)
     def exportPatterns(self, action: Optional[QtWidgets.QAction] = None):
         if action is None:
             action = self.sender()
@@ -163,6 +175,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                         self.actionPatternNumpy_NPZ: PatternFileType.NUMPY}[action]
             item.writePattern(os.path.join(outputfolder, basename + filetype.value[-1]), filetype)
 
+    @Slot(QtWidgets.QAction)
     def exportOutlierTestResults(self, action: Optional[QtWidgets.QAction] = None):
         if action is None:
             action = self.sender()
@@ -187,6 +200,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                         self.actionCmatNumpy_NPZ: CorMatFileType.NUMPY}[action]
             item.writeCorMat(os.path.join(outputfolder, basename + filetype.value[-1]), filetype)
 
+    @Slot(QtWidgets.QAction)
     def exportCurves(self, action: Optional[QtWidgets.QAction] = None):
         if action is None:
             action = self.sender()
@@ -231,5 +245,6 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                             self.actionRSR: CurveFileType.RSR}[action]
                 item.writeCurve(os.path.join(outputfolder, basename + filetype.value[-1]), filetype)
 
+    @Slot()
     def exportReport(self):
         pass

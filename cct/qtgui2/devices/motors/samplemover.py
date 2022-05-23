@@ -5,6 +5,7 @@ import logging
 from typing import Optional
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .samplemover_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -26,6 +27,7 @@ class SampleMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.movetoSampleYToolButton.clicked.connect(self.moveToSample)
         self.sampleNameComboBox.setModel(self.instrument.samplestore.sortedmodel)
 
+    @Slot()
     def moveToSample(self):
         if self.sampleNameComboBox.currentIndex() < 0:
             return
@@ -48,6 +50,7 @@ class SampleMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             logger.debug('Moving to sample started.')
 
+    @Slot(bool, str)
     def onMovingToSampleFinished(self, success: bool, samplename: str):
         for widget in [self.movetoSampleXToolButton, self.movetoSampleYToolButton, self.movetoSampleToolButton,
                        self.sampleNameComboBox]:

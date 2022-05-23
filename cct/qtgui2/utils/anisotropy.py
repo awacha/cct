@@ -2,6 +2,8 @@ import logging
 
 import numpy as np
 from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from matplotlib.axes import Axes
 from matplotlib.patches import Circle, Polygon
 from matplotlib.widgets import SpanSelector
@@ -87,9 +89,11 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.fsnSelector.setVisible(enable)
             self.fsnSelectorLabel.setVisible(enable)
 
+    @Slot(str, int)
     def onFSNSelected(self, prefix: str, fsn: int):
         self.setExposure(self.fsnSelector.loadExposure())
 
+    @Slot(str, str, float)
     def onH5Selected(self, filename: str, sample: str, distance: float):
         self.setExposure(self.h5Selector.loadExposure())
 

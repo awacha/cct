@@ -4,6 +4,7 @@ from typing import Optional, Final, Any
 
 import numpy as np
 from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -83,6 +84,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.intensityTargetDoubleSpinBox.valueChanged.connect(self.updateTargetLines)
         self.resizeBuffer()
 
+    @Slot()
     def updateTargetLines(self):
         logger.debug(f'UpdateTargetLines() called from {self.sender().objectName()=}')
         if self.xTargetLine is not None:
@@ -117,6 +119,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.canvasPosition.draw_idle()
         self.canvasIntensity.draw_idle()
 
+    @Slot()
     def resizeBuffer(self):
         """Resize the measurement buffer"""
 
@@ -139,6 +142,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.cursor = (~np.isnan(self.buffer['time'])).sum() % len(self.buffer)
         self.redraw()
 
+    @Slot()
     def startStop(self):
         if self.startStopToolButton.text() == 'Start':
             # no measurement running, start it.
@@ -157,12 +161,14 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             if self.instrument.exposer.isExposing():
                 self.instrument.exposer.stopExposure()
 
+    @Slot()
     def clearBuffer(self):
         self.buffer = np.empty(self.bufferLengthSpinBox.value(), dtype=self.bufferdtype)
         self.buffer[:] = np.nan
         self.cursor = 0
         self.redraw()
 
+    @Slot()
     def moveShutter(self, open: bool):
         source = self.instrument.devicemanager.source()
         assert isinstance(source, GeniX)
@@ -225,7 +231,6 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             self.killTimer(event.timerId())
             self.instrument.exposer.startExposure('mon', self.expTimeDoubleSpinBox.value(), 1)
-
 
     def addPoint(self, intensity: float, x: float, y: float):
         self.buffer[self.cursor] = (time.thread_time(), intensity, x, y)
@@ -291,6 +296,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             sigma = (np.sum(dataset[validpoints]**2*timeweight[validpoints])/np.sum(timeweight[validpoints]) - mean**2)**0.5
             label.setText(f'{mean:.2f} (σ={sigma:.2f})')
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         assert isinstance(self.sender(), DeviceFrontend)
         if (self.sender().devicetype == DeviceType.Source) and (name == 'shutter'):
@@ -300,6 +306,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.shutterToolButton.setChecked(newvalue)
             self.shutterToolButton.blockSignals(False)
 
+    @Slot(object)
     def onImageReceived(self, exposure: Exposure):
         sumimage, maximage, meanrow, meancol, stdrow, stdcol, pixelcount = beamweights(
             exposure.intensity, exposure.mask)
@@ -307,6 +314,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.addPoint(sumimage, meancol, meanrow)
         self.plotimage.setExposure(exposure, keepzoom=None)
 
+    @Slot(bool)
     def onExposureFinished(self, success: bool):
         if (self.startStopToolButton.text() == 'Stop') and success:
             # measurement is still running, do another exposure

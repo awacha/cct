@@ -3,6 +3,8 @@
 import math
 from typing import Optional, Any
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+
 import time
 import logging
 
@@ -85,6 +87,7 @@ class PeristalticPumpDispense(Command):
         self.device().stopRotation()
         self.fail('User stop')
 
+    @Slot(bool, str, object)
     def onCommandResult(self, success: bool, command: str, result: Any):
         logger.debug(f'Command result from peristaltic pump: {success=}, {command=}, {result=}')
         if not success:
@@ -159,6 +162,7 @@ class PeristalticPumpStop(Command):
     def device(self) -> BT100S:
         return self.instrument.devicemanager.peristalticpump()
 
+    @Slot(bool, str, object)
     def onCommandResult(self, success: bool, command: str, result: Any):
         if not success:
             self.fail(f'Peristaltic pump command {command} failed.')

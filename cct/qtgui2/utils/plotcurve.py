@@ -3,6 +3,8 @@ from typing import Dict, Any, Tuple, List
 
 import numpy as np
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -45,6 +47,7 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         self.showLinesToolButton.toggled.connect(self.replot)
         self.symbolsTypeComboBox.currentIndexChanged.connect(self.replot)
 
+    @Slot(bool)
     def pixelOrQChanged(self, state: bool):
         self.pixelOrQToolButton.setText('q' if state else 'Pixel')
         self.replot()
@@ -57,14 +60,17 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
     def on_showErrorBarsToolButton_toggled(self):
         self.replot()
 
+    @Slot(bool)
     def showGrid(self, grid: bool):
         self.axes.grid(self.showGridToolButton.isChecked(), which='both')
         self.canvas.draw()
 
+    @Slot(bool)
     def showLegend(self, show: bool):
         self.axes.get_legend().set_visible(show)
         self.canvas.draw()
 
+    @Slot()
     def replot(self):
         logger.debug('Replotting curves')
         self.axes.clear()

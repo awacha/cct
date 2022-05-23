@@ -4,6 +4,7 @@ import math
 from typing import Iterator, Any, Optional
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from ..auth.privilege import Privilege
 from ....devices.device.frontend import DeviceFrontend
@@ -37,13 +38,13 @@ class Motor(QtCore.QObject):
     role: MotorRole = MotorRole.Other
     direction: MotorDirection = MotorDirection.Other
 
-    started = QtCore.pyqtSignal(float)  # emitted when a move is started. Argument: start position
-    stopped = QtCore.pyqtSignal(bool, float)  # emitted when a move is finished. Arguments: success, end position
-    variableChanged = QtCore.pyqtSignal(str, object, object)  # emitted whenever a variable changes
-    positionChanged = QtCore.pyqtSignal(float)  # emitted when the position changes either by movement or by calibration
-    moving = QtCore.pyqtSignal(float, float, float)  # arguments: actual position, start position, target position
-    cameOnLine = QtCore.pyqtSignal()  # emitted when the controller becomes on-line
-    wentOffLine = QtCore.pyqtSignal()  # emitted when the controller becomes off-line
+    started = Signal(float)  # emitted when a move is started. Argument: start position
+    stopped = Signal(bool, float)  # emitted when a move is finished. Arguments: success, end position
+    variableChanged = Signal(str, object, object)  # emitted whenever a variable changes
+    positionChanged = Signal(float)  # emitted when the position changes either by movement or by calibration
+    moving = Signal(float, float, float)  # arguments: actual position, start position, target position
+    cameOnLine = Signal()  # emitted when the controller becomes on-line
+    wentOffLine = Signal()  # emitted when the controller becomes off-line
 
     def __init__(self, instrument: "Instrument", controllername: str, axis: int, name: str,
                  role: Optional[MotorRole] = None, direction: Optional[MotorDirection] = None):
@@ -78,6 +79,7 @@ class Motor(QtCore.QObject):
         if self.instrument.devicemanager[self.controllername].isOnline():
             self.onControllerConnected()
 
+    @Slot()
     def onControllerConnected(self):
         logger.debug(f'Connecting slots of motor {self.name} to controller {self.controllername}')
         self.controller.moveStarted.connect(self.onMoveStarted)
@@ -85,6 +87,7 @@ class Motor(QtCore.QObject):
         self.controller.variableChanged.connect(self.onVariableChanged)
         self.cameOnLine.emit()
 
+    @Slot(bool)
     def onControllerDisconnected(self, expected: bool):
         try:
             self.controller.moveStarted.disconnect(self.onMoveStarted)
@@ -95,11 +98,13 @@ class Motor(QtCore.QObject):
             pass
         self.wentOffLine.emit()
 
+    @Slot(int, float)
     def onMoveStarted(self, motor: int, startposition: float):
         if motor == self.axis:
             logger.debug(f'Move started of motor {self.name}')
             self.started.emit(startposition)
 
+    @Slot(int, bool, float)
     def onMoveEnded(self, motor: int, success: bool, endposition: float):
         if motor == self.axis:
             logger.debug(f'Move ended of motor {self.name}')
@@ -143,6 +148,7 @@ class Motor(QtCore.QObject):
     def __getitem__(self, item: str) -> Any:
         return self.controller[f'{item}${self.axis}']
 
+    @Slot(str, object, object)
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
         if '$' not in variablename:
             # disregard non per-axis variables

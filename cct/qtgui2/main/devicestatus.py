@@ -2,6 +2,7 @@ import logging
 from typing import Any, Optional
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .devicestatus_ui import Ui_GroupBox
 from ...core2.devices.device.frontend import DeviceFrontend
@@ -34,6 +35,7 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
         else:
             self.onDeviceDisconnected()
 
+    @Slot()
     def reconnect(self):
         if Instrument.instance().devicemanager[self.devicename].isOffline():
             Instrument.instance().devicemanager.connectDevice(self.devicename)
@@ -41,12 +43,14 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
             Instrument.instance().devicemanager.disconnectDevice(self.devicename)
         self.reconnectToolButton.setEnabled(False)
 
+    @Slot()
     def onDeviceAllVariablesReady(self):
         self.reconnectToolButton.setText('D')
         self.reconnectToolButton.setIcon(QtGui.QIcon.fromTheme('network-disconnect'))
         self.reconnectToolButton.setToolTip('Disconnect from the device')
         self.reconnectToolButton.setEnabled(True)
 
+    @Slot()
     def onDeviceDisconnected(self):
         self.reconnectToolButton.setText('C')
         self.reconnectToolButton.setIcon(QtGui.QIcon.fromTheme('network-connect'))
@@ -64,6 +68,7 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
         self.device.variableChanged.connect(self.onDeviceVariableChanged)
         self.device.telemetry.connect(self.onDeviceTelemetry)
 
+    @Slot(str, object, object)
     def onDeviceVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name in ['__status__', '__auxstatus__']:
             try:
@@ -71,6 +76,7 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
             except DeviceFrontend.DeviceError:
                 pass
 
+    @Slot(object)
     def onDeviceTelemetry(self, telemetryinformation: TelemetryInformation):
         self.setToolTip(str(telemetryinformation))
         self.setLabelColor(self.autoQueryLabel, not telemetryinformation.autoqueryinhibited)

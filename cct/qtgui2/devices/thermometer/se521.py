@@ -2,6 +2,7 @@ import math
 from typing import Any
 
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .se521_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -27,6 +28,7 @@ class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             widget: QtWidgets.QLineEdit = getattr(self, widgetname)
             widget.editingFinished.connect(self.onNameEdited)
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name == 'battery_level':
             self.batteryLevelLabel.setText(f'{newvalue}/3')
@@ -104,12 +106,15 @@ class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def device(self) -> SE521:
         return self.instrument.devicemanager['se521']
 
+    @Slot()
     def toggleBacklight(self):
         self.device().toggleBacklight()
 
+    @Slot()
     def celsiusorfahrenheit(self):
         self.device().setDisplayUnits()
 
+    @Slot()
     def onNameEdited(self):
         for name, widgetname in self._name_lineedits.items():
             if self.sender().objectName() == widgetname:

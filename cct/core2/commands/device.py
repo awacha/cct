@@ -1,6 +1,8 @@
 from typing import Any, List
 import logging
 
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .command import InstantCommand, CommandArgument, Command
 from .commandargument import StringArgument
 from ..devices.device.frontend import DeviceFrontend
@@ -53,6 +55,7 @@ class DevCommand(Command):
             self._disconnectDevice()
             raise
 
+    @Slot(bool, str, str)
     def onDeviceCommandResult(self, success: bool, commandname: str, message: str):
         if commandname == self.sentcommand:
             self._disconnectDevice()

@@ -6,6 +6,7 @@ from typing import Optional, Dict, Final, List, Tuple, Type
 
 import appdirs
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .averaging import AveragingWindow
 from .closablemdisubwindow import ClosableMdiSubWindow
@@ -68,6 +69,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionRecent_projects.setMenu(QtWidgets.QMenu())
         self.loadRecentFileList()
 
+    @Slot(bool)
     def onShowHideProjectWindow(self, checked: bool):
         if self.project is None:
             return
@@ -80,6 +82,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.closeProject()
         event.accept()
 
+    @Slot(QtWidgets.QWidget)
     def onSubWindowHidden(self, widget: QtWidgets.QWidget):
         subwindow = self.sender()
         assert isinstance(subwindow, ClosableMdiSubWindow)
@@ -90,6 +93,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 action.setChecked(False)
                 action.blockSignals(False)
 
+    @Slot()
     def saveProject(self) -> bool:
         if not self.windowFilePath():
             return self.saveProjectAs()
@@ -97,6 +101,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             self.project.save(self.windowFilePath())
             return True
 
+    @Slot()
     def newProject(self):
         self.closeProject()
         filename = getSaveFile(
@@ -110,7 +115,8 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setWindowTitle(f'CREDO Processing Tool - {self.project.settings.filename}')
         self.addNewRecentFile(filename)
 
-    def addNewRecentFile(self, filename):
+    @Slot(str)
+    def addNewRecentFile(self, filename: str):
         logger.debug(
             f'Adding new file to the recents list: {filename}. '
             f'Current actions: {[a.text() for a in self.actionRecent_projects.menu().actions()]}')
@@ -131,7 +137,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             f'Current actions: {[a.text() for a in self.actionRecent_projects.menu().actions()]}')
         self.saveRecentFileList()
 
-    @QtCore.pyqtSlot()
+    @Slot(str)
     def openProject(self, filename: Optional[str] = None):
         if filename is None:
             filename = getOpenFile(
@@ -150,6 +156,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         logger.debug('Loaded window geometry.')
         self.addNewRecentFile(filename)
 
+    @Slot()
     def saveProjectAs(self) -> bool:  # True if saved successfully
         filename = getSaveFile(self, 'Save the project to...', '', 'CPT4 project files (*.cpt4);;All files (*)', '.cpt4')
         if not filename:
@@ -157,6 +164,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setWindowFilePath(filename)
         return self.saveProject()
 
+    @Slot()
     def closeProject(self):
         if self.project is None:
             return
@@ -166,6 +174,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.project = None
         self.setWindowFilePath('')
 
+    @Slot()
     def createProjectWindows(self):
         logger.debug('CreateProjectWindows called')
         self.destroyProjectWindows()
@@ -190,6 +199,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionProject_window.setChecked(True)
         self.projectwindow.showNormal()
 
+    @Slot()
     def destroyProjectWindows(self):
         logger.debug('Destroying project windows')
         for wi in self.windowinfo:
@@ -236,6 +246,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             self.viewwindows[handlestring].parent().restoreGeometry(geometry)
         return self.viewwindows[handlestring]
 
+    @Slot(QtWidgets.QWidget)
     def onWidgetDestroyed(self, object: QtWidgets.QWidget):
         for key in list(self.viewwindows):
             try:
@@ -421,6 +432,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 action.setChecked(not windowstate[label]['hidden'])
                 action.blockSignals(False)
 
+    @Slot()
     def loadRecentFileList(self):
         logger.debug(
             f'Loading recent file list. List is now: '
@@ -452,6 +464,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 logger.debug(f'File name: {action.toolTip()}')
                 f.write(action.toolTip() + '\n')
 
+    @Slot()
     def loadRecentFile(self):
         action = self.sender()
         assert isinstance(action, QtWidgets.QAction)

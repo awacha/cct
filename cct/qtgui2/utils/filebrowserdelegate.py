@@ -1,8 +1,9 @@
 import enum
 from typing import Optional
+import logging
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-import logging
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .filebrowsers import getSaveFile, getOpenFile, getDirectory
 
@@ -92,6 +93,7 @@ class FileSelectorDelegate(QtWidgets.QStyledItemDelegate):
         assert isinstance(toolbutton, QtWidgets.QToolButton)
         model.setData(index, lineedit.text(), QtCore.Qt.EditRole)
 
+    @Slot()
     def onToolButtonClicked(self):
         assert isinstance(self.sender(), QtWidgets.QToolButton)
         widget = self.sender().parent()

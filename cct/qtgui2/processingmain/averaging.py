@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 from .averaging_ui import Ui_Form
 from .processingwindow import ProcessingWindow
 
@@ -24,24 +25,28 @@ class AveragingWindow(ProcessingWindow, Ui_Form):
         self.processCountSpinBox.setMinimum(1)
         self.processCountSpinBox.setMaximum(multiprocessing.cpu_count())
 
+    @Slot(int)
     def onProcessCountChanged(self, value: int):
         if self.project.summarization.isBusy():
             raise ValueError('Cannot change process count: summarization is busy.')
         else:
             self.project.summarization.maxprocesscount = value
 
+    @Slot()
     def resizeTreeViewColumns(self):
         logger.debug('Resizing treeview columns of averaging window')
         for c in range(self.treeView.model().columnCount()):
             self.treeView.resizeColumnToContents(c)
         logger.debug('Resized treeview columns of averaging window.')
 
+    @Slot()
     def runClicked(self):
         if self.runPushButton.text() == 'Run':
             self.project.summarization.start()
         else:
             self.project.summarization.stop()
 
+    @Slot()
     def onAveragingStarted(self):
         self.runPushButton.setText('Stop')
         self.runPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
@@ -50,6 +55,7 @@ class AveragingWindow(ProcessingWindow, Ui_Form):
         self.progressBar.setMaximum(0)
         self.processCountSpinBox.setEnabled(False)
 
+    @Slot(bool)
     def onAveragingStopped(self, success: bool):
         self.processCountSpinBox.setEnabled(True)
         self.runPushButton.setText('Run')
@@ -64,6 +70,7 @@ class AveragingWindow(ProcessingWindow, Ui_Form):
                 'Finished averaging images.' + (f" New bad exposures found: \n{badfsnstext}" if badfsnstext else " No new bad exposures found.")
             )
 
+    @Slot(int, int)
     def onProgress(self, current: int, total: int):
         logger.debug(f'Averaging progress: {current=}, {total=}')
         self.progressBar.setMaximum(total)

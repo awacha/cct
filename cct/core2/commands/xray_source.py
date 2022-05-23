@@ -1,5 +1,7 @@
 import logging
 
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .command import Command
 from .commandargument import StringChoicesArgument
 from ..devices.xraysource import GeniX
@@ -20,12 +22,15 @@ class XraySourceCommand(Command):
         self.xraysource().shutter.disconnect(self.onShutter)
         self.xraysource().powerStateChanged.disconnect(self.onXraySourcePowerStateChanged)
 
+    @Slot(bool)
     def onShutter(self, state: bool):
         pass
 
+    @Slot(bool, str, str)
     def onXraySourceCommandResult(self, success: bool, command: str, message: str):
         pass
 
+    @Slot(str)
     def onXraySourcePowerStateChanged(self, state: str):
         pass
 
@@ -55,6 +60,7 @@ class Shutter(XraySourceCommand):
         self.progress.emit(f'{"Opening" if self.requestedstate else "Closing"} beam shutter.', 0, 0)
         self.xraysource().moveShutter(self.requestedstate)
 
+    @Slot(bool, str, str)
     def onXraySourceCommandResult(self, success: bool, command: str, message: str):
         if command != 'shutter':
             logger.warning(f'Command result received for unexpected command "{command}" ({type(command)=}')
@@ -65,6 +71,7 @@ class Shutter(XraySourceCommand):
             # wait for the shutter change
             pass
 
+    @Slot(bool)
     def onShutter(self, state: bool):
         self._disconnectXraySource()
         if self.requestedstate == state:
@@ -95,6 +102,7 @@ class Xrays(XraySourceCommand):
         else:
             self.xraysource().xraysOff()
 
+    @Slot(bool, str, str)
     def onXraySourceCommandResult(self, success: bool, command: str, message: str):
         if command != 'xrays':
             logger.warning(f'Command result received for unexpected command {command}')
@@ -104,6 +112,7 @@ class Xrays(XraySourceCommand):
         else:
             pass
 
+    @Slot(str)
     def onXraySourcePowerStateChanged(self, state: str):
         self._disconnectXraySource()
         if self.requestedstate and (state == GeniX.Status.off):
@@ -144,6 +153,7 @@ class XRayPower(XraySourceCommand):
         self.message.emit(f'Putting X-ray source to {self.requestedstate} mode.')
         self.progress.emit(f'Putting X-ray source to {self.requestedstate} mode.', 0, 0)
 
+    @Slot(bool, str, str)
     def onXraySourceCommandResult(self, success: bool, command: str, message: str):
         if (command == self.commandsent) and not success:
             self._disconnectXraySource()
@@ -154,6 +164,7 @@ class XRayPower(XraySourceCommand):
         else:  # (command == self.commandsent) and success
             pass
 
+    @Slot(str)
     def onXraySourcePowerStateChanged(self, state: str):
         if state == self.requestedstate:
             self.message.emit(f'X-ray generator is now in {state} mode.')
@@ -177,6 +188,7 @@ class WarmUp(XraySourceCommand):
             self._disconnectXraySource()
             raise
 
+    @Slot(str)
     def onXraySourcePowerStateChanged(self, state: str):
         if state in [GeniX.Status.off, GeniX.Status.standby]:
             self.message.emit('X-ray source warm-up finished.')

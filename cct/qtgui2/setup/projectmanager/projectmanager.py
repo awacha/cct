@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .projectmanager_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -21,18 +22,21 @@ class ProjectManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.addProjectPushButton.setEnabled(self.instrument.auth.hasPrivilege(Privilege.ProjectManagement))
         self.removeProjectPushButton.setEnabled(self.instrument.auth.hasPrivilege(Privilege.ProjectManagement))
 
+    @Slot()
     def addProject(self):
         prjid, ok = QtWidgets.QInputDialog.getText(self, 'Create a new project', 'Name of the new project:')
         if not ok:
             return
         self.instrument.projects.addProject(projectid=prjid)
 
+    @Slot()
     def removeProject(self):
         if self.projectListTreeView.selectionModel().currentIndex().isValid():
             self.instrument.projects.removeProject(
                 self.projectListTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole).projectid
             )
 
+    @Slot()
     def projectSelected(self):
         if not self.projectListTreeView.selectionModel().currentIndex().isValid():
             self.removeProjectPushButton.setEnabled(False)

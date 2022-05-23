@@ -1,6 +1,7 @@
 from typing import Optional
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .fsnselector_ui import Ui_Form
 from ...core2.dataclasses import Exposure
@@ -8,7 +9,7 @@ from ...core2.instrument.instrument import Instrument
 
 
 class FSNSelector(QtWidgets.QWidget, Ui_Form):
-    fsnSelected = QtCore.pyqtSignal(str, int)
+    fsnSelected = Signal(str, int)
 
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
@@ -27,9 +28,11 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
         self.lastToolButton.clicked.connect(self.gotoLast)
         self.reloadToolButton.clicked.connect(self.onFSNSelected)
 
+    @Slot()
     def gotoFirst(self):
         self.spinBox.setValue(self.spinBox.minimum())
 
+    @Slot()
     def gotoLast(self):
         self.spinBox.setValue(self.spinBox.maximum())
 
@@ -41,6 +44,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
         self.lastToolButton.setEnabled(not invalid)
         self.reloadToolButton.setEnabled(not invalid)
 
+    @Slot()
     def onPrefixChanged(self):
         if self.comboBox.currentIndex() < 0:
             self.setInvalid(True)
@@ -55,10 +59,12 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
             self.setInvalid(False)
             self.spinBox.setRange(0, Instrument.instance().io.lastfsn(prefix))
 
+    @Slot(str, int)
     def onLastFSNChanged(self, prefix: str, fsn: int):
         if prefix == self.comboBox.currentText():
             self.spinBox.setRange(0, fsn)
 
+    @Slot(object)
     def onFSNSelected(self, value: Optional[int] = None):
         if self.comboBox.currentIndex() < 0:
             return

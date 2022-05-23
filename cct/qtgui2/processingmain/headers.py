@@ -1,6 +1,7 @@
 from .processingwindow import ProcessingWindow
 from .headers_ui import Ui_Form
 from PyQt5 import QtGui, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 import logging
 logger=logging.getLogger(__name__)
@@ -21,12 +22,14 @@ class HeadersWindow(ProcessingWindow, Ui_Form):
         # Do not resize treeview columns automatically: if a lot of headers are loaded, it takes too much time!
         #self.treeView.model().modelReset.connect(self.resizeTreeViewColumns)
 
+    @Slot()
     def resizeTreeViewColumns(self):
         logger.debug('Resize treeview columns')
         for c in range(self.treeView.model().columnCount()):
             self.treeView.resizeColumnToContents(c)
         logger.debug('Treeview columns resized.')
 
+    @Slot()
     def markSelectedAsGoodOrBad(self):
         for selectedindex in self.treeView.selectionModel().selectedRows(0):
             self.project.headers.setData(
@@ -34,17 +37,20 @@ class HeadersWindow(ProcessingWindow, Ui_Form):
                 value=QtCore.Qt.Checked if self.sender() is self.markBadToolButton else QtCore.Qt.Unchecked,
                 role=QtCore.Qt.CheckStateRole)
 
+    @Slot()
     def startStopReload(self):
         if self.reloadPushButton.text() == 'Stop':
             self.project.headers.stop()
         else:
             self.project.headers.start()
 
+    @Slot()
     def onFinished(self):
         self.reloadPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
         self.reloadPushButton.setText('(Re)load')
         self.progressBar.setVisible(False)
 
+    @Slot()
     def onStarted(self):
         self.reloadPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
         self.reloadPushButton.setText('Stop')
@@ -52,6 +58,7 @@ class HeadersWindow(ProcessingWindow, Ui_Form):
         self.progressBar.setMinimum(0)
         self.progressBar.setMaximum(0)
 
+    @Slot(int, int)
     def onProgress(self, current: int, total: int):
         self.progressBar.setMaximum(total)
         self.progressBar.setValue(current)

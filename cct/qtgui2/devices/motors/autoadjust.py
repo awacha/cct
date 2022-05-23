@@ -3,6 +3,7 @@ from typing import Optional
 import logging
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.components.motors.motor import Motor
 from .autoadjust_ui import Ui_Form
@@ -75,6 +76,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.findText(motorname))
         self.onMotorChanged()
 
+    @Slot()
     def onStartClicked(self):
         if self.startPushButton.text() == 'Start':
             if self.state != AdjustingState.Idle:
@@ -102,6 +104,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             assert False
 
+    @Slot()
     def onMotorChanged(self):
         if self.motorname is not None:
             try:
@@ -111,6 +114,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.motorname = None if self.motorNameComboBox.currentIndex() < 0 else self.motorNameComboBox.currentText()
         self.connectMotor(self.instrument.motors[self.motorname])
 
+    @Slot(float)
     def onMotorPositionChanged(self, newposition: float):
         if (self.state == AdjustingState.WaitForInitialSetPositionResult) and \
                 (newposition >= self.motor()['softright']):
@@ -126,6 +130,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             logger.debug(f'Doing nothing in onMotorPositionChanged({newposition=:.6f}): {self.state=}')
 
+    @Slot(float, float, float)
     def onMotorMoving(self, position: float, startposition: float, endposition: float):
         logger.debug(f'onMotorMoving({position=:.6f}, {startposition=:.6f}, {endposition=:.6f}')
         if self.state in [AdjustingState.MovingLeft, AdjustingState.MovingRight, AdjustingState.MoveByBufferDistance]:
@@ -136,6 +141,7 @@ class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             logger.debug(f'Doing nothing in onMotorMoving(): in state {self.state}')
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         logger.debug(f'onMotorStopped({success=}, {endposition=:.6f})')
         motor = self.motor()

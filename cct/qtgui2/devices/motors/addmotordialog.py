@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 from .addmotordialog_ui import Ui_Dialog
 from ....core2.instrument.instrument import Instrument
 from ....core2.devices.motor.generic.frontend import MotorController
@@ -27,12 +28,14 @@ class AddMotorDialog(QtWidgets.QDialog, Ui_Dialog):
         self.motorDirectionComboBox.addItems([direction.name for direction in MotorDirection])
         self.motorDirectionComboBox.setCurrentIndex(0)
 
+    @Slot()
     def motorControllerSelected(self):
         controller = Instrument.instance().devicemanager[self.controllerComboBox.currentText()]
         assert isinstance(controller, MotorController)
         self.axisSpinBox.setRange(0, controller.Naxes)
         self.axisSpinBox.setValue(0)
 
+    @Slot()
     def validate(self):
         if (not self.motorNameLineEdit.text()) or \
             (self.motorNameLineEdit.text() in Instrument.instance().motors) or \

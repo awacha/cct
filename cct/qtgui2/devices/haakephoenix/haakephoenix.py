@@ -2,6 +2,7 @@ from typing import Any, Optional
 import datetime
 
 from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 from .haakephoenix_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 from ....core2.devices.thermostat.haakephoenix.backend import HaakePhoenixBackend
@@ -49,25 +50,31 @@ class HaakePhoenixDevice(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         except DeviceFrontend.DeviceError:
             pass
 
+    @Slot()
     def updateHighLimit(self):
         self.device().setHighLimit(self.highLimitDoubleSpinBox.value())
 
+    @Slot()
     def updateLowLimit(self):
         self.device().setLowLimit(self.lowLimitDoubleSpinBox.value())
 
+    @Slot()
     def updateSetpoint(self):
         self.device().setSetpoint(self.setPointDoubleSpinBox.value())
 
+    @Slot()
     def startStop(self):
         if self.startStopPushButton.text() == 'Start':
             self.device().startCirculator()
         else:
             self.device().stopCirculator()
 
+    @Slot()
     def setRTC(self):
         self.device().setTime(datetime.datetime.now().time())
         self.device().setDate(datetime.datetime.now().date())
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name == 'firmwareversion':
             self.firmwareVersionLabel.setText(newvalue)

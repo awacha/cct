@@ -2,6 +2,8 @@ from typing import Any, Final, Dict, Tuple
 import logging
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from ...utils.window import WindowRequiresDevices
 from .pilatus_ui import Ui_Form
 from ....core2.devices.detector.pilatus.frontend import PilatusDetector, PilatusGain, PilatusBackend
@@ -67,6 +69,7 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 logger.warning(f'Variable not yet updated: {variable}')
                 pass
 
+    @Slot()
     def onQuickTrim(self):
         if self.sender() is self.setAgToolButton:
             threshold, gain = self.thresholdsettings['Ag']
@@ -84,6 +87,7 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.thresholdSpinBox.setValue(threshold)
         self.trimPushButton.click()
 
+    @Slot()
     def updateThresholdLimits(self):
         if self.gainComboBox.currentIndex() < 0:
             return
@@ -92,11 +96,13 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         assert isinstance(detector, PilatusDetector)
         self.thresholdSpinBox.setRange(*detector.thresholdLimits(gain))
 
+    @Slot()
     def onTrimButtonClicked(self):
         detector = self.instrument.devicemanager.detector()
         assert isinstance(detector, PilatusDetector)
         detector.trim(self.thresholdSpinBox.value(), PilatusGain(self.gainComboBox.currentText()))
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         det: PilatusDetector = self.instrument.devicemanager.detector()
         if name == '__status__':

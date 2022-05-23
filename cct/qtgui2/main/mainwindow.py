@@ -4,6 +4,7 @@ from typing import Dict, Optional, Union, List
 
 import pkg_resources
 from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .devicestatus import DeviceStatus
 from .devicevariablemeasurement import DeviceVariableMeasurement
@@ -168,24 +169,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.deviceStatusTab.setLayout(QtWidgets.QVBoxLayout())
         self.deviceStatusTab.layout().addWidget(self.devicevariablemeasurement)
 
+    @Slot()
     def saveSettings(self):
         self.instrument.saveConfig()
 
+    @Slot()
     def onPanicClicked(self):
         self.instrument.panic('User clicked on the panic button')
 
+    @Slot()
     def onPanicAcknowledged(self):
         QtWidgets.QMessageBox.critical(
             self, 'Panic',
             f'Panic occurred, the instrument has been shut down. The program will exit. '
             f'Reason of the panic: {self.instrument.panicreason}')
 
+    @Slot()
     def onScriptTriggered(self):
         self.tabWidget.setCurrentWidget(self.scriptingTab)
 
+    @Slot()
     def onLogTriggered(self):
         self.tabWidget.setCurrentWidget(self.logTab)
 
+    @Slot(bool)
     def onActionTriggered(self, toggled: bool):
         action = self.sender()
         windowclass = self._action2windowclass[action.objectName()]
@@ -222,6 +229,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return w
         return None
 
+    @Slot(QtWidgets.QWidget)
     def onWindowDestroyed(self, window: QtWidgets.QWidget):
         logger.debug(f'Window with object name {window.objectName()} destroyed.')
         del self._windows[window.objectName()]
@@ -246,24 +254,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.instrument.stop()
         logger.debug('Exiting closeEvent')
 
+    @Slot(bool, str)
     def onInterpreterFinished(self, success: bool, message: str):
         self.commandLineEdit.setEnabled(True)
         self.progressBar.setVisible(False)
         self.executePushButton.setEnabled(True)
 
+    @Slot()
     def onInterpreterStarted(self):
         self.commandLineEdit.setEnabled(False)
         self.executePushButton.setEnabled(False)
 
+    @Slot(str, int, int)
     def onInterpreterProgress(self, message: str, current: int, total: int):
         self.progressBar.setRange(0, total)
         self.progressBar.setValue(current)
         self.progressBar.setFormat(message)
         self.progressBar.setVisible(True)
 
+    @Slot(str)
     def onInterpreterMessage(self, message: str):
         self.statusBar().showMessage(message)
 
+    @Slot(str)
     def onDeviceAdded(self, device: str):
         if not [ds for ds in self._devicestatuswidgets if ds.devicename == device]:
             # device status widget not yet exists
@@ -274,6 +287,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             logger.debug(f'Device status widget already exists for device {device}')
 
+    @Slot(str)
     def onDeviceRemoved(self, device: str):
         try:
             statuswidget = [ds for ds in self._devicestatuswidgets if ds.devicename == device][0]
@@ -285,6 +299,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         statuswidget.deleteLater()
         logger.debug(f'Device status widget for device {device} has been removed.')
 
+    @Slot()
     def onExecutePushed(self):
         if self.executePushButton.text() == 'Stop':
             self.instrument.interpreter.stop()

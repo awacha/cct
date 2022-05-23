@@ -2,6 +2,7 @@ from typing import Any, List, Tuple, Optional, Dict
 import logging
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from ..component import Component
 from ....devices.device.frontend import DeviceFrontend
@@ -39,6 +40,7 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
     def panichandler(self):
         super().panichandler()
 
+    @Slot(str)
     def onDeviceAdded(self, name: str):
         # assume that self._devicenames is already sorted
         assert self._devicenames == sorted(self._devicenames)
@@ -53,6 +55,7 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
         device.connectionEnded.connect(self.onDeviceReadyOrLost)
         device.variableChanged.connect(self.onVariableChanged)
 
+    @Slot()
     def onDeviceReadyOrLost(self):
         device: DeviceFrontend = self.sender()
         logger.debug(f'Device {device.name} is ready: {device.ready}')
@@ -71,6 +74,7 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
             self._deviceready[device.name] = False
             self.endRemoveRows()
 
+    @Slot(str, bool)
     def onDeviceRemoved(self, name: str, expected: bool):
         logger.debug(f'Device {name} removed')
         assert self._devicenames == sorted(self._devicenames)
@@ -87,6 +91,7 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
         device.connectionEnded.disconnect(self.onDeviceReadyOrLost)
         device.variableChanged.disconnect(self.onVariableChanged)
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         device: DeviceFrontend = self.sender()
         variablenames = sorted(device.keys())

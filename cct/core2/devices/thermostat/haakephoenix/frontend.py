@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .backend import HaakePhoenixBackend
 from ...device.frontend import DeviceFrontend, DeviceType
@@ -14,8 +15,8 @@ class HaakePhoenix(DeviceFrontend):
     devicename = 'HaakePhoenix'
     devicetype = DeviceType.Thermostat
     vendor = 'Haake'
-    temperatureChanged = QtCore.pyqtSignal(float)
-    startStop = QtCore.pyqtSignal(bool)
+    temperatureChanged = Signal(float)
+    startStop = Signal(bool)
     loglevel = logging.INFO
 
     def __init__(self, name: str, host: str, port: int, **kwargs):

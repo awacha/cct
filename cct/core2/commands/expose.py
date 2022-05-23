@@ -1,6 +1,8 @@
 import logging
 from typing import Optional
 
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .command import Command
 from .commandargument import StringArgument, FloatArgument, IntArgument
 from ..dataclasses import Exposure
@@ -28,10 +30,12 @@ class Expose(Command):
         self.instrument.exposer.imageReceived.disconnect(self.onImageReceived)
         self.instrument.exposer.exposureFinished.disconnect(self.onExposureFinished)
 
+    @Slot(str, int, float, float, float)
     def onExposureProgress(self, prefix: str, fsn: int, currenttime: float, starttime: float, endtime: float):
         self.progress.emit(f'Exposing {prefix}/{fsn}, remaining time {endtime - currenttime:.1f} sec',
                            int(1000 * (currenttime - starttime) / (endtime - starttime)), 1000)
 
+    @Slot(bool)
     def onExposureFinished(self, success: bool):
         self.success = success
         if not success:
@@ -52,6 +56,7 @@ class Expose(Command):
         else:
             self.fail('Error while exposing')
 
+    @Slot(object)
     def onImageReceived(self, exposure: Exposure):
         self.waiting_for_images -= 1
         self.tryToFinalize()

@@ -1,6 +1,7 @@
 from typing import Optional
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .connectioneditor_ui import Ui_Form
 from ....core2.devices.device.telemetry import TelemetryInformation
@@ -32,6 +33,7 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.deviceComboBox.currentIndex() >= 0:
             self.variablesTreeView.setModel(self.instrument.devicemanager[self.deviceComboBox.currentText()])
 
+    @Slot()
     def addDevice(self):
         if self.newconnectiondialog is not None:
             return
@@ -39,6 +41,7 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.newconnectiondialog.finished.connect(self.onNewConnectionDialogFinished)
         self.newconnectiondialog.show()
 
+    @Slot(int)
     def onNewConnectionDialogFinished(self, result: int):
         if result == QtWidgets.QDialog.Accepted:
             try:
@@ -49,6 +52,7 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.newconnectiondialog.deleteLater()
         self.newconnectiondialog = None
 
+    @Slot()
     def removeDevice(self):
         index = self.treeView.selectionModel().currentIndex()
         if not index.isValid():
@@ -59,21 +63,25 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         except RuntimeError as rte:
             QtWidgets.QMessageBox.critical(self, 'Cannot remove device', str(rte))
 
+    @Slot()
     def connectDevice(self):
         if not self.treeView.selectionModel().currentIndex().isValid():
             return
         self.instrument.devicemanager.connectDevice(
             self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole))
 
+    @Slot()
     def disconnectDevice(self):
         if not self.treeView.selectionModel().currentIndex().isValid():
             return
         self.instrument.devicemanager.disconnectDevice(
             self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole))
 
+    @Slot(str)
     def onDeviceAdded(self, devicename: str):
         self.updateDeviceComboBox()
 
+    @Slot(str, bool)
     def onDeviceRemoved(self, devicename: str, expected: bool):
         self.updateDeviceComboBox()
 
@@ -94,10 +102,12 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if (currentdevice is None) or (self.deviceComboBox.currentIndex()<0):
             self.deviceComboBox.setCurrentIndex(0)
 
+    @Slot(object)
     def onDeviceTelemetry(self, telemetry: TelemetryInformation):
         if self.sender().name == self.deviceComboBox.currentText():
             self.telemetryTreeView.model().setTelemetry(telemetry)
 
+    @Slot()
     def onDeviceChanged(self):
         self.telemetryTreeView.model().setTelemetry(None)
         if self.deviceComboBox.currentIndex() >= 0:

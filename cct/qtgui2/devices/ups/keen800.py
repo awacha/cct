@@ -2,6 +2,8 @@ from typing import Any
 import logging
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from ...utils.window import WindowRequiresDevices
 from .keen800_ui import Ui_Form
 
@@ -24,6 +26,7 @@ class Keen80UPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             except ups.DeviceError:
                 pass
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         logger.debug(f'{name}: {prevvalue} -> {newvalue}')
         ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'Keen800'][0]

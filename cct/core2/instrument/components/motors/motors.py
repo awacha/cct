@@ -3,6 +3,7 @@ import logging
 from typing import Iterator, Any, List, Dict, Union, Optional
 
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .motor import Motor, MotorRole, MotorDirection
 from ..auth import Privilege, needsprivilege
@@ -16,8 +17,8 @@ logger.setLevel(logging.INFO)
 class Motors(QtCore.QAbstractItemModel, Component):
     motors: List[Motor]
 
-    newMotor = QtCore.pyqtSignal(str)
-    motorRemoved = QtCore.pyqtSignal(str)
+    newMotor = Signal(str)
+    motorRemoved = Signal(str)
 
     def __init__(self, **kwargs):
         self.motors = []
@@ -50,6 +51,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
                 role=None if role is None else MotorRole(role),
                 direction=None if direction is None else MotorDirection(direction))
 
+    @Slot(str)
     def onDeviceConnectedOrDisconnected(self, name: str):
         # If a motor controller is disconnected or connected
         for i, motor in enumerate(self.motors):
@@ -172,6 +174,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
         else:
             return self.motors[item]
 
+    @Slot(float)
     def onMotorPositionChanged(self, position: float):
         motor = self.sender()
         assert isinstance(motor, Motor)
@@ -181,6 +184,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
             self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex())
         )
 
+    @Slot(float)
     def onMotorStarted(self, startposition: float):
         motor = self.sender()
         assert isinstance(motor, Motor)
@@ -189,6 +193,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
             self.index(row, 0, QtCore.QModelIndex()),
             self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         motor = self.sender()
         assert isinstance(motor, Motor)
@@ -199,6 +204,7 @@ class Motors(QtCore.QAbstractItemModel, Component):
         if (self._panicking == self.PanicState.Panicking) and (not [m for m in self.motors if m.isMoving()]):
             super().panichandler()
 
+    @Slot(str, object, object)
     def onMotorVariableChanged(self, name: str, value: Any, prevvalue: Any):
         motor = self.sender()
         assert isinstance(motor, Motor)

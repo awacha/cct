@@ -4,6 +4,7 @@ import pickle
 from typing import List, Any, Optional, Union, Iterable, Final, Tuple
 
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from ..component import Component
 from ..motors import Motor
@@ -29,12 +30,12 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         ('situation', 'Situation')]
 
     _movesampledirection: str = 'both'
-    sampleListChanged = QtCore.pyqtSignal()
-    currentSampleChanged = QtCore.pyqtSignal(object)  # sample name or None
-    sampleEdited = QtCore.pyqtSignal(str, str, object)
-    movingToSample = QtCore.pyqtSignal(str, str, float, float,
+    sampleListChanged = Signal()
+    currentSampleChanged = Signal(object)  # sample name or None
+    sampleEdited = Signal(str, str, object)
+    movingToSample = Signal(str, str, float, float,
                                        float)  # sample, motor name, motor position, start position, end position
-    movingFinished = QtCore.pyqtSignal(bool, str)  # success, sample
+    movingFinished = Signal(bool, str)  # success, sample
     sortedmodel: QtCore.QSortFilterProxyModel
 
     def __init__(self, **kwargs):
@@ -388,12 +389,15 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             motor.stopped.disconnect(self.onMotorStopped)
             motor.moving.disconnect(self.onMotorMoving)
 
+    @Slot(float, float, float)
     def onMotorMoving(self, current: float, start: float, end: float):
         self.movingToSample.emit(self._currentsample, self.sender().name, current, start, end)
 
+    @Slot(float)
     def onMotorStarted(self, start: float):
         pass
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, end: float):
         logger.debug(f'Motor {self.sender().name} stopped. Success: {success}. End: {end:.4f}')
         if not success:

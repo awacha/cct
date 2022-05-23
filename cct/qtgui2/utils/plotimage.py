@@ -6,6 +6,7 @@ import matplotlib.cm
 import matplotlib.colors
 import numpy as np
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.colorbar import Colorbar
@@ -78,10 +79,12 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.equalAspectToolButton.toggled.connect(self.changeAspect)
         self.lockZoomToolButton.toggled.connect(self.onLockZoomToggled)
 
+    @Slot(bool)
     def onLockZoomToggled(self, active: bool):
         self.lockZoomToolButton.setIcon(
             QtGui.QIcon(QtGui.QPixmap(":/icons/zoom_locked.svg" if active else ":/icons/zoom_unlocked.svg")))
 
+    @Slot()
     def axisScaleChanged(self):
         if self.matrix is None:
             return
@@ -91,16 +94,19 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.canvas.draw_idle()
         self.figToolbar.update()
 
+    @Slot(bool)
     def showColourBar(self, showit: bool):
         if self._cmapaxis is not None:
             self._cmapaxis.ax.set_visible(showit)
             self.canvas.draw_idle()
 
+    @Slot(bool)
     def showMask(self, showit: bool):
         if self._maskhandle is not None:
             self._maskhandle.set_visible(showit)
             self.canvas.draw_idle()
 
+    @Slot(bool)
     def showBeam(self, showit: bool):
         if self._xcrosshairhandle is not None:
             self._xcrosshairhandle.set_visible(showit)
@@ -109,6 +115,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             self._ycrosshairhandle.set_visible(showit)
             self.canvas.draw_idle()
 
+    @Slot(bool)
     def changeAspect(self, equalaspect: bool):
         self.axes.set_aspect('equal' if equalaspect else 'auto')
         self.canvas.draw_idle()
@@ -165,6 +172,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             assert False
         return extent, center
 
+    @Slot(object)
     def replot(self, keepzoom: Optional[bool] = None):
         if keepzoom is None:
             keepzoom = self.lockZoomToolButton.isChecked()

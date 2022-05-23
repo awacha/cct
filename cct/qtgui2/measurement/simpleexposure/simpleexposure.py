@@ -2,6 +2,7 @@ import enum
 import logging
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 from .simpleexposure_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 from ....core2.devices import DeviceType
@@ -56,6 +57,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.resize(self.minimumSizeHint())
         self.setUiEnabled()
 
+    @Slot(int)
     def onImageCountValueChanged(self, value: int):
         self.delayDoubleSpinBox.setEnabled(value > 1)
 
@@ -135,6 +137,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     # slots for checking the results of the steps
 
+    @Slot(bool)
     def onShutterChanged(self, state: bool):
         assert self.state in [State.OpeningShutter, State.ClosingShutter]
         self.instrument.devicemanager.source().shutter.disconnect(self.onShutterChanged)
@@ -157,13 +160,15 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             assert False
 
-    def onMovingToSample(self, samplename:str, motorname: str, current:float, start:float, end):
+    @Slot(str, str, float, float, float)
+    def onMovingToSample(self, samplename:str, motorname: str, current:float, start:float, end: float):
         self.progressBar.setMinimum(0)
         self.progressBar.setMaximum(100)
         self.progressBar.setValue((current-start)/(end-start) * 100)
         self.progressBar.setFormat(f'Moving {motorname}: {current:.3f}')
         self.progressBar.setVisible(True)
 
+    @Slot(str, bool)
     def onMovingToSampleFinished(self, samplename: str, success: bool):
         assert self.state == State.MovingSample
         self.instrument.samplestore.movingToSample.disconnect(self.onMovingToSample)
@@ -174,6 +179,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             QtWidgets.QMessageBox.critical(self, 'Error', f'Sample {samplename} could not be moved into the beam.')
             self._waitforimages()
 
+    @Slot(bool)
     def onExposureFinished(self, success: bool):
         self.instrument.exposer.exposureFinished.disconnect(self.onExposureFinished)
         self.instrument.exposer.exposureProgress.disconnect(self.onExposureProgress)
@@ -181,6 +187,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.imagesrequired = 0
         self._closeshutter()
 
+    @Slot(object)
     def onImageReceived(self, exposure):
         self.imagesrequired -= 1
         self.mainwindow.showPattern(exposure)
@@ -190,12 +197,14 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             if self.state == State.WaitingForImages:
                 self.cleanupAfterExposure()
 
-    def onExposureProgress(self, prefix, fsn, currenttime, starttime, endtime):
+    @Slot(str, int, float, float, float)
+    def onExposureProgress(self, prefix:str, fsn:int, currenttime:float, starttime:float, endtime:float):
         self.progressBar.setVisible(True)
         self.progressBar.setRange(starttime*100, endtime*100)
         self.progressBar.setValue(currenttime*100)
         self.progressBar.setFormat(f'Exposing {prefix} #{fsn}, {endtime-currenttime:.2f} secs remaining')
 
+    @Slot()
     def onStartStopClicked(self):
         if self.startStopPushButton.text() == 'Start':
             self.setBusy()

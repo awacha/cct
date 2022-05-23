@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple
 
 import numpy as np
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from ..motors import Motor
 from ....algorithms.beamweighting import beamweights
@@ -70,9 +71,9 @@ class ScanRecorder(QtCore.QObject):
     imagesdone: int
     positionsdone: List[float]
     state: State = State.Idle
-    finished = QtCore.pyqtSignal(bool, str)
-    scanpoint = QtCore.pyqtSignal(tuple)
-    progress = QtCore.pyqtSignal(float, float, float, str)
+    finished = Signal(bool, str)
+    scanpoint = Signal(tuple)
+    progress = Signal(float, float, float, str)
     initialmotorposition: float
     instrument: "Instrument"
     imageprocessingtasks: List[multiprocessing.pool.AsyncResult]
@@ -211,6 +212,7 @@ class ScanRecorder(QtCore.QObject):
         else:
             assert False
 
+    @Slot(bool)
     def onShutter(self, state: bool):
         if self.state == self.State.OpeningShutter:
             if state:
@@ -234,6 +236,7 @@ class ScanRecorder(QtCore.QObject):
             # shutter opened or closed during the measurement. Do nothing, only issue a warning.
             logger.warning(f'Shutter {"opened" if state else "closed"} during the scan measurement.')
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         logger.debug(f'Motor stopped {success=}, {endposition=}')
         if not success:
@@ -260,12 +263,14 @@ class ScanRecorder(QtCore.QObject):
             elif self.state == self.State.StopRequested:
                 self.waitForImageProcessing()
 
+    @Slot(float, float, float)
     def onMotorMoving(self, current: float, start: float, end: float):
         if self.state in [self.State.MotorReset, self.State.MoveToStart]:
             self.progress.emit(start, end, current, self.state.value)
         else:
             pass
 
+    @Slot(object)
     def onImageReceived(self, exposure: Exposure):
         logger.debug('Image received')
         assert self.imagesrequested > 0
@@ -324,6 +329,7 @@ class ScanRecorder(QtCore.QObject):
                 f'New scan point: at {position=}. {self.imagesdone=}. {self.positionsdone=}, {len(self.imageprocessingtasks)=}')
             self.scanpoint.emit((position,) + tuple(readings))
 
+    @Slot(bool)
     def onExposureFinished(self, success: bool):
         """Called when the detector signals that the exposure is finished.
 

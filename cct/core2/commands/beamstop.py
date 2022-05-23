@@ -1,5 +1,7 @@
 from typing import Any
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
+
 
 from .command import Command
 from .commandargument import StringChoicesArgument
@@ -32,6 +34,7 @@ class BeamStopCommand(Command):
             self.instrument.beamstop.moveOut()
         self.message.emit(f'Moving beamstop {"in" if requestedstate else "out"}.')
 
+    @Slot(bool)
     def onBeamstopMovingFinished(self, success: bool):
         self.disconnectSignals()
         if success:
@@ -39,6 +42,7 @@ class BeamStopCommand(Command):
         else:
             self.fail('Moving the beam-stop failed.')
 
+    @Slot(str, float, float, float)
     def onBeamstopMovingProgress(self, message: str, start: float, end: float, current: float):
         self.progress.emit(message, int(1000*(current-start)/(end-start)), 1000)
 
@@ -51,5 +55,6 @@ class BeamStopCommand(Command):
         self.instrument.beamstop.movingFinished.disconnect(self.onBeamstopMovingFinished)
         self.instrument.beamstop.movingProgress.disconnect(self.onBeamstopMovingProgress)
 
+    @Slot(str)
     def onBeamstopStateChanged(self, state: str):
         pass

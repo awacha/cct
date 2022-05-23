@@ -1,4 +1,6 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from ...utils.window import WindowRequiresDevices
 from .usermanager_ui import Ui_Form
 from ....core2.instrument.components.auth.privilege import Privilege
@@ -30,6 +32,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         for c in range(self.instrument.auth.columnCount()):
             self.userListTreeView.resizeColumnToContents(c)
 
+    @Slot()
     def passwordEdit(self):
         pal = self.passwordLineEdit.palette()
         if self.passwordLineEdit.text() != self.passwordRepeatLineEdit.text():
@@ -39,6 +42,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.passwordLineEdit.setPalette(pal)
         self.passwordRepeatLineEdit.setPalette(pal)
 
+    @Slot()
     def fetchUserData(self):
         user = self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
         assert isinstance(user, User)
@@ -56,6 +60,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             priv = [p for p in Privilege if p.name == item.text()][0]
             item.setCheckState(QtCore.Qt.Checked if user.hasPrivilege(priv) else QtCore.Qt.Unchecked)
 
+    @Slot()
     def addUser(self):
         username, ok = QtWidgets.QInputDialog.getText(self, 'Create new user', 'User name of the new user:')
         if not ok:
@@ -64,10 +69,12 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             QtWidgets.QMessageBox.critical(self, 'Cannot create user', f'User {username} already exists.')
         self.instrument.auth.addUser(username)
 
+    @Slot()
     def removeUser(self):
         self.instrument.auth.removeUser(
             self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole).username)
 
+    @Slot()
     def updateEditedValues(self):
         password, ok = QtWidgets.QInputDialog.getText(self, 'Authenticate', 'Please type your password:', QtWidgets.QLineEdit.Password, '')
         if not ok:
@@ -104,6 +111,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.auth.saveToConfig()
         self.fetchUserData()
 
+    @Slot()
     def onCurrentUserChanged(self):
         # the current authenticated user has changed or the currently selected user has changed: set widget permissions
         widgets_only_usermanagers_can_edit = [self.ldapdnLineEdit, self.krbprincipalLineEdit, self.privilegeListWidget]

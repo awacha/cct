@@ -6,6 +6,7 @@ import time
 from typing import Dict, Optional, Any, Sequence
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .recorder import ScanRecorder
 from ..component import Component
@@ -22,12 +23,12 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
     _scans: Dict[int, Scan]
     _lastscan: Optional[int] = None
     _nextscan: int = 0
-    nextscanchanged = QtCore.pyqtSignal(int)
-    lastscanchanged = QtCore.pyqtSignal(int)
-    scanstarted = QtCore.pyqtSignal(int, int)  # scanindex, number of steps
-    scanpointreceived = QtCore.pyqtSignal(int, int, int, tuple)  # scanindex, current scan point, total number of scan points, readings
-    scanprogress = QtCore.pyqtSignal(float, float, float, str)  # start, end, current, message
-    scanfinished = QtCore.pyqtSignal(bool, int)
+    nextscanchanged = Signal(int)
+    lastscanchanged = Signal(int)
+    scanstarted = Signal(int, int)  # scanindex, number of steps
+    scanpointreceived = Signal(int, int, int, tuple)  # scanindex, current scan point, total number of scan points, readings
+    scanprogress = Signal(float, float, float, str)  # start, end, current, message
+    scanfinished = Signal(bool, int)
     scanrecorder: Optional[ScanRecorder] = None
 
     def __init__(self, **kwargs):
@@ -76,6 +77,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         self.scanrecorder.start()
         self.scanstarted.emit(self.scanrecorder.scanindex, steps)
 
+    @Slot(float, float, float, str)
     def onScanProgress(self, start:float, end:float, current:float, message:str):
         self.scanprogress.emit(start, end, current, message)
 
@@ -117,6 +119,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         self.lastscanchanged.emit(self._lastscan)
         return self._scans[scanindex]
 
+    @Slot(object)
     def addScanLine(self, readings: Sequence[float]):
         if self.scanrecorder is None:
             raise RuntimeError('No scan running')
@@ -130,6 +133,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         self.dataChanged.emit(self.index(list(self._scans.keys()).index(scan.index), 5),
                               self.index(list(self._scans.keys()).index(scan.index), 5))
 
+    @Slot(bool, str)
     def onScanFinished(self, success: bool, message: str):
         with open(self.scanfile(), 'at') as f:
             f.write('\n')
@@ -144,6 +148,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         return os.path.join(self.config['path']['directories']['scan'],
                             self.config['scan']['scanfile'])
 
+    @Slot(object, object)
     def onConfigChanged(self, path, value):
         if path == ('scan', 'scanfile'):
             self.reindex()

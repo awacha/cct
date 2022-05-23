@@ -5,6 +5,7 @@ import logging
 from typing import Optional
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .motormover_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -31,6 +32,7 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.motors.newMotor.connect(self.onMotorAdded)
         self.instrument.motors.motorRemoved.connect(self.onMotorRemoved)
 
+    @Slot(object)
     def onRelativeCheckBoxToggled(self, toggled: Optional[bool] = None):
         if self.motorNameComboBox.currentIndex() < 0:
             self.moveMotorPushButton.setEnabled(False)
@@ -54,6 +56,7 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.onMotorOffLine()
             self.motorTargetDoubleSpinBox.setRange(0,0)
 
+    @Slot(int)
     def onMotorNameChanged(self, currentindex: int):
         if self.currentmotor is not None:
             self.disconnectMotor(self.currentmotor)
@@ -61,6 +64,7 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.connectMotor(self.currentmotor)
         self.onRelativeCheckBoxToggled()  # this ensures setting the target spinbox limits and value.
 
+    @Slot(float)
     def onMotorStarted(self, startposition: float):
         motor = self.sender()
         assert isinstance(motor, Motor)
@@ -72,12 +76,14 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.motorTargetDoubleSpinBox.setEnabled(False)
             self.relativeMovementCheckBox.setEnabled(False)
 
+    @Slot(float)
     def onMotorPositionChanged(self, newposition: float):
         motor = self.sender()
         assert isinstance(motor, Motor)
         if motor.name == self.motorNameComboBox.currentText():
             self.onRelativeCheckBoxToggled()
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         motor = self.sender()
         assert isinstance(motor, Motor)
@@ -89,6 +95,7 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.motorTargetDoubleSpinBox.setEnabled(True)
             self.relativeMovementCheckBox.setEnabled(True)
 
+    @Slot()
     def onMoveMotorClicked(self):
         motor = self.instrument.motors[self.motorNameComboBox.currentText()]
         if self.moveMotorPushButton.text() == 'Move':
@@ -99,6 +106,7 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         elif self.moveMotorPushButton.text() == 'Stop':
             motor.stop()
 
+    @Slot(str)
     def onMotorAdded(self, motorname: str):
         self.motorNameComboBox.blockSignals(True)
         try:
@@ -111,6 +119,7 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.motorNameComboBox.currentText() != currentmotor:
             self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.currentIndex())
 
+    @Slot(str)
     def onMotorRemoved(self, motorname: str):
         self.motorNameComboBox.blockSignals(True)
         try:
@@ -123,11 +132,13 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.motorNameComboBox.currentText() != currentmotor:
             self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.currentIndex())
 
+    @Slot()
     def onMotorOffLine(self):
         self.relativeMovementCheckBox.setEnabled(False)
         self.moveMotorPushButton.setEnabled(False)
         self.motorTargetDoubleSpinBox.setEnabled(False)
 
+    @Slot()
     def onMotorOnline(self):
         self.relativeMovementCheckBox.setEnabled(True)
         self.moveMotorPushButton.setEnabled(True)

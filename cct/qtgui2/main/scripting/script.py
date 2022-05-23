@@ -4,6 +4,7 @@ import os
 from typing import Optional
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .script_ui import Ui_Form
 from .scripteditor import ScriptEditor
@@ -15,10 +16,10 @@ logger.setLevel(logging.INFO)
 
 
 class ScriptUI(QtWidgets.QWidget, Ui_Form):
-    modificationChanged = QtCore.pyqtSignal(bool)
-    undoAvailable = QtCore.pyqtSignal(bool)
-    redoAvailable = QtCore.pyqtSignal(bool)
-    copyAvailable = QtCore.pyqtSignal(bool)
+    modificationChanged = Signal(bool)
+    undoAvailable = Signal(bool)
+    redoAvailable = Signal(bool)
+    copyAvailable = Signal(bool)
     filename: Optional[str] = None
     scriptEditor: ScriptEditor
     syntaxhighlighter: ScriptSyntaxHighlighter

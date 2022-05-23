@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .backend import GeniXBackend
 from ...device.frontend import DeviceFrontend, DeviceType
@@ -15,8 +16,8 @@ class GeniX(DeviceFrontend):
     backendclass = GeniXBackend
     loglevel = logging.DEBUG
 
-    shutter = QtCore.pyqtSignal(bool)
-    powerStateChanged = QtCore.pyqtSignal(str)
+    shutter = Signal(bool)
+    powerStateChanged = Signal(str)
 
     def moveShutter(self, requestedstate: bool):
         self._logger.info(f'{"Opening" if requestedstate else "Closing"} shutter')

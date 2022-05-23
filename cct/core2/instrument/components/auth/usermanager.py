@@ -5,6 +5,7 @@ import pickle
 from typing import Any, List, Optional
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .privilege import Privilege
 from .user import User
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 class UserManager(QtCore.QAbstractItemModel, Component):
     _users: List[User]
     _currentuser: Optional[User] = None
-    currentUserChanged = QtCore.pyqtSignal(str)
+    currentUserChanged = Signal(str)
     instance = None
 
     def __init__(self, **kwargs):

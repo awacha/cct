@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Optional
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 from matplotlib.axes import Axes, np
 from matplotlib.backend_bases import key_press_handler, KeyEvent
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
@@ -88,6 +89,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             key_press_handler(event, self.canvas, self.figtoolbar)
         return True
 
+    @Slot()
     def updateCursor(self):
         if self.cursor is not None:
             self.cursor.set_xdata(self.scan[self.scan.motorname][self.cursorHorizontalSlider.value()])
@@ -96,6 +98,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self.showImage(keepzoom=True)
             self.cursorPositionLabel.setText(str(self.scan[self.scan.motorname][self.cursorHorizontalSlider.value()]))
 
+    @Slot()
     def showAll(self):
         self.listWidget.blockSignals(True)
         for row in range(self.listWidget.count()):
@@ -103,6 +106,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.listWidget.blockSignals(False)
         self.setPlotVisibility()
 
+    @Slot()
     def hideAll(self):
         self.listWidget.blockSignals(True)
         for row in range(self.listWidget.count()):
@@ -110,12 +114,14 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.listWidget.blockSignals(False)
         self.setPlotVisibility()
 
+    @Slot()
     def emphasizeCurrentLine(self):
         signal = self.listWidget.currentItem().text()
         for key in self.lines:
             self.lines[key].set_linewidth(3 if signal == key else 1)
         self.canvas.draw_idle()
 
+    @Slot()
     def onSliderButton(self):
         if self.sender() is self.goBackToolButton:
             self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderSingleStepSub)
@@ -127,6 +133,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             assert self.sender() is self.gotoLastToolButton
             self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderToMaximum)
 
+    @Slot()
     def autoScaleToggled(self):
         self.axes.relim(visible_only=True)
         self.axes.autoscale(self.autoScaleToolButton.isChecked())
@@ -145,26 +152,32 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             and (not self.instrument.motors[self.scan.motorname].isMoving())
         )
 
+    @Slot()
     def motorToPeak(self):
         if self.peakposition() is not None:
             self.instrument.motors[self.scan.motorname].moveTo(self.peakposition())
 
+    @Slot()
     def motorToCursor(self):
         self.instrument.motors[self.scan.motorname].moveTo(
             self.scan[self.scan.motorname][self.cursorHorizontalSlider.value()])
 
+    @Slot()
     def cursorToMin(self):
         x, y = self.currentData(onlyzoomed=False)
         self.cursorHorizontalSlider.setValue(np.argmin(y))
 
+    @Slot()
     def cursorToMax(self):
         x, y = self.currentData(onlyzoomed=False)
         self.cursorHorizontalSlider.setValue(np.argmax(y))
 
+    @Slot()
     def show2DToggled(self):
         if self.show2DToolButton.isChecked():
             self.showImage(keepzoom=False)
 
+    @Slot(bool)
     def showImage(self, keepzoom: bool = False):
         self.mainwindow.showPattern(
             self.instrument.io.loadExposure(
@@ -182,6 +195,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             y = y[idx]
         return x, y
 
+    @Slot()
     def fitPeak(self):
         x, y = self.currentData(onlyzoomed=True)
         symmetric = self.sender() in [self.fitSymmetricNegativeToolButton, self.fitSymmetricPositiveToolButton]
@@ -225,6 +239,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                        self.motorToPeakToolButton]:
             button.setEnabled(not recording)
 
+    @Slot()
     def setPlotVisibility(self):
         if not self.lines:
             return
@@ -244,11 +259,13 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.legend.set_visible(self.showLegendToolButton.isChecked())
         self.canvas.draw_idle()
 
+    @Slot()
     def setLegendVisibility(self):
         if self.legend is not None:
             self.legend.set_visible(self.showLegendToolButton.isChecked())
             self.canvas.draw_idle()
 
+    @Slot()
     def replot(self):
         self.axes.clear()
         motor = self.scan.motorname
@@ -296,12 +313,15 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.replot()
         self.setWindowTitle(f'Scan #{self.scan.index}: {self.scan.comment}')
 
+    @Slot(float)
     def onMotorStarted(self, startposition: float):
         self.setMotorButtonsEnabled()
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         self.setMotorButtonsEnabled()
 
+    @Slot(float)
     def onMotorPositionChanged(self, newposition: float):
         if self.motorvline is not None:
             self.motorvline.set_xdata(newposition)

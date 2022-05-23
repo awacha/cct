@@ -4,6 +4,7 @@ from typing import List, Tuple, Any
 
 import h5py
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .loader import Loader
 from .settings import ProcessingSettings
@@ -36,7 +37,7 @@ class Processing(QtCore.QAbstractItemModel):
     results: ResultsModel
     merging: Merging
 
-    resultItemChanged = QtCore.pyqtSignal(str, str)
+    resultItemChanged = Signal(str, str)
 
     """The main class of the processing subsystem"""
 
@@ -57,12 +58,14 @@ class Processing(QtCore.QAbstractItemModel):
         self.merging.itemChanged.connect(self.resultItemChanged)
         self.settings.badfsnsChanged.connect(self.onBadFSNsChanged)
 
+    @Slot()
     def onBadFSNsChanged(self):
         self.headers.badfsnschanged()
 
     def isIdle(self):
         return self.headers.isIdle() and self.summarization.isIdle() and self.subtraction.isIdle()
 
+    @Slot(bool)
     def onTaskFinished(self, success: bool):
         if self.sender() is self.headers:
             # headers have been loaded

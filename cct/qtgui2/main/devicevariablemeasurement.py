@@ -2,6 +2,7 @@ import logging
 from typing import List
 
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .devicevariablelogging.devicevariablelogger import DeviceVariableLoggerUI
 from .devicevariablemeasurement_ui import Ui_Form
@@ -32,15 +33,18 @@ class DeviceVariableMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_For
         self.instrument.devicelogmanager.modelReset.connect(self.onModelReset)
         self.onModelReset()
 
-    def onRowsInserted(self, parent, first, last):
+    @Slot(QtCore.QModelIndex, int, int)
+    def onRowsInserted(self, parent: QtCore.QModelIndex, first:int, last:int):
         layout: QtWidgets.QVBoxLayout = self.scrollArea.widget().layout()
         for i in range(first, last+1):
             widget = DeviceVariableLoggerUI(instrument=self.instrument, devicelogger=self.instrument.devicelogmanager[i])
             layout.insertWidget(i, widget)
 
-    def onRowsRemoved(self, parent, first, last):
+    @Slot(QtCore.QModelIndex, int, int)
+    def onRowsRemoved(self, parent: QtCore.QModelIndex, first: int, last: int):
         pass  # the widget should be destroyed when the DeviceStatusLogger instance is destroyed
 
+    @Slot()
     def onModelReset(self):
         self.checkForDestroyedWidgets()
         for widget in self.loggerwidgets:
@@ -54,12 +58,15 @@ class DeviceVariableMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_For
         logger.debug(f'Calling onRowsInserted, rowcount is {self.instrument.devicelogmanager.rowCount(QtCore.QModelIndex())}')
         self.onRowsInserted(QtCore.QModelIndex(), 0, self.instrument.devicelogmanager.rowCount(QtCore.QModelIndex())-1)
 
+    @Slot()
     def startAll(self):
         self.instrument.devicelogmanager.startAll()
 
+    @Slot()
     def stopAll(self):
         self.instrument.devicelogmanager.stopAll()
 
+    @Slot()
     def onAddClicked(self):
         self.instrument.devicelogmanager.insertRow(len(self.instrument.devicelogmanager), QtCore.QModelIndex())
         lgr = self.instrument.devicelogmanager[len(self.instrument.devicelogmanager)-1]
@@ -76,6 +83,7 @@ class DeviceVariableMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_For
                     f'Error while adding variable '
                     f'{rowindex.parent().data(QtCore.Qt.EditRole)}/{rowindex.data(QtCore.Qt.EditRole)}: {ve}')
 
+    @Slot()
     def onLoggerDestroyed(self):
         self.checkForDestroyedWidgets()
 

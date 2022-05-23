@@ -1,13 +1,14 @@
 from typing import Dict, Any, Iterable
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 
 class InterpreterFlags(QtCore.QAbstractItemModel):
     _flags: Dict[str, bool]
-    newFlag = QtCore.pyqtSignal(str, bool)
-    flagChanged = QtCore.pyqtSignal(str, bool)
-    flagRemoved = QtCore.pyqtSignal(str)
+    newFlag = Signal(str, bool)
+    flagChanged = Signal(str, bool)
+    flagRemoved = Signal(str)
 
     def __init__(self):
         super().__init__()

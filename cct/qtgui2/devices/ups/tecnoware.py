@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .tecnoware_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -36,6 +37,7 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             except TecnowareEvoDSPPlus.DeviceError:
                 pass
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         logger.debug(f'{name}: {prevvalue} -> {newvalue}')
         if name == '__status__':
@@ -111,6 +113,7 @@ class TecnowareUPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                     pal.setColor(pal.Window, QtGui.QColor('lightgreen' if good else 'red'))
                     widget.setPalette(pal)
 
+    @Slot(bool)
     def onFlagButtonToggled(self, state: bool):
         flagbutton: QtWidgets.QPushButton = self.sender()
         flagname = flagbutton.objectName().replace('PushButton', '')

@@ -11,6 +11,7 @@ from typing import Optional, Set, Iterable, List, Tuple, Final, Iterator, Union
 import appdirs
 import numpy as np
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .calculations.outliertest import OutlierMethod
 from .h5io import ProcessingH5File
@@ -46,8 +47,8 @@ class ProcessingSettings(QtCore.QObject):
     qrangemethod: QRangeMethod = QRangeMethod.Linear
     qcount: int = 0  # 0 means the same number as pixels
 
-    settingsChanged = QtCore.pyqtSignal()
-    badfsnsChanged = QtCore.pyqtSignal()
+    settingsChanged = Signal()
+    badfsnsChanged = Signal()
     _h5io: Optional[ProcessingH5File] = None
 
     _manager: multiprocessing.managers.SyncManager

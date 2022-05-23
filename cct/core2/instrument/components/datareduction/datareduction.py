@@ -4,6 +4,7 @@ import queue
 from typing import Optional
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .datareductionpipeline import DataReductionPipeLine
 from ..component import Component
@@ -20,7 +21,7 @@ class DataReduction(QtCore.QObject, Component):
     backend: Optional[multiprocessing.Process] = None
     queuetobackend: Optional[multiprocessing.Queue] = None
     queuefrombackend: Optional[multiprocessing.Queue] = None
-    datareductionresult= QtCore.pyqtSignal(object)
+    datareductionresult= Signal(object)
     submitted: int = 0
     timerinterval: float = 0.1
     timer: Optional[int] = None

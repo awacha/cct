@@ -3,7 +3,8 @@ from typing import Tuple, Sequence, Dict, Any, Optional, Union
 
 import numpy as np
 from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtProperty
+from PyQt5.QtCore import pyqtProperty as Property
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from ....config import Config
 
@@ -14,7 +15,7 @@ logger.setLevel(logging.INFO)
 class GeometryPreset(QtCore.QObject):
     config: Config
     _state: Dict[str, Any]
-    changed = QtCore.pyqtSignal(str, object)
+    changed = Signal(str, object)
 
     def _getproperty(self, propertyname: str) -> Any:
         return self._state[propertyname]
@@ -47,47 +48,47 @@ class GeometryPreset(QtCore.QObject):
         self._state['dist_sample_det'] = (value[0], value[1])
         self.changed.emit('dist_sample_det', value)
 
-    description = pyqtProperty(
+    description = Property(
         str, lambda self: self._getproperty('description'), lambda self, value: self._setproperty('description', value))
-    l1_elements = pyqtProperty(
+    l1_elements = Property(
         list, lambda self: self._getproperty('l1_elements'),
         lambda self, value: self._setproperty('l1_elements', value))
-    l2_elements = pyqtProperty(
+    l2_elements = Property(
         list, lambda self: self._getproperty('l2_elements'),
         lambda self, value: self._setproperty('l2_elements', value))
-    dist_sample_det = pyqtProperty(
+    dist_sample_det = Property(
         tuple, _get_sd, _set_sd)
-    beamposx = pyqtProperty(
+    beamposx = Property(
         tuple, lambda self: self._getproperty('beamposx'), lambda self, value: self._setproperty('beamposx', value))
-    beamposy = pyqtProperty(
+    beamposy = Property(
         tuple, lambda self: self._getproperty('beamposy'), lambda self, value: self._setproperty('beamposy', value))
-    pinhole1 = pyqtProperty(
+    pinhole1 = Property(
         float, lambda self: self._getproperty('pinhole1'), lambda self, value: self._setproperty('pinhole1', value))
-    pinhole2 = pyqtProperty(
+    pinhole2 = Property(
         float, lambda self: self._getproperty('pinhole2'), lambda self, value: self._setproperty('pinhole2', value))
-    pinhole3 = pyqtProperty(
+    pinhole3 = Property(
         float, lambda self: self._getproperty('pinhole3'), lambda self, value: self._setproperty('pinhole3', value))
-    beamstop = pyqtProperty(
+    beamstop = Property(
         float, lambda self: self._getproperty('beamstop'), lambda self, value: self._setproperty('beamstop', value))
-    mask = pyqtProperty(
+    mask = Property(
         str, lambda self: self._getproperty('mask'), lambda self, value: self._setproperty('mask', value))
-    flightpipes = pyqtProperty(
+    flightpipes = Property(
         list, lambda self: self._getproperty('flightpipes'), lambda self, value: self._setproperty('flightpipes', value)
     )
 
-    l1base = pyqtProperty(float, lambda self: self._getproperty_config('l1base', 0.0))
-    l2base = pyqtProperty(float, lambda self: self._getproperty_config('l2base', 0.0))
-    sourcetoph1 = pyqtProperty(float, lambda self: self._getproperty_config('sourcetoph1', 0.0))
-    ph3tosample = pyqtProperty(float, lambda self: self._getproperty_config('ph3tosample', 0.0))
-    beamstoptodetector = pyqtProperty(float, lambda self: self._getproperty_config('beamstoptodetector', 0.0))
-    isoKFspacer = pyqtProperty(float, lambda self: self._getproperty_config('isoKFspacer', 4.0))
-    sourcedivergence = pyqtProperty(float, lambda self: self._getproperty_config('sourcedivergence', 0.0))
-    ph3toflightpipes = pyqtProperty(float, lambda self: self._getproperty_config('ph3toflightpipes', 0.0))
-    lastflightpipetodetector = pyqtProperty(float,
+    l1base = Property(float, lambda self: self._getproperty_config('l1base', 0.0))
+    l2base = Property(float, lambda self: self._getproperty_config('l2base', 0.0))
+    sourcetoph1 = Property(float, lambda self: self._getproperty_config('sourcetoph1', 0.0))
+    ph3tosample = Property(float, lambda self: self._getproperty_config('ph3tosample', 0.0))
+    beamstoptodetector = Property(float, lambda self: self._getproperty_config('beamstoptodetector', 0.0))
+    isoKFspacer = Property(float, lambda self: self._getproperty_config('isoKFspacer', 4.0))
+    sourcedivergence = Property(float, lambda self: self._getproperty_config('sourcedivergence', 0.0))
+    ph3toflightpipes = Property(float, lambda self: self._getproperty_config('ph3toflightpipes', 0.0))
+    lastflightpipetodetector = Property(float,
                                             lambda self: self._getproperty_config('lastflightpipetodetector', 0.0))
-    wavelength = pyqtProperty(tuple, lambda self: (self.config['geometry'].setdefault('wavelength', 1.0),
+    wavelength = Property(tuple, lambda self: (self.config['geometry'].setdefault('wavelength', 1.0),
                                                    self.config['geometry'].setdefault('wavelength.err', 0.0)))
-    pixelsize = pyqtProperty(tuple, lambda self: (self.config['geometry'].setdefault('pixelsize', 1.0),
+    pixelsize = Property(tuple, lambda self: (self.config['geometry'].setdefault('pixelsize', 1.0),
                                                   self.config['geometry'].setdefault('pixelsize.err', 0.0002)))
 
     def __init__(self,

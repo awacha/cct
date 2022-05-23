@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .leadfluid_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -46,50 +47,61 @@ class LeadFluid_BT100S(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def device(self) -> BT100S:
         return self.instrument.devicemanager['BT100S']
 
+    @Slot(float)
     def onRotationSpeedChanged(self, value: float):
         self.rotationSpeedDoubleSpinBox.setEnabled(False)
         self.device().setRotationSpeed(value)
 
+    @Slot(float)
     def onDispenseTimeChanged(self, value: float):
         self.dispenseTimeDoubleSpinBox.setEnabled(False)
         self.device().setDispenseTime(value)
 
+    @Slot(float)
     def onDispenseVolumeChanged(self, value: float):
         return False  # ToDo
         self.dispenseVolumeDoubleSpinBox.setEnabled(False)
         self.device().setDispenseVolume(value)
 
+    @Slot(bool)
     def onEasyDispenseToggled(self, active: bool):
         self.easyDispensePushButton.setEnabled(False)
         self.device().setEasyDispenseMode(active)
 
+    @Slot(bool)
     def onTimeDispenseToggled(self, active: bool):
         self.timeDispensePushButton.setEnabled(False)
         self.device().setTimeDispenseMode(active)
 
+    @Slot(bool)
     def onClockwiseToggled(self, active: bool):
         self.clockwisePushButton.setEnabled(False)
         self.device().setCounterClockwise(active)
 
+    @Slot(bool)
     def onFullSpeedToggled(self, active: bool):
         self.fullSpeedPushButton.setEnabled(False)
         self.device().setFullSpeed(active)
 
+    @Slot()
     def onStartClicked(self):
         self.startPushButton.setEnabled(False)
         self.stopPushButton.setEnabled(False)
         self.device().startRotation()
 
+    @Slot()
     def onStopClicked(self):
         self.startPushButton.setEnabled(False)
         self.stopPushButton.setEnabled(False)
         self.device().stopRotation()
 
+    @Slot()
     def onControlModeChanged(self):
         self.controlModeComboBox.setEnabled(False)
         cm = ControlMode(self.controlModeComboBox.currentText().rsplit(' ', 1)[0].lower())
         self.device().setControlMode(cm)
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name == 'steps_for_one_round':
             self.stepCountLabel.setText(f'{newvalue}')

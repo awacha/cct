@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 from .project_ui import Ui_Form
 from .processingwindow import ProcessingWindow
 from ..utils.filebrowsers import getDirectory
@@ -22,28 +23,35 @@ class ProjectWindow(ProcessingWindow, Ui_Form):
             task.started.connect(self.onTaskStarted)
             task.finished.connect(self.onTaskFinished)
 
+    @Slot()
     def onTaskStarted(self):
         for pushbutton in [self.loadHeadersPushButton, self.averagingPushButton, self.subtractionPushButton, self.mergingPushButton]:
             pushbutton.setEnabled(False)
 
+    @Slot(bool)
     def onTaskFinished(self, success: bool):
         for pushbutton in [self.loadHeadersPushButton, self.averagingPushButton, self.subtractionPushButton, self.mergingPushButton]:
             pushbutton.setEnabled(True)
 
+    @Slot()
     def rootPathChanged(self):
         self.project.settings.rootpath = self.rootPathLineEdit.text()
         self.project.settings.emitSettingsChanged()
 
+    @Slot()
     def addFSNRange(self):
         self.project.insertRow(self.project.rowCount())
 
+    @Slot()
     def removeFSNRange(self):
         while selectedrows := self.fsnsTreeView.selectionModel().selectedRows(0):
             self.project.removeRow(selectedrows[0].row())
 
+    @Slot()
     def clearFSNRanges(self):
         self.project.modelReset()
 
+    @Slot()
     def browseRootPath(self):
         dn = getDirectory(self, 'Select measurement root directory', '')
         if not dn:

@@ -5,6 +5,7 @@ import logging
 
 import dateutil.parser
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .calibrant import Calibrant
 from .intensity import IntensityCalibrant
@@ -17,7 +18,7 @@ logger.setLevel(logging.INFO)
 
 class CalibrantStore(QtCore.QAbstractItemModel, Component):
     _calibrants: List[Calibrant]
-    calibrantListChanged = QtCore.pyqtSignal()
+    calibrantListChanged = Signal()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

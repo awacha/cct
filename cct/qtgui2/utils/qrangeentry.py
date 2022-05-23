@@ -1,11 +1,13 @@
 from typing import Tuple, Optional
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+
 from .qrangeentry_ui import Ui_Form
 
 
 class QRangeEntry(QtWidgets.QWidget, Ui_Form):
-    valueChanged = QtCore.pyqtSignal(float, float, int)
+    valueChanged = Signal(float, float, int)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -19,6 +21,7 @@ class QRangeEntry(QtWidgets.QWidget, Ui_Form):
         self.qmaxDoubleSpinBox.valueChanged.connect(self._onvaluechanged)
         self.qCountSpinBox.valueChanged.connect(self._onvaluechanged)
 
+    @Slot()
     def _onvaluechanged(self):
         self.valueChanged.emit(self.qminDoubleSpinBox.value(), self.qmaxDoubleSpinBox.value(), self.qCountSpinBox.value())
 

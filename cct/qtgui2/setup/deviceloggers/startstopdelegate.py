@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 import logging
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ class StartStopDelegate(QtWidgets.QStyledItemDelegate):
                      index: QtCore.QModelIndex) -> None:
         model.setData(index, editor.isChecked(), QtCore.Qt.EditRole)
 
+    @Slot()
     def onToggled(self):
         self.commitData.emit(self.sender())
         self.closeEditor.emit(self.sender(), self.SubmitModelCache)

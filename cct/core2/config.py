@@ -5,6 +5,7 @@ import pickle
 from typing import Dict, Any, Union, Tuple, KeysView, ValuesView, ItemsView, Optional
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 PathLike = Union[os.PathLike, str, pathlib.Path]
 
@@ -23,7 +24,7 @@ class Config(QtCore.QObject):
 
     """
 
-    changed = QtCore.pyqtSignal(object, object)
+    changed = Signal(object, object)
     filename: Optional[str] = None
     _data: Dict[str, Any]
     _modificationcount: int = 0
@@ -55,6 +56,7 @@ class Config(QtCore.QObject):
             self._autosavetimer = None
             self.save(self.filename)
 
+    @Slot(object, object)
     def onChanged(self, path: Tuple[str, ...], value: Any):
         self.autosave()
 
@@ -145,6 +147,7 @@ class Config(QtCore.QObject):
     def items(self) -> ItemsView:
         return self._data.items()
 
+    @Slot(object, object)
     def _subConfigChanged(self, path, newvalue):
         cnf = self.sender()
         # find the key for this `Config` instance

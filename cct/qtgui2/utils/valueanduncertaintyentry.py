@@ -1,11 +1,13 @@
 from typing import Tuple, Optional
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+
 from .valueanduncertaintyentry_ui import Ui_Form
 
 
 class ValueAndUncertaintyEntry(QtWidgets.QWidget, Ui_Form):
-    valueChanged = QtCore.pyqtSignal(float, float)
+    valueChanged = Signal(float, float)
     maxrelativeuncertainty: float = 2  # 1 means 100%
 
     def __init__(self, **kwargs):
@@ -19,6 +21,7 @@ class ValueAndUncertaintyEntry(QtWidgets.QWidget, Ui_Form):
         self.valueDoubleSpinBox.valueChanged.connect(self._onvaluechanged)
         self.uncertaintyDoubleSpinBox.valueChanged.connect(self._onvaluechanged)
 
+    @Slot()
     def _onvaluechanged(self):
         self.valueChanged.emit(self.valueDoubleSpinBox.value(), self.uncertaintyDoubleSpinBox.value())
 

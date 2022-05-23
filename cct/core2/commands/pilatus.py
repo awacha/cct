@@ -1,3 +1,5 @@
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .command import Command
 from .commandargument import StringChoicesArgument, FloatArgument
 from ..devices.detector import PilatusDetector, PilatusGain, PilatusBackend
@@ -37,7 +39,8 @@ class Trim(Command):
         self.progress.emit(f'Trimming detector to {1e-3*threshold:.3f} keV, {gain.value}', 0,0)
         self.message.emit(f'Trimming detector to {1e-3*threshold:.3f} keV, {gain.value}')
 
-    def onPilatusStateChanged(self, newstate):
+    @Slot(str)
+    def onPilatusStateChanged(self, newstate: str):
         if newstate == PilatusBackend.Status.Trimming:
             pass
         elif newstate == PilatusBackend.Status.Idle:

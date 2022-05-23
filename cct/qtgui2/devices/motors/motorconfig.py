@@ -3,6 +3,7 @@ import logging
 
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .motorconfig_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -60,24 +61,31 @@ class AdvancedMotorConfig(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.motorSelectorComboBox.currentText() != currentmotor:
             self.motorSelectorComboBox.setCurrentIndex(0)
 
+    @Slot(str)
     def onMotorRemoved(self, motorname: str):
         self.updateMotorSelector()
 
+    @Slot(float)
     def onMotorStarted(self, startposition: float):
         self.entryVerticalLayout.setEnabled(False)
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         self.entryVerticalLayout.setEnabled(True)
 
+    @Slot()
     def onMotorOnLine(self):
         self.updateMotorSelector()
 
+    @Slot()
     def onMotorOffLine(self):
         self.updateMotorSelector()
 
+    @Slot()
     def onNewMotor(self, motorname: str):
         self.updateMotorSelector()
 
+    @Slot()
     def onMotorSelected(self):
         if self.motorname is not None:
             self.disconnectMotor(self.motorname)
@@ -90,6 +98,7 @@ class AdvancedMotorConfig(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.entryVerticalLayout.setEnabled(True)
         self.resetChanges()
 
+    @Slot()
     def applyChanges(self):
         motor = self.instrument.motors[self.motorSelectorComboBox.currentText()]
         axis = motor.axis
@@ -126,6 +135,7 @@ class AdvancedMotorConfig(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                         f'to {widgetvalue}')
                     setfunc(axis, widgetvalue)
 
+    @Slot()
     def resetChanges(self):
         if self.motorSelectorComboBox.currentIndex() < 0:
             return
@@ -176,6 +186,7 @@ class AdvancedMotorConfig(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.maxCurrentSpinBox.setValue(mot['maxcurrent:raw'])
         self.standbyCurrentSpinBox.setValue(mot['standbycurrent:raw'])
 
+    @Slot()
     def onRawPhysSpinboxChanged(self):
         motor = self.instrument.motors[self.motorSelectorComboBox.currentText()]
         uc = UnitConverter(
@@ -200,6 +211,7 @@ class AdvancedMotorConfig(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             finally:
                 other.blockSignals(False)
 
+    @Slot()
     def recalculateRawToPhys(self):
         """Force the re-calculation of physical values from raw values by simulating valueChanged events for each raw
         spin-box."""

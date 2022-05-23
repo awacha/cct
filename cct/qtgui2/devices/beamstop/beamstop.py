@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .beamstop_ui import Ui_Frame
 from ...utils.window import WindowRequiresDevices
@@ -20,6 +21,7 @@ class BeamstopIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.onBeamstopStateChanged()
         self.setSensitive(None)
 
+    @Slot()
     def onBeamstopStateChanged(self):
         if self.instrument.beamstop.state == self.instrument.beamstop.States.In:
             self.statusLabel.setPixmap(QtGui.QPixmap(':/icons/beamstop-in.svg'))
@@ -38,12 +40,14 @@ class BeamstopIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
             self.inToolButton.setEnabled(True)
             self.outToolButton.setEnabled(True)
 
+    @Slot()
     def moveBeamstopIn(self):
         try:
             self.instrument.beamstop.moveIn()
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self.window(), 'Cannot move beam-stop', exc.args[0])
 
+    @Slot()
     def moveBeamstopOut(self):
         try:
             self.instrument.beamstop.moveOut()

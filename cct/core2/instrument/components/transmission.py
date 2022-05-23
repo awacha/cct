@@ -6,6 +6,7 @@ from typing import List, Tuple, Any, Optional, Iterable, Union
 
 import numpy as np
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .beamstop import BeamStop
 from .component import Component
@@ -130,10 +131,10 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
     delaytime: float
     nimages: int
     waitingforimages: Optional[int] = None
-    progress = QtCore.pyqtSignal(float, float, float, str)  # minimum, maximum, current, message
-    sampleStarted = QtCore.pyqtSignal(str, int, int)  # sample name, index, number of samples
-    finished = QtCore.pyqtSignal(bool, str)
-    started = QtCore.pyqtSignal()
+    progress = Signal(float, float, float, str)  # minimum, maximum, current, message
+    sampleStarted = Signal(str, int, int)  # sample name, index, number of samples
+    finished = Signal(bool, str)
+    started = Signal()
 
     def __init__(self, **kwargs):
         self._data = []
@@ -150,6 +151,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
     def startComponent(self):
         self.instrument.samplestore.sampleListChanged.connect(self.onSampleListChanged)
 
+    @Slot()
     def onSampleListChanged(self):
         # see if some samples vanished
         vanishedsamples = [data.samplename for data in self._data if data.samplename not in self.instrument.samplestore]
@@ -623,6 +625,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
 
     # slots for checking the outcome of the above commands
 
+    @Slot(bool)
     def onShutter(self, shutterstate: bool):
         if self.finishIfUserStop():
             return
@@ -703,6 +706,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         except ValueError as ve:
             logger.error(f'Cannot set transmission of sample {samplename}: {str(ve)}')
 
+    @Slot(object)
     def onImageReceived(self, exposure: Exposure):
         if self.finishIfUserStop():
             return
@@ -749,6 +753,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         else:
             pass
 
+    @Slot(bool)
     def onExposureFinished(self, success: bool):
         if self.finishIfUserStop():
             return
@@ -759,11 +764,13 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             # pass, finish this step when all images are received.
             pass
 
+    @Slot(str, int, float, float, float)
     def onExposureProgress(self, prefix: str, fsn: int, currenttime: float, starttime: float, endtime: float):
         if self.finishIfUserStop():
             return
         self.progress.emit(starttime, endtime, currenttime, 'Exposing...')
 
+    @Slot(str)
     def onBeamStopStateChanged(self, state: str):
         if self.finishIfUserStop():
             return
@@ -789,6 +796,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
 
     #            logger.warning(f'Unexpected Beamstop motion during transmission measurement: {self.status=}, {state=}.')
 
+    @Slot(str)
     def onXraySourcePowerStateChanged(self, value: str):
         if self.finishIfUserStop():
             return
@@ -799,6 +807,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         else:
             pass
 
+    @Slot(bool, str)
     def onMovingToSampleFinished(self, success: bool, samplename: str):
         if self.finishIfUserStop():
             return
@@ -810,6 +819,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             self._disconnectSampleStore()
             self.finish(False, f'Cannot move to sample {samplename}.')
 
+    @Slot(str, str, float, float, float)
     def onMovingToSampleProgress(self, samplename: str, motorname: str, current: float, start: float, end: float):
         self.progress.emit(start, end, current, f'Moving to sample {samplename}: motor {motorname} is at {current:.2f}')
 

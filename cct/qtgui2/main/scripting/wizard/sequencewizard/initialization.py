@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .initialization_ui import Ui_WizardPage
 from ......core2.devices.detector import PilatusGain, PilatusDetector
@@ -32,6 +33,7 @@ class InitPage(QtWidgets.QWizardPage, Ui_WizardPage):
                            self.temperatureDoubleSpinBox.valueChanged)
         self.registerField('openShutterBefore', self.openShutterCheckBox, 'checked', self.openShutterCheckBox.toggled)
 
+    @Slot(int)
     def onGainChanged(self, index: int):
         gain = PilatusGain(self.gainComboBox.currentText())
         self.thresholdSpinBox.setRange(*PilatusDetector.thresholdLimits(gain))

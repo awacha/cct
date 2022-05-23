@@ -4,6 +4,7 @@ from typing import Dict, List, Any, Optional
 
 import numpy as np
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .task import ProcessingTask
 from ..calculations.mergingjob import MergingResult, MergingJob
@@ -36,7 +37,7 @@ class MergingData:
 class Merging(ProcessingTask):
     _data: List[MergingData]
     spinnerTimer: Optional[QtCore.QTimer]
-    itemChanged = QtCore.pyqtSignal(str, str)
+    itemChanged = Signal(str, str)
 
     def __init__(self, processing: "Processing", settings: ProcessingSettings):
         self._data = []
@@ -215,6 +216,7 @@ class Merging(ProcessingTask):
         self._data[jobid].errormessage = errormessage
         self._data[jobid].traceback = traceback
 
+    @Slot()
     def onSpinnerTimerTimeout(self):
         for md in self._data:
             if md.spinner is not None:

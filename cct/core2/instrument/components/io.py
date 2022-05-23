@@ -9,6 +9,7 @@ from typing import Dict, Tuple, Optional, List, Iterator
 import h5py
 import numpy as np
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 from scipy.io import loadmat
 
 from .component import Component
@@ -51,8 +52,8 @@ class IO(QtCore.QObject, Component):
     _nextfsn: Dict[str, int]
     _lastfsn: Dict[str, Optional[int]]
 
-    nextFSNChanged = QtCore.pyqtSignal(str, int)
-    lastFSNChanged = QtCore.pyqtSignal(str, int)
+    nextFSNChanged = Signal(str, int)
+    lastFSNChanged = Signal(str, int)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

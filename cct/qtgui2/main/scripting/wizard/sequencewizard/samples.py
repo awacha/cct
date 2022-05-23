@@ -3,6 +3,8 @@ from typing import Tuple, List, Iterable, Any
 import logging
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .samples_ui import Ui_WizardPage
 from ......core2.instrument.instrument import Instrument
 
@@ -192,6 +194,7 @@ class SamplesPage(QtWidgets.QWizardPage, Ui_WizardPage):
     def exposures(self) -> List[Tuple[str, float, int]]:
         return self.exposureTreeView.model().exposures()
 
+    @Slot()
     def onAddSample(self):
         logger.debug(f'Adding {len(self.sampleListView.selectedIndexes())} samples')
         for index in self.sampleListView.selectedIndexes():
@@ -202,10 +205,12 @@ class SamplesPage(QtWidgets.QWizardPage, Ui_WizardPage):
             model.setData(model.index(model.rowCount(QtCore.QModelIndex())-1, 0, QtCore.QModelIndex()), samplename, QtCore.Qt.EditRole)
         self.sampleListView.selectionModel().clearSelection()
 
+    @Slot()
     def onRemoveSamples(self):
         while (indexlist := self.exposureTreeView.selectionModel().selectedRows(0)):
             self.exposureTreeView.model().removeRow(indexlist[0].row(), QtCore.QModelIndex())
 
+    @Slot()
     def onClearExposureList(self):
         self.exposureTreeView.model().clear()
 

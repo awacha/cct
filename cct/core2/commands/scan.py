@@ -1,5 +1,7 @@
 import logging
 
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .commandargument import StringArgument, FloatArgument, IntArgument
 from .command import Command
 
@@ -46,9 +48,11 @@ class ScanCommand(Command):
             self.disconnectScanComponent()
             raise
 
+    @Slot(int, int)
     def onScanStarted(self, scanindex: int, steps: int):
         self.message.emit(f'Started scan #{scanindex}')
 
+    @Slot(bool, int)
     def onScanFinished(self, success: bool, scanindex: int):
         self.disconnectScanComponent()
         if success:
@@ -57,6 +61,7 @@ class ScanCommand(Command):
         else:
             self.fail(scanindex)
 
+    @Slot(float, float, float, str)
     def onScanProgress(self, start: float, end: float, current: float, message: str):
         logger.debug(f'Scan progress: {start=}, {end=}, {current=}, {message=}')
         if start != end:

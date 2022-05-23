@@ -4,6 +4,7 @@ import queue
 from typing import List, Any, Optional, Sequence, Iterator, Set
 
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .task import ProcessingTask, ProcessingStatus, ProcessingSettings
 from ..calculations.backgroundprocess import Message
@@ -180,6 +181,7 @@ class Summarization(ProcessingTask):
                 d.spinner = None
                 self.dataChanged.emit(self.index(i, 0, QtCore.QModelIndex()), self.index(i, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
+    @Slot()
     def updateSpinners(self):
         # update spinners
         for d in self._data:

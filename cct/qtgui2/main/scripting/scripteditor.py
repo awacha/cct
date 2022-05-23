@@ -3,6 +3,7 @@ import math
 from typing import Optional
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .linenumbersbar import LineNumbersBar
 
@@ -58,9 +59,11 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         self.linenumbersbar.setGeometry(QtCore.QRect(cr.left(), cr.top(), self.linenumbersbarAreaWidth(), cr.height()))
         super().resizeEvent(event)
 
+    @Slot(int)
     def updateLineNumbersBarAreaWidth(self, blockcount: int):
         self.setViewportMargins(self.linenumbersbarAreaWidth(), 0, 0, 0)
 
+    @Slot()
     def highlightCurrentLine(self):
         if self.isReadOnly():
             return
@@ -73,6 +76,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         selection.cursor.clearSelection()
         self.setExtraSelections([selection])
 
+    @Slot(QtCore.QRect, int)
     def updateLineNumbersBar(self, rect: QtCore.QRect, dy: int):
         if dy:
             self.linenumbersbar.scroll(0, dy)
@@ -81,6 +85,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         if rect.contains(self.viewport().rect()):
             self.updateLineNumbersBarAreaWidth(0)
 
+    @Slot(int)
     def highlightRunningLine(self, line: int):
         selection = QtWidgets.QTextEdit.ExtraSelection()
         color = QtGui.QColor(QtCore.Qt.green).lighter(160)

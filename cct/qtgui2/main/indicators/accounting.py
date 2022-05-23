@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 from .accounting_ui import Ui_Frame
 from ....core2.instrument.instrument import Instrument
 from ...utils.window import WindowRequiresDevices
@@ -31,6 +32,7 @@ class AccountingIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.projectIDComboBox.setCurrentIndex(self.projectIDComboBox.findText(Instrument.instance().projects.projectID()))
         self.onProjectChanged()
 
+    @Slot()
     def onProjectChanged(self):
         Instrument.instance().projects.setProject(self.projectIDComboBox.currentText())
         self.titleLineEdit.setText(Instrument.instance().projects.project().title)

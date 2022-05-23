@@ -3,6 +3,7 @@ import logging
 import weakref
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from ...config import Config
 
@@ -14,11 +15,11 @@ class Component:
     """Logical component of an instrument"""
     config: Config
     instrument: "Instrument"
-    started = QtCore.pyqtSignal()
-    stopped = QtCore.pyqtSignal()
+    started = Signal()
+    stopped = Signal()
     stopping: bool = False
     __running: bool = False
-    panicAcknowledged = QtCore.pyqtSignal()
+    panicAcknowledged = Signal()
 
     class PanicState(enum.Enum):
         NoPanic = enum.auto()
@@ -38,6 +39,7 @@ class Component:
             self.instrument = None
         self.loadFromConfig()
 
+    @Slot(object, object)
     def onConfigChanged(self, path, value):
         pass
 

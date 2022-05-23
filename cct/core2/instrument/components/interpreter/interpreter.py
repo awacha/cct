@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 import traceback
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .flags import InterpreterFlags
 from ..component import Component
@@ -25,11 +26,11 @@ class Interpreter(QtCore.QObject, Component):
     flags: InterpreterFlags
     stopping: Optional[bool] = None
 
-    scriptstarted = QtCore.pyqtSignal()
-    message = QtCore.pyqtSignal(str)
-    progress = QtCore.pyqtSignal(str, int, int)
-    scriptfinished = QtCore.pyqtSignal(bool, str)  # success, message
-    advance = QtCore.pyqtSignal(int)
+    scriptstarted = Signal()
+    message = Signal(str)
+    progress = Signal(str, int, int)
+    scriptfinished = Signal(bool, str)  # success, message
+    advance = Signal(int)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -85,13 +86,16 @@ class Interpreter(QtCore.QObject, Component):
             raise RuntimeError('No script is running')
         self.script[self.pointer].stop()
 
+    @Slot(object)
     def commandFinished(self, returnvalue: Any):
         self.namespace['_'] = returnvalue
         self.advanceToNextCommand()
 
+    @Slot(str)
     def commandFailed(self, message: str):
         self.fail(message)
 
+    @Slot(str, bool)
     def commandJumped(self, label: str, gosub: bool):
         if not label:
             # this is a return command
@@ -158,9 +162,11 @@ class Interpreter(QtCore.QObject, Component):
                 self._disconnectCommand(command)
                 self.fail(traceback.format_exc())
 
+    @Slot(str, int, int)
     def commandProgress(self, message: str, current: int, total: int):
         self.progress.emit(message, current, total)
 
+    @Slot(str)
     def commandMessage(self, message: str):
         self.message.emit(message)
 

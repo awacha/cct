@@ -5,6 +5,7 @@ from typing import Tuple, List
 import numpy as np
 import scipy.stats.kde
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 import matplotlib.cm
@@ -97,6 +98,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
         self.markBadPushButton.clicked.connect(self.markExposures)
         self.markGoodPushButton.clicked.connect(self.markExposures)
 
+    @Slot()
     def markExposures(self):
         fsns = [index.data(QtCore.Qt.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)]
         if self.sender() is self.markBadPushButton:
@@ -104,6 +106,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
         elif self.sender() is self.markGoodPushButton:
             self.project.settings.markAsGood(fsns)
 
+    @Slot()
     def redraw(self):
         self.cmatfigure.clear()
         self.cmataxes = self.cmatfigure.add_subplot(self.cmatfigure.add_gridspec(1, 1)[:, :])
@@ -144,18 +147,21 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
             self.plotcurve.addCurve(curves[fsn], label=f'{fsn}', color=matplotlib.cm.inferno(i/(len(curves)-1)))
         self.plotcurve.replot()
 
+    @Slot()
     def showImage(self):
         for index in self.treeView.selectionModel().selectedRows(0):
             header = index.data(QtCore.Qt.UserRole)
             self.mainwindow.createViewWindow(
                 ShowImageWindow, items=[('', str(header.fsn))])
 
+    @Slot()
     def showCurve(self):
         fsns = sorted([index.data(QtCore.Qt.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)])
         if not fsns:
             return
         self.mainwindow.createViewWindow(ShowCurveWindow, [('', str(fsn)) for fsn in fsns])
 
+    @Slot()
     def onResultItemChanged(self, samplename: str, distkey: str):
         self.outliertestresults = self.project.settings.h5io.readOutlierTest(f'Samples/{self.samplename}/{self.distancekey}')
         self.redraw()
@@ -196,6 +202,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
                     else:
                         self.treeView.selectionModel().select(index, QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Select)
 
+    @Slot(object, object)
     def fsnSelectionChanged(self, selected, deselected):
         selectedfsns = [index.data(QtCore.Qt.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)]
         sizes = self.otmarkedline.get_sizes()

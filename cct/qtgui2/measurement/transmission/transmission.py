@@ -1,6 +1,7 @@
 import logging
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .transmission_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
@@ -39,12 +40,15 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.saveResultsPushButton.clicked.connect(self.forceSaveResults)
         self.resize(self.minimumSize())
 
+    @Slot()
     def forceSaveResults(self):
         self.instrument.transmission.saveAllResults()
 
+    @Slot(bool)
     def errorPropagationModeChanged(self, checked: bool):
         self.instrument.transmission.setErrorPropagationMode(not checked)
 
+    @Slot()
     def onAddSamplesClicked(self):
         samples = [index.data(QtCore.Qt.DisplayRole) for index in self.sampleListView.selectedIndexes()]
         if not samples:
@@ -57,15 +61,18 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 pass
         self.sampleListView.selectionModel().clearSelection()
 
+    @Slot()
     def onRemoveSamplesClicked(self):
         samplenames = [index.data(QtCore.Qt.DisplayRole) for index in
                        self.transmissionTreeView.selectionModel().selectedRows(0)]
         for samplename in samplenames:
             self.instrument.transmission.removeSample(samplename)
 
+    @Slot()
     def onClearTransmissionList(self):
         self.instrument.transmission.clear()
 
+    @Slot()
     def onTransmissionStarted(self):
         self.setBusy()
         for widget in [self.emptySampleComboBox, self.nImagesSpinBox, self.exposureTimeDoubleSpinBox,
@@ -79,6 +86,7 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.startStopPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
         self.progressBar.setVisible(True)
 
+    @Slot(bool, str)
     def onTransmissionFinished(self, success: bool, message: str):
         if not success:
             QtWidgets.QMessageBox.critical(self, 'Transmission stopped', message)
@@ -94,9 +102,11 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setVisible(False)
         self.setIdle()
 
+    @Slot(str, int, int)
     def onTransmissionSampleStarted(self, samplename: str, sampleindex: int, nsamples: int):
         pass
 
+    @Slot(float, float, float, str)
     def onTransmissionProgress(self, start: float, end: float, current: float, message: str):
         self.progressBar.setTextVisible(True)
         self.progressBar.setFormat(message)
@@ -106,6 +116,7 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.progressBar.setRange(0, 1000)
             self.progressBar.setValue(int(1000*(current-start)/(end-start)))
 
+    @Slot()
     def onStartStopClicked(self):
         if self.startStopPushButton.text() == 'Start':
             self.instrument.transmission.startMeasurement(
@@ -116,9 +127,11 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             assert False
 
+    @Slot()
     def sortSamplesByName(self):
         self.instrument.transmission.orderSamplesByName()
 
+    @Slot()
     def sortSamplesForMinimumMotorMovement(self):
         self.instrument.transmission.emptysample = self.emptySampleComboBox.currentText()
         self.instrument.transmission.orderSamplesForLeastMovement()

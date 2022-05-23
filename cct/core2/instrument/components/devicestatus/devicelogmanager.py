@@ -2,6 +2,7 @@ from typing import Any, List
 import logging
 
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .devicestatuslogger import DeviceStatusLogger
 from ....devices.device.variable import VariableType
@@ -152,6 +153,7 @@ class DeviceLogManager(QtCore.QAbstractItemModel, Component):
         finally:
             self.endResetModel()
 
+    @Slot()
     def saveToConfig(self):
         self.config['deviceloggers'] = {}
         for key in list(self.config['deviceloggers'].keys()):
@@ -190,6 +192,7 @@ class DeviceLogManager(QtCore.QAbstractItemModel, Component):
     def __len__(self) -> int:
         return len(self._loggers)
 
+    @Slot()
     def onLoggerDestroyed(self):
         while True:
             for i, lgr in enumerate(self._loggers[:]):

@@ -3,6 +3,7 @@ import multiprocessing.pool
 from typing import Any, List, Optional, Sequence, Iterator
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from ...core2.dataclasses import Header
 from ...core2.instrument.components.io import IO
@@ -14,7 +15,7 @@ iocomponent: Optional[IO] = None
 class HeaderViewModel(QtCore.QAbstractItemModel):
     _headerdata: List[Header]
     columns: List[str] = ['fsn', 'title', 'distance', 'enddate', 'project', 'thickness', 'transmission']
-    loading = QtCore.pyqtSignal(bool)
+    loading = Signal(bool)
     loaderpool: Optional[multiprocessing.pool.Pool] = None
     asyncresults: Optional[List[multiprocessing.pool.AsyncResult]]
     _stopLoading: bool=False

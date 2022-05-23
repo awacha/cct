@@ -3,6 +3,7 @@ import logging
 from typing import Optional, Tuple
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .component import Component
 from .motors import Motor, MotorRole, MotorDirection
@@ -20,9 +21,9 @@ class BeamStop(QtCore.QObject, Component):
         Moving = 'moving'
         Error = 'error'
 
-    stateChanged = QtCore.pyqtSignal(str)
-    movingFinished = QtCore.pyqtSignal(bool)
-    movingProgress = QtCore.pyqtSignal(str, float, float, float)
+    stateChanged = Signal(str)
+    movingFinished = Signal(bool)
+    movingProgress = Signal(str, float, float, float)
     _movetarget: Optional[States]
     _movephase: Optional[str]
     state: States = States.Undefined
@@ -35,6 +36,7 @@ class BeamStop(QtCore.QObject, Component):
         logger.debug(str(self.__dict__.keys()))
         self.instrument.motors.newMotor.connect(self.onNewMotorConnected)
 
+    @Slot()
     def onMotorDestroyed(self):
         # no need to disconnect signal handlers from the destroyed object: Qt does it automatically
         self.state = self.States.Undefined
@@ -58,13 +60,16 @@ class BeamStop(QtCore.QObject, Component):
         motor.cameOnLine.connect(self.onMotorOnLine)
         motor.wentOffLine.connect(self.onMotorOffLine)
 
+    @Slot()
     def onMotorOnLine(self):
         self.checkState()
 
+    @Slot()
     def onMotorOffLine(self):
         self.state = self.States.Undefined
         self.stateChanged.emit(self.state.value)
 
+    @Slot(str)
     def onNewMotorConnected(self, motorname: str):
         if self.instrument.motors[motorname].role == MotorRole.BeamStop:
             self._connectMotor(self.instrument.motors[motorname])
@@ -114,14 +119,17 @@ class BeamStop(QtCore.QObject, Component):
             self.stateChanged.emit(self.state.value)
         return self.state
 
+    @Slot(float, float, float)
     def onMotorMoving(self, current: float, start: float, end: float):
         if (self.state == self.States.Moving) and (self._movetarget is not None):
             self.movingProgress.emit(
                 f'Moving beamstop {self._movetarget.value}, moving motor {self.sender().name}', start, end, current)
 
+    @Slot(float)
     def onMotorStarted(self, startposition: float):
         self.checkState()
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         self.checkState()
         motor = self.sender()
@@ -147,6 +155,7 @@ class BeamStop(QtCore.QObject, Component):
         if self._panicking == self.PanicState.Panicking:
             super().panichandler()
 
+    @Slot(float)
     def onMotorPositionChanged(self, actualposition: float):
         try:
             self.checkState()

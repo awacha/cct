@@ -4,6 +4,7 @@ import logging
 from typing import Tuple, List, Final, Dict, Optional, Any
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .delegates import SampleEditorDelegate
 from .sampleeditor_ui import Ui_Form
@@ -90,6 +91,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.multiColumnPushButton.toggled.connect(self.onMultiColumnToggled)
         self.multiColumnPushButton.setChecked(False)
 
+    @Slot(bool)
     def onMultiColumnToggled(self, checked: bool):
         self.multiColumnPushButton.setText('Detailed' if checked else 'Simple')
         self.proxymodel.setSimpleMode(not checked)
@@ -98,13 +100,16 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         for column in range(self.proxymodel.columnCount(QtCore.QModelIndex())):
             self.treeView.resizeColumnToContents(column)
 
+    @Slot()
     def setToday(self):
         self.preparationDateDateEdit.setDate(QtCore.QDate.currentDate())
 
+    @Slot()
     def browseMask(self):
         if (filename := browseMask(self)) is not None:
             self.maskOverrideLineEdit.setText(filename)
 
+    @Slot()
     def addSample(self):
         samplename = self.instrument.samplestore.addSample()
         self.treeView.selectionModel().setCurrentIndex(
@@ -112,11 +117,13 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Clear |
             QtCore.QItemSelectionModel.Current | QtCore.QItemSelectionModel.Rows)
 
+    @Slot()
     def removeSample(self):
         while lis := self.treeView.selectionModel().selectedRows(0):
             delendum = self.treeView.model().mapToSource(lis[0])
             self.instrument.samplestore.removeRow(delendum.row(), delendum.parent())
 
+    @Slot()
     def duplicateSample(self):
         title = self.currentSampleName()
         if title is None:
@@ -137,10 +144,12 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         sam = self.currentSample()
         return None if sam is None else sam.title
 
+    @Slot(bool)
     def onLockToolButtonToggled(self, checked: bool):
         attr = self.attributeForWidget(self.sender())
         self.instrument.samplestore.updateAttributeLocking(self.currentSampleName(), attr, checked)
 
+    @Slot(float)
     def onDoubleSpinBoxValueChanged(self, value: float):
         attribute = self.attributeForWidget(self.sender())
         oldvalue = getattr(self.currentSample(), attribute)
@@ -156,11 +165,13 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             assert len(self.widgetsForAttribute(attribute)) == 1
             self.updateSampleInStore(attribute, value)
 
+    @Slot(QtCore.QDate)
     def onDateEditDateChanged(self, value: QtCore.QDate):
         attribute = self.attributeForWidget(self.sender())
         date = self.sender().date()
         self.updateSampleInStore(attribute, datetime.date(date.year(), date.month(), date.day()))
 
+    @Slot(int)
     def onComboBoxCurrentIndexChanged(self, currentIndex: int):
         logger.debug(
             f'onComboBoxCurrentIndexChanged. Current text: {self.sender().currentText()}. Sender: {self.sender().objectName()}')
@@ -174,10 +185,12 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             assert False
 
+    @Slot()
     def onPlainTextEdited(self):
         attribute = self.attributeForWidget(self.sender())
         self.updateSampleInStore(attribute, self.sender().toPlainText())
 
+    @Slot()
     def onLineEditEditingFinished(self):
         attribute = self.attributeForWidget(self.sender())
         self.updateSampleInStore(attribute, self.sender().text())
@@ -188,6 +201,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Error', f'Error while updating the sample: {exc}')
 
+    @Slot(str, str, object)
     def onSampleChangedInStore(self, samplename: str, attribute: str, newvalue: Any):
         logger.debug(
             f'Sample {samplename=} changed in the store: {attribute=} is now {newvalue=}. Current sample name: {self.currentSampleName()}')
@@ -223,6 +237,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 widget.blockSignals(False)
             self.updateLockButtonState(self.instrument.samplestore[samplename], attribute)
 
+    @Slot(QtCore.QItemSelection, QtCore.QItemSelection)
     def onSelectionChanged(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
         nonemptyselection = len(self.treeView.selectionModel().selectedRows())
         self.removeSamplePushButton.setEnabled(nonemptyselection)
@@ -276,6 +291,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         finally:
             ltb.blockSignals(False)
 
+    @Slot(QtCore.QModelIndex, QtCore.QModelIndex)
     def onCurrentSelectionChanged(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
         self.updateEditWidgets(self.currentSample())
 

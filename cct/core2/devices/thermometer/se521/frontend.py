@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .backend import SE521Backend
 from ...device.frontend import DeviceFrontend, DeviceType
@@ -16,7 +17,7 @@ class SE521(DeviceFrontend):
     devicename = 'SE521'
     vendor = 'Thermosense'
     devicetype = DeviceType.Thermometer
-    temperatureChanged = QtCore.pyqtSignal(int, float)
+    temperatureChanged = Signal(int, float)
 
     def __init__(self, name: str, host: str, port: int, **kwargs):
         super().__init__(name, host, port, **kwargs)

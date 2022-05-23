@@ -4,6 +4,7 @@ import queue
 from typing import Optional
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .headerview_ui import Ui_Form
 from ..utils.window import WindowRequiresDevices
@@ -47,6 +48,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.hide()
         self.stopPushButton.hide()
 
+    @Slot(bool)
     def onHeadersLoading(self, loading: bool):
         self.progressBar.setVisible(loading)
         self.stopPushButton.setVisible(loading)
@@ -61,6 +63,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setMaximum(0)
         self.progressBar.setFormat('Loading headers...')
 
+    @Slot(str, object)
     def onLastFSNChanged(self, prefix: str, lastfsn: Optional[int]):
         if prefix == self.instrument.config['path']['prefixes']['crd']:
             if lastfsn is None:
@@ -72,16 +75,19 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self.firstFSNSpinBox.setMaximum(lastfsn)
                 self.lastFSNSpinBox.setMaximum(lastfsn)
 
+    @Slot()
     def onStop(self):
         if self.model.isLoading():
             self.model.stopLoading()
         elif self.datareductionpipeline is not None:
             self.stopprocessingevent.set()
 
+    @Slot()
     def reload(self):
         if self.firstFSNSpinBox.isEnabled() and self.lastFSNSpinBox.isEnabled():
             self.model.reload(range(self.firstFSNSpinBox.value(), self.lastFSNSpinBox.value() + 1))
 
+    @Slot()
     def showImage(self):
         if self.headersTreeView.selectionModel().currentIndex().isValid():
             header = self.headersTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
@@ -90,6 +96,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self.instrument.config['path']['prefixes']['crd'], header.fsn, raw=True, check_local=True)
             self.mainwindow.showPattern(exposure)
 
+    @Slot()
     def showCurve(self):
         if self.headersTreeView.selectionModel().currentIndex().isValid():
             header = self.headersTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
@@ -98,6 +105,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self.instrument.config['path']['prefixes']['crd'], header.fsn, raw=True, check_local=True)
             self.mainwindow.showCurve(exposure)
 
+    @Slot()
     def dataReduction(self):
         if self.datareductionpipeline is not None:
             QtWidgets.QMessageBox.critical(self, 'Error', 'Data reduction already running')

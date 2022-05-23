@@ -4,6 +4,7 @@ import os
 from typing import List, Optional
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .script import ScriptUI
 from .wizard.sequencewizard import SequenceWizard
@@ -67,6 +68,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             item.setToolTip(command.helptext())
             self.listWidget.addItem(item)
 
+    @Slot(str, bool)
     def onNewFlag(self, flagname: str, flagstate: bool):
         child = self.findChild(QtWidgets.QToolButton, f'flag_{flagname}_ToolButton')
         assert child is None
@@ -79,10 +81,12 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         tb.toggled.connect(self.onFlagToolButtonToggled)
         self.flagsHorizontalLayout.insertWidget(self.flagsHorizontalLayout.count() - 1, tb)
 
+    @Slot()
     def onFlagToolButtonToggled(self):
         flagname = self.sender().objectName().split('_')[1]
         self.instrument.interpreter.flags.setFlag(flagname, self.sender().isChecked())
 
+    @Slot(str, bool)
     def onFlagChanged(self, flagname: str, flagstate: bool):
         logger.debug(f'onFlagChanged {flagname=}, {flagstate=}')
         tb = self.findChild(QtWidgets.QToolButton, f'flag_{flagname}_ToolButton')
@@ -90,20 +94,24 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         tb.setChecked(flagstate)
         tb.blockSignals(False)
 
+    @Slot(str)
     def onFlagRemoved(self, flagname: str):
         tb = self.findChild(QtWidgets.QToolButton, f'flag_{flagname}_ToolButton')
         self.flagsHorizontalLayout.removeWidget(tb)
         tb.deleteLater()
 
+    @Slot(str)
     def onScriptMessage(self, message: str):
         self.currentScript().addMessage(message)
 
+    @Slot(int)
     def onScriptAdvance(self, currentline: int):
         logger.debug('onScriptAdvance')
         scriptui = self.runningScript()
         assert scriptui is not None
         scriptui.scriptEditor.highlightRunningLine(currentline)
 
+    @Slot()
     def onScriptStarted(self):
         self.startStopToolButton.setText('Stop')
         self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
@@ -111,6 +119,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             self.currentScript().outputPlainTextEdit.setVisible(True)
             self.currentScript().addMessage('Script started')
 
+    @Slot(bool, str)
     def onScriptFinished(self, success: bool, message: str):
         if self.currentScript() is not None:
             if success:
@@ -126,10 +135,12 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             sui.scriptEditor.setReadOnly(False)
             sui.scriptEditor.highlightCurrentLine()
 
+    @Slot()
     def onClipboardDataChanged(self):
         if self.currentScript() is not None:
             self.pasteToolButton.setEnabled(self.currentScript().canPaste())
 
+    @Slot(int)
     def currentTabChanged(self, index: int):
         scriptui = self.currentScript()
         if scriptui is not None:
@@ -137,6 +148,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             self.redoToolButton.setEnabled(scriptui.canRedo())
             self.pasteToolButton.setEnabled(scriptui.canPaste())
 
+    @Slot(int)
     def tabCloseRequested(self, index: int):
         if self.scripts[index].isRunning():
             QtWidgets.QMessageBox.critical(self, 'Script is running', 'Cannot close the running script!')
@@ -153,6 +165,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         self.scripts[index].deleteLater()
         del self.scripts[index]
 
+    @Slot()
     def startStopScript(self):
         if self.startStopToolButton.text() == 'Start':
             try:
@@ -170,9 +183,11 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         elif self.startStopToolButton.text() == 'Stop':
             self.instrument.interpreter.stop()
 
+    @Slot()
     def openScanWizard(self):
         pass
 
+    @Slot()
     def openScriptWizard(self):
         if self.wizard is not None:
             QtWidgets.QMessageBox.critical(self, 'Error', 'Another wizard is already open.')
@@ -181,6 +196,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         self.wizard.finished.connect(self.onWizardFinished)
         self.wizard.show()
 
+    @Slot(int)
     def onWizardFinished(self, result: int):
         # ToDo: create script.
         logger.debug(f'Wizard finished with result {result}.')
@@ -197,14 +213,17 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         self.wizard.deleteLater()
         self.wizard = None
 
+    @Slot()
     def stopScriptAfterThisCommand(self):
         pass
 
+    @Slot()
     def newScript(self) -> ScriptUI:
         s=ScriptUI()
         self._createTab(s)
         return s
 
+    @Slot()
     def openScript(self):
         filename = getOpenFile(self, 'Load a script...', '', 'CCT script files (*.cct);;All files (*)')
         logger.debug(f'Got filename: {filename}')
@@ -217,6 +236,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             sui.filename = filename
         self._createTab(sui)
 
+    @Slot()
     def saveScript(self):
         try:
             self.currentScript().save()
@@ -224,6 +244,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             if self.currentScript() is not None:
                 raise
 
+    @Slot()
     def saveScriptAs(self):
         try:
             self.currentScript().saveas()
@@ -231,6 +252,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             if self.currentScript() is not None:
                 raise
 
+    @Slot()
     def undo(self):
         try:
             self.currentScript().undo()
@@ -238,6 +260,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             if self.currentScript() is not None:
                 raise
 
+    @Slot()
     def redo(self):
         try:
             self.currentScript().redo()
@@ -245,6 +268,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             if self.currentScript() is not None:
                 raise
 
+    @Slot()
     def editCopy(self):
         try:
             self.currentScript().editCopy()
@@ -252,6 +276,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             if self.currentScript() is not None:
                 raise
 
+    @Slot()
     def editCut(self):
         try:
             self.currentScript().editCut()
@@ -259,6 +284,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             if self.currentScript() is not None:
                 raise
 
+    @Slot()
     def editPaste(self):
         try:
             self.currentScript().editPaste()
@@ -266,6 +292,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             if self.currentScript() is not None:
                 raise
 
+    @Slot()
     def currentScript(self) -> Optional[ScriptUI]:
         try:
             return self.scripts[self.tabWidget.currentIndex()]
@@ -282,6 +309,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         script.copyAvailable.connect(self.copyToolButton.setEnabled)
         script.copyAvailable.connect(self.cutToolButton.setEnabled)
 
+    @Slot()
     def onScriptModificationChanged(self, modified: bool):
         self.tabWidget.setTabText(self.scripts.index(self.sender()), self.sender().getTitle())
 

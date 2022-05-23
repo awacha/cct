@@ -1,6 +1,7 @@
 from typing import Optional
 
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .plotindicator_ui import Ui_Frame
 from ...utils.window import WindowRequiresDevices
@@ -40,11 +41,13 @@ class PlotIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
             self.prefixComboBox.blockSignals(False)
         self.onPrefixChanged()
 
+    @Slot(str, int)
     def onLastFSNChanged(self, prefix: str, fsn: int):
         self.repopulatePrefixComboBox()
         # self.onPrefixChanged()
 
-    def onPrefixChanged(self):
+    @Slot(int)
+    def onPrefixChanged(self, currentIndex:int):
         if self.prefixComboBox.currentIndex() < 0:
             return
         self.fsnSpinBox.setEnabled(self.prefixComboBox.currentIndex() >= 0)
@@ -53,17 +56,21 @@ class PlotIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         lastfsn = self.instrument.io.lastfsn(self.prefixComboBox.currentText())
         self.fsnSpinBox.setRange(0, -1 if lastfsn is None else lastfsn)
 
+    @Slot()
     def onPlotCurve(self):
         if (exposure := self.exposure()) is not None:
             self.mainwindow.showCurve(exposure)
 
+    @Slot()
     def onPlotImage(self):
         if (exposure := self.exposure()) is not None:
             self.mainwindow.showPattern(exposure)
 
+    @Slot()
     def onGoToFirstFSN(self):
         self.fsnSpinBox.setValue(self.fsnSpinBox.minimum())
 
+    @Slot()
     def onGoToLastFSN(self):
         self.fsnSpinBox.setValue(self.fsnSpinBox.maximum())
 

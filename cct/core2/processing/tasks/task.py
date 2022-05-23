@@ -6,6 +6,8 @@ from configparser import ConfigParser
 import weakref
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+
 import multiprocessing.synchronize, multiprocessing.queues
 from ..settings import ProcessingSettings
 from ..calculations.backgroundprocess import Results, Message
@@ -21,9 +23,9 @@ class ProcessingStatus(enum.Enum):
 
 
 class ProcessingTask(QtCore.QAbstractItemModel):
-    finished = QtCore.pyqtSignal(bool)
-    started = QtCore.pyqtSignal()
-    progress = QtCore.pyqtSignal(int, int)
+    finished = Signal(bool)
+    started = Signal()
+    progress = Signal(int, int)
     status: ProcessingStatus = ProcessingStatus.Idle
     _pool: Optional[multiprocessing.pool.Pool] = None
     _stopEvent: Optional[multiprocessing.synchronize.Event] = None

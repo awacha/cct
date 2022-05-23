@@ -9,6 +9,7 @@ from typing import Dict, Optional, Any, List
 
 import numpy as np
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .component import Component
 from .devicemanager import DeviceManager
@@ -95,11 +96,11 @@ class Exposer(QtCore.QObject, Component):
     When an exposure sequence starts, float keys are generated. They are turned into int keys when the acknowledgement
     of the 'expose' command is received.
     """
-    exposureFinished = QtCore.pyqtSignal(bool)  # bool = success or failure
-    exposureProgress = QtCore.pyqtSignal(str, int, float, float,
+    exposureFinished = Signal(bool)  # bool = success or failure
+    exposureProgress = Signal(str, int, float, float,
                                          float)  # prefix, fsn currently exposed, currenttime, starttime, endtime
-    imageReceived = QtCore.pyqtSignal(object)
-    exposureStarted = QtCore.pyqtSignal()
+    imageReceived = Signal(object)
+    exposureStarted = Signal()
     waittimers: Dict[int, ExposureData]
     pendingtimers: List[ExposureData]
     detector: Optional[PilatusDetector] = None
@@ -229,6 +230,7 @@ class Exposer(QtCore.QObject, Component):
     def isExposing(self) -> bool:
         return self.state != ExposerState.Idle
 
+    @Slot()
     def onDetectorVariableChanged(self, variable: str, value: Any):
         if variable == '__status__':
             logger.debug(f'__status__ set to {value}, exposer state is {self.state.name}')
@@ -263,9 +265,11 @@ class Exposer(QtCore.QObject, Component):
             else:
                 logger.debug(f'State set to {value}, exposer state is {self.state.name}')
 
+    @Slot()
     def onDetectorDisconnected(self):
         self._disconnectDetector()
 
+    @Slot()
     def stopExposure(self):
         self.instrument.devicemanager.detector().stopexposure()
 
@@ -323,6 +327,7 @@ class Exposer(QtCore.QObject, Component):
             data['geometry']['mask'] = maskoverride
         return Header(datadict=data)
 
+    @Slot(bool, str, str)
     def onCommandResult(self, success: bool, commandname: str, result: str):
         logger.debug(f'onCommandResult: {success}, {commandname}')
         if commandname == 'expose' and success:

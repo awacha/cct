@@ -2,6 +2,8 @@ import logging
 from typing import Tuple, Dict, Any, Optional, Sequence
 
 from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 
@@ -106,6 +108,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.loadPresetPushButton.clicked.connect(self.onLoadPreset)
         self.savePresetPushButton.clicked.connect(self.onSavePreset)
 
+    @Slot()
     def onLoadPreset(self):
         filename = getOpenFile(self, 'Load geometry from a file',
                                filters='Geometry files (*.geop *.geoj);;'
@@ -116,6 +119,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             return
         self.instrument.geometry.loadGeometry(filename)
 
+    @Slot()
     def onSavePreset(self):
         filename = getSaveFile(self, 'Save geometry to a file', defaultsuffix='.geo',
                                filters='Geometry files (*.geop *.geoj);;'
@@ -126,6 +130,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             return
         self.instrument.geometry.saveGeometry(filename)
 
+    @Slot()
     def onBrowseMask(self):
         filename = browseMask(self)
         if not filename:
@@ -133,16 +138,19 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.maskFileNameLineEdit.setText(filename)
         self.maskFileNameLineEdit.editingFinished.emit()
 
+    @Slot()
     def updateSetupParameters(self):
         dic = self.optimizationTreeView.model().data(self.optimizationTreeView.currentIndex(), role = QtCore.Qt.UserRole)
         self.instrument.geometry.updateFromOptimizerResult(dic)
 
+    @Slot(object, object)
     def onOptimizationSelectionChanged(self, selected: Sequence[QtCore.QModelIndex],
                                        deselected: Sequence[QtCore.QModelIndex]):
         self.updateSetupParametersPushButton.setEnabled(
             bool(len(self.optimizationTreeView.selectionModel().selectedRows(0))))
         self.copyToClipboardPushButton.setEnabled(bool(len(self.optimizationTreeView.selectionModel().selectedRows(0))))
 
+    @Slot()
     def doOptimization(self):
         if self._optimizer is not None:
             self._optimizer.stopevent.set()
@@ -162,9 +170,11 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.optimizePushButton.setText('Stop')
         self.optimizePushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(":/icons/stop.svg")))
 
+    @Slot(object)
     def onOptimizationGeometryFound(self, optresult: Dict[str, Any]):
         self._optimizerstore.addOptResult(optresult)
 
+    @Slot(float)
     def onOptimizationFinished(self, elapsedtime: float):
         self._optimizer.deleteLater()
         del self._optimizer
@@ -224,6 +234,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.l1Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.config['geometry']['l1_elements']]))
         self.l2Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.config['geometry']['l2_elements']]))
 
+    @Slot()
     def editSpacers(self):
         assert self.sender() in [self.l1EditToolButton, self.l2EditToolButton, self.flightpipesToolButton]
         if self._spacerselectordialog is not None:
@@ -246,6 +257,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self._spacerselectordialog.finished.connect(self.spacerSelectorFinished)
         self._spacerselectordialog.open()
 
+    @Slot(int)
     def spacerSelectorFinished(self, result: int):
         if result == QtWidgets.QDialog.Accepted:
             if self._spacerselectordialog.target == SpacerSelectorDialog.TargetTypes.L2:
@@ -261,6 +273,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         del self._spacerselectordialog
         self.updateL1L2Labels()
 
+    @Slot(float)
     def onDoubleSpinBoxValueChanged(self, newvalue: float):
         w = self.sender()
         path = [p for wn, p in self._widgetname2configpath.items() if wn == w.objectName()][0]
@@ -268,6 +281,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         assert all([isinstance(k, str) for k in path])
         self.instrument.config[path] = newvalue
 
+    @Slot()
     def onLineEditChanged(self):
         w = self.sender()
         path = [p for wn, p in self._widgetname2configpath.items() if wn == w.objectName()][0]
@@ -275,6 +289,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         assert all([isinstance(k, str) for k in path])
         self.instrument.config[path] = w.text()
 
+    @Slot()
     def onPlainTextEditChanged(self):
         w = self.sender()
         path = [p for wn, p in self._widgetname2configpath.items() if wn == w.objectName()][0]
@@ -282,12 +297,14 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         assert all([isinstance(k, str) for k in path])
         self.instrument.config[path] = w.toPlainText()
 
+    @Slot(QtCore.QModelIndex, QtCore.QModelIndex)
     def onChoicesTreeViewCurrentChanged(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
         if not current.isValid():
             logger.debug('Current index is not valid')
         else:
             logger.debug(f'Current index data: {current.internalPointer()}')
 
+    @Slot()
     def addChoice(self):
         current = self.choicesTreeView.selectionModel().currentIndex()
         if not current.isValid():
@@ -306,6 +323,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             return
 
+    @Slot()
     def removeChoice(self):
         current = self.choicesTreeView.selectionModel().currentIndex()
         if not current.isValid():
@@ -318,6 +336,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 ((ip.componenttype == ComponentType.Pinhole) and (ip.level == 3))):
             self.instrument.geometry.choices.removeRow(current.row(), current.parent())
 
+    @Slot(object, object)
     def onConfigChanged(self, path: Tuple[str, ...], newvalue: Any):
         logger.debug(f'onConfigChanged({path}, {newvalue})')
         if path[0] != 'geometry':

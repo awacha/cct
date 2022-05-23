@@ -2,6 +2,7 @@ from typing import Optional
 
 import h5py
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .h5selector_ui import Ui_Form
 from ...core2.dataclasses import Exposure
@@ -11,7 +12,7 @@ from ..utils.filebrowsers import getOpenFile
 
 class H5Selector(QtWidgets.QWidget, Ui_Form):
     filename: Optional[str] = None
-    datasetSelected = QtCore.pyqtSignal(str, str, str)
+    datasetSelected = Signal(str, str, str)
 
     def __init__(self, parent: QtWidgets.QWidget):
         super().__init__(parent)
@@ -25,6 +26,7 @@ class H5Selector(QtWidgets.QWidget, Ui_Form):
         self.sampleNameComboBox.currentIndexChanged.connect(self.sampleNameSelected)
         self.distanceComboBox.currentIndexChanged.connect(self.distanceSelected)
 
+    @Slot()
     def browseH5FileName(self):
         filename = getOpenFile(
             self, "Select a HDF5 file", "", "HDF5 files (*.h5);;All files (*)",)
@@ -43,6 +45,7 @@ class H5Selector(QtWidgets.QWidget, Ui_Form):
             self.sampleNameComboBox.setEnabled(True)
             self.sampleNameSelected()
 
+    @Slot()
     def sampleNameSelected(self):
         if (self.sampleNameComboBox.currentIndex() < 0) or (self.filename is None):
             self.distanceComboBox.clear()
@@ -61,6 +64,7 @@ class H5Selector(QtWidgets.QWidget, Ui_Form):
             self.distanceComboBox.setEnabled(True)
             self.distanceSelected()
 
+    @Slot()
     def distanceSelected(self):
         if ((self.distanceComboBox.currentIndex() >= 0) and
                 (self.sampleNameComboBox.currentIndex() >= 0)

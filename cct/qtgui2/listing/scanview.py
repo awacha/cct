@@ -1,6 +1,7 @@
 from typing import Optional
 
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .scanview_ui import Ui_Form
 from ..utils.plotscan import PlotScan
@@ -22,10 +23,12 @@ class ScanViewer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.treeView.activated.connect(self.showScan)
         self.resizeTreeColumns()
 
+    @Slot()
     def resizeTreeColumns(self):
         for c in range(self.instrument.scan.columnCount()):
             self.treeView.resizeColumnToContents(c)
 
+    @Slot(object)
     def showScan(self, index: Optional[QtCore.QModelIndex] = None):
         if not isinstance(index, QtCore.QModelIndex):
             index = self.treeView.currentIndex()

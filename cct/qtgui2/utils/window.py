@@ -3,6 +3,7 @@ import traceback
 from typing import List, Optional, Any, Tuple, final, Union
 
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from ...core2.devices import DeviceFrontend, DeviceType
 from ...core2.devices.device.telemetry import TelemetryInformation
@@ -214,9 +215,11 @@ class WindowRequiresDevices:
 
     # -------------------------- callback functions from devices and motors -------------------------------------------
 
+    @Slot(object)
     def onDeviceTelemetry(self, telemetry: TelemetryInformation):
         pass
 
+    @Slot()
     def onConnectionLost(self):
         """Called when the connection to a device is lost unexpectedly, but will be reconnected if possible.
 
@@ -226,6 +229,7 @@ class WindowRequiresDevices:
         """
         self.setSensitive(None)
 
+    @Slot(bool)
     def onConnectionEnded(self, expected: bool):
         """Called when the connection to a device is closed, without further attempts to reconneect.
 
@@ -235,13 +239,15 @@ class WindowRequiresDevices:
         """
         self.setSensitive(None)
 
-    def onCommandResult(self, name: str, success: str, message: str):
+    @Slot(bool, str, str)
+    def onCommandResult(self, success: bool, name: str, message: str):
         """Called when a command issued to a device is done: either successfully or with an error.
 
         The device is `self.sender()`
         """
         pass
 
+    @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         """Called when a state variable of a connected device or motor is changed.
 
@@ -250,6 +256,7 @@ class WindowRequiresDevices:
         pass
 
     @final
+    @Slot(str, bool)
     def _onDeviceRemoved(self, devicename: str, expected: bool):
         self.setSensitive(None)
         self.onDeviceRemoved(devicename, expected)
@@ -258,6 +265,7 @@ class WindowRequiresDevices:
         pass
 
     @final
+    @Slot(str)
     def _onDeviceAdded(self, devicename: str):
         device = self.instrument.devicemanager[devicename]
         if (device.devicename in self.required_devicenames) or self.connect_all_devices or (
@@ -275,11 +283,13 @@ class WindowRequiresDevices:
         pass
 
     @final
+    @Slot()
     def _onMotorOnLine(self):
         self.setSensitive(None)
         self.onMotorOnLine()
 
     @final
+    @Slot()
     def _onMotorOffLine(self):
         self.setSensitive(None)
         self.onMotorOffLine()
@@ -290,28 +300,36 @@ class WindowRequiresDevices:
     def onMotorOffLine(self):
         pass
 
+    @Slot()
     def onAllVariablesReady(self):
         self.setSensitive(None)
 
+    @Slot(float)
     def onMotorStarted(self, startposition: float):
         pass
 
+    @Slot(bool, float)
     def onMotorStopped(self, success: bool, endposition: float):
         pass
 
+    @Slot(float, float, float)
     def onMotorMoving(self, position: float, startposition: float, endposition: float):
         pass
 
+    @Slot(float)
     def onMotorPositionChanged(self, newposition: float):
         pass
 
+    @Slot(object, object)
     def onConfigChanged(self, path: Tuple[str, ...], newvalue: Any):
         pass
 
+    @Slot(str)
     def onUserOrPrivilegesChanged(self, username: str):
         pass
 
     @final
+    @Slot(str)
     def _onNewMotor(self, motorname: str):
         logger.debug(f'New motor callback in {self.__class__.__name__}')
         motor = self.instrument.motors[motorname]
@@ -323,6 +341,7 @@ class WindowRequiresDevices:
     def onNewMotor(self, motorname: str):
         pass
 
+    @Slot(str)
     def onMotorRemoved(self, motorname: str):
         self.setSensitive(None)
 

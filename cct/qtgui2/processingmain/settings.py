@@ -1,3 +1,5 @@
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from .processingwindow import ProcessingWindow
 from .settings_ui import Ui_Form
 from ...core2.algorithms.matrixaverager import ErrorPropagationMethod
@@ -18,6 +20,7 @@ class SettingsWindow(ProcessingWindow, Ui_Form):
         self.savePushButton.clicked.connect(self.saveSettings)
         self.onSettingsChanged()
 
+    @Slot()
     def onSettingsChanged(self):
         self.outlierTestThresholdDoubleSpinBox.setValue(self.project.settings.outlierthreshold)
         self.logarithmicCorrelationMatrixCheckBox.setChecked(self.project.settings.outlierlogcormat)
@@ -32,6 +35,7 @@ class SettingsWindow(ProcessingWindow, Ui_Form):
             self.autoQScaleSpacingComboBox.findText(self.project.settings.qrangemethod.name))
         self.autoQLengthSpinBox.setValue(self.project.settings.qcount)
 
+    @Slot()
     def saveSettings(self):
         self.project.settings.outliermethod = OutlierMethod(self.outlierTestMethodComboBox.currentText())
         self.project.settings.ierrorprop = ErrorPropagationMethod[self.intensityErrorPropagationComboBox.currentText()]

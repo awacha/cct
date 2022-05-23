@@ -2,6 +2,7 @@ import weakref
 import logging
 
 from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from ...core2.processing.processing import Processing
 
@@ -35,6 +36,7 @@ class ProcessingWindow(QtWidgets.QWidget):
             self.showMinimized()
             closeEvent.ignore()
 
+    @Slot(QtCore.QObject)
     def onDestroyed(self, object: QtCore.QObject):
         logger.debug('A processing window has been destroyed')
         pass

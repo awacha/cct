@@ -1,4 +1,5 @@
 from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtCore import pyqtSlot as Slot
 
 from .resultviewwindow import ResultViewWindow
 from ..utils.anisotropy import AnisotropyEvaluator
@@ -18,6 +19,7 @@ class ShowAnisotropyWindow(ResultViewWindow):
         self.anisotropyWidget.enableFSNSelector(False)
         self.setWindowIcon(QtGui.QIcon(':/icons/anisotropy.svg'))
 
+    @Slot(str, str)
     def onResultItemChanged(self, samplename: str, distancekey: str):
         self.anisotropyWidget.setExposure(
             self.project.settings.h5io.readExposure(f'Samples/{samplename}/{distancekey}'))
