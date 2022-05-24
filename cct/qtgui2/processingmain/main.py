@@ -22,7 +22,7 @@ from ...core2.processing.processing import Processing
 from ..utils.filebrowsers import getOpenFile, getSaveFile
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 WindowInfo = collections.namedtuple('WindowInfo', ['attribute', 'windowclass', 'action'])
 
@@ -225,6 +225,14 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.viewwindows = {}
         logger.debug('Destroyed all project windows.')
 
+    def addMDISubWindow(self, widget: QtWidgets.QWidget):
+        subwindow = QtWidgets.QMdiSubWindow()
+        subwindow.setWidget(widget)
+        self.mdiArea.addSubWindow(subwindow)
+        subwindow.setWindowIcon(widget.windowIcon())
+        widget.destroyed.connect(self.onWidgetDestroyed)
+        subwindow.show()
+
     def createViewWindow(self, windowclass: Type[ResultViewWindow], items: List[Tuple[str, str]],
                          geometry: Optional[bytes] = None) -> ResultViewWindow:
         items_str = '([' + ', '.join([f'({sn}, {dk})' for sn, dk in items]) + '])'
@@ -233,14 +241,9 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             self.viewwindows[handlestring] = windowclass(
                 project=self.project, mainwindow=self, resultitems=items,
                 closable=True)
-            subwindow = QtWidgets.QMdiSubWindow()
-            subwindow.setWidget(self.viewwindows[handlestring])
-            self.mdiArea.addSubWindow(subwindow)
-            subwindow.setWindowIcon(self.viewwindows[handlestring].windowIcon())
+            self.addMDISubWindow(self.viewwindows[handlestring])
             self.viewwindows[handlestring].setObjectName(
                 self.viewwindows[handlestring].objectName() + f'__{time.monotonic()}')
-            self.viewwindows[handlestring].destroyed.connect(self.onWidgetDestroyed)
-            subwindow.show()
         self.viewwindows[handlestring].parent().raise_()
         self.viewwindows[handlestring].parent().showNormal()
         if geometry is not None:

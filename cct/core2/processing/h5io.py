@@ -122,11 +122,12 @@ class ProcessingH5File:
             except KeyError:
                 return []
 
-    def addDistance(self, samplename: str, distance: Union[float, str]):
+    def addDistance(self, samplename: str, distance: Union[float, str]) -> Tuple[str, str]:
         if isinstance(distance, float):
             distance = f'{distance:.2f}'
         with self.writer() as h5file:
             h5file.require_group(f'Samples/{samplename}/{distance}')
+        return (samplename, distance)
 
     def removeDistance(self, samplename: str, distance: Union[float, str]):
         if isinstance(distance, float):

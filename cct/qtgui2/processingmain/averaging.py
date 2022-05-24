@@ -1,10 +1,12 @@
 import logging
 import multiprocessing
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtCore import pyqtSlot as Slot
 from .averaging_ui import Ui_Form
 from .processingwindow import ProcessingWindow
+from .settings import SettingsWindow
+from ...core2.processing.tasks.summarization import SummaryData
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -24,6 +26,18 @@ class AveragingWindow(ProcessingWindow, Ui_Form):
         self.processCountSpinBox.valueChanged.connect(self.onProcessCountChanged)
         self.processCountSpinBox.setMinimum(1)
         self.processCountSpinBox.setMaximum(multiprocessing.cpu_count())
+        self.changeSettingsPushButton.clicked.connect(self.onChangeSettingsClicked)
+        self.treeView.selectionModel().currentChanged.connect(self.onCurrentChanged)
+
+    @Slot(QtCore.QModelIndex, QtCore.QModelIndex)
+    def onCurrentChanged(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):
+        self.changeSettingsPushButton.setEnabled((not self.project.summarization.isBusy()) and current.isValid())
+
+    @Slot(bool)
+    def onChangeSettingsClicked(self, checked: bool):
+        sd: SummaryData = self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
+        settingswindow = SettingsWindow(project=self.project, mainwindow=self.mainwindow, closable=True, samplename=sd.samplename, distkey=f'{sd.distance:.2f}')
+        self.mainwindow.addMDISubWindow(settingswindow)
 
     @Slot(int)
     def onProcessCountChanged(self, value: int):
@@ -54,6 +68,7 @@ class AveragingWindow(ProcessingWindow, Ui_Form):
         self.progressBar.setMinimum(0)
         self.progressBar.setMaximum(0)
         self.processCountSpinBox.setEnabled(False)
+        self.changeSettingsPushButton.setEnabled(False)
 
     @Slot(bool)
     def onAveragingStopped(self, success: bool):
@@ -61,6 +76,7 @@ class AveragingWindow(ProcessingWindow, Ui_Form):
         self.runPushButton.setText('Run')
         self.runPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
         self.progressBar.setVisible(False)
+        self.changeSettingsPushButton.setEnabled(self.treeView.currentIndex().isValid())
         if not success:
             QtWidgets.QMessageBox.critical(self, 'Averaging stopped', 'Averaging stopped unexpectedly.')
         else:

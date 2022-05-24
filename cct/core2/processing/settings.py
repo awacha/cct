@@ -253,8 +253,8 @@ class ProcessingSettings(QtCore.QObject):
             return cp
         elif (filename.lower().endswith('.h5')) or (filename.lower().endswith('.cpt4')):
             self.filename = filename
-            isinstance(self.h5io,
-                       ProcessingH5File)  # ensure the h5io is reconstructed with the new file name. Don't use assert, it can be disabled!
+            # ensure the h5io is reconstructed with the new file name. Don't use assert, it can be disabled!
+            isinstance(self.h5io, ProcessingH5File)
             try:
                 with self.h5io.reader('cptsettings') as grp:
                     identity = lambda a: a

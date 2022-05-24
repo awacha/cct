@@ -9,6 +9,9 @@ from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 from .task import ProcessingTask, ProcessingStatus, ProcessingSettings
 from ..calculations.backgroundprocess import Message
 from ..calculations.summaryjob import SummaryJob, SummaryJobResults, Results
+from ...algorithms.matrixaverager import ErrorPropagationMethod
+from ..calculations.outliertest import OutlierMethod
+from ...dataclasses.exposure import QRangeMethod
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -80,6 +83,8 @@ class Summarization(ProcessingTask):
             return QtGui.QColor('red').lighter(0.5)
         elif (role == QtCore.Qt.TextColorRole) and (sd.errormessage is not None):
             return QtGui.QColor('black')
+        elif (role == QtCore.Qt.UserRole):
+            return sd
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
@@ -119,6 +124,18 @@ class Summarization(ProcessingTask):
             sd.traceback = None
             sd.spinner = 0
             logger.debug(f'{self.settings.badfsns=}')
+            self.settings.h5io.addSample(sd.samplename)
+            samplename, distkey = self.settings.h5io.addDistance(sd.samplename, sd.distance)
+            with self.settings.h5io.writer(f'Samples/{samplename}/{distkey}') as grp:
+                grp.attrs.setdefault('ierrorprop', self.settings.ierrorprop.name)
+                grp.attrs.setdefault('qerrorprop', self.settings.qerrorprop.name)
+                grp.attrs.setdefault('outliermethod', self.settings.outliermethod.value)
+                grp.attrs.setdefault('outlierthreshold', self.settings.outlierthreshold)
+                grp.attrs.setdefault('outlierlogcormat', self.settings.outlierlogcormat)
+                grp.attrs.setdefault('qrangemethod', self.settings.qrangemethod.name)
+                grp.attrs.setdefault('qcount', self.settings.qcount)
+                grp.attrs.setdefault('bigmemorymode', self.settings.bigmemorymode)
+                attrs = dict(grp.attrs)
             self._submitTask(SummaryJob.run, (i, sd.samplename, sd.distance),
                              rootpath=self.settings.rootpath,
                              eval2dsubpath=self.settings.eval2dsubpath,
@@ -126,14 +143,14 @@ class Summarization(ProcessingTask):
                              fsndigits=self.settings.fsndigits,
                              prefix=self.settings.prefix,
                              fsnlist=list(sd.fsns),
-                             ierrorprop=self.settings.ierrorprop,
-                             qerrorprop=self.settings.qerrorprop,
-                             outliermethod=self.settings.outliermethod,
-                             outlierthreshold=self.settings.outlierthreshold,
-                             cormatLogarithmic=self.settings.outlierlogcormat,
-                             qrangemethod=self.settings.qrangemethod,
-                             qcount=self.settings.qcount,
-                             bigmemorymode=self.settings.bigmemorymode,
+                             ierrorprop=ErrorPropagationMethod(attrs['ierrorprop']),
+                             qerrorprop=ErrorPropagationMethod(attrs['qerrorprop']),
+                             outliermethod=OutlierMethod(attrs['outliermethod']),
+                             outlierthreshold=float(attrs['outlierthreshold']),
+                             cormatLogarithmic=bool(attrs['outlierlogcormat']),
+                             qrangemethod=QRangeMethod(attrs['qrangemethod']),
+                             qcount=int(attrs['qcount']),
+                             bigmemorymode=bool(attrs['bigmemorymode']),
                              badfsns=self.settings.badfsns
                              )
             sd.statusmessage = 'Queued for processing...'

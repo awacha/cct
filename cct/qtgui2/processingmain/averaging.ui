@@ -104,6 +104,17 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="changeSettingsPushButton">
+       <property name="text">
+        <string>Change settings...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../resource/icons/icons.qrc">
+         <normaloff>:/icons/editconfig.svg</normaloff>:/icons/editconfig.svg</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="runPushButton">
        <property name="text">
         <string>Run</string>
@@ -121,6 +132,7 @@
  <tabstops>
   <tabstop>treeView</tabstop>
   <tabstop>processCountSpinBox</tabstop>
+  <tabstop>changeSettingsPushButton</tabstop>
   <tabstop>runPushButton</tabstop>
  </tabstops>
  <resources>
