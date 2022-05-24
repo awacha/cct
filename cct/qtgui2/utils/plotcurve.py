@@ -1,6 +1,6 @@
 import logging
 import fractions
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
 
 import numpy as np
 from PyQt5 import QtWidgets
