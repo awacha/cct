@@ -140,7 +140,7 @@ class SetTemperature(ThermostatCommand):
                 self.finish(setpoint)
             else:
                 self.thermostat().setSetpoint(setpoint)
-                self.progress.emit(f'Setting thermostat setpoint to {setpoint:.2f}°C')
+                self.message.emit(f'Setting thermostat setpoint to {setpoint:.2f}°C')
         except:
             self.disconnectThermostat()
             raise
