@@ -79,7 +79,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
         self.outlierTestTab.setLayout(QtWidgets.QVBoxLayout())
         self.outlierTestTab.layout().addWidget(self.otfigtoolbar)
         self.outlierTestTab.layout().addWidget(self.otcanvas)
-        self.plotcurve = PlotCurve(self.curvesTab)
+        self.plotcurve = PlotCurve(self.curvesTab, show_stddev=True)
         self.curvesTab.setLayout(QtWidgets.QVBoxLayout())
         self.curvesTab.layout().addWidget(self.plotcurve)
         gs = self.otfigure.add_gridspec(1, 8)

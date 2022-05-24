@@ -1,4 +1,5 @@
 import logging
+import fractions
 from typing import Dict, Any, Tuple, List
 
 import numpy as np
@@ -20,15 +21,21 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
     curves: List[Tuple[Curve, Dict[str, Any]]] = None
     figure: Figure
     axes: Axes
+    axes_stddev: Optional[Axes]
+    show_stddev: bool = False
+    stddev_graph_height_ratio: fractions.Fraction = fractions.Fraction(3,1)
     canvas: FigureCanvasQTAgg
     navigationToolbar: NavigationToolbar2QT
     MARKERS: str = 'ovsp*D^h<H>x+d1234'
     _figsize: Tuple[float, float] = None
 
-    def __init__(self, parent: QtWidgets.QWidget = None, figsize: Tuple[float, float] = (6, 6)):
+    def __init__(self, parent: QtWidgets.QWidget = None, figsize: Tuple[float, float] = (6, 6), show_stddev: bool = False, stddev_graph_height_ratio: Optional[fractions.Fraction] = None):
         super().__init__(parent)
         self._figsize = figsize
         self.curves = []
+        if stddev_graph_height_ratio is not None:
+            self.stddev_graph_height_ratio = stddev_graph_height_ratio
+        self.show_stddev = show_stddev
         self.setupUi(self)
 
     def setupUi(self, Form):
@@ -36,7 +43,16 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         self.figure = Figure(figsize=self._figsize, constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.navigationToolbar = NavigationToolbar2QT(self.canvas, self)
-        self.axes = self.figure.add_subplot(self.figure.add_gridspec(1, 1)[:, :])
+        gridspec = self.figure.add_gridspec(
+            self.stddev_graph_height_ratio.numerator + self.stddev_graph_height_ratio.denominator, 1)
+        if not self.show_stddev:
+            self.axes = self.figure.add_subplot(gridspec[:, :])
+            self.axes_stddev = None
+        else:
+            self.axes = self.figure.add_subplot(gridspec[:self.stddev_graph_height_ratio.numerator, :])
+            self.axes_stddev = self.figure.add_subplot(
+                gridspec[self.stddev_graph_height_ratio.numerator:, :],
+                sharex=self.axes)
         self.figureVerticalLayout.addWidget(self.navigationToolbar)
         self.figureVerticalLayout.addWidget(self.canvas)
         self.pixelOrQToolButton.toggled.connect(self.pixelOrQChanged)
@@ -63,6 +79,8 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
     @Slot(bool)
     def showGrid(self, grid: bool):
         self.axes.grid(self.showGridToolButton.isChecked(), which='both')
+        if self.axes_stddev is not None:
+            self.axes_stddev.grid(self.showGridToolButton.isChecked(), which='both')
         self.canvas.draw()
 
     @Slot(bool)
@@ -73,6 +91,23 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
     @Slot()
     def replot(self):
         logger.debug('Replotting curves')
+        if self.axes_stddev is not None:
+            if (len({len(c.q) for c, kw in self.curves if c is not None}) == 1) and \
+                    (np.nanmax(np.nanstd(np.vstack([c.q for c, kw in self.curves if c is not None]), axis=0)) < 0.0001):
+                # all curves have the same q-range
+                q = self.curves[0][0].q if self.pixelOrQToolButton.isChecked() else self.curves[0][0].pixel
+                intensity_std = np.nanstd(np.vstack([c.intensity for c, kw in self.curves if c is not None]), axis=0)
+                self.axes_stddev.plot(
+                    q, intensity_std, ('-' if self.showLinesToolButton.isChecked() else '') +
+                                      ('o' if (self.symbolsTypeComboBox.currentText() == 'No symbols') else ''),
+                    mfc = ('none' if self.symbolsTypeComboBox.currentText() == 'Empty symbols' else 'k'),
+                )
+            else:
+                self.axes_stddev.clear()
+                self.axes_stddev.text(
+                    0.5, 0.5, 'Not all curves are defined on the same $q$-range', ha='c', va='c',
+                    transform=self.axes_stddev.transAxes)
+
         self.axes.clear()
         for i, (curve, kwargs) in enumerate(self.curves):
             if curve is None:
@@ -170,6 +205,10 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         self.axes.set_ylabel(
             r'$d\Sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)' if self.pixelOrQToolButton.isChecked() else 'Intensity')
         # ToDo: draw logo
+        if self.axes_stddev is not None:
+            self.axes_stddev.xaxis.set_label(self.axes.xaxis.get_label())
+            self.axes_stddev.yaxis.set_label('Stddev. of intensity')
+            self.axes_stddev.grid(self.showGridToolButton.isChecked(), which='both')
         self.canvas.draw_idle()
         self.navigationToolbar.update()
 
