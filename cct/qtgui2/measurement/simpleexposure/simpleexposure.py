@@ -139,7 +139,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     @Slot(bool)
     def onShutterChanged(self, state: bool):
-        assert self.state in [State.OpeningShutter, State.ClosingShutter]
+        assert self.state in [State.OpeningShutter, State.ClosingShutter, State.StopRequested]
         self.instrument.devicemanager.source().shutter.disconnect(self.onShutterChanged)
 
         if self.state == State.OpeningShutter:
@@ -157,6 +157,9 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 self._waitforimages()
             else:
                 self._waitforimages()
+        elif self.state == State.StopRequested:
+            self._waitforimages()
+            return
         else:
             assert False
 
@@ -170,10 +173,10 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     @Slot(str, bool)
     def onMovingToSampleFinished(self, samplename: str, success: bool):
-        assert self.state == State.MovingSample
+        assert self.state in [State.MovingSample, State.StopRequested]
         self.instrument.samplestore.movingToSample.disconnect(self.onMovingToSample)
         self.instrument.samplestore.movingFinished.disconnect(self.onMovingToSampleFinished)
-        if success:
+        if success and (self.state == State.MovingSample):
             self._openshutter()
         else:
             QtWidgets.QMessageBox.critical(self, 'Error', f'Sample {samplename} could not be moved into the beam.')
