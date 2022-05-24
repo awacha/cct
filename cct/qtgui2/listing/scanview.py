@@ -19,7 +19,7 @@ class ScanViewer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.treeView.setModel(self.instrument.scan)
         self.instrument.scan.rowsInserted.connect(self.resizeTreeColumns)
         self.instrument.scan.modelReset.connect(self.resizeTreeColumns)
-        self.showPushButton.clicked.connect(self.showScan)
+        self.showPushButton.clicked.connect(self.onShowPushButtonClicked)
         self.treeView.activated.connect(self.showScan)
         self.resizeTreeColumns()
 
@@ -28,10 +28,12 @@ class ScanViewer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         for c in range(self.instrument.scan.columnCount()):
             self.treeView.resizeColumnToContents(c)
 
-    @Slot(object)
-    def showScan(self, index: Optional[QtCore.QModelIndex] = None):
-        if not isinstance(index, QtCore.QModelIndex):
-            index = self.treeView.currentIndex()
+    @Slot(bool)
+    def onShowPushButtonClicked(self, checked: bool):
+        self.showScan(self.treeView.currentIndex())
+
+    @Slot(QtCore.QModelIndex)
+    def showScan(self, index: QtCore.QModelIndex):
         scan = index.data(QtCore.Qt.UserRole)
         assert isinstance(scan, Scan)
         plotscan = self.mainwindow.addSubWindow(PlotScan, singleton=False)

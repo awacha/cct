@@ -137,6 +137,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             f'Current actions: {[a.text() for a in self.actionRecent_projects.menu().actions()]}')
         self.saveRecentFileList()
 
+    @Slot()
     @Slot(str)
     def openProject(self, filename: Optional[str] = None):
         if filename is None:
@@ -246,8 +247,8 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             self.viewwindows[handlestring].parent().restoreGeometry(geometry)
         return self.viewwindows[handlestring]
 
-    @Slot(QtWidgets.QWidget)
-    def onWidgetDestroyed(self, object: QtWidgets.QWidget):
+    @Slot(QtCore.QObject)
+    def onWidgetDestroyed(self, object: QtCore.QObject):
         for key in list(self.viewwindows):
             try:
                 self.viewwindows[key].objectName()

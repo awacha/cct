@@ -22,11 +22,15 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
         self.comboBox.addItems(sorted(instrument.io.prefixes))
         self.comboBox.currentIndexChanged.connect(self.onPrefixChanged)
         self.comboBox.setCurrentIndex(0)
-        self.onPrefixChanged()
+        self.onPrefixChanged(self.comboBox.currentIndex())
         self.spinBox.valueChanged.connect(self.onFSNSelected)
         self.firstToolButton.clicked.connect(self.gotoFirst)
         self.lastToolButton.clicked.connect(self.gotoLast)
-        self.reloadToolButton.clicked.connect(self.onFSNSelected)
+        self.reloadToolButton.clicked.connect(self.onReloadClicked)
+
+    @Slot(bool)
+    def onReloadClicked(self, checked: bool):
+        self.onLastFSNChanged(self.comboBox.currentIndex(), self.spinBox.value())
 
     @Slot()
     def gotoFirst(self):
@@ -44,8 +48,8 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
         self.lastToolButton.setEnabled(not invalid)
         self.reloadToolButton.setEnabled(not invalid)
 
-    @Slot()
-    def onPrefixChanged(self):
+    @Slot(int)
+    def onPrefixChanged(self, index:int):
         if self.comboBox.currentIndex() < 0:
             self.setInvalid(True)
             return
@@ -64,7 +68,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
         if prefix == self.comboBox.currentText():
             self.spinBox.setRange(0, fsn)
 
-    @Slot(object)
+    @Slot(int)
     def onFSNSelected(self, value: Optional[int] = None):
         if self.comboBox.currentIndex() < 0:
             return

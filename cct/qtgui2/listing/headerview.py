@@ -63,7 +63,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setMaximum(0)
         self.progressBar.setFormat('Loading headers...')
 
-    @Slot(str, object)
+    @Slot(str, int)
     def onLastFSNChanged(self, prefix: str, lastfsn: Optional[int]):
         if prefix == self.instrument.config['path']['prefixes']['crd']:
             if lastfsn is None:

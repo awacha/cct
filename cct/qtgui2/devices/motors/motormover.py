@@ -32,7 +32,7 @@ class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.motors.newMotor.connect(self.onMotorAdded)
         self.instrument.motors.motorRemoved.connect(self.onMotorRemoved)
 
-    @Slot(object)
+    @Slot(bool)
     def onRelativeCheckBoxToggled(self, toggled: Optional[bool] = None):
         if self.motorNameComboBox.currentIndex() < 0:
             self.moveMotorPushButton.setEnabled(False)

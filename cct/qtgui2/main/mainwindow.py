@@ -229,7 +229,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return w
         return None
 
-    @Slot(QtWidgets.QWidget)
+    @Slot(QtCore.QObject)
     def onWindowDestroyed(self, window: QtWidgets.QWidget):
         logger.debug(f'Window with object name {window.objectName()} destroyed.')
         del self._windows[window.objectName()]

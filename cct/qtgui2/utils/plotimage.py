@@ -70,8 +70,8 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         cmapnames = list(matplotlib.cm.cmaps_listed) + list(matplotlib.cm.datad)
         self.paletteComboBox.addItems(sorted(cmapnames + [f'{cmname}_r' for cmname in cmapnames]))
         self.paletteComboBox.setCurrentIndex(self.paletteComboBox.findText(matplotlib.rcParams['image.cmap']))
-        self.paletteComboBox.currentIndexChanged.connect(self.replot)
-        self.colourScaleComboBox.currentIndexChanged.connect(self.replot)
+        self.paletteComboBox.currentIndexChanged.connect(self.onPaletteChanged)
+        self.colourScaleComboBox.currentIndexChanged.connect(self.onColourScaleChanged)
         self.axesComboBox.currentIndexChanged.connect(self.axisScaleChanged)
         self.showColourBarToolButton.toggled.connect(self.showColourBar)
         self.showBeamToolButton.toggled.connect(self.showBeam)
@@ -172,7 +172,14 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             assert False
         return extent, center
 
-    @Slot(object)
+    @Slot(int)
+    def onColourScaleChanged(self, index: int):
+        self.replot()
+
+    @Slot(int)
+    def onPaletteChanged(self, index: int):
+        self.replot()
+
     def replot(self, keepzoom: Optional[bool] = None):
         if keepzoom is None:
             keepzoom = self.lockZoomToolButton.isChecked()

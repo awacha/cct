@@ -92,20 +92,24 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
     def replot(self):
         logger.debug('Replotting curves')
         if self.axes_stddev is not None:
+            self.axes_stddev.clear()
             if (len({len(c.q) for c, kw in self.curves if c is not None}) == 1) and \
                     (np.nanmax(np.nanstd(np.vstack([c.q for c, kw in self.curves if c is not None]), axis=0)) < 0.0001):
                 # all curves have the same q-range
                 q = self.curves[0][0].q if self.pixelOrQToolButton.isChecked() else self.curves[0][0].pixel
                 intensity_std = np.nanstd(np.vstack([c.intensity for c, kw in self.curves if c is not None]), axis=0)
+                intensity_mean = np.nanmean(np.vstack([c.intensity for c, kw in self.curves if c is not None]), axis=0)
                 self.axes_stddev.plot(
-                    q, intensity_std, ('-' if self.showLinesToolButton.isChecked() else '') +
+                    q, intensity_std/intensity_mean, ('-' if self.showLinesToolButton.isChecked() else '') +
                                       ('o' if (self.symbolsTypeComboBox.currentText() == 'No symbols') else ''),
                     mfc = ('none' if self.symbolsTypeComboBox.currentText() == 'Empty symbols' else 'k'),
+                    mec = ('none' if self.symbolsTypeComboBox.currentText() == 'Empty symbols' else 'k'),
+                    color = 'k',
                 )
             else:
                 self.axes_stddev.clear()
                 self.axes_stddev.text(
-                    0.5, 0.5, 'Not all curves are defined on the same $q$-range', ha='c', va='c',
+                    0.5, 0.5, 'Not all curves are defined on the same $q$-range', ha='center', va='center',
                     transform=self.axes_stddev.transAxes)
 
         self.axes.clear()
@@ -206,8 +210,8 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
             r'$d\Sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)' if self.pixelOrQToolButton.isChecked() else 'Intensity')
         # ToDo: draw logo
         if self.axes_stddev is not None:
-            self.axes_stddev.xaxis.set_label(self.axes.xaxis.get_label())
-            self.axes_stddev.yaxis.set_label('Stddev. of intensity')
+            self.axes_stddev.set_xlabel(self.axes.get_xlabel())
+            self.axes_stddev.set_ylabel('Rel. stddev. of intensity (%)')
             self.axes_stddev.grid(self.showGridToolButton.isChecked(), which='both')
         self.canvas.draw_idle()
         self.navigationToolbar.update()

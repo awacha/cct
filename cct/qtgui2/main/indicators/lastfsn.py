@@ -21,7 +21,7 @@ class LastFSNIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.nextScanLabel.setText(str(Instrument.instance().scan.nextscan()))
         self.lastScanLabel.setText(str(Instrument.instance().scan.lastscan()))
         self.prefixComboBox.currentIndexChanged.connect(self.prefixSelected)
-        self.prefixSelected()
+        self.prefixSelected(self.prefixComboBox.currentIndex())
 
     def populatePrefixComboBox(self):
         self.prefixComboBox.blockSignals(True)
@@ -32,7 +32,7 @@ class LastFSNIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         if self.prefixComboBox.currentIndex() < 0:
             self.prefixComboBox.setCurrentIndex(0)
         self.prefixComboBox.blockSignals(False)
-        self.prefixSelected()
+        self.prefixSelected(self.prefixComboBox.currentIndex())
 
     @Slot(int)
     def prefixSelected(self, currentIndex: int):

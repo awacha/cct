@@ -143,9 +143,9 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         dic = self.optimizationTreeView.model().data(self.optimizationTreeView.currentIndex(), role = QtCore.Qt.UserRole)
         self.instrument.geometry.updateFromOptimizerResult(dic)
 
-    @Slot(object, object)
-    def onOptimizationSelectionChanged(self, selected: Sequence[QtCore.QModelIndex],
-                                       deselected: Sequence[QtCore.QModelIndex]):
+    @Slot(QtCore.QItemSelection, QtCore.QItemSelection)
+    def onOptimizationSelectionChanged(self, selected: QtCore.QItemSelection,
+                                       deselected: QtCore.QItemSelection):
         self.updateSetupParametersPushButton.setEnabled(
             bool(len(self.optimizationTreeView.selectionModel().selectedRows(0))))
         self.copyToClipboardPushButton.setEnabled(bool(len(self.optimizationTreeView.selectionModel().selectedRows(0))))

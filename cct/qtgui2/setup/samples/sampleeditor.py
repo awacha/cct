@@ -277,7 +277,10 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                         else:
                             assert isinstance(value, datetime.date)
                             widget.setDate(QtCore.QDate(value.year, value.month, value.day))
+                    elif isinstance(widget, QtWidgets.QPushButton):
+                        pass
                     else:
+                        logger.critical(f'{type(widget)}')
                         assert False
                 finally:
                     widget.blockSignals(False)

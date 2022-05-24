@@ -1,6 +1,6 @@
 import logging
 import itertools
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 import numpy as np
 import scipy.stats.kde
@@ -45,7 +45,7 @@ class SortFilterModel(QtCore.QSortFilterProxyModel):
 
 
 class OutlierTestWindow(ResultViewWindow, Ui_Form):
-    outliertestresults : OutlierTest
+    outliertestresults : Optional[OutlierTest] = None
     cmatfigure: Figure
     cmatcanvas: FigureCanvasQTAgg
     cmatfigtoolbar: NavigationToolbar2QT
@@ -108,6 +108,15 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
 
     @Slot()
     def redraw(self):
+        if self.outliertestresults is None:
+            self.cmatfigure.clear()
+            self.otaxes.clear()
+            self.otkdeaxes.clear()
+            self.plotcurve.clear()
+            self.plotcurve.replot()
+            self.cmatcanvas.draw_idle()
+            self.otcanvas.draw_idle()
+            return
         self.cmatfigure.clear()
         self.cmataxes = self.cmatfigure.add_subplot(self.cmatfigure.add_gridspec(1, 1)[:, :])
         im = self.cmataxes.imshow(self.outliertestresults.correlmatrix, cmap='coolwarm', interpolation='nearest', origin='upper', picker=5)
@@ -161,7 +170,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
             return
         self.mainwindow.createViewWindow(ShowCurveWindow, [('', str(fsn)) for fsn in fsns])
 
-    @Slot()
+    @Slot(str, str)
     def onResultItemChanged(self, samplename: str, distkey: str):
         self.outliertestresults = self.project.settings.h5io.readOutlierTest(f'Samples/{self.samplename}/{self.distancekey}')
         self.redraw()
@@ -189,6 +198,8 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
                     self.treeView.selectionModel().select(index, QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Select)
 
     def cmatPicked(self, event: PickEvent):
+        if self.outliertestresults is None:
+            return
         logger.debug([event.mouseevent.xdata, event.mouseevent.ydata])
         col = int(round(event.mouseevent.xdata))
         row = int(round(event.mouseevent.ydata))
@@ -202,8 +213,10 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
                     else:
                         self.treeView.selectionModel().select(index, QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Select)
 
-    @Slot(object, object)
-    def fsnSelectionChanged(self, selected, deselected):
+    @Slot(QtCore.QItemSelection, QtCore.QItemSelection)
+    def fsnSelectionChanged(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
+        if self.outliertestresults is None:
+            return
         selectedfsns = [index.data(QtCore.Qt.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)]
         sizes = self.otmarkedline.get_sizes()
         for i in range(sizes.size):

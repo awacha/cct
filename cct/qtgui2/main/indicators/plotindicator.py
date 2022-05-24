@@ -39,7 +39,7 @@ class PlotIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
             self.plotImageToolButton.setEnabled(self.prefixComboBox.currentIndex() >= 0)
         finally:
             self.prefixComboBox.blockSignals(False)
-        self.onPrefixChanged()
+        self.onPrefixChanged(self.prefixComboBox.currentIndex())
 
     @Slot(str, int)
     def onLastFSNChanged(self, prefix: str, fsn: int):

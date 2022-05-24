@@ -93,8 +93,8 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onFSNSelected(self, prefix: str, fsn: int):
         self.setExposure(self.fsnSelector.loadExposure())
 
-    @Slot(str, str, float)
-    def onH5Selected(self, filename: str, sample: str, distance: float):
+    @Slot(str, str, str)
+    def onH5Selected(self, filename: str, sample: str, distancekey: str):
         self.setExposure(self.h5Selector.loadExposure())
 
     def setExposure(self, exposure: Exposure):
