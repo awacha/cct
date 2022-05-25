@@ -136,8 +136,8 @@ class Interpreter(QtCore.QObject, Component):
 
     def advanceToNextCommand(self):
         finishedcommand = self.sender()
-        logger.debug(f'Finishedcommand: {finishedcommand.objectName()}')
         if isinstance(finishedcommand, Command):
+            logger.debug(f'Finishedcommand: {finishedcommand.objectName()}')
             self._disconnectCommand(finishedcommand)
         if self.pointer is None:
             logger.warning('Script pointer is None!')
