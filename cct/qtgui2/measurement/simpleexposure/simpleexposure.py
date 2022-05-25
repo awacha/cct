@@ -171,8 +171,8 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setFormat(f'Moving {motorname}: {current:.3f}')
         self.progressBar.setVisible(True)
 
-    @Slot(str, bool)
-    def onMovingToSampleFinished(self, samplename: str, success: bool):
+    @Slot(bool, str)
+    def onMovingToSampleFinished(self, success: bool, samplename: str):
         assert self.state in [State.MovingSample, State.StopRequested]
         self.instrument.samplestore.movingToSample.disconnect(self.onMovingToSample)
         self.instrument.samplestore.movingFinished.disconnect(self.onMovingToSampleFinished)
