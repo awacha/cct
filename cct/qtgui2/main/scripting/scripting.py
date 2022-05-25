@@ -309,7 +309,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         script.copyAvailable.connect(self.copyToolButton.setEnabled)
         script.copyAvailable.connect(self.cutToolButton.setEnabled)
 
-    @Slot()
+    @Slot(bool)
     def onScriptModificationChanged(self, modified: bool):
         self.tabWidget.setTabText(self.scripts.index(self.sender()), self.sender().getTitle())
 
