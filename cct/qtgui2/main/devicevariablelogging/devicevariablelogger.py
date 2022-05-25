@@ -86,6 +86,7 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
             self.variableNameComboBox.setModel(None)
 
     @Slot(int)
+    @Slot()
     def onNewData(self, recordptr: int):
         if not self.plotToolButton.isChecked():
             return
