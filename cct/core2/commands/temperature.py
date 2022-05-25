@@ -172,6 +172,7 @@ class WaitTemperature(ThermostatCommand):
     delay: float
     setpoint: float
     intervalreachedat: Optional[float]
+    timerinterval = 0.5
 
     def initialize(self, tolerance: float, delay: float):
         self.tolerance = tolerance
