@@ -180,6 +180,11 @@ class WaitTemperature(ThermostatCommand):
         self.delay = delay
         self.setpoint = self.thermostat().setpoint()
         self.intervalreachedat = None
+        self.progress.emit('Waiting for temperature to reach the interval around the setpoint...', 0, 0)
+        try:
+            self.onThermostatVariableChanged('temperature', self.thermostat().temperature())
+        except KeyError:
+            pass
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         if self.intervalreachedat is None:
@@ -189,7 +194,7 @@ class WaitTemperature(ThermostatCommand):
             self.finish(True)
         else:
             self.progress.emit(f'Ensuring temperature stability. Remaining time: {remainingtime:.2f} seconds',
-                               int(1000*(remainingtime/self.delay)), 1000)
+                               int(1000*((self.delay-remainingtime)/self.delay)), 1000)
 
     @Slot(str, object, object)
     def onThermostatVariableChanged(self, name: str, newvalue: Any, previousvalue: Any):
