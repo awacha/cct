@@ -230,7 +230,7 @@ class Exposer(QtCore.QObject, Component):
     def isExposing(self) -> bool:
         return self.state != ExposerState.Idle
 
-    @Slot()
+    @Slot(str, object)
     def onDetectorVariableChanged(self, variable: str, value: Any):
         if variable == '__status__':
             logger.debug(f'__status__ set to {value}, exposer state is {self.state.name}')
