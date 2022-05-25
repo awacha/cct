@@ -175,6 +175,7 @@ class WaitTemperature(ThermostatCommand):
     timerinterval = 0.5
 
     def initialize(self, tolerance: float, delay: float):
+        self.connectThermostat()
         self.tolerance = tolerance
         self.delay = delay
         self.setpoint = self.thermostat().setpoint()
@@ -209,3 +210,5 @@ class WaitTemperature(ThermostatCommand):
             else:
                 pass
 
+    def finalize(self):
+        self.disconnectThermostat()
