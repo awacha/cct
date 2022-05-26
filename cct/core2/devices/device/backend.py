@@ -191,14 +191,21 @@ class DeviceBackend:
             self.messageToFrontend('end', expected=False)
             return
         # flush the incoming stream: remove residual data
+        # Because streamreader.read() will block until something is to be read, we create a timeout task, and
+        # run the two together.
         done, pending = await asyncio.wait(
             [asyncio.create_task(self.streamreader.read(), name='flush'),
              asyncio.create_task(asyncio.sleep(0.1), name='sleep')], return_when=asyncio.FIRST_COMPLETED)
+        # at this point, at least one of the tasks is done. Either the reader or the timeout, or both (but the
+        # probability of this is very small). We need to reap those
         for donetask in done:
             if donetask.get_name() == 'flush':
                 self.debug(f'Flushed input queue: {len(donetask.result()):d} bytes.')
+        # kill all pending tasks, if present.
         for task in pending:
             task.cancel()
+
+        # Start the main loop by creating several concurrently running tasks
         name2coro = {'processFrontendMessages': self.processFrontendMessages,
                      'hardwareSender': self.hardwareSender,
                      'hardwareReceiver': self.hardwareReceiver,
@@ -206,46 +213,63 @@ class DeviceBackend:
                      'telemetry': self.telemetry}
         pending = {asyncio.create_task(value(), name=key) for key, value in name2coro.items()}
         try:
-            while True:
-                done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
-                for donetask in done:
-                    if self.telemetryInformation is not None:
-                        if donetask.get_name() not in self.telemetryInformation.coro_wakes:
-                            self.telemetryInformation.coro_wakes[donetask.get_name()] = 0
-                        self.telemetryInformation.coro_wakes[donetask.get_name()] += 1
-
-                    if (not self.stopevent.is_set()) and (donetask.result()):
-                        # each task returns True if it wants to be re-scheduled and False if not.
-                        pending.add(asyncio.create_task(name2coro[donetask.get_name()](), name=donetask.get_name()))
-                    exc = donetask.exception()
-                    if exc:
-                        try:
-                            raise exc
-                        except Exception as exc:
-                            self.error(f'Exception occurred in the back-end thread: {traceback.format_exc()}')
-                            for task in pending:
-                                task.cancel()
-                            pending = []
-                            break
-                if not pending:
-                    break
-            await self.disconnectFromHardware()
+            try:
+                while True:
+                    # this is the main loop. Submit all tasks and wait until the first one is completed.
+                    done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+                    # check all tasks which have ended, reap them and restart them.
+                    for donetask in done:
+                        # collect some statistics on this task in the telemetry.
+                        if self.telemetryInformation is not None:
+                            if donetask.get_name() not in self.telemetryInformation.coro_wakes:
+                                self.telemetryInformation.coro_wakes[donetask.get_name()] = 0
+                            self.telemetryInformation.coro_wakes[donetask.get_name()] += 1
+                        # if we are not stopping, re-schedule the finished task
+                        if (not self.stopevent.is_set()) and (donetask.result()):
+                            # each task returns True if it wants to be re-scheduled and False if not.
+                            pending.add(asyncio.create_task(name2coro[donetask.get_name()](), name=donetask.get_name()))
+                        # check if we have an exception.
+                        exc = donetask.exception()
+                        if exc:
+                            # an exception has occurred. Handle the exception and then kill all pending tasks.
+                            try:
+                                raise exc
+                            except Exception as exc:
+                                self.error(f'Exception occurred in the back-end thread: {traceback.format_exc()}')
+                                for task in pending:
+                                    task.cancel()
+                                pending = []
+                                break
+                    # when there are no more running coroutines (either because none wanted to be rescheduled, or one has
+                    # thrown an exception, or the `stopevent` is set, exit from the main loop
+                    if not pending:
+                        break
+                # after the main loop has ended, we disconnect from the hardware.
+            finally:
+                # ensure that we always disconnect from the hardware, even in the case of an unhandled exception in the
+                # main loop
+                await self.disconnectFromHardware()
         except Exception as exc:
             self.error(f'Exception occurred in the back-end thread: {repr(exc)}\n{traceback.format_exc()}')
-        self.messageToFrontend('end', expected=self.stopevent.is_set())
+        finally:
+            # always notify the frontend that we exit.
+            self.messageToFrontend('end', expected=self.stopevent.is_set())
 
     @final
     async def ensureready(self) -> bool:
+        """Task to ensure that the device is ready, i.e. all variables have been successfully queried at least once."""
         await asyncio.sleep(self.readytimeout)
         if self.variablesready:
             return self.variablesready
 
     @final
     async def telemetry(self) -> bool:
-        """Collect telemetry"""
+        """Collect telemetry information periodically"""
         #        self.debug('Telemetry task started.')
+        # `communicating` is True if a message has been sent to the device and we are waiting for a response.
         communicating = False
         if self.telemetryInformation is not None:
+            # if we already have a telemetry information instance, finish data collection and send it to the frontend
             self.telemetryInformation.finish()
             self.telemetryInformation.outbufferlength = self.outbuffer.qsize()
             self.telemetryInformation.outstandingvariables = [v.name for v in self.variables if
@@ -263,25 +287,32 @@ class DeviceBackend:
             self.telemetryInformation.lastrecvtime = self.lastrecvtime
             self.telemetryInformation.asyncio_tasks = [t.get_name() for t in asyncio.all_tasks()]
             self.messageToFrontend('telemetry', telemetry=self.telemetryInformation)
+            # check if we have successfully queried all variables in the given time.
             for timeout in self.telemetryInformation.outdatedqueries.values():
                 if (timeout > self.outstandingqueryfailtimeout) and (self.autoqueryenabled.is_set()):
                     raise RuntimeError(f'Outstanding query fail timeout reached. Variables not yet queried: '
                                        f'{", ".join(sorted(self.telemetryInformation.outdatedqueries))}')
             communicating = self.telemetryInformation.communicating
+            # start with a new telemetry information instance.
             del self.telemetryInformation
             self.telemetryInformation = None
         gc.collect()
         self.telemetryInformation = TelemetryInformation(communicating)
         t0 = time.monotonic()
+        # start an interruptible wait for `self.telemetryPeriod` seconds. It can be ended earlier if `self.stopevent`
+        # is set
         telemetrytask = asyncio.create_task(asyncio.sleep(self.telemetryPeriod if self.variablesready else 0.5),
                                             name='tm_task')
         stoptask = asyncio.create_task(self.stopevent.wait(), name='tm_stoptask')
         done, pending = await asyncio.wait({telemetrytask, stoptask}, return_when=asyncio.FIRST_COMPLETED)
         #        self.debug(f'Telemetry task slept {time.monotonic() - t0} seconds.')
-        if stoptask in done:
-            return False
+        # reap all remaining coroutines
         for t in pending.union(done):
             t.cancel()
+        if stoptask in done:
+            # stop was requested, exit cleanly and notify the main loop that we don't want to be rescheduled
+            return False
+        # otherwise we want to be rescheduled.
         return True
 
     @final
@@ -292,6 +323,7 @@ class DeviceBackend:
                 message = self.inqueue.get_nowait()
                 # self.inqueue.task_done()
             except queue.Empty:
+                # this is ugly, but multiprocessing Queues cannot be awaited.
                 await asyncio.sleep(0.1)
                 return True
             else:
