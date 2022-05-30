@@ -71,7 +71,7 @@ class ProcessingSettings(QtCore.QObject):
         self.load(filename)
 
     def loadDefaults(self):
-        cp = configparser.ConfigParser()
+        cp = configparser.ConfigParser(interpolation=None)
         cp.read([os.path.join(appdirs.user_config_dir('cct'), 'cpt4.conf')])
         cp['DEFAULT'] = {'eval2dsubpath': 'eval2d',
                          'masksubpath': 'mask',
@@ -107,7 +107,7 @@ class ProcessingSettings(QtCore.QObject):
         self.filenamepattern = cpt4section.get('filenamepattern')
 
     def saveDefaults(self):
-        cp = configparser.ConfigParser()
+        cp = configparser.ConfigParser(interpolation=None)
         cp.read(os.path.join(appdirs.user_config_dir('cct'), 'cpt4.conf'))
         if not cp.has_section('cpt4'):
             cp.add_section('cpt4')
@@ -181,7 +181,7 @@ class ProcessingSettings(QtCore.QObject):
 
     def load(self, filename: str):
         if filename.lower().endswith('.cpt') or filename.lower().endswith('.cpt2'):
-            cp = configparser.ConfigParser()
+            cp = configparser.ConfigParser(interpolation=None)
             cp.read([filename])
 
             def parsefsnranges(s) -> List[Tuple[int, int]]:
