@@ -6,16 +6,15 @@ from typing import Any, List, Final, Optional, Sequence, Iterator, Tuple
 
 from PyQt5 import QtCore
 
-from ..settings import ProcessingSettings
+from ..settings import ProcessingSettings, FileNameScheme
 from .task import ProcessingTask, ProcessingStatus
 from ...dataclasses import Header
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 class HeaderStore(ProcessingTask):
-
     _data: List[Header]
     _data_being_loaded: Optional[List[Optional[Header]]] = None
     columns: Final[List[str]] = ['fsn', 'title', 'distance', 'enddate', 'project', 'thickness', 'transmission']
@@ -94,21 +93,29 @@ class HeaderStore(ProcessingTask):
         self._data = []
         self.endResetModel()
         fsns = list(self.settings.fsns())
-        self._data_being_loaded=[None] * len(fsns)
+        self._data_being_loaded = [None] * len(fsns)
         for i, fsn in enumerate(fsns):
-            self._submitTask(self._loadheader, i, rootdir=os.path.join(self.settings.rootpath, self.settings.eval2dsubpath), prefix=self.settings.prefix, fsn=fsn, fsndigits=self.settings.fsndigits)
+            self._submitTask(self._loadheader, i,
+                             rootdir=os.path.join(self.settings.rootpath, self.settings.eval2dsubpath),
+                             prefix=self.settings.prefix, fsn=fsn, fsndigits=self.settings.fsndigits,
+                             filenamescheme=self.settings.filenamescheme, filenamepattern=self.settings.filenamepattern)
 
     @staticmethod
-    def _loadheader(h5file: str, h5lock, jobid, messagequeue, stopEvent, rootdir: str, prefix: str, fsn: int, fsndigits) -> Tuple[int, Optional[Header]]:
-        filename = f'{prefix}_{fsn:0{fsndigits}d}.pickle'
+    def _loadheader(
+            h5file: str, h5lock, jobid, messagequeue, stopEvent, rootdir: str, prefix: str, fsn: int,
+            fsndigits: int, filenamescheme: FileNameScheme, filenamepattern: str) -> Tuple[int, Optional[Header]]:
+        if filenamescheme == FileNameScheme.Parts:
+            filename = f'{prefix}_{fsn:0{fsndigits}d}.pickle'
+        else:
+            filename = (filenamepattern % fsn) + '.pickle'
         # first try the header in the root directory
         try:
-            return jobid, Header(filename = os.path.join(rootdir, filename))
+            return jobid, Header(filename=os.path.join(rootdir, filename))
         except FileNotFoundError:
             pass
         # if not successful, try the 'prefix' subfolder
         try:
-            return jobid, Header(filename = os.path.join(rootdir, prefix, filename))
+            return jobid, Header(filename=os.path.join(rootdir, prefix, filename))
         except FileNotFoundError:
             pass
 
@@ -128,7 +135,7 @@ class HeaderStore(ProcessingTask):
         if header is None:
             return
         assert isinstance(header, Header)
-        self._data_being_loaded[jobid]=header
+        self._data_being_loaded[jobid] = header
         super().onBackgroundTaskFinished(result)
 
     def stop(self):

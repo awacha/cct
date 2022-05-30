@@ -6,6 +6,7 @@ import multiprocessing.synchronize
 import numbers
 import os
 import re
+import enum
 from typing import Optional, Set, Iterable, List, Tuple, Final, Iterator, Union
 
 import appdirs
@@ -15,12 +16,13 @@ from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from .calculations.outliertest import OutlierMethod
 from .h5io import ProcessingH5File
-from .loader import Loader
+from .loader import Loader, FileNameScheme
 from ..algorithms.matrixaverager import ErrorPropagationMethod
 from ..dataclasses.exposure import QRangeMethod
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 
 class ProcessingSettings(QtCore.QObject):
@@ -46,6 +48,8 @@ class ProcessingSettings(QtCore.QObject):
     fsnranges: List[Tuple[int, int]]
     qrangemethod: QRangeMethod = QRangeMethod.Linear
     qcount: int = 0  # 0 means the same number as pixels
+    filenamescheme: FileNameScheme = FileNameScheme.Parts
+    filenamepattern: str = "crd_%05d"
 
     settingsChanged = Signal()
     badfsnsChanged = Signal()
@@ -81,6 +85,8 @@ class ProcessingSettings(QtCore.QObject):
                          'bigmemorymode': 'no',
                          'qrangemethod': QRangeMethod.Linear.name,
                          'qrangecount': 0,
+                         'filenamepattern': 'crd_%05d',
+                         'filenamescheme': FileNameScheme.Parts,
                          }
         if not cp.has_section('cpt4'):
             cp.add_section('cpt4')
@@ -97,6 +103,8 @@ class ProcessingSettings(QtCore.QObject):
         self.bigmemorymode = cpt4section.getboolean('bigmemorymode')
         self.qrangemethod = QRangeMethod[cpt4section.get('qrangemethod')]
         self.qcount = cpt4section.getint('qrangecount')
+        self.filenamescheme = FileNameScheme(cpt4section.get('filenamescheme'))
+        self.filenamepattern = cpt4section.get('filenamepattern')
 
     def saveDefaults(self):
         cp = configparser.ConfigParser()
@@ -116,6 +124,8 @@ class ProcessingSettings(QtCore.QObject):
         cpt4section['bigmemorymode'] = 'yes' if self.bigmemorymode else 'no'
         cpt4section['qrangecount'] = str(self.qcount)
         cpt4section['qrangemethod'] = self.qrangemethod.name
+        cpt4section['filenamepattern'] = self.filenamepattern
+        cpt4section['filenamescheme'] = self.filenamescheme.value
         os.makedirs(appdirs.user_config_dir('cct'), exist_ok=True)
         with open(os.path.join(appdirs.user_config_dir('cct'), 'cpt4.conf'), 'wt') as f:
             cp.write(f)
@@ -271,6 +281,8 @@ class ProcessingSettings(QtCore.QObject):
                         ('outlierlogcormat', 'processing', 'logcorrelmatrix', identity),
                         ('qrangemethod', 'processing', 'qrangemethod', lambda x: QRangeMethod[x]),
                         ('count', 'processing', 'qrangecount', int),
+                        ('filenamepattern', 'io', 'filenamepattern', str),
+                        ('filenamescheme', 'io', 'filenamescheme', FileNameScheme)
                     ]:
                         try:
                             setattr(self, attrname, typeconversion(grp[grpname].attrs[h5attrname]))
@@ -296,6 +308,8 @@ class ProcessingSettings(QtCore.QObject):
             iogrp.attrs['fsndigits'] = self.fsndigits
             iogrp.attrs['prefix'] = self.prefix
             iogrp.attrs['bigmemorymode'] = self.bigmemorymode
+            iogrp.attrs['filenamescheme'] = self.filenamescheme.value
+            iogrp.attrs['filenamepattern'] = self.filenamepattern
             try:
                 del iogrp['fsnranges']
             except KeyError:
@@ -336,9 +350,11 @@ class ProcessingSettings(QtCore.QObject):
 
     def loader(self) -> Loader:
         if self._loader is None:
-            return Loader(self.rootpath, self.eval2dsubpath, self.masksubpath, self.fsndigits)
+            return Loader(self.rootpath, self.eval2dsubpath, self.masksubpath, self.fsndigits, self.prefix, self.filenamepattern, self.filenamescheme)
         elif (self._loader.rootpath != self.rootpath) or (self._loader.eval2dsubpath != self.eval2dsubpath) or \
-                (self._loader.masksubpath != self.masksubpath) or (self._loader.fsndigits != self.fsndigits):
+                (self._loader.masksubpath != self.masksubpath) or (self._loader.fsndigits != self.fsndigits) or \
+                (self._loader.prefix != self.prefix) or (self._loader.filenamepattern != self.filenamepattern) or \
+                (self._loader.filenamescheme != self.filenamescheme):
             del self._loader
             self._loader = None
             return self.loader()

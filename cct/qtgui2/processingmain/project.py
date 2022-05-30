@@ -3,7 +3,7 @@ from PyQt5.QtCore import pyqtSlot as Slot
 from .project_ui import Ui_Form
 from .processingwindow import ProcessingWindow
 from ..utils.filebrowsers import getDirectory
-
+from ...core2.processing.settings import FileNameScheme
 
 class ProjectWindow(ProcessingWindow, Ui_Form):
     def setupUi(self, Form):
@@ -15,6 +15,15 @@ class ProjectWindow(ProcessingWindow, Ui_Form):
         self.rootPathLineEdit.editingFinished.connect(self.rootPathChanged)
         self.fsnsTreeView.setModel(self.project)
         self.rootPathLineEdit.setText(self.project.settings.rootpath)
+        self.fsnDigitsSpinBox.setValue(self.project.settings.fsndigits)
+        self.fileNamePrefixLineEdit.setText(self.project.settings.prefix)
+        for ischeme, scheme in enumerate(FileNameScheme):
+            self.fileNameSchemeComboBox.setItemText(ischeme, scheme.value+':')
+        self.fileNamePatternLineEdit.setText(self.project.settings.filenamepattern)
+        self.fsnDigitsSpinBox.valueChanged.connect(self.onFSNDigitsChanged)
+        self.fileNamePrefixLineEdit.editingFinished.connect(self.onFileNamePrefixEditingFinished)
+        self.fileNamePatternLineEdit.editingFinished.connect(self.onFileNamePatternEditingFinished)
+        self.fileNameSchemeComboBox.currentTextChanged.connect(self.onFileNameSchemeChanged)
         self.loadHeadersPushButton.clicked.connect(self.project.headers.start)
         self.averagingPushButton.clicked.connect(self.project.summarization.start)
         self.subtractionPushButton.clicked.connect(self.project.subtraction.start)
@@ -22,6 +31,26 @@ class ProjectWindow(ProcessingWindow, Ui_Form):
         for task in [self.project.headers, self.project.subtraction, self.project.summarization, self.project.merging]:
             task.started.connect(self.onTaskStarted)
             task.finished.connect(self.onTaskFinished)
+
+    @Slot(int)
+    def onFSNDigitsChanged(self, value: int):
+        self.project.settings.fsndigits = value
+        self.project.settings.emitSettingsChanged()
+
+    @Slot(str)
+    def onFileNameSchemeChanged(self, text: str):
+        self.project.settings.filenamescheme = FileNameScheme(text[:-1])
+        self.project.settings.emitSettingsChanged()
+
+    @Slot()
+    def onFileNamePrefixEditingFinished(self):
+        self.project.settings.prefix = self.fileNamePrefixLineEdit.text()
+        self.project.settings.emitSettingsChanged()
+
+    @Slot()
+    def onFileNamePatternEditingFinished(self):
+        self.project.settings.filenamepattern = self.fileNamePatternLineEdit.text()
+        self.project.settings.emitSettingsChanged()
 
     @Slot()
     def onTaskStarted(self):

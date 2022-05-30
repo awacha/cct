@@ -12,7 +12,7 @@ from .backgroundprocess import BackgroundProcess, Results, BackgroundProcessErro
 from .outliertest import OutlierMethod, OutlierTest
 from ...dataclasses.exposure import QRangeMethod
 from ..h5io import ProcessingH5File
-from ..loader import Loader
+from ..loader import Loader, FileNameScheme
 from ...algorithms.matrixaverager import ErrorPropagationMethod
 from ...dataclasses import Header, Exposure, Curve
 
@@ -53,7 +53,7 @@ class SummaryJob(BackgroundProcess):
     ierrorprop: ErrorPropagationMethod
     qerrorprop: ErrorPropagationMethod
     fsns: List[int]
-    prefix: str
+
     curves: np.ndarray
     intensities2D: np.ndarray
     uncertainties2D: np.ndarray
@@ -72,16 +72,15 @@ class SummaryJob(BackgroundProcess):
     def __init__(self, jobid: Any, h5file: str, h5lock: Lock,
                  stopEvent: multiprocessing.synchronize.Event, messagequeue: multiprocessing.queues.Queue,
                  rootpath: str, eval2dsubpath: str, masksubpath: str, fsndigits: int,
-                 prefix: str, fsnlist: List[int],
+                 prefix: str, filenamepattern: str, filenamescheme: FileNameScheme, fsnlist: List[int],
                  ierrorprop: ErrorPropagationMethod, qerrorprop: ErrorPropagationMethod,
                  outliermethod: OutlierMethod, outlierthreshold: float, cormatLogarithmic: bool,
                  qrangemethod: QRangeMethod, qcount: int, bigmemorymode: bool, badfsns: List[int]):
         super().__init__(jobid, h5file, h5lock, stopEvent, messagequeue)
-        self.loader = Loader(rootpath, eval2dsubpath, masksubpath, fsndigits)
+        self.loader = Loader(rootpath, eval2dsubpath, masksubpath, fsndigits, prefix, filenamepattern, filenamescheme)
         self.ierrorprop = ierrorprop
         self.qerrorprop = qerrorprop
         self.fsns = list(fsnlist)
-        self.prefix = prefix
         self.outliermethod = outliermethod
         self.outlierthreshold = outlierthreshold
         self.cormatLogarithmic = cormatLogarithmic
@@ -102,7 +101,7 @@ class SummaryJob(BackgroundProcess):
             if self.killSwitch.is_set():
                 raise BackgroundProcessError('Stop switch is set.')
             try:
-                h = self.loader.loadHeader(self.prefix, fsn)
+                h = self.loader.loadHeader(fsn)
                 if h.fsn != fsn:
                     raise ValueError('FSN in header ({}) is different than in the filename ({}).'.format(h.fsn, fsn))
                 self.headers.append(h)
@@ -138,7 +137,7 @@ class SummaryJob(BackgroundProcess):
             if self.killSwitch.is_set():
                 raise BackgroundProcessError('Stop switch is set.')
             try:
-                ex = self.loader.loadExposure(self.prefix, h.fsn)
+                ex = self.loader.loadExposure(h.fsn)
                 radavg = ex.radial_average(
                     qbincenters=(self.qrangemethod, self.qcount),
                     errorprop=self.ierrorprop,
@@ -201,7 +200,7 @@ class SummaryJob(BackgroundProcess):
         t1 = time.monotonic()
         self.sendProgress('Averaging exposures...', current=0, total=0)
 
-        def exposureiterator(hs: List[Header], ldr: Loader, prefix: str):
+        def exposureiterator(hs: List[Header], ldr: Loader):
             count=0
             for i, h in enumerate(hs):
                 if self.killSwitch.is_set():
@@ -212,11 +211,11 @@ class SummaryJob(BackgroundProcess):
                 self.sendProgress('Averaging exposures {}/{}...'.format(i, len(hs)),
                                   current=i, total=len(hs))
                 count+=1
-                yield ldr.loadExposure(prefix, h.fsn, h)
+                yield ldr.loadExposure(h.fsn, h)
 
         self.averagedExposure = Exposure.average(
             [ex for ex in self.exposures if ex.header.fsn not in self.result.badfsns] if self.bigmemorymode
-            else exposureiterator(self.headers, self.loader, self.prefix),
+            else exposureiterator(self.headers, self.loader),
             errorpropagation=self.ierrorprop)
         self.result.time_averaging_exposures = time.monotonic() - t1
 

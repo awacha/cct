@@ -1,4 +1,5 @@
 import logging
+import enum
 import os
 import time
 from typing import Tuple, Dict, Final, Optional, List
@@ -12,22 +13,36 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+class FileNameScheme(enum.Enum):
+    Parts = "Filename parts"
+    Pattern = "Filename pattern"
+
+
 class Loader:
     _cachetimeout: Final[float] = 300.
     rootpath: str
     eval2dsubpath: str
     masksubpath: str
     fsndigits: int
+    prefix: str
+    filenamescheme: FileNameScheme
+    filenamepattern: str
     _maskcache: Dict[str, Tuple[np.ndarray, float, str]]
 
-    def __init__(self, rootpath: str, eval2dsubpath: str = 'eval2d', masksubpath: str = 'mask', fsndigits: int = 5):
+    def __init__(self, rootpath: str, eval2dsubpath: str = 'eval2d', masksubpath: str = 'mask', fsndigits: int = 5,
+                 prefix: str = 'crd_', filenamepattern: str = 'crd_%05d',
+                 filenamescheme: FileNameScheme = FileNameScheme.Parts):
         self.rootpath = rootpath
         self.eval2dsubpath = eval2dsubpath
         self.masksubpath = masksubpath
         self.fsndigits = fsndigits
+        self.prefix = prefix
+        self.filenamepattern = filenamepattern
+        self.filenamescheme = filenamescheme
         self._maskcache = {}
 
-    def _findfile(self, filename: str, directory: str, arbitraryextension: bool = True, quicksubdirs: Optional[List[str]]=None):
+    def _findfile(self, filename: str, directory: str, arbitraryextension: bool = True,
+                  quicksubdirs: Optional[List[str]] = None):
         # first try to read the file from the directory
         if os.path.isfile(os.path.join(directory, filename)):
             return os.path.join(directory, filename)
@@ -75,11 +90,13 @@ class Loader:
             self._maskcache[maskname] = mask, os.stat(maskfile).st_mtime, maskfile
             return mask
 
-    def loadExposure(self, prefix: str, fsn: int, header: Optional[Header] = None) -> Exposure:
+    def loadExposure(self, fsn: int, header: Optional[Header] = None) -> Exposure:
         if header is None:
-            header = self.loadHeader(prefix, fsn)
-        filename = f'{prefix}_{fsn:0{self.fsndigits}}.npz'
-        npzfile = np.load(self._findfile(filename, os.path.join(self.rootpath, self.eval2dsubpath), quicksubdirs=[prefix], arbitraryextension=False))
+            header = self.loadHeader(fsn)
+        filename = self.filebasename(fsn) + '.npz'
+        npzfile = np.load(self._findfile(filename, os.path.join(self.rootpath, self.eval2dsubpath),
+                                         quicksubdirs=[self.prefix] if self.prefix is not None else [],
+                                         arbitraryextension=False))
         if 'mask' not in npzfile:
             mask = self.loadMask(header.maskname)
         else:
@@ -89,6 +106,14 @@ class Loader:
         except:
             raise ValueError(f'Cannot load exposure {fsn=}')
 
-    def loadHeader(self, prefix: str, fsn: int) -> Header:
-        filename = f'{prefix}_{fsn:0{self.fsndigits}}.pickle'
-        return Header(self._findfile(filename, os.path.join(self.rootpath, self.eval2dsubpath), arbitraryextension=False, quicksubdirs=[prefix]))
+    def loadHeader(self, fsn: int) -> Header:
+        filename = self.filebasename(fsn) + '.pickle'
+        return Header(
+            self._findfile(filename, os.path.join(self.rootpath, self.eval2dsubpath), arbitraryextension=False,
+                           quicksubdirs=[self.prefix] if self.prefix is not None else []))
+
+    def filebasename(self, fsn: int) -> str:
+        if self.filenamescheme == FileNameScheme.Parts:
+            return f'{self.prefix}_{fsn:0{self.fsndigits}}'
+        elif self.filenamescheme == FileNameScheme.Pattern:
+            return self.filenamepattern % fsn
