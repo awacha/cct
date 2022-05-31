@@ -182,7 +182,7 @@ class WaitTemperature(ThermostatCommand):
         self.intervalreachedat = None
         self.progress.emit('Waiting for temperature to reach the interval around the setpoint...', 0, 0)
         try:
-            self.onThermostatVariableChanged('temperature', self.thermostat().temperature())
+            self.onThermostatVariableChanged('temperature', self.thermostat().temperature(), self.thermostat().temperature())
         except KeyError:
             pass
 
