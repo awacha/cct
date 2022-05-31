@@ -167,7 +167,7 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onMovingToSample(self, samplename:str, motorname: str, current:float, start:float, end: float):
         self.progressBar.setMinimum(0)
         self.progressBar.setMaximum(100)
-        self.progressBar.setValue((current-start)/(end-start) * 100)
+        self.progressBar.setValue(int((current-start)/(end-start) * 100))
         self.progressBar.setFormat(f'Moving {motorname}: {current:.3f}')
         self.progressBar.setVisible(True)
 
@@ -203,8 +203,8 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     @Slot(str, int, float, float, float)
     def onExposureProgress(self, prefix:str, fsn:int, currenttime:float, starttime:float, endtime:float):
         self.progressBar.setVisible(True)
-        self.progressBar.setRange(starttime*100, endtime*100)
-        self.progressBar.setValue(currenttime*100)
+        self.progressBar.setRange(int(starttime*100), int(endtime*100))
+        self.progressBar.setValue(int(currenttime*100))
         self.progressBar.setFormat(f'Exposing {prefix} #{fsn}, {endtime-currenttime:.2f} secs remaining')
 
     @Slot()
