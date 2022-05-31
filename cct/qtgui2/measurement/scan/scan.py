@@ -221,5 +221,5 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.progressBar.setRange(0, 0)
         else:
             self.progressBar.setRange(0, 1000)
-            self.progressBar.setValue((current - start) / (end - start) * 1000)
+            self.progressBar.setValue(int((current - start) / (end - start) * 1000))
         self.progressBar.setFormat(message)
