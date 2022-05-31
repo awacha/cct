@@ -86,7 +86,7 @@ class ProcessingSettings(QtCore.QObject):
                          'qrangemethod': QRangeMethod.Linear.name,
                          'qrangecount': 0,
                          'filenamepattern': 'crd_%05d',
-                         'filenamescheme': FileNameScheme.Parts,
+                         'filenamescheme': FileNameScheme.Parts.value,
                          }
         if not cp.has_section('cpt4'):
             cp.add_section('cpt4')
