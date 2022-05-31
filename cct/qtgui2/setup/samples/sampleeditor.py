@@ -95,9 +95,9 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onMultiColumnToggled(self, checked: bool):
         self.multiColumnPushButton.setText('Detailed' if checked else 'Simple')
         self.proxymodel.setSimpleMode(not checked)
-        for column in range(self.proxymodel.columnCount(QtCore.QModelIndex())):
-            self.treeView.resizeColumnToContents(column)
-        self.treeView.resize(self.treeView.minimumSizeHint().width(), self.treeView.height())
+        #for column in range(self.proxymodel.columnCount(QtCore.QModelIndex())):
+        #    self.treeView.resizeColumnToContents(column)
+        #self.treeView.resize(self.treeView.minimumSizeHint().width(), self.treeView.height())
         #self.resize(1, self.height())
 
     @Slot()
