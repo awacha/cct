@@ -113,7 +113,7 @@ class Config(QtCore.QObject):
         if isinstance(dic._data[key[-1]], Config):
             try:
                 dic._data[key[-1]].changed.disconnect(self._subConfigChanged)
-            except TypeError:
+            except (TypeError, RuntimeError):
                 pass
         del dic._data[key[-1]]
         self.autosave()
