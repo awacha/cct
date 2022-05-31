@@ -294,13 +294,19 @@ class Exposer(QtCore.QObject, Component):
             'geometry': self.instrument.geometry.getHeaderEntry(),
             'sample': sample.todict() if sample is not None else {},
             'motors': self.instrument.motors.getHeaderEntry(),
-            'devices': {dev.devicename: dev.toDict() for dev in self.instrument.devicemanager if dev.isOnline()},
+            'devices': {dev.name: dev.toDict() for dev in self.instrument.devicemanager if dev.isOnline()},
             'environment': {},
             'accounting': {'projectid': self.instrument.projects.project().projectid,
                            'operator': self.instrument.auth.username(),
                            'projectname': self.instrument.projects.project().title,
                            'proposer': self.instrument.projects.project().proposer},
         }
+        # devices
+        for dev in self.instrument.devicemanager:
+            if not dev.isOnline():
+                continue
+            data['devices'][dev.name]['devicetype'] = dev.devicetype.value
+            data['devices'][dev.name]['deviceclass'] = dev.devicename
         # environment
         try:
             vac = self.instrument.devicemanager.vacuum()
