@@ -80,7 +80,7 @@ class Summarization(ProcessingTask):
         elif (role == QtCore.Qt.ToolTipRole) and (sd.errormessage is not None):
             return sd.traceback
         elif (role == QtCore.Qt.BackgroundColorRole) and (sd.errormessage is not None):
-            return QtGui.QColor('red').lighter(0.5)
+            return QtGui.QColor('red').lighter(150)
         elif (role == QtCore.Qt.TextColorRole) and (sd.errormessage is not None):
             return QtGui.QColor('black')
         elif (role == QtCore.Qt.UserRole):
