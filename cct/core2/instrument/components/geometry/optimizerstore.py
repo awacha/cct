@@ -5,10 +5,10 @@ from PyQt5 import QtCore
 
 
 class OptimizerStore(QtCore.QAbstractItemModel):
-    _presets: List[Dict[str, Any]]
+    _optimizationresults: List[Dict[str, Any]]
 
     def __init__(self):
-        self._presets = []
+        self._optimizationresults = []
         super().__init__()
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
@@ -16,69 +16,72 @@ class OptimizerStore(QtCore.QAbstractItemModel):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         columnlabel = self.headerData(index.column(), QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
-        preset = self._presets[index.row()]
+        optimizationresult = self._optimizationresults[index.row()]
         if role == QtCore.Qt.UserRole:
-            return preset
+            return optimizationresult
         elif columnlabel == 'Intensity':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["intensity"]:.0f}'
+                return f'{optimizationresult["intensity"]:.0f}'
             elif role == QtCore.Qt.EditRole:
-                return preset["intensity"]
+                return optimizationresult["intensity"]
         elif columnlabel == 'Qmin':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["qmin"]:.4f}'
+                return f'{optimizationresult["qmin"]:.4f}'
             elif role == QtCore.Qt.ToolTipRole:
-                return f'Qmin: {preset["qmin"]:.4f} 1/nm, corresponding to Dmax: {2 * np.pi / preset["qmin"]:.0f} nm periodic distance and Rgmax {1 / preset["qmin"]:.0f} nm radius of gyration.'
+                return f'Qmin: {optimizationresult["qmin"]:.4f} 1/nm, corresponding to Dmax: {2 * np.pi / optimizationresult["qmin"]:.0f} nm periodic distance and Rgmax {1 / optimizationresult["qmin"]:.0f} nm radius of gyration.'
             elif role == QtCore.Qt.EditRole:
-                return preset["qmin"]
+                return optimizationresult["qmin"]
         elif columnlabel == 'Sample':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["dbeam_at_sample"]:.2f}'
+                return f'{optimizationresult["dbeam_at_sample"]:.2f}'
             elif role == QtCore.Qt.ToolTipRole:
-                return f'Beam diameter at sample: {preset["dbeam_at_sample"]:.2f} mm'
+                return f'Beam diameter at sample: {optimizationresult["dbeam_at_sample"]:.2f} mm'
             elif role == QtCore.Qt.EditRole:
-                return preset["dbeam_at_sample"]
+                return optimizationresult["dbeam_at_sample"]
         elif columnlabel == 'Beamstop':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["beamstop"]:.2f}'
+                return f'{optimizationresult["beamstop"]:.2f}'
             elif role == QtCore.Qt.EditRole:
-                return preset["beamstop"]
+                return optimizationresult["beamstop"]
         elif columnlabel == 'PH#1-PH#2':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["l1"]:.0f}'
+                return f'{optimizationresult["l1"]:.0f}'
             elif role == QtCore.Qt.ToolTipRole:
-                return 'Spacers needed: ' + ' + '.join([f'{x:.0f} mm' for x in sorted(preset['l1_elements'])])
+                return 'Spacers needed: ' + ' + '.join(
+                    [f'{x:.0f} mm' for x in sorted(optimizationresult['l1_elements'])])
             elif role == QtCore.Qt.EditRole:
-                return preset["l1"]
+                return optimizationresult["l1"]
         elif columnlabel == 'PH#2-PH#3':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["l2"]:.0f}'
+                return f'{optimizationresult["l2"]:.0f}'
             elif role == QtCore.Qt.ToolTipRole:
-                return 'Spacers needed: ' + ' + '.join([f'{x:.0f} mm' for x in sorted(preset['l2_elements'])])
+                return 'Spacers needed: ' + ' + '.join(
+                    [f'{x:.0f} mm' for x in sorted(optimizationresult['l2_elements'])])
             elif role == QtCore.Qt.EditRole:
-                return preset["l2"]
+                return optimizationresult["l2"]
         elif columnlabel == 'S-D':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["sd"]:.2f}'
+                return f'{optimizationresult["sd"]:.2f}'
             elif role == QtCore.Qt.ToolTipRole:
-                return 'Flight pipes needed: ' + ' + '.join([f'{x:.0f} mm' for x in sorted(preset["flightpipes"])])
+                return 'Flight pipes needed: ' + ' + '.join(
+                    [f'{x:.0f} mm' for x in sorted(optimizationresult["flightpipes"])])
             elif role == QtCore.Qt.EditRole:
-                return preset["sd"]
+                return optimizationresult["sd"]
         elif columnlabel == 'PH#1':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["pinhole_1"]:.0f}'
+                return f'{optimizationresult["pinhole_1"]:.0f}'
             elif role == QtCore.Qt.EditRole:
-                return preset["pinhole_1"]
+                return optimizationresult["pinhole_1"]
         elif columnlabel == 'PH#2':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["pinhole_2"]:.0f}'
+                return f'{optimizationresult["pinhole_2"]:.0f}'
             elif role == QtCore.Qt.EditRole:
-                return preset["pinhole_2"]
+                return optimizationresult["pinhole_2"]
         elif columnlabel == 'PH#3':
             if role == QtCore.Qt.DisplayRole:
-                return f'{preset["pinhole_3"]:.0f}'
+                return f'{optimizationresult["pinhole_3"]:.0f}'
             elif role == QtCore.Qt.EditRole:
-                return preset["pinhole_3"]
+                return optimizationresult["pinhole_3"]
         else:
             assert False
 
@@ -89,7 +92,7 @@ class OptimizerStore(QtCore.QAbstractItemModel):
         return QtCore.QModelIndex()
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return len(self._presets)
+        return len(self._optimizationresults)
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
         return self.createIndex(row, column, None)
@@ -98,25 +101,35 @@ class OptimizerStore(QtCore.QAbstractItemModel):
         columnlabel = self.headerData(column, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
         self.beginResetModel()
         if columnlabel == 'Intensity':
-            self._presets.sort(key=lambda preset: preset["intensity"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["intensity"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'Qmin':
-            self._presets.sort(key=lambda preset: preset["qmin"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["qmin"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'Sample':
-            self._presets.sort(key=lambda preset: preset["dbeam_at_sample"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["dbeam_at_sample"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'Beamstop':
-            self._presets.sort(key=lambda preset: preset["beamstop"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["beamstop"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'PH#1-PH#2':
-            self._presets.sort(key=lambda preset: preset["l1"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["l1"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'PH#2-PH#3':
-            self._presets.sort(key=lambda preset: preset["l2"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["l2"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'S-D':
-            self._presets.sort(key=lambda preset: preset["sd"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["sd"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'PH#1':
-            self._presets.sort(key=lambda preset: preset["pinhole_1"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["pinhole_1"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'PH#2':
-            self._presets.sort(key=lambda preset: preset["pinhole_2"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["pinhole_2"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         elif columnlabel == 'PH#3':
-            self._presets.sort(key=lambda preset: preset["pinhole_3"], reverse=(order == QtCore.Qt.DescendingOrder))
+            self._optimizationresults.sort(key=lambda optresult: optresult["pinhole_3"],
+                                           reverse=(order == QtCore.Qt.DescendingOrder))
         else:
             assert False
         self.endResetModel()
@@ -127,23 +140,25 @@ class OptimizerStore(QtCore.QAbstractItemModel):
                 section]
 
     def addOptResult(self, optresult: Dict[str, Any]):
-        self.beginInsertRows(QtCore.QModelIndex(), len(self._presets), len(self._presets))
-        for key in ['l1_elements', 'l2_elements', 'pinhole_1', 'pinhole_2', 'pinhole_3', 'flightpipes', 'beamstop', 'l1', 'l2', 'ph3todetector', 'sd', 'dbeam_at_ph3', 'dbeam_at_bs', 'dparasitic_at_bs', 'dbeam_at_sample', 'qmin', 'intensity']:
+        self.beginInsertRows(QtCore.QModelIndex(), len(self._optimizationresults), len(self._optimizationresults))
+        for key in ['l1_elements', 'l2_elements', 'pinhole_1', 'pinhole_2', 'pinhole_3', 'flightpipes', 'beamstop',
+                    'l1', 'l2', 'ph3todetector', 'sd', 'dbeam_at_ph3', 'dbeam_at_bs', 'dparasitic_at_bs',
+                    'dbeam_at_sample', 'qmin', 'intensity']:
             assert key in optresult
-        self._presets.append(optresult)
+        self._optimizationresults.append(optresult)
         self.endInsertRows()
 
     def clear(self):
         self.beginResetModel()
-        self._presets = []
+        self._optimizationresults = []
         self.endResetModel()
 
     def __iter__(self) -> Iterator[Dict[str, Any]]:
-        for preset in self._presets:
-            yield preset
+        for result in self._optimizationresults:
+            yield result
 
     def __getitem__(self, item: int) -> Dict[str, Any]:
-        return self._presets[item]
+        return self._optimizationresults[item]
 
     def __len__(self) -> int:
-        return len(self._presets)
+        return len(self._optimizationresults)
