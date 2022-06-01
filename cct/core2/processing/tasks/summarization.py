@@ -12,6 +12,7 @@ from ..calculations.summaryjob import SummaryJob, SummaryJobResults, Results
 from ...algorithms.matrixaverager import ErrorPropagationMethod
 from ..calculations.outliertest import OutlierMethod
 from ...dataclasses.exposure import QRangeMethod
+from ..loader import FileNameScheme
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -142,6 +143,8 @@ class Summarization(ProcessingTask):
                              masksubpath=self.settings.masksubpath,
                              fsndigits=self.settings.fsndigits,
                              prefix=self.settings.prefix,
+                             filenamepattern=self.settings.filenamepattern,
+                             filenamescheme=self.settings.filenamescheme,
                              fsnlist=list(sd.fsns),
                              ierrorprop=ErrorPropagationMethod[attrs['ierrorprop']],
                              qerrorprop=ErrorPropagationMethod[attrs['qerrorprop']],

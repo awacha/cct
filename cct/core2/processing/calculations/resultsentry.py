@@ -90,7 +90,10 @@ class SampleDistanceEntry:
         if self.entrytype in [SampleDistanceEntryType.Merged, SampleDistanceEntryType.Subtracted]:
             return None
         if self._outliertest is None:
-            self._outliertest = self.h5io.readOutlierTest(self.h5path)
+            try:
+                self._outliertest = self.h5io.readOutlierTest(self.h5path)
+            except KeyError:
+                return None
         return self._outliertest
 
     @property
