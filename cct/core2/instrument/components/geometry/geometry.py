@@ -123,7 +123,7 @@ class Geometry(QtCore.QObject, Component):
         ph2 = self.config['geometry']['pinhole_2']
         ph3 = self.config['geometry']['pinhole_3']
 
-        sd = self.config['geometry']['dist_sample_det']
+        sd = float(self.config['geometry']['dist_sample_det'])
         ph3tosample = self.config['geometry']['ph3tosample']
         ph3todetector = ph3tosample + sd
         beamstoptodetector = self.config['geometry']['beamstoptodetector']
@@ -133,12 +133,12 @@ class Geometry(QtCore.QObject, Component):
         self.config['geometry']['dbeam_at_ph3'] = ((ph1 + ph2) * (l1 + l2) / l1 - ph1) / 1000
         dbeamsample = self.config['geometry']['dbeam_at_sample'] = ((ph1 + ph2) * (
                 l1 + l2 + ph3tosample) / l1 - ph1) / 1000
-        self.config['geometry']['dbeam_at_bs'] = ((ph1 + ph2) * (l1 + l2 + ph3tobeamstop) / l1 - ph1) / 1000
-        self.config['geometry']['dparasitic_at_bs'] = ((ph2 + ph3) * (l2 + ph3tobeamstop) / l2 - ph2) / 1000
+        self.config['geometry']['dbeam_at_bs'] = float(((ph1 + ph2) * (l1 + l2 + ph3tobeamstop) / l1 - ph1) / 1000)
+        self.config['geometry']['dparasitic_at_bs'] = float(((ph2 + ph3) * (l2 + ph3tobeamstop) / l2 - ph2) / 1000)
         beamstopshadowradius = ((dbeamsample + beamstopradius) * sd / (sd - beamstoptodetector) - dbeamsample) * 0.5
         try:
-            self.config['geometry']['qmin'] = 4 * np.pi * np.sin(0.5 * np.arctan(beamstopshadowradius / sd)) / \
-                                          self.config['geometry']['wavelength']
+            self.config['geometry']['qmin'] = float(4 * np.pi * np.sin(0.5 * np.arctan(beamstopshadowradius / sd)) / \
+                                          self.config['geometry']['wavelength'])
         except ZeroDivisionError:
             self.config['geometry']['qmin'] = math.nan
 
@@ -152,6 +152,9 @@ class Geometry(QtCore.QObject, Component):
             'beamposx', 'beamposx.err', 'beamposy', 'beamposy.err', 'mask', 'description', 'l1base', 'l2base',
             'isoKFspacer', 'ph3tosample', 'beamstoptodetector', 'ph3toflightpipes', 'pixelsize', 'pixelsize.err',
             'wavelength', 'wavelength.err', 'sourcetoph1', 'lastflightpipetodetector']}
+        for key, value in dic.items():
+            if isinstance(value, np.number):
+                dic[key] = float(value)
         if filename.lower().endswith('.geoj'):
             with open(filename, 'wt') as f:
                 json.dump(dic, f)
@@ -195,7 +198,7 @@ class Geometry(QtCore.QObject, Component):
                     'qmin', 'intensity']:
             logger.debug(f'Updating geometry from optimizer results: {key} <- {optresult[key]}')
             self.config['geometry'][key] = optresult[key]
-        self.config['geometry']['dist_sample_det'] = optresult['sd']
+        self.config['geometry']['dist_sample_det'] = float(optresult['sd'])
         self.config['geometry']['dist_sample_det.err'] = 0.0
         self.config['geometry']['description'] = ''
 
@@ -214,4 +217,7 @@ class Geometry(QtCore.QObject, Component):
                            ('truedistance', 'dist_sample_det'),
                            ('truedistance.err', 'dist_sample_det.err')]:
             dic[key] = self.config['geometry'][alias]
+        for key, value in dic.items():
+            if isinstance(value, np.number):
+                dic[key] = float(value)
         return dic
