@@ -27,7 +27,7 @@ class ShowImageWindow(ResultViewWindow):
         if not samplename:
             fsn = int(distancekey)
             try:
-                ex = self.project.loader().loadExposure(self.project.settings.prefix, fsn)
+                ex = self.project.loader().loadExposure(fsn)
             except Exception as exc:
                 QtWidgets.QMessageBox.critical(self, 'Error', f'Cannot load exposure #{fsn}: {exc}')
                 return

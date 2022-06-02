@@ -22,9 +22,9 @@ class ShowCurveWindow(ResultViewWindow):
         # full redraw every time. This is suboptimal, ToDo
         self.plotCurve.clear()
         for sn, dist in self.resultitems:
-            if not sn:
+            if not sn:  # then dist is the FSN!
                 try:
-                    ex = self.project.loader().loadExposure(self.project.settings.prefix, int(dist))
+                    ex = self.project.loader().loadExposure(int(dist))
                     curve = ex.radial_average(
                         errorprop=self.project.settings.ierrorprop, qerrorprop=self.project.settings.qerrorprop)
                     label = f'{ex.header.title}, #{ex.header.fsn}'
