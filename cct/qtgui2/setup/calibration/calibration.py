@@ -108,8 +108,8 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         if self.exposure is None:
             return
         if self.sender() is self.saveSDDistToolButton:
-            self.instrument.config['geometry']['dist_sample_det'] = self.dist_sample_det[0]
-            self.instrument.config['geometry']['dist_sample_det.err'] = self.dist_sample_det[1]
+            self.instrument.config['geometry']['dist_sample_det'] = float(self.dist_sample_det[0])
+            self.instrument.config['geometry']['dist_sample_det.err'] = float(self.dist_sample_det[1])
             logger.info(f'Updated sample-to-detector distance to {self.dist_sample_det[0]:.5f} \xb1 {self.dist_sample_det[1]:.5f} mm')
         elif self.sender() == self.saveBeamXToolButton:
             self.instrument.config['geometry']['beamposy'] = self.exposure.header.beamposcol[0]
