@@ -10,7 +10,7 @@ from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 PathLike = Union[os.PathLike, str, pathlib.Path]
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Config(QtCore.QObject):
@@ -24,30 +24,48 @@ class Config(QtCore.QObject):
 
     """
 
+    # The `changed` signal is emitted whenever the value of a key changes. Its arguments: the path (tuple of strings)
+    # and the new value (any type)
     changed = Signal(object, object)
+
+    # The name of the associated config file. If not None, any change is written almost instantly.
     filename: Optional[str] = None
     _data: Dict[str, Any]
     _modificationcount: int = 0
     _autosavetimeout: float = 0.1
     _autosavetimer: Optional[int] = None
 
-    def __init__(self, dicorfile: Union[None, Dict[str, Any], str] = None):
-        super().__init__()
+    def __init__(self, dicorfile: Union[None, Dict[str, Any], str] = None, parent: Optional["Config"]=None):
+        """Initialize a new Config instance
+
+        :param dicorfile: the file name to load the configuration from, or a dictionary-like object
+        :type dicorfile: str or dict or None
+        """
+        super().__init__(parent)
         self._data = {}
         if dicorfile is None:
+            # no initialization required
             pass
         elif isinstance(dicorfile, dict):
-            self.__setstate__({} if dicorfile is None else dicorfile.copy())
+            self.__setstate__(dicorfile)
         elif isinstance(dicorfile, str):
             self.load(dicorfile, update=False)
         self.changed.connect(self.onChanged)
 
     def autosave(self):
+        """Request automatic saving of the config.
+
+        Changes are not saved instantly. Instead, a timer of `self._autosavetimeout` seconds is started. Changes
+        in this interval are accumulated, to avoid too frequent disk writes.
+        """
         if self.filename is not None:
+            # only save data if we have a file name
             if self._autosavetimer is not None:
+                # a timer is already running, restart it.
                 self.killTimer(self._autosavetimer)
                 self._autosavetimer = None
-            self._autosavetimer = self.startTimer(int(self._autosavetimeout*1000), QtCore.Qt.PreciseTimer)
+            # start a timer. After the required time interval has elapsed, do the actual saving.
+            self._autosavetimer = self.startTimer(int(self._autosavetimeout * 1000), QtCore.Qt.PreciseTimer)
 
     def timerEvent(self, timerEvent: QtCore.QTimerEvent) -> None:
         if timerEvent.timerId() == self._autosavetimer:
@@ -58,9 +76,40 @@ class Config(QtCore.QObject):
 
     @Slot(object, object)
     def onChanged(self, path: Tuple[str, ...], value: Any):
+        """Whenever something changes, request automatic save."""
         self.autosave()
 
     def __setitem__(self, key: Union[int, str, Tuple[Union[str, int]]], value: Any):
+        """Modify (or create) a new key->value pair using the dict['key'] = value syntax.
+
+        This mimics the behavior of the common Pythonic dict, with a few differences:
+
+        - if `key` is a string or an integer, the behaviour is the same as the dict.
+        - `key` can be a tuple of strings, corresponding to a path in the Config hierarchy.
+            In this case, the job is delegated to the corresponding sub-Config instances
+            below, i.e.:
+            >>> config[('key1', 'key2')] = newvalue
+
+            is equivalent to
+            >>> config['key1']['key2'] = newvalue
+
+            It is also checked (with an assertion) that config['key1'] is also a Config instance.
+
+            The special case of
+            >>> config[('key1', )] = newvalue
+
+            is equivalent to
+            >>> config['key1'] = newvalue
+
+            Supplying a 0-length tuple is an error.
+        - Other key types than int, str, tuple() are not supported.
+
+        Some value types are stored in a special way:
+
+        - If the value is a dict, a sub-Config is created and updated key-by-key. This enforces the creation
+            of a whole Config hierarchy in the case of nested dicts.
+
+        """
         logger.debug(f'Config.__setitem__({key}, {value})')
         if isinstance(key, tuple) and len(key) > 1:
             subconfig = self._data[key[0]]
@@ -71,71 +120,94 @@ class Config(QtCore.QObject):
         elif isinstance(key, tuple) and len(key) == 0:
             raise ValueError('Empty tuples cannot be Config keys!')
         elif not isinstance(key, (str, int)):
-            logger.error(f'Funny key type: {key}, {type(key)}')
-            assert False
-        if not isinstance(value, dict):
+            raise ValueError(f'Invalid key type: {key}, {type(key)}')
+
+        if isinstance(value, Config):
             if key not in self._data:
                 self._data[key] = value
+                value.changed.connect(self._subConfigChanged)
+                self.changed.emit((key,), value)
+            elif self._data[key] is value:
+                return  # physically the same Config instance
+            else:
+                del self._data[key]  # this takes care of all cases, even when the previous value is a Config
+                self[key] = value  # try again
+        elif isinstance(value, dict):
+            # create a Config from that dictionary
+            cfg = Config(value, parent=self)
+            self[key] = cfg  # try again
+        else:
+            # "ordinary" value type, i.e. not dict and not Config
+            if key not in self._data:
+                # nonexistent key, add it in a straightforward fashion.
+                self._data[key] = value
+                self.changed.emit((key,), value)
+            elif isinstance(self._data[key], Config):
+                # updating a Config with a non-config value: we need to disconnect the signal first
+                del self[key]
+                self[key] = value  # try again
+            elif not (isinstance(self._data[key], type(value)) and (self._data[key] == value)):
+                # the key is already present but either the type or the value is different
+                self._data[key] = value
+                # value changed, emit the signal
+                logger.debug(f'Key value changed, emitting change signal.')
                 self.changed.emit((key,), value)
             else:
-                # key already present, see if they are different
-                if not (isinstance(self._data[key], type(value)) and (self._data[key] == value)):
-                    self._data[key] = value
-                    # value changed, emit the signal
-                    logger.debug(f'Key value changed, emitting change signal.')
-                    self.changed.emit((key, ), value)
-                else:
-                    logger.debug(f'No need to change key {key}: type and value are the same')
-                    pass
-        else:
-            # convert it to a Config instance
-            cnf = Config(value)
-            if (key not in self._data) or (not isinstance(self._data[key], Config)):
-                self._data[key] = cnf
-                self._data[key].changed.connect(self._subConfigChanged)
-                self.changed.emit((key,), cnf)
-            elif cnf is not self._data[key]:
-                self._data[key].update(cnf)
-            else:
-                # setting the same config: do nothing.
+                # the key is already present and both the type and value are the same. Nothing needs to be done.
                 pass
         self.autosave()
 
-    def __delitem__(self, key: Union[str, Tuple[str, ...]]):
+    def __delitem__(self, key: Union[int, str, Tuple[Union[str, int], ...]]):
+        """Delete a key->value pair from this Config, invoked by `del config[key]`
+
+        This mimics the corresponding method of the Python dict, except that only ints,
+        strings and tuples of ints/strings can be keys. If the key to be deleted is a tuple,
+        the deletion request is propagated to the bottom.
+        """
         logger.debug(f'Deleting key {key}')
-        if isinstance(key, str):
+        if isinstance(key, (int, str)):
             key = (key,)
         logger.debug(f'Key normalized to {key}')
-        dic = self
-        for k in key[:-1]:
-            dic = dic[k]
-        assert isinstance(dic, Config)
-        if isinstance(dic._data[key[-1]], Config):
-            try:
-                dic._data[key[-1]].changed.disconnect(self._subConfigChanged)
-            except (TypeError, RuntimeError):
-                pass
-        del dic._data[key[-1]]
+        if not isinstance(key, tuple):
+            raise ValueError(f'Invalid key type: {type(key)}')
+        if len(key) == 0:
+            raise ValueError(f'An empty tuple cannot be a key')
+        elif len(key) > 1:
+            # delegate the deletion to a subConfig one level below us in the hierarchy
+            if not isinstance(self._data[key[0]], Config):
+                raise ValueError(f'Invalid path in key {key}')
+            del self._data[key[0]][key[1:]]
+        else:
+            assert len(key) == 1
+            if isinstance(self._data[key[0]], Config):
+                # deleting a sub-config. Disconnect the changed signal first.
+                self._data[key[0]].changed.disconnect(self._subConfigChanged)
+            del self._data[key[0]]
         self.autosave()
 
-    def __getitem__(self, item: Union[str, Tuple[str, ...]]):
-        if isinstance(item, str):
+    def __getitem__(self, item: Union[str, int, Tuple[Union[str, int], ...]]):
+        """Respond to the `config[item]` command.
+        """
+        if isinstance(item, (str, int)):
             return self._data[item]
-        elif isinstance(item, int):
-            return self._data[item]
-        else:
-            dic = self
-            for key in item:
-                dic = dic[key]
-            return dic
-
-    def __getstate__(self) -> Dict[str, Any]:
-        dic = {}
-        for k in self:
-            if isinstance(self[k], Config):
-                dic[k] = self[k].__getstate__()
+        elif isinstance(item, tuple):
+            if len(item) == 0:
+                raise ValueError('An empty tuple cannot be a Config key')
+            elif len(item) == 1:
+                return self._data[item[0]]
             else:
-                dic[k] = self[k]
+                return self._data[item[0]][item[1:]]
+        else:
+            raise ValueError(f'Invalid key type: {type(item)}')
+
+    def __getstate__(self) -> Dict[Union[str, int], Any]:
+        """Convert the whole Config hierarchy to a dict"""
+        dic = {}
+        for key, value in self.items():
+            if isinstance(value, Config):
+                dic[key] = value.__getstate__()
+            else:
+                dic[key] = value
         return dic
 
     def keys(self) -> KeysView:
@@ -148,34 +220,49 @@ class Config(QtCore.QObject):
         return self._data.items()
 
     @Slot(object, object)
-    def _subConfigChanged(self, path, newvalue):
+    def _subConfigChanged(self, path: Tuple[Union[str, int], ...], newvalue: Any):
+        """Slot for reacting to changes in sub-configs."""
         cnf = self.sender()
         # find the key for this `Config` instance
         try:
-            key = [k for k in self.keys() if self[k] is cnf][0]
+            key = [k for k in self.keys() if self._data[k] is cnf][0]
         except IndexError:
             # this `Config` instance does not belong to us, disconnect the signal.
             logger.warning(f'Disconnecting stale `changed` signal handler. Keys in stale config: {list(cnf.keys())}')
             cnf.changed.disconnect(self._subConfigChanged)
         else:
             # extend the path with the key and re-emit the signal.
-            logger.debug(f'Config change in subconfig "{key}", path {path}. Emitting `changed` signal with path "{key}"')
+            logger.debug(
+                f'Config change in subconfig "{key}", path {path}. Emitting `changed` signal with path "{key}"')
             self.changed.emit((key,) + path, newvalue)
         self.autosave()
 
     def update(self, other: Union["Config", Dict]):
-        for key in other:
+        """Mimic the .update() method of the Pythonic dict.
+
+        Extend the current Config instance with all keys in the other one (either dict or Config), where either the key
+        is nonexistent in this, or the value is different (type or value).
+        """
+        if self is other:
+            # Nothing needs to be done
+            return
+        if not isinstance(other, (Config, dict)):
+            raise ValueError(f'Cannot update a Config from other than another Config or a dict.')
+        for key, value in other.items():
             logger.debug(f'Updating {key=}')
-            if isinstance(other[key], Config) or isinstance(other[key], dict):
-                if (key in self) and isinstance(self[key], Config):
-                    logger.debug(f'Key {key} is a Config')
-                    self[key].update(other[key])
-                else:
-                    logger.debug(f'scalar -> dict of key {key}')
-                    self[key] = other[key]
+            if isinstance(value, (Config, dict)) and (key in self._data):
+                # we need to work hierarchically
+                if self._data[key] is value:
+                    # nothing needs to be done
+                    pass
+                # propagate down in the hierarchy
+#                logger.debug(f'Delegating update work of key {key} to value {value}')
+                self._data[key].update(value)
             else:
-                logger.debug(f'simple update of key {key}')
-                self[key] = other[key]
+                logger.debug(f'Simply setting {key} to {value}')
+                # the value is not a Config/dict: we use __setitem__() and it will take care of everything else,
+                # including disconnecting the changed() signal if the previous value is a Config.
+                self[key] = value
         self.autosave()
 
     def __iter__(self):
@@ -190,8 +277,20 @@ class Config(QtCore.QObject):
                 dic = dic[key]
             return item[-1] in dic
 
-    def load(self, picklefile: PathLike, update: bool=True):
-        self.filename = picklefile
+    def load(self, picklefile: PathLike, update: bool = True, autosave: bool=True):
+        """Load the config from a pickle.
+
+        This also sets the `filename` attribute, i.e. autosaving will be enabled.
+
+        :param picklefile: file name of the pickle file to be loaded
+        :type picklefile: PathLike
+        :param update: if True, the already existing config data will only be updated, not overwritten
+        :type update: bool
+        :param autosave: if True, this sets the `filename` attribute, so changes will be saved back automatically
+        :type autosave: bool
+        """
+        if autosave:
+            self.filename = picklefile
         if not update:
             logger.debug(f'Loading configuration from {picklefile}')
             with open(picklefile, 'rb') as f:
@@ -205,22 +304,25 @@ class Config(QtCore.QObject):
         logger.info(f'Loaded configuration from {picklefile}')
 
     def save(self, picklefile: Optional[PathLike] = None):
+        """Save the config to a pickle."""
         if picklefile is None:
             picklefile = self.filename
-        #logger.debug(f'Saving configuration to {picklefile}')
+        # logger.debug(f'Saving configuration to {picklefile}')
         dirs, filename = os.path.split(picklefile)
         os.makedirs(dirs, exist_ok=True)
         with open(picklefile, 'wb') as f:
             pickle.dump(self.__getstate__(), f)
         logger.info(f'Saved configuration to {picklefile}')
 
-    def __setstate__(self, dic: Dict[str, Any]):
-        self._data = dic
-        for key in self._data:
-            # convert dictionaries to `Config` instances and connect to their changed signals.
-            if isinstance(self._data[key], dict):
-                self._data[key] = Config(self._data[key])
-                self._data[key].changed.connect(self._subConfigChanged)
+    def __setstate__(self, dic: Dict[Tuple[str, int], Any]):
+        """Convert a dictionary to a Config instance"""
+        self._data = {}
+        for key, value in dic.items():
+            if isinstance(value, dict):
+                cfg = Config(value, self)
+                self[key] = cfg
+            else:
+                self[key] = value
 
     asdict = __getstate__
 
@@ -233,10 +335,9 @@ class Config(QtCore.QObject):
     def __len__(self):
         return len(self._data)
 
-    def setdefault(self, key: str, value: Any) -> Any:
+    def setdefault(self, key: Union[str, int, Tuple[Union[str, int], ...]], value: Any) -> Any:
         try:
-            return self._data[key]
+            return self[key]
         except KeyError:
-            self[key]=value
-            self.autosave()
+            self[key] = value
             return self[key]
