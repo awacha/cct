@@ -6,7 +6,6 @@ from Cython.Build import cythonize
 from numpy import get_include
 from setuptools import setup, find_packages, Extension
 
-
 try:
     from PyQt5.uic import compileUi
 except ImportError:
@@ -88,7 +87,7 @@ setup(name='cct', author='Andras Wacha',
       install_requires=['appdirs', 'numpy>=1.15.0', 'scipy>=1.0.0', 'matplotlib>=3.0.0',
                         'psutil>=4.1.0', 'h5py', 'pillow', 'openpyxl', 'sqlalchemy',
                         'adjusttext', 'imageio', 'click', 'colorlog', 'pyusb'],
-      entry_points={'gui_scripts': ['cct4 = cct.__main__:main'],
+      entry_points={'gui_scripts': ['cct4 = cct.cmdline.main:main'],
 
                     },
       keywords="saxs sans sas small-angle scattering x-ray instrument control",
