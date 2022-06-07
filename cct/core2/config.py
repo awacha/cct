@@ -10,7 +10,7 @@ from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 PathLike = Union[os.PathLike, str, pathlib.Path]
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Config(QtCore.QObject):
