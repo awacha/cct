@@ -23,7 +23,7 @@ from ....core2.dataclasses import Exposure, Curve
 from ....core2.instrument.components.calibrants.q import QCalibrant
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
@@ -377,6 +377,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         col = np.arange(self.exposure.shape[1])
         idxrow = np.logical_and(row >= min(rowmin, rowmax), row<=max(rowmin, rowmax))
         idxcol = np.logical_and(col >= min(colmin, colmax), col<=max(colmin, colmax))
+        logger.debug(f'Row: {row[idxrow].min()} .. {row[idxrow].max()}, col: {col[idxcol].min()} .. {col[idxcol].max()}')
         smallimg = self.exposure.intensity[idxrow, :][:, idxcol]
         smallrow = row[idxrow]
         smallcol = col[idxcol]
@@ -387,4 +388,5 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         sumimg = smallimg[smallmask].sum()
         bcrow = (smallrow[:, np.newaxis] * smallimg)[smallmask].sum() / sumimg
         bccol = (smallcol[np.newaxis, :] * smallimg)[smallmask].sum() / sumimg
+        logger.debug(f'Beam center from c.o.g. method: {bcrow}, {bccol}')
         self.updateBeamPosition((bcrow, 0), (bccol, 0))
