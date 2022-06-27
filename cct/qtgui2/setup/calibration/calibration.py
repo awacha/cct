@@ -82,6 +82,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.saveBeamXToolButton.clicked.connect(self.saveParameter)
         self.saveBeamYToolButton.clicked.connect(self.saveParameter)
         self.beamXDoubleSpinBox.valueChanged.connect(self.beamPosUIEdit)
+        self.centerOfGravityPushButton.clicked.connect(self.getCentreOfGravity)
 
         self.canvas.draw_idle()
 
@@ -303,7 +304,25 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.exposure = exposure
         self.plotimage.setExposure(self.exposure)
         self.plotcurve.clear()
-        self.curve = self.exposure.radial_average()
+        pixmin, pixmax = self.exposure.validpixelrange()
+        numpoints = int(np.ceil(abs(pixmax - pixmin)))
+        if self.pixMinCheckBox.isChecked():
+            pixmin = self.pixMinDoubleSpinBox.value()
+        else:
+            self.pixMinDoubleSpinBox.setValue(pixmin)
+        if self.pixMaxCheckBox.isChecked():
+            pixmax = self.pixMaxDoubleSpinBox.value()
+        else:
+            self.pixMaxDoubleSpinBox.setValue(pixmax)
+        if self.numPointsCheckBox.isChecked():
+            numpoints = self.numPointsSpinBox.value()
+        else:
+            self.numPointsSpinBox.setValue(numpoints)
+        if self.logSpacedPixelsCheckBox.isChecked():
+            pixrange = np.geomspace(pixmin, pixmax, numpoints)
+        else:
+            pixrange = np.linspace(pixmin, pixmax, numpoints)
+        self.curve = self.exposure.radial_average(self.exposure.pixeltoq(pixrange))
         self.plotcurve.addCurve(self.curve)
         self.plotcurve.setPixelMode(True)
         for spinbox in [self.beamXDoubleSpinBox, self.beamYDoubleSpinBox, self.beamXErrDoubleSpinBox, self.beamYErrDoubleSpinBox]:
@@ -350,3 +369,22 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         if self.manualcursor is not None:
             return
         self.manualcursor = Cursor(self.plotimage.axes, horizOn=True, vertOn=True, useblit=False, color='red', lw='1')
+
+    @Slot()
+    def getCentreOfGravity(self):
+        colmin, colmax, rowmin, rowmax = self.plotimage.axes.axis()
+        row = np.arange(self.exposure.shape[0])
+        col = np.arange(self.exposure.shape[1])
+        idxrow = np.logical_and(row >= min(rowmin, rowmax), row<=max(rowmin, rowmax))
+        idxcol = np.logical_and(col >= min(colmin, colmax), col<=max(colmin, colmax))
+        mask = np.logical_and(
+            self.exposure.mask,
+            np.logical_and(idxrow[:,np.newaxis], idxcol[np.newaxis, :])
+        )
+        smallimg = self.exposure.intensity[np.logical_and(idxrow[:,np.newaxis], idxcol[np.newaxis, :])]
+        smallrow = row[idxrow]
+        smallcol = col[idxcol]
+        sumimg = self.exposure.intensity[mask>0].sum()
+        bcrow = (smallrow[:, np.newaxis] * smallimg).sum() / sumimg
+        bccol = (smallcol[np.newaxis, :] * smallimg).sum() / sumimg
+        self.updateBeamPosition((bcrow, 0), (bccol, 0))

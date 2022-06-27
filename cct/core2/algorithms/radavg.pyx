@@ -22,17 +22,7 @@ def autoq(uint8_t[:,:] mask, double wavelength, double distance, double pixelsiz
         double r2min, r2max, r2, qmin, qmax
         Py_ssize_t irow, icol
 
-    r2min = HUGE_VAL
-    r2max = 0
-    for irow in range(mask.shape[0]):
-        for icol in range(mask.shape[1]):
-            if mask[irow, icol]==0:
-                continue
-            r2 = ((irow - center_row)**2 + (icol - center_col)**2)
-            if r2 > r2max:
-                r2max = r2
-            if r2 < r2min:
-                r2min = r2
+    r2min, r2max = validpixelrange(mask, center_row, center_col)
     qmin = 4 * M_PI * sin(0.5 * atan(sqrt(r2min)*pixelsize/distance))/wavelength
     qmax = 4 * M_PI * sin(0.5 * atan(sqrt(r2max)*pixelsize/distance))/wavelength
     if N <= 0:
@@ -52,6 +42,32 @@ def autoq(uint8_t[:,:] mask, double wavelength, double distance, double pixelsiz
     else:
         raise ValueError(f'Invalid q spacing: {linspacing}')
 
+
+def validpixelrange(uint8_t[:,:] mask, double center_row, double center_col):
+    """Determine the lowest and highest pixel coordinate where the mask is valid
+
+    Inputs:
+        mask (np.ndarray, two dimensions, dtype: uint8): mask matrix (1 valid, 0 invalid).
+        center_row, center_col (double): beam position in pixel (starting from 0)
+
+    Output: (minpixel, maxpixel)
+    """
+    cdef:
+        double r2min, r2max
+        Py_ssize_t irow, icol
+
+    r2min = HUGE_VAL
+    r2max = 0
+    for irow in range(mask.shape[0]):
+        for icol in range(mask.shape[1]):
+            if mask[irow, icol]==0:
+                continue
+            r2 = ((irow - center_row)**2 + (icol - center_col)**2)
+            if r2 > r2max:
+                r2max = r2
+            if r2 < r2min:
+                r2min = r2
+    return r2min**0.5, r2max**0.5
 
 
 def radavg(double[:,:] data, double[:,:] error, uint8_t[:,:] mask,

@@ -37,6 +37,100 @@
          </widget>
         </item>
         <item>
+         <widget class="QGroupBox" name="groupBox_3">
+          <property name="toolTip">
+           <string>Adjust the abscissa of the azimuthally averaged scattering curves</string>
+          </property>
+          <property name="title">
+           <string>Azimuthal averaging</string>
+          </property>
+          <layout class="QFormLayout" name="formLayout">
+           <item row="0" column="0">
+            <widget class="QCheckBox" name="pixMinCheckBox">
+             <property name="toolTip">
+              <string>Manually set the lowest pixel coordinate in the azimuthally averaged scattering curves</string>
+             </property>
+             <property name="text">
+              <string>Min. radius (pixel):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QDoubleSpinBox" name="pixMinDoubleSpinBox">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>Lowest pixel coordinate in the azimuthally averaged scattering curves</string>
+             </property>
+             <property name="maximum">
+              <double>999999999.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="pixMaxDoubleSpinBox">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>Highest pixel coordinate in the azimuthally averaged scattering curves</string>
+             </property>
+             <property name="maximum">
+              <double>9999999999.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="numPointsSpinBox">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>The number of points in the azimuthally averaged scattering curve</string>
+             </property>
+             <property name="minimum">
+              <number>2</number>
+             </property>
+             <property name="maximum">
+              <number>999999999</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="pixMaxCheckBox">
+             <property name="toolTip">
+              <string>Manually set the highest pixel coordinate in the azimuthally averaged scattering curves</string>
+             </property>
+             <property name="text">
+              <string>Max. radius (pixel):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="numPointsCheckBox">
+             <property name="toolTip">
+              <string>Manually set the number of points in the azimuthally averaged scattering curve</string>
+             </property>
+             <property name="text">
+              <string>Number of points:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="2">
+            <widget class="QCheckBox" name="logSpacedPixelsCheckBox">
+             <property name="toolTip">
+              <string>Logarithmic pixel point spacing in the azimuthally averaged scattering curve</string>
+             </property>
+             <property name="text">
+              <string>Logarithmic spacing</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <widget class="QGroupBox" name="groupBox_4">
           <property name="title">
            <string>Centering</string>
@@ -121,6 +215,16 @@
               <widget class="QPushButton" name="manualCenteringPushButton">
                <property name="text">
                 <string>Manual</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="centerOfGravityPushButton">
+               <property name="toolTip">
+                <string>Determine the beam centre as the centre of gravity of the selected area of the image</string>
+               </property>
+               <property name="text">
+                <string>C.o.g.</string>
                </property>
               </widget>
              </item>
@@ -749,6 +853,17 @@
   </widget>
  </widget>
  <tabstops>
+  <tabstop>pixMinCheckBox</tabstop>
+  <tabstop>pixMinDoubleSpinBox</tabstop>
+  <tabstop>pixMaxCheckBox</tabstop>
+  <tabstop>pixMaxDoubleSpinBox</tabstop>
+  <tabstop>numPointsCheckBox</tabstop>
+  <tabstop>numPointsSpinBox</tabstop>
+  <tabstop>logSpacedPixelsCheckBox</tabstop>
+  <tabstop>centeringMethodComboBox</tabstop>
+  <tabstop>finiteDifferenceDeltaDoubleSpinBox</tabstop>
+  <tabstop>centeringPushButton</tabstop>
+  <tabstop>manualCenteringPushButton</tabstop>
   <tabstop>uncalibratedValDoubleSpinBox</tabstop>
   <tabstop>uncalibratedErrDoubleSpinBox</tabstop>
   <tabstop>fitLorentzPushButton</tabstop>
@@ -760,7 +875,6 @@
   <tabstop>addPairToolButton</tabstop>
   <tabstop>removePairToolButton</tabstop>
   <tabstop>pairsTreeWidget</tabstop>
-  <tabstop>tabWidget</tabstop>
   <tabstop>beamXDoubleSpinBox</tabstop>
   <tabstop>beamXErrDoubleSpinBox</tabstop>
   <tabstop>saveBeamXToolButton</tabstop>
@@ -770,9 +884,59 @@
   <tabstop>sdDistDoubleSpinBox</tabstop>
   <tabstop>sdDistErrDoubleSpinBox</tabstop>
   <tabstop>saveSDDistToolButton</tabstop>
+  <tabstop>tabWidget</tabstop>
  </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>pixMinCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>pixMinDoubleSpinBox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>88</x>
+     <y>90</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>203</x>
+     <y>92</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pixMaxCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>pixMaxDoubleSpinBox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>71</x>
+     <y>115</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>234</x>
+     <y>121</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>numPointsCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>numPointsSpinBox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>67</x>
+     <y>150</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>223</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

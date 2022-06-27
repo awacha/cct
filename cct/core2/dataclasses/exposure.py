@@ -8,7 +8,7 @@ from .azimuthalcurve import AzimuthalCurve
 from .curve import Curve
 from .header import Header
 from ..algorithms.matrixaverager import ErrorPropagationMethod, MatrixAverager
-from ..algorithms.radavg import radavg, autoq, azimavg
+from ..algorithms.radavg import radavg, autoq, azimavg, validpixelrange
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -153,3 +153,8 @@ class Exposure:
     def pixeltoq(self, pixel: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         return 4 * np.pi * np.sin(0.5 * np.arctan(pixel * self.header.pixelsize[0] / self.header.distance[0])) / \
                self.header.wavelength[0]
+
+    def validpixelrange(self) -> Tuple[float, float]:
+        """Return the valid pixel range, i.e. the lowest and highest distance from the origin of the
+        valid pixels"""
+        return validpixelrange(self.mask, self.header.beamposrow[0], self.header.beamposcol[0])
