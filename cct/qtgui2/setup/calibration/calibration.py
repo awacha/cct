@@ -357,7 +357,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         logger.debug(f'{rmin=}, {rmax=}')
         algorithm = centeringalgorithms[self.centeringMethodComboBox.currentText()]
         self.updateBeamPosition(
-            *findbeam(algorithm, self.exposure, rmin, rmax, 0, 0, eps=self.finiteDifferenceDeltaDoubleSpinBox.value()), numabscissa=len(curve))
+            *findbeam(algorithm, self.exposure, rmin, rmax, 0, 0, eps=self.finiteDifferenceDeltaDoubleSpinBox.value(), numabscissa=len(curve)))
 
     def updateBeamPosition(self, row: Tuple[float, float], col: Tuple[float, float]):
         if self.exposure is None:
