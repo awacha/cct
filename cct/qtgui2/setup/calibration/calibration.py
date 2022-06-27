@@ -83,6 +83,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.saveBeamYToolButton.clicked.connect(self.saveParameter)
         self.beamXDoubleSpinBox.valueChanged.connect(self.beamPosUIEdit)
         self.centerOfGravityPushButton.clicked.connect(self.getCentreOfGravity)
+        self.recalculateRadialCurvePushButton.clicked.connect(self.resetExposure)
 
         self.canvas.draw_idle()
 
@@ -299,6 +300,10 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
     def onFSNSelected(self, prefix: str, index: int):
         logger.debug(f'FSN selected: {prefix=} {index=}')
         self.setExposure(self.instrument.io.loadExposure(prefix, index, raw=True, check_local=True))
+
+    @Slot()
+    def resetExposure(self):
+        self.setExposure(self.exposure)
 
     def setExposure(self, exposure: Exposure):
         self.exposure = exposure
