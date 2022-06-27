@@ -17,8 +17,8 @@ def powerlawtargetfunc(params, x, y):
     return y - params[0] * x ** params[1]
 
 
-def peakheight(beampos, matrix, mask, rmin, rmax):
-    pixel, intensity, area = fastradavg(matrix, mask, beampos[0], beampos[1], rmin, rmax, 20)
+def peakheight(beampos, matrix, mask, rmin, rmax, numabscissa):
+    pixel, intensity, area = fastradavg(matrix, mask, beampos[0], beampos[1], rmin, rmax, 20 if numabscissa is None else numabscissa)
     result = scipy.optimize.least_squares(
         lorentziantargetfunc,
         [(rmax - rmin) * 0.5,
@@ -34,8 +34,8 @@ def peakheight(beampos, matrix, mask, rmin, rmax):
     return -(result.x[2] + result.x[3])
 
 
-def peakwidth(beampos, matrix, mask, rmin, rmax):
-    pixel, intensity, area = fastradavg(matrix, mask, beampos[0], beampos[1], rmin, rmax, 20)
+def peakwidth(beampos, matrix, mask, rmin, rmax, numabscissa):
+    pixel, intensity, area = fastradavg(matrix, mask, beampos[0], beampos[1], rmin, rmax, 20 if numabscissa is None else numabscissa)
     result = scipy.optimize.least_squares(
         lorentziantargetfunc,
         [(rmax - rmin) * 0.5,
@@ -53,8 +53,8 @@ def peakwidth(beampos, matrix, mask, rmin, rmax):
     return result.x[0]
 
 
-def slices(beampos, matrix, mask, rmin, rmax):
-    N = int(rmax - rmin)
+def slices(beampos, matrix, mask, rmin, rmax, numabscissa):
+    N = int(rmax - rmin) if numabscissa is None else numabscissa
     pixels = np.empty((N, 4))
     intensities = np.empty((N, 4))
     areas = np.empty((N, 4))
@@ -67,8 +67,8 @@ def slices(beampos, matrix, mask, rmin, rmax):
                 intensities[valid, 1] - intensities[valid, 3]) ** 2).mean()
 
 
-def powerlaw(beampos, matrix, mask, rmin, rmax):
-    pixel, intensity, area = fastradavg(matrix, mask, beampos[0], beampos[1], rmin, rmax, 20)
+def powerlaw(beampos, matrix, mask, rmin, rmax, numabscissa):
+    pixel, intensity, area = fastradavg(matrix, mask, beampos[0], beampos[1], rmin, rmax, 20 if numabscissa is None else numabscissa)
     valid = np.logical_and(np.isfinite(pixel), np.isfinite(intensity))
     pixel = pixel[valid]
     intensity = intensity[valid]
@@ -83,11 +83,11 @@ def powerlaw(beampos, matrix, mask, rmin, rmax):
     return result.cost
 
 
-def momentofinertia(beampos, matrix, mask, rmin, rmax):
+def momentofinertia(beampos, matrix, mask, rmin, rmax, numabscissa):
     return -_momentofinertia(matrix, mask, beampos[0], beampos[1], rmin, rmax)
 
 
-def azimuthal(beampos, matrix, mask, rmin, rmax):
+def azimuthal(beampos, matrix, mask, rmin, rmax, numabscissa):
     msk = maskforannulus(mask, beampos[0], beampos[1], rmin, rmax)
     phi, intensity, area = fastazimavg(matrix, msk, beampos[0], beampos[1], int((rmin + rmax) * np.pi / 2))
     binarea_q1, binarea_q3 = np.percentile(area, [25, 75])
@@ -96,7 +96,7 @@ def azimuthal(beampos, matrix, mask, rmin, rmax):
     return intensity[np.logical_and(binok, area > 0)].std()
 
 
-def azimuthal_fold(beampos, matrix, mask, rmin, rmax):
+def azimuthal_fold(beampos, matrix, mask, rmin, rmax, numabscissa):
     msk = maskforannulus(mask, beampos[0], beampos[1], rmin, rmax)
     phi, intensity, area = fastazimavg(matrix, msk, beampos[0], beampos[1], int((rmin + rmax) * np.pi / 4) * 2)
     binarea_q1, binarea_q3 = np.percentile(area, [25, 75])

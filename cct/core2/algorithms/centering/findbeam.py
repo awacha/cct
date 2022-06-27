@@ -32,7 +32,7 @@ def findbeam_crude(targetfunc, exposure, rmin, rmax, d=30, N=10) -> Tuple[float,
     return bestposition
 
 
-def findbeam(algorithm, exposure, rmin, rmax, dcrude=30, Ncrude=10, eps=0.01):
+def findbeam(algorithm, exposure, rmin, rmax, dcrude=30, Ncrude=10, eps=0.01, numabscissa=None):
     if dcrude > 0 and Ncrude > 2:
         crudeposition = findbeam_crude(algorithm, exposure, rmin, rmax, dcrude, Ncrude)
     else:
@@ -40,7 +40,7 @@ def findbeam(algorithm, exposure, rmin, rmax, dcrude=30, Ncrude=10, eps=0.01):
     result = scipy.optimize.minimize(
         algorithm,
         np.array(crudeposition),
-        args=(exposure.intensity, exposure.mask, rmin, rmax),
+        args=(exposure.intensity, exposure.mask, rmin, rmax, numabscissa),
         method='L-BFGS-B',
         options={'ftol': 1e7 * np.finfo(float).eps,
                  'eps': eps,  # finite step size for approximating the jacobian

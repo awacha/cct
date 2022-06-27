@@ -352,7 +352,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         logger.debug(f'{rmin=}, {rmax=}')
         algorithm = centeringalgorithms[self.centeringMethodComboBox.currentText()]
         self.updateBeamPosition(
-            *findbeam(algorithm, self.exposure, rmin, rmax, 0, 0, eps=self.finiteDifferenceDeltaDoubleSpinBox.value()))
+            *findbeam(algorithm, self.exposure, rmin, rmax, 0, 0, eps=self.finiteDifferenceDeltaDoubleSpinBox.value()), numabscissa=len(curve))
 
     def updateBeamPosition(self, row: Tuple[float, float], col: Tuple[float, float]):
         if self.exposure is None:
@@ -378,7 +378,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         idxrow = np.logical_and(row >= min(rowmin, rowmax), row<=max(rowmin, rowmax))
         idxcol = np.logical_and(col >= min(colmin, colmax), col<=max(colmin, colmax))
         mask = np.logical_and(
-            self.exposure.mask,
+            self.exposure.mask if self.plotimage.showMaskToolButton.isChecked() else np.ones_like(self.exposure.mask),
             np.logical_and(idxrow[:,np.newaxis], idxcol[np.newaxis, :])
         )
         smallimg = self.exposure.intensity[np.logical_and(idxrow[:,np.newaxis], idxcol[np.newaxis, :])]
