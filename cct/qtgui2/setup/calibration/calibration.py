@@ -381,10 +381,11 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
             self.exposure.mask if self.plotimage.showMaskToolButton.isChecked() else np.ones_like(self.exposure.mask),
             np.logical_and(idxrow[:,np.newaxis], idxcol[np.newaxis, :])
         )
-        smallimg = self.exposure.intensity[np.logical_and(idxrow[:,np.newaxis], idxcol[np.newaxis, :])]
+        smallimg = self.exposure.intensity[idxrow, idxcol]
         smallrow = row[idxrow]
         smallcol = col[idxcol]
+        smallmask = mask[idxrow, idxcol]
         sumimg = self.exposure.intensity[mask>0].sum()
-        bcrow = (smallrow[:, np.newaxis] * smallimg).sum() / sumimg
-        bccol = (smallcol[np.newaxis, :] * smallimg).sum() / sumimg
+        bcrow = (smallrow[:, np.newaxis] * smallimg)[smallmask].sum() / sumimg
+        bccol = (smallcol[np.newaxis, :] * smallimg)[smallmask].sum() / sumimg
         self.updateBeamPosition((bcrow, 0), (bccol, 0))
