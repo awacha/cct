@@ -385,7 +385,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
             self.exposure.mask
             if self.plotimage.showMaskToolButton.isChecked()
             else np.ones_like(self.exposure.mask))[idxrow, :][:,idxcol]
-        logger.debug(f'Valid pixels: {smallmask.sum()}. Invalid pixels: {(~smallmask).sum()}')
+        logger.debug(f'Valid pixels: {smallmask.sum()}. Invalid pixels: {(~smallmask).sum()}, {smallmask.shape=}, {idxrow.sum()=}, {idxcol.sum()=}, {idxrow.sum()*idxcol.sum()=}')
         sumimg = smallimg[smallmask].sum()
         bcrow = (smallrow[:, np.newaxis] * smallimg)[smallmask].sum() / sumimg
         bccol = (smallcol[np.newaxis, :] * smallimg)[smallmask].sum() / sumimg
