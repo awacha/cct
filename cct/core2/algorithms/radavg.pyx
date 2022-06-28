@@ -19,14 +19,14 @@ def autoq(uint8_t[:,:] mask, double wavelength, double distance, double pixelsiz
     Output: the q scale in a numpy vector.
     """
     cdef:
-        double r2min, r2max, r2, qmin, qmax
+        double rmin, rmax, r2, qmin, qmax
         Py_ssize_t irow, icol
 
-    r2min, r2max = validpixelrange(mask, center_row, center_col)
-    qmin = 4 * M_PI * sin(0.5 * atan(sqrt(r2min)*pixelsize/distance))/wavelength
-    qmax = 4 * M_PI * sin(0.5 * atan(sqrt(r2max)*pixelsize/distance))/wavelength
+    rmin, rmax = validpixelrange(mask, center_row, center_col)
+    qmin = 4 * M_PI * sin(0.5 * atan(rmin*pixelsize/distance))/wavelength
+    qmax = 4 * M_PI * sin(0.5 * atan(rmax*pixelsize/distance))/wavelength
     if N <= 0:
-        N = <Py_ssize_t>(r2max**0.5 - r2min**0.5)+1
+        N = <Py_ssize_t>(rmax - rmin)+1
 
     if linspacing == 1:
         return np.linspace(qmin, qmax, N)
