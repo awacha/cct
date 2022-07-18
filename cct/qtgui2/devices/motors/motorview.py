@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot as Slot
@@ -136,7 +136,8 @@ class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.motorCalibrationDialog.setFocus()
 
     @Slot(bool)
-    def onMotorCalibrationDialogFinished(self, accepted: bool):
+    @Slot(int)
+    def onMotorCalibrationDialogFinished(self, accepted: Union[int, bool]):
         if accepted:
             motor = self.instrument.motors[self.motorCalibrationDialog.motorname]
             motor.setLimits(self.motorCalibrationDialog.leftLimit(), self.motorCalibrationDialog.rightLimit())
