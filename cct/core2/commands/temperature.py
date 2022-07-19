@@ -155,7 +155,7 @@ class SetTemperature(ThermostatCommand):
     @Slot(bool, str, str)
     def onThermostatCommandResult(self, success: bool, commandname: str, message: str):
         if commandname != 'setpoint':
-            logger.warning(f'Reply from an unexpected command {commandname} instead from {self.sentcommand}.')
+            logger.warning(f'Reply from an unexpected command {commandname} instead from "setpoint".')
         elif not success:
             self.disconnectThermostat()
             self.fail('Cannot set setpoint on the thermostat.')
