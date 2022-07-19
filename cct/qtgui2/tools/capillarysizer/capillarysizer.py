@@ -107,7 +107,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         params['outerdiameter'].max = np.nanmax(x[idx]) - np.nanmin(x[idx])
         params['outerdiameter'].vary = self.profileFitOuterDiameterCeckBox.isChecked()
         params['wallthickness'].min = 0
-        params['wallthickness'].max = params['outerdiameter'].max()
+        params['wallthickness'].max = params['outerdiameter']
         params['wallthickness'].vary = self.profileFitWallThicknessCheckBox.isChecked()
         params['sampleabsorptionlength'].min = 10**self.profileFitSampleAbsorptionLengthDoubleSpinBox.decimals()
         params['sampleabsorptionlength'].max = self.profileFitSampleAbsorptionLengthDoubleSpinBox.maximum()

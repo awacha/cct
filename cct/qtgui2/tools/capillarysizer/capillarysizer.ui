@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1075</width>
-    <height>257</height>
+    <width>1407</width>
+    <height>193</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1117,6 +1117,9 @@
              <height>48</height>
             </size>
            </property>
+           <property name="shortcut">
+            <string>.</string>
+           </property>
           </widget>
          </item>
          <item row="0" column="1">
@@ -1774,6 +1777,9 @@
              <height>48</height>
             </size>
            </property>
+           <property name="shortcut">
+            <string>.</string>
+           </property>
           </widget>
          </item>
         </layout>
@@ -1798,56 +1804,17 @@
          <property name="verticalSpacing">
           <number>0</number>
          </property>
-         <item row="6" column="2">
-          <widget class="QLabel" name="label_19">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>±</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="QCheckBox" name="profileFitWallAbsorptionLengthCheckBox">
+         <item row="0" column="0">
+          <widget class="QCheckBox" name="profileFitI0CheckBox">
            <property name="toolTip">
-            <string>If checked, the absorption length of the wall is variable during the least-squares fit</string>
+            <string>If checked, the empty intensity is variable during the least-squares fit</string>
            </property>
            <property name="text">
-            <string>Wall abs. length:</string>
+            <string>Empty intensity:</string>
            </property>
           </widget>
          </item>
-         <item row="5" column="2">
-          <widget class="QLabel" name="label_18">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>±</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="0">
-          <widget class="QLabel" name="label_11">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Beam discretization:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
+         <item row="0" column="4">
           <widget class="QCheckBox" name="profileFitSampleAbsorptionLengthCheckBox">
            <property name="toolTip">
             <string>If checked, the sample absorption length is variable during the least-squares fit</string>
@@ -1857,32 +1824,16 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QCheckBox" name="profileFitPositionCheckBox">
-           <property name="toolTip">
-            <string>If checked, the capillary position is variable during the least-squares fit</string>
-           </property>
-           <property name="text">
-            <string>Position:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
-          <widget class="QDoubleSpinBox" name="profileFitWallAbsorptionLengthDoubleSpinBox">
+         <item row="2" column="2">
+          <widget class="QLabel" name="label_14">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
-           <property name="decimals">
-            <number>4</number>
-           </property>
-           <property name="maximum">
-            <double>100000000000000.000000000000000</double>
-           </property>
-           <property name="value">
-            <double>0.139000000000000</double>
+           <property name="text">
+            <string>±</string>
            </property>
           </widget>
          </item>
@@ -1899,18 +1850,8 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="0">
-          <widget class="QCheckBox" name="profileFitI0CheckBox">
-           <property name="toolTip">
-            <string>If checked, the empty intensity is variable during the least-squares fit</string>
-           </property>
-           <property name="text">
-            <string>Empty intensity:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="2">
-          <widget class="QLabel" name="label_16">
+         <item row="0" column="6">
+          <widget class="QLabel" name="label_17">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -1919,6 +1860,41 @@
            </property>
            <property name="text">
             <string>±</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QDoubleSpinBox" name="profileFitWallThicknessDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
+           <property name="maximum">
+            <double>100000000000000.000000000000000</double>
+           </property>
+           <property name="value">
+            <double>0.010000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="3">
+          <widget class="QLabel" name="profileFitWallThicknessUncertaintyLabel">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>--</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -1945,19 +1921,23 @@
            </property>
           </widget>
          </item>
-         <item row="6" column="1">
-          <widget class="QDoubleSpinBox" name="profileFitBeamSigmaDoubleSpinBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+         <item row="1" column="0">
+          <widget class="QCheckBox" name="profileFitPositionCheckBox">
+           <property name="toolTip">
+            <string>If checked, the capillary position is variable during the least-squares fit</string>
            </property>
-           <property name="decimals">
-            <number>4</number>
+           <property name="text">
+            <string>Position:</string>
            </property>
-           <property name="maximum">
-            <double>100000000000000.000000000000000</double>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QCheckBox" name="profileFitWallThicknessCheckBox">
+           <property name="toolTip">
+            <string>If checked, the wall thickness is variable during the least-squares fit</string>
+           </property>
+           <property name="text">
+            <string>Wall thickness:</string>
            </property>
           </widget>
          </item>
@@ -1980,16 +1960,19 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="2">
-          <widget class="QLabel" name="label_17">
+         <item row="0" column="3">
+          <widget class="QLabel" name="profileFitI0UncertaintyLabel">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
            <property name="text">
-            <string>±</string>
+            <string>--</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -2009,78 +1992,7 @@
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
-          <widget class="QDoubleSpinBox" name="profileFitWallThicknessDoubleSpinBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="decimals">
-            <number>4</number>
-           </property>
-           <property name="maximum">
-            <double>100000000000000.000000000000000</double>
-           </property>
-           <property name="value">
-            <double>0.010000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="QLabel" name="label_14">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>±</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="1">
-          <widget class="QSpinBox" name="profileFitNBeamSpinBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimum">
-            <number>1</number>
-           </property>
-           <property name="maximum">
-            <number>1000</number>
-           </property>
-           <property name="value">
-            <number>100</number>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QCheckBox" name="profileFitBeamSigmaCheckBox">
-           <property name="toolTip">
-            <string>If checked, the beam profile width parameter is variable during the least-squares fit</string>
-           </property>
-           <property name="text">
-            <string>Beam profile std.dev:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QCheckBox" name="profileFitWallThicknessCheckBox">
-           <property name="toolTip">
-            <string>If checked, the wall thickness is variable during the least-squares fit</string>
-           </property>
-           <property name="text">
-            <string>Wall thickness:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="1">
+         <item row="0" column="5">
           <widget class="QDoubleSpinBox" name="profileFitSampleAbsorptionLengthDoubleSpinBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
@@ -2099,27 +2011,8 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QDoubleSpinBox" name="profileFitOuterDiameterDoubleSpinBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="decimals">
-            <number>4</number>
-           </property>
-           <property name="maximum">
-            <double>100000000000000.000000000000000</double>
-           </property>
-           <property name="value">
-            <double>1.500000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="3">
-          <widget class="QLabel" name="profileFitI0UncertaintyLabel">
+         <item row="2" column="3">
+          <widget class="QLabel" name="profileFitOuterDiameterUncertaintyLabel">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -2150,39 +2043,52 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="3">
-          <widget class="QLabel" name="profileFitOuterDiameterUncertaintyLabel">
+         <item row="3" column="2">
+          <widget class="QLabel" name="label_16">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
            <property name="text">
-            <string>--</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <string>±</string>
            </property>
           </widget>
          </item>
-         <item row="3" column="3">
-          <widget class="QLabel" name="profileFitWallThicknessUncertaintyLabel">
+         <item row="7" column="2" colspan="2">
+          <widget class="QPushButton" name="profileFitPushButton">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
            <property name="text">
-            <string>--</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <string>Fit</string>
            </property>
           </widget>
          </item>
-         <item row="4" column="3">
+         <item row="2" column="1">
+          <widget class="QDoubleSpinBox" name="profileFitOuterDiameterDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
+           <property name="maximum">
+            <double>100000000000000.000000000000000</double>
+           </property>
+           <property name="value">
+            <double>1.500000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="7">
           <widget class="QLabel" name="profileFitSampleAbsorptionLengthUncertaintyLabel">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -2198,7 +2104,72 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="3">
+         <item row="1" column="4">
+          <widget class="QCheckBox" name="profileFitWallAbsorptionLengthCheckBox">
+           <property name="toolTip">
+            <string>If checked, the absorption length of the wall is variable during the least-squares fit</string>
+           </property>
+           <property name="text">
+            <string>Wall abs. length:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="4">
+          <widget class="QCheckBox" name="profileFitBeamSigmaCheckBox">
+           <property name="toolTip">
+            <string>If checked, the beam profile width parameter is variable during the least-squares fit</string>
+           </property>
+           <property name="text">
+            <string>Beam profile std.dev:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="4">
+          <widget class="QLabel" name="label_11">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Beam discretization:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="5">
+          <widget class="QDoubleSpinBox" name="profileFitWallAbsorptionLengthDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
+           <property name="maximum">
+            <double>100000000000000.000000000000000</double>
+           </property>
+           <property name="value">
+            <double>0.139000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="6">
+          <widget class="QLabel" name="label_18">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>±</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="7">
           <widget class="QLabel" name="profileFitWallAbsorptionLengthUncertaintyLabel">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -2214,7 +2185,36 @@
            </property>
           </widget>
          </item>
-         <item row="6" column="3">
+         <item row="2" column="5">
+          <widget class="QDoubleSpinBox" name="profileFitBeamSigmaDoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="decimals">
+            <number>4</number>
+           </property>
+           <property name="maximum">
+            <double>100000000000000.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="6">
+          <widget class="QLabel" name="label_19">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>±</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="7">
           <widget class="QLabel" name="profileFitBeamSigmaUncertaintyLabel">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
@@ -2230,16 +2230,22 @@
            </property>
           </widget>
          </item>
-         <item row="7" column="2" colspan="2">
-          <widget class="QPushButton" name="profileFitPushButton">
+         <item row="3" column="5" colspan="3">
+          <widget class="QSpinBox" name="profileFitNBeamSpinBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
-           <property name="text">
-            <string>Fit</string>
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+           <property name="value">
+            <number>100</number>
            </property>
           </widget>
          </item>
