@@ -70,6 +70,9 @@ extensions = [Extension("cct.core2.algorithms.radavg",
               Extension("cct.core2.algorithms.schilling",
                         [os.path.join("cct", "core2", "algorithms", "schilling.pyx")],
                         include_dirs=[get_include()]),
+              Extension("cct.core2.algorithms.capillarytransmission",
+                        [os.path.join("cct", "core2", "algorithms", "capillarytransmission.pyx")],
+                        include_dirs=[get_include()]),
               ]
 
 print(get_include())
@@ -86,7 +89,7 @@ setup(name='cct', author='Andras Wacha',
       ext_modules=cythonize(extensions),
       install_requires=['appdirs', 'numpy>=1.15.0', 'scipy>=1.0.0', 'matplotlib>=3.0.0',
                         'psutil>=4.1.0', 'h5py', 'pillow', 'openpyxl', 'sqlalchemy',
-                        'adjusttext', 'imageio', 'click', 'colorlog', 'pyusb'],
+                        'adjusttext', 'imageio', 'click', 'colorlog', 'pyusb', 'lmfit', 'numdifftools'],
       entry_points={'gui_scripts': ['cct4 = cct.cmdline.main:main'],
 
                     },

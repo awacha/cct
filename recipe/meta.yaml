@@ -29,6 +29,8 @@ requirements:
     - imageio
     - click
     - colorlog
+    - lmfit
+    - numdifftools
 
   host: *id1
 
@@ -48,6 +50,8 @@ requirements:
     - imageio
     - click
     - colorlog
+    - lmfit
+    - numdifftools
 
 about:
   home: https://github.com/awacha/cct
