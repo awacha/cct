@@ -174,8 +174,8 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.progressBar.setRange(0, 0)
         self.progressBar.setFormat('Starting scan...')
 
-    @Slot(bool, int)
-    def onScanEnded(self, success: bool,  scanindex: int):
+    @Slot(bool, int, str)
+    def onScanEnded(self, success: bool,  scanindex: int, message: str):
         for widget in [self.motorComboBox, self.rangeTypeComboBox, self.rangeMinDoubleSpinBox,
                        self.rangeMaxDoubleSpinBox, self.stepCountSpinBox, self.stepSizeDoubleSpinBox,
                        self.countingTimeDoubleSpinBox, self.commentLineEdit, self.shutterCheckBox,
@@ -196,6 +196,8 @@ class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.scan.scanfinished.disconnect(self.onScanEnded)
         self.instrument.scan.scanpointreceived.disconnect(self.onScanPointReceived)
         self.instrument.scan.scanprogress.disconnect(self.onScanProgress)
+        if not success:
+            QtWidgets.QMessageBox.critical(self, "Error while scan", f"Scan ended with an error message: {message}")
         self.setIdle()
         self.shrinkWindow()
 

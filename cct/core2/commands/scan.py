@@ -52,14 +52,14 @@ class ScanCommand(Command):
     def onScanStarted(self, scanindex: int, steps: int):
         self.message.emit(f'Started scan #{scanindex}')
 
-    @Slot(bool, int)
-    def onScanFinished(self, success: bool, scanindex: int):
+    @Slot(bool, int, str)
+    def onScanFinished(self, success: bool, scanindex: int, message: str):
         self.disconnectScanComponent()
         if success:
-            self.message.emit(f'Scan {scanindex} finished successfully')
+            self.message.emit(f'Scan {scanindex} finished successfully. Message: {message}')
             self.finish(scanindex)
         else:
-            self.fail(scanindex)
+            self.fail(message)
 
     @Slot(float, float, float, str)
     def onScanProgress(self, start: float, end: float, current: float, message: str):

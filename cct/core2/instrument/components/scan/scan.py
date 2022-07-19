@@ -28,7 +28,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
     scanstarted = Signal(int, int)  # scanindex, number of steps
     scanpointreceived = Signal(int, int, int, tuple)  # scanindex, current scan point, total number of scan points, readings
     scanprogress = Signal(float, float, float, str)  # start, end, current, message
-    scanfinished = Signal(bool, int)
+    scanfinished = Signal(bool, int, str)
     scanrecorder: Optional[ScanRecorder] = None
 
     def __init__(self, **kwargs):
@@ -138,7 +138,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         with open(self.scanfile(), 'at') as f:
             f.write('\n')
 #        self.lastscanchanged.emit(self.scanrecorder.scanindex)
-        self.scanfinished.emit(success, self.scanrecorder.scanindex)
+        self.scanfinished.emit(success, self.scanrecorder.scanindex, message)
         self.scanrecorder.deleteLater()
         self.scanrecorder = None
         if self._panicking == self.PanicState.Panicking:
