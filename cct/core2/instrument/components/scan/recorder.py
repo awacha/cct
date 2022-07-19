@@ -130,7 +130,11 @@ class ScanRecorder(QtCore.QObject):
     def moveMotorBack(self):
         if self.movemotorback:
             self.state = self.State.MotorReset
-            self.motor.moveTo(self.initialmotorposition)
+            try:
+                self.motor.moveTo(self.initialmotorposition)
+            except DeviceFrontend.DeviceError as de:
+                self.errormessage = f'Error while moving motor back to start position: {de}'
+                self.onMotorStopped(False, self.motor.where())
         else:
             self.waitForImageProcessing()
 
@@ -165,7 +169,10 @@ class ScanRecorder(QtCore.QObject):
         position = self.startposition + (self.endposition - self.startposition) / (
                 self.nsteps - 1) * self.stepsexposed
         self.state = self.State.MotorMoving
-        self.motor.moveTo(position)
+        try:
+            self.motor.moveTo(position)
+        except DeviceFrontend.DeviceError as de:
+            self.onMotorStopped(False, self.motor.where())
 
     def waitForImageProcessing(self):
         if self.state == self.State.StopRequested:
@@ -190,7 +197,10 @@ class ScanRecorder(QtCore.QObject):
         assert self.imageprocessingtimer is None
         self.imageprocessorpool = multiprocessing.pool.Pool()
         self.exposurefinished = True
-        self.motor.moveTo(self.startposition)
+        try:
+            self.motor.moveTo(self.startposition)
+        except DeviceFrontend.DeviceError as de:
+            self.onMotorStopped(False, self.motor.where())
 
     def stop(self):
         currentstate = self.state
