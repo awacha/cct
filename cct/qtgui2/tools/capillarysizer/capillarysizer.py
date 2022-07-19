@@ -170,7 +170,7 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             y = -y
         try:
             # do not use y error bars: if y<0, y**0.5 is NaN, which will break the fitting routine
-            pars, covar, peakfunc = fitpeak(x[idx], y[idx], None, None, PeakType.Lorentzian)
+            pars, covar, peakfunc = fitpeak(x[idx], y[idx], None, None, PeakType.AsymmetricLorentzian)
         except ValueError as ve:
             QtWidgets.QMessageBox.critical(self, 'Error while fitting',
                                            f'Cannot fit peak, please try another range. The error message was: {ve}')

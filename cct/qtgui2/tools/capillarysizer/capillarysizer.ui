@@ -81,7 +81,7 @@
           </property>
           <property name="icon">
            <iconset theme="view-refresh">
-            <normaloff>../../../qtgui/tools/capillarymeasurement</normaloff>../../../qtgui/tools/capillarymeasurement</iconset>
+            <normaloff>../../../../../../../qtgui/tools/capillarymeasurement</normaloff>../../../../../../../qtgui/tools/capillarymeasurement</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -145,7 +145,7 @@
      <item>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="inflexionPointFitTab">
         <attribute name="title">
@@ -463,6 +463,9 @@
            <property name="decimals">
             <number>4</number>
            </property>
+           <property name="maximum">
+            <double>10000000000.000000000000000</double>
+           </property>
           </widget>
          </item>
          <item row="1" column="0">
@@ -778,6 +781,12 @@
            </property>
            <property name="decimals">
             <number>4</number>
+           </property>
+           <property name="minimum">
+            <double>-10000000000.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>10000000000.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -1104,8 +1113,8 @@
            </property>
            <property name="iconSize">
             <size>
-             <width>24</width>
-             <height>24</height>
+             <width>48</width>
+             <height>48</height>
             </size>
            </property>
           </widget>
@@ -1268,6 +1277,12 @@
            </property>
            <property name="decimals">
             <number>4</number>
+           </property>
+           <property name="minimum">
+            <double>-10000000000.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>10000000000.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -1582,6 +1597,9 @@
            <property name="decimals">
             <number>4</number>
            </property>
+           <property name="maximum">
+            <double>10000000000.000000000000000</double>
+           </property>
           </widget>
          </item>
          <item row="0" column="4">
@@ -1752,8 +1770,8 @@
            </property>
            <property name="iconSize">
             <size>
-             <width>24</width>
-             <height>24</height>
+             <width>48</width>
+             <height>48</height>
             </size>
            </property>
           </widget>
@@ -2237,6 +2255,12 @@
        <layout class="QGridLayout" name="gridLayout_3">
         <item row="1" column="3">
          <widget class="QLabel" name="label_10">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Current values</string>
           </property>
@@ -2302,6 +2326,12 @@
         </item>
         <item row="1" column="1">
          <widget class="QLabel" name="label_15">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Fitted values</string>
           </property>
@@ -2351,7 +2381,7 @@
           <item>
            <widget class="QComboBox" name="sampleNameComboBox">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -2365,6 +2395,12 @@
         </item>
         <item row="2" column="2">
          <widget class="QToolButton" name="updateCenterToolButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="toolTip">
            <string>Update the sample position</string>
           </property>
@@ -2375,6 +2411,12 @@
         </item>
         <item row="3" column="2">
          <widget class="QToolButton" name="updateThicknessToolButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="toolTip">
            <string>Update the sample thickness</string>
           </property>
