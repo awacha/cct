@@ -130,7 +130,10 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             ('beamsigma', self.profileFitBeamSigmaDoubleSpinBox, self.profileFitBeamSigmaUncertaintyLabel),
         ]:
             doublespinbox.setValue(result.params[parname].value)
-            label.setText(f'{result.params[parname].stderr:.4f}')
+            if result.parameter[parname].stderr is None:
+                label.setText('(fixed)')
+            else:
+                label.setText(f'{result.params[parname].stderr:.4f}')
         self.newPositionLabel.setText(f'{result.params["center"].value:.4f} \xb1 {result.params["center"].stderr:.4f}')
         self.newThicknessLabel.setText(f'{result.params["outerdiameter"].value/10:.4f} \xb1 {result.params["outerdiameter"].stderr/10:.4f}')
         xfit = np.linspace(np.nanmin(x[idx]), np.nanmax(x[idx]), 100)
