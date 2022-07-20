@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "setuptools-scm", "cython", "PyQt5", "wheel", "numpy"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cct"
+description = "CREDO Control Tool"
+authors = [
+    {name = "András Wacha", email = "awacha@gmail.com"},
+]
+dependencies = [
+    "appdirs",
+    "numpy>=1.15.0",
+    "scipy>=1.0.0",
+    "matplotlib>=3.0.0",
+    "psutil>=4.1.0",
+    "h5py",
+    "pillow",
+    "openpyxl",
+    "sqlalchemy",
+    "adjusttext",
+    "imageio",
+    "click",
+    "colorlog",
+    "pyusb",
+    "lmfit",
+    "numdifftools",
+    "PyQt5"
+]
+dynamic = ["version"]
+requires-python = ">=3.9"
+license = {text = "BSD 3-clause"}
+readme = "README.md"
+keywords = ["saxs", "sans", "sas", "small-angle scattering", "x-ray", "instrument control", "data acquisition"]
+
+[project.urls]
+homepage = "https://gitlab.com/awacha/cct"
+
+[project.scripts]
+cct4 = "cct.cmdline.main:main"
+
+[tool.setuptools.packages.find]
+where = [""]
+include = ["cct"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools_scm]
+write_to = "cct/_version.py"
+

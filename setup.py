@@ -46,56 +46,18 @@ if sys.platform.lower().startswith('win') and sys.maxsize > 2 ** 32:
 else:
     krb5_libs = ['krb5']
 
-extensions = [Extension("cct.core2.algorithms.radavg",
-                        [os.path.join("cct", "core2", "algorithms", "radavg.pyx")],
-                        include_dirs=[get_include()]),
-              Extension("cct.core2.algorithms.cbfdecompress",
-                        [os.path.join("cct", "core2", "algorithms", "cbfdecompress.pyx")],
-                        include_dirs=[get_include()]),
-              Extension("cct.core2.algorithms.centering.momentofinertia",
-                        [os.path.join("cct", "core2", "algorithms", "centering", "momentofinertia.pyx")],
-                        include_dirs=[get_include()]),
-              Extension("cct.qtgui2.tools.maskeditor.maskoperations",
-                        [os.path.join("cct", "qtgui2", "tools", "maskeditor", "maskoperations.pyx")],
-                        include_dirs=[get_include()]),
-              Extension("cct.core2.instrument.components.auth.user",
-                        [os.path.join("cct", "core2", "instrument", "components", "auth", "user.pyx")],
-                        include_dirs=[get_include()], libraries=krb5_libs),
-              Extension("cct.core2.algorithms.beamweighting",
-                        [os.path.join("cct", "core2", "algorithms", "beamweighting.pyx")],
-                        include_dirs=[get_include()]),
-              Extension("cct.core2.algorithms.correlmatrix",
-                        [os.path.join("cct", "core2", "algorithms", "correlmatrix.pyx")],
-                        include_dirs=[get_include()]),
-              Extension("cct.core2.algorithms.schilling",
-                        [os.path.join("cct", "core2", "algorithms", "schilling.pyx")],
-                        include_dirs=[get_include()]),
-              Extension("cct.core2.algorithms.capillarytransmission",
-                        [os.path.join("cct", "core2", "algorithms", "capillarytransmission.pyx")],
-                        include_dirs=[get_include()]),
-              ]
+extensions = []
+for dirpath, dirnames, filenames in os.walk('cct'):
+    for fn in filenames:
+        if not os.path.splitext(fn)[-1] == '.pyx':
+            continue
+        pyxfilename = os.path.join(dirpath, fn)
+        extensions.append(Extension(os.path.splitext(pyxfilename)[0].replace(os.path.sep, '.'),
+                                    [pyxfilename],
+                                    include_dirs=[get_include()],
+                                    libraries=krb5_libs,
+#                                    define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
+                                    ))
 
-print(get_include())
-# extensions=[]
-
-# update_languagespec()
-setup(name='cct', author='Andras Wacha',
-      author_email='awacha@gmail.com', url='http://gitlab.com/awacha/cct',
-      description='CREDO Control Tool',
-      packages=find_packages(),
-      use_scm_version=True,
-      setup_requires=['setuptools_scm'],
-      #      cmdclass = {'build_ext': build_ext},
-      ext_modules=cythonize(extensions),
-      install_requires=['appdirs', 'numpy>=1.15.0', 'scipy>=1.0.0', 'matplotlib>=3.0.0',
-                        'psutil>=4.1.0', 'h5py', 'pillow', 'openpyxl', 'sqlalchemy',
-                        'adjusttext', 'imageio', 'click', 'colorlog', 'pyusb', 'lmfit', 'numdifftools'],
-      entry_points={'gui_scripts': ['cct4 = cct.cmdline.main:main'],
-
-                    },
-      keywords="saxs sans sas small-angle scattering x-ray instrument control",
-      license="",
-      package_data={'': getresourcefiles()},
-      #      include_package_data=True,
-      zip_safe=False,
+setup(ext_modules=cythonize(extensions),
       )
