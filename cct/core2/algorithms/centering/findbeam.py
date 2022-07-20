@@ -18,14 +18,14 @@ centeringalgorithms = {
     'Moment of inertia': momentofinertia, }
 
 
-def findbeam_crude(targetfunc, exposure, rmin, rmax, d=30, N=10) -> Tuple[float, float]:
+def findbeam_crude(targetfunc, exposure, rmin, rmax, d=30, N=10, numabscissa=None) -> Tuple[float, float]:
     bestvalue = np.inf
     bestposition = None
     for irow, beamrow in enumerate(
             np.linspace(exposure.header.beamposrow[0] - d, exposure.header.beamposrow[0] + d, N)):
         for icol, beamcol in enumerate(
                 np.linspace(exposure.header.beamposcol[0] - d, exposure.header.beamposcol[0] + d, N)):
-            value = targetfunc((beamrow, beamcol), exposure.intensity, exposure.mask, rmin, rmax)
+            value = targetfunc((beamrow, beamcol), exposure.intensity, exposure.mask, rmin, rmax, numabscissa)
             if value < bestvalue:
                 bestvalue = value
                 bestposition = (beamrow, beamcol)
@@ -34,7 +34,7 @@ def findbeam_crude(targetfunc, exposure, rmin, rmax, d=30, N=10) -> Tuple[float,
 
 def findbeam(algorithm, exposure, rmin, rmax, dcrude=30, Ncrude=10, eps=0.01, numabscissa=None):
     if dcrude > 0 and Ncrude > 2:
-        crudeposition = findbeam_crude(algorithm, exposure, rmin, rmax, dcrude, Ncrude)
+        crudeposition = findbeam_crude(algorithm, exposure, rmin, rmax, dcrude, Ncrude, numabscissa=numabscissa)
     else:
         crudeposition = exposure.header.beamposrow[0], exposure.header.beamposcol[0]
     result = scipy.optimize.minimize(
