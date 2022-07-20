@@ -28,3 +28,4 @@ conda_build.sh
 /cct/core2/algorithms/correlmatrix.c
 /cct/core2/algorithms/schilling.c
 /cct/core2/algorithms/capillarytransmission.c
+/cct/_version.py
