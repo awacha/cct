@@ -152,8 +152,8 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
 
     @staticmethod
-    def capillarytransmissionmodel(x: np.ndarray, I0: float, center: float, outerdiameter: float, wallthickness: float, sampleabslength: float, wallabslength: float, beamsigma: float, Nbeam: int):
-        return I0 * capillarytransmission(x, center, outerdiameter, wallthickness, 1/sampleabslength, 1/wallabslength, beamsigma, int(Nbeam))
+    def capillarytransmissionmodel(x: np.ndarray, I0: float, center: float, outerdiameter: float, wallthickness: float, sampleabsorptionlength: float, wallabsorptionlength: float, beamsigma: float, Nbeam: int):
+        return I0 * capillarytransmission(x, center, outerdiameter, wallthickness, 1/sampleabsorptionlength, 1/wallabsorptionlength, beamsigma, int(Nbeam))
 
     @Slot()
     def fitPeak(self):
