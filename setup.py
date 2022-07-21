@@ -1,45 +1,68 @@
 #!/usb/bin/env python
 import os
+import subprocess
 import sys
 
-from Cython.Build import cythonize
+from PyQt5.uic import compileUi
 from numpy import get_include
-from setuptools import setup, find_packages, Extension
-
-try:
-    from PyQt5.uic import compileUi
-except ImportError:
-    def compileUi(*args):
-        pass
-
-rcc_output = os.path.join('cct', 'resource', 'icons_rc.py')
-rcc_input = os.path.join('cct', 'resource', 'icons', 'icons.qrc')
-os.system('pyrcc5 {} -o {}'.format(rcc_input, rcc_output))
+from setuptools import setup, Extension, Command
+from setuptools.command.build_py import build_py
 
 
-def compile_uis(packageroot):
-    if compileUi is None:
-        return
-    for dirpath, dirnames, filenames in os.walk(packageroot):
-        for fn in [fn_ for fn_ in filenames if fn_.endswith('.ui')]:
-            fname = os.path.join(dirpath, fn)
-            pyfilename = os.path.splitext(fname)[0] + '_ui.py'
-            with open(pyfilename, 'wt', encoding='utf-8') as pyfile:
-                compileUi(fname, pyfile, from_imports=True, import_from='cct.resource')
-            print('Compiled UI file: {} -> {}.'.format(fname, pyfilename))
+class RCCComand(Command):
+    """Custom setuptools command to invoke the PyQt resource compiler"""
+
+    description = 'Invoke the PyQt resource compiler'
+    user_options = []
+
+    def initialize_options(self) -> None:
+        return None
+
+    def finalize_options(self) -> None:
+        return None
+
+    def run(self) -> None:
+        subprocess.check_call(
+            ['pyrcc5',
+             os.path.join('cct', 'resource', 'icons', 'icons.qrc'),
+             '-o', os.path.join('cct', 'resource', 'icons_rc.py')]
+        )
 
 
-compile_uis(os.path.join('cct'))
+class BuildUICommand(Command):
+    """Custom setuptools command to compile .ui files to _ui.py files"""
+
+    description = 'Compile Qt .ui files to Python modules'
+    user_options = []
+
+    def initialize_options(self) -> None:
+        return None
+
+    def finalize_options(self) -> None:
+        return None
+
+    def run(self):
+        """Run the command."""
+        self.announce('Compiling Qt .ui files to Python modules', 2)
+        for dirpath, dirnames, filenames in os.walk('.'):
+            for fn in [fn_ for fn_ in filenames if fn_.endswith('.ui')]:
+                fname = os.path.join(dirpath, fn)
+                pyfilename = os.path.splitext(fname)[0] + '_ui.py'
+                with open(pyfilename, 'wt', encoding='utf-8') as pyfile:
+                    compileUi(fname, pyfile, from_imports=True, import_from='cct.resource')
+                self.announce('Compiled UI file: {} -> {}.'.format(fname, pyfilename), 2)
 
 
-def getresourcefiles():
-    print('Generating resource list', flush=True)
-    reslist = []
-    for directory, subdirs, files in os.walk(os.path.join('cct', 'resource')):
-        reslist.extend([os.path.join(directory, f).split(os.path.sep, 1)[1] for f in files])
-    print('Generated resource list:\n  ' + '\n  '.join(x for x in reslist) + '\n', flush=True)
-    return reslist
+class BuildPyCommand(build_py):
+    """Override the default build_py command to require Qt UI and resource compilation"""
 
+    def run(self):
+        self.run_command('rcc')
+        self.run_command('uic')
+        super().run()
+
+
+# collect extensions
 
 if sys.platform.lower().startswith('win') and sys.maxsize > 2 ** 32:
     krb5_libs = ['krb5_64']
@@ -56,8 +79,11 @@ for dirpath, dirnames, filenames in os.walk('cct'):
                                     [pyxfilename],
                                     include_dirs=[get_include()],
                                     libraries=krb5_libs,
-#                                    define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
+                                    # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
                                     ))
 
-setup(ext_modules=cythonize(extensions),
+setup(ext_modules=extensions,
+      cmdclass={'build_py': BuildPyCommand,
+                'uic': BuildUICommand,
+                'rcc': RCCComand, }
       )

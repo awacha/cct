@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "cct"
 description = "CREDO Control Tool"
 authors = [
-    {name = "András Wacha", email = "awacha@gmail.com"},
+    { name = "András Wacha", email = "awacha@gmail.com" },
 ]
 dependencies = [
     "appdirs",
@@ -29,7 +29,7 @@ dependencies = [
 ]
 dynamic = ["version"]
 requires-python = ">=3.9"
-license = {text = "BSD 3-clause"}
+license = { text = "BSD 3-clause" }
 readme = "README.md"
 keywords = ["saxs", "sans", "sas", "small-angle scattering", "x-ray", "instrument control", "data acquisition"]
 
@@ -41,7 +41,7 @@ cct4 = "cct.cmdline.main:main"
 
 [tool.setuptools.packages.find]
 where = [""]
-include = ["cct"]
+include = ["cct*"]
 
 [tool.setuptools]
 include-package-data = true
