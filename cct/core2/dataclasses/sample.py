@@ -4,6 +4,7 @@ import logging
 from typing import Dict, Union, Optional, Tuple, SupportsFloat
 
 import dateutil.parser
+import h5py
 
 from .descriptors import LockableFloat, LockableString, LockableOptionalString, LockableDate, LockableEnum, LockState
 
@@ -163,3 +164,38 @@ class Sample(object):
 
     def __copy__(self) -> "Sample":
         return Sample.fromdict(self.todict())
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        """Write the NXsample group
+
+        :param grp: the HDF5 to write the NeXus information about this sample to
+        :type grp: h5py.Group instance
+        :return: the same HDF5 group as `grp`
+        :rtype: h5py.Group instance
+        """
+        grp.attrs['NX_class'] = 'NXsample'
+        grp.create_dataset('name', data=self.title)
+
+        grp.create_dataset('type', data=self.category.value)
+        grp.create_dataset('situation', data=self.situation.value)
+        grp.create_dataset('description', data=self.description)
+        grp.create_dataset('preparation_date', data=self.preparetime.isoformat())
+        grp.create_dataset('thickness', data=self.thickness[0]).attrs['units'] = 'cm'
+        grp.create_dataset('thickness_errors', data=self.thickness[1]).attrs['units'] = 'cm'
+        grp.create_dataset('x_translation', data=self.positionx[0]).attrs['units'] = 'mm'
+        grp.create_dataset('y_translation', data=self.positiony[0]).attry['units'] = 'mm'
+        grp.create_dataset('x_translation_errors', data=self.positionx[1]).attrs['units'] = 'mm'
+        grp.create_dataset('y_translation_errors', data=self.positiony[1]).attry['units'] = 'mm'
+        # The NXsample base class specifies that the transmission should be a NXdata. A little overkill in our case,
+        # but let's conform to the standards...
+        transmgrp = grp.create_group('transmission')
+        transmgrp.attrs = {'NX_class': 'NXdata', 'signal': 'transmission'}
+        transmgrp.create_dataset('')
+
+        beamgrp = grp.create_group('beam')
+        beamgrp.attrs = {'NX_class': 'NXbeam'}
+
+        # Temperature
+        #grp.create_dataset('temperature')  #ToDo somewhere else
+        # temperature_env
+        #positioner X and Y
