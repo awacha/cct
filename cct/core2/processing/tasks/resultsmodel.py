@@ -48,7 +48,7 @@ class ResultsModel(ProcessingTask):
                     return '--'
                 try:
                     return f'{sde.outliertest.shapiroTest().pvalue:.3g}'
-                except ValueError as ve:
+                except (AttributeError, ValueError) as ve:
                     return str(ve)
             elif index.column() == 6:
                 if sde.isDerived():
