@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1407</width>
+    <width>1467</width>
     <height>193</height>
    </rect>
   </property>
@@ -1907,7 +1907,8 @@
             <string>Guess</string>
            </property>
            <property name="icon">
-            <iconset theme="system-run"/>
+            <iconset theme="system-run">
+             <normaloff>.</normaloff>.</iconset>
            </property>
           </widget>
          </item>
@@ -2027,7 +2028,10 @@
             <number>4</number>
            </property>
            <property name="maximum">
-            <double>100000000000000.000000000000000</double>
+            <double>20.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.010000000000000</double>
            </property>
            <property name="value">
             <double>0.010000000000000</double>
@@ -2043,7 +2047,8 @@
             <string>Guess</string>
            </property>
            <property name="icon">
-            <iconset theme="system-run"/>
+            <iconset theme="system-run">
+             <normaloff>.</normaloff>.</iconset>
            </property>
           </widget>
          </item>
@@ -2100,8 +2105,14 @@
            <property name="decimals">
             <number>4</number>
            </property>
+           <property name="minimum">
+            <double>0.000100000000000</double>
+           </property>
            <property name="maximum">
-            <double>100000000000000.000000000000000</double>
+            <double>1000.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.010000000000000</double>
            </property>
            <property name="value">
             <double>0.139000000000000</double>
@@ -2143,7 +2154,8 @@
             <string>Guess</string>
            </property>
            <property name="icon">
-            <iconset theme="system-run"/>
+            <iconset theme="system-run">
+             <normaloff>.</normaloff>.</iconset>
            </property>
           </widget>
          </item>
@@ -2158,8 +2170,14 @@
            <property name="decimals">
             <number>4</number>
            </property>
+           <property name="minimum">
+            <double>0.001000000000000</double>
+           </property>
            <property name="maximum">
-            <double>100000000000000.000000000000000</double>
+            <double>20.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.050000000000000</double>
            </property>
           </widget>
          </item>
@@ -2184,8 +2202,14 @@
            <property name="decimals">
             <number>4</number>
            </property>
+           <property name="minimum">
+            <double>0.000100000000000</double>
+           </property>
            <property name="maximum">
-            <double>100000000000000.000000000000000</double>
+            <double>1000.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.010000000000000</double>
            </property>
            <property name="value">
             <double>1.000000000000000</double>
@@ -2214,7 +2238,10 @@
             <number>4</number>
            </property>
            <property name="maximum">
-            <double>100000000000000.000000000000000</double>
+            <double>20.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
            </property>
            <property name="value">
             <double>1.500000000000000</double>
@@ -2230,7 +2257,8 @@
             <string>Guess</string>
            </property>
            <property name="icon">
-            <iconset theme="system-run"/>
+            <iconset theme="system-run">
+             <normaloff>.</normaloff>.</iconset>
            </property>
           </widget>
          </item>
@@ -2250,6 +2278,9 @@
            </property>
            <property name="maximum">
             <double>10000000000000.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
            </property>
           </widget>
          </item>
@@ -2291,7 +2322,8 @@
             <string>Guess</string>
            </property>
            <property name="icon">
-            <iconset theme="system-run"/>
+            <iconset theme="system-run">
+             <normaloff>.</normaloff>.</iconset>
            </property>
           </widget>
          </item>
@@ -2304,7 +2336,8 @@
             <string>Guess</string>
            </property>
            <property name="icon">
-            <iconset theme="system-run"/>
+            <iconset theme="system-run">
+             <normaloff>.</normaloff>.</iconset>
            </property>
           </widget>
          </item>
@@ -2317,7 +2350,8 @@
             <string>Guess</string>
            </property>
            <property name="icon">
-            <iconset theme="system-run"/>
+            <iconset theme="system-run">
+             <normaloff>.</normaloff>.</iconset>
            </property>
           </widget>
          </item>
@@ -2531,7 +2565,42 @@
  </widget>
  <tabstops>
   <tabstop>scanIndexSpinBox</tabstop>
+  <tabstop>reloadToolButton</tabstop>
   <tabstop>signalNameComboBox</tabstop>
+  <tabstop>derivativeToolButton</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>negativeValDoubleSpinBox</tabstop>
+  <tabstop>negativeErrDoubleSpinBox</tabstop>
+  <tabstop>fitNegativeToolButton</tabstop>
+  <tabstop>positiveValDoubleSpinBox</tabstop>
+  <tabstop>positiveErrDoubleSpinBox</tabstop>
+  <tabstop>fitPositiveToolButton</tabstop>
+  <tabstop>profileFitI0CheckBox</tabstop>
+  <tabstop>profileFitI0ToolButton</tabstop>
+  <tabstop>profileFitI0DoubleSpinBox</tabstop>
+  <tabstop>profileFitPositionCheckBox</tabstop>
+  <tabstop>profileFitPositionToolButton</tabstop>
+  <tabstop>profileFitPositionDoubleSpinBox</tabstop>
+  <tabstop>profileFitOuterDiameterCeckBox</tabstop>
+  <tabstop>profileFitOuterDiameterToolButton</tabstop>
+  <tabstop>profileFitOuterDiameterDoubleSpinBox</tabstop>
+  <tabstop>profileFitWallThicknessCheckBox</tabstop>
+  <tabstop>profileFitWallThicknessToolButton</tabstop>
+  <tabstop>profileFitWallThicknessDoubleSpinBox</tabstop>
+  <tabstop>profileFitSampleAbsorptionLengthCheckBox</tabstop>
+  <tabstop>profileFitSampleAbsorptionLengthToolButton</tabstop>
+  <tabstop>profileFitSampleAbsorptionLengthDoubleSpinBox</tabstop>
+  <tabstop>profileFitWallAbsorptionLengthCheckBox</tabstop>
+  <tabstop>profileFitWallAbsorptionLengthToolButton</tabstop>
+  <tabstop>profileFitWallAbsorptionLengthDoubleSpinBox</tabstop>
+  <tabstop>profileFitBeamSigmaCheckBox</tabstop>
+  <tabstop>profileFitBeamSigmaToolButton</tabstop>
+  <tabstop>profileFitBeamSigmaDoubleSpinBox</tabstop>
+  <tabstop>profileFitNBeamSpinBox</tabstop>
+  <tabstop>profileFitPushButton</tabstop>
+  <tabstop>sampleNameComboBox</tabstop>
+  <tabstop>updateCenterToolButton</tabstop>
+  <tabstop>updateThicknessToolButton</tabstop>
  </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>

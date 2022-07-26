@@ -1,5 +1,6 @@
 import logging
 from typing import Optional, Tuple
+import math
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot as Slot
@@ -130,64 +131,59 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     @Slot()
     def fitProfile(self):
         x, y = self.getFittingData()
-
+        parameters_widgets_limits = [
+            ('I0', self.profileFitI0DoubleSpinBox, self.profileFitI0CheckBox, self.profileFitI0UncertaintyLabel, self.profileFitI0ToolButton, 0, math.inf),
+            ('center', self.profileFitPositionDoubleSpinBox, self.profileFitPositionCheckBox, self.profileFitPositionUncertaintyLabel, self.profileFitPositionToolButton, np.nanmin(x), np.nanmax(x)),
+            ('outerdiameter', self.profileFitOuterDiameterDoubleSpinBox, self.profileFitOuterDiameterCeckBox, self.profileFitOuterDiameterUncertaintyLabel, self.profileFitOuterDiameterToolButton, 0, np.nanmax(x) - np.nanmin(x)),
+            ('wallthickness', self.profileFitWallThicknessDoubleSpinBox, self.profileFitWallThicknessCheckBox, self.profileFitWallThicknessUncertaintyLabel, self.profileFitWallThicknessToolButton, 0, np.nanmax(x) - np.nanmin(x)),
+            ('sampleabsorptionlength', self.profileFitSampleAbsorptionLengthDoubleSpinBox, self.profileFitSampleAbsorptionLengthCheckBox, self.profileFitSampleAbsorptionLengthUncertaintyLabel, self.profileFitSampleAbsorptionLengthToolButton, 10 ** self.profileFitSampleAbsorptionLengthDoubleSpinBox.decimals(), self.profileFitSampleAbsorptionLengthDoubleSpinBox.maximum()),
+            ('wallabsorptionlength', self.profileFitWallAbsorptionLengthDoubleSpinBox, self.profileFitWallAbsorptionLengthCheckBox, self.profileFitWallAbsorptionLengthUncertaintyLabel, self.profileFitWallAbsorptionLengthToolButton, 10 ** self.profileFitWallAbsorptionLengthDoubleSpinBox.decimals(), self.profileFitWallAbsorptionLengthDoubleSpinBox.maximum()),
+            ('beamsigma', self.profileFitBeamSigmaDoubleSpinBox, self.profileFitBeamSigmaCheckBox, self.profileFitBeamSigmaUncertaintyLabel, self.profileFitBeamSigmaToolButton, 10 ** self.profileFitBeamSigmaDoubleSpinBox.decimals(), 0.5*(np.nanmax(x) - np.nanmin(x))),
+            ('Nbeam', self.profileFitNBeamSpinBox, None, None, None, None, None),
+        ]
         model = lmfit.Model(self.capillarytransmissionmodel)
-        params = model.make_params(
-            I0=self.profileFitI0DoubleSpinBox.value(),
-            center=self.profileFitPositionDoubleSpinBox.value(),
-            outerdiameter=self.profileFitOuterDiameterDoubleSpinBox.value(),
-            wallthickness=self.profileFitWallThicknessDoubleSpinBox.value(),
-            sampleabsorptionlength=self.profileFitSampleAbsorptionLengthDoubleSpinBox.value(),
-            wallabsorptionlength=self.profileFitWallAbsorptionLengthDoubleSpinBox.value(),
-            beamsigma=self.profileFitBeamSigmaDoubleSpinBox.value(),
-            Nbeam=self.profileFitNBeamSpinBox.value()
-        )
-        params['I0'].min = 0
-        params['I0'].vary = self.profileFitI0CheckBox.isChecked()
-        params['center'].min = np.nanmin(x)
-        params['center'].max = np.nanmax(x)
-        params['center'].vary = self.profileFitPositionCheckBox.isChecked()
-        params['outerdiameter'].min = 0
-        params['outerdiameter'].max = np.nanmax(x) - np.nanmin(x)
-        params['outerdiameter'].vary = self.profileFitOuterDiameterCeckBox.isChecked()
-        params['wallthickness'].min = 0
-        params['wallthickness'].max = params['outerdiameter']
-        params['wallthickness'].vary = self.profileFitWallThicknessCheckBox.isChecked()
-        params['sampleabsorptionlength'].min = 10 ** self.profileFitSampleAbsorptionLengthDoubleSpinBox.decimals()
-        params['sampleabsorptionlength'].max = self.profileFitSampleAbsorptionLengthDoubleSpinBox.maximum()
-        params['sampleabsorptionlength'].vary = self.profileFitSampleAbsorptionLengthCheckBox.isChecked()
-        params['wallabsorptionlength'].min = 10 ** self.profileFitWallAbsorptionLengthDoubleSpinBox.decimals()
-        params['wallabsorptionlength'].max = self.profileFitWallAbsorptionLengthDoubleSpinBox.maximum()
-        params['wallabsorptionlength'].vary = self.profileFitWallAbsorptionLengthCheckBox.isChecked()
-        params['beamsigma'].min = 10 ** self.profileFitBeamSigmaDoubleSpinBox.decimals()
-        params['beamsigma'].max = 0.5 * (np.nanmax(x) - np.nanmin(x))
-        params['beamsigma'].vary = self.profileFitBeamSigmaCheckBox.isChecked()
-        params['Nbeam'].vary = False
+        params = model.make_params(**{p:sb.value() for p, sb, cb, l, tb, lb, ub in parameters_widgets_limits})
+        for p, sb, cb, l, tb, lbound, ubound in parameters_widgets_limits:
+            params[p].vary = cb.isChecked() if cb is not None else False
+            params[p].min = lbound if params[p].vary else -math.inf
+            params[p].max = ubound if params[p].vary else math.inf
+        print(params.pretty_print())
         result = model.fit(y, params, x=x)
-        for parname, doublespinbox, label in [
-            ('I0', self.profileFitI0DoubleSpinBox, self.profileFitI0UncertaintyLabel),
-            ('center', self.profileFitPositionDoubleSpinBox, self.profileFitPositionUncertaintyLabel),
-            ('outerdiameter', self.profileFitOuterDiameterDoubleSpinBox, self.profileFitOuterDiameterUncertaintyLabel),
-            ('wallthickness', self.profileFitWallThicknessDoubleSpinBox, self.profileFitWallThicknessUncertaintyLabel),
-            ('sampleabsorptionlength', self.profileFitSampleAbsorptionLengthDoubleSpinBox,
-             self.profileFitSampleAbsorptionLengthUncertaintyLabel),
-            ('wallabsorptionlength', self.profileFitWallAbsorptionLengthDoubleSpinBox,
-             self.profileFitWallAbsorptionLengthUncertaintyLabel),
-            ('beamsigma', self.profileFitBeamSigmaDoubleSpinBox, self.profileFitBeamSigmaUncertaintyLabel),
-        ]:
-            doublespinbox.setValue(result.params[parname].value)
-            if result.params[parname].stderr is None:
-                label.setText('(fixed)')
+        print(params.pretty_print())
+        print(len(y), len(x), len(params))
+        for parname, spinbox, checkbox, label, toolbutton, lbound, ubound in parameters_widgets_limits:
+            value = result.params[parname].value if result.params[parname].vary else result.params[parname].init_value
+            if isinstance(spinbox, QtWidgets.QSpinBox):
+                spinbox.setValue(int(value))
             else:
-                label.setText(f'{result.params[parname].stderr:.4f}')
+                spinbox.setValue(value)
+            if label is not None:
+                if not result.params[parname].vary:
+                    label.setText('(fixed)')
+                elif result.params[parname].stderr is None:
+                    label.setText('N/A')
+                else:
+                    label.setText(f'{result.params[parname].stderr:.4f}')
         if not result.success:
             QtWidgets.QMessageBox.warning(self, 'Fitting not successful',
                                           f'Capillary fitting was not succesful: {result.message}')
         else:
-            self.newPositionLabel.setText(
-                f'{result.params["center"].value:.4f} \xb1 {result.params["center"].stderr:.4f}')
-            self.newThicknessLabel.setText(
-                f'{result.params["outerdiameter"].value / 10:.4f} \xb1 {result.params["outerdiameter"].stderr / 10:.4f}')
+            if result.params["center"].stderr is not None:
+                self.newPositionLabel.setText(
+                    f'{result.params["center"].value:.4f} \xb1 {result.params["center"].stderr:.4f}')
+            else:
+                self.newPositionLabel.setText(
+                    f'{result.params["center"].value:.4f} \xb1 --'
+                )
+            self.center = (result.params["center"].value, result.params["center"].stderr)
+            if result.params["outerdiameter"].stderr is not None:
+                self.newThicknessLabel.setText(
+                    f'{result.params["outerdiameter"].value / 10:.4f} \xb1 {result.params["outerdiameter"].stderr / 10:.4f}')
+                self.thickness = (result.params["outerdiameter"].value / 10, result.params["outerdiameter"].stderr / 10)
+            else:
+                self.newThicknessLabel.setText(
+                    f'{result.params["outerdiameter"].value / 10:.4f} \xb1 --'
+                )
         xfit = np.linspace(np.nanmin(x), np.nanmax(x), 100)
         yfit = model.eval(params, x=xfit)
         if self.positivepeakline is not None:
@@ -197,18 +193,17 @@ class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.negativepeakline.remove()
             self.negativepeakline = None
         if self.profilefitline is None:
-            self.profilefitline = self.axes.plot(xfit, yfit, 'g-')
+            self.profilefitline = self.axes.plot(xfit, yfit, 'g-')[0]
         else:
             self.profilefitline.set_xdata(xfit)
             self.profilefitline.set_ydata(yfit)
         self.canvas.draw_idle()
-        self.center = (result.params["center"].value, result.params["center"].stderr)
-        self.thickness = (result.params["outerdiameter"].value / 10, result.params["outerdiameter"].stderr / 10)
 
     @staticmethod
     def capillarytransmissionmodel(x: np.ndarray, I0: float, center: float, outerdiameter: float, wallthickness: float,
                                    sampleabsorptionlength: float, wallabsorptionlength: float, beamsigma: float,
                                    Nbeam: int):
+        print(I0, center, outerdiameter, wallthickness, sampleabsorptionlength, wallabsorptionlength, beamsigma)
         return I0 * capillarytransmission(x, center, outerdiameter, wallthickness, 1 / sampleabsorptionlength,
                                           1 / wallabsorptionlength, beamsigma, int(Nbeam))
 
