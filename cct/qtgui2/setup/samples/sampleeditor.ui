@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>Form</class>
  <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>820</width>
+    <height>646</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>Sample database</string>
   </property>
@@ -18,16 +26,13 @@
      <item>
       <widget class="QTreeView" name="treeView">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
          <horstretch>1</horstretch>
-         <verstretch>0</verstretch>
+         <verstretch>1</verstretch>
         </sizepolicy>
        </property>
        <property name="acceptDrops">
         <bool>true</bool>
-       </property>
-       <property name="sizeAdjustPolicy">
-        <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
        </property>
        <property name="showDropIndicator" stdset="0">
         <bool>true</bool>
