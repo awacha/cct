@@ -29,7 +29,7 @@ class H5Selector(QtWidgets.QWidget, Ui_Form):
     @Slot()
     def browseH5FileName(self):
         filename = getOpenFile(
-            self, "Select a HDF5 file", "", "HDF5 files (*.h5);;All files (*)",)
+            self, "Select a HDF5 file", "", "CREDO Processed Data (*.cpt4);;HDF5 files (*.h5 *.hdf5);;All files (*)",)
         if not filename:
             return
         try:
