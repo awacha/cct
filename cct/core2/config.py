@@ -10,7 +10,7 @@ from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 PathLike = Union[os.PathLike, str, pathlib.Path]
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Config(QtCore.QObject):
@@ -130,11 +130,11 @@ class Config(QtCore.QObject):
             elif self._data[key] is value:
                 return  # physically the same Config instance
             else:
-                del self._data[key]  # this takes care of all cases, even when the previous value is a Config
+                del self[key]  # this takes care of all cases, even when the previous value is a Config
                 self[key] = value  # try again
         elif isinstance(value, dict):
             # create a Config from that dictionary
-            cfg = Config(value, parent=self)
+            cfg = Config(value) #, parent=self)
             self[key] = cfg  # try again
         else:
             # "ordinary" value type, i.e. not dict and not Config
@@ -148,6 +148,7 @@ class Config(QtCore.QObject):
                 self[key] = value  # try again
             elif not (isinstance(self._data[key], type(value)) and (self._data[key] == value)):
                 # the key is already present but either the type or the value is different
+                del self[key]
                 self._data[key] = value
                 # value changed, emit the signal
                 logger.debug(f'Key value changed, emitting change signal.')
@@ -181,7 +182,11 @@ class Config(QtCore.QObject):
             assert len(key) == 1
             if isinstance(self._data[key[0]], Config):
                 # deleting a sub-config. Disconnect the changed signal first.
-                self._data[key[0]].changed.disconnect(self._subConfigChanged)
+                try:
+                    self._data[key[0]].changed.disconnect(self._subConfigChanged)
+                except RuntimeError:
+                    # sometimes the underlying C/C++ object vanishes first. Why???
+                    pass
             del self._data[key[0]]
         self.autosave()
 
@@ -229,7 +234,10 @@ class Config(QtCore.QObject):
         except IndexError:
             # this `Config` instance does not belong to us, disconnect the signal.
             logger.warning(f'Disconnecting stale `changed` signal handler. Keys in stale config: {list(cnf.keys())}')
-            cnf.changed.disconnect(self._subConfigChanged)
+            try:
+                cnf.changed.disconnect(self._subConfigChanged)
+            except RuntimeError:
+                pass
         else:
             # extend the path with the key and re-emit the signal.
             logger.debug(
@@ -319,7 +327,7 @@ class Config(QtCore.QObject):
         self._data = {}
         for key, value in dic.items():
             if isinstance(value, dict):
-                cfg = Config(value, self)
+                cfg = Config(value) #, self)
                 self[key] = cfg
             else:
                 self[key] = value
