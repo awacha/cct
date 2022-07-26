@@ -2,16 +2,18 @@
 #cython: cdivision=True
 #cython: embedsignature=True
 #cython: nonecheck=False
+#cython: language_level=3
 
 """Utilities for the Schilling distribution (longest runs in an n-long coin-toss sequence)
 
 See: M. F. Schilling: The Longest Run of Heads. Coll. Math. J 21(3) p196-207 (1990)
 """
-cimport numpy as np
 import cython
 import numpy as np
+cimport numpy as np
 from libc.float cimport DBL_MAX_EXP
 from libc.stdlib cimport calloc, free
+np.import_array()
 
 cdef Py_ssize_t A_(Py_ssize_t n, Py_ssize_t x):
     """Calculate A_n(x) as per Schilling's original paper"""
