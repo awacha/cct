@@ -155,6 +155,12 @@ class DeviceLogManager(QtCore.QAbstractItemModel, Component):
 
     @Slot()
     def saveToConfig(self):
+        try:
+            self.config.objectName()
+        except RuntimeError:
+            # this happens sometimes at shutdown, when the log manager is notified too late on the destroying of a
+            # device logger.
+            return
         self.config['deviceloggers'] = {}
         for key in list(self.config['deviceloggers'].keys()):
             # Config is somewhat counterintuitive here, assigning a {} does not make it empty, only updates it
