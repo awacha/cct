@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../resource/icons/icons.qrc">
+    <normaloff>:/icons/imagemonitor.svg</normaloff>:/icons/imagemonitor.svg</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="fsnSelectorHorizontalLayout">
+     <item>
+      <widget class="QPushButton" name="autoUpdatePushButton">
+       <property name="text">
+        <string>Auto-update</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="plotImageVerticalLayout"/>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../../resource/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>

@@ -49,6 +49,7 @@ from ..utils.anisotropy import AnisotropyEvaluator
 from ..utils.plotcurve import PlotCurve
 from ..utils.plotimage import PlotImage
 from ..utils.window import WindowRequiresDevices
+from ..utils.imageandcurvemonitor import ImageMonitor, CurveMonitor
 from ...core2.dataclasses import Exposure, Curve
 from ...core2.instrument.components.interpreter import ParsingError
 from ...core2.instrument.instrument import Instrument
@@ -102,6 +103,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionDevice_loggers': DeviceLogManagerUI,
         'actionSchott_KL2500LED': SchottKL2500LEDUI,
         'actionAnisotropy': AnisotropyEvaluator,
+        'actionImage_monitor': ImageMonitor,
+        'actionCurve_monitor': CurveMonitor,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]

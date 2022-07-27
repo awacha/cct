@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="icons">
+    <file>curvemonitor.svg</file>
+    <file>imagemonitor.svg</file>
     <file>illumination.svg</file>
     <file>notification.svg</file>
     <file>cpt4logo.svg</file>

@@ -85,3 +85,9 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
             self.comboBox.setCurrentIndex(i)
         else:
             raise ValueError(f'Prefix {prefix} unknown.')
+
+    def prefix(self) -> str:
+        return self.comboBox.currentText()
+
+    def fsn(self) -> int:
+        return self.spinBox.value()

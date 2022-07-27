@@ -257,7 +257,7 @@
      <x>0</x>
      <y>0</y>
      <width>1966</width>
-     <height>30</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -325,6 +325,8 @@
     <addaction name="actionResource_consumption"/>
     <addaction name="actionSamplePositionChecker"/>
     <addaction name="actionLogbook"/>
+    <addaction name="actionImage_monitor"/>
+    <addaction name="actionCurve_monitor"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -387,6 +389,8 @@
    <addaction name="actionCapillary_sizing"/>
    <addaction name="actionView_images_and_curves"/>
    <addaction name="actionView_scans"/>
+   <addaction name="actionImage_monitor"/>
+   <addaction name="actionCurve_monitor"/>
   </widget>
   <action name="actionSample_editor">
    <property name="icon">
@@ -886,6 +890,30 @@
    </property>
    <property name="toolTip">
     <string>Control a Schott KL2500LED light source</string>
+   </property>
+  </action>
+  <action name="actionImage_monitor">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/imagemonitor.svg</normaloff>:/icons/imagemonitor.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Image monitor</string>
+   </property>
+   <property name="toolTip">
+    <string>Show scattering patterns</string>
+   </property>
+  </action>
+  <action name="actionCurve_monitor">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/curvemonitor.svg</normaloff>:/icons/curvemonitor.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Curve monitor</string>
+   </property>
+   <property name="toolTip">
+    <string>Show recorded scattering curves</string>
    </property>
   </action>
  </widget>
