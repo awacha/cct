@@ -3,6 +3,7 @@ import logging
 import math
 from typing import Iterator, Any, Optional
 
+import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -210,3 +211,18 @@ class Motor(QtCore.QObject):
 
     def isAtLeftHardLimit(self) -> bool:
         return self['leftswitchenable'] and self['leftswitchstatus']
+
+    create_hdf5_dataset = DeviceFrontend.create_hdf5_dataset
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        grp.attrs['NX_class'] = 'NXpositioner'
+        self.create_hdf5_dataset(grp, 'name', self.name)
+        self.create_hdf5_dataset(grp, 'description', self.role.value + ' motor in direction ' + self.direction.value)
+        self.create_hdf5_dataset(grp, 'value', self['actualposition'])
+        self.create_hdf5_dataset(grp, 'raw_value', self['actualposition:raw'])
+        self.create_hdf5_dataset(grp, 'target_value', self['targetposition'])
+        self.create_hdf5_dataset(grp, 'soft_limit_min', self['softleft'])
+        self.create_hdf5_dataset(grp, 'soft_limit_max', self['softright'])
+        self.create_hdf5_dataset(grp, 'velocity', self['actualspeed'])
+        self.create_hdf5_dataset(grp, 'acceleration_time', self['maxspeed'] / self['maxacceleration'], units='s')
+        return grp

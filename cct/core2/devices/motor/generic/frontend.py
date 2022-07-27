@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Tuple, Any, List, Optional
 
+import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -109,3 +110,8 @@ class MotorController(DeviceFrontend):
             return (['Variable'] + [f'Motor #{i}' for i in range(self.Naxes)])[section]
         else:
             return None
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        """"""
+        # the NeXus specification does not have a base class for multi-axis motor controllers (as of June 2022)
+        return grp

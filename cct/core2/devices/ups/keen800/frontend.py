@@ -1,5 +1,7 @@
 from typing import Any
 
+import h5py
+
 from .backend import Keen800Backend
 from ..generic import UPS
 from ....sensors.thermometer import Thermometer
@@ -22,3 +24,8 @@ class Keen800(UPS):
                 self.utilityPowerRestored.emit()
         elif variablename == 'temperature':
             self.sensors[0].update(newvalue)
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        """"""
+        # the NeXus specification does not have a base class for UPS devices (as of June 2022)
+        return grp

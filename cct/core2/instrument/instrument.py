@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, Optional, List
 
+import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -226,3 +227,22 @@ class Instrument(QtCore.QObject):
             ['calibrants', 'auth', 'io', 'geometry', 'datareduction'],
         ]
         self.onComponentPanicAcknowledged()
+
+    def toNeXus(self, entrygrp: h5py.Group) -> h5py.Group:
+        """Write NeXus-formatted data to a HDF5 group about the instrument
+
+        Parameter `entrygrp` is the NXentry group into which the NXinstrument and its subgroups will be placed
+
+        :param entrygrp: group of the NXentry
+        :type entrygrp: h5py.Group instance
+        """
+        instgroup = entrygrp.create_group('instrument')
+        instgroup.attrs['NX_class'] = 'NXinstrument'
+        instgroup.create_dataset('name', data='Creative Research Equipment for DiffractiOn').attrs={'short_name':'CREDO'}
+        self.geometry.toNeXus(instgroup)
+        self.devicemanager.toNeXus(instgroup)
+        self.beamstop.toNeXus(instgroup)
+        self.motors.toNeXus(instgroup)
+        return entrygrp
+
+

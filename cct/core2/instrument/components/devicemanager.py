@@ -2,6 +2,7 @@ import logging
 import warnings
 from typing import List, Any, Type, Iterator, Union
 
+import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -326,3 +327,11 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
                 dev.panicAcknowledged.connect(self.onDevicePanicAcknowledged)
                 logger.info(f'Notifying device {dev.name} on the panic situation')
                 dev.panichandler()
+
+    def toNeXus(self, instrumentgroup: h5py.Group) -> h5py.Group:
+        for device in self:
+            if not device.isOnline():
+                continue
+            devgrp = instrumentgroup.create_group(device.name)
+            device.toNeXus(devgrp)
+        return instrumentgroup

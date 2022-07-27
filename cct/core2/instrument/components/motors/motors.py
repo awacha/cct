@@ -2,6 +2,7 @@ import itertools
 import logging
 from typing import Iterator, Any, List, Dict, Union, Optional
 
+import h5py
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -300,3 +301,9 @@ class Motors(QtCore.QAbstractItemModel, Component):
                 m.stop()
         if not [m for m in self.motors if m.isMoving()]:
             super().panichandler()
+
+    def toNeXus(self, instrumentgroup: h5py.Group) -> h5py.Group:
+        for motor in self:
+            mg = instrumentgroup.create_group(motor.name)
+            motor.toNeXus(mg)
+        return instrumentgroup

@@ -451,6 +451,7 @@ class IO(QtCore.QObject, Component):
                 (('path', 'directories', 'status'), 'status'),
                 (('path', 'directories', 'scripts'), 'scripts'),
                 (('path', 'directories', 'images_detector'), ['/disk2/images', '/home/det/p2_det/images']),
+                (('path', 'directories', 'nxsas'), 'nxsas'),
                 (('path', 'fsndigits'), 5),
                 (('path', 'prefixes', 'crd'), 'crd'),
                 (('path', 'prefixes', 'scn'), 'scn'),

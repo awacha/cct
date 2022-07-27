@@ -2,6 +2,7 @@ import enum
 import logging
 from typing import Optional, Tuple
 
+import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -222,3 +223,15 @@ class BeamStop(QtCore.QObject, Component):
             self.stopMoving()
         else:
             super().panichandler()
+
+    def toNeXus(self, instrumentgroup: h5py.Group) -> h5py.Group:
+        bsgroup = instrumentgroup.require_group('beam_stop')  # the beamstop group will also be edited by the geometry component
+        bsgroup.attrs['NX_class'] = 'NXbeam_stop'
+        bsgroup.require_dataset('description', data='circular')
+        bsgroup.require_dataset('status', data=self.state.value)
+        wherex = self.motorx.where()
+        wherey = self.motory.where()
+        inx, iny = self.inPosition()
+        bsgroup.require_dataset('x', data=wherex-inx).attrs={'units': 'mm'}
+        bsgroup.require_dataset('y', data=wherey-iny).attrs={'units': 'mm'}
+        return instrumentgroup

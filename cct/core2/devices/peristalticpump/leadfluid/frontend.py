@@ -2,6 +2,8 @@ import enum
 import logging
 from typing import Any
 
+import h5py
+
 from .backend import BT100SBackend
 from ...device.frontend import DeviceFrontend, DeviceType
 
@@ -62,3 +64,8 @@ class BT100S(DeviceFrontend):
 
     def setDispenseTime(self, dispensetime: float):
         self.issueCommand('set_dispense_time', dispensetime)
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        """"""
+        # the NeXus specification does not have a base class for peristaltic pumps (as of June 2022)
+        return grp

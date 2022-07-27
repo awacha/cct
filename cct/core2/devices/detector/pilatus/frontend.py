@@ -2,6 +2,8 @@ import enum
 import logging
 from typing import Tuple, Any
 
+import h5py
+
 from .backend import PilatusBackend
 from ...device.frontend import DeviceFrontend, DeviceType
 from ....sensors.hygrometer import Hygrometer
@@ -68,3 +70,38 @@ class PilatusDetector(DeviceFrontend):
         elif variablename == 'humiditylimits':
             for i in range(3):
                 self.sensors[3 + i].setErrorLimits(*newvalue[i])
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        # variables to be set later:
+        #   - data
+        #   - data_errors
+        #   - distance
+        #   - polar_angle
+        #   - azimuthal_angle
+        #   - x_pixel_size and y_pixel_size (camserver does not report it, it is set outside, in the geometry)
+        #   - beam_center_x
+        #   - beam_center_y
+        #   - pixel_mask
+        grp = super().toNeXus(grp)
+        grp.attrs['NX_class'] = 'NXdetector'
+        grp.attrs['default'] = 'data'
+        self.create_hdf5_dataset(grp, 'detector_number', 1)
+        self.create_hdf5_dataset(grp, 'description', 'Pilatus-300k, Dectris Ltd.')
+        self.create_hdf5_dataset(grp, 'serial_number', self['cameraSN'])
+        self.create_hdf5_dataset(grp, 'local_name', self['cameraname'])
+        self.create_hdf5_dataset(grp, 'dead_time', 0.0, units='ms')
+        self.create_hdf5_dataset(grp, 'type', 'CMOS')
+        self.create_hdf5_dataset(grp, 'layout', 'area')
+        self.create_hdf5_dataset(grp, 'count_time', self['exptime'], units='s')
+        self.create_hdf5_dataset(grp, 'angular_calibration_applied', False)
+        self.create_hdf5_dataset(grp, 'flatfield_applied', True)
+        self.create_hdf5_dataset(grp, 'countrate_correction_applied', self['tau'] > 0)
+        self.create_hdf5_dataset(grp, 'bit_depth_readout', 10)
+        self.create_hdf5_dataset(grp, 'detector_readout_time', 0.0023, units='s')
+        self.create_hdf5_dataset(grp, 'frame_time', self['expperiod'], units='s')
+        self.create_hdf5_dataset(grp, 'gain_setting', self['gain'])
+        self.create_hdf5_dataset(grp, 'saturation_value', self['cutoff'])
+        self.create_hdf5_dataset(grp, 'sensor_material', 'Si')
+        self.create_hdf5_dataset(grp, 'sensor_thickness', '0.450', units='mm')
+        self.create_hdf5_dataset(grp, 'threshold_energy', self['threshold'], units='eV')
+        return grp

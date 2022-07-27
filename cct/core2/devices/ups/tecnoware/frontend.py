@@ -1,5 +1,7 @@
 from typing import Any
 
+import h5py
+
 from .backend import TecnowareEvoDSPPlusBackend
 from ..generic import UPS
 from ....sensors.thermometer import Thermometer
@@ -33,3 +35,8 @@ class TecnowareEvoDSPPlus(UPS):
             self.sensors[2].update(newvalue)
         elif variablename == 'temperature.charger':
             self.sensors[3].update(newvalue)
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        """"""
+        # the NeXus specification does not have a base class for UPS devices (as of June 2022)
+        return grp

@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -80,3 +81,14 @@ class GeniX(DeviceFrontend):
         if commandname == 'shutter' and not success:
             self._logger.error(f'Cannot {"close" if self["shutter"] else "open"} shutter')
             self.shutter.emit(self['shutter'])
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        grp = super().toNeXus(grp)
+        grp.attrs['NX_class'] = 'NXsource'
+        self.create_hdf5_dataset(grp, 'type', 'Fixed Tube X-ray')
+        self.create_hdf5_dataset(grp, 'probe', 'x-ray')
+        self.create_hdf5_dataset(grp, 'power', self['power'], units='W')
+        self.create_hdf5_dataset(grp, 'energy', self['ht'], units='keV')
+        self.create_hdf5_dataset(grp, 'current', self['current'], units='mA')
+        self.create_hdf5_dataset(grp, 'voltage', self['ht'], units='kV')
+        return grp

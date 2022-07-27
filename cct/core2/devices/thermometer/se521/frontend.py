@@ -1,6 +1,8 @@
 import logging
 from typing import Any
 
+import h5py
+import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -50,3 +52,15 @@ class SE521(DeviceFrontend):
         if channel not in ['t1', 't2', 't3', 't4', 't1-t2']:
             raise ValueError('Invalid channel name: can only be "t1", "t2", "t3", "t4" or "t1-t2".')
         self.issueCommand(f'set{channel}name', newname)
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        grp = super().toNeXus(grp)
+        grp.attrs['NX_class'] = 'NXsensor'
+        self.create_hdf5_dataset(grp, 'model', 'SE521')
+        self.create_hdf5_dataset(grp, 'name', 'SE521 4-channel digital thermometer')
+        self.create_hdf5_dataset(grp, 'short_name', 'Sample chamber temperature')
+        self.create_hdf5_dataset(grp, 'measurement', 'temperature')
+        self.create_hdf5_dataset(grp, 'type', self['thermistortype'])
+        self.create_hdf5_dataset(grp, 'run_control', False)
+        self.create_hdf5_dataset(grp, 'value', np.array([self['t1'], self['t2'], self['t3'], self['t4']]))
+        return grp

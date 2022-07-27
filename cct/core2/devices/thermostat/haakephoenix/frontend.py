@@ -2,6 +2,7 @@ import datetime
 import logging
 from typing import Any
 
+import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -78,3 +79,17 @@ class HaakePhoenix(DeviceFrontend):
             self.sensors[1].update(float(newvalue))
         elif variablename == 'temperature_external':
             self.sensors[2].update(float(newvalue))
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        grp = super().toNeXus(grp)
+        self.create_hdf5_dataset(grp, 'type', self['firmwareversion'])
+        self.create_hdf5_dataset(grp, 'description', 'Haake Phoenix 2P circulating bath')
+        sensorgrp = grp.create_group('temperature')
+        sensorgrp.attrs['NX_class'] = 'NXsensor'
+        self.create_hdf5_dataset(sensorgrp, 'model', 'Haake Phoenix')
+        self.create_hdf5_dataset(sensorgrp, 'name', 'temperature')
+        self.create_hdf5_dataset(sensorgrp, 'short_name', 'sample block temperature')
+        self.create_hdf5_dataset(sensorgrp, 'measurement', 'temperature')
+        self.create_hdf5_dataset(sensorgrp, 'run_control', False)
+        self.create_hdf5_dataset(sensorgrp, 'value', self['temperature'], units='°C')
+        return grp

@@ -1,5 +1,7 @@
 from typing import Any
 
+import h5py
+
 from .backend import SchottKL2500LEDBackend
 from ....sensors.thermometer import Thermometer
 from ...device.frontend import DeviceFrontend, DeviceType
@@ -43,3 +45,8 @@ class KL2500LED(DeviceFrontend):
     @property
     def maximumBrightness(self):
         return self.backendclass.maximumBrightness
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        """"""
+        # the NeXus specification does not have a base class for sample illumination sources (as of June 2022)
+        return grp

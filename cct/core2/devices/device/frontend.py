@@ -5,6 +5,7 @@ from multiprocessing import Queue, Process
 from typing import Any, Type, List, Iterator, Dict, Optional, Tuple
 import time
 
+import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -476,3 +477,50 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     def __iter__(self) -> Iterator[Tuple[str, Any]]:
         for v in self._variables:
             yield v.name, v.value
+
+    @staticmethod
+    def create_hdf5_dataset(grp: h5py.Group, name: str, data: Any, **kwargs) -> h5py.Dataset:
+        ds = grp.create_dataset(name, data=data)
+        ds.attrs = kwargs
+        return ds
+
+    def toNeXus(self, grp: h5py.Group) -> h5py.Group:
+        """Write the corresponding entry to a HDF5 group conforming to the NeXus format.
+
+        The default implementation creates two NXcollections:
+        - statevariables: listing of the state variables
+        - devicesensors: sensors
+
+        Note that device-sensors in CCT and NXsensors are totally different concepts. In NeXus, a sensor is a
+        stand-alone device (e.g. vacuum gauge, temperature sensor etc), while in CCT it is only a state parameter
+        with defined warning and error intervals around it, for monitoring critical state variables.
+
+        Therefore, CCT device-sensors are written in a NXcollection group and not as NXsensor classes.
+
+        Subclasses should additionally set the correct NeXus base class (e.g. NXsource, NXdetector etc.), and create the
+        appropriate attributes.
+
+        :param grp: HDF5 group, should be empty
+        :type grp: h5py.Group entry
+        """
+        grp.attrs['NX_class'] = 'NXcollection'  # add a default NX_class, the actual implementation will correct it.
+        stategrp = grp.create_group('statevariables')
+        stategrp.attrs['NX_class'] = 'NXcollection'
+        for variable, value in self:
+            stategrp.create_dataset(variable, data=value)
+        sensorgrp = grp.create_group('devicesensors')
+        sensorgrp.attrs['NX_class'] = 'NXcollection'
+        for isensor, sensor in enumerate(self.sensors, start=1):
+            sg = sensorgrp.create_group(sensor.name)
+            self.create_hdf5_dataset(sg, 'sensortype', sensor.sensortype)
+            self.create_hdf5_dataset(sg, 'quantity', sensor.quantityname)
+            self.create_hdf5_dataset(sg, 'devicename', sensor.devicename)
+            self.create_hdf5_dataset(sg, 'index', sensor.index)
+            self.create_hdf5_dataset(sg, 'value', sensor.value(), units=sensor.units)
+            self.create_hdf5_dataset(sg, 'lowwarnlimit', sensor.lowwarnlimit, units=sensor.units)
+            self.create_hdf5_dataset(sg, 'highwarnlimit', sensor.highwarnlimit, units=sensor.units)
+            self.create_hdf5_dataset(sg, 'lowerrorlimit', sensor.lowerrorlimit, units=sensor.units)
+            self.create_hdf5_dataset(sg, 'higherrorlimit', sensor.higherrorlimit, uints=sensor.units)
+            self.create_hdf5_dataset(sg, 'state', sensor.errorstate().name)
+        return grp
+

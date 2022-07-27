@@ -2,6 +2,7 @@ import enum
 import logging
 import weakref
 
+import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -65,3 +66,12 @@ class Component:
         """Default panic handler: schedules the emission of the panicAcknowledged signal soon afterwards."""
         self._panicking = self.PanicState.Panicked
         QtCore.QTimer.singleShot(0, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)
+
+    # noinspection PyMethodMayBeStatic
+    def toNeXus(self, instrumentgroup: h5py.Group) -> h5py.Group:
+        """Write NeXus-formatted information
+
+        :param instrumentgroup: HDF5 group with NX_class == 'NXinstrument'
+        :type instrumentgroup: h5py.Group instance
+        """
+        return instrumentgroup
