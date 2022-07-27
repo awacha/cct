@@ -22,6 +22,15 @@
     <layout class="QHBoxLayout" name="fsnSelectorHorizontalLayout">
      <item>
       <widget class="QPushButton" name="autoUpdatePushButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="toolTip">
+        <string>If checked, automatically load and display new exposures when ready</string>
+       </property>
        <property name="text">
         <string>Auto-update</string>
        </property>
@@ -29,6 +38,19 @@
         <bool>true</bool>
        </property>
       </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </item>
