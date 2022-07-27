@@ -4,10 +4,10 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot as Slot
 
 from .curveandimagemonitor_ui import Ui_Form
-from ..utils.window import WindowRequiresDevices
 from .fsnselector import FSNSelector
 from .plotcurve import PlotCurve
 from .plotimage import PlotImage
+from ..utils.window import WindowRequiresDevices
 
 
 class ImageAndCurveMonitor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
@@ -27,9 +27,11 @@ class ImageAndCurveMonitor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.mode_image:
             self.plotimage = PlotImage(self)
             self.plotImageVerticalLayout.addWidget(self.plotimage, 1)
+            self.setWindowTitle('Image monitor')
         else:
             self.plotcurve = PlotCurve(self)
             self.plotImageVerticalLayout.addWidget(self.plotcurve, 1)
+            self.setWindowTitle('Curve monitor')
         self.fsnselector.fsnSelected.connect(self.onFSNSelected)
         self.instrument.io.lastFSNChanged.connect(self.onLastFSNChanged)
 
@@ -38,15 +40,18 @@ class ImageAndCurveMonitor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         ex = self.fsnselector.loadExposure()
         if hasattr(self, 'plotcurve'):
             self.plotcurve.clear()
-            self.plotcurve.addCurve(ex.radial_average())
+            self.plotcurve.addCurve(
+                ex.radial_average(),
+                label=f'{prefix}/{ex.header.fsn}: {ex.header.title} @ {ex.header.distance[0]:.2f} mm')
             self.plotcurve.replot()
         if hasattr(self, 'plotimage'):
-            self.plotimage.setExposure(ex, None,
-                                       f'{prefix}/{ex.header.fsn}: {ex.header.title} @ {ex.header.distance[0]:.2f} mm')
+            self.plotimage.setExposure(
+                ex, None,
+                f'{prefix}/{ex.header.fsn}: {ex.header.title} @ {ex.header.distance[0]:.2f} mm')
 
     @Slot(str, int)
     def onLastFSNChanged(self, prefix: str, fsn: int):
-        if prefix == self.fsnselector.prefix():
+        if (prefix == self.fsnselector.prefix()) and self.autoUpdatePushButton.isChecked():
             self.fsnselector.gotoLast()
 
 
