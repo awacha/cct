@@ -139,3 +139,6 @@ class Sensor(QtCore.QObject):
             'errorlimits': (self.lowerrorlimit, self.higherrorlimit),
             'status': self._errorstate.name,
         }
+
+    def errorstate(self) -> ErrorState:
+        return self._errorstate
