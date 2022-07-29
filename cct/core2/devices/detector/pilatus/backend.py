@@ -465,7 +465,7 @@ class PilatusBackend(DeviceBackend):
                 # new behaviour, split prepare + expose commands
                 firstfilename = args[0]
                 self.disableAutoQuery()
-                self.enqueueHardwareMessage(f'exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
+                self.enqueueHardwareMessage(f'Exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
                 self.updateVariable('__status__',
                                     self.Status.Exposing if self['nimages'] == 1 else self.Status.ExposingMulti)
                 self.lastissuedcommand = 'expose'
