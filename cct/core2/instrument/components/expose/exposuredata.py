@@ -165,7 +165,7 @@ class ExposureTask(QtCore.QObject):
                 uncertainty[image <= 0] = 1
                 # emit the raw image.
                 exposure = Exposure(image, header, uncertainty, mask)
-                if self.prefix == self.config['path']['prefixes']['crd']:
+                if self.prefix == self.instrument.config['path']['prefixes']['crd']:
                     self.instrument.datareduction.submit(exposure)
                 self.finished.emit(True, exposure)
 
@@ -229,7 +229,7 @@ class ExposureTask(QtCore.QObject):
             'fsn': self.fsn,
             'filename': os.path.abspath(
                 os.path.join(
-                    self.config['path']['directories']['param'], self.prefix,
+                    self.instrument.config['path']['directories']['param'], self.prefix,
                     self.instrument.io.formatFileName(self.prefix, self.fsn, '.pickle'))),
             'exposure': {
                 'fsn': self.fsn,
