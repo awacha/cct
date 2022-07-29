@@ -49,7 +49,7 @@ from ..utils.anisotropy import AnisotropyEvaluator
 from ..utils.plotcurve import PlotCurve
 from ..utils.plotimage import PlotImage
 from ..utils.window import WindowRequiresDevices
-from ..utils.imageandcurvemonitor import ImageMonitor, CurveMonitor
+from ..utils.curveandimagemonitor import ImageMonitor, CurveMonitor
 from ...core2.dataclasses import Exposure, Curve
 from ...core2.instrument.components.interpreter import ParsingError
 from ...core2.instrument.instrument import Instrument

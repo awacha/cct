@@ -1,6 +1,6 @@
-from typing import Final
+from typing import Final, Union
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSlot as Slot
 
 from .curveandimagemonitor_ui import Ui_Form
@@ -12,8 +12,7 @@ from ..utils.window import WindowRequiresDevices
 
 class ImageAndCurveMonitor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     fsnselector: FSNSelector
-    plotimage: PlotImage
-    plotcurve: PlotCurve
+    plotwidget: Union[PlotImage, PlotCurve]
     mode_image: bool
 
     def __init__(self, **kwargs):
@@ -24,28 +23,28 @@ class ImageAndCurveMonitor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         super().setupUi(Form)
         self.fsnselector = FSNSelector(self)
         self.fsnSelectorHorizontalLayout.insertWidget(0, self.fsnselector, 1)
-        if self.mode_image:
-            self.plotimage = PlotImage(self)
-            self.plotImageVerticalLayout.addWidget(self.plotimage, 1)
-            self.setWindowTitle('Image monitor')
-        else:
-            self.plotcurve = PlotCurve(self)
-            self.plotImageVerticalLayout.addWidget(self.plotcurve, 1)
-            self.setWindowTitle('Curve monitor')
+        self.plotwidget = PlotImage(self) if self.mode_image else PlotCurve(self)
+        self.plotImageVerticalLayout.addWidget(self.plotwidget, 1)
+        self.setWindowTitle('Image monitor' if self.mode_image else 'Curve monitor')
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/icons/imagemonitor.svg" if self.mode_image else ':/icons/curvemonitor.svg'),
+                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.setWindowIcon(icon)
         self.fsnselector.fsnSelected.connect(self.onFSNSelected)
         self.instrument.io.lastFSNChanged.connect(self.onLastFSNChanged)
+        self.autoUpdatePushButton.setChecked(True)
 
     @Slot(str, int)
     def onFSNSelected(self, prefix: str, fsn: int):
         ex = self.fsnselector.loadExposure()
-        if hasattr(self, 'plotcurve'):
-            self.plotcurve.clear()
-            self.plotcurve.addCurve(
+        if isinstance(self.plotwidget, PlotCurve):
+            self.plotwidget.clear()
+            self.plotwidget.addCurve(
                 ex.radial_average(),
                 label=f'{prefix}/{ex.header.fsn}: {ex.header.title} @ {ex.header.distance[0]:.2f} mm')
-            self.plotcurve.replot()
-        if hasattr(self, 'plotimage'):
-            self.plotimage.setExposure(
+            self.plotwidget.replot()
+        elif isinstance(self.plotwidget, PlotImage):
+            self.widget.setExposure(
                 ex, None,
                 f'{prefix}/{ex.header.fsn}: {ex.header.title} @ {ex.header.distance[0]:.2f} mm')
 
