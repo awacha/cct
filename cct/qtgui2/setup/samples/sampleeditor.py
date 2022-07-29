@@ -108,6 +108,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def browseMask(self):
         if (filename := browseMask(self)) is not None:
             self.maskOverrideLineEdit.setText(filename)
+            self.maskOverrideLineEdit.editingFinished.emit()
 
     @Slot()
     def addSample(self):
