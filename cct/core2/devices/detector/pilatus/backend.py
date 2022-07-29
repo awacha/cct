@@ -477,6 +477,7 @@ class PilatusBackend(DeviceBackend):
 
     def stopExposure(self):
         """Do what it takes to stop an ongoing exposure"""
+        self.info('Stopping an exposure')
         if self['__status__'] == self.Status.Exposing:
             # single exposure, do a "resetcam", then trim again.
             # A dirty trick is involved here. By default, the communicator process refuses to send a message until
@@ -493,6 +494,7 @@ class PilatusBackend(DeviceBackend):
             #                assert self.outbuffer.qsize() == 0
             while self.outbuffer.qsize() > 0:
                 self.warning(f'Outbuffer not empty! Queue size is: {self.outbuffer.qsize()}')
+            self.info('Stopping a single exposure with resetcam.')
             self.enqueueHardwareMessage(b'resetcam\r')
             self.lastmessage = None
             self.cleartosend.set()
@@ -510,6 +512,7 @@ class PilatusBackend(DeviceBackend):
             # will be attibuted by us to the "K" command, hence "numreplies=1".
             while self.outbuffer.qsize() > 0:
                 self.warning(f'Outbuffer not empty! Queue size is: {self.outbuffer.qsize()}')
+            self.info('Stopping a multi-exposure with K')
             self.enqueueHardwareMessage(b'K\r', numreplies=2)
             self.lastmessage = None
             self.cleartosend.set()

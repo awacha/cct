@@ -136,7 +136,7 @@ class Exposer(QtCore.QObject, Component):
         self.detector = None
 
     def startExposure(self, prefix: str, exposuretime: float, imagecount: int = 1, delay: float = 0.003,
-                      maskoverride: Optional[str] = None, writenexus: bool = True) -> int:
+                      maskoverride: Optional[str] = None, writenexus: bool = False) -> int:
         """prepare the detector for an exposure. Also prepare timers for waiting for images.
 
         :param prefix: file name prefix (e.g. 'crd', 'tst', 'scn' etc.)
@@ -334,6 +334,7 @@ class Exposer(QtCore.QObject, Component):
 
     @Slot()
     def stopExposure(self):
+        logger.debug('Exposure stop request.')
         self.instrument.devicemanager.detector().stopexposure()
 
     def isIdle(self) -> bool:
