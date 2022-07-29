@@ -1,3 +1,4 @@
+import datetime
 import enum
 import enum
 import logging
@@ -17,7 +18,7 @@ from ....devices.detector.pilatus.backend import PilatusBackend
 from ....devices.detector.pilatus.frontend import PilatusDetector
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ExposerState(enum.Enum):
@@ -110,6 +111,7 @@ class Exposer(QtCore.QObject, Component):
 
     def _connectDetector(self):
         """Connect signals to the Detector instance"""
+        logger.debug('Connecting detector signals to slots in Exposer')
         if self.detector is not None:
             logger.warning('Detector signals already connected')
             return
@@ -127,6 +129,7 @@ class Exposer(QtCore.QObject, Component):
             logger.warning('Emitting exposureFinished only because disconnecting the detector while exposing.')
             self.state = ExposerState.Idle
             self.exposureFinished.emit(False)
+        logger.debug('Disconnecting detector signals from slots in Exposer')
         self.detector.connectionEnded.disconnect(self.onDetectorDisconnected)
         self.detector.variableChanged.disconnect(self.onDetectorVariableChanged)
         self.detector.commandResult.disconnect(self.onCommandResult)
@@ -172,12 +175,14 @@ class Exposer(QtCore.QObject, Component):
         # ##############################################
 
         self.state = ExposerState.Preparing
+        logger.debug('Preparing the detector')
         nextfsn = self.instrument.io.nextfsn(prefix, checkout=imagecount)
         self.firstfilename = self.instrument.io.formatFileName(prefix, nextfsn, '.cbf')
         self.detector.prepareexposure(
             prefix,
             exposuretime, imagecount, delay
         )
+        logger.debug(f'Creating {imagecount} exposure tasks')
         for i in range(imagecount):
             task = ExposureTask(
                 self.instrument, self.detector, prefix, nextfsn + i, i, exposuretime, delay, maskoverride, writenexus)
@@ -190,6 +195,7 @@ class Exposer(QtCore.QObject, Component):
             self.exposureStarted.emit()
         except Exception as exc:
             logger.warning(f'Exception while emitting the exposureStarted() signal: {exc}')
+        logger.debug('Waiting for the detector to finish preparing.')
         return nextfsn
 
     @Slot()
@@ -233,6 +239,7 @@ class Exposer(QtCore.QObject, Component):
     def onCommandResult(self, success: bool, commandname: str, result: str):
         logger.debug(f'onCommandResult: {success}, {commandname}')
         if commandname == 'prepareexposure' and success:
+            logger.debug('The detector notified us on a successful prepare.')
             # the exposure has been successfully prepared.
             if self.state != ExposerState.Preparing:
                 logger.warning('Detector reported the end of a prepareexposure command, but the exposer is not in the '
@@ -241,6 +248,7 @@ class Exposer(QtCore.QObject, Component):
             # ##############################################
             # state: Preparing -> Starting
             # ##############################################
+            logger.debug('Instructing the detector to start the exposure')
             self.detector.exposeprepared(self.firstfilename)
             self.state = ExposerState.Starting
         elif commandname == 'expose' and success:
@@ -251,12 +259,16 @@ class Exposer(QtCore.QObject, Component):
             # ##############################################
             # state: Starting -> Exposing
             # ##############################################
+            logger.debug('The detector reported that it has started exposing')
             assert self.detector['__status__'] in [PilatusBackend.Status.Exposing, PilatusBackend.Status.ExposingMulti]
             self.state = ExposerState.Exposing
 
             # now start the timers of the ExposureTasks
             date_reported_by_the_detector = dateutil.parser.parse(result.split('$')[0])
             timestamp_of_message_received = float(result.split("$")[1])
+            date_with_timestamp = datetime.datetime.fromtimestamp(time.time()-time.monotonic()+timestamp_of_message_received)
+
+            logger.debug(f'Exposure started by the detector at {date_reported_by_the_detector}, message received at {date_with_timestamp}, delta is {(date_with_timestamp-date_reported_by_the_detector).total_seconds():.6f} secs')
             for task in self.exposuretasks:
                 if task.status == ExposureState.Initializing:
                     task.onDetectorExposureStarted(timestamp_of_message_received)
@@ -296,6 +308,8 @@ class Exposer(QtCore.QObject, Component):
 
     @Slot(str, object, object)
     def onDetectorVariableChanged(self, variable: str, value: Any, prevvalue: Any):
+        if variable == '__status__':
+            logger.debug(f'Detector status: {prevvalue} -> {value}')
         if (variable == '__status__') and (self.state in [ExposerState.Exposing, ExposerState.Stopping]) and (
                 value in [PilatusBackend.Status.Idle]):
             # this means that exposing is done without error. Images are not necessarily read yet.
