@@ -212,6 +212,8 @@ class Exposer(QtCore.QObject, Component):
 
     @Slot(bool, object)
     def onExposureTaskFinished(self, success: bool, exposure: Optional[Exposure]):
+        task: ExposureTask = self.sender()
+        logger.debug(f'Exposure task {task.prefix}/{task.fsn} finished {"successfully" if success else "with error"}.')
         if success and (exposure is not None):
             try:
                 self.imageReceived.emit(exposure)
