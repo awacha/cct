@@ -5,6 +5,7 @@ import multiprocessing
 import time
 from typing import Dict, Optional, Any, List
 
+import dateutil.parser
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -254,9 +255,11 @@ class Exposer(QtCore.QObject, Component):
             self.state = ExposerState.Exposing
 
             # now start the timers of the ExposureTasks
+            date_reported_by_the_detector = dateutil.parser.parse(result.split('$')[0])
+            timestamp_of_message_received = float(result.split("$")[1])
             for task in self.exposuretasks:
                 if task.status == ExposureState.Initializing:
-                    task.onDetectorExposureStarted(self.detector.currentMessage.timestamp)
+                    task.onDetectorExposureStarted(timestamp_of_message_received)
 
             # also start the timer for emitting the progress signal periodically
             self.progresstimer = self.startTimer(int(1000 * self.progressinterval), QtCore.Qt.CoarseTimer)

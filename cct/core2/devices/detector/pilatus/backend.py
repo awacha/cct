@@ -1,4 +1,5 @@
 import re
+import time
 from math import inf
 from typing import Sequence, Any, Tuple, List, Union, Optional
 
@@ -279,6 +280,9 @@ class PilatusBackend(DeviceBackend):
                             r'(?P<date>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+)$', remainder)) is not None):
             self.updateVariable('exptime', float(m['exptime']))
             self.updateVariable('starttime', dateutil.parser.parse(m['date']))
+            if self.lastissuedcommand == 'expose':
+                self.commandFinished('expose', f'm["date"] $ {time.monotonic():.16f}')
+                self.lastissuedcommand = None
         elif (status == 'OK') and (idnum == 15) and (not remainder):
             # this can also happen, i.e. just a simple '15 OK'. E.g. by "resetcam" or "imgmode x"
             self.warning(f'15 OK received. Sentmessage: {sentmessage}')
@@ -416,7 +420,6 @@ class PilatusBackend(DeviceBackend):
                 fulltime = nimages * exptime + (nimages - 1) * delay
                 self.enqueueHardwareMessage(f'Exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
                 self.updateVariable('__status__', self.Status.Exposing if nimages == 1 else self.Status.ExposingMulti)
-                self.lastissuedcommand = None
                 self.commandFinished(name, 'Started exposure')
             elif len(args) == 1:
                 # new behaviour, split prepare + expose commands
@@ -424,7 +427,6 @@ class PilatusBackend(DeviceBackend):
                 self.disableAutoQuery()
                 self.enqueueHardwareMessage(f'exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
                 self.updateVariable('__status__', self.Status.Exposing if self['nimages'] == 1 else self.Status.ExposingMulti)
-                self.lastissuedcommand = None
                 self.commandFinished(name, 'Started exposure')
         elif name == 'stopexposure':
             self.lastissuedcommand = 'stopexposure'
