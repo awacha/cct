@@ -115,8 +115,12 @@ class ExposureTask(QtCore.QObject):
         if writenexus:
             targetdir = os.path.join(self.instrument.io.getSubDir('nexus'), prefix)
             os.makedirs(targetdir, exist_ok=True)
-            self.h5 = h5py.File(os.path.join(targetdir, self.instrument.io.formatFileName(prefix, fsn, '.nxs')), 'wt',
-                                libver='latest')
+            self.h5 = h5py.File(
+                os.path.join(targetdir, self.instrument.io.formatFileName(prefix, fsn, '.nxs')), 'w',
+                libver='latest')
+            grp = self.h5.require_group(f'{prefix}_{fsn:05d}')
+            grp.attrs['NX_class'] = 'NXentry'
+            self.instrument.toNeXus(grp)
 
     @property
     def starttime(self):
@@ -281,13 +285,17 @@ class ExposureTask(QtCore.QObject):
             data['geometry']['truedistance'] = data['geometry']['dist_sample_det'] - data['sample']['distminus.val']
             data['geometry']['truedistance.err'] = (data['geometry']['dist_sample_det.err'] ** 2 + data['sample'][
                 'distminus.err'] ** 2) ** 0.5
-        folder, filename = os.path.split(data['filename'])
-        os.makedirs(folder, exist_ok=True)
-        with open(data['filename'], 'wb') as f:
-            pickle.dump(data, f)
         if (sample is not None) and (sample.maskoverride is not None):
             data['geometry']['mask'] = sample.maskoverride
         if self.maskoverride is not None:
             # global mask override takes precedence
             data['geometry']['mask'] = self.maskoverride
+        # Save the pickle file
+        folder, filename = os.path.split(data['filename'])
+        os.makedirs(folder, exist_ok=True)
+        with open(data['filename'], 'wb') as f:
+            pickle.dump(data, f)
         return Header(datadict=data)
+
+    def writeNeXus(self):
+        self.h5.create_group(f'Entry')
