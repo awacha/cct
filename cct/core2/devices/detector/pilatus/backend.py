@@ -1,6 +1,6 @@
 import re
 from math import inf
-from typing import Sequence, Any, Tuple, List, Union
+from typing import Sequence, Any, Tuple, List, Union, Optional
 
 import dateutil.parser
 
@@ -14,6 +14,7 @@ class PilatusBackend(DeviceBackend):
         Exposing = 'exposing'
         ExposingMulti = 'exposing multiple images'
         Stopping = 'stopping exposure'
+        Preparing = 'preparing for an exposure'
 
     varinfo = [
         DeviceBackend.VariableInfo(name='gain', dependsfrom=['threshold'], urgent=False, timeout=inf, vartype=VariableType.STR),
@@ -57,6 +58,11 @@ class PilatusBackend(DeviceBackend):
 
     minimal_exposure_delay = 0.003  # seconds
     baseimagepath: str = None
+    lastissuedcommand: Optional[str] = None
+    prepared_imgpath: str = None
+    prepared_nimages: int = None
+    prepared_exptime: float = None
+    prepared_expperiod: float = None
 
     def _query(self, variablename: str):
         if variablename == 'threshold':
@@ -230,6 +236,17 @@ class PilatusBackend(DeviceBackend):
             self.updateVariable('expperiod', float(remainder.split(':')[1].strip().split()[0]))
         elif (status == 'OK') and (idnum == 15) and remainder.startswith('Exposure time set to: '):
             self.updateVariable('exptime', float(remainder.split(':')[1].strip().split()[0]))
+            if (self['__status__'] == self.Status.Preparing) and (self['expperiod'] == self.prepared_expperiod) and \
+                    (self['exptime'] == self.prepared_exptime) and (self['nimages'] == self.prepared_nimages) and \
+                    (self['imgpath'] == self.prepared_imgpath):
+                # the preparations are ready
+                self.updateVariable('__status__', self.Status.Idle)
+                self.commandFinished(
+                    'prepareexposure',
+                    f'Exposure of {self["nimages"]} image(s) prepared, '
+                    f'exposure time is {self["exptime"]:.6f} s, '
+                    f'delay between exposures is {self["expperiod"]-self["exptime"]:.6f} s, '
+                    f'file(s) will be saved to {self["imgpath"]}')
         elif (status == 'OK') and (idnum == 15) and ((m := re.match(
                 r'^Rate correction is on; tau = (?P<tau>.*) s, '
                 r'cutoff = (?P<cutoff>\d+) counts$', remainder)) is not None):
@@ -339,7 +356,6 @@ class PilatusBackend(DeviceBackend):
         else:
             self.error(f'Invalid message received from detector: {message}. Last sent message: {sentmessage}')
 
-
     def issueCommand(self, name: str, args: Sequence[Any]):
         if name == 'trim':
             threshold, gain = args
@@ -349,10 +365,10 @@ class PilatusBackend(DeviceBackend):
             self.enqueueHardwareMessage(f'SetThreshold {gain} {threshold:f}\r'.encode("ascii"))
             self.messagereplytimeout = 60
             self.updateVariable('__status__', self.Status.Trimming)
-            self.commandFinished(name, 'Started trimming')
-        elif name == 'expose':
-            relimgpath, firstfilename, exptime, nimages, delay = args
-            #self.debug(f'Starting exposure {relimgpath=}, {firstfilename=}, {exptime=}, {nimages=}, {delay=}')
+            self.lastissuedcommand = 'trim'
+#            self.commandFinished(name, 'Started trimming')
+        elif name == 'prepareexposure':
+            relimgpath, exptime, nimages, delay = args
             if exptime < 1e-7 or exptime > 1e6:
                 self.commandError(name, 'Invalid value for exposure time')
                 return
@@ -364,16 +380,52 @@ class PilatusBackend(DeviceBackend):
                 return
             if self.connectionIsReadOnly():
                 self.commandError(name, 'Read-only connection')
+            self.updateVariable('__status__', self.Status.Preparing)
             self.disableAutoQuery()
+            self.prepared_exptime = exptime
+            self.prepared_nimages = nimages
+            self.prepared_expperiod = exptime + delay
+            self.prepared_imgpath = f"{self.baseimagepath}/{relimgpath}"
             self.enqueueHardwareMessage(f'imgpath {self.baseimagepath}/{relimgpath}\r'.encode('ascii'))
             self.enqueueHardwareMessage(f'expperiod {exptime + delay:f}\r'.encode('ascii'))
             self.enqueueHardwareMessage(f'nimages {nimages}\r'.encode('ascii'))
             self.enqueueHardwareMessage(f'exptime {exptime}\r'.encode('ascii'))
-            fulltime = nimages * exptime + (nimages - 1) * delay
-            self.enqueueHardwareMessage(f'Exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
-            self.updateVariable('__status__', self.Status.Exposing if nimages == 1 else self.Status.ExposingMulti)
-            self.commandFinished(name, 'Started exposure')
+        elif name == 'expose':
+            if len(args) == 5:
+                # old behaviour
+                relimgpath, firstfilename, exptime, nimages, delay = args
+                #self.debug(f'Starting exposure {relimgpath=}, {firstfilename=}, {exptime=}, {nimages=}, {delay=}')
+                if exptime < 1e-7 or exptime > 1e6:
+                    self.commandError(name, 'Invalid value for exposure time')
+                    return
+                if nimages < 1:
+                    self.commandError(name, 'Invalid number of images')
+                    return
+                if delay < self.minimal_exposure_delay:
+                    self.commandError(name, 'Too short exposure delay')
+                    return
+                if self.connectionIsReadOnly():
+                    self.commandError(name, 'Read-only connection')
+                self.disableAutoQuery()
+                self.enqueueHardwareMessage(f'imgpath {self.baseimagepath}/{relimgpath}\r'.encode('ascii'))
+                self.enqueueHardwareMessage(f'expperiod {exptime + delay:f}\r'.encode('ascii'))
+                self.enqueueHardwareMessage(f'nimages {nimages}\r'.encode('ascii'))
+                self.enqueueHardwareMessage(f'exptime {exptime}\r'.encode('ascii'))
+                fulltime = nimages * exptime + (nimages - 1) * delay
+                self.enqueueHardwareMessage(f'Exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
+                self.updateVariable('__status__', self.Status.Exposing if nimages == 1 else self.Status.ExposingMulti)
+                self.lastissuedcommand = None
+                self.commandFinished(name, 'Started exposure')
+            elif len(args) == 1:
+                # new behaviour, split prepare + expose commands
+                firstfilename = args[0]
+                self.disableAutoQuery()
+                self.enqueueHardwareMessage(f'exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
+                self.updateVariable('__status__', self.Status.Exposing if self['nimages'] == 1 else self.Status.ExposingMulti)
+                self.lastissuedcommand = None
+                self.commandFinished(name, 'Started exposure')
         elif name == 'stopexposure':
+            self.lastissuedcommand = 'stopexposure'
             self.stopExposure()
         else:
             self.commandError(name, f'Unknown command: {name}')
@@ -400,6 +452,7 @@ class PilatusBackend(DeviceBackend):
             self.lastmessage = None
             self.cleartosend.set()
             self.updateVariable('__status__', self.Status.Stopping)
+            self.lastissuedcommand = None
             self.commandFinished('stopexposure', 'Stopping a single exposure')
         elif self['__status__'] == self.Status.ExposingMulti:
             # we do the same trick as above, only we have to issue the "K" command.
@@ -416,6 +469,7 @@ class PilatusBackend(DeviceBackend):
             self.lastmessage = None
             self.cleartosend.set()
             self.updateVariable('__status__', self.Status.Stopping)
+            self.lastissuedcommand = None
             self.commandFinished('stopexposure', 'Stopping a multiple exposure sequence')
         elif self['__status__'] == self.Status.Stopping:
             self.commandError('stopexposure', 'Already stopping...')

@@ -42,6 +42,12 @@ class PilatusDetector(DeviceFrontend):
     def expose(self, relative_imgpath, firstfilename, exptime, nimages, delay):
         self.issueCommand('expose', relative_imgpath, firstfilename, exptime, nimages, delay)
 
+    def exposeprepared(self, firstfilename):
+        self.issueCommand('expose', firstfilename)
+
+    def prepareexposure(self, relative_imgpath: str, exptime: float, nimages: int, delay: float):
+        self.issueCommand('prepareexposure', relative_imgpath, exptime, nimages, delay)
+
     def stopexposure(self):
         self.issueCommand('stopexposure')
 
