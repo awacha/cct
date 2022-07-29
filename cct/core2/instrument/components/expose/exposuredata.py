@@ -1,21 +1,23 @@
 # coding: utf-8
 """ExposureTask: a class representing an ongoing exposure with the detector"""
-from typing import Optional
-import time
-import enum
 import datetime
-import numpy as np
-import pickle
-import os
+import enum
 import logging
+import os
+import pickle
+import time
+from typing import Optional
 
-from ....dataclasses.header import Header
+import h5py
+import numpy as np
+from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal as Signal
+
 from ....dataclasses.exposure import Exposure
+from ....dataclasses.header import Header
+from ....dataclasses.sample import Sample
 from ....devices.detector.pilatus.frontend import PilatusDetector
 from ....devices.device.frontend import DeviceFrontend
-
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -94,10 +96,10 @@ class ExposureTask(QtCore.QObject):
     imageloadperiod: float = 0.1
     instrument: "Instrument"
     detector: PilatusDetector
-    writenexus: bool = False
+    h5: Optional[h5py.File] = None
 
     def __init__(self, instrument: "Instrument", detector: PilatusDetector, prefix: str, fsn: int, index: int,
-                 exptime: float, expdelay: float, maskoverride: Optional[str] = None, writenexus: bool=False):
+                 exptime: float, expdelay: float, maskoverride: Optional[str] = None, writenexus: bool = False):
         super().__init__()
         self.prefix = prefix
         self.fsn = fsn
@@ -110,6 +112,11 @@ class ExposureTask(QtCore.QObject):
         self.instrument = instrument
         self.detector = detector
         self.writenexus = writenexus
+        if writenexus:
+            targetdir = os.path.join(self.instrument.io.getSubDir('nexus'), prefix)
+            os.makedirs(targetdir, exist_ok=True)
+            self.h5 = h5py.File(os.path.join(targetdir, self.instrument.io.formatFileName(prefix, fsn, '.nxs')), 'wt',
+                                libver='latest')
 
     @property
     def starttime(self):
@@ -224,7 +231,7 @@ class ExposureTask(QtCore.QObject):
         self.finished.emit(False, None)
 
     def createHeader(self) -> Header:
-        sample = self.instrument.samplestore.currentSample()
+        sample: Sample = self.instrument.samplestore.currentSample()
         data = {
             'fsn': self.fsn,
             'filename': os.path.abspath(
@@ -278,6 +285,9 @@ class ExposureTask(QtCore.QObject):
         os.makedirs(folder, exist_ok=True)
         with open(data['filename'], 'wb') as f:
             pickle.dump(data, f)
+        if sample.maskoverride is not None:
+            data['geometry']['mask'] = sample.maskoverride
         if self.maskoverride is not None:
+            # global mask override takes precedence
             data['geometry']['mask'] = self.maskoverride
         return Header(datadict=data)
