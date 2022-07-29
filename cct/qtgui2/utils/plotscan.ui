@@ -340,7 +340,7 @@
         </layout>
        </item>
        <item>
-        <widget class="QPushButton" name="saveDefaultSignalVisibility">
+        <widget class="QPushButton" name="saveDefaultSignalVisibilityPushButton">
          <property name="text">
           <string>Save default signal visibility</string>
          </property>
