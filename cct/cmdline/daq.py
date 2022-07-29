@@ -2,6 +2,7 @@ import logging
 import logging.handlers
 import multiprocessing
 import os
+import gc
 import sys
 
 import click
@@ -70,11 +71,13 @@ def daq(config: str, online: bool, root: bool):
     result = app.exec_()
     print('Event loop exited', flush=True)
     mw.deleteLater()
+    gc.collect()
     print('MainWindow deleted', flush=True)
     instrument.deleteLater()
+    gc.collect()
     print('Instrument deleted', flush=True)
-    #    gc.collect()
+    gc.collect()
     app.deleteLater()
     print('App deleted', flush=True)
-    #    gc.collect()
+    gc.collect()
     sys.exit(result)
