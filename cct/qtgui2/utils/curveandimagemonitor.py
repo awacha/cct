@@ -44,7 +44,7 @@ class ImageAndCurveMonitor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 label=f'{prefix}/{ex.header.fsn}: {ex.header.title} @ {ex.header.distance[0]:.2f} mm')
             self.plotwidget.replot()
         elif isinstance(self.plotwidget, PlotImage):
-            self.widget.setExposure(
+            self.plotwidget.setExposure(
                 ex, None,
                 f'{prefix}/{ex.header.fsn}: {ex.header.title} @ {ex.header.distance[0]:.2f} mm')
 
