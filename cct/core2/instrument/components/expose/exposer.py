@@ -321,8 +321,9 @@ class Exposer(QtCore.QObject, Component):
             logger.debug('Exposure stopped.' if externalstop else 'Exposure finished.')
             self.state = ExposerState.Idle
             self.exposureFinished.emit(not externalstop)
-            self.killTimer(self.progresstimer)
-            self.progresstimer = None
+            if self.progresstimer is not None:
+                self.killTimer(self.progresstimer)
+                self.progresstimer = None
             # check if the stopping was due to a panic event
             if self._panicking == self.PanicState.Panicking:
                 super().panichandler()

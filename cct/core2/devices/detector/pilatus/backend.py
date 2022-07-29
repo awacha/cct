@@ -284,7 +284,7 @@ class PilatusBackend(DeviceBackend):
             self.updateVariable('exptime', float(m['exptime']))
             self.updateVariable('starttime', dateutil.parser.parse(m['date']))
             if self.lastissuedcommand == 'expose':
-                self.commandFinished('expose', f'm["date"] $ {time.monotonic():.16f}')
+                self.commandFinished('expose', f'{m["date"]} $ {time.monotonic():.16f}')
                 self.lastissuedcommand = None
         elif (status == 'OK') and (idnum == 15) and (not remainder):
             # this can also happen, i.e. just a simple '15 OK'. E.g. by "resetcam" or "imgmode x"
