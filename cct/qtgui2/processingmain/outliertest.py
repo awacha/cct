@@ -135,13 +135,17 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
         self.otaxes.set_title(f'{self.samplename} @ {self.distancekey} mm')
         self.otmarkedline = self.otaxes.scatter(self.outliertestresults.fsns, self.outliertestresults.score, [0.0]*len(self.outliertestresults.fsns), c='none', edgecolors='red')
         self.otkdeaxes.clear()
-        kde = scipy.stats.kde.gaussian_kde(self.outliertestresults.score)
-        y = np.linspace(min(np.nanmin(self.outliertestresults.score) - np.ptp(self.outliertestresults.score) * 0.1, rmin),
-                        max(np.nanmax(self.outliertestresults.score) + np.ptp(self.outliertestresults.score), rmax), 300)
-        self.otkdeaxes.plot(kde(y), y)
-        self.otkdeaxes.set_xlabel('Gaussian KDE')
-        self.otkdeaxes.yaxis.set_label_position('right')
-        self.otkdeaxes.yaxis.set_ticks_position('right')
+        try:
+            kde = scipy.stats.kde.gaussian_kde(self.outliertestresults.score)
+            y = np.linspace(min(np.nanmin(self.outliertestresults.score) - np.ptp(self.outliertestresults.score) * 0.1, rmin),
+                            max(np.nanmax(self.outliertestresults.score) + np.ptp(self.outliertestresults.score), rmax), 300)
+            self.otkdeaxes.plot(kde(y), y)
+            self.otkdeaxes.set_xlabel('Gaussian KDE')
+            self.otkdeaxes.yaxis.set_label_position('right')
+            self.otkdeaxes.yaxis.set_ticks_position('right')
+        except np.linalg.LinAlgError:
+            # singular matrix, KDE cannot be computed from too few points
+            pass
         self.otaxes.set_xlabel('File sequence number')
         self.otaxes.set_ylabel('Outlier score')
         self.otcanvas.draw()
