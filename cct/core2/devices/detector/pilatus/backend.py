@@ -18,42 +18,72 @@ class PilatusBackend(DeviceBackend):
         Preparing = 'preparing for an exposure'
 
     varinfo = [
-        DeviceBackend.VariableInfo(name='gain', dependsfrom=['threshold'], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='threshold', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
-        DeviceBackend.VariableInfo(name='vcmp', dependsfrom=['threshold'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
-        DeviceBackend.VariableInfo(name='trimfile', dependsfrom=['telemetry_date'], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='wpix', dependsfrom=['telemetry_date'], urgent=False, timeout=inf, vartype=VariableType.INT),
-        DeviceBackend.VariableInfo(name='hpix', dependsfrom=['telemetry_date'], urgent=False, timeout=inf, vartype=VariableType.INT),
-        DeviceBackend.VariableInfo(name='sel_bank', dependsfrom=['telemetry_date'], urgent=False, timeout=inf, vartype=VariableType.INT),
-        DeviceBackend.VariableInfo(name='sel_module', dependsfrom=['telemetry_date'], urgent=False, timeout=inf, vartype=VariableType.INT),
-        DeviceBackend.VariableInfo(name='sel_chip', dependsfrom=['telemetry_date'], urgent=False, timeout=inf, vartype=VariableType.INT),
-        DeviceBackend.VariableInfo(name='telemetry_date', dependsfrom=[], urgent=False, timeout=2, vartype=VariableType.DATETIME),
-        DeviceBackend.VariableInfo(name='humidity', dependsfrom=['temperature'], urgent=False, timeout=10, vartype=VariableType.UNKNOWN),
-        DeviceBackend.VariableInfo(name='temperature', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.UNKNOWN),
+        DeviceBackend.VariableInfo(name='gain', dependsfrom=['threshold'], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='threshold', dependsfrom=[], urgent=False, timeout=inf,
+                                   vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='vcmp', dependsfrom=['threshold'], urgent=False, timeout=inf,
+                                   vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='trimfile', dependsfrom=['telemetry_date'], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='wpix', dependsfrom=['telemetry_date'], urgent=False, timeout=inf,
+                                   vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='hpix', dependsfrom=['telemetry_date'], urgent=False, timeout=inf,
+                                   vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='sel_bank', dependsfrom=['telemetry_date'], urgent=False, timeout=inf,
+                                   vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='sel_module', dependsfrom=['telemetry_date'], urgent=False, timeout=inf,
+                                   vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='sel_chip', dependsfrom=['telemetry_date'], urgent=False, timeout=inf,
+                                   vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='telemetry_date', dependsfrom=[], urgent=False, timeout=2,
+                                   vartype=VariableType.DATETIME),
+        DeviceBackend.VariableInfo(name='humidity', dependsfrom=['temperature'], urgent=False, timeout=10,
+                                   vartype=VariableType.UNKNOWN),
+        DeviceBackend.VariableInfo(name='temperature', dependsfrom=[], urgent=False, timeout=inf,
+                                   vartype=VariableType.UNKNOWN),
         DeviceBackend.VariableInfo(name='nimages', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.INT),
-        DeviceBackend.VariableInfo(name='cameradef', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='cameraname', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='cameraSN', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='camstate', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='targetfile', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='timeleft', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
-        DeviceBackend.VariableInfo(name='lastimage', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='masterPID', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.INT),
-        DeviceBackend.VariableInfo(name='controllingPID', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.INT),
-        DeviceBackend.VariableInfo(name='exptime', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
-        DeviceBackend.VariableInfo(name='lastcompletedimage', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='shutterstate', dependsfrom=['cameradef'], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='temperaturelimits', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.UNKNOWN),
-        DeviceBackend.VariableInfo(name='humiditylimits', dependsfrom=['temperaturelimits'], urgent=False, timeout=inf, vartype=VariableType.UNKNOWN),
+        DeviceBackend.VariableInfo(name='cameradef', dependsfrom=[], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='cameraname', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='cameraSN', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='camstate', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='targetfile', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='timeleft', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastimage', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='masterPID', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='controllingPID', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.INT),
+        DeviceBackend.VariableInfo(name='exptime', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='lastcompletedimage', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='shutterstate', dependsfrom=['cameradef'], urgent=False, timeout=inf,
+                                   vartype=VariableType.STR),
+        DeviceBackend.VariableInfo(name='temperaturelimits', dependsfrom=[], urgent=False, timeout=inf,
+                                   vartype=VariableType.UNKNOWN),
+        DeviceBackend.VariableInfo(name='humiditylimits', dependsfrom=['temperaturelimits'], urgent=False, timeout=inf,
+                                   vartype=VariableType.UNKNOWN),
         DeviceBackend.VariableInfo(name='imgpath', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
         DeviceBackend.VariableInfo(name='imgmode', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
         DeviceBackend.VariableInfo(name='pid', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.INT),
-        DeviceBackend.VariableInfo(name='expperiod', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='expperiod', dependsfrom=[], urgent=False, timeout=inf,
+                                   vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='tau', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
-        DeviceBackend.VariableInfo(name='cutoff', dependsfrom=['tau'], urgent=False, timeout=inf, vartype=VariableType.FLOAT),
-        DeviceBackend.VariableInfo(name='diskfree', dependsfrom=[], urgent=False, timeout=2, vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='cutoff', dependsfrom=['tau'], urgent=False, timeout=inf,
+                                   vartype=VariableType.FLOAT),
+        DeviceBackend.VariableInfo(name='diskfree', dependsfrom=[], urgent=False, timeout=2,
+                                   vartype=VariableType.FLOAT),
         DeviceBackend.VariableInfo(name='version', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.STR),
-        DeviceBackend.VariableInfo(name='starttime', dependsfrom=[], urgent=False, timeout=inf, vartype=VariableType.DATETIME),
+        DeviceBackend.VariableInfo(name='starttime', dependsfrom=[], urgent=False, timeout=inf,
+                                   vartype=VariableType.DATETIME),
         #        DeviceBackend.VariableInfo(name='filename', dependsfrom=[], urgent=False, timeout=inf),
     ]
 
@@ -150,7 +180,7 @@ class PilatusBackend(DeviceBackend):
                 self.updateVariable('__status__', self.Status.Idle)
                 self.updateVariable('__auxstatus__', '')
                 self.error(f'Error in exposure: {remainder}')
-#                self.panic()
+                #                self.panic()
                 self.enableAutoQuery()
         elif (status == 'OK') and (idnum == 7):  # successful end of single exposure
             self.updateVariable('lastcompletedimage', remainder)
@@ -175,7 +205,7 @@ class PilatusBackend(DeviceBackend):
                 self.enableAutoQuery()
         elif status == 'ERR':
             self.error(f'Unknown error reported by the Pilatus detector: {remainder}')
-            #self.panic()
+            # self.panic()
         elif (status == 'OK') and (idnum == 2):  # reply to 'camsetup'
             lines = [l.strip() for l in remainder.split('\n')]
             if not ((lines[0] == 'Camera definition:') and
@@ -212,13 +242,14 @@ class PilatusBackend(DeviceBackend):
             if self.baseimagepath is None:
                 self.baseimagepath = remainder
         elif (status == 'OK') and (idnum == 15) and ((m := re.match(
-                    r'Settings: (?P<gain>.+) gain; threshold: (?P<threshold>\d+) eV; '
-                    r'vcmp: (?P<vcmp>[+-]?\d+\.\d+) V\n Trim file:\n\s*(?P<trimfile>.+)\s*', remainder)) is not None):
-            self.updateVariable('gain', m['gain']+'G')
+                r'Settings: (?P<gain>.+) gain; threshold: (?P<threshold>\d+) eV; '
+                r'vcmp: (?P<vcmp>[+-]?\d+\.\d+) V\n Trim file:\n\s*(?P<trimfile>.+)\s*', remainder)) is not None):
+            self.updateVariable('gain', m['gain'] + 'G')
             self.updateVariable('threshold', float(m['threshold']))
             self.updateVariable('vcmp', float(m['vcmp']))
             self.updateVariable('trimfile', m['trimfile'])
-        elif (status == 'OK') and (idnum == 15) and ((m := re.match(r'^N images set to: (?P<nimages>\d+)$', remainder)) is not None):
+        elif (status == 'OK') and (idnum == 15) and (
+                (m := re.match(r'^N images set to: (?P<nimages>\d+)$', remainder)) is not None):
             self.updateVariable('nimages', int(m['nimages']))
         elif (status == 'OK') and (idnum == 15) and remainder.startswith('chan  Tlo   Thi   Hlo   Hhi'):
             # reply to setlimth: query of temperature and humidity limits
@@ -236,8 +267,10 @@ class PilatusBackend(DeviceBackend):
             self.updateVariable('expperiod', float(remainder.split(':')[1].strip().split()[0]))
         elif (status == 'OK') and (idnum == 15) and remainder.startswith('Exposure time set to: '):
             self.updateVariable('exptime', float(remainder.split(':')[1].strip().split()[0]))
-            if (self['__status__'] == self.Status.Preparing) and (self['expperiod'] == self.prepared_expperiod) and \
-                    (self['exptime'] == self.prepared_exptime) and (self['nimages'] == self.prepared_nimages):
+            if (self['__status__'] == self.Status.Preparing) and \
+                    (abs(self['expperiod'] - self.prepared_expperiod) < 0.00001) and \
+                    (abs(self['exptime'] - self.prepared_exptime) < 0.00001) and \
+                    (self['nimages'] == self.prepared_nimages):
                 # the preparations are ready
                 # Note that we don't check for the equality of imgpath, because it can differ due to symbolic links,
                 # e.g. /disk2/images/tst can be the same as /home/det/p2_det/images/tst. This is nearly impossible to
@@ -247,10 +280,11 @@ class PilatusBackend(DeviceBackend):
                     'prepareexposure',
                     f'Exposure of {self["nimages"]} image(s) prepared, '
                     f'exposure time is {self["exptime"]:.6f} s, '
-                    f'delay between exposures is {self["expperiod"]-self["exptime"]:.6f} s, '
+                    f'delay between exposures is {self["expperiod"] - self["exptime"]:.6f} s, '
                     f'file(s) will be saved to {self["imgpath"]}')
             elif self['__status__'] == self.Status.Preparing:
-                self.warning(f'Detector incorrectly prepared: {self["exptime"]} ?= {self.prepared_exptime}, {self["expperiod"]} ?= {self.prepared_expperiod}, {self["nimages"]} ?= {self.prepared_nimages}')
+                self.warning(
+                    f'Detector incorrectly prepared: {self["exptime"]} ?= {self.prepared_exptime}, {self["expperiod"]} ?= {self.prepared_expperiod}, {self["nimages"]} ?= {self.prepared_nimages}')
         elif (status == 'OK') and (idnum == 15) and ((m := re.match(
                 r'^Rate correction is on; tau = (?P<tau>.*) s, '
                 r'cutoff = (?P<cutoff>\d+) counts$', remainder)) is not None):
@@ -259,12 +293,14 @@ class PilatusBackend(DeviceBackend):
         elif (status == 'OK') and (idnum == 15) and (remainder == 'Turn off rate correction'):
             self.updateVariable('tau', 0.0)
             self.updateVariable('cutoff', 1048574)
-        elif (status == 'OK') and (idnum == 15) and (remainder == 'Turning off rate correction  Setting gap-fill byte to 0'):
+        elif (status == 'OK') and (idnum == 15) and (
+                remainder == 'Turning off rate correction  Setting gap-fill byte to 0'):
             # e.g. for "imgmode p"
             self.updateVariable('imgmode', 'pulses')
             self.updateVariable('tau', 0.0)
             self.updateVariable('cutoff', 1048574)
-        elif (status == 'OK') and (idnum == 15) and ((m := re.match(r'^Rate correction is off, cutoff = (?P<cutoff>\d+) counts$', remainder)) is not None):
+        elif (status == 'OK') and (idnum == 15) and (
+                (m := re.match(r'^Rate correction is off, cutoff = (?P<cutoff>\d+) counts$', remainder)) is not None):
             self.updateVariable('tau', 0.0)
             self.updateVariable('cutoff', int(m['cutoff']))
         elif (status == 'OK') and (idnum == 15) and (remainder == '/tmp/setthreshold.cmd'):
@@ -280,7 +316,8 @@ class PilatusBackend(DeviceBackend):
             if self.panicking == self.PanicState.Panicking:
                 super().doPanic()
         elif (status == 'OK') and (idnum == 15) and ((m := re.match(r'Starting (?P<exptime>.*) second background: '
-                            r'(?P<date>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+)$', remainder)) is not None):
+                                                                    r'(?P<date>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+)$',
+                                                                    remainder)) is not None):
             self.updateVariable('exptime', float(m['exptime']))
             self.updateVariable('starttime', dateutil.parser.parse(m['date']))
             if self.lastissuedcommand == 'expose':
@@ -376,7 +413,7 @@ class PilatusBackend(DeviceBackend):
             self.messagereplytimeout = 60
             self.updateVariable('__status__', self.Status.Trimming)
             self.lastissuedcommand = 'trim'
-#            self.commandFinished(name, 'Started trimming')
+        #            self.commandFinished(name, 'Started trimming')
         elif name == 'prepareexposure':
             relimgpath, exptime, nimages, delay = args
             if exptime < 1e-7 or exptime > 1e6:
@@ -403,7 +440,7 @@ class PilatusBackend(DeviceBackend):
             if len(args) == 5:
                 # old behaviour
                 relimgpath, firstfilename, exptime, nimages, delay = args
-                #self.debug(f'Starting exposure {relimgpath=}, {firstfilename=}, {exptime=}, {nimages=}, {delay=}')
+                # self.debug(f'Starting exposure {relimgpath=}, {firstfilename=}, {exptime=}, {nimages=}, {delay=}')
                 if exptime < 1e-7 or exptime > 1e6:
                     self.commandError(name, 'Invalid value for exposure time')
                     return
@@ -429,7 +466,8 @@ class PilatusBackend(DeviceBackend):
                 firstfilename = args[0]
                 self.disableAutoQuery()
                 self.enqueueHardwareMessage(f'exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
-                self.updateVariable('__status__', self.Status.Exposing if self['nimages'] == 1 else self.Status.ExposingMulti)
+                self.updateVariable('__status__',
+                                    self.Status.Exposing if self['nimages'] == 1 else self.Status.ExposingMulti)
                 self.lastissuedcommand = 'expose'
         elif name == 'stopexposure':
             self.lastissuedcommand = 'stopexposure'
@@ -496,7 +534,7 @@ class PilatusBackend(DeviceBackend):
         elif self['__status__'] in [self.Status.Trimming]:
             pass  # do nothing, when the trimming is done, panic will be acknowledged
         elif self['__status__'] in [self.Status.Stopping]:
-            pass # do nothing, when the system is settled, panic will be acknowledged
+            pass  # do nothing, when the system is settled, panic will be acknowledged
         elif self['__status__'] == self.Status.Idle:
             super().doPanic()
         else:
