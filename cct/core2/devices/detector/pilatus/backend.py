@@ -269,6 +269,9 @@ class PilatusBackend(DeviceBackend):
             self.updateVariable('cutoff', int(m['cutoff']))
         elif (status == 'OK') and (idnum == 15) and (remainder == '/tmp/setthreshold.cmd'):
             # end of trimming
+            if (self.lastissuedcommand == 'trim') and (self['__status__'] == self.Status.Trimming):
+                self.commandFinished('trim', 'Trimming finished successfully')
+                self.lastissuedcommand = None
             self.enableAutoQuery()
             self.updateVariable('__status__', self.Status.Idle)
             self.updateVariable('__auxstatus__', '')
@@ -420,14 +423,12 @@ class PilatusBackend(DeviceBackend):
                 fulltime = nimages * exptime + (nimages - 1) * delay
                 self.enqueueHardwareMessage(f'Exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
                 self.updateVariable('__status__', self.Status.Exposing if nimages == 1 else self.Status.ExposingMulti)
-                self.commandFinished(name, 'Started exposure')
             elif len(args) == 1:
                 # new behaviour, split prepare + expose commands
                 firstfilename = args[0]
                 self.disableAutoQuery()
                 self.enqueueHardwareMessage(f'exposure {firstfilename}\r'.encode('ascii'), numreplies=2)
                 self.updateVariable('__status__', self.Status.Exposing if self['nimages'] == 1 else self.Status.ExposingMulti)
-                self.commandFinished(name, 'Started exposure')
         elif name == 'stopexposure':
             self.lastissuedcommand = 'stopexposure'
             self.stopExposure()
