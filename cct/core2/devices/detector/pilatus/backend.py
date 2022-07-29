@@ -59,7 +59,6 @@ class PilatusBackend(DeviceBackend):
     minimal_exposure_delay = 0.003  # seconds
     baseimagepath: str = None
     lastissuedcommand: Optional[str] = None
-    prepared_imgpath: str = None
     prepared_nimages: int = None
     prepared_exptime: float = None
     prepared_expperiod: float = None
@@ -237,9 +236,11 @@ class PilatusBackend(DeviceBackend):
         elif (status == 'OK') and (idnum == 15) and remainder.startswith('Exposure time set to: '):
             self.updateVariable('exptime', float(remainder.split(':')[1].strip().split()[0]))
             if (self['__status__'] == self.Status.Preparing) and (self['expperiod'] == self.prepared_expperiod) and \
-                    (self['exptime'] == self.prepared_exptime) and (self['nimages'] == self.prepared_nimages) and \
-                    (self['imgpath'] == self.prepared_imgpath):
+                    (self['exptime'] == self.prepared_exptime) and (self['nimages'] == self.prepared_nimages):
                 # the preparations are ready
+                # Note that we don't check for the equality of imgpath, because it can differ due to symbolic links,
+                # e.g. /disk2/images/tst can be the same as /home/det/p2_det/images/tst. This is nearly impossible to
+                # assess remotely.
                 self.updateVariable('__status__', self.Status.Idle)
                 self.commandFinished(
                     'prepareexposure',
@@ -387,7 +388,6 @@ class PilatusBackend(DeviceBackend):
             self.prepared_exptime = exptime
             self.prepared_nimages = nimages
             self.prepared_expperiod = exptime + delay
-            self.prepared_imgpath = f"{self.baseimagepath}/{relimgpath}"
             self.enqueueHardwareMessage(f'imgpath {self.baseimagepath}/{relimgpath}\r'.encode('ascii'))
             self.enqueueHardwareMessage(f'expperiod {exptime + delay:f}\r'.encode('ascii'))
             self.enqueueHardwareMessage(f'nimages {nimages}\r'.encode('ascii'))
