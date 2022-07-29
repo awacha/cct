@@ -339,6 +339,16 @@
          </item>
         </layout>
        </item>
+       <item>
+        <widget class="QPushButton" name="saveDefaultSignalVisibility">
+         <property name="text">
+          <string>Save default signal visibility</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-save"/>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="verticalLayoutWidget">

@@ -74,6 +74,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.lines = {}
         self.setRecording(self._recording)
         self.canvas.setFocus(QtCore.Qt.OtherFocusReason)
+        self.saveDefaultSignalVisibilityPushButton.clicked.connect(self.saveDefaultSignalVisibility)
 
     def onCanvasKeyPress(self, event: KeyEvent):
         logger.debug('Key pressed on canvas: {}'.format(event.key))
@@ -280,13 +281,14 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.setPlotVisibility()  # this also plots the legend
         self.emphasizeCurrentLine()
         self.cursorHorizontalSlider.setMinimum(0)
-        self.cursorHorizontalSlider.setMaximum(len(self.scan)-1)
+        self.cursorHorizontalSlider.setMaximum(len(self.scan) - 1)
         self.cursor = self.axes.axvline(self.scan[self.scan.motorname][self.cursorHorizontalSlider.value()], lw=2,
                                         ls='dashed', color='k')
         self.cursor.set_visible(not self._recording)
         limits = self.axes.axis()
         try:
-            self.motorvline = self.axes.axvline(self.instrument.motors[self.scan.motorname].where(), lw=1, ls='dotted', color='g')
+            self.motorvline = self.axes.axvline(self.instrument.motors[self.scan.motorname].where(), lw=1, ls='dotted',
+                                                color='g')
             self.axes.axis(limits)
         except Exception as exc:
             logger.warning(f'Cannot plot motor vline: {exc}')
@@ -305,7 +307,12 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             item = self.listWidget.item(row)
             item.setFlags(
                 QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable)
-            item.setCheckState(QtCore.Qt.Checked)
+            if 'gui' not in self.instrument.config:
+                self.instrument.config['gui'] = {}
+            if 'plotscan' not in self.instrument.config['gui']:
+                self.instrument.config['gui']['plotscan'] = {}
+            visible = self.instrument.config['gui']['plotscan'].setdefault(self.scan.columnnames[1 + row], True)
+            item.setCheckState(QtCore.Qt.Checked if bool(visible) else QtCore.Qt.Unchecked)
         self.listWidget.setCurrentItem(self.listWidget.item(1))
         self.cursorHorizontalSlider.setMinimum(0)
         self.cursorHorizontalSlider.setMaximum(len(self.scan) - 1)
@@ -326,3 +333,15 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if self.motorvline is not None:
             self.motorvline.set_xdata(newposition)
             self.canvas.draw_idle()
+
+    @Slot()
+    def saveDefaultSignalVisibility(self):
+        if self.scan is None:
+            return
+        for row, label in enumerate(self.scan.columnnames[1:]):
+            if 'gui' not in self.instrument.config:
+                self.instrument.config['gui'] = {}
+            if 'plotscan' not in self.instrument.config['gui']:
+                self.instrument.config['gui']['plotscan'] = {}
+            self.instrument.config['gui']['plotscan'][label] = \
+                self.listWidget.item(row).checkState() == QtCore.Qt.Checked
