@@ -231,7 +231,7 @@ class ExposureTask(QtCore.QObject):
         self.finished.emit(False, None)
 
     def createHeader(self) -> Header:
-        sample: Sample = self.instrument.samplestore.currentSample()
+        sample: Optional[Sample] = self.instrument.samplestore.currentSample()
         data = {
             'fsn': self.fsn,
             'filename': os.path.abspath(
@@ -285,7 +285,7 @@ class ExposureTask(QtCore.QObject):
         os.makedirs(folder, exist_ok=True)
         with open(data['filename'], 'wb') as f:
             pickle.dump(data, f)
-        if sample.maskoverride is not None:
+        if (sample is not None) and (sample.maskoverride is not None):
             data['geometry']['mask'] = sample.maskoverride
         if self.maskoverride is not None:
             # global mask override takes precedence

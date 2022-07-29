@@ -301,6 +301,9 @@ class Exposer(QtCore.QObject, Component):
                                ' Starting or Exposing states')
             logger.error(f'Exposure stop requested by user.')
             self.state = ExposerState.Stopping
+            for task in self.exposuretasks:
+                if task.status in [ExposureState.Running, ExposureState.Pending, ExposureState.WaitingForImage]:
+                    task.stopExposure()
         elif commandname == 'stopexposure' and (not success):
             logger.error(f'Exposure cannot be stopped: {result}')
         else:
