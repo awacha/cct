@@ -250,7 +250,7 @@ class Exposer(QtCore.QObject, Component):
             # ##############################################
             # state: Starting -> Exposing
             # ##############################################
-            assert self.detector['__state__'] in [PilatusBackend.Status.Exposing, PilatusBackend.Status.ExposingMulti]
+            assert self.detector['__status__'] in [PilatusBackend.Status.Exposing, PilatusBackend.Status.ExposingMulti]
             self.state = ExposerState.Exposing
 
             # now start the timers of the ExposureTasks
@@ -276,7 +276,7 @@ class Exposer(QtCore.QObject, Component):
             if n := [t for t in self.exposuretasks if t.status in [ExposureState.Running, ExposureState.Pending]]:
                 logger.error(
                     f'There are still {n} exposure tasks Running/Pending. There shouldn\'t be any at this point!')
-            self.state = ExposerState.Idle  # we won't get __state__ change from the detector to set this
+            self.state = ExposerState.Idle  # we won't get __status__ change from the detector to set this
             # Emit the exposureStarted and exposureFinished signals quickly after each other.
             self.exposureStarted.emit()
             self.exposureFinished.emit(False)
