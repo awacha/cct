@@ -247,6 +247,8 @@ class PilatusBackend(DeviceBackend):
                     f'exposure time is {self["exptime"]:.6f} s, '
                     f'delay between exposures is {self["expperiod"]-self["exptime"]:.6f} s, '
                     f'file(s) will be saved to {self["imgpath"]}')
+            elif self['__status__'] == self.Status.Preparing:
+                self.warning(f'Detector incorrectly prepared: {self["exptime"]} ?= {self.prepared_exptime}, {self["expperiod"]} ?= {self.prepared_expperiod}, {self["nimages"]} ?= {self.prepared_nimages}, {self["imgpath"]} ?= {self.prepared_imgpath}')
         elif (status == 'OK') and (idnum == 15) and ((m := re.match(
                 r'^Rate correction is on; tau = (?P<tau>.*) s, '
                 r'cutoff = (?P<cutoff>\d+) counts$', remainder)) is not None):
