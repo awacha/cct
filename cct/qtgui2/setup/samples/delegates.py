@@ -58,7 +58,7 @@ class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
     def setEditorData(self, editor: QtWidgets.QWidget, index: QtCore.QModelIndex) -> None:
         logger.debug(f'setEditorData({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         attribute = self._get_attribute(index)
-        sample = Instrument.instance().samplestore[index.row()]
+        sample: Sample = index.data(QtCore.Qt.UserRole)
         assert isinstance(sample, Sample)
         if attribute in ['title', 'description', 'preparedby', 'maskoverride', 'preparetime']:
             super().setEditorData(editor, index)

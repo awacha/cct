@@ -95,6 +95,8 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
                 attribute in ['positionx', 'positiony', 'thickness', 'distminus', 'transmission']):
             attr = getattr(sample, attribute)
             return f'{attr[0]:.4f} \xb1 {attr[1]:.4f}'
+        elif role == QtCore.Qt.UserRole:
+            return sample
         else:
             return None
 
