@@ -7,6 +7,7 @@ from PyQt5.uic import compileUi
 from numpy import get_include
 from setuptools import setup, Extension, Command
 from setuptools.command.build_py import build_py
+from setuptools.command.develop import develop
 
 
 class RCCComand(Command):
@@ -62,6 +63,14 @@ class BuildPyCommand(build_py):
         super().run()
 
 
+class DevelopCommand(develop):
+    """Override the default develop command to require Qt UI and resourec compilation"""
+    def run(self) -> None:
+        self.run_command('rcc')
+        self.run_command('uic')
+        super().run()
+
+
 # collect extensions
 
 if sys.platform.lower().startswith('win') and sys.maxsize > 2 ** 32:
@@ -85,5 +94,7 @@ for dirpath, dirnames, filenames in os.walk('cct'):
 setup(ext_modules=extensions,
       cmdclass={'build_py': BuildPyCommand,
                 'uic': BuildUICommand,
-                'rcc': RCCComand, }
+                'rcc': RCCComand,
+                'develop': DevelopCommand,
+                }
       )
