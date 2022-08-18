@@ -238,8 +238,8 @@ class Instrument(QtCore.QObject):
         """
         instgroup = entrygrp.create_group('instrument')
         instgroup.attrs['NX_class'] = 'NXinstrument'
-        instgroup.create_dataset('name', data='Creative Research Equipment for DiffractiOn').attrs = {
-            'short_name': 'CREDO'}
+        instgroup.create_dataset('name', data='Creative Research Equipment for DiffractiOn').attrs.update({
+            'short_name': 'CREDO'})
         sample = self.samplestore.currentSample()
         self.geometry.toNeXus(instgroup, 0.0 if sample is None else sample.distminus[0])
         self.devicemanager.toNeXus(instgroup)
