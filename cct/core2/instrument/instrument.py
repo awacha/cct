@@ -241,8 +241,8 @@ class Instrument(QtCore.QObject):
         instgroup.create_dataset('name', data='Creative Research Equipment for DiffractiOn').attrs.update({
             'short_name': 'CREDO'})
         sample = self.samplestore.currentSample()
+        self.beamstop.toNeXus(instgroup)
         self.geometry.toNeXus(instgroup, 0.0 if sample is None else sample.distminus[0])
         self.devicemanager.toNeXus(instgroup)
-        self.beamstop.toNeXus(instgroup)
         self.motors.toNeXus(instgroup)
         return entrygrp
