@@ -189,11 +189,11 @@ class Sample(object):
         # The NXsample base class specifies that the transmission should be a NXdata. A little overkill in our case,
         # but let's conform to the standards...
         transmgrp = grp.create_group('transmission')
-        transmgrp.attrs = {'NX_class': 'NXdata', 'signal': 'transmission'}
+        transmgrp.attrs.update({'NX_class': 'NXdata', 'signal': 'transmission'})
         transmgrp.create_dataset('')
 
         beamgrp = grp.create_group('beam')
-        beamgrp.attrs = {'NX_class': 'NXbeam'}
+        beamgrp.attrs.update({'NX_class': 'NXbeam'})
 
         # Temperature
         #grp.create_dataset('temperature')  #ToDo somewhere else

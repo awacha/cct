@@ -232,6 +232,6 @@ class BeamStop(QtCore.QObject, Component):
         wherex = self.motorx.where()
         wherey = self.motory.where()
         inx, iny = self.inPosition()
-        bsgroup.require_dataset('x', data=wherex-inx).attrs={'units': 'mm'}
-        bsgroup.require_dataset('y', data=wherey-iny).attrs={'units': 'mm'}
+        bsgroup.require_dataset('x', data=wherex-inx).attrs.update({'units': 'mm'})
+        bsgroup.require_dataset('y', data=wherey-iny).attrs.update({'units': 'mm'})
         return instrumentgroup

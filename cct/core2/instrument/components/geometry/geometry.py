@@ -236,28 +236,28 @@ class Geometry(QtCore.QObject, Component):
         geoconf = self.config['geometry']
         ### Add information on the beamstop
         bsgroup = instrumentgroup.require_group('beam_stop')  # should be created by the beamstop component
-        bsgroup.create_dataset('size', data=geoconf['beamstop']).attrs = {'units': 'mm'}
-        bsgroup.create_dataset('distance_to_detector', data=geoconf['beamstoptodetector']).attrs = {'units': 'mm'}
+        bsgroup.create_dataset('size', data=geoconf['beamstop']).attrs.update({'units': 'mm'})
+        bsgroup.create_dataset('distance_to_detector', data=geoconf['beamstoptodetector']).attrs.update({'units': 'mm'})
         trans = bsgroup.create_group('transformations')
         trans.attrs['NX_class'] = 'NXtransformations'
-        trans.create_dataset('z', data=geoconf['dist_sample_det'] - sampleshift - geoconf['beamstoptodetector']).attrs = {
+        trans.create_dataset('z', data=geoconf['dist_sample_det'] - sampleshift - geoconf['beamstoptodetector']).attrs.update({
             'transformation_type': 'translation',
             'vector': [0, 0, 1],
             'units': 'mm',
             'depends_on': '.'
-        }
-        trans.create_dataset('y', data=float(bsgroup.y)).attrs = {
+        })
+        trans.create_dataset('y', data=float(bsgroup.y)).attrs.update({
             'transformation_type': 'translation',
             'vector': [0, 1, 0],
             'units': 'mm',
             'depends_on': 'z'
-        }
-        trans.create_dataset('x', data=float(bsgroup.x)).attrs = {
+        })
+        trans.create_dataset('x', data=float(bsgroup.x)).attrs.update({
             'transformation_type': 'translation',
             'vector': [1, 0, 0],
             'units': 'mm',
             'depends_on': 'y'
-        }
+        })
         # Create a legacy geometry group for the beamstop
         geogrp = bsgroup.create_group('geometry')
         geogrp.attrs['NX_class'] = 'NXgeometry'
@@ -266,11 +266,11 @@ class Geometry(QtCore.QObject, Component):
         shapegrp = geogrp.create_group('shape')
         shapegrp.attrs['NX_class'] = 'NXshape'
         shapegrp.create_dataset('shape', data='nxcylinder')
-        shapegrp.create_dataset('size', data=[[geoconf['beamstop'], 0, 0, 0, 1]]).attrs = {'units': 'mm'}
+        shapegrp.create_dataset('size', data=[[geoconf['beamstop'], 0, 0, 0, 1]]).attrs.update({'units': 'mm'})
         translationgrp = geogrp.create_group('translation')
         translationgrp.attrs['NX_class'] = 'NXtranslation'
         translationgrp.create_dataset(
-            'distances', [[0, 0, geoconf['dist_sample_det'] - sampleshift - geoconf['beamstoptodetector']]]).attrs = {'units': 'mm'}
+            'distances', [[0, 0, geoconf['dist_sample_det'] - sampleshift - geoconf['beamstoptodetector']]]).attrs.update({'units': 'mm'})
 
         ### Pinholes
         for ipinhole, (dist, aperture) in enumerate([
@@ -282,18 +282,18 @@ class Geometry(QtCore.QObject, Component):
             phgrp.create_dataset('material', data='Pt-Ir alloy')
             phgrp.create_dataset('description', data=f'Pinhole #{ipinhole}')
             transgrp = phgrp.create_group('transformations')
-            transgrp.create_dataset('x', data=0).attrs = {'transformation_type': 'translation', 'vector': [1, 0, 0],
-                                                          'units': 'mm', 'depends_on': '.'}
-            transgrp.create_dataset('y', data=0).attrs = {'transformation_type': 'translation', 'vector': [0, 1, 0],
-                                                          'units': 'mm', 'depends_on': 'x'}
-            transgrp.create_dataset('z', data=-dist).attrs = {'transformation_type': 'translation', 'vector': [0, 0, 1],
-                                                              'units': 'mm', 'depends_on': 'y'}
+            transgrp.create_dataset('x', data=0).attrs.update({'transformation_type': 'translation', 'vector': [1, 0, 0],
+                                                          'units': 'mm', 'depends_on': '.'})
+            transgrp.create_dataset('y', data=0).attrs.update({'transformation_type': 'translation', 'vector': [0, 1, 0],
+                                                          'units': 'mm', 'depends_on': 'x'})
+            transgrp.create_dataset('z', data=-dist).attrs.update({'transformation_type': 'translation', 'vector': [0, 0, 1],
+                                                              'units': 'mm', 'depends_on': 'y'})
             shapegrp = phgrp.create_group('shape')
             shapegrp.attrs['NX_class'] = 'NXcylindrical_geometry'
             shapegrp.create_dataset('vertices',
-                                    data=[[0, 0, -dist], [0, aperture / 1000, -dist], [0, 0, -dist]]).attrs = {
+                                    data=[[0, 0, -dist], [0, aperture / 1000, -dist], [0, 0, -dist]]).attrs.update({
                 "units": 'mm'
-            }
+            })
             shapegrp.create_dataset('cylinders', data=[0, 1, 2])
             # create legacy geometry class
             geogrp = phgrp.create_group('geometry')
@@ -303,24 +303,24 @@ class Geometry(QtCore.QObject, Component):
             shapegrp = geogrp.create_group('shape')
             shapegrp.attrs['NX_class'] = 'NXshape'
             shapegrp.create_dataset('shape', data='nxcylinder')
-            shapegrp.create_dataset('size', data=[[aperture / 1000, 0.1, 0, 0, 1]]).attrs = {'units': 'mm'}
+            shapegrp.create_dataset('size', data=[[aperture / 1000, 0.1, 0, 0, 1]]).attrs.update({'units': 'mm'})
             translationgrp = geogrp.create_group('translation')
             translationgrp.attrs['NX_class'] = 'NXtranslation'
-            translationgrp.create_dataset('distances', [[0, 0, -dist]]).attrs = {'units': 'mm'}
+            translationgrp.create_dataset('distances', [[0, 0, -dist]]).attrs.update({'units': 'mm'})
 
         ### Crystal and Monochromator: only to set the wavelength
         crystgrp = instrumentgroup.create_group('crystal')
         crystgrp.attrs['NX_class'] = 'NXcrystal'
-        crystgrp.create_dataset('wavelength', geoconf['wavelength']).attrs = {'units': 'nm'}
-        crystgrp.create_dataset('wavelength_errors', geoconf['wavelength.err']).attrs = {'units': 'nm'}
+        crystgrp.create_dataset('wavelength', geoconf['wavelength']).attrs.update({'units': 'nm'})
+        crystgrp.create_dataset('wavelength_errors', geoconf['wavelength.err']).attrs.update({'units': 'nm'})
         mcgrp = instrumentgroup.create_group('monochromator')
         mcgrp.attrs['NX_class'] = 'NXmonochromator'
-        mcgrp.create_dataset('wavelength', geoconf['wavelength']).attrs = {'units': 'nm'}
-        mcgrp.create_dataset('wavelength_errors', geoconf['wavelength.err']).attrs = {'units': 'nm'}
+        mcgrp.create_dataset('wavelength', geoconf['wavelength']).attrs.update({'units': 'nm'})
+        mcgrp.create_dataset('wavelength_errors', geoconf['wavelength.err']).attrs.update({'units': 'nm'})
         hcdive = (299792458 * 6.6260705e-34 / 1.60217663e-19) * 1e9  # eV * nm
-        mcgrp.create_dataset('energy', hcdive / geoconf['wavelength']).attrs = {'units': 'eV'}
-        mcgrp.create_dataset('energy_errors', hcdive / geoconf['wavelength'] ** 2 * geoconf['wavelength.err']).attrs = {
-            'units': 'eV'}
+        mcgrp.create_dataset('energy', hcdive / geoconf['wavelength']).attrs.update({'units': 'eV'})
+        mcgrp.create_dataset('energy_errors', hcdive / geoconf['wavelength'] ** 2 * geoconf['wavelength.err']).attrs.update({
+            'units': 'eV'})
         mcgrp.create_dataset('wavelength_spread', geoconf['wavelength.err'] / geoconf['wavelength'])
 
         ### update the source
@@ -329,19 +329,19 @@ class Geometry(QtCore.QObject, Component):
                                                          instrumentgroup[grp].attrs['NX_class'] == 'NXsource')][0]]
         transformgrp = sourcegrp.create_group('transformations')
         transformgrp.attrs['NX_class'] = 'NXtransformations'
-        transformgrp.create_dataset('x', data=0).attrs = {'transformation_type': 'translation', 'vector': [1, 0, 0],
-                                                          'units': 'mm', 'depends_on': '.'}
-        transformgrp.create_dataset('y', data=0).attrs = {'transformation_type': 'translation', 'vector': [1, 0, 0],
-                                                          'units': 'mm', 'depends_on': 'x'}
+        transformgrp.create_dataset('x', data=0).attrs.update({'transformation_type': 'translation', 'vector': [1, 0, 0],
+                                                          'units': 'mm', 'depends_on': '.'})
+        transformgrp.create_dataset('y', data=0).attrs.update({'transformation_type': 'translation', 'vector': [1, 0, 0],
+                                                          'units': 'mm', 'depends_on': 'x'})
         transformgrp.create_dataset(
-            'z', data=-geoconf['ph3tosample'] - geoconf['l2'] - geoconf['l1'] - geoconf['sourcetoph1'] - sampleshift).attrs = {
-            'transformation_type': 'translation', 'vector': [1, 0, 0], 'units': 'mm', 'depends_on': 'y'}
+            'z', data=-geoconf['ph3tosample'] - geoconf['l2'] - geoconf['l1'] - geoconf['sourcetoph1'] - sampleshift).attrs.update({
+            'transformation_type': 'translation', 'vector': [1, 0, 0], 'units': 'mm', 'depends_on': 'y'})
         geogrp = sourcegrp.create_group('geometry')
         geogrp.attrs['NX_class'] = 'NXgeometry'
         geogrp.create_dataset('component_index', data=-4)
         translationgrp = geogrp.create_group('translation')
         translationgrp.attrs['NX_class'] = 'NXtranslation'
-        translationgrp.create_dataset('distances', [[0, 0, -geoconf['ph3tosample'] - geoconf['l2'] - geoconf['l1'] - geoconf['sourcetoph1'] - sampleshift]]).attrs = {'units': 'mm'}
+        translationgrp.create_dataset('distances', [[0, 0, -geoconf['ph3tosample'] - geoconf['l2'] - geoconf['l1'] - geoconf['sourcetoph1'] - sampleshift]]).attrs.update({'units': 'mm'})
 
         ### update the detector
         detgroup: h5py.Group = instrumentgroup[[grp for grp in instrumentgroup if
@@ -369,17 +369,17 @@ class Geometry(QtCore.QObject, Component):
         detgroup.create_dataset('aequatorial_angle', 0.0).attrs['units'] = 'rad'
         transformgrp = detgroup.create_group('transformations')
         transformgrp.attrs['NX_class'] = 'NXtransformations'
-        transformgrp.create_dataset('x', data=0).attrs = {'transformation_type': 'translation', 'vector': [1, 0, 0],
-                                                          'units': 'mm', 'depends_on': '.'}
-        transformgrp.create_dataset('y', data=0).attrs = {'transformation_type': 'translation', 'vector': [1, 0, 0],
-                                                          'units': 'mm', 'depends_on': 'x'}
-        transformgrp.create_dataset('z', data=geoconf['dist_sample_to_det'] - sampleshift).attrs = {
-            'transformation_type': 'translation', 'vector': [1, 0, 0], 'units': 'mm', 'depends_on': 'y'}
+        transformgrp.create_dataset('x', data=0).attrs.update({'transformation_type': 'translation', 'vector': [1, 0, 0],
+                                                          'units': 'mm', 'depends_on': '.'})
+        transformgrp.create_dataset('y', data=0).attrs.update({'transformation_type': 'translation', 'vector': [1, 0, 0],
+                                                          'units': 'mm', 'depends_on': 'x'})
+        transformgrp.create_dataset('z', data=geoconf['dist_sample_to_det'] - sampleshift).attrs.update({
+            'transformation_type': 'translation', 'vector': [1, 0, 0], 'units': 'mm', 'depends_on': 'y'})
         geogrp = detgroup.create_group('geometry')
         geogrp.attrs['NX_class'] = 'NXgeometry'
         geogrp.create_dataset('component_index', data=2)
         translationgrp = geogrp.create_group('translation')
         translationgrp.attrs['NX_class'] = 'NXtranslation'
-        translationgrp.create_dataset('distances', [[0, 0, geoconf['dist_sample_to_det']- sampleshift]]).attrs = {'units': 'mm'}
+        translationgrp.create_dataset('distances', [[0, 0, geoconf['dist_sample_to_det']- sampleshift]]).attrs.update({'units': 'mm'})
 
         return instrumentgroup

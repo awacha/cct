@@ -188,12 +188,12 @@ class Processing(QtCore.QAbstractItemModel):
                         return
                     if isinstance(h5.get(path, getclass=True), h5py.Group):
                         grp = h5out.require_group(path)
-                        grp.attrs = h5.get(path).attrs
+                        grp.attrs.update(h5.get(path).attrs)
                     elif isinstance(h5.get(path, getclass=True), h5py.Dataset):
                         ds = h5.get(path)
                         dsnew = h5out.create_dataset(path, shape=ds.shape, dtype=ds.dtype, data=np.array(ds),
                                                      compression=ds.compression, compression_opts=ds.compression_opts)
-                        dsnew.attrs = ds.attrs
+                        dsnew.attrs.update(ds.attrs)
                     else:
                         raise ValueError(path)
 

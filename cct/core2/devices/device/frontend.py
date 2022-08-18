@@ -481,7 +481,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     @staticmethod
     def create_hdf5_dataset(grp: h5py.Group, name: str, data: Any, **kwargs) -> h5py.Dataset:
         ds = grp.create_dataset(name, data=data)
-        ds.attrs = kwargs
+        ds.attrs.update(kwargs)
         return ds
 
     def toNeXus(self, grp: h5py.Group) -> h5py.Group:
