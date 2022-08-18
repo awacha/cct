@@ -248,13 +248,13 @@ class Geometry(QtCore.QObject, Component):
             'units': 'mm',
             'depends_on': '.'
         })
-        trans.create_dataset('y', data=float(bsgroup["y"])).attrs.update({
+        trans.create_dataset('y', data=float(np.asanyarray(bsgroup["y"]))).attrs.update({
             'transformation_type': 'translation',
             'vector': [0, 1, 0],
             'units': 'mm',
             'depends_on': 'z'
         })
-        trans.create_dataset('x', data=float(bsgroup["x"])).attrs.update({
+        trans.create_dataset('x', data=float(np.asanyarray(bsgroup["x"]))).attrs.update({
             'transformation_type': 'translation',
             'vector': [1, 0, 0],
             'units': 'mm',
