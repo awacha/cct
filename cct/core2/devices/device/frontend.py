@@ -480,7 +480,10 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
     @staticmethod
     def create_hdf5_dataset(grp: h5py.Group, name: str, data: Any, **kwargs) -> h5py.Dataset:
-        ds = grp.create_dataset(name, data=data)
+        if data is None:
+            ds = grp.create_dataset(name, data='__NONE__')
+        else:
+            ds = grp.create_dataset(name, data=data)
         ds.attrs.update(kwargs)
         return ds
 
