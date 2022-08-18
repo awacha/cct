@@ -375,13 +375,13 @@ class Geometry(QtCore.QObject, Component):
                                                           'units': 'mm', 'depends_on': '.'})
         transformgrp.create_dataset('y', data=0).attrs.update({'transformation_type': 'translation', 'vector': [1, 0, 0],
                                                           'units': 'mm', 'depends_on': 'x'})
-        transformgrp.create_dataset('z', data=geoconf['dist_sample_to_det'] - sampleshift).attrs.update({
+        transformgrp.create_dataset('z', data=geoconf['dist_sample_det'] - sampleshift).attrs.update({
             'transformation_type': 'translation', 'vector': [1, 0, 0], 'units': 'mm', 'depends_on': 'y'})
         geogrp = detgroup.create_group('geometry')
         geogrp.attrs['NX_class'] = 'NXgeometry'
         geogrp.create_dataset('component_index', data=2)
         translationgrp = geogrp.create_group('translation')
         translationgrp.attrs['NX_class'] = 'NXtranslation'
-        translationgrp.create_dataset('distances', data=[[0, 0, geoconf['dist_sample_to_det']- sampleshift]]).attrs.update({'units': 'mm'})
+        translationgrp.create_dataset('distances', data=[[0, 0, geoconf['dist_sample_det']- sampleshift]]).attrs.update({'units': 'mm'})
 
         return instrumentgroup
