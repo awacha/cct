@@ -1,3 +1,4 @@
+import datetime
 import enum
 import logging
 import queue
@@ -5,6 +6,7 @@ from multiprocessing import Queue, Process
 from typing import Any, Type, List, Iterator, Dict, Optional, Tuple
 import time
 
+import numpy as np
 import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
@@ -481,9 +483,12 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     @staticmethod
     def create_hdf5_dataset(grp: h5py.Group, name: str, data: Any, **kwargs) -> h5py.Dataset:
         if data is None:
-            ds = grp.create_dataset(name, data='__NONE__')
-        else:
-            ds = grp.create_dataset(name, data=data)
+            data = '__NONE__'
+        elif isinstance(data, datetime.datetime):
+            data = data.astimezone().isoformat()
+        elif isinstance(data, bytes):
+            data = np.frombuffer(data, np.uint8)
+        ds = grp.create_dataset(name, data=data)
         ds.attrs.update(kwargs)
         return ds
 
@@ -511,8 +516,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         stategrp.attrs['NX_class'] = 'NXcollection'
         for variable, value in self:
             try:
-                stategrp.create_dataset(variable, data=value)
-            except (ValueError, TypeError):
+                self.create_hdf5_dataset(stategrp, variable, value)
+            except ValueError:
                 logging.error(f'Cannot write state variable {variable} of device {self.name} to NeXus file: value is {value} (type {type(value)}.')
         sensorgrp = grp.create_group('devicesensors')
         sensorgrp.attrs['NX_class'] = 'NXcollection'
