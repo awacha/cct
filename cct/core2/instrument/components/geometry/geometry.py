@@ -301,7 +301,7 @@ class Geometry(QtCore.QObject, Component):
             geogrp = phgrp.create_group('geometry')
             geogrp.attrs['NX_class'] = 'NXgeometry'
             geogrp.create_dataset('description', data=f'Pinhole #{ipinhole}')
-            geogrp.create_dataset('component_index', -(3 - ipinhole) - 1)
+            geogrp.create_dataset('component_index', data=-(3 - ipinhole) - 1)
             shapegrp = geogrp.create_group('shape')
             shapegrp.attrs['NX_class'] = 'NXshape'
             shapegrp.create_dataset('shape', data='nxcylinder')
@@ -343,7 +343,7 @@ class Geometry(QtCore.QObject, Component):
         geogrp.create_dataset('component_index', data=-4)
         translationgrp = geogrp.create_group('translation')
         translationgrp.attrs['NX_class'] = 'NXtranslation'
-        translationgrp.create_dataset('distances', data = [[0, 0, -geoconf['ph3tosample'] - geoconf['l2'] - geoconf['l1'] - geoconf['sourcetoph1'] - sampleshift]]).attrs.update({'units': 'mm'})
+        translationgrp.create_dataset('distances', data=[[0, 0, -geoconf['ph3tosample'] - geoconf['l2'] - geoconf['l1'] - geoconf['sourcetoph1'] - sampleshift]]).attrs.update({'units': 'mm'})
 
         ### update the detector
         detgroup: h5py.Group = instrumentgroup[[grp for grp in instrumentgroup if
