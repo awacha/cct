@@ -227,11 +227,11 @@ class BeamStop(QtCore.QObject, Component):
     def toNeXus(self, instrumentgroup: h5py.Group) -> h5py.Group:
         bsgroup = instrumentgroup.require_group('beam_stop')  # the beamstop group will also be edited by the geometry component
         bsgroup.attrs['NX_class'] = 'NXbeam_stop'
-        bsgroup.require_dataset('description', data='circular')
-        bsgroup.require_dataset('status', data=self.state.value)
+        bsgroup.create_dataset('description', data='circular')
+        bsgroup.create_dataset('status', data=self.state.value)
         wherex = self.motorx.where()
         wherey = self.motory.where()
         inx, iny = self.inPosition()
-        bsgroup.require_dataset('x', data=wherex-inx).attrs.update({'units': 'mm'})
-        bsgroup.require_dataset('y', data=wherey-iny).attrs.update({'units': 'mm'})
+        bsgroup.create_dataset('x', data=wherex-inx).attrs.update({'units': 'mm'})
+        bsgroup.create_dataset('y', data=wherey-iny).attrs.update({'units': 'mm'})
         return instrumentgroup
