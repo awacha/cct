@@ -212,7 +212,9 @@ class Motor(QtCore.QObject):
     def isAtLeftHardLimit(self) -> bool:
         return self['leftswitchenable'] and self['leftswitchstatus']
 
-    create_hdf5_dataset = DeviceFrontend.create_hdf5_dataset
+    @staticmethod
+    def create_hdf5_dataset(grp: h5py.Group, name: str, data: Any, **kwargs) -> h5py.Dataset:
+        return DeviceFrontend.create_hdf5_dataset(grp, name, data, **kwargs)
 
     def toNeXus(self, grp: h5py.Group) -> h5py.Group:
         grp.attrs['NX_class'] = 'NXpositioner'
