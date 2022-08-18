@@ -13,7 +13,7 @@ from .choices import GeometryChoices
 from ..component import Component
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Geometry(QtCore.QObject, Component):
@@ -236,6 +236,8 @@ class Geometry(QtCore.QObject, Component):
         geoconf = self.config['geometry']
         ### Add information on the beamstop
         bsgroup = instrumentgroup.require_group('beam_stop')  # should be created by the beamstop component
+        logger.debug(str(list(bsgroup.keys())))
+        logger.debug(bsgroup.name)
         bsgroup.create_dataset('size', data=geoconf['beamstop']).attrs.update({'units': 'mm'})
         bsgroup.create_dataset('distance_to_detector', data=geoconf['beamstoptodetector']).attrs.update({'units': 'mm'})
         trans = bsgroup.create_group('transformations')
