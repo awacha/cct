@@ -284,6 +284,7 @@ class Geometry(QtCore.QObject, Component):
             phgrp.create_dataset('material', data='Pt-Ir alloy')
             phgrp.create_dataset('description', data=f'Pinhole #{ipinhole}')
             transgrp = phgrp.create_group('transformations')
+            transgrp.attrs['NX_class'] = 'NXtransformations'
             transgrp.create_dataset('x', data=0).attrs.update({'transformation_type': 'translation', 'vector': [1, 0, 0],
                                                           'units': 'mm', 'depends_on': '.'})
             transgrp.create_dataset('y', data=0).attrs.update({'transformation_type': 'translation', 'vector': [0, 1, 0],

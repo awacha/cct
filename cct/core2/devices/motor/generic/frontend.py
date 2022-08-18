@@ -114,4 +114,4 @@ class MotorController(DeviceFrontend):
     def toNeXus(self, grp: h5py.Group) -> h5py.Group:
         """"""
         # the NeXus specification does not have a base class for multi-axis motor controllers (as of June 2022)
-        return grp
+        return super().toNeXus(grp)

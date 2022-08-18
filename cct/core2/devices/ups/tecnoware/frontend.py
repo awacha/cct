@@ -39,4 +39,4 @@ class TecnowareEvoDSPPlus(UPS):
     def toNeXus(self, grp: h5py.Group) -> h5py.Group:
         """"""
         # the NeXus specification does not have a base class for UPS devices (as of June 2022)
-        return grp
+        return super().toNeXus(grp)

@@ -488,6 +488,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             data = data.astimezone().isoformat()
         elif isinstance(data, bytes):
             data = np.frombuffer(data, np.uint8)
+        elif isinstance(data, bool):
+            data = int(data)
         ds = grp.create_dataset(name, data=data)
         ds.attrs.update(kwargs)
         return ds
