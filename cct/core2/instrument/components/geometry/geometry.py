@@ -349,8 +349,8 @@ class Geometry(QtCore.QObject, Component):
         detgroup: h5py.Group = instrumentgroup[[grp for grp in instrumentgroup if
                                                 ('NX_class' in instrumentgroup[grp].attrs) and (
                                                         instrumentgroup[grp].attrs['NX_class'] == 'NXdetector')][0]]
-        detgroup.create_dataset('distance', data=geoconf['dist_sample_to_det'] - sampleshift).attrs['units'] = 'mm'
-        detgroup.create_dataset('distance_errors', data=geoconf['dist_sample_to_det.err']).attrs['units'] = 'mm'
+        detgroup.create_dataset('distance', data=geoconf['dist_sample_det'] - sampleshift).attrs['units'] = 'mm'
+        detgroup.create_dataset('distance_errors', data=geoconf['dist_sample_det.err']).attrs['units'] = 'mm'
         detgroup.create_dataset('x_pixel_size', data=geoconf['pixelsize']).attrs['units'] = 'mm'
         detgroup.create_dataset('x_pixel_size_errors', data=geoconf['pixelsize.err']).attrs['units'] = 'mm'
         detgroup.create_dataset('y_pixel_size', data=geoconf['pixelsize']).attrs['units'] = 'mm'
