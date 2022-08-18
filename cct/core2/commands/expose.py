@@ -92,7 +92,7 @@ class ExposeMulti(Expose):
         self.success = None
         self.waiting_for_images = nimages
         try:
-            fsn = self.instrument.exposer.startExposure(prefix, exptime, nimages, delay)
+            fsn = self.instrument.exposer.startExposure(prefix, exptime, nimages, delay, writenexus=True)
         except:
             self.disconnectExposer()
             raise

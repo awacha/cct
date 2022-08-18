@@ -17,12 +17,12 @@ from .components.geometry.geometry import Geometry
 from .components.interpreter import Interpreter
 from .components.io import IO
 from .components.motors import Motors
+from .components.notifier import Notifier
 from .components.projects import ProjectManager
 from .components.samples import SampleStore
 from .components.scan import ScanStore
 from .components.sensors import Sensors
 from .components.transmission import TransmissionMeasurement
-from .components.notifier import Notifier
 from ..config import Config
 
 logger = logging.getLogger(__name__)
@@ -238,11 +238,11 @@ class Instrument(QtCore.QObject):
         """
         instgroup = entrygrp.create_group('instrument')
         instgroup.attrs['NX_class'] = 'NXinstrument'
-        instgroup.create_dataset('name', data='Creative Research Equipment for DiffractiOn').attrs={'short_name':'CREDO'}
-        self.geometry.toNeXus(instgroup)
+        instgroup.create_dataset('name', data='Creative Research Equipment for DiffractiOn').attrs = {
+            'short_name': 'CREDO'}
+        sample = self.samplestore.currentSample()
+        self.geometry.toNeXus(instgroup, 0.0 if sample is None else sample.distminus[0])
         self.devicemanager.toNeXus(instgroup)
         self.beamstop.toNeXus(instgroup)
         self.motors.toNeXus(instgroup)
         return entrygrp
-
-

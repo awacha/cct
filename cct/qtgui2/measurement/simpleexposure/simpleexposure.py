@@ -126,7 +126,11 @@ class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.instrument.exposer.imageReceived.connect(self.onImageReceived)
         self.instrument.exposer.exposureProgress.connect(self.onExposureProgress)
         try:
-            self.instrument.exposer.startExposure(self.prefixComboBox.currentText(), self.exposureTimeDoubleSpinBox.value(), self.imageCountSpinBox.value(), self.delayDoubleSpinBox.value())
+            self.instrument.exposer.startExposure(
+                self.prefixComboBox.currentText(),
+                self.exposureTimeDoubleSpinBox.value(),
+                self.imageCountSpinBox.value(),
+                self.delayDoubleSpinBox.value(), writenexus=Truemo)
         except RuntimeError as rte:
             QtWidgets.QMessageBox.critical(self.window(), 'Error while starting exposure', str(rte))
             self.imagesrequired = 0
