@@ -276,9 +276,9 @@ class Geometry(QtCore.QObject, Component):
 
         ### Pinholes
         for ipinhole, (dist, aperture) in enumerate([
-            (geoconf['ph3tosample'] + geoconf['l2'] + geoconf['l1'], geoconf['pinhole_1'] + sampleshift),
-            (geoconf['ph3tosample'] + geoconf['l2'], geoconf['pinhole_2'] + sampleshift),
-            (geoconf['ph3tosample'] + geoconf['pinhole_3'] + sampleshift)], start=1):
+            (geoconf['ph3tosample'] + geoconf['l2'] + geoconf['l1'] + sampleshift, geoconf['pinhole_1']),
+            (geoconf['ph3tosample'] + geoconf['l2'] + sampleshift, geoconf['pinhole_2']),
+            (geoconf['ph3tosample'] + sampleshift, geoconf['pinhole_3'])], start=1):
             phgrp = instrumentgroup.create_group(f'pinhole_{ipinhole}')
             phgrp.attrs['NX_class'] = 'NXaperture'
             phgrp.create_dataset('material', data='Pt-Ir alloy')
