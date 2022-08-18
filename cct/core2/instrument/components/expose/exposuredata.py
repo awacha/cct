@@ -308,3 +308,5 @@ class ExposureTask(QtCore.QObject):
         detectorgroup: h5py.Group = instgroup[[g for g in instgroup if instgroup[g].attrs['NX_class'] == 'NXdetector'][0]]
         detectorgroup.create_dataset('data', data=img)
         detectorgroup.create_dataset('data_errors', data=unc)
+        self.h5.close()
+        self.h5 = None
