@@ -507,7 +507,10 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         stategrp = grp.create_group('statevariables')
         stategrp.attrs['NX_class'] = 'NXcollection'
         for variable, value in self:
-            stategrp.create_dataset(variable, data=value)
+            try:
+                stategrp.create_dataset(variable, data=value)
+            except ValueError:
+                logging.error(f'Cannot write state variable {variable} of device {self.name} to NeXus file: value is {value} (type {type(value)}.')
         sensorgrp = grp.create_group('devicesensors')
         sensorgrp.attrs['NX_class'] = 'NXcollection'
         for isensor, sensor in enumerate(self.sensors, start=1):
