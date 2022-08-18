@@ -242,7 +242,7 @@ class Instrument(QtCore.QObject):
             'short_name': 'CREDO'})
         sample = self.samplestore.currentSample()
         self.beamstop.toNeXus(instgroup)
-        self.geometry.toNeXus(instgroup, 0.0 if sample is None else sample.distminus[0])
         self.devicemanager.toNeXus(instgroup)
         self.motors.toNeXus(instgroup)
+        self.geometry.toNeXus(instgroup, 0.0 if sample is None else sample.distminus[0])
         return entrygrp
