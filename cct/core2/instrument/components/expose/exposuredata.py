@@ -305,6 +305,6 @@ class ExposureTask(QtCore.QObject):
         grp.attrs['NX_class'] = 'NXentry'
         # the instrument state has already been written, no need to call self.instrument.toNeXus() again.
         instgroup = [g for g in grp if g.attrs['NX_class'] == 'NXinstrument'][0]
-        detectorgroup: h5py.Group = [g for g in instgroup if g.attrs['NX_class'] == 'NXdetector'][0]
+        detectorgroup: h5py.Group = [g for g in instgroup if instgroup[g].attrs['NX_class'] == 'NXdetector'][0]
         detectorgroup.create_dataset('data', data=img)
         detectorgroup.create_dataset('data_errors', data=unc)
