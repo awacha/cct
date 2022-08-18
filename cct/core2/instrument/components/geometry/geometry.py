@@ -272,7 +272,7 @@ class Geometry(QtCore.QObject, Component):
         translationgrp = geogrp.create_group('translation')
         translationgrp.attrs['NX_class'] = 'NXtranslation'
         translationgrp.create_dataset(
-            'distances', [[0, 0, geoconf['dist_sample_det'] - sampleshift - geoconf['beamstoptodetector']]]).attrs.update({'units': 'mm'})
+            'distances', data=[[0, 0, geoconf['dist_sample_det'] - sampleshift - geoconf['beamstoptodetector']]]).attrs.update({'units': 'mm'})
 
         ### Pinholes
         for ipinhole, (dist, aperture) in enumerate([
@@ -308,22 +308,22 @@ class Geometry(QtCore.QObject, Component):
             shapegrp.create_dataset('size', data=[[aperture / 1000, 0.1, 0, 0, 1]]).attrs.update({'units': 'mm'})
             translationgrp = geogrp.create_group('translation')
             translationgrp.attrs['NX_class'] = 'NXtranslation'
-            translationgrp.create_dataset('distances', [[0, 0, -dist]]).attrs.update({'units': 'mm'})
+            translationgrp.create_dataset('distances', data=[[0, 0, -dist]]).attrs.update({'units': 'mm'})
 
         ### Crystal and Monochromator: only to set the wavelength
         crystgrp = instrumentgroup.create_group('crystal')
         crystgrp.attrs['NX_class'] = 'NXcrystal'
-        crystgrp.create_dataset('wavelength', geoconf['wavelength']).attrs.update({'units': 'nm'})
-        crystgrp.create_dataset('wavelength_errors', geoconf['wavelength.err']).attrs.update({'units': 'nm'})
+        crystgrp.create_dataset('wavelength', data=geoconf['wavelength']).attrs.update({'units': 'nm'})
+        crystgrp.create_dataset('wavelength_errors', data=geoconf['wavelength.err']).attrs.update({'units': 'nm'})
         mcgrp = instrumentgroup.create_group('monochromator')
         mcgrp.attrs['NX_class'] = 'NXmonochromator'
-        mcgrp.create_dataset('wavelength', geoconf['wavelength']).attrs.update({'units': 'nm'})
-        mcgrp.create_dataset('wavelength_errors', geoconf['wavelength.err']).attrs.update({'units': 'nm'})
+        mcgrp.create_dataset('wavelength', data=geoconf['wavelength']).attrs.update({'units': 'nm'})
+        mcgrp.create_dataset('wavelength_errors', data=geoconf['wavelength.err']).attrs.update({'units': 'nm'})
         hcdive = (299792458 * 6.6260705e-34 / 1.60217663e-19) * 1e9  # eV * nm
-        mcgrp.create_dataset('energy', hcdive / geoconf['wavelength']).attrs.update({'units': 'eV'})
-        mcgrp.create_dataset('energy_errors', hcdive / geoconf['wavelength'] ** 2 * geoconf['wavelength.err']).attrs.update({
+        mcgrp.create_dataset('energy', data=hcdive / geoconf['wavelength']).attrs.update({'units': 'eV'})
+        mcgrp.create_dataset('energy_errors', data=hcdive / geoconf['wavelength'] ** 2 * geoconf['wavelength.err']).attrs.update({
             'units': 'eV'})
-        mcgrp.create_dataset('wavelength_spread', geoconf['wavelength.err'] / geoconf['wavelength'])
+        mcgrp.create_dataset('wavelength_spread', data = geoconf['wavelength.err'] / geoconf['wavelength'])
 
         ### update the source
         sourcegrp: h5py.Group = instrumentgroup[[grp for grp in instrumentgroup if
@@ -343,7 +343,7 @@ class Geometry(QtCore.QObject, Component):
         geogrp.create_dataset('component_index', data=-4)
         translationgrp = geogrp.create_group('translation')
         translationgrp.attrs['NX_class'] = 'NXtranslation'
-        translationgrp.create_dataset('distances', [[0, 0, -geoconf['ph3tosample'] - geoconf['l2'] - geoconf['l1'] - geoconf['sourcetoph1'] - sampleshift]]).attrs.update({'units': 'mm'})
+        translationgrp.create_dataset('distances', data = [[0, 0, -geoconf['ph3tosample'] - geoconf['l2'] - geoconf['l1'] - geoconf['sourcetoph1'] - sampleshift]]).attrs.update({'units': 'mm'})
 
         ### update the detector
         detgroup: h5py.Group = instrumentgroup[[grp for grp in instrumentgroup if
@@ -365,10 +365,10 @@ class Geometry(QtCore.QObject, Component):
             'beam_center_y_errors', data=(geoconf['beamposy.err'] ** 2 * geoconf['pixelsize'] ** 2 +
                                           geoconf['pixelsize.err'] ** 2 * geoconf['beamposy'] ** 2) ** 0.5
         ).attrs['units'] = 'mm'
-        detgroup.create_dataset('polar_angle', 0.0).attrs['units'] = 'rad'
-        detgroup.create_dataset('azimuthal_angle', 0.0).attrs['units'] = 'rad'
-        detgroup.create_dataset('rotation_angle', 0.0).attrs['units'] = 'rad'
-        detgroup.create_dataset('aequatorial_angle', 0.0).attrs['units'] = 'rad'
+        detgroup.create_dataset('polar_angle', data=0.0).attrs['units'] = 'rad'
+        detgroup.create_dataset('azimuthal_angle', data=0.0).attrs['units'] = 'rad'
+        detgroup.create_dataset('rotation_angle', data=0.0).attrs['units'] = 'rad'
+        detgroup.create_dataset('aequatorial_angle', data=0.0).attrs['units'] = 'rad'
         transformgrp = detgroup.create_group('transformations')
         transformgrp.attrs['NX_class'] = 'NXtransformations'
         transformgrp.create_dataset('x', data=0).attrs.update({'transformation_type': 'translation', 'vector': [1, 0, 0],
@@ -382,6 +382,6 @@ class Geometry(QtCore.QObject, Component):
         geogrp.create_dataset('component_index', data=2)
         translationgrp = geogrp.create_group('translation')
         translationgrp.attrs['NX_class'] = 'NXtranslation'
-        translationgrp.create_dataset('distances', [[0, 0, geoconf['dist_sample_to_det']- sampleshift]]).attrs.update({'units': 'mm'})
+        translationgrp.create_dataset('distances', data=[[0, 0, geoconf['dist_sample_to_det']- sampleshift]]).attrs.update({'units': 'mm'})
 
         return instrumentgroup
