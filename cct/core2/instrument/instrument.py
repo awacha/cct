@@ -250,5 +250,5 @@ class Instrument(QtCore.QObject):
             sample.toNeXus(samplegrp)
             for motor in [self.samplestore.xmotor(), self.samplestore.ymotor()]:
                 motorgroup = instgroup[[g for g in instgroup if ('NX_class' in instgroup[g].attrs) and (instgroup[g].attrs['NX_class'] == 'NXpositioner') and g == motor.name][0]]
-                sample[motor.name] = motorgroup
+                samplegrp[motor.name] = motorgroup
         return entrygrp
