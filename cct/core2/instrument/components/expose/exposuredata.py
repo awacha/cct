@@ -96,7 +96,7 @@ class ExposureTask(QtCore.QObject):
     imageloadperiod: float = 0.1
     instrument: "Instrument"
     detector: PilatusDetector
-    h5: Optional[h5py.File] = None
+    h5filename: Optional[str] = None
 
     def __init__(self, instrument: "Instrument", detector: PilatusDetector, prefix: str, fsn: int, index: int,
                  exptime: float, expdelay: float, maskoverride: Optional[str] = None, writenexus: bool = False):
@@ -117,15 +117,13 @@ class ExposureTask(QtCore.QObject):
         if writenexus:
             targetdir = os.path.join(self.instrument.io.getSubDir('nexus'), prefix)
             os.makedirs(targetdir, exist_ok=True)
-            self.h5 = h5py.File(
-                os.path.join(targetdir, self.instrument.io.formatFileName(prefix, fsn, '.nxs')), 'w',
-                libver='latest')
-            self.h5.attrs['NX_class'] = 'NXroot'
-            grp = self.h5.require_group(f'{prefix}_{fsn:05d}')
-            self.h5.attrs['default'] = f'{prefix}_{fsn:05d}'
-            grp.attrs['NX_class'] = 'NXentry'
-            self.instrument.toNeXus(grp)
-            self.h5.flush()
+            self.h5filename = os.path.join(targetdir, self.instrument.io.formatFileName(prefix, fsn, '.nxs'))
+            with h5py.File(self.h5filename, 'w', libver='latest') as h5:
+                h5.attrs['NX_class'] = 'NXroot'
+                grp = h5.require_group(f'{prefix}_{fsn:05d}')
+                h5.attrs['default'] = f'{prefix}_{fsn:05d}'
+                grp.attrs['NX_class'] = 'NXentry'
+                self.instrument.toNeXus(grp)
 
     @property
     def starttime(self):
@@ -307,30 +305,29 @@ class ExposureTask(QtCore.QObject):
         return Header(datadict=data)
 
     def writeNeXus(self, img: np.ndarray, unc: np.ndarray, mask: np.ndarray):
-        if self.h5 is None:
+        if self.h5filename is None:
             return
-        grp = self.h5.require_group(f'{self.prefix}_{self.fsn:05d}')
-        grp.attrs['NX_class'] = 'NXentry'
-        # the instrument state has already been written, no need to call self.instrument.toNeXus() again.
-        instgroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXinstrument')][0]]
-        detectorgroup: h5py.Group = instgroup[[g for g in instgroup if ('NX_class' in instgroup[g].attrs) and (instgroup[g].attrs['NX_class'] == 'NXdetector')][0]]
-        ds = detectorgroup.create_dataset('data', data=img)
-        ds.attrs['target'] = ds.name  # we will link to this from NXentry/NXdata
-        ds = detectorgroup.create_dataset('data_errors', data=unc)
-        ds.attrs['target'] = ds.name  # we will link to this from NXentry/NXdata
-        ds = detectorgroup.create_dataset('pixel_mask', data=mask.astype(np.uint32))
-        ds.attrs['target'] = ds.name
+        with h5py.File(self.h5filename, 'a', libver='latest') as h5:
+            grp = h5.require_group(f'{self.prefix}_{self.fsn:05d}')
+            grp.attrs['NX_class'] = 'NXentry'
+            # the instrument state has already been written, no need to call self.instrument.toNeXus() again.
+            instgroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXinstrument')][0]]
+            detectorgroup: h5py.Group = instgroup[[g for g in instgroup if ('NX_class' in instgroup[g].attrs) and (instgroup[g].attrs['NX_class'] == 'NXdetector')][0]]
+            ds = detectorgroup.create_dataset('data', data=img)
+            ds.attrs['target'] = ds.name  # we will link to this from NXentry/NXdata
+            ds = detectorgroup.create_dataset('data_errors', data=unc)
+            ds.attrs['target'] = ds.name  # we will link to this from NXentry/NXdata
+            ds = detectorgroup.create_dataset('pixel_mask', data=mask.astype(np.uint32))
+            ds.attrs['target'] = ds.name
 
-        datagrp = grp.create_group('data')
-        datagrp.attrs['NX_class'] = 'NXdata'
-        datagrp.attrs['signal'] = 'data'
-        datagrp['data'] = detectorgroup['data']
-        grp.attrs['default'] = 'data'
-        datagrp['errors'] = detectorgroup['data_errors']
+            datagrp = grp.create_group('data')
+            datagrp.attrs['NX_class'] = 'NXdata'
+            datagrp.attrs['signal'] = 'data'
+            datagrp['data'] = detectorgroup['data']
+            grp.attrs['default'] = 'data'
+            datagrp['errors'] = detectorgroup['data_errors']
 
-        samplegroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXsample')][0]]
-        datagrp['title'] = f"{samplegroup['name'][()].decode('utf-8')}"
-        self.h5.flush()
-        self.h5.close()
-        self.h5 = None
+            samplegroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXsample')][0]]
+            datagrp['title'] = f"{samplegroup['name'][()].decode('utf-8')}"
+        self.h5filename = None
 
