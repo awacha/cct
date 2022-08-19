@@ -162,12 +162,14 @@ class ExposureTask(QtCore.QObject):
                 pass
             else:
                 # the file has been found. Kill the timers
+                logger.debug(f'CBF file {self.prefix}/{self.fsn} has been found.')
                 self.killTimer(self.waitforimagetimer)
                 self.killTimer(self.imageloadtimer)
                 self.waitforimagetimer = None
                 self.imageloadtimer = None
                 self.status = ExposureState.Finished
                 # construct the metadata
+                logger.debug(f'Writing header for {self.prefix}/{self.fsn}')
                 header = self.createHeader()
                 self.instrument.io.imageReceived(self.prefix, self.fsn)
                 try:
@@ -178,6 +180,7 @@ class ExposureTask(QtCore.QObject):
                 uncertainty = np.empty_like(image)
                 uncertainty[image > 0] = image[image > 0] ** 0.5
                 uncertainty[image <= 0] = 1
+                logger.debug(f'Finalizing NeXus file for {self.prefix}/{self.fsn}')
                 self.writeNeXus(image, uncertainty, mask)
                 # emit the raw image.
                 exposure = Exposure(image, header, uncertainty, mask)
