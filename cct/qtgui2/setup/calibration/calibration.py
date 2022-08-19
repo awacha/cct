@@ -112,7 +112,8 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         if self.sender() is self.saveSDDistToolButton:
             self.instrument.config['geometry']['dist_sample_det'] = float(self.dist_sample_det[0])
             self.instrument.config['geometry']['dist_sample_det.err'] = float(self.dist_sample_det[1])
-            logger.info(f'Updated sample-to-detector distance to {self.dist_sample_det[0]:.5f} \xb1 {self.dist_sample_det[1]:.5f} mm')
+            logger.info(
+                f'Updated sample-to-detector distance to {self.dist_sample_det[0]:.5f} \xb1 {self.dist_sample_det[1]:.5f} mm')
         elif self.sender() == self.saveBeamXToolButton:
             self.instrument.config['geometry']['beamposy'] = self.exposure.header.beamposcol[0]
             self.instrument.config['geometry']['beamposy.err'] = self.exposure.header.beamposcol[1]
@@ -165,7 +166,8 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.axes.grid(True, which='both')
         self.canvas.draw_idle()
 
-    def calibrationDataset(self):
+    def calibrationDataset(self) -> Tuple[
+        np.ndarray, np.ndarray, np.ndarray, np.ndarray, Tuple[float, float], Tuple[float, float]]:
         pixval = np.array([self.pairsTreeWidget.topLevelItem(i).data(0, QtCore.Qt.UserRole)[0] for i in
                            range(self.pairsTreeWidget.topLevelItemCount())])
         pixunc = np.array([self.pairsTreeWidget.topLevelItem(i).data(0, QtCore.Qt.UserRole)[1] for i in
@@ -174,49 +176,47 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
                          range(self.pairsTreeWidget.topLevelItemCount())])
         qunc = np.array([self.pairsTreeWidget.topLevelItem(i).data(1, QtCore.Qt.UserRole)[1] for i in
                          range(self.pairsTreeWidget.topLevelItemCount())])
-        wavelength = self.instrument.config['geometry']['wavelength'], self.instrument.config['geometry']['wavelength.err']
-        pixelsize = self.exposure.header.pixelsize
+        wavelength: Tuple[float, float] = self.exposure.header.wavelength
+        pixelsize: Tuple[float, float] = self.exposure.header.pixelsize
         return pixval, pixunc, qval, qunc, wavelength, pixelsize
 
     def calibrate(self):
+        """Do the calibration"""
+
         pixval, pixunc, qval, qunc, wavelength, pixelsize = self.calibrationDataset()
         if pixval.size == 0:
             return
-        ql_div_4pi = (  # q * wavelength / (4pi)
-            qval * wavelength[0] / 4 / np.pi,
-            ((qval * wavelength[1]) ** 2 + (qunc * wavelength[0]) ** 2) ** 0.5 / 4 / np.pi
-        )
-        logger.debug(f'{ql_div_4pi=}')
-        asinx2_ql_div_4pi = (
-            np.arcsin(ql_div_4pi[0]) * 2,
-            2 / (1 - ql_div_4pi[0] ** 2) ** 0.5 * ql_div_4pi[1],
-        )
-        logger.debug(f'{asinx2_ql_div_4pi=}')
-        tg_2asin_ql_div_4pi = (
-            np.tan(asinx2_ql_div_4pi[0]),
-            (1 + np.tan(asinx2_ql_div_4pi[0]) ** 2) * asinx2_ql_div_4pi[1]
-        )
-        logger.debug(f'{tg_2asin_ql_div_4pi=}')
-        tg_2asin_ql_div_4pi_div_pixsize = (
-            tg_2asin_ql_div_4pi[0] / pixelsize[0],
-            (((tg_2asin_ql_div_4pi[0] * pixelsize[1]) / pixelsize[0] ** 2) ** 2 + (
-                    tg_2asin_ql_div_4pi[1] / pixelsize[0]) ** 2) ** 0.5
-        )
-        logger.debug(f'{tg_2asin_ql_div_4pi_div_pixsize=}')
+
+        def pixel_to_q(pixel, sd, wl=wavelength, pixsize=pixelsize):
+            return 4 * np.pi / wl[0] * np.sin(0.5 * np.arctan(pixel * pixsize[0] / sd))
+
+        # q = 4 * pi * sin(0.5*arctan(pix*pixelsize/L)) / wavelength
+
         if len(pixval) == 1:
-            # no fitting, just calculate L directly: L = pixel / (tan(2*asin(q*lambda/4pi)) / pixsize)
-            L = (
-                pixval[0] / tg_2asin_ql_div_4pi_div_pixsize[0][0],
-                ((pixunc[0] / tg_2asin_ql_div_4pi_div_pixsize[0][0]) ** 2 +
-                 (pixval[0] * tg_2asin_ql_div_4pi_div_pixsize[1][0] / tg_2asin_ql_div_4pi_div_pixsize[0][
-                     0] ** 2) ** 2) ** 0.5
-            )
+            # we only have a single data point, calculate the sample-to-detector distance directly.
+            # While we could derive the formula for the error propagation analytically, it is easier to do it by
+            # sampling from a multivariate normal distribution.
+            means = np.array([qval[0], pixval[0], pixelsize[0], wavelength[0]])
+            covar = np.array([[qunc[0], 0, 0, 0],
+                              [0, pixunc[0], 0, 0],
+                              [0, 0, pixelsize[1], 0],
+                              [0, 0, 0, wavelength[1]]])
+            samples = np.random.multivariate_normal(means, covar, 5000)
+            q = samples[:, 0]
+            pix = samples[:, 1]
+            pixsize = samples[:, 2]
+            wl = samples[:, 3]
+            # q = 4 * pi * sin(0.5*arctan(pix*pixelsize/L)) / wavelength
+            # therefore
+            # L = pix * pixelsize / tan(2* arcsin(q * wavelength / (4* pi)))
+
+            Lsamples = pix * pixsize / np.tan(2 * np.arcsin(q * wl / (4 * np.pi)))
+            L = np.nanmean(Lsamples), np.nanstd(Lsamples)
         else:
             # fitting:    pixel = L * tan(2*asin(q*lambda/4pi))
-            data = scipy.odr.RealData(x=tg_2asin_ql_div_4pi_div_pixsize[0], sx=tg_2asin_ql_div_4pi_div_pixsize[1],
-                                      y=pixval, sy=pixunc)
-            logger.debug(f'{data.x=}, {data.y=}, {data.sx=}, {data.sy=}')
-            model = scipy.odr.Model(lambda L, x: L * x)
+            data = scipy.odr.RealData(x=pixval, sx=pixunc,
+                                      y=qval, sy=qunc)
+            model = scipy.odr.Model(lambda Lpix: pixel_to_q(Lpix[1], Lpix[0]))
             odr = scipy.odr.ODR(data, model, [1.0])
             result = odr.run()
             L = result.beta[0], result.sd_beta[0]
@@ -239,8 +239,8 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
                 peaktype=PeakType.Lorentzian if self.sender() == self.fitLorentzPushButton else PeakType.Gaussian)
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, 'Error while fitting', f'An error happened while fitting: {exc}.\n'
-                                           'Please select a different algorithm, a different range in the curve or '
-                                           'select an approximate beam position manually and start over.')
+                                                                        'Please select a different algorithm, a different range in the curve or '
+                                                                        'select an approximate beam position manually and start over.')
             return
         x = np.linspace(curve.pixel.min(), curve.pixel.max(), 100)
         fitcurve = Curve.fromVectors(q=np.interp(x, curve.pixel, curve.q), intensity=peakfcn(x), pixel=x)
@@ -330,13 +330,15 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         self.curve = self.exposure.radial_average(self.exposure.pixeltoq(pixrange))
         self.plotcurve.addCurve(self.curve)
         self.plotcurve.setPixelMode(True)
-        for spinbox in [self.beamXDoubleSpinBox, self.beamYDoubleSpinBox, self.beamXErrDoubleSpinBox, self.beamYErrDoubleSpinBox]:
+        for spinbox in [self.beamXDoubleSpinBox, self.beamYDoubleSpinBox, self.beamXErrDoubleSpinBox,
+                        self.beamYErrDoubleSpinBox]:
             spinbox.blockSignals(True)
         self.beamXDoubleSpinBox.setValue(self.exposure.header.beamposcol[0])
         self.beamXErrDoubleSpinBox.setValue(self.exposure.header.beamposcol[1])
         self.beamYDoubleSpinBox.setValue(self.exposure.header.beamposrow[0])
         self.beamYErrDoubleSpinBox.setValue(self.exposure.header.beamposrow[1])
-        for spinbox in [self.beamXDoubleSpinBox, self.beamYDoubleSpinBox, self.beamXErrDoubleSpinBox, self.beamYErrDoubleSpinBox]:
+        for spinbox in [self.beamXDoubleSpinBox, self.beamYDoubleSpinBox, self.beamXErrDoubleSpinBox,
+                        self.beamYErrDoubleSpinBox]:
             spinbox.blockSignals(False)
         self.saveBeamXToolButton.setEnabled(False)
         self.saveBeamYToolButton.setEnabled(False)
@@ -357,7 +359,8 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         logger.debug(f'{rmin=}, {rmax=}')
         algorithm = centeringalgorithms[self.centeringMethodComboBox.currentText()]
         self.updateBeamPosition(
-            *findbeam(algorithm, self.exposure, rmin, rmax, 0, 0, eps=self.finiteDifferenceDeltaDoubleSpinBox.value(), numabscissa=len(curve)))
+            *findbeam(algorithm, self.exposure, rmin, rmax, 0, 0, eps=self.finiteDifferenceDeltaDoubleSpinBox.value(),
+                      numabscissa=len(curve)))
 
     def updateBeamPosition(self, row: Tuple[float, float], col: Tuple[float, float]):
         if self.exposure is None:
@@ -380,17 +383,19 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         colmin, colmax, rowmin, rowmax = self.plotimage.axes.axis()
         row = np.arange(self.exposure.shape[0])
         col = np.arange(self.exposure.shape[1])
-        idxrow = np.logical_and(row >= min(rowmin, rowmax), row<=max(rowmin, rowmax))
-        idxcol = np.logical_and(col >= min(colmin, colmax), col<=max(colmin, colmax))
-        logger.debug(f'Row: {row[idxrow].min()} .. {row[idxrow].max()}, col: {col[idxcol].min()} .. {col[idxcol].max()}')
+        idxrow = np.logical_and(row >= min(rowmin, rowmax), row <= max(rowmin, rowmax))
+        idxcol = np.logical_and(col >= min(colmin, colmax), col <= max(colmin, colmax))
+        logger.debug(
+            f'Row: {row[idxrow].min()} .. {row[idxrow].max()}, col: {col[idxcol].min()} .. {col[idxcol].max()}')
         smallimg = self.exposure.intensity[idxrow, :][:, idxcol]
         smallrow = row[idxrow]
         smallcol = col[idxcol]
         smallmask = (
-            self.exposure.mask
-            if self.plotimage.showMaskToolButton.isChecked()
-            else np.ones_like(self.exposure.mask))[idxrow, :][:,idxcol].astype(bool)
-        logger.debug(f'Valid pixels: {smallmask.sum()}. Invalid pixels: {(~smallmask).sum()}, {smallmask.shape=}, {idxrow.sum()=}, {idxcol.sum()=}, {idxrow.sum()*idxcol.sum()=}')
+                        self.exposure.mask
+                        if self.plotimage.showMaskToolButton.isChecked()
+                        else np.ones_like(self.exposure.mask))[idxrow, :][:, idxcol].astype(bool)
+        logger.debug(
+            f'Valid pixels: {smallmask.sum()}. Invalid pixels: {(~smallmask).sum()}, {smallmask.shape=}, {idxrow.sum()=}, {idxcol.sum()=}, {idxrow.sum()*idxcol.sum()=}')
         sumimg = smallimg[smallmask].sum()
         bcrow = (smallrow[:, np.newaxis] * smallimg)[smallmask].sum() / sumimg
         bccol = (smallcol[np.newaxis, :] * smallimg)[smallmask].sum() / sumimg
