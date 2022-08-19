@@ -184,7 +184,7 @@ class Sample(object):
         grp.create_dataset('thickness_errors', data=self.thickness[1]).attrs['units'] = 'cm'
         # additionally, path_length and path_length_window could be used, if we know the thickness of the capillary wall
         grp.create_dataset('x_translation', data=self.positionx[0]).attrs['units'] = 'mm'
-        grp.create_dataset('y_translation', data=self.positiony[0]).attry['units'] = 'mm'
+        grp.create_dataset('y_translation', data=self.positiony[0]).attrs['units'] = 'mm'
         grp.create_dataset('x_translation_errors', data=self.positionx[1]).attrs['units'] = 'mm'
         grp.create_dataset('y_translation_errors', data=self.positiony[1]).attrs['units'] = 'mm'
         # The NXsample base class specifies that the transmission should be a NXdata. A little overkill in our case,
