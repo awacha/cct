@@ -119,6 +119,7 @@ class ExposureTask(QtCore.QObject):
             os.makedirs(targetdir, exist_ok=True)
             self.h5filename = os.path.join(targetdir, self.instrument.io.formatFileName(prefix, fsn, '.nxs'))
             with h5py.File(self.h5filename, 'w', libver='latest') as h5:
+                logger.debug(f'Initializing NeXus file {h5.filename}')
                 h5.attrs['NX_class'] = 'NXroot'
                 grp = h5.require_group(f'{prefix}_{fsn:05d}')
                 h5.attrs['default'] = f'{prefix}_{fsn:05d}'
@@ -308,6 +309,7 @@ class ExposureTask(QtCore.QObject):
         if self.h5filename is None:
             return
         with h5py.File(self.h5filename, 'a', libver='latest') as h5:
+            logger.debug(f'Finalizing NeXus file {h5.filename}')
             grp = h5.require_group(f'{self.prefix}_{self.fsn:05d}')
             grp.attrs['NX_class'] = 'NXentry'
             # the instrument state has already been written, no need to call self.instrument.toNeXus() again.
