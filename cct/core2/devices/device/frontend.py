@@ -525,6 +525,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         sensorgrp.attrs['NX_class'] = 'NXcollection'
         for isensor, sensor in enumerate(self.sensors, start=1):
             sg = sensorgrp.create_group(sensor.name)
+            sg.attrs['NX_class'] = 'NXcollection'
             self.create_hdf5_dataset(sg, 'sensortype', sensor.sensortype)
             self.create_hdf5_dataset(sg, 'quantity', sensor.quantityname)
             self.create_hdf5_dataset(sg, 'devicename', sensor.devicename)

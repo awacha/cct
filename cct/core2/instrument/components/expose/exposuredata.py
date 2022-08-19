@@ -317,12 +317,13 @@ class ExposureTask(QtCore.QObject):
 
 
         datagrp = grp.create_group('data')
+        datagrp.attrs['NX_class'] = 'NXdata'
         datagrp['data'] = detectorgroup['data']
         grp.attrs['default'] = 'data'
         datagrp['errors'] = detectorgroup['data_errors']
 
         samplegroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXsample')][0]]
-        datagrp['title'] = ""
+        datagrp['title'] = f"{samplegroup['name'][()].decode('utf-8')}"
 
         self.h5.close()
         self.h5 = None
