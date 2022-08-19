@@ -120,7 +120,9 @@ class ExposureTask(QtCore.QObject):
             self.h5 = h5py.File(
                 os.path.join(targetdir, self.instrument.io.formatFileName(prefix, fsn, '.nxs')), 'w',
                 libver='latest')
+            self.h5.attrs['NX_class'] = 'NXroot'
             grp = self.h5.require_group(f'{prefix}_{fsn:05d}')
+            self.h5.attrs['default'] = f'{prefix}_{fsn:05d}'
             grp.attrs['NX_class'] = 'NXentry'
             self.instrument.toNeXus(grp)
 
@@ -308,7 +310,20 @@ class ExposureTask(QtCore.QObject):
         # the instrument state has already been written, no need to call self.instrument.toNeXus() again.
         instgroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXinstrument')][0]]
         detectorgroup: h5py.Group = instgroup[[g for g in instgroup if ('NX_class' in instgroup[g].attrs) and (instgroup[g].attrs['NX_class'] == 'NXdetector')][0]]
-        detectorgroup.create_dataset('data', data=img)
-        detectorgroup.create_dataset('data_errors', data=unc)
+        ds = detectorgroup.create_dataset('data', data=img)
+        ds.attrs['target'] = ds.name  # we will link to this from NXentry/NXdata
+        ds = detectorgroup.create_dataset('data_errors', data=unc)
+        ds.attrs['target'] = ds.name  # we will link to this from NXentry/NXdata
+
+
+        datagrp = grp.create_group('data')
+        datagrp['data'] = detectorgroup['data']
+        grp.attrs['default'] = 'data'
+        datagrp['errors'] = detectorgroup['data_errors']
+
+        samplegroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXsample')][0]]
+        datagrp['title'] = ""
+
         self.h5.close()
         self.h5 = None
+

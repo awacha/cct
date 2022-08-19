@@ -182,6 +182,7 @@ class Sample(object):
         grp.create_dataset('preparation_date', data=self.preparetime.isoformat())
         grp.create_dataset('thickness', data=self.thickness[0]).attrs['units'] = 'cm'
         grp.create_dataset('thickness_errors', data=self.thickness[1]).attrs['units'] = 'cm'
+        # additionally, path_length and path_length_window could be used, if we know the thickness of the capillary wall
         grp.create_dataset('x_translation', data=self.positionx[0]).attrs['units'] = 'mm'
         grp.create_dataset('y_translation', data=self.positiony[0]).attry['units'] = 'mm'
         grp.create_dataset('x_translation_errors', data=self.positionx[1]).attrs['units'] = 'mm'
@@ -189,13 +190,7 @@ class Sample(object):
         # The NXsample base class specifies that the transmission should be a NXdata. A little overkill in our case,
         # but let's conform to the standards...
         transmgrp = grp.create_group('transmission')
-        transmgrp.attrs.update({'NX_class': 'NXdata', 'signal': 'transmission'})
-        transmgrp.create_dataset('')
-
-        beamgrp = grp.create_group('beam')
-        beamgrp.attrs.update({'NX_class': 'NXbeam'})
-
-        # Temperature
-        #grp.create_dataset('temperature')  #ToDo somewhere else
-        # temperature_env
-        #positioner X and Y
+        transmgrp.attrs.update({'NX_class': 'NXdata', 'signal': 'data'})
+        transmgrp.create_dataset('data', data=[self.transmission[0]])
+        transmgrp.create_dataset('errors', data=[self.transmission[1]])
+        return grp
