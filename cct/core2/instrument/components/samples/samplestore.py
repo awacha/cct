@@ -243,6 +243,8 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
             if value in self:
                 raise ValueError(
                     f'Cannot rename sample {sample.title} to {value}: another sample with this title already exists.')
+        elif attribute == 'maskoverride' and isinstance(value, str) and not value.strip():
+            value = None
         setattr(sample, attribute, value)
         row = self._samples.index(sample)
         try:

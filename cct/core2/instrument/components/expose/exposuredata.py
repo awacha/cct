@@ -107,6 +107,8 @@ class ExposureTask(QtCore.QObject):
         self.exptime = exptime
         self.expdelay = expdelay
         self.exptime = exptime
+        if isinstance(maskoverride, str) and not maskoverride.strip():
+            maskoverride = None
         self.maskoverride = maskoverride
         self.status = ExposureState.Initializing
         self.instrument = instrument

@@ -148,7 +148,7 @@ class Exposer(QtCore.QObject, Component):
         :param delay: delay between exposures (sec). Should be long enonugh to cover the detector read-out time.
         :type delay: float
         :param maskoverride: use a different mask for this exposure
-        :type maskoverride: str (file name)
+        :type maskoverride: str (file name) or None. Blank str also means None.
         :param writenexus: write the results to a NeXus HDF5 file conforming the NXsas application definition
         :type writenexus: bool
         :return: the next available file sequence number
