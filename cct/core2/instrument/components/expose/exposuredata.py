@@ -101,6 +101,7 @@ class ExposureTask(QtCore.QObject):
     def __init__(self, instrument: "Instrument", detector: PilatusDetector, prefix: str, fsn: int, index: int,
                  exptime: float, expdelay: float, maskoverride: Optional[str] = None, writenexus: bool = False):
         super().__init__()
+        logger.debug(f'Initializing an exposure task for {prefix}/{fsn}')
         self.prefix = prefix
         self.fsn = fsn
         self.index = index
@@ -125,6 +126,8 @@ class ExposureTask(QtCore.QObject):
                 h5.attrs['default'] = f'{prefix}_{fsn:05d}'
                 grp.attrs['NX_class'] = 'NXentry'
                 self.instrument.toNeXus(grp)
+        else:
+            logger.debug('Won\'t write a NeXus file')
 
     @property
     def starttime(self):
@@ -212,11 +215,13 @@ class ExposureTask(QtCore.QObject):
             QtCore.Qt.PreciseTimer)
 
     def onExposureStarted(self):
+        logger.debug(f'Exposure of {self.prefix}/{self.fsn} started')
         assert self.status == ExposureState.Pending
         self.status = ExposureState.Running
         self.exposurestarted.emit()
 
     def onExposureFinished(self):
+        logger.debug(f'Exposure of {self.prefix}/{self.fsn} finished')
         assert self.status == ExposureState.Running
         self.imageloadtimer = self.startTimer(int(1000 * self.imageloadperiod), QtCore.Qt.PreciseTimer)
         self.status = ExposureState.WaitingForImage
