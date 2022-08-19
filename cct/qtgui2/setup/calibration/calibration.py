@@ -197,10 +197,10 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
             # While we could derive the formula for the error propagation analytically, it is easier to do it by
             # sampling from a multivariate normal distribution.
             means = np.array([qval[0], pixval[0], pixelsize[0], wavelength[0]])
-            covar = np.array([[qunc[0], 0, 0, 0],
-                              [0, pixunc[0], 0, 0],
-                              [0, 0, pixelsize[1], 0],
-                              [0, 0, 0, wavelength[1]]])
+            covar = np.array([[qunc[0]**2, 0, 0, 0],
+                              [0, pixunc[0]**2, 0, 0],
+                              [0, 0, pixelsize[1]**2, 0],
+                              [0, 0, 0, wavelength[1]**2]])
             samples = np.random.multivariate_normal(means, covar, 5000)
             q = samples[:, 0]
             pix = samples[:, 1]
@@ -216,7 +216,7 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
             # fitting:    pixel = L * tan(2*asin(q*lambda/4pi))
             data = scipy.odr.RealData(x=pixval, sx=pixunc,
                                       y=qval, sy=qunc)
-            model = scipy.odr.Model(lambda Lpix: pixel_to_q(Lpix[1], Lpix[0]))
+            model = scipy.odr.Model(lambda L, pix: pixel_to_q(pix, L))
             odr = scipy.odr.ODR(data, model, [1.0])
             result = odr.run()
             L = result.beta[0], result.sd_beta[0]
