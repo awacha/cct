@@ -178,7 +178,7 @@ class ExposureTask(QtCore.QObject):
                 uncertainty = np.empty_like(image)
                 uncertainty[image > 0] = image[image > 0] ** 0.5
                 uncertainty[image <= 0] = 1
-                self.writeNeXus(image, uncertainty)
+                self.writeNeXus(image, uncertainty, mask)
                 # emit the raw image.
                 exposure = Exposure(image, header, uncertainty, mask)
                 if self.prefix == self.instrument.config['path']['prefixes']['crd']:
@@ -302,7 +302,7 @@ class ExposureTask(QtCore.QObject):
             pickle.dump(data, f)
         return Header(datadict=data)
 
-    def writeNeXus(self, img: np.ndarray, unc: np.ndarray):
+    def writeNeXus(self, img: np.ndarray, unc: np.ndarray, mask: np.ndarray):
         if self.h5 is None:
             return
         grp = self.h5.require_group(f'{self.prefix}_{self.fsn:05d}')
@@ -314,10 +314,12 @@ class ExposureTask(QtCore.QObject):
         ds.attrs['target'] = ds.name  # we will link to this from NXentry/NXdata
         ds = detectorgroup.create_dataset('data_errors', data=unc)
         ds.attrs['target'] = ds.name  # we will link to this from NXentry/NXdata
-
+        ds = detectorgroup.create_dataset('pixel_mask', data=mask.astype(np.uint32))
+        ds.attrs['target'] = ds.name
 
         datagrp = grp.create_group('data')
         datagrp.attrs['NX_class'] = 'NXdata'
+        datagrp.attrs['signal'] = 'data'
         datagrp['data'] = detectorgroup['data']
         grp.attrs['default'] = 'data'
         datagrp['errors'] = detectorgroup['data_errors']
