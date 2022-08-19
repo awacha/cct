@@ -20,7 +20,7 @@ from ....devices.detector.pilatus.frontend import PilatusDetector
 from ....devices.device.frontend import DeviceFrontend
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ExposureState(enum.Enum):
@@ -125,6 +125,7 @@ class ExposureTask(QtCore.QObject):
             self.h5.attrs['default'] = f'{prefix}_{fsn:05d}'
             grp.attrs['NX_class'] = 'NXentry'
             self.instrument.toNeXus(grp)
+            self.h5.flush()
 
     @property
     def starttime(self):
@@ -329,7 +330,7 @@ class ExposureTask(QtCore.QObject):
 
         samplegroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXsample')][0]]
         datagrp['title'] = f"{samplegroup['name'][()].decode('utf-8')}"
-
+        self.h5.flush()
         self.h5.close()
         self.h5 = None
 
