@@ -66,7 +66,7 @@ class Expose(Command):
         self.success = None
         self.waiting_for_images = 1
         try:
-            fsn = self.instrument.exposer.startExposure(prefix, exptime)
+            fsn = self.instrument.exposer.startExposure(prefix, exptime, writenexus=True)
         except:
             self.disconnectExposer()
             raise
