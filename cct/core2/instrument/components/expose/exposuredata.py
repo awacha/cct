@@ -288,9 +288,9 @@ class ExposureTask(QtCore.QObject):
             data['geometry']['truedistance'] = data['geometry']['dist_sample_det'] - data['sample']['distminus.val']
             data['geometry']['truedistance.err'] = (data['geometry']['dist_sample_det.err'] ** 2 + data['sample'][
                 'distminus.err'] ** 2) ** 0.5
-        if (sample is not None) and (sample.maskoverride is not None):
+        if (sample is not None) and (sample.maskoverride is not None) and sample.maskoverride.strip():
             data['geometry']['mask'] = sample.maskoverride
-        if self.maskoverride is not None:
+        if (self.maskoverride is not None) and self.maskoverride.strip():
             # global mask override takes precedence
             data['geometry']['mask'] = self.maskoverride
         # Save the pickle file
