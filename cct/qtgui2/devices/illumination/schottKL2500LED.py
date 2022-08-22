@@ -8,7 +8,7 @@ from .schottKL2500LED_ui import Ui_Form
 from ....core2.devices.illumination.schott.frontend import KL2500LED
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SchottKL2500LEDUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):

@@ -30,12 +30,12 @@ class ResultViewWindow(ProcessingWindow):
         logger.debug(f'_onResultItemChanged in ResultViewWindow with resultitems {self.resultitems}')
         if (samplename, distancekey) in self.resultitems:
             if (samplename, distancekey) in self.project.results:
-                logging.debug(f'ACCEPTED _onResultItemChanged({samplename}, {distancekey})')
+                logger.debug(f'ACCEPTED _onResultItemChanged({samplename}, {distancekey})')
                 self.onResultItemChanged(samplename, distancekey)
             else:
                 self.clear()
         else:
-            logging.debug(f'SKIPPED _onResultItemChanged({samplename}, {distancekey})')
+            logger.debug(f'SKIPPED _onResultItemChanged({samplename}, {distancekey})')
 
     @Slot(str, str)
     def onResultItemChanged(self, samplename: str, distancekey: str):

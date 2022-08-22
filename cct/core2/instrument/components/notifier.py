@@ -192,7 +192,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
             # send a single message
             msg, emailaddresses = self.email_ratelimit_buffer.pop(0)
             for addressee in emailaddresses:
-                print(f'Sending e-mail to "{addressee}"')
+#                print(f'Sending e-mail to "{addressee}"')
                 msg['To'] = addressee
                 s.send_message(msg, self.fromaddress, addressee)
         except:
@@ -343,7 +343,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         logger.debug('Starting component Notification')
         super().startComponent()
         logging.root.addHandler(self)
-        self.setLevel(logging.DEBUG)
+        self.setLevel(logging.INFO)
         logger.debug('Started component Notification')
 
     def stopComponent(self):

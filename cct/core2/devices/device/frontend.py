@@ -68,6 +68,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     _last_ready_time: Optional[float] = None
     _ready: bool = False
 
+    _locked_for_writing: bool = False
+
     class PanicState(enum.Enum):
         NoPanic = enum.auto()
         Panicking = enum.auto()
@@ -538,3 +540,15 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             self.create_hdf5_dataset(sg, 'state', sensor.errorstate().name)
         return grp
 
+    def lockForWriting(self):
+        if self._locked_for_writing:
+            raise RuntimeError('This device is already used/requested')
+        self._locked_for_writing = True
+
+    def unlockForWriting(self):
+        if not self._locked_for_writing:
+            raise RuntimeError('This device is not locked/requested')
+        self._locked_for_writing = False
+
+    def isLockedForWriting(self) -> bool:
+        return self._locked_for_writing

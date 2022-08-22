@@ -15,7 +15,6 @@ class GeniX(DeviceFrontend):
     devicename = 'GeniX'
     vendor = 'Xenocs SA'
     backendclass = GeniXBackend
-    loglevel = logging.DEBUG
 
     shutter = Signal(bool)
     powerStateChanged = Signal(str)

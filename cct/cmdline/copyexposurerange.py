@@ -7,7 +7,7 @@ import click
 from .main import main
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 @main.command()

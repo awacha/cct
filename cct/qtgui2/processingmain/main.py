@@ -22,7 +22,7 @@ from ...core2.processing.processing import Processing
 from ..utils.filebrowsers import getOpenFile, getSaveFile
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 WindowInfo = collections.namedtuple('WindowInfo', ['attribute', 'windowclass', 'action'])
 

@@ -9,7 +9,7 @@ from ....core2.instrument.components.motors.motor import Motor
 from .autoadjust_ui import Ui_Form
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class AdjustingState(enum.Enum):

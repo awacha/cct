@@ -20,7 +20,7 @@ from ....devices.detector.pilatus.frontend import PilatusDetector
 from ....devices.device.frontend import DeviceFrontend
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ExposureState(enum.Enum):

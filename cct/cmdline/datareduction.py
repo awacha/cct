@@ -5,7 +5,7 @@ from ..core2.instrument.components.io import IO
 from ..core2.instrument.components.datareduction import DataReductionPipeLine
 import logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 @main.command()
 @click.option('--firstfsn', '-f', default=None, help='First file sequence number', type=click.IntRange(0),

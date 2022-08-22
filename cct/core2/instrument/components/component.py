@@ -9,7 +9,7 @@ from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 from ...config import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Component:

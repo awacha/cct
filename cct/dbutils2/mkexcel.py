@@ -29,7 +29,7 @@ columns: Final[List[str]] = ['fsn', 'title', 'distance', 'distancedecrease', 'ex
 
 
 def mkexcel(filename: str, firstfsn: int, lastfsn: int, configfile: str, verbose: bool):
-    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    logger.setLevel(logging.INFO if verbose else logging.INFO)
     config = Config(dicorfile=configfile)
     config.filename = None  # inhibit auto-save
     wb = openpyxl.Workbook()

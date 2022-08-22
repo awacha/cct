@@ -29,3 +29,4 @@ conda_build.sh
 /cct/core2/algorithms/schilling.c
 /cct/core2/algorithms/capillarytransmission.c
 /cct/_version.py
+/cct/core2/instrument/components/auth/krb5_check_pass.c

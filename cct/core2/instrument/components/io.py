@@ -18,7 +18,7 @@ from ...dataclasses import Exposure, Header
 from ...config import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def mywalkdir(root: str):

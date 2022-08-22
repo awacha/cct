@@ -18,7 +18,7 @@ from ....devices.detector.pilatus.backend import PilatusBackend
 from ....devices.detector.pilatus.frontend import PilatusDetector
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ExposerState(enum.Enum):
