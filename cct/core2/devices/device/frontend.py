@@ -552,3 +552,6 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
 
     def isLockedForWriting(self) -> bool:
         return self._locked_for_writing
+
+    def variables(self) -> List[Variable]:
+        return self._variables
