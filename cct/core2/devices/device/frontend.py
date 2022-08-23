@@ -2,14 +2,14 @@ import datetime
 import enum
 import logging
 import queue
+import time
 from multiprocessing import Queue, Process
 from typing import Any, Type, List, Iterator, Dict, Optional, Tuple
-import time
 
-import numpy as np
 import h5py
+import numpy as np
 from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PyQt5.QtCore import pyqtSignal as Signal
 
 from .backend import DeviceBackend
 from .message import Message
@@ -17,6 +17,9 @@ from .telemetry import TelemetryInformation
 from .variable import Variable
 from ...algorithms.queuewaiter import QueueWaiter
 from ...sensors.sensor import Sensor
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class DeviceType(enum.Enum):
@@ -52,7 +55,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     currentMessage: Optional[Message] = None
     sensors: List[Sensor] = None
 
-    connectionstate: DeviceConnectionState=DeviceConnectionState.Offline
+    connectionstate: DeviceConnectionState = DeviceConnectionState.Offline
 
     # whenever the connection to the device is broken after a successful initialization, connection is retried.
     connectRetries: List[float] = [0, 1, 2, 5]
@@ -300,7 +303,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         elif self._connectretry is None:
             # this is our very first retry.
             self._connectretry = 0
-        elif self._connectretry == len(self.connectRetries)-1:
+        elif self._connectretry == len(self.connectRetries) - 1:
             # this was our last connect retry
             self._logger.error('Giving up trying to restart backend: maximum number of retries exhausted.')
             self._backend = None  # we won't retry
@@ -316,9 +319,9 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             self._connectretry += 1
         self.connectionstate = DeviceConnectionState.Reconnecting
         self._logger.info(f'Trying to reconnect to device in {self.connectRetries[self._connectretry]:.2f} seconds. '
-                          f'This retry #{self._connectretry+1} of {len(self.connectRetries)}')
+                          f'This retry #{self._connectretry + 1} of {len(self.connectRetries)}')
         QtCore.QTimer.singleShot(
-            int(self.connectRetries[self._connectretry]*1000), QtCore.Qt.PreciseTimer, self.startBackend)
+            int(self.connectRetries[self._connectretry] * 1000), QtCore.Qt.PreciseTimer, self.startBackend)
 
     @property
     def ready(self) -> bool:
@@ -492,7 +495,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             data = np.frombuffer(data, np.uint8)
         elif isinstance(data, bool):
             data = int(data)
-        elif not isinstance(data, [float, str, int, bool]):
+        elif not isinstance(data, (float, str, int, bool)):
             logger.warning(f'Unknown data type to write to NeXus file: variable {name}, value {data}, type {type(data)}')
         ds = grp.create_dataset(name, data=data)
         ds.attrs.update(kwargs)
@@ -524,7 +527,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             try:
                 self.create_hdf5_dataset(stategrp, variable, value)
             except ValueError:
-                logging.error(f'Cannot write state variable {variable} of device {self.name} to NeXus file: value is {value} (type {type(value)}.')
+                logging.error(
+                    f'Cannot write state variable {variable} of device {self.name} to NeXus file: value is {value} (type {type(value)}.')
         sensorgrp = grp.create_group('devicesensors')
         sensorgrp.attrs['NX_class'] = 'NXcollection'
         for isensor, sensor in enumerate(self.sensors, start=1):
