@@ -499,6 +499,14 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             data = np.frombuffer(data, np.uint8)
         elif isinstance(data, bool):
             data = int(data)
+        elif isinstance(data, (list, tuple)) and all([isinstance(x, (float, int)) for x in data]):
+            # a simple tuple of numbers
+            data = np.asanyarray(data)
+        elif isinstance(data, (list, tuple)) and all([
+            (isinstance(x, (list, tuple)) and all([isinstance(y, (float, int)) for y in x])) for x in data
+        ]) and (len({len(x) for x in data}) == 1):
+            # tuple/list of tuples/lists of numbers, all having the same length
+            data = np.asanyarray(data)
         elif not isinstance(data, (float, str, int, bool, np.ndarray)):
             logger.warning(f'Unknown data type to write to NeXus file: variable {name}, value {data}, type {type(data)}')
         ds = grp.create_dataset(name, data=data)
