@@ -492,6 +492,8 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
             data = np.frombuffer(data, np.uint8)
         elif isinstance(data, bool):
             data = int(data)
+        elif not isinstance(data, [float, str, int, bool]):
+            logger.warning(f'Unknown data type to write to NeXus file: variable {name}, value {data}, type {type(data)}')
         ds = grp.create_dataset(name, data=data)
         ds.attrs.update(kwargs)
         return ds
