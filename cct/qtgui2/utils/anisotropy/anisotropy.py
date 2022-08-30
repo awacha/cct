@@ -81,8 +81,8 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             setattr(self, f'figtoolbar_{graphname}', NavigationToolbar2QT(getattr(self, f'canvas_{graphname}'), self))
             getattr(self, f'canvas_{graphname}').setSizePolicy(
                 QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
-            vbox.addWidget(f'figtoolbar_{graphname}', stretch=0)
-            vbox.addWidget(f'canvas_{graphname}', stretch=1)
+            vbox.addWidget(getattr(self, f'figtoolbar_{graphname}'), stretch=0)
+            vbox.addWidget(getattr(self, f'canvas_{graphname}'), stretch=1)
         vboxLayout: QtWidgets.QVBoxLayout = self.layout()
         self.selectorGrid = QtWidgets.QGridLayout()
         vboxLayout.insertLayout(0, self.selectorGrid, stretch=0)
