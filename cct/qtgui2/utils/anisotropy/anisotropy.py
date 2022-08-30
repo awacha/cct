@@ -209,9 +209,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.sectorModel.insertRow(self.sectorModel.rowCount(QtCore.QModelIndex()), QtCore.QModelIndex())
         self.sectorModel.appendSector(0.5*(phimin+phimax), phimax-phimin, True, None)
 
-    @Slot(QtCore.QModelIndex, QtCore.QModelIndex, object, name='onSectorsChanged')  # dataChanged
-    @Slot(QtCore.QModelIndex, int, int, name='onSectorsChanged')  # rowsInserted, rowsRemoved
-    @Slot(name='onSectorsChanged')  # modelReset
+    @Slot(name='onSectorsChanged')
     def onSectorsChanged(self):
         self.removeSliceLines()
         self.axes_slice.clear()
