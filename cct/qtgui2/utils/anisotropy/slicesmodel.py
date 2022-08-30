@@ -54,7 +54,7 @@ class SectorModel(QtCore.QAbstractItemModel):
         elif index.column() == 2:
             return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
         elif index.column() == 3:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable, QtCore.Qt.ItemIsUserCheckable
+            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         si = self._data[index.row()]

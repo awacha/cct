@@ -69,7 +69,6 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.setWindowTitle('Anisotropy Evaluator [*]')
         self.plotimage = PlotImage(self)
         self.patternVerticalLayout.addWidget(self.plotimage)
-        self.plotimage.figure.clf()
         self.plotimage.axes.set_facecolor('black')
         self.plotimage.axes.set_title('2D scattering pattern')
         self.plotimage.axesComboBox.setCurrentIndex(self.plotimage.axesComboBox.findText('q'))
@@ -199,7 +198,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         finally:
             ex.mask = prevmask
         self.axes_azim.clear()
-        self.axes_azim.plot(azimcurve.phi * 180.0 / np.pi, azimcurve.intensity, label='Azimuthal curve')
+        self.axes_azim.plot(azimcurve.phi * 180.0 / np.pi, azimcurve.intensity, 'o', label='Azimuthal curve')
         self.azimSpanSelector = SpanSelector(self.axes_azim, self.onPhiRangeSelected, 'horizontal', span_stays=True)
         self.axes_azim.set_xlabel(r'$\phi$ (°)')
         self.axes_azim.set_ylabel(r'$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
