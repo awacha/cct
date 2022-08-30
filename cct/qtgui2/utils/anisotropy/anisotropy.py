@@ -163,7 +163,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         for c in self._qrangecircles:
             try:
                 c.remove()
-            except ValueError:
+            except (ValueError, AttributeError):
                 pass
         self._qrangecircles = (None, None)
 
