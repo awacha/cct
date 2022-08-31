@@ -68,6 +68,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         super().setupUi(MainWindow)
         self.setWindowTitle('Anisotropy Evaluator [*]')
         self.plotimage = PlotImage(self)
+        self.plotimage.figure.set_size_inches(3, 2)
         self.patternVerticalLayout.addWidget(self.plotimage)
         self.plotimage.axes.set_facecolor('black')
         self.plotimage.axes.set_title('2D scattering pattern')
@@ -75,7 +76,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
         for graphname, vbox in [('full', self.radialVerticalLayout), ('azim', self.azimuthalVerticalLayout),
                                 ('slice', self.sliceVerticalLayout)]:
-            setattr(self, f'fig_{graphname}', Figure(constrained_layout=True))
+            setattr(self, f'fig_{graphname}', Figure(figsize=(3, 2), constrained_layout=True))
             setattr(self, f'canvas_{graphname}', FigureCanvasQTAgg(getattr(self, f'fig_{graphname}')))
             setattr(self, f'figtoolbar_{graphname}', NavigationToolbar2QT(getattr(self, f'canvas_{graphname}'), self))
             getattr(self, f'canvas_{graphname}').setSizePolicy(
@@ -108,6 +109,21 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.sectorModel.rowsRemoved.connect(self.onSectorsChanged)
         self.sectorModel.rowsInserted.connect(self.onSectorsChanged)
         self.sectorModel.modelReset.connect(self.onSectorsChanged)
+        self.addSliceToolButton.clicked.connect(self.addNewSlice)
+        self.removeSliceToolButton.clicked.connect(self.removeSlice)
+        self.cleanSlicesToolButton.clicked.connect(self.clearSlices)
+        self.nAzimSpinBox.valueChanged.connect(self.onAzimuthalCountChanged)
+        self.nRadialSpinBox.valueChanged.connect(self.onRadialCountChanged)
+        self.fanPushButton.clicked.connect(self.createFan)
+
+    @Slot(int, name='onAzimuthalCountChanged')
+    def onAzimuthalCountChanged(self, value: int):
+        self.onQRangeSelected(*self.fullSpanSelector.extents)
+
+    @Slot(int, name='onRadialCountChanged')
+    def onRadialCountChanged(self, value: int):
+        self.onSectorsChanged()
+
 
     def enableH5Selector(self, enable: bool = True):
         self.h5Selector.setEnabled(enable)
@@ -137,8 +153,12 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axes_azim.clear()
         self.axes_slice.clear()
         self.plotimage.setExposure(exposure)
+        self.redrawFullRadialAverage()
+        self.sectorModel.clear()
+
+    def redrawFullRadialAverage(self):
         self.axes_full.clear()
-        rad = exposure.radial_average()
+        rad = self.exposure.radial_average(self.nRadialSpinBox.value() if self.nRadialSpinBox.value() > 0 else None)
         self.axes_full.loglog(rad.q, rad.intensity, label='Full radial average')
         self.axes_full.set_xlabel('q (nm$^{-1}$)')
         self.axes_full.set_ylabel(r'$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
@@ -146,18 +166,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axes_full.set_xlabel('q (nm$^{-1}$)')
         self.axes_full.set_ylabel(r'$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
         self.fullSpanSelector = SpanSelector(self.axes_full, self.onQRangeSelected, 'horizontal', span_stays=True)
-        self.axes_azim.set_xlabel(r'$\phi$ (°)')
-        self.axes_azim.set_ylabel(r'$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
-        self.axes_azim.set_title('Azimuthal scattering curve')
-        self.axes_slice.set_xlabel('q (nm$^{-1}$)')
-        self.axes_slice.set_ylabel(r'$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
-        self.axes_slice.set_title('Slices')
-        self.plotimage.figure.tight_layout()
-        self.plotimage.canvas.draw()
-        self.canvas_azim.draw_idle()
         self.canvas_full.draw_idle()
-        self.canvas_slice.draw_idle()
-        self.sectorModel.clear()
 
     def removeCircles(self):
         for c in self._qrangecircles:
@@ -184,7 +193,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         )
         self.plotimage.axes.add_patch(self._qrangecircles[0])
         self.plotimage.axes.add_patch(self._qrangecircles[1])
-        self.plotimage.canvas.draw()
+        self.plotimage.canvas.draw_idle()
         ex = self.exposure
         # ex.mask_nonfinite()
         prevmask = ex.mask
@@ -206,20 +215,23 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.canvas_azim.draw_idle()
 
     def onPhiRangeSelected(self, phimin: float, phimax: float):
-        self.sectorModel.insertRow(self.sectorModel.rowCount(QtCore.QModelIndex()), QtCore.QModelIndex())
         self.sectorModel.appendSector(0.5*(phimin+phimax), phimax-phimin, True, None)
 
-    @Slot(name='onSectorsChanged')
-    def onSectorsChanged(self):
+    @Slot(name='onSectorsChanged')  # QAbstractItemModel.modelReset
+    @Slot(QtCore.QModelIndex, int, int, name='onSectorsChanged')  # QAbstractItemModel.rowsInserted
+    @Slot(QtCore.QModelIndex, int, int, name='onSectorsChanged')  # QAbstractItemModel.rowsRemoved
+    @Slot(QtCore.QModelIndex, QtCore.QModelIndex, 'QVector<int>', name='onSectorsChanged')  # QAbstractItemModel.dataChanged
+    def onSectorsChanged(self, *args, **kwargs):
         self.removeSliceLines()
         self.axes_slice.clear()
         ex = self.exposure
         originalmask = ex.mask
+        qdata = ex.q()
         try:
             for si in self.sectorModel:
                 ex.mask = maskforsectors(originalmask, ex.header.beamposrow[0], ex.header.beamposcol[0],
                                          si.phi0 * np.pi / 180., si.dphi * np.pi / 180, symmetric=si.symmetric)
-                sliced = ex.radial_average().sanitize()
+                sliced = ex.radial_average(self.nRadialSpinBox.value() if self.nRadialSpinBox.value() > 0 else None).sanitize()
                 line2d = self.axes_slice.loglog(
                     sliced.q, sliced.intensity,
                     label=rf'$\phi_0={si.phi0:.2f}^\circ$, $\Delta\phi = {si.dphi:.2f}^\circ$', color=si.color.name(QtGui.QColor.HexRgb))[0]
@@ -241,7 +253,33 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                             fill=True))
         finally:
             ex.mask = originalmask
-        self.axes_slice.legend(loc='best')
+#        self.axes_slice.legend(loc='best')
+        self.axes_slice.set_xlabel('q (nm$^{-1}$)')
+        self.axes_slice.set_ylabel(r'$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
         self.axes_slice.set_title('Slices')
+        self.canvas_slice.draw_idle()
         for patch in self._slicearcs:
             self.plotimage.axes.add_patch(patch)
+        self.plotimage.canvas.draw_idle()
+
+    @Slot(name='addNewSlice')
+    def addNewSlice(self):
+        self.sectorModel.insertRow(self.sectorModel.rowCount(QtCore.QModelIndex()), QtCore.QModelIndex())
+
+    @Slot(name='removeSlice')
+    def removeSlice(self):
+        for row in reversed(sorted({index.row() for index in self.slicesTreeView.selectionModel().selectedRows(0)})):
+            self.slicesTreeView.model().removeRow(row, QtCore.QModelIndex())
+
+    @Slot(name='clearSlices')
+    def clearSlices(self):
+        self.sectorModel.clear()
+
+    @Slot(name='createFan')
+    def createFan(self):
+        phi0 = self.fanPhi0DoubleSpinBox.value()
+        dphi = 360.0 / self.fanCountSpinBox.value()
+        for i in range(self.fanCountSpinBox.value()):
+            self.sectorModel.appendSector(phi0 + dphi * i, dphi, False)
+
+

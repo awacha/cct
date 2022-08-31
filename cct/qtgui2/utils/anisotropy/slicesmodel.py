@@ -128,7 +128,7 @@ class SectorModel(QtCore.QAbstractItemModel):
         del self._data[row:row+count]
         self.endRemoveRows()
 
-    def appendSector(self, phi0: float, dphi: float, symmetric: bool, color: Optional[str]):
+    def appendSector(self, phi0: float, dphi: float, symmetric: bool, color: Optional[str] = None):
         si = SectorInformation()
         si.phi0 = phi0
         si.dphi = dphi
