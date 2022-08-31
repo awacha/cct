@@ -420,8 +420,8 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         self.beginResetModel()
         for data in self._data:
             data.clear()
-        if self.lazymode:
-            self.orderSamplesForLeastMovement()
+#        if self.lazymode:
+#            self.orderSamplesForLeastMovement()
         self.endResetModel()
         self.started.emit()
         self.closeShutter()
