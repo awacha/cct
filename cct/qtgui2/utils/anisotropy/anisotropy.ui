@@ -43,28 +43,68 @@
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
         <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Q min:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
+         <item row="3" column="0">
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Q max:</string>
+            <string>Fan sector count:</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
+         <item row="2" column="1">
+          <widget class="QDoubleSpinBox" name="fanPhi0DoubleSpinBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximum">
+            <double>360.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
           <widget class="QLabel" name="label_3">
            <property name="text">
             <string>Points in azimuthal curve:</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
+         <item row="3" column="1">
+          <widget class="QSpinBox" name="fanCountSpinBox">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Points in radial curves:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Fan starting angle:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2" rowspan="2">
+          <widget class="QPushButton" name="fanPushButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Create fan</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1" colspan="2">
           <widget class="QSpinBox" name="nAzimSpinBox">
            <property name="minimum">
             <number>2</number>
@@ -77,23 +117,10 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QDoubleSpinBox" name="qMinDoubleSpinBox"/>
-         </item>
-         <item row="1" column="1">
-          <widget class="QDoubleSpinBox" name="qMaxDoubleSpinBox"/>
-         </item>
-         <item row="3" column="1">
+         <item row="1" column="1" colspan="2">
           <widget class="QSpinBox" name="nRadialSpinBox">
            <property name="specialValueText">
             <string>Number of pixels</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Points in radial curves:</string>
            </property>
           </widget>
          </item>
@@ -117,7 +144,8 @@
             <string>Add sector</string>
            </property>
            <property name="icon">
-            <iconset theme="list-add"/>
+            <iconset theme="list-add">
+             <normaloff>.</normaloff>.</iconset>
            </property>
           </widget>
          </item>
@@ -127,7 +155,18 @@
             <string>Remove sector</string>
            </property>
            <property name="icon">
-            <iconset theme="list-remove"/>
+            <iconset theme="list-remove">
+             <normaloff>.</normaloff>.</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="cleanSlicesToolButton">
+           <property name="text">
+            <string>Clear</string>
+           </property>
+           <property name="icon">
+            <iconset theme="edit-clear-all"/>
            </property>
           </widget>
          </item>
@@ -139,6 +178,17 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>nAzimSpinBox</tabstop>
+  <tabstop>nRadialSpinBox</tabstop>
+  <tabstop>fanPhi0DoubleSpinBox</tabstop>
+  <tabstop>fanCountSpinBox</tabstop>
+  <tabstop>fanPushButton</tabstop>
+  <tabstop>slicesTreeView</tabstop>
+  <tabstop>addSliceToolButton</tabstop>
+  <tabstop>removeSliceToolButton</tabstop>
+  <tabstop>cleanSlicesToolButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>
  </resources>
