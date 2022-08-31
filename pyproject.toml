@@ -25,7 +25,8 @@ dependencies = [
     "pyusb",
     "lmfit",
     "numdifftools",
-    "PyQt5"
+    "PyQt5",
+    "dbus-python"
 ]
 dynamic = ["version"]
 requires-python = ">=3.9"
