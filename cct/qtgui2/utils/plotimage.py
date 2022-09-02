@@ -323,7 +323,11 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
 #        self.canvas.draw_idle()
         self.replot(keepzoom=True)
 
-    def getNormalization(self, minposvalue: float, minvalue: float):
+    def getNormalization(self, minposvalue: Optional[float] = None, minvalue: Optional[float] = None):
+        if minposvalue is None:
+            minposvalue = np.nanmin(self.matrix[self.matrix>0])
+        if minvalue is None:
+            minvalue = np.nanmin(self.matrix)
         if self.colourScaleComboBox.currentText() == 'linear':
             return matplotlib.colors.Normalize(minvalue)
         elif self.colourScaleComboBox.currentText() == 'log10':
@@ -334,3 +338,6 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             return matplotlib.colors.PowerNorm(0.5, minposvalue)
         else:
             assert False
+
+    def colorMapName(self) -> str:
+        return self.paletteComboBox.currentText()

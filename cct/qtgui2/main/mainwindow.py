@@ -34,6 +34,7 @@ from ..measurement.simpleexposure.simpleexposure import SimpleExposure
 from ..measurement.transmission import TransmissionUi
 from ..setup.calibrants.calibrants import Calibrants
 from ..setup.calibration.calibration import Calibration
+from ..setup.centering.centering import CenteringUI
 from ..setup.deviceloggers.devicelogmanager import DeviceLogManagerUI
 from ..setup.geometry.geometry import GeometryEditor
 from ..setup.notifier.notifier import NotifierSetup
@@ -105,6 +106,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         'actionAnisotropy': AnisotropyEvaluator,
         'actionImage_monitor': ImageMonitor,
         'actionCurve_monitor': CurveMonitor,
+        'actionBeam_centering': CenteringUI,
 
     }
     _windows: Dict[str, QtWidgets.QWidget]

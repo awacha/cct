@@ -276,6 +276,7 @@
     <addaction name="actionEdit_configuration"/>
     <addaction name="actionCalibrantsDB"/>
     <addaction name="separator"/>
+    <addaction name="actionBeam_centering"/>
     <addaction name="actionCalibration"/>
     <addaction name="separator"/>
     <addaction name="actionNotification"/>
@@ -368,6 +369,7 @@
    </attribute>
    <addaction name="actionSample_editor"/>
    <addaction name="actionGeometry_editor"/>
+   <addaction name="actionBeam_centering"/>
    <addaction name="actionCalibration"/>
    <addaction name="separator"/>
    <addaction name="actionX_ray_source"/>
@@ -914,6 +916,18 @@
    </property>
    <property name="toolTip">
     <string>Show recorded scattering curves</string>
+   </property>
+  </action>
+  <action name="actionBeam_centering">
+   <property name="icon">
+    <iconset resource="../../resource/icons/icons.qrc">
+     <normaloff>:/icons/centering.svg</normaloff>:/icons/centering.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Beam centering</string>
+   </property>
+   <property name="toolTip">
+    <string>Find the beam center from a scattering pattern</string>
    </property>
   </action>
  </widget>
