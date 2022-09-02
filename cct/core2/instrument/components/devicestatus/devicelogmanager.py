@@ -198,13 +198,17 @@ class DeviceLogManager(QtCore.QAbstractItemModel, Component):
     def __len__(self) -> int:
         return len(self._loggers)
 
-    @Slot()
-    def onLoggerDestroyed(self):
+    @Slot(QtCore.QObject, name = 'onLoggerDestroyed')
+    def onLoggerDestroyed(self, object: QtCore.QObject):
+        logger.debug(f'Logger {object.objectName()} has been destroyed.')
         while True:
             for i, lgr in enumerate(self._loggers[:]):
                 try:
-                    lgr.objectName()
+                    if lgr.objectName() == object.objectName():
+                        self.removeRow(i, QtCore.QModelIndex())
+                    continue
                 except RuntimeError:
+                    logger.warning(f'Found a stale device logger handle at row {i}')
                     self.removeRow(i, QtCore.QModelIndex())
                     break
             else:

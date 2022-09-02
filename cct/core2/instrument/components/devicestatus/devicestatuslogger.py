@@ -285,8 +285,12 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
             self._savepointer = self._recordpointer  # emulate that the data has been saved
             return
         if not os.path.exists(self._filename):
-            with open(self._filename, 'wt') as f:
-                f.write('# ' + '  '.join(self._record.dtype.names) + '\n')
+            try:
+                with open(self._filename, 'wt') as f:
+                    f.write('# ' + '  '.join(self._record.dtype.names) + '\n')
+            except FileNotFoundError:
+                # path does not exist:
+                return
         with open(self._filename, 'at') as f:
             # watch out for the cyclic buffer!
             if self._savepointer < self._recordpointer:

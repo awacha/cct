@@ -194,7 +194,10 @@ cdef class User:
         self.firstname = state['firstname']
         self.lastname = state['lastname']
         self.email = state['email']
-        self.__privileges = {p for p in Privilege if p.value in state['privileges'].split('|')}
+        if state['privileges'] is not None:
+            self.__privileges = {p for p in Privilege if p.value in state['privileges'].split('|')}
+        else:
+            self.__privileges = set()
 
     @property
     def privileges(self):

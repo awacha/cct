@@ -64,7 +64,7 @@ class Instrument(QtCore.QObject):
         type(self)._singleton_instance = self
         super().__init__()
         self.online = False
-        self.config = Config()
+        self.config = Config(path='ROOT')
         self.createDefaultConfig()
         logger.debug(f'Using config file {configfile}')
         try:
@@ -252,3 +252,11 @@ class Instrument(QtCore.QObject):
                 motorgroup = instgroup[[g for g in instgroup if ('NX_class' in instgroup[g].attrs) and (instgroup[g].attrs['NX_class'] == 'NXpositioner') and g == motor.name][0]]
                 samplegrp[motor.name] = motorgroup
         return entrygrp
+
+    def __del__(self):
+        self.deleteLater()
+
+    def deleteLater(self) -> None:
+        self.config.deleteLater()
+        del self.config
+        super().deleteLater()

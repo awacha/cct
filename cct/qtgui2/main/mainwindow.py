@@ -128,8 +128,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def setupUi(self, Form):
         super().setupUi(Form)
         rootlogger = logging.root
-        self.logViewer = LogViewerText(parent=self.centralwidget)
-        self.logHorizontalLayout.addWidget(self.logViewer)
+        self.logViewer = LogViewerText()
+        self.logViewer.widget.setParent(self.centralWidget())
+        self.centralwidget.layout().addWidget(self.logViewer.widget)
+        self.logHorizontalLayout.addWidget(self.logViewer.widget)
         rootlogger.addHandler(self.logViewer)
         self.actionQuit.triggered.connect(self.close)
         self.progressBar.setVisible(False)
@@ -240,11 +242,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         logger.debug('closeEvent in Main window')
         if not self.instrument.running:
+            self.logViewer.close()
+            logging.root.removeHandler(self.logViewer)
             logger.debug('Instrument is not running, closing all windows')
             for name in self._windows:
                 self._windows[name].close()
             logger.debug('All windows closed, accepting close event.')
             self.instrument.config.save()
+            logger.info('Detaching GUI logger')
             event.accept()
         elif not self.instrument.stopping:
             logger.debug('Instrument is running.')

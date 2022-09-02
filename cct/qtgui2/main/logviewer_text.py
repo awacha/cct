@@ -3,11 +3,12 @@ import logging
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 
-class LogViewerText(QtWidgets.QPlainTextEdit, logging.Handler):
+class LogViewerText(logging.Handler):
+    widget: QtWidgets.QPlainTextEdit
     def __init__(self, *args, **kwargs):
-        QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        logging.Handler.__init__(self)
+        super().__init__(*args, **kwargs)
         formatter = logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s')
+        self.widget = QtWidgets.QPlainTextEdit()
         self.setFormatter(formatter)
         self.debugformat = QtGui.QTextCharFormat()
         self.debugformat.setFontWeight(QtGui.QFont.Normal)
@@ -23,11 +24,11 @@ class LogViewerText(QtWidgets.QPlainTextEdit, logging.Handler):
         self.stronginfoformat.setForeground(QtCore.Qt.black)
         self.stronginfoformat.setBackground(QtCore.Qt.green)
         self.infoformat = QtGui.QTextCharFormat()
-        self.setReadOnly(True)
+        self.widget.setReadOnly(True)
 
     def emit(self, record: logging.LogRecord):
         msg = self.format(record) + '\n'
-        cursor = self.textCursor()
+        cursor = self.widget.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
 
         if record.levelno < logging.INFO:
@@ -43,5 +44,5 @@ class LogViewerText(QtWidgets.QPlainTextEdit, logging.Handler):
         else:
             cursor.insertText(msg, self.criticalformat)
         cursor.movePosition(QtGui.QTextCursor.End)
-        self.setTextCursor(cursor)
-        self.ensureCursorVisible()
+        self.widget.setTextCursor(cursor)
+        self.widget.ensureCursorVisible()

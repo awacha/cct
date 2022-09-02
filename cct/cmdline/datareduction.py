@@ -17,7 +17,7 @@ logger.setLevel(logging.INFO)
                               allow_dash=False, ))
 def datareduction(firstfsn: int, lastfsn: int, config):
     """Command-line data reduction routine"""
-    config = Config(dicorfile=config)
+    config = Config(dicorfile=config, path='ROOT')
     config.filename = None  # inhibit autosave
     io = IO(config=config, instrument=None)
     pipeline = DataReductionPipeLine(config.asdict())

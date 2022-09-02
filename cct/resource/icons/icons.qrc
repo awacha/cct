@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons">
+    <file>centering.svg</file>
     <file>curvemonitor.svg</file>
     <file>imagemonitor.svg</file>
     <file>illumination.svg</file>

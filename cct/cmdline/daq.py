@@ -6,9 +6,10 @@ import gc
 import sys
 
 import click
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 
 from .main import main
+from ..core2.config import Config
 from ..core2.instrument.instrument import Instrument
 from ..qtgui2.main.logindialog import LoginDialog
 from ..qtgui2.main.mainwindow import MainWindow
@@ -67,17 +68,20 @@ def daq(config: str, online: bool, root: bool):
     mw = MainWindow(instrument=instrument)
     mw.show()
     instrument.start()
+    def onAboutToQuit():
+#        print('Application is about to quit')
+        logging.root.removeHandler(mw.logViewer)
+#        print(logging.root.handlers)
+        mw.deleteLater()
+        instrument.config.deleteLater()
+        instrument.deleteLater()
+        app.processEvents(QtCore.QEventLoop.AllEvents)
+        gc.collect()
+#        print('Application about to quit callback has finished')
+    app.aboutToQuit.connect(onAboutToQuit)
+
     logger.debug('Starting event loop')
     result = app.exec_()
-    print('Event loop exited', flush=True)
-    mw.deleteLater()
-    gc.collect()
-    print('MainWindow deleted', flush=True)
-    instrument.deleteLater()
-    gc.collect()
-    print('Instrument deleted', flush=True)
-    gc.collect()
-    app.deleteLater()
-    print('App deleted', flush=True)
-    gc.collect()
+    print(f'Remaining Configs: {len(Config.instances)}')
+    print('Now exiting...')
     sys.exit(result)

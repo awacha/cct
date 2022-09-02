@@ -84,7 +84,10 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         try:
             return self.config['notifier']['smtpserver']
         except KeyError:
-            self.config['notifier']['smtpserver'] = None
+            try:
+                self.config['notifier']['smtpserver'] = None
+            except KeyError:
+                pass
             return None
 
     @smtpserver.setter
