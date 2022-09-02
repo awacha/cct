@@ -115,6 +115,8 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.nAzimSpinBox.valueChanged.connect(self.onAzimuthalCountChanged)
         self.nRadialSpinBox.valueChanged.connect(self.onRadialCountChanged)
         self.fanPushButton.clicked.connect(self.createFan)
+        self.beamPosXDoubleSpinBox.valueChanged.connect(self.onBeamXChanged)
+        self.beamPosYDoubleSpinBox.valueChanged.connect(self.onBeamYChanged)
 
     @Slot(int, name='onAzimuthalCountChanged')
     def onAzimuthalCountChanged(self, value: int):
@@ -155,6 +157,17 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.plotimage.setExposure(exposure)
         self.redrawFullRadialAverage()
         self.sectorModel.clear()
+        self.beamPosYDoubleSpinBox.blockSignals(True)
+        try:
+            self.beamPosYDoubleSpinBox.setValue(exposure.header.beamposrow[0])
+        finally:
+            self.beamPosYDoubleSpinBox.blockSignals(False)
+        self.beamPosXDoubleSpinBox.blockSignals(True)
+        try:
+            self.beamPosXDoubleSpinBox.setValue(exposure.header.beamposcol[0])
+        finally:
+            self.beamPosXDoubleSpinBox.blockSignals(False)
+
 
     def redrawFullRadialAverage(self):
         self.axes_full.clear()
@@ -281,5 +294,21 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         dphi = 360.0 / self.fanCountSpinBox.value()
         for i in range(self.fanCountSpinBox.value()):
             self.sectorModel.appendSector(phi0 + dphi * i, dphi, False)
+
+    @Slot(float, name='onBeamXChanged')
+    def onBeamXChanged(self, value:float):
+        self.exposure.header.beamposcol = (value, 0.0)
+        self.plotimage.setExposure(self.exposure, keepzoom=True)
+        self.redrawFullRadialAverage()
+        self.onAzimuthalCountChanged(self.nAzimSpinBox.value())
+        self.onSectorsChanged()
+
+    @Slot(float, name='onBeamYChanged')
+    def onBeamYChanged(self, value:float):
+        self.exposure.header.beamposrow = (value, 0.0)
+        self.plotimage.setExposure(self.exposure, keepzoom=True)
+        self.redrawFullRadialAverage()
+        self.onAzimuthalCountChanged(self.nAzimSpinBox.value())
+        self.onSectorsChanged()
 
 
