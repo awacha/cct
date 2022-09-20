@@ -167,16 +167,19 @@ class ProcessingH5File:
             pass
         dsname = os.path.split(exposure.header.maskname)[-1]
         if dsname not in maskgroup:
-            maskgroup.create_dataset(os.path.split(exposure.header.maskname)[-1],
+            maskgroup.create_dataset(dsname,
                                      exposure.mask.shape, exposure.mask.dtype, exposure.mask,
                                      compression='lzf', fletcher32=True, shuffle=True)
         else:
             # the mask is already present
-            # ToDo: check if it the same as the current one.
-            pass
+            maskpresent = np.array(maskgroup[dsname], dtype=exposure.mask.dtype)
+            if ((exposure.mask - maskpresent)**2).sum() > 1e-9:
+                del maskgroup[dsname]
+                maskgroup.create_dataset(dsname, exposure.mask.shape, exposure.mask.dtype, exposure.mask, compression='lzf', fletcher32=True, shuffle=True)
+                logger.info(f'Replaced mask {dsname} in the HDF5 file.')
         if 'mask' in group:
             del group['mask']
-        group['mask'] = h5py.SoftLink(f'/masks/{os.path.split(exposure.header.maskname)[-1]}')
+        group['mask'] = h5py.SoftLink(f'/masks/{dsname}')
         self.writeHeader(exposure.header, group)
 
     def writeHeader(self, header: Header, group: h5py.Group):
