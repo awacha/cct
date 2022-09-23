@@ -50,7 +50,7 @@ class Config(QtCore.QObject):
         :param dicorfile: the file name to load the configuration from, or a dictionary-like object
         :type dicorfile: str or dict or None
         """
-        Config.instances.append(self)
+        Config.instances.append(weakref.proxy(self))
         self._name = f"Config({path})_{time.monotonic_ns()}_{random.random()}"
         self.path = path
         super().__init__(parent)
@@ -70,25 +70,34 @@ class Config(QtCore.QObject):
     @Slot(QtCore.QObject, name='onDestroyed')
     @staticmethod
     def onDestroyed(selfdict):
-        objs = [c for c in Config.instances if c._name == selfdict['_name']]
+        newinstances = []
+        removedcount = 0
+        vanishedPython = 0
+        for obj in Config.instances:
+            try:
+                if obj._name == selfdict['_name']:
+                    removedcount += 1
+                    continue
+            except ReferenceError:
+                vanishedPython += 1
+                continue
+            newinstances.append(obj)
+
+        Config.instances = newinstances
 
         try:
-            assert len(objs) <= 1
-            assert len(objs) != 0
+            assert removedcount <= 1
+            assert removedcount > 0
         except AssertionError:
 #            print(f'{selfdict["_name"]}, {selfdict["path"]}')
 #            print(sorted([c._name for c in Config.instances]))
             pass
-        for o in objs:
-            Config.instances.remove(o)
-#        print(f'Destroying a Config object ({selfdict["path"]}): number of active Config instances is {len(Config.instances)}')
+        logger.debug(f'Destroying a Config object ({selfdict["path"]}): number of active Config instances is {len(Config.instances)}, stale weakref: {vanishedPython}')
         for c in Config.instances[:]:
             try:
                 c.objectName()
             except RuntimeError:
                 assert False
-#                print(f'Vanished config instance: {c._name}, {c.path}')
-                Config.instances.remove(c)
 
     def autosave(self):
         """Request automatic saving of the config.
@@ -110,6 +119,7 @@ class Config(QtCore.QObject):
             # do autosave
             self.killTimer(timerEvent.timerId())
             self._autosavetimer = None
+            logger.debug('Autosave timer elapsed, saving.')
             self.save(self.filename)
 
     @Slot(object, object)
@@ -148,7 +158,7 @@ class Config(QtCore.QObject):
             of a whole Config hierarchy in the case of nested dicts.
 
         """
-        logger.debug(f'Config.__setitem__({key}, {value})')
+#        logger.debug(f'Config.__setitem__({key}, {value})')
         if isinstance(key, tuple) and len(key) > 1:
             subconfig = self._data[key[0]]
             assert isinstance(subconfig, Config)
@@ -169,6 +179,8 @@ class Config(QtCore.QObject):
             elif self._data[key] is value:
                 return  # physically the same Config instance
             else:
+                if isinstance(self[key], Config):
+                    self[key].deleteLater()
                 del self[key]  # this takes care of all cases, even when the previous value is a Config
                 self[key] = value  # try again
         elif isinstance(value, dict):
@@ -190,7 +202,7 @@ class Config(QtCore.QObject):
                 del self[key]
                 self._data[key] = value
                 # value changed, emit the signal
-                logger.debug(f'Key value changed, emitting change signal.')
+#                logger.debug(f'Key value changed, emitting change signal.')
                 self.changed.emit((key,), value)
             else:
                 # the key is already present and both the type and value are the same. Nothing needs to be done.
@@ -204,10 +216,10 @@ class Config(QtCore.QObject):
         strings and tuples of ints/strings can be keys. If the key to be deleted is a tuple,
         the deletion request is propagated to the bottom.
         """
-        logger.debug(f'Deleting key {key}')
+#        logger.debug(f'Deleting key {key}')
         if isinstance(key, (int, str)):
             key = (key,)
-        logger.debug(f'Key normalized to {key}')
+#        logger.debug(f'Key normalized to {key}')
         if not isinstance(key, tuple):
             raise ValueError(f'Invalid key type: {type(key)}')
         if len(key) == 0:
@@ -231,7 +243,7 @@ class Config(QtCore.QObject):
                     self._data[key[0]].deleteLater()
                 except (RuntimeError, TypeError):
                     # sometimes the underlying C/C++ object vanishes first. Why???
-                    print(f'Vanished C/C++ object: {self._data[key[0]]._name}')
+                    logger.error(f'Vanished C/C++ object: {self._data[key[0]]._name}')
                     pass
             del self._data[key[0]]
         self.autosave()
@@ -289,8 +301,8 @@ class Config(QtCore.QObject):
                 pass
         else:
             # extend the path with the key and re-emit the signal.
-            logger.debug(
-                f'Config change in subconfig "{key}", path {path}. Emitting `changed` signal with path "{key}"')
+#            logger.debug(
+#                f'Config change in subconfig "{key}", path {path}. Emitting `changed` signal with path "{key}"')
             self.changed.emit((key,) + path, newvalue)
         self.autosave()
 
@@ -306,7 +318,7 @@ class Config(QtCore.QObject):
         if not isinstance(other, (Config, dict)):
             raise ValueError(f'Cannot update a Config from other than another Config or a dict.')
         for key, value in other.items():
-            logger.debug(f'Updating {key=}')
+#            logger.debug(f'Updating {key=}')
             if isinstance(value, (Config, dict)) and (key in self._data):
                 # we need to work hierarchically
                 if self._data[key] is value:
@@ -352,7 +364,7 @@ class Config(QtCore.QObject):
             logger.info(f'Loading configuration from {picklefile}')
             with open(picklefile, 'rb') as f:
                 data = pickle.load(f)
-            logger.debug('Loaded a pickle file')
+#            logger.debug('Loaded a pickle file')
             self.__setstate__(data)
         else:
             logger.info(f'Loading configuration with update')
@@ -374,6 +386,19 @@ class Config(QtCore.QObject):
         with open(picklefile, 'wb') as f:
             pickle.dump(self.__getstate__(), f)
         logger.info(f'Saved configuration to {picklefile}')
+
+        newinstances = []
+        allpaths = []
+        for instance in Config.instances:
+            try:
+                allpaths.append(instance.path)
+                newinstances.append(instance)
+            except ReferenceError:
+                continue
+        Config.instances = newinstances
+#        for path in {instance.path for instance in Config.instances}:
+#            if allpaths.count(path) > 1:
+#                logger.warning(f'Multiple extant Config entries of path {path}: count is {allpaths.count(path)}')
 
     def __setstate__(self, dic: Dict[Union[str, int], Any]):
         """Convert a dictionary to a Config instance"""
@@ -409,7 +434,7 @@ class Config(QtCore.QObject):
 
     def __del__(self):
         self.filename = None
-        logger.debug(f'Config.__del__ called, requesting deleteLater() on config {self.path}')
+#        logger.debug(f'Config.__del__ called, requesting deleteLater() on config {self.path}')
         self.deleteLater()
 
     def deleteLater(self) -> None:

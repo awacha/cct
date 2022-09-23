@@ -105,13 +105,19 @@ class ProjectManager(QtCore.QAbstractItemModel, Component):
         return bool([p for p in self._projects if p.projectid == item])
 
     def saveToConfig(self):
-        self.config['projects'] = {
-            'projects': {p.projectid: p.__getstate__() for p in self._projects},
-            'current': self._currentproject.projectid,
-        }
-        removedprojects = [p for p in self.config['projects']['projects'] if p not in self]
-        for p in removedprojects:
-            del self.config['projects']['projects'][p]
+        if 'projects' not in self.config:
+            self.config['projects'] = {}
+        if 'projects' not in self.config['projects']:
+            self.config['projects']['projects'] = {}
+        self.config['projects']['current'] = self._currentproject.projectid
+        for p in list(self.config['projects']['projects']):
+            if p not in self:
+                del self.config['projects']['projects'][p]
+        for p in self._projects:
+            if p.projectid not in self.config['projects']['projects']:
+                self.config['projects']['projects'][p.projectid] = p.__getstate__()
+            else:
+                self.config['projects']['projects'][p.projectid].update(p.__getstate__())
 
     def loadFromConfig(self):
         if ('projects' in self.config) and ('projects' in self.config['projects']):

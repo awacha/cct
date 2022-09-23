@@ -11,7 +11,7 @@ from ..motors import Motor
 from ....dataclasses.sample import Sample, LockState
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class SampleStore(QtCore.QAbstractItemModel, Component):
@@ -306,11 +306,17 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     def saveToConfig(self):
         self.config.blockSignals(True)
         if 'samplestore' not in self.config['services']:
+            logger.warning('Creating "samplestore" key in config/services/')
             self.config['services']['samplestore'] = {}
         if 'list' not in self.config['services']['samplestore']:
+            logger.warning('Creating "list" key in config/services/samplestore/')
             self.config['services']['samplestore']['list'] = {}
         for sample in self._samples:
-            self.config['services']['samplestore']['list'][sample.title] = sample.todict()
+            dic = sample.todict()
+            if sample.title not in self.config['services']['samplestore']['list']:
+                self.config['services']['samplestore']['list'][sample.title] = dic
+            else:
+                self.config['services']['samplestore']['list'][sample.title].update(dic)
         sampletitles = [s.title for s in self._samples]
         removedsamples = [k for k in self.config['services']['samplestore']['list'] if k not in sampletitles]
         for sn in removedsamples:

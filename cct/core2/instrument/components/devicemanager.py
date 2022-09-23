@@ -2,6 +2,7 @@ import logging
 import warnings
 from typing import List, Any, Type, Iterator, Union
 
+import gc
 import h5py
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
@@ -51,14 +52,20 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
                     logger.critical(f'Cannot add device {value["name"]}: {exc}')
 
     def saveToConfig(self):
-        self.config['connections'] = {dev.name: {
-            'classname': dev.__class__.devicename, 'name': dev.name, 'host': dev.host, 'port': dev.port}
-            for dev in self._devices}
-        removeddevices = [d for d in self.config['connections'] if
-                          d not in {dev.name for dev in self._devices}]
-        for dn in removeddevices:
-            del self.config['connections'][dn]
+        if 'connections' not in self.config:
+            self.config['connections'] = {}
+        devnames = {dev.name for dev in self._devices}
+        for dev in list(self.config['connections'].keys()):
+            if dev not in devnames:
+                self.config['connections'][dev].deleteLater()
+                del self.config['connections'][dev]
+        for dev in self._devices:
+            if dev.name in self.config['connections']:
+                self.config['connections'][dev.name].deleteLater()
+                del self.config['connections'][dev.name]
+            self.config['connections'][dev.name] = {'classname': dev.__class__.devicename, 'name': dev.name, 'host': dev.host, 'port': dev.port}
         logger.debug(f'Config connections keys: {list(self.config["connections"].keys())}')
+        gc.collect()
 
     @staticmethod
     def getDriverClass(deviceclassname: str) -> Type[DeviceFrontend]:

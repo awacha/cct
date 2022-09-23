@@ -194,8 +194,10 @@ class Instrument(QtCore.QObject):
         return cls._singleton_instance
 
     def saveConfig(self):
-        for component in self.components.values():
+        for name, component in self.components.items():
+#            logger.warning(f'Config instances before issuing {name}.saveToConfig(): {len(Config.instances)}')
             component.saveToConfig()
+#            logger.warning(f'Config instances after issuing {name}.saveToConfig(): {len(Config.instances)}')
         self.config.save(self.config.filename)
 
     def panic(self, reason: str = 'Unspecified reason'):
