@@ -348,7 +348,7 @@ def maskforsectors(uint8_t[:,:] mask, double center_row, double center_col, doub
         center_row (double): row coordinate of the beam center
         center_col (double): column coordinate of the beam center
         phicenter (double): azimuth angle of the center of the sector expressed in radians
-        phihalfwidth (double): full angular width of the sector (expressed in radians)
+        phihalfwidth (double): half angular width of the sector (expressed in radians)
         symmetric (bool): if the opposite sector should also be considered
 
     Outputs:
