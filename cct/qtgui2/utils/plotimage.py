@@ -293,13 +293,13 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.canvas.draw_idle()
 
     def setExposure(self, exposure: Exposure, keepzoom: Optional[bool] = False, title: Optional[str] = None):
-        self.matrix = exposure.intensity
-        self.mask = exposure.mask == 0
-        self.wavelength = float(exposure.header.wavelength[0])
-        self.pixelsize = float(exposure.header.pixelsize[0])
-        self.beamx = float(exposure.header.beamposcol[0])
-        self.beamy = float(exposure.header.beamposrow[0])
-        self.distance = float(exposure.header.distance[0])
+        self.matrix = exposure.intensity if exposure is not None else None
+        self.mask = (exposure.mask == 0) if exposure is not None else None
+        self.wavelength = float(exposure.header.wavelength[0]) if exposure is not None else None
+        self.pixelsize = float(exposure.header.pixelsize[0]) if exposure is not None else None
+        self.beamx = float(exposure.header.beamposcol[0]) if exposure is not None else None
+        self.beamy = float(exposure.header.beamposrow[0]) if exposure is not None else None
+        self.distance = float(exposure.header.distance[0]) if exposure is not None else None
         self.title = title
         self.replot(keepzoom)
 
