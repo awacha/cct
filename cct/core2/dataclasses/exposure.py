@@ -158,3 +158,8 @@ class Exposure:
         """Return the valid pixel range, i.e. the lowest and highest distance from the origin of the
         valid pixels"""
         return validpixelrange(self.mask, self.header.beamposrow[0], self.header.beamposcol[0])
+
+    def validqrange(self) -> Tuple[float, float]:
+        """The valid q range, i.e. the lowest and highest q where non-masked pixels exist."""
+        pixmin, pixmax = self.validpixelrange()
+        return self.pixeltoq(pixmin), self.pixeltoq(pixmax)
