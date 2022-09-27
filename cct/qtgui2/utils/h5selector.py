@@ -12,14 +12,31 @@ from ..utils.filebrowsers import getOpenFile
 
 class H5Selector(QtWidgets.QWidget, Ui_Form):
     filename: Optional[str] = None
-    datasetSelected = Signal(str, str, str)
+    datasetSelected = Signal(str, str, str, name='datasetSelected')
+    horizontal: bool=True
 
-    def __init__(self, parent: QtWidgets.QWidget):
+    def __init__(self, parent: QtWidgets.QWidget, horizontal: bool=True):
         super().__init__(parent)
+        self.horizontal = horizontal
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
+        if not self.horizontal:
+            self.horizontalLayout.removeWidget(self.browsePushButton)
+            self.horizontalLayout.removeWidget(self.sampleNameComboBox)
+            self.horizontalLayout.removeWidget(self.distanceComboBox)
+            self.horizontalLayout.removeWidget(self.reloadToolButton)
+            grid: QtWidgets.QGridLayout = QtWidgets.QGridLayout(self)
+            self.horizontalLayout.addLayout(grid, 1)
+            grid.addWidget(QtWidgets.QLabel(self, text='File:'), 0, 0, 1, 1)
+            grid.addWidget(self.browsePushButton, 0, 1, 1, 1)
+            grid.addWidget(QtWidgets.QLabel(self, text='Sample:'), 1, 0, 1, 1)
+            grid.addWidget(self.sampleNameComboBox, 1, 1, 1, 1)
+            grid.addWidget(QtWidgets.QLabel(self, text='Distance:'), 2, 0, 1, 1)
+            grid.addWidget(self.distanceComboBox, 2, 1, 1, 1)
+            grid.addWidget(self.reloadToolButton, 0, 2, 1, 1)
+            self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         self.distanceComboBox.setEnabled(False)
         self.sampleNameComboBox.setEnabled(False)
         self.browsePushButton.clicked.connect(self.browseH5FileName)

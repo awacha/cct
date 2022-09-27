@@ -10,13 +10,30 @@ from ...core2.instrument.instrument import Instrument
 
 class FSNSelector(QtWidgets.QWidget, Ui_Form):
     fsnSelected = Signal(str, int)
+    horizontal: bool=True
 
-    def __init__(self, parent: QtWidgets.QWidget):
+    def __init__(self, parent: QtWidgets.QWidget, horizontal: bool=True):
         super().__init__(parent)
+        self.horizontal = horizontal
         self.setupUi(self)
 
     def setupUi(self, Form):
         super().setupUi(Form)
+        if not self.horizontal:
+            self.horizontalLayout.removeWidget(self.comboBox)
+            self.horizontalLayout.removeWidget(self.reloadToolButton)
+            self.horizontalLayout.removeItem(self.horizontalLayout_2)
+            self.horizontalLayout.removeWidget(self.label)
+            self.horizontalLayout.removeWidget(self.label_2)
+            grid: QtWidgets.QGridLayout = QtWidgets.QGridLayout(self)
+            self.horizontalLayout.addLayout(grid, 1)
+            grid.addWidget(self.label, 0, 0, 1, 1)
+            grid.addWidget(self.comboBox, 0, 1, 1, 1)
+            grid.addWidget(self.label_2, 1, 0, 1, 1)
+            grid.addLayout(self.horizontalLayout_2, 1, 1, 1, 1)
+            grid.addWidget(self.reloadToolButton, 0, 2, 1, 1)
+            self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+
         instrument = Instrument.instance()
         instrument.io.lastFSNChanged.connect(self.onLastFSNChanged)
         self.comboBox.addItems(sorted(instrument.io.prefixes))
