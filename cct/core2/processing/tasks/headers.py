@@ -93,15 +93,17 @@ class HeaderStore(ProcessingTask):
         self._data = []
         self.endResetModel()
         self._data_being_loaded = []
+        jobid = 0
         for start, end, description, onlysamples in self.settings.fsnranges:
             fsns = list(range(start, end+1))
             self._data_being_loaded.extend([None] * len(fsns))
-            for i, fsn in enumerate(fsns):
-                self._submitTask(self._loadheader, i,
+            for fsn in fsns:
+                self._submitTask(self._loadheader, jobid,
                                  rootdir=os.path.join(self.settings.rootpath, self.settings.eval2dsubpath),
                                  prefix=self.settings.prefix, fsn=fsn, fsndigits=self.settings.fsndigits,
                                  filenamescheme=self.settings.filenamescheme, filenamepattern=self.settings.filenamepattern,
                                  onlysamples=onlysamples)
+                jobid += 1
 
     @staticmethod
     def _loadheader(
