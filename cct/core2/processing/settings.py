@@ -10,6 +10,7 @@ import enum
 from typing import Optional, Set, Iterable, List, Tuple, Final, Iterator, Union
 
 import appdirs
+import h5py
 import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
@@ -45,7 +46,7 @@ class ProcessingSettings(QtCore.QObject):
     bigmemorymode: bool = False
     h5lock: multiprocessing.synchronize.RLock
     badfsns: Set[int]
-    fsnranges: List[Tuple[int, int]]
+    fsnranges: List[Tuple[int, int, str, Optional[List[str]]]]
     qrangemethod: QRangeMethod = QRangeMethod.Linear
     qcount: int = 0  # 0 means the same number as pixels
     filenamescheme: FileNameScheme = FileNameScheme.Parts
@@ -184,11 +185,11 @@ class ProcessingSettings(QtCore.QObject):
             cp = configparser.ConfigParser(interpolation=None)
             cp.read([filename])
 
-            def parsefsnranges(s) -> List[Tuple[int, int]]:
+            def parsefsnranges(s) -> List[Tuple[int, int, str, Optional[List[str]]]]:
                 if not (m := re.match(r'\[(\(\d+\s*,\s*\d+\))(?:,\s*(\(\d+\s*,\s*\d+\)))*\]', s)):
                     raise ValueError(f'Invalid FSN range designation: {s}.')
                 logger.debug(str(m.groups()))
-                return [tuple([int(g1) for g1 in re.match(r'\((\d+),\s*(\d+)\)', g).groups()]) for g in m.groups() if
+                return [tuple([int(g1) for g1 in re.match(r'\((\d+),\s*(\d+)\)', g).groups()]+['', None]) for g in m.groups() if
                         g is not None]
 
             for attr, section, option, typeconversion in [
@@ -290,7 +291,15 @@ class ProcessingSettings(QtCore.QObject):
                             logger.debug(f'Cannot read attribute from h5 file: {attrname}')
                             continue
                     fsnrangesdata = grp['io']['fsnranges']
-                    self.fsnranges = [(fsnrangesdata[i, 0], fsnrangesdata[i, 1]) for i in range(fsnrangesdata.shape[0])]
+                    if isinstance(fsnrangesdata, h5py.Dataset):
+                        self.fsnranges = [(fsnrangesdata[i, 0], fsnrangesdata[i, 1], '', None) for i in range(fsnrangesdata.shape[0])]
+                    elif isinstance(fsnrangesdata, h5py.Group):
+                        self.fsnranges = []
+                        for rangename in fsnrangesdata:
+                            self.fsnranges.append((fsnrangesdata[f'{rangename}/start'][()],
+                                                   fsnrangesdata[f'{rangename}/end'][()],
+                                                   fsnrangesdata[f'{rangename}/description'],
+                                                   np.array(fsnrangesdata[f'{rangename}/onlysamples']).tolist()))
                     self.loadBadFSNs()
                 logger.info(f'Loaded config from H5 file {filename}')
             except (OSError, KeyError):
@@ -314,10 +323,13 @@ class ProcessingSettings(QtCore.QObject):
                 del iogrp['fsnranges']
             except KeyError:
                 pass
-            if self.fsnranges:
-                iogrp.create_dataset('fsnranges', data=np.vstack(self.fsnranges))
-            else:
-                iogrp.create_dataset('fsnranges', data=np.array([]))
+            iogrp.create_group('fsnranges')
+            for i,(start, end, description, onlysamples) in enumerate(self.fsnranges):
+                g = iogrp.create_group(f'fsnranges/{i:08d}')
+                g['start'] = start
+                g['end'] = end
+                g['description'] = description
+                g['onlysamples'] = onlysamples
 
             processinggrp = grp.require_group('processing')
             processinggrp.attrs['errorpropagation'] = self.ierrorprop.value
@@ -341,7 +353,7 @@ class ProcessingSettings(QtCore.QObject):
         return self._h5io
 
     def fsns(self) -> Iterator[int]:
-        for fmin, fmax in self.fsnranges:
+        for fmin, fmax, description, onlysamples in self.fsnranges:
             yield from range(fmin, fmax + 1)
 
     def emitSettingsChanged(self):

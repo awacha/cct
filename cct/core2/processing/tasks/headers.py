@@ -92,37 +92,49 @@ class HeaderStore(ProcessingTask):
         self.beginResetModel()
         self._data = []
         self.endResetModel()
-        fsns = list(self.settings.fsns())
-        self._data_being_loaded = [None] * len(fsns)
-        for i, fsn in enumerate(fsns):
-            self._submitTask(self._loadheader, i,
-                             rootdir=os.path.join(self.settings.rootpath, self.settings.eval2dsubpath),
-                             prefix=self.settings.prefix, fsn=fsn, fsndigits=self.settings.fsndigits,
-                             filenamescheme=self.settings.filenamescheme, filenamepattern=self.settings.filenamepattern)
+        self._data_being_loaded = []
+        for start, end, description, onlysamples in self.settings.fsnranges:
+            fsns = list(range(start, end+1))
+            self._data_being_loaded.extend([None] * len(fsns))
+            for i, fsn in enumerate(fsns):
+                self._submitTask(self._loadheader, i,
+                                 rootdir=os.path.join(self.settings.rootpath, self.settings.eval2dsubpath),
+                                 prefix=self.settings.prefix, fsn=fsn, fsndigits=self.settings.fsndigits,
+                                 filenamescheme=self.settings.filenamescheme, filenamepattern=self.settings.filenamepattern,
+                                 onlysamples=onlysamples)
 
     @staticmethod
     def _loadheader(
             h5file: str, h5lock, jobid, messagequeue, stopEvent, rootdir: str, prefix: str, fsn: int,
-            fsndigits: int, filenamescheme: FileNameScheme, filenamepattern: str) -> Tuple[int, Optional[Header]]:
+            fsndigits: int, filenamescheme: FileNameScheme, filenamepattern: str,
+            onlysamples: Optional[List[str]],
+    ) -> Tuple[int, Optional[Header]]:
         if filenamescheme == FileNameScheme.Parts:
             filename = f'{prefix}_{fsn:0{fsndigits}d}.pickle'
         else:
             filename = (filenamepattern % fsn) + '.pickle'
-        # first try the header in the root directory
-        try:
-            return jobid, Header(filename=os.path.join(rootdir, filename))
-        except FileNotFoundError:
-            pass
-        # if not successful, try the 'prefix' subfolder
-        try:
-            return jobid, Header(filename=os.path.join(rootdir, prefix, filename))
-        except FileNotFoundError:
-            pass
-
-        for folder, dirs, files in os.walk(rootdir):
-            if filename in files:
-                return jobid, Header(filename=os.path.join(folder, filename))
-        return jobid, None
+        headerloaded = None
+        for fn in [os.path.join(rootdir, filename),         # first try the header in the root directory
+                   os.path.join(rootdir, prefix, filename)          # if not successful, try the 'prefix' subfolder
+                   ]:
+            try:
+                headerloaded = Header(filename=os.path.join(rootdir, filename))
+                break
+            except FileNotFoundError:
+                pass
+        else:
+            for folder, dirs, files in os.walk(rootdir):
+                if filename in files:
+                    headerloaded = Header(filename=os.path.join(folder, filename))
+                    break
+            else:
+                return jobid, None
+        if headerloaded is None:
+            return jobid, None
+        elif (onlysamples is not None) and (headerloaded.title not in onlysamples):
+            return jobid, None
+        else:
+            return jobid, headerloaded
 
     def onAllBackgroundTasksFinished(self):
         self.beginResetModel()

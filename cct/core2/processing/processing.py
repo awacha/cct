@@ -1,6 +1,6 @@
 import enum
 import logging
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Optional
 
 import h5py
 from PyQt5 import QtCore
@@ -93,22 +93,31 @@ class Processing(QtCore.QAbstractItemModel):
         return len(self.fsnranges)
 
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return 2
+        return 4
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
         return self.createIndex(row, column, None)
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
-        if role == QtCore.Qt.DisplayRole:
-            return str(self.fsnranges[index.row()][index.column()])
-        elif role == QtCore.Qt.EditRole:
-            return self.fsnranges[index.row()][index.column()]
+        if index.column() < 3:
+            if role == QtCore.Qt.DisplayRole:
+                return str(self.fsnranges[index.row()][index.column()])
+            elif role == QtCore.Qt.EditRole:
+                return self.fsnranges[index.row()][index.column()]
+            else:
+                return None
+        elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
+            return ', '.join(self.fsnranges[index.row()][3])
+        elif (index.column() == 3) and (role == QtCore.Qt.EditRole):
+            return ', '.join(self.fsnranges[index.row()][3])
         else:
             return None
 
+
+
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
         if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
-            return ['Start', 'End'][section]
+            return ['Start', 'End', 'Description', 'Load only these samples'][section]
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         return QtCore.QModelIndex()
@@ -117,15 +126,30 @@ class Processing(QtCore.QAbstractItemModel):
         return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
-        fsnmin, fsnmax = self.fsnranges[index.row()]
+        fsnmin, fsnmax, description, onlysamples = self.fsnranges[index.row()]
         if index.column() == 0:
             try:
-                self.fsnranges[index.row()] = (int(value), fsnmax)
+                self.fsnranges[index.row()] = (int(value), fsnmax, description, onlysamples)
             except ValueError:
                 return False
         elif index.column() == 1:
             try:
-                self.fsnranges[index.row()] = (fsnmin, int(value))
+                self.fsnranges[index.row()] = (fsnmin, int(value), description, onlysamples)
+            except ValueError:
+                return False
+        elif index.column() == 2:
+            try:
+                self.fsnranges[index.row()] = (fsnmin, fsnmax, str(value), onlysamples)
+            except ValueError:
+                return False
+        elif index.column() == 3:
+            assert isinstance(value, str)
+            if not value.strip():
+                value = None
+            else:
+                value = [x.strip() for x in value.split(',')]
+            try:
+                self.fsnranges[index.row()] = (fsnmin, fsnmax, description, value)
             except ValueError:
                 return False
         else:
@@ -139,7 +163,7 @@ class Processing(QtCore.QAbstractItemModel):
 
     def insertRows(self, row: int, count: int, parent: QtCore.QModelIndex = ...) -> bool:
         self.beginInsertRows(QtCore.QModelIndex(), row, row + count - 1)
-        self.fsnranges = self.fsnranges[:row] + [(0, 0)] * count + self.fsnranges[row:]
+        self.fsnranges = self.fsnranges[:row] + [(0, 0, '', None)] * count + self.fsnranges[row:]
         self.endInsertRows()
         self.settings.emitSettingsChanged()
         return True
@@ -161,11 +185,11 @@ class Processing(QtCore.QAbstractItemModel):
         self.settings.emitSettingsChanged()
 
     @property
-    def fsnranges(self) -> List[Tuple[int, int]]:
+    def fsnranges(self) -> List[Tuple[int, int, str, Optional[List[str]]]]:
         return self.settings.fsnranges
 
     @fsnranges.setter
-    def fsnranges(self, newvalue: List[Tuple[int, int]]):
+    def fsnranges(self, newvalue: List[Tuple[int, int, str, Optional[List[str]]]]):
         self.beginResetModel()
         self.settings.fsnranges = newvalue
         self.endResetModel()
