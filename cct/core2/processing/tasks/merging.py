@@ -164,8 +164,8 @@ class Merging(ProcessingTask):
         self._data.append(MergingData(samplename))
         for distkey in self.processing.settings.h5io.distancekeys(samplename):
             exposure = self.processing.settings.h5io.readExposure(f'Samples/{samplename}/{distkey}')
-            q = exposure.q()[0][exposure.mask.astype(np.bool)]
-            self._data[-1].intervals[distkey] = MergeParameters(np.nanmin(q), np.nanmax(q))
+            qmin, qmax = exposure.validqrange()
+            self._data[-1].intervals[distkey] = MergeParameters(qmin, qmax)
         self.endInsertRows()
         self.save()
 

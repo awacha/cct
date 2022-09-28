@@ -143,7 +143,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         self.progressBar.setMinimum(0)
         self.progressBar.setMaximum(0)
 
-    @Slot()
+    @Slot(bool, name='onMergingStopped')
     def onMergingStopped(self, success: bool):
         self.runPushButton.setText('Run')
         self.runPushButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg')))
