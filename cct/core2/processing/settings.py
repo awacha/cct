@@ -296,10 +296,16 @@ class ProcessingSettings(QtCore.QObject):
                     elif isinstance(fsnrangesdata, h5py.Group):
                         self.fsnranges = []
                         for rangename in fsnrangesdata:
+                            onlysamples = np.array(fsnrangesdata[f'{rangename}/onlysamples'])
+                            if onlysamples.size == 0:
+                                onlysamples = None
+                            else:
+                                onlysamples = [sn.decode('utf-8') for sn in onlysamples.tolist()]
+                                print(onlysamples)
                             self.fsnranges.append((fsnrangesdata[f'{rangename}/start'][()],
                                                    fsnrangesdata[f'{rangename}/end'][()],
-                                                   fsnrangesdata[f'{rangename}/description'],
-                                                   np.array(fsnrangesdata[f'{rangename}/onlysamples']).tolist()))
+                                                   fsnrangesdata[f'{rangename}/description'][()],
+                                                   onlysamples))
                     self.loadBadFSNs()
                 logger.info(f'Loaded config from H5 file {filename}')
             except (OSError, KeyError):
@@ -329,7 +335,8 @@ class ProcessingSettings(QtCore.QObject):
                 g['start'] = start
                 g['end'] = end
                 g['description'] = description
-                g['onlysamples'] = onlysamples
+                g.create_dataset('onlysamples',
+                                 data=np.array([sn for sn in onlysamples] if onlysamples is not None else [], dtype=object), dtype=h5py.special_dtype(vlen=str))
 
             processinggrp = grp.require_group('processing')
             processinggrp.attrs['errorpropagation'] = self.ierrorprop.value

@@ -107,9 +107,9 @@ class Processing(QtCore.QAbstractItemModel):
             else:
                 return None
         elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
-            return ', '.join(self.fsnranges[index.row()][3])
+            return ', '.join(self.fsnranges[index.row()][3]) if self.fsnranges[index.row()][3] is not None else ''
         elif (index.column() == 3) and (role == QtCore.Qt.EditRole):
-            return ', '.join(self.fsnranges[index.row()][3])
+            return ', '.join(self.fsnranges[index.row()][3]) if self.fsnranges[index.row()][3] is not None else ''
         else:
             return None
 
