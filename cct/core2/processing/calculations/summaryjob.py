@@ -157,6 +157,8 @@ class SummaryJob(BackgroundProcess):
                     self.intensities2D[:, :, i] = ex.intensity
                     self.uncertainties2D[:, :, i] = ex.uncertainty
                     self.masks2D[:, :, i] = ex.mask
+                    if ((ex.mask == 0).sum() == 0) or ((ex.mask != 0).sum() == 0):
+                        raise ValueError('Error: uniformly on/off mask!')
                     ex.intensity = self.intensities2D[:, :, i]  # this is only a view, does not take up more space
                     ex.uncertainty = self.uncertainties2D[:, :, i]
                     ex.mask = self.masks2D[:, :, i]
