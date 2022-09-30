@@ -21,7 +21,7 @@ from ....core2.algorithms.polar2d import polar2D_pixel
 from ....core2.dataclasses.exposure import Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
@@ -39,6 +39,7 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     sensitivityaxes: Axes
     sensitivityfigtoolbar: NavigationToolbar2QT
     sensitivitycanvas: FigureCanvasQTAgg
+    lastminimizerresult: Optional[lmfit.minimizer.MinimizerResult] = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -86,11 +87,44 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.sensitivityfigtoolbar = NavigationToolbar2QT(self.sensitivitycanvas, self)
         self.sensitivityFigureVerticalLayout.addWidget(self.sensitivityfigtoolbar)
         self.sensitivityFigureVerticalLayout.addWidget(self.sensitivitycanvas, 1)
-        for method in sorted(CenteringMethod.allMethods(), key=lambda cls:cls.name):
+        for method in sorted(CenteringMethod.allMethods(), key=lambda cls: cls.name):
             self.centeringmethods[method.name] = method(patternaxes=self.plotimage.axes, curveaxes=self.plotcurve.axes,
                                                         polaraxes=self.polaraxes)
             self.parametersStackedWidget.addWidget(self.centeringmethods[method.name])
             self.methodSelectorComboBox.addItem(method.name)
+
+    @Slot(bool, name='on_beamRowSaveToolButton_clicked')
+    def on_beamRowSaveToolButton_clicked(self, checked: bool):
+        self.instrument.config[('geometry', 'beamposx')] = self.beamrow()[0]
+        self.instrument.config[('geometry', 'beamposx.err')] = self.beamrow()[1]
+        logger.info(
+            f'Updated beam row (vertical) coordinate to {self.instrument.config[("geometry", "beamposx")]:.5f} \xb1 '
+            f'{self.instrument.config[("geometry", "beamposx.err")]:.5f} pixel')
+
+    @Slot(bool, name='on_beamColumnSaveToolButton_clicked')
+    def on_beamColumnSaveToolButton_clicked(self, checked: bool):
+        self.instrument.config[('geometry', 'beamposy')] = self.beamcol()[0]
+        self.instrument.config[('geometry', 'beamposy.err')] = self.beamcol()[1]
+        logger.info(
+            f'Updated beam column (horizontal) coordinate to {self.instrument.config[("geometry", "beamposy")]:.5f} \xb1 '
+            f'{self.instrument.config[("geometry", "beamposy.err")]:.5f} pixel')
+
+
+    @Slot(bool, name='on_sensitivityGoodnessScoreRadioButton_toggled')
+    @Slot(bool, name='on_sensitivity1stDerivativeRadioButton_toggled')
+    @Slot(bool, name='on_sensitivity2ndDerivativeRadioButton_toggled')
+    def sensitivityreplotneeded(self, checked: bool):
+        if checked:  # only draw once
+            self.drawsensitivity()
+
+    @Slot(bool, name='on_sensitivityRecalculatePushButton_clicked')
+    def on_sensitivityRecalculatePushButton_clicked(self, checked: bool):
+        self.drawsensitivity()
+        self.estimateuncertainty(self.sensitivityRowHalfWidthDoubleSpinBox.value(),
+                                 self.sensitivityColumnHalfWidthDoubleSpinBox.value(),
+                                 self.sensitivityRowCountSpinBox.value(),
+                                 self.sensitivityColumnCountSpinBox.value())
+
 
     @Slot(str, name='on_methodSelectorComboBox_currentTextChanged')
     def on_methodSelectorComboBox_currentTextChanged(self, currentText: str):
@@ -113,10 +147,12 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def execute(self, checked: bool):
         result: lmfit.minimizer.MinimizerResult = self.centeringmethods[self.methodSelectorComboBox.currentText()].run(
             self.exposure)
+        self.lastminimizerresult = result
         params: lmfit.Parameters = result.params
         logger.debug(params.pretty_print())
         logger.debug(lmfit.fit_report(result))
-        logger.debug(str(result.covar))
+        #        logger.debug(str(result.covar))
+        logger.debug(f'{result.status=}, {result.message=}, {result.nfev=}, {result.success=}, {result.errorbars=}, ')
         self.setBeamPosition(
             row=(
                 params['beamrow'].value,
@@ -124,7 +160,6 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             column=(
                 params['beamcol'].value,
                 params['beamcol'].stderr if params['beamcol'].stderr is not None else 0.0))
-
 
     @Slot(float, name='on_beamColumnUncertaintyDoubleSpinBox_valueChanged')
     @Slot(float, name='on_beamColumnValueDoubleSpinBox_valueChanged')
@@ -152,13 +187,19 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     @Slot(str, str, str, name='onH5Selected')
     def onH5Selected(self, h5file: str, sample: str, distkey: str):
+        logger.debug(f'onH5Selected({h5file}, {sample}, {distkey})')
         exposure = self.h5selector.loadExposure()
         self.setExposure(exposure)
 
     def setExposure(self, exposure: Exposure):
+        logger.debug('Centering.setExposure()')
         self.exposure = exposure
+        logger.debug('Calling currentMethod().prepareUI()')
         self.currentMethod().prepareUI(exposure)
+        logger.debug('Calling currentMethod().prepareUI() done.')
+        logger.debug('Setting beam position.')
         self.setBeamPosition(row=self.exposure.header.beamposrow, column=self.exposure.header.beamposcol)
+        logger.debug('Centering.setExposure() done.')
 
     @Slot(float, name='on_radavgMinRadiusDoubleSpinBox_valueChanged')
     @Slot(float, name='on_radavgMaxRadiusDoubleSpinBox_valueChanged')
@@ -166,6 +207,7 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     @Slot(bool, name='on_radavgMinRadiusCheckBox_toggled')
     @Slot(int, name='on_radavgBinCountSpinBox_valueChanged')
     def drawcurve(self, *args):
+        logger.debug('Centering.drawcurve()')
         self.plotcurve.clear()
         if self.exposure is None:
             self.plotcurve.replot()
@@ -187,8 +229,10 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.plotcurve.setShowErrorBars(False)
         self.plotcurve.showLegend(False)
         self.plotcurve.replot()
+        logger.debug('Centering.drawcurve() done.')
 
     def drawpolar(self):
+        logger.debug('Centering.drawpolar()')
         self.polaraxes.clear()
         if self.exposure is None:
             self.polarcanvas.draw_idle()
@@ -206,6 +250,7 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.polaraxes.set_xlabel('Distance from origin (pixels)')
         self.polaraxes.set_ylabel('Azimuth angle (°)')
         self.polarcanvas.draw_idle()
+        logger.debug('Centering.drawpolar() done')
 
     def beamrow(self) -> Tuple[float, float]:
         return self.exposure.header.beamposrow
@@ -242,9 +287,11 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.plotimage.setExposure(self.exposure, keepzoom=True)
         self.drawpolar()
         self.drawcurve()
-        self.drawsensitivity()
+        #self.drawsensitivity()
 
     def drawsensitivity(self):
+        logger.debug('Centering.drawsensitivity()')
+
         self.sensitivityaxes.clear()
         if self.exposure is None:
             self.sensitivitycanvas.draw_idle()
@@ -259,16 +306,85 @@ class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.beamrow()[0] + self.sensitivityRowHalfWidthDoubleSpinBox.value(),
             self.sensitivityRowCountSpinBox.value()
         )
-        rowdep = self.currentMethod().goodnessfunction(brvalues, np.ones_like(brvalues) * self.beamcol()[0], self.exposure)
-        coldep = self.currentMethod().goodnessfunction(np.ones_like(bcvalues)* self.beamrow()[0], bcvalues, self.exposure)
-        self.sensitivityaxes.plot(bcvalues - self.beamcol()[0], coldep, 'bo-', label='X position varied')
-        self.sensitivityaxes.plot(brvalues - self.beamrow()[0], rowdep, 'rs-', label='Y position varied')
+        rowdep = np.array(self.currentMethod().goodnessfunction(brvalues, np.ones_like(brvalues) * self.beamcol()[0],
+                                                                self.exposure))
+        coldep = np.array(self.currentMethod().goodnessfunction(np.ones_like(bcvalues) * self.beamrow()[0], bcvalues,
+                                                                self.exposure))
+        if np.all(~np.isfinite(rowdep)) or np.all(~np.isfinite(coldep)):
+            self.sensitivitycanvas.draw_idle()
+            return None
+        row = brvalues - self.beamrow()[0]
+        col = bcvalues - self.beamcol()[0]
+
+        if self.sensitivityGoodnessScoreRadioButton.isChecked():
+            nderiv = 0
+            ylabel = f'Goodness score with algorithm "{self.currentMethod().name}"'
+        elif self.sensitivity1stDerivativeRadioButton.isChecked():
+            nderiv = 1
+            ylabel = f'1st derivative of goodness score with algorithm "{self.currentMethod().name}"'
+        elif self.sensitivity2ndDerivativeRadioButton.isChecked():
+            nderiv = 2
+            ylabel = f'2nd derivative of goodness score with algorithm "{self.currentMethod().name}"'
+        else:
+            assert False
+
+        for i in range(nderiv):
+            # differentiate
+            rowdep = (rowdep[1:] - rowdep[:-1]) / (row[1:] - row[:-1])
+            coldep = (coldep[1:] - coldep[:-1]) / (col[1:] - col[:-1])
+            row = 0.5 * (row[1:] + row[:-1])
+            col = 0.5 * (col[1:] + col[:-1])
+
+        self.sensitivityaxes.plot(col, coldep, 'bo-', label='X position varied')
+        self.sensitivityaxes.plot(row, rowdep, 'rs-', label='Y position varied')
         self.sensitivityaxes.grid(True, which='both')
-        self.sensitivityaxes.set_xlabel('Relative distacne from beam position (pixel)')
-        self.sensitivityaxes.set_ylabel(f'Goodness of fit with algorithm "{self.currentMethod().name}"')
+        self.sensitivityaxes.set_xlabel('Relative distance from beam position (pixel)')
+        self.sensitivityaxes.set_ylabel(ylabel)
         self.sensitivityaxes.legend(loc='best')
         self.sensitivitycanvas.draw_idle()
+        logger.debug('Centering.drawsensitivity() done')
+
 
     @Slot(float, float, float, float, name='onBeamPositionFound')
     def onBeamPositionFound(self, beamrow: float, dbeamrow: float, beamcol: float, dbeamcol: float):
         self.setBeamPosition((beamrow, dbeamrow), (beamcol, dbeamcol))
+
+    def estimateuncertainty(self, rowhalfwidth: float, colhalfwidth: float, rowcount: int, colcount: int):
+        row = np.outer(np.linspace(-rowhalfwidth, rowhalfwidth, rowcount), np.ones(colcount))
+        col = np.outer(np.ones(rowcount), np.linspace(-colhalfwidth, colhalfwidth, colcount))
+        fvalue = self.currentMethod().goodnessfunction(row + self.beamrow()[0], col + self.beamcol()[0], self.exposure)
+        if np.any(~np.isfinite(fvalue)):
+            return None
+        optimum = self.currentMethod().goodnessfunction(self.beamrow()[0], self.beamcol()[0], self.exposure)
+        logger.debug(f'{optimum.shape=}')
+        fvalue_row = self.currentMethod().goodnessfunction(
+            np.array([-rowhalfwidth, rowhalfwidth]) + self.beamrow()[0],
+            np.array([0,0]) + self.beamcol()[0], self.exposure)
+        fvalue_col = self.currentMethod().goodnessfunction(
+            np.array([0,0]) + self.beamrow()[0],
+            np.array([-colhalfwidth, colhalfwidth]) + self.beamcol()[0],
+            self.exposure
+        )
+        def modelfunction(deltarow, deltacolumn, H11, H12, H22, const):
+            return 0.5 * (
+                        H11 * deltarow * deltarow + 2 * H12 * deltarow * deltacolumn + H22 * deltacolumn * deltacolumn) + const
+
+        model = lmfit.Model(modelfunction, independent_vars=['deltarow', 'deltacolumn'])
+        params = model.make_params(H11=1.0, H12=0.0, H22=1.0, const=float(optimum))
+        params['H11'].value = float((0.5*(fvalue_row[0]+fvalue_row[-1]) - optimum) / rowhalfwidth**2)
+        params['H12'].vary = True
+        params['H22'].value = float((0.5 * (fvalue_col[0] + fvalue_col[-1]) -optimum)/ colhalfwidth**2)
+        result = model.fit(fvalue, deltarow=row, deltacolumn=col, params=params)
+        logger.debug(str(result.params))
+        logger.debug(lmfit.fit_report(result))
+        hessian = np.array([
+            [result.params['H11'].value, result.params['H12'].value],
+            [result.params['H12'].value, result.params['H22'].value]
+        ])
+        if self.lastminimizerresult is not None:
+            self.lastminimizerresult.cov = 2 * np.linalg.inv(hessian)
+            logger.debug(f'Covariance: {self.lastminimizerresult.cov}')
+            self.beamRowUncertaintyDoubleSpinBox.setValue(self.lastminimizerresult.cov[0,0]**0.5)
+            self.beamColumnUncertaintyDoubleSpinBox.setValue(self.lastminimizerresult.cov[1,1]**0.5)
+            logger.debug(f'{self.lastminimizerresult.cov[0,0]**0.5}, {self.lastminimizerresult.cov[1,1]**0.5}')
+

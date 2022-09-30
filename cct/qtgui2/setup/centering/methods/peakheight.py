@@ -1,15 +1,16 @@
 # coding: utf-8
 """Peak height centering method"""
 from typing import Union, Optional, Final
-import numpy as np
-from .centeringmethod import CenteringMethod
-from .....core2.dataclasses.exposure import Exposure
-from .....core2.algorithms.radavg import fastradavg
-from .peakheight_ui import Ui_Form
+
 import lmfit
+import numpy as np
+from PyQt5.QtCore import pyqtSlot as Slot
 from matplotlib.widgets import SpanSelector
 
-from PyQt5.QtCore import pyqtSlot as Slot
+from .centeringmethod import CenteringMethod
+from .peakheight_ui import Ui_Form
+from .....core2.algorithms.radavg import fastradavg
+from .....core2.dataclasses.exposure import Exposure
 
 
 class PeakFitting(CenteringMethod, Ui_Form):
@@ -22,10 +23,12 @@ class PeakFitting(CenteringMethod, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
 
-    def goodnessfunction(self, beamrow: Union[float, np.ndarray], beamcol:Union[float, np.ndarray], exposure: Exposure) -> np.ndarray:
+    def goodnessfunction(self, beamrow: Union[float, np.ndarray], beamcol: Union[float, np.ndarray],
+                         exposure: Exposure) -> np.ndarray:
         pixmin = self.pixMinDoubleSpinBox.value()
         pixmax = self.pixMaxDoubleSpinBox.value()
-        npix = int(abs(pixmax - pixmin)) if self.pixelCountSpinBox.value() == self.pixelCountSpinBox.minimum() else self.pixelCountSpinBox.value()
+        npix = int(
+            abs(pixmax - pixmin)) if self.pixelCountSpinBox.value() == self.pixelCountSpinBox.minimum() else self.pixelCountSpinBox.value()
         image = exposure.intensity
         mask = exposure.mask.astype(np.uint8)
         if np.isscalar(beamrow):
@@ -69,10 +72,10 @@ class PeakFitting(CenteringMethod, Ui_Form):
             return
         self.curvespanselector = SpanSelector(
             self.curveaxes, self.onRangeSelected, 'horizontal', useblit=True, interactive=True,
-            props={'alpha': 0.3, 'facecolor':'red', 'hatch':'///', 'fill': False})
+            props={'alpha': 0.3, 'facecolor': 'red', 'hatch': '///', 'fill': False})
         self.polarspanselector = SpanSelector(
             self.polaraxes, self.onRangeSelected, 'horizontal', useblit=True, interactive=True,
-            props={'alpha': 0.3, 'facecolor':'red', 'hatch':'///', 'fill': False})
+            props={'alpha': 0.3, 'facecolor': 'red', 'hatch': '///', 'fill': False})
         pixmin, pixmax = exposure.validpixelrange()
         self.pixMinDoubleSpinBox.setRange(pixmin, pixmax)
         self.pixMaxDoubleSpinBox.setRange(pixmin, pixmax)
@@ -103,13 +106,13 @@ class PeakFitting(CenteringMethod, Ui_Form):
 
     @staticmethod
     def _gaussian(x, A, pos, fwhm, bg):
-        sigma = fwhm / (2*(2*np.log(2))**0.5)
-        return A*np.exp(-(x-pos)**2/(2*sigma**2)) + bg
+        sigma = fwhm / (2 * (2 * np.log(2)) ** 0.5)
+        return A * np.exp(-(x - pos) ** 2 / (2 * sigma ** 2)) + bg
 
     @staticmethod
     def _lorentzian(x, A, pos, fwhm, bg):
         gamma = fwhm / 2
-        return A/(1 + ((x-pos)/gamma)**2) + bg
+        return A / (1 + ((x - pos) / gamma) ** 2) + bg
 
 
 class PeakHeight(PeakFitting):
@@ -122,4 +125,3 @@ class PeakWidth(PeakFitting):
     mode: Final[str] = 'width'
     description: Final[str] = 'Find beam center by minimizing the width of a peak in the scattering curve'
     name: Final[str] = 'Peak width'
-

@@ -38,9 +38,12 @@ class CenteringMethod(QtWidgets.QWidget):
         raise NotImplementedError
 
     def run(self, exposure: Exposure) -> lmfit.minimizer.MinimizerResult:
+        scalefactor = 1
         params = lmfit.Parameters()
-        params.add('beamrow', exposure.header.beamposrow[0], True)
-        params.add('beamcol', exposure.header.beamposcol[0], True)
+        params.add('br_scaled', exposure.header.beamposrow[0] / scalefactor, vary=True)
+        params.add('bc_scaled', exposure.header.beamposcol[0] / scalefactor, vary=True)
+        params.add('beamrow', vary=False, expr = f'br_scaled * {scalefactor:g}')
+        params.add('beamcol', vary=False, expr = f'bc_scaled * {scalefactor:g}')
 
         def targetfcn(params: lmfit.Parameters, exposure: Exposure):
             parvals = params.valuesdict()
@@ -48,7 +51,8 @@ class CenteringMethod(QtWidgets.QWidget):
             logger.debug(f'{parvals["beamrow"]}, {parvals["beamcol"]} -> {gfunc}')
             return gfunc
 
-        return lmfit.minimize(targetfcn, params, method='nelder', kws={'exposure': exposure}, calc_covar=True)
+        minimized = lmfit.minimize(targetfcn, params, method='nelder', kws={'exposure': exposure}, calc_covar=True)
+        return minimized
 
     def prepareUI(self, exposure: Exposure):
         """Adjust UI elements (set limits of spin boxes etc.) when this method becomes active or a new exposure is

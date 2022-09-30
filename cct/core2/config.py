@@ -127,7 +127,7 @@ class Config(QtCore.QObject):
         """Whenever something changes, request automatic save."""
         self.autosave()
 
-    def __setitem__(self, key: Union[int, str, Tuple[Union[str, int]]], value: Any):
+    def __setitem__(self, key: Union[int, str, Tuple[Union[str, int], ...]], value: Any):
         """Modify (or create) a new key->value pair using the dict['key'] = value syntax.
 
         This mimics the behavior of the common Pythonic dict, with a few differences:

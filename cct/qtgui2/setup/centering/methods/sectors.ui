@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>167</width>
+    <width>212</width>
     <height>140</height>
    </rect>
   </property>
@@ -58,7 +58,7 @@
       <number>999999</number>
      </property>
      <property name="value">
-      <number>30</number>
+      <number>50</number>
      </property>
     </widget>
    </item>
@@ -73,6 +73,9 @@
     <widget class="QSpinBox" name="sectorCountSpinBox">
      <property name="minimum">
       <number>4</number>
+     </property>
+     <property name="value">
+      <number>10</number>
      </property>
     </widget>
    </item>

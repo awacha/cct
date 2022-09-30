@@ -48,7 +48,7 @@ class Sector(CenteringMethod, Ui_Form):
             raise ValueError('Arguments `beamx` and `beamy` must have the same shape')
         mask = exposure.mask.astype(np.uint8)
         gof = []
-        for br, bc in zip(beamrow, beamcol):
+        for br, bc in zip(beamrow.ravel(), beamcol.ravel()):
             mask_annulus = maskforannulus(mask, br, bc, pixmin, pixmax)
             mask_sector = [
                 maskforsectors(mask_annulus, br, bc, 2 * np.pi / nsector * i, np.pi / nsector) for i in range(nsector)
@@ -57,7 +57,7 @@ class Sector(CenteringMethod, Ui_Form):
                    mask_sector]
             intensities = np.stack([intensity for pix, intensity, area in rad], axis=1)
             gof.append(np.nansum(np.nanstd(intensities, axis=1)))
-        return gof
+        return np.array(gof).reshape(beamrow.shape)
 
     def cleanupUI(self):
         if self.polarspanselector is not None:
@@ -68,9 +68,8 @@ class Sector(CenteringMethod, Ui_Form):
         self.curvespanselector = None
 
     def onSpanSelected(self, pixmin, pixmax):
-        with SignalsBlocked(self.pixMinDoubleSpinBox, self.pixMaxDoubleSpinBox):
-            self.pixMinDoubleSpinBox.setValue(pixmin)
-            self.pixMaxDoubleSpinBox.setValue(pixmax)
+        self.pixMinDoubleSpinBox.setValue(pixmin)
+        self.pixMaxDoubleSpinBox.setValue(pixmax)
 
     @Slot(float, name='on_pixMinDoubleSpinBox_valueChanged')
     @Slot(float, name='on_pixMaxDoubleSpinBox_valueChanged')
