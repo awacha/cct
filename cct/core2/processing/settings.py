@@ -297,14 +297,16 @@ class ProcessingSettings(QtCore.QObject):
                         self.fsnranges = []
                         for rangename in fsnrangesdata:
                             onlysamples = np.array(fsnrangesdata[f'{rangename}/onlysamples'])
+                            description = fsnrangesdata[f'{rangename}/description'][()]
+                            if isinstance(description, bytes):
+                                description = description.decode('utf-8')
                             if onlysamples.size == 0:
                                 onlysamples = None
                             else:
                                 onlysamples = [sn.decode('utf-8') for sn in onlysamples.tolist()]
-                                print(onlysamples)
-                            self.fsnranges.append((fsnrangesdata[f'{rangename}/start'][()],
-                                                   fsnrangesdata[f'{rangename}/end'][()],
-                                                   fsnrangesdata[f'{rangename}/description'][()],
+                            self.fsnranges.append((int(fsnrangesdata[f'{rangename}/start'][()]),
+                                                   int(fsnrangesdata[f'{rangename}/end'][()]),
+                                                   description,
                                                    onlysamples))
                     self.loadBadFSNs()
                 logger.info(f'Loaded config from H5 file {filename}')
