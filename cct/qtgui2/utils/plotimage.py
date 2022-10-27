@@ -212,7 +212,11 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             if (self.matrix > 0).sum() > 0:
                 self._imghandle.set_norm(self.getNormalization(float(np.nanmin(self.matrix)), float(np.nanmin(self.matrix[self.matrix>0]))))
             self._imghandle.set_extent(extent)
-            self._imghandle.autoscale()
+            try:
+                self._imghandle.autoscale()
+            except ValueError:
+                # happens with completely empty images
+                pass
             self._imghandle.changed()
         # color bar
         if np.ma.core.is_masked(self._imghandle.norm.vmin) or np.ma.core.is_masked(self._imghandle.norm.vmax):

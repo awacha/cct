@@ -168,7 +168,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.cursor = 0
         self.redraw()
 
-    @Slot()
+    @Slot(bool, name='moveShutter')
     def moveShutter(self, open: bool):
         source = self.instrument.devicemanager.source()
         assert isinstance(source, GeniX)
