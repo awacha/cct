@@ -25,7 +25,7 @@ class ResultsModel(ProcessingTask):
         return len(self._data)
 
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        return 7
+        return 9
     
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         sde = self._data[index.row()]
@@ -48,12 +48,30 @@ class ResultsModel(ProcessingTask):
                     return '--'
                 try:
                     return f'{sde.outliertest.shapiroTest().pvalue:.3g}'
-                except (AttributeError, ValueError) as ve:
+                except (AttributeError, ValueError, TypeError) as ve:
                     return str(ve)
             elif index.column() == 6:
                 if sde.isDerived():
                     return '--'
-                return f'{sde.outliertest.schillingTest().pvalue:.3g}'
+                try:
+                    return f'{sde.outliertest.schillingTest().pvalue:.3g}'
+                except (AttributeError, ValueError, TypeError) as ve:
+                    return str(ve)
+            elif index.column() == 7:
+                if sde.isDerived():
+                    return '--'
+                try:
+                    return f'{sde.outliertest.FtestQuadraticVsConstant().pvalue:.3g}'
+                except (AttributeError, ValueError, TypeError) as ve:
+                    return str(ve)
+            elif index.column() == 8:
+                if sde.isDerived():
+                    return '--'
+                try:
+                    return f'{sde.outliertest.FtestLinearVsConstant().pvalue:.3g}'
+                except (AttributeError, ValueError, TypeError) as ve:
+                    return str(ve)
+
         elif role == QtCore.Qt.UserRole:
             return sde
         elif role == QtCore.Qt.BackgroundColorRole:
@@ -67,6 +85,16 @@ class ResultsModel(ProcessingTask):
             elif index.column() == 6:
                 try:
                     return QtGui.QColor('red') if sde.outliertest.schillingTest().pvalue < 0.05 else QtGui.QColor('lightgreen')
+                except:
+                    return QtGui.QColor('orange')
+            elif index.column() == 7:
+                try:
+                    return QtGui.QColor('red') if sde.outliertest.FtestQuadraticVsConstant().pvalue < 0.05 else QtGui.QColor('lightreen')
+                except:
+                    return QtGui.QColor('orange')
+            elif index.column() == 8:
+                try:
+                    return QtGui.QColor('red') if sde.outliertest.FtestLinearVsConstant().pvalue < 0.05 else QtGui.QColor('lightreen')
                 except:
                     return QtGui.QColor('orange')
         elif role == QtCore.Qt.TextColorRole:
@@ -90,7 +118,7 @@ class ResultsModel(ProcessingTask):
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
         if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
-            return ['Sample', 'Distance', 'Category', 'Count', 'Total time', 'Shapiro test', 'Schilling test'][section]
+            return ['Sample', 'Distance', 'Category', 'Count', 'Total time', 'Shapiro test', 'Schilling test', 'Quadratic vs. const F-test', 'Linear vs. const F-test'][section]
 
     def reload(self):
         self.beginResetModel()

@@ -5,11 +5,13 @@ from typing import Optional, Tuple, Sequence
 
 import numpy as np
 import scipy.stats
+import lmfit
 
 from ...algorithms.correlmatrix import correlmatrix_cython
 from ...algorithms.schilling import cormap_pval, longest_run
 
 SchillingResult = namedtuple('SchillingResult', ('statistic', 'pvalue'))
+FtestResult = namedtuple('FtestResult', ('statistic', 'pvalue'))
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -84,3 +86,20 @@ class OutlierTest:
         longestrun = longest_run(self.score - np.nanmean(self.score))
         p = cormap_pval(self.score.size, longestrun)
         return SchillingResult(longestrun, p)
+
+    def FtestQuadraticVsConstant(self):
+        return self._polynomialFtest(2)
+
+    def FtestLinearVsConstant(self):
+        return self._polynomialFtest(1)
+
+    def _polynomialFtest(self, deg):
+        xfit = np.arange(self.score.size)
+        modelpoly = lmfit.models.PolynomialModel(deg)
+        modelconst = lmfit.models.ConstantModel()
+        resultpoly = modelpoly.fit(data=self.score, x=xfit)
+        resultconst = modelconst.fit(data=self.score, x=xfit)
+        sspoly = (resultpoly.residual**2).sum()
+        ssconst = (resultconst.residual**2).sum()
+        F = ((sspoly-ssconst)/(resultpoly.nfree - resultconst.nfree))/(ssconst/resultconst.nfree)
+        return FtestResult(F, scipy.stats.f.sf(F, resultpoly.nfree, resultconst.nfree))
