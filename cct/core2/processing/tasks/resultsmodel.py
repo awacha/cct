@@ -71,7 +71,8 @@ class ResultsModel(ProcessingTask):
                     return f'{sde.outliertest.FtestLinearVsConstant().pvalue:.3g}'
                 except (AttributeError, ValueError, TypeError) as ve:
                     return str(ve)
-
+        elif role == QtCore.Qt.ToolTipRole:
+            return self.headerData(index.column(), QtCore.Qt.Horizontal, QtCore.Qt.ToolTipRole)
         elif role == QtCore.Qt.UserRole:
             return sde
         elif role == QtCore.Qt.BackgroundColorRole:
@@ -119,6 +120,32 @@ class ResultsModel(ProcessingTask):
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
         if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
             return ['Sample', 'Distance', 'Category', 'Count', 'Total time', 'Shapiro test', 'Schilling test', 'Quadratic vs. const F-test', 'Linear vs. const F-test'][section]
+        elif (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.ToolTipRole):
+            return [
+                'The name of the sample',
+                'Sample-to-detector distance (or other designation, e.g. "merged")',
+                'Curve type (sample measurement, subtracted measurement etc.)',
+                'Number of exposures which make up the averaged result',
+                'Total exposure time (only "good" exposures are counted)',
+                'Shapiro-Wilk test for normality of the average difference scores of exposures. '
+                'Rejection of the 0-hypothesis might point towards some instability over the course '
+                'of the experiment.',
+                'Schilling\' coin-toss test for the "randomness" of the average difference scores of '
+                'the exposures. If the variation of the difference score around the mean is not random '
+                '(too long runs occur of larger/smaller than mean values), it indicates a change in the '
+                'scattering curves over time.',
+                'Result of an F-test, assessing if the variation of the average difference score over '
+                'time can be significantly better fitted by a quadratic function than a simple constant. '
+                'In cases where both the instrument and the sample is stable over time, the average '
+                'difference score of the exposures oscillates around a constant value, deviations are '
+                'only due to random statistical fluctuations. But if there is some systematic change '
+                'over time, exposures at the beginning and the end will have larger average difference '
+                'scores than those in the middle, resulting in a convex curve.',
+                'Result of an F-test, assessing if the variation of the average difference score over '
+                'time can be significantly better fitted by a linear function than a simple constant. '
+                'The rationale of this test is similar as of the F-test comparing the quadratic fit to '
+                'the constant.'
+            ]
 
     def reload(self):
         self.beginResetModel()
