@@ -89,12 +89,12 @@ class ResultsModel(ProcessingTask):
                     return QtGui.QColor('orange')
             elif index.column() == 7:
                 try:
-                    return QtGui.QColor('red') if sde.outliertest.FtestQuadraticVsConstant().pvalue < 0.05 else QtGui.QColor('lightreen')
+                    return QtGui.QColor('red') if sde.outliertest.FtestQuadraticVsConstant().pvalue < 0.05 else QtGui.QColor('lightgreen')
                 except:
                     return QtGui.QColor('orange')
             elif index.column() == 8:
                 try:
-                    return QtGui.QColor('red') if sde.outliertest.FtestLinearVsConstant().pvalue < 0.05 else QtGui.QColor('lightreen')
+                    return QtGui.QColor('red') if sde.outliertest.FtestLinearVsConstant().pvalue < 0.05 else QtGui.QColor('lightgreen')
                 except:
                     return QtGui.QColor('orange')
         elif role == QtCore.Qt.TextColorRole:
