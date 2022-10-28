@@ -486,7 +486,7 @@ class PilatusBackend(DeviceBackend):
             # make us able to send another message.
 
             # but first we ascertain if the last command was really the Exposure command.
-            assert self.lastmessage[0].startswith(b'Exposure ')
+            #assert self.lastmessage[0].startswith(b'Exposure ')
             # no messages should be pending.
             if self.connectionIsReadOnly():
                 self.commandError('stopexposure', 'Read-only connection')
@@ -496,14 +496,14 @@ class PilatusBackend(DeviceBackend):
                 self.warning(f'Outbuffer not empty! Queue size is: {self.outbuffer.qsize()}')
             self.info('Stopping a single exposure with resetcam.')
             self.enqueueHardwareMessage(b'resetcam\r')
-            self.lastmessage = None
+#            self.lastmessage = None
             self.cleartosend.set()
             self.updateVariable('__status__', self.Status.Stopping)
             self.lastissuedcommand = None
             self.commandFinished('stopexposure', 'Stopping a single exposure')
         elif self['__status__'] == self.Status.ExposingMulti:
             # we do the same trick as above, only we have to issue the "K" command.
-            assert self.lastmessage[0].startswith(b'Exposure ')
+            #assert self.lastmessage[0].startswith(b'Exposure ')
             if self.connectionIsReadOnly():
                 self.commandError('stopexposure', 'Read-only connection')
             # assert self.outbuffer.qsize() == 0
@@ -514,7 +514,7 @@ class PilatusBackend(DeviceBackend):
                 self.warning(f'Outbuffer not empty! Queue size is: {self.outbuffer.qsize()}')
             self.info('Stopping a multi-exposure with K')
             self.enqueueHardwareMessage(b'K\r', numreplies=2)
-            self.lastmessage = None
+            #self.lastmessage = None
             self.cleartosend.set()
             self.updateVariable('__status__', self.Status.Stopping)
             self.lastissuedcommand = None
