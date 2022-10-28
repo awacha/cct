@@ -451,20 +451,7 @@
            <string>Threshold:</string>
           </property>
           <property name="buddy">
-           <cstring>thresholdSpinBox</cstring>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QSpinBox" name="thresholdSpinBox">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="suffix">
-           <string> eV</string>
+           <cstring>thresholdDoubleSpinBox</cstring>
           </property>
          </widget>
         </item>
@@ -531,6 +518,19 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item row="0" column="2">
+         <widget class="QDoubleSpinBox" name="thresholdDoubleSpinBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="suffix">
+           <string> eV</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>

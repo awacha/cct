@@ -46,14 +46,10 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.trimPushButton.clicked.connect(self.onTrimButtonClicked)
         self.gainComboBox.addItems([p.value for p in PilatusGain])
         self.gainComboBox.setCurrentIndex(0)
-        self.gainComboBox.currentIndexChanged.connect(self.updateThresholdLimits)
         self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(self.instrument.devicemanager.detector()['gain']))
-        self.thresholdSpinBox.setValue(self.instrument.devicemanager.detector()['threshold'])
-        for quicktrimtoolbutton in [self.setAgToolButton, self.setCrToolButton, self.setCuToolButton, self.setFeToolButton, self.setMoToolButton]:
-            quicktrimtoolbutton.clicked.connect(self.onQuickTrim)
+        self.thresholdDoubleSpinBox.setValue(self.instrument.devicemanager.detector()['threshold'])
         det = self.instrument.devicemanager.detector()
         for variable in ['gain', 'threshold', 'vcmp', 'tau', 'cutoff',
                          'humidity', 'temperature', 'temperaturelimits', 'humiditylimits',
@@ -69,8 +65,12 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 logger.warning(f'Variable not yet updated: {variable}')
                 pass
 
-    @Slot()
-    def onQuickTrim(self):
+    @Slot(bool, name='on_setAgToolButton_clicked')
+    @Slot(bool, name='on_setCrToolButton_clicked')
+    @Slot(bool, name='on_setCuToolButton_clicked')
+    @Slot(bool, name='on_setFeToolButton_clicked')
+    @Slot(bool, name='on_setMoToolButton_clicked')
+    def onQuickTrim(self, checked: bool):
         if self.sender() is self.setAgToolButton:
             threshold, gain = self.thresholdsettings['Ag']
         elif self.sender() is self.setCrToolButton:
@@ -84,25 +84,25 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         else:
             assert False
         self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(gain.value))
-        self.thresholdSpinBox.setValue(threshold)
+        self.thresholdDoubleSpinBox.setValue(threshold)
         self.trimPushButton.click()
 
-    @Slot()
-    def updateThresholdLimits(self):
+    @Slot(int, name='on_gainComboBox_currentIndexChanged')
+    def updateThresholdLimits(self, currentIndex: int):
         if self.gainComboBox.currentIndex() < 0:
             return
         gain = PilatusGain(self.gainComboBox.currentText())
         detector = self.instrument.devicemanager.detector()
         assert isinstance(detector, PilatusDetector)
-        self.thresholdSpinBox.setRange(*detector.thresholdLimits(gain))
+        self.thresholdDoubleSpinBox.setRange(*detector.thresholdLimits(gain))
 
-    @Slot()
-    def onTrimButtonClicked(self):
+    @Slot(bool, name='on_trimPushButton_clicked')
+    def onTrimButtonClicked(self, checked: bool):
         detector = self.instrument.devicemanager.detector()
         assert isinstance(detector, PilatusDetector)
-        detector.trim(self.thresholdSpinBox.value(), PilatusGain(self.gainComboBox.currentText()))
+        detector.trim(self.thresholdDoubleSpinBox.value(), PilatusGain(self.gainComboBox.currentText()))
 
-    @Slot(str, object, object)
+    @Slot(str, object, object, name='onVariableChanged')
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         det: PilatusDetector = self.instrument.devicemanager.detector()
         if name == '__status__':
@@ -110,10 +110,10 @@ class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.statusLabel.setText(newvalue)
         elif name == 'gain':
             self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(det['gain']))
-            self.thresholdSpinBox.setValue(det['threshold'])
+            self.thresholdDoubleSpinBox.setValue(det['threshold'])
             self.gainLabel.setText(newvalue)
         elif name == 'threshold':
-            self.thresholdSpinBox.setValue(det['threshold'])
+            self.thresholdDoubleSpinBox.setValue(det['threshold'])
             self.thresholdLabel.setText(f'{newvalue:.0f} eV')
         elif name == 'vcmp':
             self.vcmpLabel.setText(f'{newvalue:.3f} V')
