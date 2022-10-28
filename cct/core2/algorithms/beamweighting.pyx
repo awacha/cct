@@ -2,7 +2,7 @@
 from libc.math cimport sqrt, NAN
 from libc.stdint cimport uint8_t
 
-def beamweights(double [:,:] image not None, uint8_t [:,:] mask not None):
+def beamweights(double [:,:] image not None, uint8_t [:,:] mask not None, rowmin: int, rowmax: int, colmin: int, colmax:int):
     """Calculate some statistics on an image
 
     :param image: the scattering image
@@ -17,9 +17,17 @@ def beamweights(double [:,:] image not None, uint8_t [:,:] mask not None):
         double meanrow=0, meanrow2=0, meancol=0, meancol2=0, sumimage=0, maximage=0
         Py_ssize_t pixelcount=0
 
+    if rowmin is None:
+        rowmin = 0
+    if rowmax is None:
+        rowmax = image.shape[0]
+    if colmin is None:
+        colmin = 0
+    if colmax is None:
+        colmax = image.shape[1]
     maximage=image[0,0]
-    for irow in range(0, image.shape[0]):
-        for icol in range(0, image.shape[1]):
+    for irow in range(rowmin, rowmax):
+        for icol in range(colmin, colmax):
             if image[irow, icol] <= 0:
                 continue
             if mask[irow, icol] == 0:

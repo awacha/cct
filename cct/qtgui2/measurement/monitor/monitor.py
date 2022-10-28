@@ -308,8 +308,14 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     @Slot(object)
     def onImageReceived(self, exposure: Exposure):
+        colmin, colmax, rowmin, rowmax = self.plotimage.axes.axes()
+
         sumimage, maximage, meanrow, meancol, stdrow, stdcol, pixelcount = beamweights(
-            exposure.intensity, exposure.mask)
+            exposure.intensity, exposure.mask,
+            rowmin=int(min(rowmin, rowmax)) if self.integrateOnlyZoomedPushButton.isChecked() else None,
+            rowmax=int(max(rowmin, rowmax)) if self.integrateOnlyZoomedPushButton.isChecked() else None,
+            colmin=int(min(colmin, colmax)) if self.integrateOnlyZoomedPushButton.isChecked() else None,
+            colmax=int(max(colmin,colmax)) if self.integrateOnlyZoomedPushButton.isChecked() else None)
         logger.debug(f'{sumimage=}, {maximage=}, {meanrow=}, {meancol=}, {stdrow=}, {stdcol=}, {pixelcount=}')
         self.addPoint(sumimage, meancol, meanrow)
         self.plotimage.setExposure(exposure, keepzoom=None)
