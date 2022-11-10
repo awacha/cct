@@ -2,7 +2,7 @@
 from libc.math cimport sqrt, NAN
 from libc.stdint cimport uint8_t
 
-def beamweights(double [:,:] image not None, uint8_t [:,:] mask not None, rowmin: int, rowmax: int, colmin: int, colmax:int):
+def beamweights(double [:,:] image not None, uint8_t [:,:] mask not None, rowmin: int = None, rowmax: int = None, colmin: int=None, colmax:int=None):
     """Calculate some statistics on an image
 
     :param image: the scattering image
