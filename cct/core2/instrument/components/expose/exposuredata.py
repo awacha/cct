@@ -334,7 +334,12 @@ class ExposureTask(QtCore.QObject):
             grp.attrs['default'] = 'data'
             datagrp['errors'] = detectorgroup['data_errors']
 
-            samplegroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXsample')][0]]
-            datagrp['title'] = f"{samplegroup['name'][()].decode('utf-8')}"
+            try:
+                samplegroup = grp[[g for g in grp if ('NX_class' in grp[g].attrs) and (grp[g].attrs['NX_class'] == 'NXsample')][0]]
+            except IndexError:
+                # no sample group, probably an exposure without specifying the sample
+                pass
+            else:
+                datagrp['title'] = f"{samplegroup['name'][()].decode('utf-8')}"
         self.h5filename = None
 
