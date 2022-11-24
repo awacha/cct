@@ -31,3 +31,4 @@ class ScriptSyntaxHighlighter(QtGui.QSyntaxHighlighter):
             for regex in regexes:
                 for m in regex.finditer(text):
                     self.setFormat(m.start(), m.end() - m.start(), textcharformat)
+                    break
