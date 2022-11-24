@@ -1,6 +1,6 @@
 import logging
 
-from PyQt5 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 
 from ...core2.processing.tasks.subtraction import SubtractionData, SubtractionScalingMode
 from ...core2.processing.processing import Processing

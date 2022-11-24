@@ -4,7 +4,7 @@ import sys
 from typing import Optional
 
 import click
-from PyQt5 import QtWidgets
+from PySide6 import QtWidgets
 
 from .main import main
 from ..qtgui2.processingmain.main import Main

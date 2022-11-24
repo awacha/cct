@@ -3,8 +3,8 @@ import logging
 import weakref
 
 import h5py
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtCore
+from PySide6.QtCore import Signal, Slot
 
 from ...config import Config
 
@@ -29,7 +29,7 @@ class Component:
 
     _panicking: PanicState = PanicState.NoPanic
 
-    def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PyQt5/multiinheritance.html
+    def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PySide6/multiinheritance.html
         self.config = kwargs['config']
         if isinstance(self.config, Config):
             logger.debug('Connecting configChanged signal')

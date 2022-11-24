@@ -1,8 +1,8 @@
 from .processingwindow import ProcessingWindow
 from .subtraction_ui import Ui_Form
 from .subtractiondelegate import SubtractionDelegate
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Slot
 
 
 class SubtractionWindow(ProcessingWindow, Ui_Form):

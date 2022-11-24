@@ -3,8 +3,8 @@ import logging
 from typing import Iterator, Any, List, Dict, Union, Optional
 
 import h5py
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtCore, QtGui
+from PySide6.QtCore import Signal, Slot
 
 from .motor import Motor, MotorRole, MotorDirection
 from ..auth import Privilege, needsprivilege

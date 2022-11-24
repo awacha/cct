@@ -3,8 +3,8 @@ import re
 from typing import Any, Dict, List, Optional
 import traceback
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtCore
+from PySide6.QtCore import Signal, Slot
 
 from .flags import InterpreterFlags
 from ..component import Component

@@ -1,6 +1,6 @@
 import logging
 
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6.QtCore import Slot
 
 from .command import Command
 from .commandargument import StringChoicesArgument

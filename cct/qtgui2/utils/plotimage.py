@@ -5,8 +5,8 @@ import matplotlib
 import matplotlib.cm
 import matplotlib.colors
 import numpy as np
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Slot
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.colorbar import Colorbar

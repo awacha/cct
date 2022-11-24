@@ -3,7 +3,7 @@ import os
 import pickle
 from typing import List, Any
 
-from PyQt5 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 from .project import Project
 from ..auth import Privilege, needsprivilege

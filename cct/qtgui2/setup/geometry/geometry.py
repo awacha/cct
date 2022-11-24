@@ -1,8 +1,8 @@
 import logging
 from typing import Tuple, Dict, Any, Optional, Sequence
 
-from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtCore import Slot
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure

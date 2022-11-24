@@ -7,7 +7,7 @@ from typing import Any, Optional, Final, List, Dict, Union
 
 import h5py
 import numpy as np
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 from .choices import GeometryChoices
 from ..component import Component

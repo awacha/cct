@@ -4,8 +4,8 @@
 import logging
 from typing import Optional
 
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Slot
 
 from .motormover_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices

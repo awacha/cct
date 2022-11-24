@@ -3,8 +3,8 @@ import logging
 import pickle
 from typing import List, Any, Optional, Union, Iterable, Final, Tuple
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtCore, QtGui
+from PySide6.QtCore import Signal, Slot
 
 from ..component import Component
 from ..motors import Motor

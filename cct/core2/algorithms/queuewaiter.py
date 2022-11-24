@@ -4,7 +4,7 @@ from multiprocessing.queues import Queue
 from queue import Empty
 from typing import Callable, Tuple, List, Union, Optional, ClassVar
 
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

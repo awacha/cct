@@ -2,8 +2,8 @@ import logging
 import traceback
 from typing import List, Optional, Any, Tuple, final, Union
 
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Slot
 
 from ...core2.devices import DeviceFrontend, DeviceType
 from ...core2.devices.device.telemetry import TelemetryInformation

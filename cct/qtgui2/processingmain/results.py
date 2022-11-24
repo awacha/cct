@@ -3,8 +3,8 @@ import os
 from typing import List, Optional
 
 import openpyxl
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtCore, QtWidgets
+from PySide6.QtCore import Slot
 
 from .outliertest import OutlierTestWindow
 from .processingwindow import ProcessingWindow

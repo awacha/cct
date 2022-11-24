@@ -1,5 +1,5 @@
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Slot
 
 from .resultviewwindow import ResultViewWindow
 from ..utils.anisotropy import AnisotropyEvaluator

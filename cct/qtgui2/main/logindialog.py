@@ -1,7 +1,7 @@
 import logging
 
 import pkg_resources
-from PyQt5 import QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui
 
 from .logindialog_ui import Ui_Dialog
 from ...core2.instrument.instrument import Instrument

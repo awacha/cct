@@ -2,7 +2,7 @@ import enum
 import logging
 from typing import List, Any, Optional
 
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 from ....config import Config
 

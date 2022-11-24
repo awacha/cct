@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from PySide6 import QtWidgets
 from .startpage_ui import Ui_WizardPage
 
 

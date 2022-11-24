@@ -1,8 +1,8 @@
 import logging
 from typing import Dict, Optional
 
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtCore import Slot
 from matplotlib.axes import Axes, np
 from matplotlib.backend_bases import key_press_handler, KeyEvent
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg

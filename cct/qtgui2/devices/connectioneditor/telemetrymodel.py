@@ -1,6 +1,6 @@
 from typing import Optional, Any
 
-from PyQt5 import QtCore
+from PySide6 import QtCore
 from ....core2.devices.device.telemetry import TelemetryInformation
 
 

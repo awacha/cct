@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6.QtCore import Slot
 
 from .command import Command
 from .commandargument import StringArgument, FloatArgument, IntArgument

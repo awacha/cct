@@ -7,7 +7,7 @@ from typing import Sequence, Optional, List, Any, Tuple
 
 import dbus
 import pkg_resources
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 from .component import Component
 

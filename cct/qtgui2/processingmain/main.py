@@ -5,8 +5,8 @@ import time
 from typing import Optional, Dict, Final, List, Tuple, Type
 
 import appdirs
-from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtCore import Signal, Slot
 
 from .averaging import AveragingWindow
 from .closablemdisubwindow import ClosableMdiSubWindow

@@ -2,7 +2,7 @@ import enum
 import logging
 from typing import Optional, List, Union
 
-from PyQt5 import QtWidgets
+from PySide6 import QtWidgets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -2,7 +2,7 @@ from configparser import ConfigParser
 from typing import Any, List, Tuple
 import logging
 
-from PyQt5 import QtCore, QtGui
+from PySide6 import QtCore, QtGui
 from .task import ProcessingTask
 from ...dataclasses import Header
 from ..calculations.resultsentry import SampleDistanceEntry, SampleDistanceEntryType

@@ -3,8 +3,8 @@ import multiprocessing
 import queue
 from typing import List, Any, Optional, Sequence, Iterator, Set
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtCore, QtGui
+from PySide6.QtCore import Signal, Slot
 
 from .task import ProcessingTask, ProcessingStatus, ProcessingSettings
 from ..calculations.backgroundprocess import Message

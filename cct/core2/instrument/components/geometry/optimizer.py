@@ -6,8 +6,8 @@ from multiprocessing import Process, Queue, Event
 from typing import Sequence, Optional, Dict, Tuple, Any
 
 import numpy as np
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtCore
+from PySide6.QtCore import Signal, Slot
 
 from ....config import Config
 

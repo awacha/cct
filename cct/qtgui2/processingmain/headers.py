@@ -1,7 +1,7 @@
 from .processingwindow import ProcessingWindow
 from .headers_ui import Ui_Form
-from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtGui, QtCore
+from PySide6.QtCore import Slot
 
 import logging
 logger=logging.getLogger(__name__)

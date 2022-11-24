@@ -4,8 +4,8 @@ import logging
 
 import numpy as np
 import scipy.io
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets
+from PySide6.QtCore import Slot
 from matplotlib.backend_bases import MouseEvent
 from matplotlib.path import Path
 from matplotlib.widgets import Cursor, EllipseSelector, RectangleSelector, LassoSelector, PolygonSelector

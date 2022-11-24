@@ -1,5 +1,5 @@
 import numpy as np
-from PyQt5 import QtWidgets
+from PySide6 import QtWidgets
 
 from .resultviewwindow import ResultViewWindow
 from .transmission_ui import Ui_Form

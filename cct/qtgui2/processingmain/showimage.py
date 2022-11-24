@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui
 
 from .resultviewwindow import ResultViewWindow
 from ..utils.plotimage import PlotImage

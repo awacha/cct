@@ -4,7 +4,7 @@ import os
 import logging
 from typing import Any, List, Final, Optional, Sequence, Iterator, Tuple
 
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 from ..settings import ProcessingSettings, FileNameScheme
 from .task import ProcessingTask, ProcessingStatus

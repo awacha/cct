@@ -1,7 +1,7 @@
 from typing import Any, List
 import logging
 
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6.QtCore import Slot
 
 from .command import InstantCommand, CommandArgument, Command
 from .commandargument import StringArgument

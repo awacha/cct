@@ -1,8 +1,8 @@
 import logging
 from typing import Any
 
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets
+from PySide6.QtCore import Slot
 
 from .leadfluid_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices

@@ -3,7 +3,7 @@
 """A context manager to block signals on Qt wigets or simple objects"""
 from typing import List, Tuple, Sequence
 
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 class SignalsBlocked:
     """A context manager to block signals on Qt objects

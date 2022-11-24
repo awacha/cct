@@ -1,5 +1,5 @@
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets
+from PySide6.QtCore import Slot
 
 from .lastfsn_ui import Ui_Frame
 from ....core2.instrument.instrument import Instrument

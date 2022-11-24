@@ -3,8 +3,8 @@ import time
 from typing import Dict, Optional, Union, List
 
 import pkg_resources
-from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6.QtCore import Slot
 
 from .devicestatus import DeviceStatus
 from .devicevariablemeasurement import DeviceVariableMeasurement

@@ -1,6 +1,6 @@
 import logging
 
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets, QtGui
 
 
 class LogViewerText(logging.Handler):

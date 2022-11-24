@@ -4,8 +4,8 @@ from typing import Optional, Tuple
 
 import numpy as np
 import scipy.odr
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtCore import Slot
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import PickEvent
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg

@@ -1,4 +1,4 @@
-from PyQt5 import QtGui, QtCore
+from PySide6 import QtGui, QtCore
 import re
 from typing import List, Tuple, Pattern
 

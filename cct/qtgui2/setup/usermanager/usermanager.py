@@ -1,5 +1,5 @@
-from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtCore import Slot
 
 from ...utils.window import WindowRequiresDevices
 from .usermanager_ui import Ui_Form

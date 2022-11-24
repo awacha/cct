@@ -1,7 +1,7 @@
 import logging
 
-from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtCore import Slot
 
 from .transmission_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices

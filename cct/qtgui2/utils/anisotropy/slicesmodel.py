@@ -4,7 +4,7 @@ import itertools
 from typing import List, Any, Iterator, Optional
 
 import matplotlib
-from PyQt5 import QtCore, QtGui
+from PySide6 import QtCore, QtGui
 
 
 class SectorInformation:

@@ -1,6 +1,6 @@
 import logging
 
-from PyQt5 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 
 from ....core2.instrument.components.samples.samplestore import SampleStore, Sample
 from ....core2.instrument.instrument import Instrument

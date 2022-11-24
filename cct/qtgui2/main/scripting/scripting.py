@@ -3,8 +3,8 @@ import logging
 import os
 from typing import List, Optional
 
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Slot
 
 from .script import ScriptUI
 from .wizard.sequencewizard import SequenceWizard

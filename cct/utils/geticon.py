@@ -1,4 +1,4 @@
-from PyQt5 import QtGui
+from PySide6 import QtGui
 
 def getIconFromTheme(*iconnames) -> QtGui.QIcon:
     for name in iconnames:

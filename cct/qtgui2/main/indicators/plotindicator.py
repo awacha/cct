@@ -1,7 +1,7 @@
 from typing import Optional
 
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets
+from PySide6.QtCore import Slot
 
 from .plotindicator_ui import Ui_Frame
 from ...utils.window import WindowRequiresDevices

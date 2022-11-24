@@ -1,7 +1,7 @@
 from typing import List
 
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtCore import Slot
 from adjustText import adjust_text
 from matplotlib.axes import Axes
 from matplotlib.text import Text

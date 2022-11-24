@@ -1,5 +1,5 @@
 from typing import Optional
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6.QtCore import Slot
 
 from .processingwindow import ProcessingWindow
 from .settings_ui import Ui_Form

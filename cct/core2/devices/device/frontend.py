@@ -8,8 +8,8 @@ from typing import Any, Type, List, Iterator, Dict, Optional, Tuple
 
 import h5py
 import numpy as np
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal
+from PySide6 import QtCore
+from PySide6.QtCore import Signal
 
 from .backend import DeviceBackend
 from .message import Message

@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 from .calibrants_ui import Ui_WizardPage
 from ......core2.instrument.instrument import Instrument
 from ......core2.dataclasses.sample import Sample

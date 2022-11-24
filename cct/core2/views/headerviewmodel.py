@@ -2,8 +2,8 @@ import datetime
 import multiprocessing.pool
 from typing import Any, List, Optional, Sequence, Iterator
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtCore
+from PySide6.QtCore import Signal, Slot
 
 from ...core2.dataclasses import Header
 from ...core2.instrument.components.io import IO

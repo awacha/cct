@@ -4,8 +4,8 @@ from typing import Tuple, List, Optional
 
 import numpy as np
 import scipy.stats.kde
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtCore import Slot
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 import matplotlib.cm

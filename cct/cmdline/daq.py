@@ -6,7 +6,7 @@ import gc
 import sys
 
 import click
-from PyQt5 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 
 from .main import main
 from ..core2.config import Config

@@ -1,6 +1,6 @@
 from typing import Any
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtCore
+from PySide6.QtCore import Slot
 
 
 from .command import Command

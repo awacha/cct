@@ -1,8 +1,8 @@
 from typing import Any, Optional
 import datetime
 
-from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6.QtCore import Slot
 from .haakephoenix_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 from ....core2.devices.thermostat.haakephoenix.backend import HaakePhoenixBackend

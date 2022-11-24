@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, Tuple, List, Optional
 
-from PyQt5 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -9,8 +9,8 @@ from matplotlib.widgets import SpanSelector
 from .processingwindow import ProcessingWindow
 from .merging_ui import Ui_Form
 
-from PyQt5 import QtGui, QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6.QtCore import Slot
 
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

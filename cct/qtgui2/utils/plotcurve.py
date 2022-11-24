@@ -3,8 +3,8 @@ import fractions
 from typing import Dict, Any, Tuple, List, Optional
 
 import numpy as np
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets
+from PySide6.QtCore import Slot
 
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg

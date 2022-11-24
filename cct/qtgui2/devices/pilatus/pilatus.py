@@ -1,8 +1,8 @@
 from typing import Any, Final, Dict, Tuple
 import logging
 
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Slot
 
 from ...utils.window import WindowRequiresDevices
 from .pilatus_ui import Ui_Form

@@ -1,8 +1,8 @@
 import weakref
 import logging
 
-from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6.QtCore import Slot
 
 from ...core2.processing.processing import Processing
 

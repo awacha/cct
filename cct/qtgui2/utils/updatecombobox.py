@@ -3,7 +3,7 @@
 from typing import List
 
 from .blocksignalscontextmanager import SignalsBlocked
-from PyQt5 import QtWidgets
+from PySide6 import QtWidgets
 
 
 def updateComboBox(combobox: QtWidgets.QComboBox, newitems: List[str]) -> bool:

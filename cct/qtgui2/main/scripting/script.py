@@ -3,8 +3,8 @@ import logging
 import os
 from typing import Optional
 
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtCore import Signal, Slot
 
 from .script_ui import Ui_Form
 from .scripteditor import ScriptEditor

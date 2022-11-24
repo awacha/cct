@@ -3,8 +3,8 @@ import multiprocessing
 import queue
 from typing import Optional
 
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtCore import Slot
 
 from .headerview_ui import Ui_Form
 from ..utils.window import WindowRequiresDevices

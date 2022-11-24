@@ -1,8 +1,8 @@
 from typing import Any
 import logging
 
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets
+from PySide6.QtCore import Slot
 from ...utils.window import WindowRequiresDevices
 from .schottKL2500LED_ui import Ui_Form
 from ....core2.devices.illumination.schott.frontend import KL2500LED

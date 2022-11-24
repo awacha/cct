@@ -1,6 +1,6 @@
 import datetime
 
-from PyQt5 import QtWidgets
+from PySide6 import QtWidgets
 
 from .calibrants import CalibrantsPage
 from .endpage import EndPage

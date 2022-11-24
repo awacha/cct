@@ -2,8 +2,8 @@ import enum
 from typing import Optional, Tuple
 import logging
 
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Slot
 
 from .scan_ui import Ui_Form
 from ...utils.plotscan import PlotScan

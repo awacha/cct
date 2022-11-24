@@ -3,8 +3,8 @@ import os
 from typing import Tuple, Any, List, Optional
 
 import h5py
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtCore
+from PySide6.QtCore import Signal, Slot
 
 from ...device.frontend import DeviceFrontend, DeviceType
 

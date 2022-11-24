@@ -5,8 +5,8 @@ import logging
 
 import numpy as np
 import numpy.ma as npma
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6 import QtCore
+from PySide6.QtCore import Signal, Slot
 
 from ....devices.device.frontend import DeviceFrontend
 from ....devices.device.variable import Variable, VariableType

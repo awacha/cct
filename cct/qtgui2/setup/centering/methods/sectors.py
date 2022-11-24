@@ -4,7 +4,7 @@
 from typing import Union, Optional
 
 import numpy as np
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6.QtCore import Slot
 from matplotlib.widgets import SpanSelector
 
 from .centeringmethod import CenteringMethod

@@ -10,8 +10,8 @@ from typing import Optional
 
 import h5py
 import numpy as np
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal as Signal
+from PySide6 import QtCore
+from PySide6.QtCore import Signal
 
 from ....dataclasses.exposure import Exposure
 from ....dataclasses.header import Header

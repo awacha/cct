@@ -1,5 +1,5 @@
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot as Slot
+from PySide6 import QtWidgets
+from PySide6.QtCore import Slot
 
 from .initialization_ui import Ui_WizardPage
 from ......core2.devices.detector import PilatusGain, PilatusDetector

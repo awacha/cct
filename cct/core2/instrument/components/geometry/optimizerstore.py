@@ -1,7 +1,7 @@
 from typing import Any, List, Iterator, Dict
 
 import numpy as np
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 
 class OptimizerStore(QtCore.QAbstractItemModel):

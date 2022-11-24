@@ -2,7 +2,7 @@ import enum
 from ctypes import Union
 from typing import Tuple, List, Any
 
-from PyQt5 import QtCore, QtGui
+from PySide6 import QtCore, QtGui
 
 from .task import ProcessingTask
 from ..settings import ProcessingSettings

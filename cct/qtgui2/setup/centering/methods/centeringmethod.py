@@ -6,8 +6,8 @@ from typing import Union, List, Type
 
 import lmfit
 import numpy as np
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSignal as Signal
+from PySide6 import QtWidgets
+from PySide6.QtCore import Signal
 from matplotlib.axes import Axes
 
 from .....core2.dataclasses.exposure import Exposure

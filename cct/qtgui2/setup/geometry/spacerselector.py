@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Sequence, List
 
-from PyQt5 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 
 from .spacerselector_ui import Ui_Dialog
 
