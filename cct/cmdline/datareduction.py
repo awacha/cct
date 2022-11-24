@@ -1,11 +1,15 @@
+import logging
+
 import click
+
 from .main import main
 from ..core2.config import Config
-from ..core2.instrument.components.io import IO
 from ..core2.instrument.components.datareduction import DataReductionPipeLine
-import logging
+from ..core2.instrument.components.io import IO
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 @main.command()
 @click.option('--firstfsn', '-f', default=None, help='First file sequence number', type=click.IntRange(0),
@@ -23,10 +27,8 @@ def datareduction(firstfsn: int, lastfsn: int, config):
     pipeline = DataReductionPipeLine(config.asdict())
     for fsn in range(firstfsn, lastfsn + 1):
         try:
-            ex = io.loadExposure(config['path']['prefixes']['crd'], fsn, raw=True, check_local=True)
+            ex = io.loadExposure(config[('path', 'prefixes', 'crd')], fsn, raw=True, check_local=True)
         except FileNotFoundError:
             logger.warning(f'Cannot load exposure #{fsn}')
             continue
         pipeline.process(ex)
-
-
