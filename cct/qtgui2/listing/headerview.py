@@ -90,7 +90,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     @Slot()
     def showImage(self):
         if self.headersTreeView.selectionModel().currentIndex().isValid():
-            header = self.headersTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
+            header = self.headersTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole)
             assert isinstance(header, Header)
             exposure = self.instrument.io.loadExposure(
                 self.instrument.config['path']['prefixes']['crd'], header.fsn, raw=True, check_local=True)
@@ -99,7 +99,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     @Slot()
     def showCurve(self):
         if self.headersTreeView.selectionModel().currentIndex().isValid():
-            header = self.headersTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
+            header = self.headersTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole)
             assert isinstance(header, Header)
             exposure = self.instrument.io.loadExposure(
                 self.instrument.config['path']['prefixes']['crd'], header.fsn, raw=True, check_local=True)
@@ -125,7 +125,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         logger.debug('Starting process')
         self.datareductionpipeline.start()
         logger.debug('Starting timer')
-        self.startTimer(100, QtCore.Qt.VeryCoarseTimer)
+        self.startTimer(100, QtCore.Qt.TimerType.VeryCoarseTimer)
         self.progressBar.setMinimum(0)
         self.progressBar.setMaximum(len(self.headersTreeView.selectionModel().selectedRows(0)))
         self.progressBar.setValue(0)
@@ -134,7 +134,7 @@ class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.stopPushButton.show()
         logger.debug('Queuing jobs')
         for index in self.headersTreeView.selectionModel().selectedRows(0):
-            header = index.data(QtCore.Qt.UserRole)
+            header = index.data(QtCore.Qt.ItemDataRole.UserRole)
             logger.debug(f'Queueing job with fsn {header.fsn}')
             self.queuetodatareduction.put(('process', (self.instrument.config['path']['prefixes']['crd'], header.fsn)))
         self.queuetodatareduction.put(('end', None))

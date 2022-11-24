@@ -34,8 +34,8 @@ class HeadersWindow(ProcessingWindow, Ui_Form):
         for selectedindex in self.treeView.selectionModel().selectedRows(0):
             self.project.headers.setData(
                 index=selectedindex,
-                value=QtCore.Qt.Checked if self.sender() is self.markBadToolButton else QtCore.Qt.Unchecked,
-                role=QtCore.Qt.CheckStateRole)
+                value=QtCore.Qt.CheckState.Checked if self.sender() is self.markBadToolButton else QtCore.Qt.CheckState.Unchecked,
+                role=QtCore.Qt.ItemDataRole.CheckStateRole)
 
     @Slot()
     def startStopReload(self):

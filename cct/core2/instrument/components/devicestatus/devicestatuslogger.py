@@ -69,30 +69,30 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if self.isRecording():
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
         else:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEditable
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
-        if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return self._variables[index.row()].devicename
-        elif (index.column() == 0) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._variables[index.row()].devicename
-        elif (index.column() == 0) and (role == QtCore.Qt.UserRole):
+        elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.UserRole):
             return sorted(self._devicemanager.devicenames())
-        elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return self._variables[index.row()].variablename
-        elif (index.column() == 1) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._variables[index.row()].variablename
-        elif (index.column() == 1) and (role == QtCore.Qt.UserRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.UserRole):
             device: DeviceFrontend = self._devicemanager[self._variables[index.row()].devicename]
             goodvariablenames = [vn for vn in device.keys() if device.getVariable(vn).vartype in [VariableType.FLOAT, VariableType.INT, VariableType.BOOL]]
             return sorted(goodvariablenames)
-        elif (index.column() == 2) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return f'{self._variables[index.row()].scaling:.6g}'
-        elif (index.column() == 2) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._variables[index.row()].scaling
-        elif (index.column() == 2) and (role == QtCore.Qt.UserRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.UserRole):
             return 0, 1e9
         else:
             return None
@@ -100,7 +100,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if self.isRecording():
             return False
-        if (index.column() == 0) and (role == QtCore.Qt.EditRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
             # device name is to be updated
             if value in self._devicemanager.devicenames:
                 self._variables[index.row()].devicename = value
@@ -109,7 +109,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
                     self.index(index.row(), 0, QtCore.QModelIndex()),
                     self.index(index.row(), self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
                 return True
-        elif (index.column() == 1) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             # variable name is to be updated
             if value in self._devicemanager[self._variables[index.row()].devicename].keys():
                 self._variables[index.row()].variablename = value
@@ -118,7 +118,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
                     self.index(index.row(), self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex())
                 )
                 return True
-        elif (index.column() == 2) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.EditRole):
             self._variables[index.row()].scaling = float(value)
             self.dataChanged.emit(
                     self.index(index.row(), 0, QtCore.QModelIndex()),
@@ -128,7 +128,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
         return False
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Device', 'Variable', 'Scaling'][section]
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
@@ -157,11 +157,11 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
         if self._recordtimerhandle is not None:
             self.killTimer(self._recordtimerhandle)
             self._recordtimerhandle = None
-        self._recordtimerhandle = self.startTimer(int(self._period * 1000), QtCore.Qt.PreciseTimer)
+        self._recordtimerhandle = self.startTimer(int(self._period * 1000), QtCore.Qt.TimerType.PreciseTimer)
         if self._writetimerhandle is not None:
             self.killTimer(self._writetimerhandle)
             self._writetimerhandle = None
-        self._writetimerhandle = self.startTimer(int(self._writeperiod * 1000), QtCore.Qt.PreciseTimer)
+        self._writetimerhandle = self.startTimer(int(self._writeperiod * 1000), QtCore.Qt.TimerType.PreciseTimer)
         for devicename in {v.devicename for v in self._variables}:
             self._devicemanager[devicename].variableChanged.connect(self.onVariableChanged)
         self.recordingStarted.emit()

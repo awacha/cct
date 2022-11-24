@@ -112,7 +112,7 @@ class Config(QtCore.QObject):
                 self.killTimer(self._autosavetimer)
                 self._autosavetimer = None
             # start a timer. After the required time interval has elapsed, do the actual saving.
-            self._autosavetimer = self.startTimer(int(self._autosavetimeout * 1000), QtCore.Qt.PreciseTimer)
+            self._autosavetimer = self.startTimer(int(self._autosavetimeout * 1000), QtCore.Qt.TimerType.PreciseTimer)
 
     def timerEvent(self, timerEvent: QtCore.QTimerEvent) -> None:
         if timerEvent.timerId() == self._autosavetimer:

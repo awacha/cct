@@ -190,15 +190,15 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
         return self.createIndex(row, column, None)
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         scan = self._scans[list(self._scans.keys())[index.row()]]
-        if role == QtCore.Qt.UserRole:
+        if role == QtCore.Qt.ItemDataRole.UserRole:
             return scan
-        elif role == QtCore.Qt.ToolTipRole:
+        elif role == QtCore.Qt.ItemDataRole.ToolTipRole:
             return scan.command
-        elif role == QtCore.Qt.DisplayRole:
+        elif role == QtCore.Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return str(scan.index)
             elif index.column() == 1:
@@ -221,7 +221,7 @@ class ScanStore(QtCore.QAbstractItemModel, Component):
                 return scan.comment
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+        if orientation == QtCore.Qt.Orientation.Horizontal and role == QtCore.Qt.ItemDataRole.DisplayRole:
             return ['Index', 'Date', 'Motor', 'From', 'To', 'Length', 'Comment'][section]
 
     def lastscan(self) -> Optional[int]:

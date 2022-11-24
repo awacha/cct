@@ -68,7 +68,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.choicesTreeView.selectionModel().currentChanged.connect(self.onChoicesTreeViewCurrentChanged)
         sortmodel = QtCore.QSortFilterProxyModel()
         sortmodel.setSourceModel(self._optimizerstore)
-        sortmodel.setSortRole(QtCore.Qt.EditRole)
+        sortmodel.setSortRole(QtCore.Qt.ItemDataRole.EditRole)
         self.optimizationTreeView.setModel(sortmodel)
         for name, path in self._widgetname2configpath.items():
             obj = getattr(self, name)
@@ -140,7 +140,7 @@ class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     @Slot()
     def updateSetupParameters(self):
-        dic = self.optimizationTreeView.model().data(self.optimizationTreeView.currentIndex(), role = QtCore.Qt.UserRole)
+        dic = self.optimizationTreeView.model().data(self.optimizationTreeView.currentIndex(), role = QtCore.Qt.ItemDataRole.UserRole)
         self.instrument.geometry.updateFromOptimizerResult(dic)
 
     @Slot(QtCore.QItemSelection, QtCore.QItemSelection)

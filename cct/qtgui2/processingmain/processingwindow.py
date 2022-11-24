@@ -19,7 +19,7 @@ class ProcessingWindow(QtWidgets.QWidget):
         super().__init__()
         self.closable = closable
         self.project = project
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
         try:
             self.mainwindow = weakref.proxy(mainwindow)
         except TypeError:

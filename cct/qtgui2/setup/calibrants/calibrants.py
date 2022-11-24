@@ -51,7 +51,7 @@ class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if not isinstance(current, QCalibrant):
             return
         self.peakeditor = PeakEditor(self, current.peaks)
-        self.peakeditor.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+        self.peakeditor.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self.peakeditor.setWindowTitle(f'Edit peaks for calibrant {current.name}')
         self.peakeditor.finished.connect(self.onPeakEditorFinished)
         self.peakeditor.open()

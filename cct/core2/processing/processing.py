@@ -100,15 +100,15 @@ class Processing(QtCore.QAbstractItemModel):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         if index.column() < 3:
-            if role == QtCore.Qt.DisplayRole:
+            if role == QtCore.Qt.ItemDataRole.DisplayRole:
                 return str(self.fsnranges[index.row()][index.column()])
-            elif role == QtCore.Qt.EditRole:
+            elif role == QtCore.Qt.ItemDataRole.EditRole:
                 return self.fsnranges[index.row()][index.column()]
             else:
                 return None
-        elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ', '.join(self.fsnranges[index.row()][3]) if self.fsnranges[index.row()][3] is not None else ''
-        elif (index.column() == 3) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return ', '.join(self.fsnranges[index.row()][3]) if self.fsnranges[index.row()][3] is not None else ''
         else:
             return None
@@ -116,14 +116,14 @@ class Processing(QtCore.QAbstractItemModel):
 
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Start', 'End', 'Description', 'Load only these samples'][section]
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         return QtCore.QModelIndex()
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         fsnmin, fsnmax, description, onlysamples = self.fsnranges[index.row()]

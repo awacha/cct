@@ -43,7 +43,7 @@ class QueueWaiter(QtCore.QObject):
         self.queues.append((queue, callback))
         if not self.timerid:
             # timer is not running, start it.
-            self.timerid = self.startTimer(self.timerinterval, QtCore.Qt.PreciseTimer)
+            self.timerid = self.startTimer(self.timerinterval, QtCore.Qt.TimerType.PreciseTimer)
 
     def deregisterQueue(self, queueorcallback: Union[Queue, Callable]):
         logger.debug(f'Deregistering {queueorcallback=}')

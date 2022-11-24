@@ -41,7 +41,7 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
         return 4  # name, regex, date, data
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Name', 'Regular expression', 'Date', 'Data'][section]
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
@@ -70,29 +70,29 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
         if not index.isValid():
             return None
         elif index.internalPointer() is None:
-            if index.column() == 0 and role == QtCore.Qt.DisplayRole:
+            if index.column() == 0 and role == QtCore.Qt.ItemDataRole.DisplayRole:
                 return ['Q calibrants', 'Intensity calibrants'][index.row()]
         else:
             calibrant = index.internalPointer()
             assert isinstance(calibrant, Calibrant)
-            if (index.column() == 0) and (role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]):
+            if (index.column() == 0) and (role in [QtCore.Qt.ItemDataRole.DisplayRole, QtCore.Qt.ItemDataRole.EditRole]):
                 return calibrant.name
-            elif (index.column() == 1) and (role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]):
+            elif (index.column() == 1) and (role in [QtCore.Qt.ItemDataRole.DisplayRole, QtCore.Qt.ItemDataRole.EditRole]):
                 return calibrant.regex
-            elif (index.column() == 2) and (role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]):
-                return str(calibrant.calibrationdate) if role == QtCore.Qt.DisplayRole else calibrant.calibrationdate
-            elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
+            elif (index.column() == 2) and (role in [QtCore.Qt.ItemDataRole.DisplayRole, QtCore.Qt.ItemDataRole.EditRole]):
+                return str(calibrant.calibrationdate) if role == QtCore.Qt.ItemDataRole.DisplayRole else calibrant.calibrationdate
+            elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 if isinstance(calibrant, QCalibrant):
                     return f'{len(calibrant)} peaks'
                 elif isinstance(calibrant, IntensityCalibrant):
                     return calibrant.datafile
-            elif (index.column() == 0) and (role == QtCore.Qt.ToolTipRole):
+            elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.ToolTipRole):
                 return calibrant.description
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if (not index.isValid()) or (index.internalPointer() is None):
             return False
-        if role != QtCore.Qt.EditRole:
+        if role != QtCore.Qt.ItemDataRole.EditRole:
             return False
         calibrant = index.internalPointer()
         assert isinstance(calibrant, Calibrant)
@@ -125,11 +125,11 @@ class CalibrantStore(QtCore.QAbstractItemModel, Component):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if index.isValid() and isinstance(index.internalPointer(), Calibrant) and index.column() in [0, 1, 2]:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled
         elif index.isValid() and isinstance(index.internalPointer(), Calibrant):
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
         else:
-            return QtCore.Qt.ItemIsEnabled
+            return QtCore.Qt.ItemFlag.ItemIsEnabled
 
     def qcalibrants(self) -> List[QCalibrant]:
         return [c for c in self._calibrants if isinstance(c, QCalibrant)]

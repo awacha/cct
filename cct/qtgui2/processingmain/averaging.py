@@ -35,7 +35,7 @@ class AveragingWindow(ProcessingWindow, Ui_Form):
 
     @Slot(bool)
     def onChangeSettingsClicked(self, checked: bool):
-        sd: SummaryData = self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
+        sd: SummaryData = self.treeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole)
         settingswindow = SettingsWindow(project=self.project, mainwindow=self.mainwindow, closable=True, samplename=sd.samplename, distkey=f'{sd.distance:.2f}')
         self.mainwindow.addMDISubWindow(settingswindow)
 

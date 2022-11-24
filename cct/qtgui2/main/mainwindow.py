@@ -226,7 +226,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 objectname = windowclass.__name__
             w = windowclass(parent=None, instrument=self.instrument, mainwindow=self)
-            w.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
+            w.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose, True)
             w.destroyed.connect(self.onWindowDestroyed)
             w.setObjectName(objectname)
             self._windows[objectname] = w
@@ -318,7 +318,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.instrument.interpreter.parseScript(self.commandLineEdit.text())
             except ParsingError:
                 pal = self.commandLineEdit.palette()
-                pal.setColor(pal.Window, QtCore.Qt.red)
+                pal.setColor(pal.Window, QtCore.Qt.GlobalColor.red)
                 self.commandLineEdit.setPalette(pal)
                 return
 

@@ -276,7 +276,7 @@ class Exposer(QtCore.QObject, Component):
                     task.onDetectorExposureStarted(timestamp_of_message_received)
 
             # also start the timer for emitting the progress signal periodically
-            self.progresstimer = self.startTimer(int(1000 * self.progressinterval), QtCore.Qt.CoarseTimer)
+            self.progresstimer = self.startTimer(int(1000 * self.progressinterval), QtCore.Qt.TimerType.CoarseTimer)
 
         elif commandname == 'expose' and (not success):
             if self.state != ExposerState.Starting:

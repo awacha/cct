@@ -18,12 +18,12 @@ class SpacerSelectorDialog(QtWidgets.QDialog, Ui_Dialog):
 
 
     def __init__(self, parent, availablespacers: Sequence[float], currentspacers: Sequence[float], target: TargetTypes):
-        super().__init__(parent, QtCore.Qt.Dialog)
+        super().__init__(parent, QtCore.Qt.WindowType.Dialog)
         self.spacers = sorted(availablespacers)
         self.target = target
         self.setupUi(self)
         for s in currentspacers:
-            item= [i for i in self.listWidget.findItems(f'{s:.0f}', QtCore.Qt.MatchExactly) if not i.isSelected()][0]
+            item= [i for i in self.listWidget.findItems(f'{s:.0f}', QtCore.Qt.MatchFlag.MatchExactly) if not i.isSelected()][0]
             item.setSelected(True)
 
     def setupUi(self, Dialog):

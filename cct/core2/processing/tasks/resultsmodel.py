@@ -29,7 +29,7 @@ class ResultsModel(ProcessingTask):
     
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         sde = self._data[index.row()]
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return sde.samplename
             elif index.column() == 1:
@@ -71,11 +71,11 @@ class ResultsModel(ProcessingTask):
                     return f'{sde.outliertest.FtestLinearVsConstant().pvalue:.3g}'
                 except (AttributeError, ValueError, TypeError) as ve:
                     return str(ve)
-        elif role == QtCore.Qt.ToolTipRole:
-            return self.headerData(index.column(), QtCore.Qt.Horizontal, QtCore.Qt.ToolTipRole)
-        elif role == QtCore.Qt.UserRole:
+        elif role == QtCore.Qt.ItemDataRole.ToolTipRole:
+            return self.headerData(index.column(), QtCore.Qt.Orientation.Horizontal, QtCore.Qt.ItemDataRole.ToolTipRole)
+        elif role == QtCore.Qt.ItemDataRole.UserRole:
             return sde
-        elif role == QtCore.Qt.BackgroundColorRole:
+        elif role == QtCore.Qt.ItemDataRole.BackgroundColorRole:
             if (index.column() in [5,6]) and sde.isDerived():
                 return None
             if index.column() == 5:
@@ -98,7 +98,7 @@ class ResultsModel(ProcessingTask):
                     return QtGui.QColor('red') if sde.outliertest.FtestLinearVsConstant().pvalue < 0.05 else QtGui.QColor('lightgreen')
                 except:
                     return QtGui.QColor('orange')
-        elif role == QtCore.Qt.TextColorRole:
+        elif role == QtCore.Qt.ItemDataRole.TextColorRole:
             if (index.column() in [5,6]) and sde.isDerived():
                 return None
             if (index.column() == 5) or (index.column() == 6):
@@ -109,7 +109,7 @@ class ResultsModel(ProcessingTask):
         return None
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         return QtCore.QModelIndex()
@@ -118,9 +118,9 @@ class ResultsModel(ProcessingTask):
         return self.createIndex(row, column, None)
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Sample', 'Distance', 'Category', 'Count', 'Total time', 'Shapiro test', 'Schilling test', 'Quadratic vs. const F-test', 'Linear vs. const F-test'][section]
-        elif (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.ToolTipRole):
+        elif (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.ToolTipRole):
             return [
                 'The name of the sample',
                 'Sample-to-detector distance (or other designation, e.g. "merged")',

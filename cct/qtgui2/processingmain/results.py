@@ -29,7 +29,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         model.setSourceModel(self.project.results)
         self.treeView.setModel(model)
         self.treeView.model().modelReset.connect(self.resizeColumns)
-        self.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.treeView.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         self.reloadPushButton.clicked.connect(self.project.results.reload)
         self.outlierTestPushButton.clicked.connect(self.openOutlierTest)
         self.project.results.modelReset.connect(self.resizeColumns)
@@ -67,7 +67,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
 
     @Slot()
     def removeSelectedResult(self):
-        sdes: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in
+        sdes: List[SampleDistanceEntry] = [index.data(QtCore.Qt.ItemDataRole.UserRole) for index in
                                            self.treeView.selectionModel().selectedRows(0)]
         samples_dists = {(sde.samplename, sde.distancekey) for sde in sdes}
         for samplename, distkey in samples_dists:
@@ -78,7 +78,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
     @Slot()
     def openOutlierTest(self):
         for index in self.treeView.selectionModel().selectedRows(0):
-            sde = index.data(QtCore.Qt.UserRole)
+            sde = index.data(QtCore.Qt.ItemDataRole.UserRole)
             assert isinstance(sde, SampleDistanceEntry)
             if sde.entrytype != SampleDistanceEntryType.Primary:
                 # only primary results have correlation matrices
@@ -95,7 +95,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         logger.debug('showAnisotropy')
         for index in self.treeView.selectionModel().selectedRows(0):
             logger.debug('+')
-            sde = index.data(QtCore.Qt.UserRole)
+            sde = index.data(QtCore.Qt.ItemDataRole.UserRole)
             if sde.entrytype not in [SampleDistanceEntryType.Subtracted, SampleDistanceEntryType.Primary]:
                 continue
             self.mainwindow.createViewWindow(ShowAnisotropyWindow, [(sde.samplename, sde.distancekey)])
@@ -103,7 +103,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
     @Slot()
     def showImage(self):
         for index in self.treeView.selectionModel().selectedRows(0):
-            sde = index.data(QtCore.Qt.UserRole)
+            sde = index.data(QtCore.Qt.ItemDataRole.UserRole)
             if sde.entrytype not in [SampleDistanceEntryType.Subtracted, SampleDistanceEntryType.Primary]:
                 continue
             self.mainwindow.createViewWindow(ShowImageWindow, [(sde.samplename, sde.distancekey)])
@@ -112,7 +112,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
     def showCurve(self):
         items = []
         for index in self.treeView.selectionModel().selectedRows(0):
-            sde = index.data(QtCore.Qt.UserRole)
+            sde = index.data(QtCore.Qt.ItemDataRole.UserRole)
             items.append((sde.samplename, sde.distancekey))
         items = list(sorted(items))
         if items:
@@ -122,7 +122,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
     def showTransmission(self):
         items = []
         for index in self.treeView.selectionModel().selectedRows(0):
-            sde = index.data(QtCore.Qt.UserRole)
+            sde = index.data(QtCore.Qt.ItemDataRole.UserRole)
             assert isinstance(sde, SampleDistanceEntry)
             if sde.entrytype not in [SampleDistanceEntryType.Primary]:
                 continue
@@ -139,7 +139,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
     def showVacuum(self):
         items = []
         for index in self.treeView.selectionModel().selectedRows(0):
-            sde = index.data(QtCore.Qt.UserRole)
+            sde = index.data(QtCore.Qt.ItemDataRole.UserRole)
             assert isinstance(sde, SampleDistanceEntry)
             if sde.entrytype not in [SampleDistanceEntryType.Primary]:
                 continue
@@ -158,7 +158,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
             action = self.exportPatternsToolButton.defaultAction()
         logger.debug(f'Export pattern action: {action.objectName()}')
         self.exportPatternsToolButton.setDefaultAction(action)
-        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in
+        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.ItemDataRole.UserRole) for index in
                                             self.treeView.selectionModel().selectedRows(0)]
         items = [it for it in items if
                  it.entrytype in [SampleDistanceEntryType.Primary, SampleDistanceEntryType.Subtracted]]
@@ -184,7 +184,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
             action = self.exportOutliersToolButton.defaultAction()
         logger.debug(f'Outlier test export action: {action.objectName()}')
         self.exportOutliersToolButton.setDefaultAction(action)
-        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in
+        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.ItemDataRole.UserRole) for index in
                                             self.treeView.selectionModel().selectedRows(0)]
         items = [it for it in items if it.entrytype == SampleDistanceEntryType.Primary]
         if not items:
@@ -207,7 +207,7 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         if not isinstance(action, QtWidgets.QAction):
             action = self.exportCurvesToolButton.defaultAction()
         self.exportCurvesToolButton.setDefaultAction(action)
-        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.UserRole) for index in
+        items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.ItemDataRole.UserRole) for index in
                                             self.treeView.selectionModel().selectedRows(0)]
         if not items:
             return

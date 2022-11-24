@@ -33,7 +33,7 @@ class ProjectManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def removeProject(self):
         if self.projectListTreeView.selectionModel().currentIndex().isValid():
             self.instrument.projects.removeProject(
-                self.projectListTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole).projectid
+                self.projectListTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole).projectid
             )
 
     @Slot()
@@ -42,6 +42,6 @@ class ProjectManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.removeProjectPushButton.setEnabled(False)
         else:
             self.removeProjectPushButton.setEnabled(
-                (self.projectListTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole).projectid !=
+                (self.projectListTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole).projectid !=
                  self.instrument.projects.projectID()) and self.instrument.auth.hasPrivilege(
                     Privilege.ProjectManagement))

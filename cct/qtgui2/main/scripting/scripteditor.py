@@ -28,7 +28,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
 
     def linenumbersbarPaintEvent(self, paintevent: QtGui.QPaintEvent):
         painter = QtGui.QPainter(self.linenumbersbar)
-        painter.fillRect(paintevent.rect(), QtCore.Qt.lightGray)
+        painter.fillRect(paintevent.rect(), QtCore.Qt.GlobalColor.lightGray)
         block = self.firstVisibleBlock()
         top = round(self.blockBoundingGeometry(block).translated(self.contentOffset()).top())
         bottom = top + round(self.blockBoundingRect(block).height())
@@ -38,8 +38,8 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
             thisblocknumber = self.textCursor().blockNumber()
         while block.isValid() and (top <= paintevent.rect().bottom()):
             if block.isVisible() and (bottom >= paintevent.rect().top()):
-                painter.setPen(QtCore.Qt.black)
-                painter.drawText(0, top, self.linenumbersbar.width(), self.fontMetrics().height(), QtCore.Qt.AlignRight,
+                painter.setPen(QtCore.Qt.GlobalColor.black)
+                painter.drawText(0, top, self.linenumbersbar.width(), self.fontMetrics().height(), QtCore.Qt.AlignmentFlag.AlignRight,
                                  str(block.blockNumber() + 1))
                 if (block.blockNumber() == thisblocknumber) and self.isReadOnly():
                     img = QtGui.QIcon.fromTheme('media-playback-start').pixmap(
@@ -68,7 +68,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         if self.isReadOnly():
             return
         selection = QtWidgets.QTextEdit.ExtraSelection()
-        color = QtGui.QColor(QtCore.Qt.yellow).lighter(160)
+        color = QtGui.QColor(QtCore.Qt.GlobalColor.yellow).lighter(160)
         selection.format.setBackground(color)
         selection.format.setForeground(QtGui.QColor('black'))
         selection.format.setProperty(QtGui.QTextFormat.FullWidthSelection, True)
@@ -88,7 +88,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
     @Slot(int)
     def highlightRunningLine(self, line: int):
         selection = QtWidgets.QTextEdit.ExtraSelection()
-        color = QtGui.QColor(QtCore.Qt.green).lighter(160)
+        color = QtGui.QColor(QtCore.Qt.GlobalColor.green).lighter(160)
         selection.format.setBackground(color)
         selection.format.setForeground(QtGui.QColor('black'))
         selection.format.setProperty(QtGui.QTextFormat.FullWidthSelection, True)

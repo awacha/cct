@@ -100,7 +100,7 @@ class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.h5SelectorLabel = QtWidgets.QLabel("Select from a h5 file:", self)
         self.h5Selector.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
         self.selectorGrid.addWidget(self.h5SelectorLabel, 1, 0, 1, 1)
-        self.selectorGrid.addWidget(self.h5Selector, 1, 1, 1, 1, QtCore.Qt.AlignLeft)
+        self.selectorGrid.addWidget(self.h5Selector, 1, 1, 1, 1, QtCore.Qt.AlignmentFlag.AlignLeft)
         self.selectorGrid.setColumnStretch(1, 1)
         self.h5Selector.datasetSelected.connect(self.onH5Selected)
         self.sectorModel = SectorModel()

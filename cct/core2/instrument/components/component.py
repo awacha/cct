@@ -65,7 +65,7 @@ class Component:
     def panichandler(self):
         """Default panic handler: schedules the emission of the panicAcknowledged signal soon afterwards."""
         self._panicking = self.PanicState.Panicked
-        QtCore.QTimer.singleShot(0, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)
+        QtCore.QTimer.singleShot(0, QtCore.Qt.TimerType.VeryCoarseTimer, self.panicAcknowledged.emit)
 
     # noinspection PyMethodMayBeStatic
     def toNeXus(self, instrumentgroup: h5py.Group) -> h5py.Group:

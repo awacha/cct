@@ -35,23 +35,23 @@ class Sensors(QtCore.QAbstractItemModel, Component):
         return QtCore.QModelIndex()
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren
+        return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemNeverHasChildren
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Sensor', 'Device', 'Reading'][section]
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         s = self._data[index.row()]
-        if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return s.name
-        elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return s.devicename
-        elif (index.column() == 2) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             if s.isUnknown():
                 return '-- Unknown --'
             return f'{s.value():.4f} {s.units}'
-        elif (index.column() == 0) and (role == QtCore.Qt.DecorationRole):
+        elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DecorationRole):
             if s.isOK():
                 return getIconFromTheme('answer-correct', 'answer', 'emblem-ok')
             elif s.isWarning():

@@ -29,7 +29,7 @@ class SubtractionDelegate(QtWidgets.QStyledItemDelegate):
             w = QtWidgets.QComboBox(parent)
             w.addItems(sorted([mode.value for mode in SubtractionScalingMode]))
         elif (index.column() == 3):
-            scalingmode = index.model().index(index.row(), 2, index.parent()).data(QtCore.Qt.EditRole)
+            scalingmode = index.model().index(index.row(), 2, index.parent()).data(QtCore.Qt.ItemDataRole.EditRole)
             assert isinstance(scalingmode, SubtractionScalingMode)
             if scalingmode in [SubtractionScalingMode.PowerLaw, SubtractionScalingMode.Interval]:
                 w = QRangeEntry(parent=parent)
@@ -56,26 +56,26 @@ class SubtractionDelegate(QtWidgets.QStyledItemDelegate):
         logger.debug(f'setEditorData({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         if (index.column() == 0) or (index.column() == 1):
             assert isinstance(editor, QtWidgets.QComboBox)
-            if index.data(QtCore.Qt.EditRole) is None:
+            if index.data(QtCore.Qt.ItemDataRole.EditRole) is None:
                 editor.setCurrentIndex(0)
             else:
-                editor.setCurrentIndex(editor.findText(index.data(QtCore.Qt.EditRole)))
+                editor.setCurrentIndex(editor.findText(index.data(QtCore.Qt.ItemDataRole.EditRole)))
         elif index.column() == 2:
             assert isinstance(editor, QtWidgets.QComboBox)
-            mode = index.data(QtCore.Qt.EditRole)
+            mode = index.data(QtCore.Qt.ItemDataRole.EditRole)
             assert isinstance(mode, SubtractionScalingMode)
             editor.setCurrentIndex(editor.findText(mode.value))
         else:
             assert index.column() == 3
-            scalingmode = index.model().index(index.row(), 2, index.parent()).data(QtCore.Qt.EditRole)
+            scalingmode = index.model().index(index.row(), 2, index.parent()).data(QtCore.Qt.ItemDataRole.EditRole)
             assert isinstance(scalingmode, SubtractionScalingMode)
             if scalingmode in [SubtractionScalingMode.PowerLaw, SubtractionScalingMode.Interval]:
                 assert isinstance(editor, QRangeEntry)
-                qmin, qmax, qcount = index.data(QtCore.Qt.EditRole)
+                qmin, qmax, qcount = index.data(QtCore.Qt.ItemDataRole.EditRole)
                 editor.setValue(qmin, qmax, qcount)
             elif scalingmode in [SubtractionScalingMode.Constant]:
                 assert isinstance(editor, ValueAndUncertaintyEntry)
-                val, unc = index.data(QtCore.Qt.EditRole)
+                val, unc = index.data(QtCore.Qt.ItemDataRole.EditRole)
                 editor.setValue(val, unc)
             else:
                 assert False
@@ -86,21 +86,21 @@ class SubtractionDelegate(QtWidgets.QStyledItemDelegate):
         if (index.column() == 0) or (index.column() == 1):
             assert isinstance(editor, QtWidgets.QComboBox)
             if editor.currentIndex() == 0:
-                model.setData(index, None, QtCore.Qt.EditRole)
+                model.setData(index, None, QtCore.Qt.ItemDataRole.EditRole)
             else:
-                model.setData(index, editor.currentText(), QtCore.Qt.EditRole)
+                model.setData(index, editor.currentText(), QtCore.Qt.ItemDataRole.EditRole)
         elif index.column() == 2:
             assert isinstance(editor, QtWidgets.QComboBox)
-            model.setData(index, SubtractionScalingMode(editor.currentText()), QtCore.Qt.EditRole)
+            model.setData(index, SubtractionScalingMode(editor.currentText()), QtCore.Qt.ItemDataRole.EditRole)
         else:
             assert index.column() == 3
-            scalingmode = index.model().index(index.row(), 2, index.parent()).data(QtCore.Qt.EditRole)
+            scalingmode = index.model().index(index.row(), 2, index.parent()).data(QtCore.Qt.ItemDataRole.EditRole)
             assert isinstance(scalingmode, SubtractionScalingMode)
             if scalingmode in [SubtractionScalingMode.PowerLaw, SubtractionScalingMode.Interval]:
                 assert isinstance(editor, QRangeEntry)
-                model.setData(index, editor.value(), QtCore.Qt.EditRole)
+                model.setData(index, editor.value(), QtCore.Qt.ItemDataRole.EditRole)
             elif scalingmode in [SubtractionScalingMode.Constant]:
                 assert isinstance(editor, ValueAndUncertaintyEntry)
-                model.setData(index, editor.value(), QtCore.Qt.EditRole)
+                model.setData(index, editor.value(), QtCore.Qt.ItemDataRole.EditRole)
             else:
                 assert False

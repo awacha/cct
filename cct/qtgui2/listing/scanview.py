@@ -34,7 +34,7 @@ class ScanViewer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     @Slot(QtCore.QModelIndex)
     def showScan(self, index: QtCore.QModelIndex):
-        scan = index.data(QtCore.Qt.UserRole)
+        scan = index.data(QtCore.Qt.ItemDataRole.UserRole)
         assert isinstance(scan, Scan)
         plotscan = self.mainwindow.addSubWindow(PlotScan, singleton=False)
         plotscan.setScan(scan)

@@ -158,7 +158,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         except:
             print(traceback.format_exc())
         self._panicking = self.PanicState.Panicked
-        QtCore.QTimer.singleShot(1, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged.emit)
+        QtCore.QTimer.singleShot(1, QtCore.Qt.TimerType.VeryCoarseTimer, self.panicAcknowledged.emit)
 
     def queue_email(self, message: email.message.EmailMessage, addressee: List[str]):
         if len(self.email_ratelimit_buffer) >= self.email_ratelimit_buffer_maxlength:
@@ -167,7 +167,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         else:
             self.email_ratelimit_buffer.append((message, addressee))
         if self.email_timer_handle is None:
-            self.email_timer_handle = self.startTimer(0, QtCore.Qt.PreciseTimer)
+            self.email_timer_handle = self.startTimer(0, QtCore.Qt.TimerType.PreciseTimer)
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         """Send an e-mail waiting in the queue
@@ -208,7 +208,7 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         self.killTimer(self.email_timer_handle)
         self.email_timer_handle = None
         if self.email_ratelimit_buffer:
-            self.email_timer_handle = self.startTimer(int(self.email_ratelimit_interval*1000), QtCore.Qt.PreciseTimer)
+            self.email_timer_handle = self.startTimer(int(self.email_ratelimit_interval*1000), QtCore.Qt.TimerType.PreciseTimer)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         if (not isinstance(parent, QtCore.QModelIndex)) or (not parent.isValid()):
@@ -229,28 +229,28 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         return QtCore.QModelIndex()
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemNeverHasChildren
+        return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemNeverHasChildren
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
-        if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return self._data[index.row()].name if self._data[index.row()].name is not None else '--'
-        elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return self._data[index.row()].emailaddress if self._data[index.row()].emailaddress is not None else '--'
-        elif (index.column() == 2) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return 'YES' if self._data[index.row()].panic else 'NO'
-        elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return 'YES' if self._data[index.row()].runtime else 'NO'
-        elif (index.column() == 4) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return f'{self._data[index.row()].loglevel:d} ({logging.getLevelName(self._data[index.row()].loglevel)})'
-        elif (index.column() == 0) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._data[index.row()].name
-        elif (index.column() == 1) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._data[index.row()].emailaddress
-        elif (index.column() == 2) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._data[index.row()].panic
-        elif (index.column() == 3) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._data[index.row()].runtime
-        elif (index.column() == 4) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._data[index.row()].loglevel
         else:
             return None
@@ -286,21 +286,21 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         return self.removeRows(row, 1, parent)
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return \
             ['Name', 'E-mail address', 'Notify on panic?', 'Send runtime notifications?', 'Log level to notify on'][
                 section]
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
-        if (index.column() == 0) and (role == QtCore.Qt.EditRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
             self._data[index.row()].name = str(value)
-        elif (index.column() == 1) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             self._data[index.row()].emailaddress = str(value)
-        elif (index.column() == 2) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.EditRole):
             self._data[index.row()].panic = bool(value)
-        elif (index.column() == 3) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.EditRole):
             self._data[index.row()].runtime = bool(value)
-        elif (index.column() == 4) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.EditRole):
             self._data[index.row()].loglevel = int(value)
         else:
             return False

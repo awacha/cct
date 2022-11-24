@@ -88,7 +88,7 @@ class DataReduction(QtCore.QObject, Component):
         self.stopping = True
         self.queuetobackend.put_nowait(('end', None))
         if self.timer is None:
-            self.timer = self.startTimer(10, QtCore.Qt.VeryCoarseTimer)
+            self.timer = self.startTimer(10, QtCore.Qt.TimerType.VeryCoarseTimer)
 
     def running(self) -> bool:
         return self.backend is not None
@@ -100,7 +100,7 @@ class DataReduction(QtCore.QObject, Component):
             raise RuntimeError('Cannot submit exposure: data reduction component not running')
         self.queuetobackend.put_nowait(('process', exposure))
         if self.timer is None:
-            self.timer = self.startTimer(int(self.timerinterval * 1000), QtCore.Qt.VeryCoarseTimer)
+            self.timer = self.startTimer(int(self.timerinterval * 1000), QtCore.Qt.TimerType.VeryCoarseTimer)
         self.submitted += 1
 
     def onConfigChanged(self, path, value):

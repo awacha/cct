@@ -57,15 +57,15 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         sampleindex = index
         while sampleindex.parent().isValid():
             sampleindex = index.parent()
-        samplename = sampleindex.data(QtCore.Qt.DisplayRole)
+        samplename = sampleindex.data(QtCore.Qt.ItemDataRole.DisplayRole)
         if index.parent().isValid():
-            selecteddistkey = index.data(QtCore.Qt.DisplayRole)
+            selecteddistkey = index.data(QtCore.Qt.ItemDataRole.DisplayRole)
         else:
             selecteddistkey = None
         for i, distkey in enumerate(sorted(self.project.settings.h5io.distancekeys(samplename), key= lambda k:float(k))):
             curve = self.project.settings.h5io.readCurve(f'Samples/{samplename}/{distkey}/curve')
             ebar = self.axes.errorbar(curve.q, curve.intensity, curve.uncertainty, curve.quncertainty, lw = 2 if distkey == selecteddistkey else 0.7, label=f'{distkey} mm', zorder=100 if distkey==selecteddistkey else 10)
-            qmin, qmax = self.treeView.model().index(i, 1, sampleindex).data(QtCore.Qt.EditRole), self.treeView.model().index(i, 2, sampleindex).data(QtCore.Qt.EditRole)
+            qmin, qmax = self.treeView.model().index(i, 1, sampleindex).data(QtCore.Qt.ItemDataRole.EditRole), self.treeView.model().index(i, 2, sampleindex).data(QtCore.Qt.ItemDataRole.EditRole)
             logger.debug(f'{qmin=}, {qmax=}')
             self.axes.axvspan(qmin, qmax, color=ebar[0].get_color(), alpha=0.3 if distkey == selecteddistkey else 0.1)
         self.axes.legend(loc='best')
@@ -89,8 +89,8 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         else:
             parent = index.parent()
             row = index.row()
-            self.treeView.model().setData(self.treeView.model().index(row, 1, parent), left, QtCore.Qt.EditRole)
-            self.treeView.model().setData(self.treeView.model().index(row, 2, parent), right, QtCore.Qt.EditRole)
+            self.treeView.model().setData(self.treeView.model().index(row, 1, parent), left, QtCore.Qt.ItemDataRole.EditRole)
+            self.treeView.model().setData(self.treeView.model().index(row, 2, parent), right, QtCore.Qt.ItemDataRole.EditRole)
             self.onSelectionChanged()
 
     def _resetaxes(self):
@@ -119,7 +119,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         for index in self.treeView.selectionModel().selectedRows(column=0):
             while index.parent().isValid():
                 index = index.parent()
-            samples.append(index.data(QtCore.Qt.DisplayRole))
+            samples.append(index.data(QtCore.Qt.ItemDataRole.DisplayRole))
         for sample in samples:
             self.project.merging.removeSample(sample)
 

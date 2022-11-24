@@ -25,8 +25,8 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.passwordRepeatLineEdit.textEdited.connect(self.passwordEdit)
         for priv in Privilege:
             itm = QtWidgets.QListWidgetItem(priv.name)
-            itm.setFlags(QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsUserCheckable)
-            itm.setCheckState(QtCore.Qt.Unchecked)
+            itm.setFlags(QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+            itm.setCheckState(QtCore.Qt.CheckState.Unchecked)
             self.privilegeListWidget.addItem(itm)
         self.onCurrentUserChanged()
         for c in range(self.instrument.auth.columnCount()):
@@ -44,7 +44,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     @Slot()
     def fetchUserData(self):
-        user = self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
+        user = self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole)
         assert isinstance(user, User)
         self.onCurrentUserChanged()  # set widget permissions
         self.userNameLabel.setText(user.username)
@@ -58,7 +58,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         for row in range(self.privilegeListWidget.count()):
             item = self.privilegeListWidget.item(row)
             priv = [p for p in Privilege if p.name == item.text()][0]
-            item.setCheckState(QtCore.Qt.Checked if user.hasPrivilege(priv) else QtCore.Qt.Unchecked)
+            item.setCheckState(QtCore.Qt.CheckState.Checked if user.hasPrivilege(priv) else QtCore.Qt.CheckState.Unchecked)
 
     @Slot()
     def addUser(self):
@@ -72,7 +72,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     @Slot()
     def removeUser(self):
         self.instrument.auth.removeUser(
-            self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole).username)
+            self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole).username)
 
     @Slot()
     def updateEditedValues(self):
@@ -81,7 +81,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             return
         if not self.instrument.auth[self.instrument.auth.username()].authenticate(password):
             QtWidgets.QMessageBox.critical(self, 'Permission denied', 'Authentication error')
-        user = self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
+        user = self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole)
         assert isinstance(user, User)
         if (user.username == self.instrument.auth.username()) or (self.instrument.auth.hasPrivilege(Privilege.UserManagement)):
             # these properties can be self-edited
@@ -104,7 +104,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
                 user.setKerberosPrincipal(self.krbprincipalLineEdit.text())
             for row in range(self.privilegeListWidget.count()):
                 priv = [p for p in Privilege if p.name == self.privilegeListWidget.item(row).text()][0]
-                if self.privilegeListWidget.item(row).checkState() == QtCore.Qt.Checked:
+                if self.privilegeListWidget.item(row).checkState() == QtCore.Qt.CheckState.Checked:
                     user.grantPrivilege(priv)
                 else:
                     user.revokePrivilege(priv)
@@ -121,7 +121,7 @@ class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             for widget in widgets_only_usermanagers_can_edit + widgets_self_can_edit + [self.removeUserPushButton]:
                 widget.setEnabled(False)
             return
-        user = self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole)
+        user = self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole)
         assert isinstance(user, User)
         for widget in widgets_only_usermanagers_can_edit + [self.addUserPushButton]:
             widget.setEnabled(self.instrument.auth.hasPrivilege(Privilege.UserManagement))

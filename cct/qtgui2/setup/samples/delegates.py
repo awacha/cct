@@ -58,7 +58,7 @@ class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
     def setEditorData(self, editor: QtWidgets.QWidget, index: QtCore.QModelIndex) -> None:
         logger.debug(f'setEditorData({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         attribute = self._get_attribute(index)
-        sample: Sample = index.data(QtCore.Qt.UserRole)
+        sample: Sample = index.data(QtCore.Qt.ItemDataRole.UserRole)
         assert isinstance(sample, Sample)
         if attribute in ['title', 'description', 'preparedby', 'maskoverride', 'preparetime']:
             super().setEditorData(editor, index)
@@ -78,8 +78,8 @@ class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
                      index: QtCore.QModelIndex) -> None:
         logger.debug(f'setModelData({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         if isinstance(editor, QtWidgets.QDoubleSpinBox):
-            model.setData(index, editor.value(), QtCore.Qt.EditRole)
+            model.setData(index, editor.value(), QtCore.Qt.ItemDataRole.EditRole)
         elif isinstance(editor, QtWidgets.QComboBox):
-            model.setData(index, editor.currentText(), QtCore.Qt.EditRole)
+            model.setData(index, editor.currentText(), QtCore.Qt.ItemDataRole.EditRole)
         else:
             super().setModelData(editor, model, index)

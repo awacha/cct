@@ -41,28 +41,28 @@ class Model(QtCore.QAbstractItemModel):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if not index.isValid():
-            return QtCore.Qt.ItemIsDropEnabled | QtCore.Qt.ItemIsDragEnabled
+            return QtCore.Qt.ItemFlag.ItemIsDropEnabled | QtCore.Qt.ItemFlag.ItemIsDropEnabled
         elif index.column() == 0:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsDropEnabled
         else:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsEditable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsDropEnabled | QtCore.Qt.ItemFlag.ItemIsEditable
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
-        if (index.column() == 0) and (role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]):
+        if (index.column() == 0) and (role in [QtCore.Qt.ItemDataRole.DisplayRole, QtCore.Qt.ItemDataRole.EditRole]):
             return self._data[index.row()][0]
-        elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return f'{self._data[index.row()][1]:.2f} sec'
-        elif (index.column() == 1) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._data[index.row()][1]
-        elif (index.column() == 2) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return f'{self._data[index.row()][2]:d}'
-        elif (index.column() == 2) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._data[index.row()][2]
         else:
             return None
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
-        if role != QtCore.Qt.EditRole:
+        if role != QtCore.Qt.ItemDataRole.EditRole:
             logger.warning(f'setdata(row={index.row()}, column={index.column()}, {value=}, {type(value)=} role={role} != EditRole)')
             return False
         data = self._data[index.row()]
@@ -96,7 +96,7 @@ class Model(QtCore.QAbstractItemModel):
         return self.removeRows(row, 1, parent)
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Sample', 'Exposure time', 'Exposure count'][section]
         return None
 
@@ -131,10 +131,10 @@ class Model(QtCore.QAbstractItemModel):
         return True
 
     def supportedDragActions(self) -> QtCore.Qt.DropAction:
-        return QtCore.Qt.MoveAction
+        return QtCore.Qt.DropAction.MoveAction
 
     def supportedDropActions(self) -> QtCore.Qt.DropAction:
-        return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
+        return QtCore.Qt.DropAction.CopyAction | QtCore.Qt.DropAction.MoveAction
 
     def mimeData(self, indexes: Iterable[QtCore.QModelIndex]) -> QtCore.QMimeData:
         md = QtCore.QMimeData()
@@ -198,11 +198,11 @@ class SamplesPage(QtWidgets.QWizardPage, Ui_WizardPage):
     def onAddSample(self):
         logger.debug(f'Adding {len(self.sampleListView.selectedIndexes())} samples')
         for index in self.sampleListView.selectedIndexes():
-            samplename = index.data(QtCore.Qt.DisplayRole)
+            samplename = index.data(QtCore.Qt.ItemDataRole.DisplayRole)
             logger.debug(f'Adding sample {samplename}')
             model = self.exposureTreeView.model()
             model.insertRow(model.rowCount(QtCore.QModelIndex()) + 1, QtCore.QModelIndex())
-            model.setData(model.index(model.rowCount(QtCore.QModelIndex())-1, 0, QtCore.QModelIndex()), samplename, QtCore.Qt.EditRole)
+            model.setData(model.index(model.rowCount(QtCore.QModelIndex())-1, 0, QtCore.QModelIndex()), samplename, QtCore.Qt.ItemDataRole.EditRole)
         self.sampleListView.selectionModel().clearSelection()
 
     @Slot()

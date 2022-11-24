@@ -141,31 +141,31 @@ class DeviceStatus(QtCore.QAbstractItemModel, Component):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if index.internalPointer()[0] is None:
-            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
         else:
-            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren
+            return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemNeverHasChildren
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (role == QtCore.Qt.DisplayRole) and (orientation == QtCore.Qt.Horizontal):
+        if (role == QtCore.Qt.ItemDataRole.DisplayRole) and (orientation == QtCore.Qt.Orientation.Horizontal):
             return ['Name', 'Value'][section]
         return None
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         if index.internalPointer()[0] is None:
             # top-level item, i.e. device name
-            if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+            if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return self._devicenames[index.row()]
-            elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+            elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return self.instrument.devicemanager[self._devicenames[index.row()]].devicename
-            elif (index.column() == 0) and (role == QtCore.Qt.EditRole):
+            elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
                 return self._devicenames[index.row()]
         else:
             device: DeviceFrontend = self.instrument.devicemanager[self._devicenames[index.parent().row()]]
             varnames = sorted(device.keys())
             variable = device.getVariable(varnames[index.row()])
-            if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+            if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return variable.name
-            elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+            elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return variable.value
-            elif (index.column() == 0) and (role == QtCore.Qt.EditRole):
+            elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
                 return variable.name

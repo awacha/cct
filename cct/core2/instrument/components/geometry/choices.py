@@ -199,31 +199,31 @@ class GeometryChoices(QtCore.QAbstractItemModel):
             ip = index.internalPointer()
             assert isinstance(ip, self.IndexObject)
             if (ip.level == 1) or ((ip.level == 2) and (ip.componenttype == ComponentType.Pinhole)):
-                return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+                return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
             else:
-                return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable
+                return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEditable
         else:
-            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         if not index.isValid():
             return False
         ip = index.internalPointer()
         assert isinstance(ip, self.IndexObject)
-        if (role == QtCore.Qt.DisplayRole) or (role == QtCore.Qt.EditRole):
+        if (role == QtCore.Qt.ItemDataRole.DisplayRole) or (role == QtCore.Qt.ItemDataRole.EditRole):
             if ip.level == 1:
                 return ip.componenttype.value.capitalize()
             elif (ip.level == 2) and (ip.componenttype == ComponentType.Pinhole):
                 return f'Stage {index.row() + 1}'
             elif (ip.level == 2) and (ip.componenttype == ComponentType.FlightPipe):
-                return f'{self.flightpipes[index.row()]:.2f}' if role == QtCore.Qt.DisplayRole else self.flightpipes[index.row()]
+                return f'{self.flightpipes[index.row()]:.2f}' if role == QtCore.Qt.ItemDataRole.DisplayRole else self.flightpipes[index.row()]
             elif (ip.level == 2) and (ip.componenttype == ComponentType.Beamstop):
-                return f'{self.beamstop[index.row()]:.2f}' if role == QtCore.Qt.DisplayRole else self.beamstop[index.row()]
+                return f'{self.beamstop[index.row()]:.2f}' if role == QtCore.Qt.ItemDataRole.DisplayRole else self.beamstop[index.row()]
             elif (ip.level == 2) and (ip.componenttype == ComponentType.PinholeSpacer):
-                return f'{self.spacers[index.row()]:.2f}' if role == QtCore.Qt.DisplayRole else self.spacers[index.row()]
+                return f'{self.spacers[index.row()]:.2f}' if role == QtCore.Qt.ItemDataRole.DisplayRole else self.spacers[index.row()]
             elif (ip.level == 3) and (ip.componenttype == ComponentType.Pinhole):
                 lis = [self.pinhole1, self.pinhole2, self.pinhole3][ip.index1]
-                return f'{lis[index.row()]:.2f}' if role == QtCore.Qt.DisplayRole else lis[index.row()]
+                return f'{lis[index.row()]:.2f}' if role == QtCore.Qt.ItemDataRole.DisplayRole else lis[index.row()]
             else:
                 assert False
         return None

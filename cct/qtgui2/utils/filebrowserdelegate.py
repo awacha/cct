@@ -83,7 +83,7 @@ class FileSelectorDelegate(QtWidgets.QStyledItemDelegate):
         toolbutton = editor.layout().itemAt(1).widget()
         assert isinstance(lineedit, QtWidgets.QLineEdit)
         assert isinstance(toolbutton, QtWidgets.QToolButton)
-        lineedit.setText(index.data(QtCore.Qt.EditRole))
+        lineedit.setText(index.data(QtCore.Qt.ItemDataRole.EditRole))
 
     def setModelData(self, editor: QtWidgets.QWidget, model: QtCore.QAbstractItemModel,
                      index: QtCore.QModelIndex) -> None:
@@ -91,7 +91,7 @@ class FileSelectorDelegate(QtWidgets.QStyledItemDelegate):
         toolbutton = editor.layout().itemAt(1).widget()
         assert isinstance(lineedit, QtWidgets.QLineEdit)
         assert isinstance(toolbutton, QtWidgets.QToolButton)
-        model.setData(index, lineedit.text(), QtCore.Qt.EditRole)
+        model.setData(index, lineedit.text(), QtCore.Qt.ItemDataRole.EditRole)
 
     @Slot()
     def onToolButtonClicked(self):

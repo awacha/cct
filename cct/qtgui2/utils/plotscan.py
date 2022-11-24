@@ -45,7 +45,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.axes = self.figure.add_subplot(self.figure.add_gridspec(1, 1)[:, :])
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.canvas.mpl_connect('key_press_event', self.onCanvasKeyPress)
-        self.canvas.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.canvas.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.figtoolbar = NavigationToolbar2QT(self.canvas, self)
         self.figureVerticalLayout.addWidget(self.figtoolbar)
         self.figureVerticalLayout.addWidget(self.canvas)
@@ -73,7 +73,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.legend = None
         self.lines = {}
         self.setRecording(self._recording)
-        self.canvas.setFocus(QtCore.Qt.OtherFocusReason)
+        self.canvas.setFocus(QtCore.Qt.FocusReason.OtherFocusReason)
         self.saveDefaultSignalVisibilityPushButton.clicked.connect(self.saveDefaultSignalVisibility)
 
     def onCanvasKeyPress(self, event: KeyEvent):
@@ -103,7 +103,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def showAll(self):
         self.listWidget.blockSignals(True)
         for row in range(self.listWidget.count()):
-            self.listWidget.item(row).setCheckState(QtCore.Qt.Checked)
+            self.listWidget.item(row).setCheckState(QtCore.Qt.CheckState.Checked)
         self.listWidget.blockSignals(False)
         self.setPlotVisibility()
 
@@ -111,7 +111,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def hideAll(self):
         self.listWidget.blockSignals(True)
         for row in range(self.listWidget.count()):
-            self.listWidget.item(row).setCheckState(QtCore.Qt.Unchecked)
+            self.listWidget.item(row).setCheckState(QtCore.Qt.CheckState.Unchecked)
         self.listWidget.blockSignals(False)
         self.setPlotVisibility()
 
@@ -245,7 +245,7 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if not self.lines:
             return
         selected = [self.listWidget.item(row).text() for row in range(self.listWidget.count()) if
-                    self.listWidget.item(row).checkState() == QtCore.Qt.Checked]
+                    self.listWidget.item(row).checkState() == QtCore.Qt.CheckState.Checked]
         for counter in self.lines:
             self.lines[counter].set_visible(counter in selected)
         if self.autoScaleToolButton.isChecked():
@@ -306,13 +306,13 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         for row in range(self.listWidget.count()):
             item = self.listWidget.item(row)
             item.setFlags(
-                QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable)
+                QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
             if 'gui' not in self.instrument.config:
                 self.instrument.config['gui'] = {}
             if 'plotscan' not in self.instrument.config['gui']:
                 self.instrument.config['gui']['plotscan'] = {}
             visible = self.instrument.config['gui']['plotscan'].setdefault(self.scan.columnnames[1 + row], True)
-            item.setCheckState(QtCore.Qt.Checked if bool(visible) else QtCore.Qt.Unchecked)
+            item.setCheckState(QtCore.Qt.CheckState.Checked if bool(visible) else QtCore.Qt.CheckState.Unchecked)
         self.listWidget.setCurrentItem(self.listWidget.item(1))
         self.cursorHorizontalSlider.setMinimum(0)
         self.cursorHorizontalSlider.setMaximum(len(self.scan) - 1)
@@ -344,4 +344,4 @@ class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             if 'plotscan' not in self.instrument.config['gui']:
                 self.instrument.config['gui']['plotscan'] = {}
             self.instrument.config['gui']['plotscan'][label] = \
-                self.listWidget.item(row).checkState() == QtCore.Qt.Checked
+                self.listWidget.item(row).checkState() == QtCore.Qt.CheckState.Checked

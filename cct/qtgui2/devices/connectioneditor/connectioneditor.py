@@ -57,7 +57,7 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         index = self.treeView.selectionModel().currentIndex()
         if not index.isValid():
             return
-        devname = index.data(QtCore.Qt.UserRole)
+        devname = index.data(QtCore.Qt.ItemDataRole.UserRole)
         try:
             self.instrument.devicemanager.removeDevice(devname)
         except RuntimeError as rte:
@@ -68,14 +68,14 @@ class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         if not self.treeView.selectionModel().currentIndex().isValid():
             return
         self.instrument.devicemanager.connectDevice(
-            self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole))
+            self.treeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole))
 
     @Slot()
     def disconnectDevice(self):
         if not self.treeView.selectionModel().currentIndex().isValid():
             return
         self.instrument.devicemanager.disconnectDevice(
-            self.treeView.selectionModel().currentIndex().data(QtCore.Qt.UserRole))
+            self.treeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole))
 
     @Slot(str)
     def onDeviceAdded(self, devicename: str):

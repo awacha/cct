@@ -22,7 +22,7 @@ class CalibrantsPage(QtWidgets.QWizardPage, Ui_WizardPage):
             sortmodel.setSourceModel(instrument.samplestore)
             sortmodel.setFilterKeyColumn(8)
             sortmodel.setFilterRegExp(regexp)
-            sortmodel.sort(0, QtCore.Qt.AscendingOrder)
+            sortmodel.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
             combobox.setModel(sortmodel)
             self.registerField(fieldname, combobox, 'currentText', combobox.currentTextChanged)
             combobox.setCurrentIndex(-1)

@@ -33,43 +33,43 @@ class DeviceLogManager(QtCore.QAbstractItemModel, Component):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         lgr = self._loggers[index.row()]
-        if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return lgr.name()
-        elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return lgr.fileName()
-        elif (index.column() == 2) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return f'{len(lgr)}'
-        elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return f'{lgr.period()}'
-        elif (index.column() == 4) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return 'Running' if lgr.isRecording() else 'Stopped'
-        elif (index.column() == 4) and (role == QtCore.Qt.DecorationRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.DecorationRole):
             return QtGui.QIcon(QtGui.QPixmap(':/icons/start.svg' if lgr.isRecording() else ':/icons/stop.svg'))
-        elif (index.column() == 0) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return lgr.name()
-        elif (index.column() == 1) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return lgr.fileName()
-        elif (index.column() == 2) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return None
-        elif (index.column() == 3) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return lgr.period()
-        elif (index.column() == 4) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return lgr.isRecording()
         return None
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         lgr = self._loggers[index.row()]
-        if (index.column() == 0) and (role == QtCore.Qt.EditRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
             lgr.setName(value)
             self.dataChanged.emit(index, index)
             self.saveToConfig()
             return True
-        if (index.column() == 1) and (role == QtCore.Qt.EditRole):
+        if (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             lgr.setFileName(value)
             self.dataChanged.emit(index, index)
             self.saveToConfig()
             return True
-        elif (index.column() == 3) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.EditRole):
             try:
                 lgr.setPeriod(float(value))
             except ValueError:
@@ -77,7 +77,7 @@ class DeviceLogManager(QtCore.QAbstractItemModel, Component):
             self.dataChanged.emit(index, index)
             self.saveToConfig()
             return True
-        elif (index.column() == 4) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.EditRole):
             if value:
                 lgr.startRecording()
             else:
@@ -88,11 +88,11 @@ class DeviceLogManager(QtCore.QAbstractItemModel, Component):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if (index.column() in [0, 1, 3]) and not self._loggers[index.row()].isRecording():
-            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable
+            return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEditable
         elif index.column() == 4:
-            return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled
+            return QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled
         else:
-            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren
+            return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemNeverHasChildren
 
     def removeRows(self, row: int, count: int, parent: QtCore.QModelIndex = ...) -> bool:
         self.beginRemoveRows(parent, row, row + count - 1)
@@ -129,7 +129,7 @@ class DeviceLogManager(QtCore.QAbstractItemModel, Component):
         return self.insertRows(row, 1, parent)
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (role == QtCore.Qt.DisplayRole) and (orientation == QtCore.Qt.Horizontal):
+        if (role == QtCore.Qt.ItemDataRole.DisplayRole) and (orientation == QtCore.Qt.Orientation.Horizontal):
             return ['Name', 'File name', 'Variable count', 'Period', 'Running?'][section]
 
     def loadFromConfig(self):

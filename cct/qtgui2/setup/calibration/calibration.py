@@ -135,10 +135,10 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
         pixunc = self.uncalibratedErrDoubleSpinBox.value()
         qval = self.calibratedValDoubleSpinBox.value()
         qunc = self.calibratedErrDoubleSpinBox.value()
-        twi.setData(0, QtCore.Qt.DisplayRole, f'{pixval:.4f} \xb1 {pixunc:.4f}')
-        twi.setData(0, QtCore.Qt.UserRole, (pixval, pixunc))
-        twi.setData(1, QtCore.Qt.DisplayRole, f'{qval:.4f} \xb1 {qunc:.4f}')
-        twi.setData(1, QtCore.Qt.UserRole, (qval, qunc))
+        twi.setData(0, QtCore.Qt.ItemDataRole.DisplayRole, f'{pixval:.4f} \xb1 {pixunc:.4f}')
+        twi.setData(0, QtCore.Qt.ItemDataRole.UserRole, (pixval, pixunc))
+        twi.setData(1, QtCore.Qt.ItemDataRole.DisplayRole, f'{qval:.4f} \xb1 {qunc:.4f}')
+        twi.setData(1, QtCore.Qt.ItemDataRole.UserRole, (qval, qunc))
         self.pairsTreeWidget.addTopLevelItem(twi)
         self.pairsTreeWidget.resizeColumnToContents(0)
         self.pairsTreeWidget.resizeColumnToContents(1)
@@ -168,13 +168,13 @@ class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
 
     def calibrationDataset(self) -> Tuple[
         np.ndarray, np.ndarray, np.ndarray, np.ndarray, Tuple[float, float], Tuple[float, float]]:
-        pixval = np.array([self.pairsTreeWidget.topLevelItem(i).data(0, QtCore.Qt.UserRole)[0] for i in
+        pixval = np.array([self.pairsTreeWidget.topLevelItem(i).data(0, QtCore.Qt.ItemDataRole.UserRole)[0] for i in
                            range(self.pairsTreeWidget.topLevelItemCount())])
-        pixunc = np.array([self.pairsTreeWidget.topLevelItem(i).data(0, QtCore.Qt.UserRole)[1] for i in
+        pixunc = np.array([self.pairsTreeWidget.topLevelItem(i).data(0, QtCore.Qt.ItemDataRole.UserRole)[1] for i in
                            range(self.pairsTreeWidget.topLevelItemCount())])
-        qval = np.array([self.pairsTreeWidget.topLevelItem(i).data(1, QtCore.Qt.UserRole)[0] for i in
+        qval = np.array([self.pairsTreeWidget.topLevelItem(i).data(1, QtCore.Qt.ItemDataRole.UserRole)[0] for i in
                          range(self.pairsTreeWidget.topLevelItemCount())])
-        qunc = np.array([self.pairsTreeWidget.topLevelItem(i).data(1, QtCore.Qt.UserRole)[1] for i in
+        qunc = np.array([self.pairsTreeWidget.topLevelItem(i).data(1, QtCore.Qt.ItemDataRole.UserRole)[1] for i in
                          range(self.pairsTreeWidget.topLevelItemCount())])
         wavelength: Tuple[float, float] = self.exposure.header.wavelength
         pixelsize: Tuple[float, float] = self.exposure.header.pixelsize

@@ -321,7 +321,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         self._logger.info(f'Trying to reconnect to device in {self.connectRetries[self._connectretry]:.2f} seconds. '
                           f'This retry #{self._connectretry + 1} of {len(self.connectRetries)}')
         QtCore.QTimer.singleShot(
-            int(self.connectRetries[self._connectretry] * 1000), QtCore.Qt.PreciseTimer, self.startBackend)
+            int(self.connectRetries[self._connectretry] * 1000), QtCore.Qt.TimerType.PreciseTimer, self.startBackend)
 
     @property
     def ready(self) -> bool:
@@ -432,12 +432,12 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         return QtCore.QModelIndex()
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Name', 'Value'][section]
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         variable = self._variables[index.row()]
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return variable.name
             elif index.column() == 1:
@@ -445,7 +445,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         return None
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled
 
     @property
     def host(self) -> str:
@@ -468,7 +468,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         self._panicking = self.PanicState.Panicking
         if self.isOffline():
             self._panicking = self.PanicState.Panicked
-            QtCore.QTimer.singleShot(1, QtCore.Qt.VeryCoarseTimer, self.panicAcknowledged)
+            QtCore.QTimer.singleShot(1, QtCore.Qt.TimerType.VeryCoarseTimer, self.panicAcknowledged)
         else:
             self._queue_to_backend.put(Message('panic'))
 

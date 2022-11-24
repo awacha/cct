@@ -13,13 +13,13 @@ class ScriptSyntaxHighlighter(QtGui.QSyntaxHighlighter):
         super().__init__(textdocument)
         f = QtGui.QTextCharFormat()
         f.setFontWeight(QtGui.QFont.Bold)
-        f.setForeground(QtCore.Qt.darkMagenta)
+        f.setForeground(QtCore.Qt.GlobalColor.darkMagenta)
         self.formats.append(([re.compile(r'\b' + c.name + r'\b') for c in Command.subclasses() if isinstance(c.name, str)], f))
         f = QtGui.QTextCharFormat()
-        f.setForeground(QtCore.Qt.lightGray)
+        f.setForeground(QtCore.Qt.GlobalColor.lightGray)
         self.formats.append(([re.compile('#.*$')], f))
         f = QtGui.QTextCharFormat()
-        f.setForeground(QtCore.Qt.blue)
+        f.setForeground(QtCore.Qt.GlobalColor.blue)
         self.formats.append(([re.compile(r'^\s*@.*$')], f))
 
     def highlightBlock(self, text: str) -> None:

@@ -65,7 +65,7 @@ class Summarization(ProcessingTask):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         sd = self._data[index.row()]
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return sd.samplename
             elif index.column() == 1:
@@ -76,22 +76,22 @@ class Summarization(ProcessingTask):
                 return str(len(sd.fsns))
             elif index.column() == 4:
                 return sd.statusmessage if sd.errormessage is None else sd.errormessage
-        elif (role == QtCore.Qt.DecorationRole) and (sd.spinner is not None) and (index.column() == 0):
+        elif (role == QtCore.Qt.ItemDataRole.DecorationRole) and (sd.spinner is not None) and (index.column() == 0):
             return QtGui.QIcon(QtGui.QPixmap(f':/icons/spinner_{sd.spinner % 12:02d}.svg'))
-        elif (role == QtCore.Qt.ToolTipRole) and (sd.errormessage is not None):
+        elif (role == QtCore.Qt.ItemDataRole.ToolTipRole) and (sd.errormessage is not None):
             return sd.traceback
-        elif (role == QtCore.Qt.BackgroundColorRole) and (sd.errormessage is not None):
+        elif (role == QtCore.Qt.ItemDataRole.BackgroundColorRole) and (sd.errormessage is not None):
             return QtGui.QColor('red').lighter(150)
-        elif (role == QtCore.Qt.TextColorRole) and (sd.errormessage is not None):
+        elif (role == QtCore.Qt.ItemDataRole.TextColorRole) and (sd.errormessage is not None):
             return QtGui.QColor('black')
-        elif (role == QtCore.Qt.UserRole):
+        elif (role == QtCore.Qt.ItemDataRole.UserRole):
             return sd
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled | QtCore.Qt.ItemIsDropEnabled
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsDropEnabled | QtCore.Qt.ItemFlag.ItemIsDropEnabled
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Sample', 'Distance', 'Good', 'All', 'Status'][section]
 
     def __iter__(self) -> Iterator[SummaryData]:
@@ -161,7 +161,7 @@ class Summarization(ProcessingTask):
                               self.index(self.rowCount(), self.columnCount(), QtCore.QModelIndex()))
         self.spinnerTimer = QtCore.QTimer()
         self.spinnerTimer.timeout.connect(self.updateSpinners)
-        self.spinnerTimer.setTimerType(QtCore.Qt.PreciseTimer)
+        self.spinnerTimer.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
         self.spinnerTimer.start(100)
 
     def onBackgroundTaskProgress(self, jobid: Any, total: int, current: int, message: str):
@@ -209,7 +209,7 @@ class Summarization(ProcessingTask):
                 d.spinner += 1
         self.dataChanged.emit(
             self.index(0, 0, QtCore.QModelIndex()),
-            self.index(self.rowCount(QtCore.QModelIndex()), 0, QtCore.QModelIndex()), [QtCore.Qt.DecorationRole])
+            self.index(self.rowCount(QtCore.QModelIndex()), 0, QtCore.QModelIndex()), [QtCore.Qt.ItemDataRole.DecorationRole])
         if not [d for d in self._data if d.spinner is not None]:
             self.spinnerTimer.stop()
             self.spinnerTimer.deleteLater()

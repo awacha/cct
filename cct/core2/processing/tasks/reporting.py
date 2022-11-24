@@ -35,7 +35,7 @@ class Reporting(ProcessingTask):
         return 3
     
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable
+        return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable
     
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         return QtCore.QModelIndex()
@@ -45,14 +45,14 @@ class Reporting(ProcessingTask):
     
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         d = self._data[index.row()]
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return d.samplename
             elif index.column() == 1:
                 return d.distancekey
             elif index.column() == 2:
                 return d.path
-        elif (role == QtCore.Qt.DecorationRole) and (index.column() == 0):
+        elif (role == QtCore.Qt.ItemDataRole.DecorationRole) and (index.column() == 0):
             if isinstance(d.filetype, CurveFileType):
                 return QtGui.QIcon(':/icons/saxscurve.svg')
             elif isinstance(d.filetype, PatternFileType):
@@ -65,6 +65,6 @@ class Reporting(ProcessingTask):
                 return QtGui.QIcon.fromTheme('x-office-spreadsheet')
     
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (role==QtCore.Qt.DisplayRole) and (orientation == QtCore.Qt.Horizontal):
+        if (role==QtCore.Qt.ItemDataRole.DisplayRole) and (orientation == QtCore.Qt.Orientation.Horizontal):
             return ['Sample name', 'Distance', 'Output path'][section]
 

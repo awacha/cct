@@ -48,17 +48,17 @@ class SectorModel(QtCore.QAbstractItemModel):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if index.column() == 0:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
         elif index.column() == 1:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
         elif index.column() == 2:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
         elif index.column() == 3:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsUserCheckable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsUserCheckable
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         si = self._data[index.row()]
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return si.color.name()
             elif index.column() == 1:
@@ -67,13 +67,13 @@ class SectorModel(QtCore.QAbstractItemModel):
                 return f'{si.dphi:.2f}'
             elif index.column() == 3:
                 return 'Symmetric' if si.symmetric else 'Asymmetric'
-        elif role == QtCore.Qt.DecorationRole:
+        elif role == QtCore.Qt.ItemDataRole.DecorationRole:
             if index.column() == 0:
                 return si.color
-        elif role == QtCore.Qt.CheckStateRole:
+        elif role == QtCore.Qt.ItemDataRole.CheckStateRole:
             if index.column() == 3:
-                return QtCore.Qt.Checked if si.symmetric else QtCore.Qt.Unchecked
-        elif role == QtCore.Qt.EditRole:
+                return QtCore.Qt.CheckState.Checked if si.symmetric else QtCore.Qt.CheckState.Unchecked
+        elif role == QtCore.Qt.ItemDataRole.EditRole:
             if index.column() == 0:
                 return si.color
             elif index.column() == 1:
@@ -82,31 +82,31 @@ class SectorModel(QtCore.QAbstractItemModel):
                 return si.dphi, 0, 360.0
             elif index.column() == 3:
                 return si.symmetric
-        elif role == QtCore.Qt.UserRole:
+        elif role == QtCore.Qt.ItemDataRole.UserRole:
             return si
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         si = self._data[index.row()]
-        if (index.column() == 0) and (role == QtCore.Qt.EditRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
             if isinstance(value, QtGui.QColor):
                 si.color = value
             elif isinstance(value, str):
                 si.color = QtGui.QColor(value)
             else:
                 return False
-        elif (index.column() == 1) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             si.phi0 = float(value)
-        elif (index.column() == 2) and (role == QtCore.Qt.EditRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.EditRole):
             si.dphi = float(value)
-        elif (index.column() == 3) and (role == QtCore.Qt.CheckStateRole):
-            si.symmetric = value == QtCore.Qt.Checked
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.CheckStateRole):
+            si.symmetric = value == QtCore.Qt.CheckState.Checked
         self.dataChanged.emit(
             self.index(index.row(), index.column(), QtCore.QModelIndex()),
             self.index(index.row(), index.column(), QtCore.QModelIndex()))
         return True
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Colour', 'Center (°)', 'Width (°)', 'Symmetric'][section]
 
     def insertRow(self, row: int, parent: QtCore.QModelIndex = ...) -> bool:

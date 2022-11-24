@@ -13,7 +13,7 @@ class ComboBoxDelegate(QtWidgets.QStyledItemDelegate):
     def createEditor(self, parent: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
                      index: QtCore.QModelIndex) -> QtWidgets.QWidget:
         w = QtWidgets.QComboBox(parent)
-        w.addItems(index.data(QtCore.Qt.UserRole))
+        w.addItems(index.data(QtCore.Qt.ItemDataRole.UserRole))
         w.setFrame(False)
         return w
 
@@ -23,8 +23,8 @@ class ComboBoxDelegate(QtWidgets.QStyledItemDelegate):
 
     def setEditorData(self, editor: QtWidgets.QComboBox, index: QtCore.QModelIndex) -> None:
         assert isinstance(editor, QtWidgets.QComboBox)
-        editor.setCurrentIndex(editor.findText(index.data(QtCore.Qt.EditRole)))
+        editor.setCurrentIndex(editor.findText(index.data(QtCore.Qt.ItemDataRole.EditRole)))
 
     def setModelData(self, editor: QtWidgets.QWidget, model: QtCore.QAbstractItemModel,
                      index: QtCore.QModelIndex) -> None:
-        model.setData(index, editor.currentText(), QtCore.Qt.EditRole)
+        model.setData(index, editor.currentText(), QtCore.Qt.ItemDataRole.EditRole)

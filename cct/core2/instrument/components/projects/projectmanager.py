@@ -29,21 +29,21 @@ class ProjectManager(QtCore.QAbstractItemModel, Component):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         prj = self._projects[index.row()]
-        if (index.column() == 0) and (role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]):
+        if (index.column() == 0) and (role in [QtCore.Qt.ItemDataRole.DisplayRole, QtCore.Qt.ItemDataRole.EditRole]):
             return prj.projectid
-        elif (index.column() == 1) and (role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]):
+        elif (index.column() == 1) and (role in [QtCore.Qt.ItemDataRole.DisplayRole, QtCore.Qt.ItemDataRole.EditRole]):
             return prj.proposer
-        elif (index.column() == 2) and (role in [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole]):
+        elif (index.column() == 2) and (role in [QtCore.Qt.ItemDataRole.DisplayRole, QtCore.Qt.ItemDataRole.EditRole]):
             return prj.title
-        elif role == QtCore.Qt.UserRole:
+        elif role == QtCore.Qt.ItemDataRole.UserRole:
             return prj
-        elif (role == QtCore.Qt.DecorationRole) and (index.column() == 0):
+        elif (role == QtCore.Qt.ItemDataRole.UserRole) and (index.column() == 0):
             return QtWidgets.QApplication.instance().style().standardIcon(
                 QtWidgets.QStyle.SP_DialogOkButton) if self._currentproject is prj else None
 
     @needsprivilege(Privilege.ProjectManagement, 'Insufficient privileges')
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
-        if role != QtCore.Qt.EditRole:
+        if role != QtCore.Qt.ItemDataRole.EditRole:
             return False
         prj = self._projects[index.row()]
         if (index.column() == 0) and (value not in self):
@@ -64,11 +64,11 @@ class ProjectManager(QtCore.QAbstractItemModel, Component):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if not self.instrument.auth.hasPrivilege(Privilege.ProjectManagement):
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEditable
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['ID', 'Proposer', 'Title'][section]
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:

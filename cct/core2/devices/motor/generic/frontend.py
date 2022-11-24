@@ -90,7 +90,7 @@ class MotorController(DeviceFrontend):
         return 1+self.Naxes
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemNeverHasChildren
+        return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemNeverHasChildren
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         basename, isperaxis = self._variablebasenames()[index.row()]
@@ -98,15 +98,15 @@ class MotorController(DeviceFrontend):
             var = self.getVariable(f'{basename}${index.column() - 1}' if isperaxis else basename)
         else:
             var = self.getVariable(f'{basename}$0' if isperaxis else basename)
-        if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return basename
-        elif (index.column() >= 1) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() >= 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return f'{var.value}' if isperaxis or index.column() == 1 else '--'
         else:
             return None
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return (['Variable'] + [f'Motor #{i}' for i in range(self.Naxes)])[section]
         else:
             return None

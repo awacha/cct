@@ -44,7 +44,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         self._currentsample = None
         self.sortedmodel = QtCore.QSortFilterProxyModel()
         self.sortedmodel.setSourceModel(self)
-        self.sortedmodel.sort(0, QtCore.Qt.AscendingOrder)
+        self.sortedmodel.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
         # self.loadFromConfig()
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
@@ -62,40 +62,40 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         attribute = self._columns[index.column()][0]
         sample = self._samples[index.row()]
-        if ((role == QtCore.Qt.DisplayRole) or (role == QtCore.Qt.EditRole)) and (attribute == 'title'):
+        if ((role == QtCore.Qt.ItemDataRole.DisplayRole) or (role == QtCore.Qt.ItemDataRole.EditRole)) and (attribute == 'title'):
             return sample.title
-        elif ((role == QtCore.Qt.DisplayRole) or (role == QtCore.Qt.EditRole)) and (attribute == 'preparedby'):
+        elif ((role == QtCore.Qt.ItemDataRole.DisplayRole) or (role == QtCore.Qt.ItemDataRole.EditRole)) and (attribute == 'preparedby'):
             return sample.preparedby
-        elif ((role == QtCore.Qt.DisplayRole) or (role == QtCore.Qt.EditRole)) and (attribute == 'category'):
+        elif ((role == QtCore.Qt.ItemDataRole.DisplayRole) or (role == QtCore.Qt.ItemDataRole.EditRole)) and (attribute == 'category'):
             return sample.category.value
-        elif ((role == QtCore.Qt.DisplayRole) or (role == QtCore.Qt.EditRole)) and (attribute == 'situation'):
+        elif ((role == QtCore.Qt.ItemDataRole.DisplayRole) or (role == QtCore.Qt.ItemDataRole.EditRole)) and (attribute == 'situation'):
             return sample.situation.value
-        elif (role == QtCore.Qt.DisplayRole) and (attribute == 'preparetime'):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (attribute == 'preparetime'):
             return str(sample.preparetime)
-        elif (role == QtCore.Qt.EditRole) and (attribute == 'preparetime'):
+        elif (role == QtCore.Qt.ItemDataRole.EditRole) and (attribute == 'preparetime'):
             return sample.preparetime
-        elif (role == QtCore.Qt.DisplayRole) and (attribute == 'positionx'):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (attribute == 'positionx'):
             return f'{sample.positionx[0]:.4f}'
-        elif (role == QtCore.Qt.DisplayRole) and (attribute == 'positiony'):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (attribute == 'positiony'):
             return f'{sample.positiony[0]:.4f}'
-        elif (role == QtCore.Qt.DisplayRole) and (attribute == 'thickness'):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (attribute == 'thickness'):
             return f'{sample.thickness[0]:.4f}'
-        elif (role == QtCore.Qt.DisplayRole) and (attribute == 'distminus'):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (attribute == 'distminus'):
             return f'{sample.distminus[0]:.4f}'
-        elif (role == QtCore.Qt.DisplayRole) and (attribute == 'transmission'):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (attribute == 'transmission'):
             return f'{sample.transmission[0]:.4f}'
-        elif (role == QtCore.Qt.EditRole) and (
+        elif (role == QtCore.Qt.ItemDataRole.EditRole) and (
                 attribute in ['positionx', 'positiony', 'thickness', 'distminus', 'transmission']):
             return getattr(sample, attribute)
-        elif role == QtCore.Qt.DecorationRole:
+        elif role == QtCore.Qt.ItemDataRole.DecorationRole:
             return QtGui.QIcon.fromTheme('lock') if sample.isLocked(attribute) else None
-        elif (role == QtCore.Qt.ToolTipRole) and (attribute == 'title'):
+        elif (role == QtCore.Qt.ItemDataRole.ToolTipRole) and (attribute == 'title'):
             return sample.description
-        elif (role == QtCore.Qt.ToolTipRole) and (
+        elif (role == QtCore.Qt.ItemDataRole.ToolTipRole) and (
                 attribute in ['positionx', 'positiony', 'thickness', 'distminus', 'transmission']):
             attr = getattr(sample, attribute)
             return f'{attr[0]:.4f} \xb1 {attr[1]:.4f}'
-        elif role == QtCore.Qt.UserRole:
+        elif role == QtCore.Qt.ItemDataRole.UserRole:
             return sample
         else:
             return None
@@ -103,7 +103,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         sample = self._samples[index.row()]
         attribute = self._columns[index.column()][0]
-        if role == QtCore.Qt.EditRole:
+        if role == QtCore.Qt.ItemDataRole.EditRole:
             try:
                 return self.updateSample(sample.title, attribute, value)
             except Exception:
@@ -113,11 +113,11 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         sample = self._samples[index.row()]
         attr = self._columns[index.column()][0]
         if sample.isLocked(attr):
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled | \
-                   QtCore.Qt.ItemIsEnabled  # note that if it is not enabled, we cannot select it!
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsDragEnabled | \
+                   QtCore.Qt.ItemFlag.ItemIsEnabled  # note that if it is not enabled, we cannot select it!
         else:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsDragEnabled | \
-                   QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsDragEnabled | \
+                   QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemIsEnabled
 
     def sort(self, column: int, order: QtCore.Qt.SortOrder = ...) -> None:
         attr = self._columns[column][0]
@@ -192,7 +192,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         return True
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return self._columns[section][1]
 
     def mimeData(self, indexes: Iterable[QtCore.QModelIndex]) -> QtCore.QMimeData:
@@ -205,7 +205,7 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
         return ['application/x-cctsamplelist']
 
     def supportedDragActions(self) -> QtCore.Qt.DropAction:
-        return QtCore.Qt.CopyAction
+        return QtCore.Qt.DropAction.CopyAction
 
     def __contains__(self, item: str) -> bool:
         return item in [s.title for s in self._samples]
@@ -450,8 +450,8 @@ class SampleStore(QtCore.QAbstractItemModel, Component):
     def sortedSamplesOfCategory(self, category: Sample.Categories) -> QtCore.QSortFilterProxyModel:
         model = QtCore.QSortFilterProxyModel()
         model.setSourceModel(self)
-        model.sort(0, QtCore.Qt.AscendingOrder)
-        model.setFilterRegExp(QtCore.QRegExp(f"^{category.value}$", QtCore.Qt.CaseSensitive, QtCore.QRegExp.RegExp))
+        model.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
+        model.setFilterRegExp(QtCore.QRegExp(f"^{category.value}$", QtCore.Qt.CaseSensitivity.CaseSensitive, QtCore.QRegExp.RegExp))
         model.setFilterKeyColumn([i for i in range(len(self._columns)) if self._columns[i][0] == 'category'][0])
-        model.setFilterRole(QtCore.Qt.DisplayRole)
+        model.setFilterRole(QtCore.Qt.ItemDataRole.DisplayRole)
         return model

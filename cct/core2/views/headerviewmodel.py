@@ -31,7 +31,7 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
         return len(self.columns)
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             value = getattr(self._headerdata[index.row()], self.columns[index.column()])
             columnname = self.columns[index.column()]
             if isinstance(value, str):
@@ -52,11 +52,11 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
                     return f'{value[0]:g} \xb1 {value[1]:g}'
             else:
                 return str(value)
-        elif role == QtCore.Qt.UserRole:
+        elif role == QtCore.Qt.ItemDataRole.UserRole:
             return self._headerdata[index.row()]
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return self.columns[section]
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
@@ -66,7 +66,7 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
         return self.createIndex(row, column, None)
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled
 
     def reload(self, fsns: Sequence[int]):
         if self.loaderpool is not None:
@@ -79,7 +79,7 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
         self.beginResetModel()
         self._headerdata = []
         self.endResetModel()
-        self.startTimer(100, QtCore.Qt.VeryCoarseTimer)
+        self.startTimer(100, QtCore.Qt.TimerType.VeryCoarseTimer)
         self.loading.emit(True)
 
     @staticmethod

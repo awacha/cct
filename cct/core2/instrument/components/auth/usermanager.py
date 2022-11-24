@@ -36,23 +36,23 @@ class UserManager(QtCore.QAbstractItemModel, Component):
         return 5
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemNeverHasChildren
+        return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemNeverHasChildren
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         user = self._users[index.row()]
-        if role == QtCore.Qt.UserRole:
+        if role == QtCore.Qt.ItemDataRole.UserRole:
             return user
-        elif (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return user.username
-        elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return user.firstname
-        elif (index.column() == 2) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return user.lastname
-        elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return user.email
-        elif (index.column() == 4) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return '|'.join(sorted([str(p.value) for p in user.privileges]))
-        elif (index.column() == 4) and (role == QtCore.Qt.ToolTipRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.ToolTipRole):
             return '\n'.join(sorted([str(p.name) for p in user.privileges]))
         else:
             return None
@@ -64,7 +64,7 @@ class UserManager(QtCore.QAbstractItemModel, Component):
         return self.createIndex(row, column, None)
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['User name', 'First name', 'Last name', 'E-mail', 'Privileges'][section]
 
     def addUser(self, username: str):

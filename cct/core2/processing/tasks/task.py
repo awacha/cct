@@ -54,7 +54,7 @@ class ProcessingTask(QtCore.QAbstractItemModel):
         self.status = ProcessingStatus.Running
         self._startPool()
         self._start()
-        self.startTimer(100, QtCore.Qt.PreciseTimer)
+        self.startTimer(100, QtCore.Qt.TimerType.PreciseTimer)
         self.started.emit()
 
     def stop(self):

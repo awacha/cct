@@ -1,21 +1,22 @@
 from typing import Optional
 
 import h5py
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
+from .blocksignalscontextmanager import SignalsBlocked
+from .filebrowsers import getOpenFile
 from .h5selector_ui import Ui_Form
 from ...core2.dataclasses import Exposure
 from ...core2.instrument.instrument import Instrument
-from ..utils.filebrowsers import getOpenFile
 
 
 class H5Selector(QtWidgets.QWidget, Ui_Form):
     filename: Optional[str] = None
     datasetSelected = Signal(str, str, str, name='datasetSelected')
-    horizontal: bool=True
+    horizontal: bool = True
 
-    def __init__(self, parent: QtWidgets.QWidget, horizontal: bool=True):
+    def __init__(self, parent: QtWidgets.QWidget, horizontal: bool = True):
         super().__init__(parent)
         self.horizontal = horizontal
         self.setupUi(self)
@@ -46,21 +47,31 @@ class H5Selector(QtWidgets.QWidget, Ui_Form):
     @Slot()
     def browseH5FileName(self):
         filename = getOpenFile(
-            self, "Select a HDF5 file", "", "CREDO Processed Data (*.cpt4);;HDF5 files (*.h5 *.hdf5);;All files (*)",)
+            self, "Select a HDF5 file", "", "CREDO Processed Data (*.cpt4);;HDF5 files (*.h5 *.hdf5);;All files (*)", )
         if not filename:
             return
         try:
             with h5py.File(filename, 'r', libver='latest', swmr=True) as f:
-                self.sampleNameComboBox.clear()
-                self.sampleNameComboBox.addItems(sorted(f['Samples']))
+                samplenames = sorted(f['Samples'])
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, "Cannot open H5 file",
                                            f"Error while opening H5 file {filename}: {exc}")
-        else:
-            self.filename = filename
-            self.browsePushButton.setToolTip(f'Current file: {self.filename}')
-            self.sampleNameComboBox.setEnabled(True)
-            self.sampleNameSelected()
+            return
+        currentsample = self.sampleNameComboBox.currentText() if self.sampleNameComboBox.currentIndex() >= 0 else None
+        with SignalsBlocked(self.sampleNameComboBox):
+            self.sampleNameComboBox.clear()
+            if samplenames:
+                self.sampleNameComboBox.addItems(samplenames)
+                if currentsample is None:
+                    self.sampleNameComboBox.setCurrentIndex(0)
+                indexofoldcurrentsample = self.sampleNameComboBox.findText(currentsample)
+                self.sampleNameComboBox.setCurrentIndex(indexofoldcurrentsample if indexofoldcurrentsample >= 0 else 0)
+
+        self.filename = filename
+        self.browsePushButton.setToolTip(f'Current file: {self.filename}')
+        self.sampleNameComboBox.setEnabled(True)
+
+        self.sampleNameSelected()
 
     @Slot()
     def sampleNameSelected(self):

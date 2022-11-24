@@ -170,32 +170,32 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         return 7
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Sample name', 'Dark', 'Empty', 'Sample', 'Transmission', 'Mu (1/cm)', 'Absorption length (cm)'][
                 section]
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         data = self._data[index.row()]
-        if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return data.samplename
-        elif (index.column() == 0) and (role == QtCore.Qt.DecorationRole):
+        elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DecorationRole):
             return QtGui.QIcon.fromTheme(
                 'media-playback-start') if index.row() == self.currentlymeasuredsample else None
-        elif role == QtCore.Qt.BackgroundColorRole:
-            return QtGui.QColor(QtCore.Qt.green) if index.row() == self.currentlymeasuredsample else None
-        elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+        elif role == QtCore.Qt.ItemDataRole.BackgroundColorRole:
+            return QtGui.QColor(QtCore.Qt.GlobalColor.green) if index.row() == self.currentlymeasuredsample else None
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             value = data.dark()
             return '--' if value is None else f'{value[0]:.1f} \xb1 {value[1]:.1f}'
-        elif (index.column() == 2) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             value = data.empty()
             return '--' if value is None else f'{value[0]:.1f} \xb1 {value[1]:.1f}'
-        elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             value = data.sample()
             return '--' if value is None else f'{value[0]:.1f} \xb1 {value[1]:.1f}'
-        elif (index.column() == 4) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             value = data.transmission(self.config['transmission']['sd_from_error_propagation'])
             return '--' if value is None else f'{value[0]:.4f} \xb1 {value[1]:.4f}'
-        elif (index.column() == 5) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 5) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             transm = data.transmission(self.config['transmission']['sd_from_error_propagation'])
             if transm is None:
                 return '--'
@@ -206,7 +206,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                     mud[1] ** 2 / sample.thickness[0] ** 2 + mud[0] ** 2 * sample.thickness[1] ** 2 /
                     sample.thickness[0] ** 4) ** 0.5
             return f'{mu[0]:.4f} \xb1 {mu[1]:.4f}'
-        elif (index.column() == 6) and (role == QtCore.Qt.DisplayRole):
+        elif (index.column() == 6) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             transm = data.transmission(self.config['transmission']['sd_from_error_propagation'])
             if transm is None:
                 return '--'
@@ -217,17 +217,17 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                     sample.thickness[1] ** 2 / mud[0] ** 2 + sample.thickness[0] ** 2 * mud[1] ** 2 / mud[
                 0] ** 4) ** 0.5
             return f'{invmu[0]:.4f} \xb1 {invmu[1]:.4f}'
-        elif (index.column() == 1) and (role == QtCore.Qt.ToolTipRole):
+        elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.ToolTipRole):
             if not data.darkcounts:
                 return 'No measurements yet'
             else:
                 return ', '.join([str(x) for x in data.darkcounts]) + f'({len(data.darkcounts)} measurements)'
-        elif (index.column() == 2) and (role == QtCore.Qt.ToolTipRole):
+        elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.ToolTipRole):
             if not data.emptycounts:
                 return 'No measurements yet'
             else:
                 return ', '.join([str(x) for x in data.empty()]) + f'({len(data.emptycounts)} measurements)'
-        elif (index.column() == 3) and (role == QtCore.Qt.ToolTipRole):
+        elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.ToolTipRole):
             if not data.samplecounts:
                 return 'No measurements yet'
             else:
@@ -242,11 +242,11 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if self.status == TransmissionMeasurementStatus.Idle:
             if index.isValid():
-                return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+                return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
             else:
-                return QtCore.Qt.ItemIsDropEnabled | QtCore.Qt.ItemIsEnabled
+                return QtCore.Qt.ItemFlag.ItemIsDropEnabled | QtCore.Qt.ItemFlag.ItemIsEnabled
         else:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
 
     def removeRows(self, row: int, count: int, parent: QtCore.QModelIndex = ...) -> bool:
         self.beginRemoveRows(parent, row, row+count)
@@ -258,10 +258,10 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         return self.removeRows(row, 1, parent)
 
     def supportedDropActions(self) -> QtCore.Qt.DropAction:
-        return QtCore.Qt.CopyAction | QtCore.Qt.MoveAction
+        return QtCore.Qt.DropAction.CopyAction | QtCore.Qt.DropAction.MoveAction
 
     def supportedDragActions(self) -> QtCore.Qt.DropAction:
-        return QtCore.Qt.MoveAction
+        return QtCore.Qt.DropAction.MoveAction
 
     def mimeTypes(self) -> List[str]:
         return ['application/x-cctsamplelist', 'application/x-ccttransmissiondata']
@@ -277,7 +277,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
 
     def dropMimeData(self, data: QtCore.QMimeData, action: QtCore.Qt.DropAction, row: int, column: int,
                      parent: QtCore.QModelIndex) -> bool:
-        if action != QtCore.Qt.CopyAction:
+        if action != QtCore.Qt.DropAction.CopyAction:
             pass
         if parent.isValid():
             row = parent.row()

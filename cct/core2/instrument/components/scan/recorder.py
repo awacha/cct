@@ -144,7 +144,7 @@ class ScanRecorder(QtCore.QObject):
     def exposeNextImage(self):
         """Start the next exposure"""
         if not self.isReadyForExposure():
-            self.startTimer(10, QtCore.Qt.PreciseTimer)
+            self.startTimer(10, QtCore.Qt.TimerType.PreciseTimer)
             logger.debug('Detector is not ready yet, cannot start exposure.')
             self.state = self.State.WaitingForDetector
             return
@@ -308,7 +308,7 @@ class ScanRecorder(QtCore.QObject):
         self.imageprocessingtasks.append(
             self.imageprocessorpool.apply_async(self._analyzeimage, args=(exposure, self.mask, self.mask_total)))
         if self.imageprocessingtimer is None:
-            self.imageprocessingtimer = self.startTimer(1, QtCore.Qt.VeryCoarseTimer)
+            self.imageprocessingtimer = self.startTimer(1, QtCore.Qt.TimerType.VeryCoarseTimer)
         if not self.exposurefinished:
             # imageReceived signal has been called first.
             logger.debug('imageReceived signal has been called first')

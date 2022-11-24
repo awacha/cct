@@ -66,7 +66,7 @@ class Subtraction(ProcessingTask):
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         sd = self._data[index.row()]
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return sd.samplename if sd.samplename is not None else '-- None --'
             elif index.column() == 1:
@@ -82,7 +82,7 @@ class Subtraction(ProcessingTask):
                     return f'{sd.interval[0]:.4f} ≤ q ≤ {sd.interval[1]:.4f} ({sd.interval[2]} pts)'
                 else:
                     assert False
-        elif role == QtCore.Qt.EditRole:
+        elif role == QtCore.Qt.ItemDataRole.EditRole:
             if index.column() == 0:
                 return sd.samplename
             elif index.column() == 1:
@@ -100,10 +100,10 @@ class Subtraction(ProcessingTask):
                     assert False
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEditable
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Sample', 'Background', 'Scaling method', 'Parameters'][section]
 
     def addSubtractionPair(self, samplename: Optional[str], background: Optional[str], mode: SubtractionScalingMode = SubtractionScalingMode.Unscaled, factor: Optional[Tuple[float, float]]=None, interval:Optional[Tuple[float, float, int]]=None):

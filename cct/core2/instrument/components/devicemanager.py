@@ -82,7 +82,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
     def disconnectDevices(self):
         logger.info('Disconnecting all devices')
         if not self._devices:
-            QtCore.QTimer.singleShot(0, QtCore.Qt.VeryCoarseTimer, self.stopped.emit)
+            QtCore.QTimer.singleShot(0, QtCore.Qt.TimerType.VeryCoarseTimer, self.stopped.emit)
             logger.debug('No devices, emitting stopped.')
         for dev in self._devices:
             self.disconnectDevice(dev.name)
@@ -107,7 +107,7 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         if not dev.isOffline():
             raise RuntimeError(f'Cannot start device backend for device {dev.name}: device is not offline!')
         dev.startBackend()
-        self.dataChanged.emit(self.index(row, 0), self.index(row, 0), [QtCore.Qt.DecorationRole])
+        self.dataChanged.emit(self.index(row, 0), self.index(row, 0), [QtCore.Qt.ItemDataRole.UserRole])
 
     @Slot(bool)
     def onConnectionEnded(self, expected: bool):
@@ -273,24 +273,24 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
         return QtCore.QModelIndex()
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         dev = self._devices[index.row()]
-        if (role == QtCore.Qt.DisplayRole) and (index.column() == 0):
+        if (role == QtCore.Qt.ItemDataRole.DisplayRole) and (index.column() == 0):
             return dev.name
-        elif (role == QtCore.Qt.DisplayRole) and (index.column() == 1):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (index.column() == 1):
             try:
                 return dev.devicetype.value
             except IndexError:
                 return '-- invalid driver class --'
-        elif (role == QtCore.Qt.DisplayRole) and (index.column() == 2):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (index.column() == 2):
             return dev.__class__.__name__
-        elif (role == QtCore.Qt.DisplayRole) and (index.column() == 3):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (index.column() == 3):
             return dev.host
-        elif (role == QtCore.Qt.DisplayRole) and (index.column() == 4):
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and (index.column() == 4):
             return dev.port
-        elif (role == QtCore.Qt.DecorationRole) and (index.column() == 0):
+        elif (role == QtCore.Qt.ItemDataRole.UserRole) and (index.column() == 0):
             if dev.isOffline():
                 return getIconFromTheme('network-offline', 'network-wired-offline', 'network-wired-disconnected')
             elif dev.isOnline():
@@ -299,12 +299,12 @@ class DeviceManager(QtCore.QAbstractItemModel, Component):
                 return getIconFromTheme('network-transmit-receive', 'network-limited')
             else:
                 return getIconFromTheme('network-error', 'network-wired-unavailable')
-        elif role == QtCore.Qt.UserRole:
+        elif role == QtCore.Qt.ItemDataRole.UserRole:
             return dev.name
         return None
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Device name', 'Type', 'Driver', 'Host', 'Port'][section]
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:

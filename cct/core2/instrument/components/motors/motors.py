@@ -72,13 +72,13 @@ class Motors(QtCore.QAbstractItemModel, Component):
         return self.createIndex(row, column, None)
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+        if orientation == QtCore.Qt.Orientation.Horizontal and role == QtCore.Qt.ItemDataRole.DisplayRole:
             return \
                 ['Motor name', 'Left limit', 'Right limit', 'Position', 'Speed', 'Left switch', 'Right switch', 'Load',
                  'Status flags'][section]
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             try:
                 if index.column() == 0:  # motor name
                     return self.motors[index.row()].name
@@ -99,29 +99,29 @@ class Motors(QtCore.QAbstractItemModel, Component):
             except (KeyError, MotorController.DeviceError):
                 # happens when a controller is missing
                 return None
-        elif role == QtCore.Qt.CheckStateRole:
+        elif role == QtCore.Qt.ItemDataRole.CheckStateRole:
             try:
                 if index.column() == 5:
-                    return QtCore.Qt.Checked if self.motors[index.row()]['leftswitchstatus'] else QtCore.Qt.Unchecked
+                    return QtCore.Qt.CheckState.Checked if self.motors[index.row()]['leftswitchstatus'] else QtCore.Qt.CheckState.Unchecked
                 elif index.column() == 6:
-                    return QtCore.Qt.Checked if self.motors[index.row()]['rightswitchstatus'] else QtCore.Qt.Unchecked
+                    return QtCore.Qt.CheckState.Checked if self.motors[index.row()]['rightswitchstatus'] else QtCore.Qt.CheckState.Unchecked
             except (KeyError, MotorController.DeviceError):
                 # happens when a controller is missing
                 return None
-        elif role == QtCore.Qt.BackgroundColorRole:
+        elif role == QtCore.Qt.ItemDataRole.BackgroundColorRole:
             try:
                 return QtGui.QColor('lightgreen') if self.motors[index.row()]['moving'] else None
             except (KeyError, MotorController.DeviceError):
                 # happens when a controller is missing
                 return None
-        elif role == QtCore.Qt.FontRole:
+        elif role == QtCore.Qt.ItemDataRole.FontRole:
             if index.column() == 3:
                 font = QtGui.QFont()
                 font.setBold(True)
                 return font
-        elif role == QtCore.Qt.UserRole:
+        elif role == QtCore.Qt.ItemDataRole.UserRole:
             return self.motors[index.row()]
-        elif (role == QtCore.Qt.DecorationRole) and (index.column() == 0):
+        elif (role == QtCore.Qt.ItemDataRole.DecorationRole) and (index.column() == 0):
             if self.motors[index.row()].role == MotorRole.Sample:
                 return QtGui.QIcon(QtGui.QPixmap(":/icons/sample.svg"))
             elif self.motors[index.row()].role == MotorRole.BeamStop:
@@ -135,9 +135,9 @@ class Motors(QtCore.QAbstractItemModel, Component):
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         motor = self.motors[index.row()]
         if motor.hasController:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
         else:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         return QtCore.QModelIndex()

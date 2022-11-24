@@ -30,19 +30,19 @@ class HeaderStore(ProcessingTask):
         return len(self.columns)
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
-        if (index.column() == 0) and (role == QtCore.Qt.CheckStateRole):
-            if value == QtCore.Qt.Checked:
+        if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.CheckStateRole):
+            if value == QtCore.Qt.CheckState.Checked:
                 self.settings.markAsBad(self._data[index.row()].fsn)
-            elif value == QtCore.Qt.Unchecked:
+            elif value == QtCore.Qt.CheckState.Unchecked:
                 self.settings.markAsGood(self._data[index.row()].fsn)
             else:
                 raise ValueError(f'Invalid check state: {value}')
-            self.dataChanged.emit(index, index, [QtCore.Qt.CheckStateRole])
+            self.dataChanged.emit(index, index, [QtCore.Qt.ItemDataRole.CheckStateRole])
             return True
         return False
 
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             value = getattr(self._data[index.row()], self.columns[index.column()])
             columnname = self.columns[index.column()]
             if isinstance(value, str):
@@ -65,15 +65,15 @@ class HeaderStore(ProcessingTask):
                     return f'{value[0]:g} \xb1 {value[1]:g}'
             else:
                 return str(value)
-        elif role == QtCore.Qt.UserRole:
+        elif role == QtCore.Qt.ItemDataRole.UserRole:
             return self._data[index.row()]
-        elif (role == QtCore.Qt.CheckStateRole) and (index.column() == 0):
-            return QtCore.Qt.Checked if (self._data[index.row()].fsn in self.settings.badfsns) else QtCore.Qt.Unchecked
+        elif (role == QtCore.Qt.ItemDataRole.CheckStateRole) and (index.column() == 0):
+            return QtCore.Qt.CheckState.Checked if (self._data[index.row()].fsn in self.settings.badfsns) else QtCore.Qt.CheckState.Unchecked
         else:
             return None
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return self.columns[section]
 
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
@@ -84,9 +84,9 @@ class HeaderStore(ProcessingTask):
 
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if index.column() == 0:
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | \
-                   QtCore.Qt.ItemIsUserCheckable
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled | \
+                   QtCore.Qt.ItemFlag.ItemIsUserCheckable
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled
 
     def _start(self):
         self.beginResetModel()
@@ -163,4 +163,4 @@ class HeaderStore(ProcessingTask):
         return len(self._data)
 
     def badfsnschanged(self):
-        self.dataChanged.emit(self.index(0, 0), self.index(self.rowCount(), 0), [QtCore.Qt.CheckStateRole])
+        self.dataChanged.emit(self.index(0, 0), self.index(self.rowCount(), 0), [QtCore.Qt.ItemDataRole.CheckStateRole])

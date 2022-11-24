@@ -29,7 +29,7 @@ class StartStopDelegate(QtWidgets.QStyledItemDelegate):
 
     def setEditorData(self, editor: QtWidgets.QPushButton, index: QtCore.QModelIndex) -> None:
         assert isinstance(editor, QtWidgets.QPushButton)
-        if index.data(QtCore.Qt.EditRole):
+        if index.data(QtCore.Qt.ItemDataRole.EditRole):
             editor.setText('Stop')
             editor.blockSignals(True)
             editor.setChecked(True)
@@ -42,7 +42,7 @@ class StartStopDelegate(QtWidgets.QStyledItemDelegate):
 
     def setModelData(self, editor: QtWidgets.QPushButton, model: QtCore.QAbstractItemModel,
                      index: QtCore.QModelIndex) -> None:
-        model.setData(index, editor.isChecked(), QtCore.Qt.EditRole)
+        model.setData(index, editor.isChecked(), QtCore.Qt.ItemDataRole.EditRole)
 
     @Slot()
     def onToggled(self):

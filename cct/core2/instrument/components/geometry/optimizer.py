@@ -151,7 +151,7 @@ class GeometryOptimizer(QtCore.QObject):
                                lmax))
         self.stopevent.clear()
         self.process.start()
-        self.timerid = self.startTimer(10, QtCore.Qt.PreciseTimer)
+        self.timerid = self.startTimer(10, QtCore.Qt.TimerType.PreciseTimer)
         self.starttime = time.monotonic()
 
     def timerEvent(self, timerevent: QtCore.QTimerEvent) -> None:

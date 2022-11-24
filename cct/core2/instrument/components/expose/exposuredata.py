@@ -206,13 +206,13 @@ class ExposureTask(QtCore.QObject):
             self.status = ExposureState.Pending
             self.pendingtimer = self.startTimer(
                 int(1000 * (self.exptime + self.expdelay) * self.index),
-                QtCore.Qt.PreciseTimer)
+                QtCore.Qt.TimerType.PreciseTimer)
         self.runningtimer = self.startTimer(
             int(1000 * ((self.exptime + self.expdelay) * self.index + self.exptime)),
-            QtCore.Qt.PreciseTimer)
+            QtCore.Qt.TimerType.PreciseTimer)
         self.waitforimagetimer = self.startTimer(
             int(1000 * ((self.exptime + self.expdelay) * self.index + self.exptime + self.imagetimeout)),
-            QtCore.Qt.PreciseTimer)
+            QtCore.Qt.TimerType.PreciseTimer)
 
     def onExposureStarted(self):
         logger.debug(f'Exposure of {self.prefix}/{self.fsn} started')
@@ -223,7 +223,7 @@ class ExposureTask(QtCore.QObject):
     def onExposureFinished(self):
         logger.debug(f'Exposure of {self.prefix}/{self.fsn} finished')
         assert self.status == ExposureState.Running
-        self.imageloadtimer = self.startTimer(int(1000 * self.imageloadperiod), QtCore.Qt.PreciseTimer)
+        self.imageloadtimer = self.startTimer(int(1000 * self.imageloadperiod), QtCore.Qt.TimerType.PreciseTimer)
         self.status = ExposureState.WaitingForImage
         self.exposureended.emit()
 

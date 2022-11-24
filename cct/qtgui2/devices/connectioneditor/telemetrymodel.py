@@ -23,7 +23,7 @@ class TelemetryModel(QtCore.QAbstractItemModel):
         return QtCore.QModelIndex()
     
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlags:
-        return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled
+        return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled
     
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
         return self.createIndex(row, column, parent)
@@ -31,16 +31,16 @@ class TelemetryModel(QtCore.QAbstractItemModel):
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         if self._telemetry is None:
             return None
-        if (role == QtCore.Qt.DisplayRole) and index.column() == 0:
+        if (role == QtCore.Qt.ItemDataRole.DisplayRole) and index.column() == 0:
             return self._telemetry.attributeinfo[index.row()].description
-        elif (role == QtCore.Qt.DisplayRole) and index.column() == 1:
+        elif (role == QtCore.Qt.ItemDataRole.DisplayRole) and index.column() == 1:
             return self._telemetry.attributeinfo[index.row()].formatter(getattr(self._telemetry, self._telemetry.attributeinfo[index.row()].name))
         else:
             return None
 
     
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Quantity', 'Value'][section]
         else:
             return None

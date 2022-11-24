@@ -23,7 +23,7 @@ class PeakModel(QtCore.QAbstractItemModel):
         return self.createIndex(row, column, None)
 
     def flags(self, index: QtCore.QModelIndex):
-        return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+        return QtCore.Qt.ItemFlag.ItemIsEditable | QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
 
     def columnCount(self, parent: QtCore.QModelIndex = ...):
         return 3
@@ -32,7 +32,7 @@ class PeakModel(QtCore.QAbstractItemModel):
         return len(self._peakdata)
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...):
-        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+        if orientation == QtCore.Qt.Orientation.Horizontal and role == QtCore.Qt.ItemDataRole.DisplayRole:
             return ['Name', 'Value (1/nm)', 'Uncertainty (1/nm)'][section]
         else:
             return None
@@ -42,12 +42,12 @@ class PeakModel(QtCore.QAbstractItemModel):
         logger.debug('Index: {}, {}'.format(index.row(), index.column()))
         logger.debug(
             'Peakdata [{}]: {}. Rowcount: {}'.format(index.row(), self._peakdata[index.row()], self.rowCount()))
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if index.column() == 0:
                 return self._peakdata[index.row()][0]
             else:
                 return '{{:.{:d}f}}'.format(DECIMALS).format(self._peakdata[index.row()][index.column()])
-        elif role == QtCore.Qt.EditRole:
+        elif role == QtCore.Qt.ItemDataRole.EditRole:
             return self._peakdata[index.row()][index.column()]
         return None
 
@@ -55,7 +55,7 @@ class PeakModel(QtCore.QAbstractItemModel):
         self._peakdata[index.row()][index.column()] = value
         self.dataChanged.emit(self.index(index.row(), index.column(), None),
                               self.index(index.row(), index.column(), None),
-                              [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole])
+                              [QtCore.Qt.ItemDataRole.DisplayRole, QtCore.Qt.ItemDataRole.EditRole])
         return True
 
     def removeRow(self, row: int, parent: QtCore.QModelIndex = ...):
@@ -92,7 +92,7 @@ class DoubleSpinBoxDelegate(QtWidgets.QStyledItemDelegate):
         return editor
 
     def setEditorData(self, editor: QtWidgets.QWidget, index: QtCore.QModelIndex):
-        value = index.data(QtCore.Qt.EditRole)
+        value = index.data(QtCore.Qt.ItemDataRole.EditRole)
         assert isinstance(editor, QtWidgets.QDoubleSpinBox)
         editor.setValue(value)
 
@@ -101,4 +101,4 @@ class DoubleSpinBoxDelegate(QtWidgets.QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
     def setModelData(self, editor: QtWidgets.QWidget, model: QtCore.QAbstractItemModel, index: QtCore.QModelIndex):
-        model.setData(index, editor.value(), QtCore.Qt.EditRole)
+        model.setData(index, editor.value(), QtCore.Qt.ItemDataRole.EditRole)

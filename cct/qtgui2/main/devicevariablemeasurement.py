@@ -74,14 +74,14 @@ class DeviceVariableMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_For
             if not rowindex.parent().isValid():
                 continue
             logger.debug(
-                f'Adding logger for variable {rowindex.parent().data(QtCore.Qt.EditRole)}/{rowindex.data((QtCore.Qt.EditRole))}')
+                f'Adding logger for variable {rowindex.parent().data(QtCore.Qt.ItemDataRole.EditRole)}/{rowindex.data((QtCore.Qt.ItemDataRole.EditRole))}')
             try:
-                lgr.addRecordedVariable(rowindex.parent().data(QtCore.Qt.EditRole), rowindex.data(QtCore.Qt.EditRole))
+                lgr.addRecordedVariable(rowindex.parent().data(QtCore.Qt.ItemDataRole.EditRole), rowindex.data(QtCore.Qt.ItemDataRole.EditRole))
             except ValueError as ve:
                 QtWidgets.QMessageBox.critical(
                     self, f'Cannot add variable',
                     f'Error while adding variable '
-                    f'{rowindex.parent().data(QtCore.Qt.EditRole)}/{rowindex.data(QtCore.Qt.EditRole)}: {ve}')
+                    f'{rowindex.parent().data(QtCore.Qt.ItemDataRole.EditRole)}/{rowindex.data(QtCore.Qt.ItemDataRole.EditRole)}: {ve}')
 
     @Slot()
     def onLoggerDestroyed(self):

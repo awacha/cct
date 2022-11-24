@@ -49,19 +49,19 @@ class SamplePositionChecker(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     @Slot()
     def repopulateListWidget(self):
         items = [self.listWidget.item(row) for row in range(self.listWidget.count())]
-        selected = [item.text() for item in items if item.checkState() == QtCore.Qt.Checked]
+        selected = [item.text() for item in items if item.checkState() == QtCore.Qt.CheckState.Checked]
         self.listWidget.clear()
         self.listWidget.addItems(sorted([sample.title for sample in self.instrument.samplestore]))
         for item in [self.listWidget.item(row) for row in range(self.listWidget.count())]:
             item.setFlags(
-                QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsUserCheckable)
-            item.setCheckState(QtCore.Qt.Checked if (item.text() in selected) else QtCore.Qt.Unchecked)
+                QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(QtCore.Qt.CheckState.Checked if (item.text() in selected) else QtCore.Qt.CheckState.Unchecked)
         self.listWidget.setMinimumWidth(self.listWidget.sizeHintForColumn(0))
 
     @Slot()
     def replot(self):
         items = [self.listWidget.item(row) for row in range(self.listWidget.count())]
-        selected = sorted([item.text() for item in items if item.checkState() == QtCore.Qt.Checked])
+        selected = sorted([item.text() for item in items if item.checkState() == QtCore.Qt.CheckState.Checked])
         self.axes.clear()
         samples = [self.instrument.samplestore[samplename] for samplename in selected]
         self.xdata = [s.positionx[0] for s in samples]

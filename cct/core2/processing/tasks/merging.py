@@ -83,33 +83,33 @@ class Merging(ProcessingTask):
         elif not index.parent().isValid():
             # 1st level index: sample name and nothing else
             md = self._data[index.row()]
-            if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+            if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return md.samplename
-            elif (index.column() == 3) and (role == QtCore.Qt.DisplayRole):
+            elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return md.statusmessage if md.errormessage is None else md.errormessage
-            elif (role == QtCore.Qt.BackgroundColorRole) and (md.errormessage is not None):
+            elif (role == QtCore.Qt.ItemDataRole.BackgroundColorRole) and (md.errormessage is not None):
                 return QtGui.QColor('red').lighter(50)
-            elif (role == QtCore.Qt.TextColorRole) and (md.errormessage is not None):
+            elif (role == QtCore.Qt.ItemDataRole.TextColorRole) and (md.errormessage is not None):
                 return QtGui.QColor('black')
-            elif (index.column() == 0) and (role == QtCore.Qt.DecorationRole):
+            elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DecorationRole):
                 return QtGui.QIcon(
                     QtGui.QPixmap(f':/icons/spinner_{md.spinner % 12:02d}.svg')) if md.spinner is not None else None
-            elif (role == QtCore.Qt.ToolTipRole) and (md.errormessage is not None):
+            elif (role == QtCore.Qt.ItemDataRole.ToolTipRole) and (md.errormessage is not None):
                 return md.traceback
 
         elif not index.parent().parent().isValid():
             # 2nd level index: distance key
             md = self._data[index.parent().row()]
             distkey = list(sorted(md.intervals.keys(), key=lambda k: float(k)))[index.row()]
-            if (index.column() == 0) and (role == QtCore.Qt.DisplayRole):
+            if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return distkey
-            elif (index.column() == 1) and (role == QtCore.Qt.DisplayRole):
+            elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return f'{md.intervals[distkey].qmin:.4f}'
-            elif (index.column() == 2) and (role == QtCore.Qt.DisplayRole):
+            elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return f'{md.intervals[distkey].qmax:.4f}'
-            elif (index.column() == 1) and (role == QtCore.Qt.EditRole):
+            elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
                 return md.intervals[distkey].qmin
-            elif (index.column() == 2) and (role == QtCore.Qt.EditRole):
+            elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.EditRole):
                 return md.intervals[distkey].qmax
 
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:
@@ -126,17 +126,17 @@ class Merging(ProcessingTask):
     def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         if not index.isValid():
             # root index
-            return QtCore.Qt.ItemIsEnabled
+            return QtCore.Qt.ItemFlag.ItemIsEnabled
         elif not index.parent().isValid():
             # 1st level index: sample name. No columns are editable
-            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
         elif index.column() == 0:
             # 2nd level index: distance & qmin & qmax: qmin and qmax are editable, the distance label not.
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable
         else:
             # 2nd level index: qmin & qmax editable
             assert index.column() in [1, 2]
-            return QtCore.Qt.ItemNeverHasChildren | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable
+            return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEditable
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if not index.parent().isValid():
@@ -156,7 +156,7 @@ class Merging(ProcessingTask):
         return True
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if (orientation == QtCore.Qt.Horizontal) and (role == QtCore.Qt.DisplayRole):
+        if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Sample/Distance', 'qmin', 'qmax', 'status'][section]
 
     def addSample(self, samplename: str):
@@ -193,7 +193,7 @@ class Merging(ProcessingTask):
                 self.columnCount(QtCore.QModelIndex()),
                 QtCore.QModelIndex()))
         self.spinnerTimer = QtCore.QTimer()
-        self.spinnerTimer.setTimerType(QtCore.Qt.PreciseTimer)
+        self.spinnerTimer.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
         self.spinnerTimer.timeout.connect(self.onSpinnerTimerTimeout)
         self.spinnerTimer.start(200)
 

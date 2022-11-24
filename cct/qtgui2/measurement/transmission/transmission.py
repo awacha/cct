@@ -50,7 +50,7 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     @Slot()
     def onAddSamplesClicked(self):
-        samples = [index.data(QtCore.Qt.DisplayRole) for index in self.sampleListView.selectedIndexes()]
+        samples = [index.data(QtCore.Qt.ItemDataRole.DisplayRole) for index in self.sampleListView.selectedIndexes()]
         if not samples:
             return
         logger.debug(samples)
@@ -63,7 +63,7 @@ class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
 
     @Slot()
     def onRemoveSamplesClicked(self):
-        samplenames = [index.data(QtCore.Qt.DisplayRole) for index in
+        samplenames = [index.data(QtCore.Qt.ItemDataRole.DisplayRole) for index in
                        self.transmissionTreeView.selectionModel().selectedRows(0)]
         for samplename in samplenames:
             self.instrument.transmission.removeSample(samplename)

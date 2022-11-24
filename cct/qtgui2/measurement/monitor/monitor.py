@@ -149,7 +149,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
             self.startStopToolButton.setText('Stop')
             self.startStopToolButton.setIcon(QtGui.QIcon(QtGui.QPixmap(':/icons/stop.svg')))
             if self.debugmode:
-                self.startTimer(int(self.waitTimeDoubleSpinBox.value() * 1000), QtCore.Qt.PreciseTimer)
+                self.startTimer(int(self.waitTimeDoubleSpinBox.value() * 1000), QtCore.Qt.TimerType.PreciseTimer)
             else:
                 self.instrument.exposer.exposureFinished.connect(self.onExposureFinished)
                 self.instrument.exposer.imageReceived.connect(self.onImageReceived)
@@ -323,7 +323,7 @@ class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
     def onExposureFinished(self, success: bool):
         if (self.startStopToolButton.text() == 'Stop') and success:
             # measurement is still running, do another exposure
-            self.startTimer(int(self.waitTimeDoubleSpinBox.value()*1000), QtCore.Qt.PreciseTimer)
+            self.startTimer(int(self.waitTimeDoubleSpinBox.value()*1000), QtCore.Qt.TimerType.PreciseTimer)
         else:
             self.instrument.exposer.exposureFinished.disconnect(self.onExposureFinished)
             self.instrument.exposer.imageReceived.disconnect(self.onImageReceived)

@@ -35,12 +35,12 @@ class SortFilterModel(QtCore.QSortFilterProxyModel):
         super().__init__()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QtCore.QModelIndex) -> bool:
-        data = self.sourceModel().index(source_row, 0, source_parent).data(QtCore.Qt.UserRole)
+        data = self.sourceModel().index(source_row, 0, source_parent).data(QtCore.Qt.ItemDataRole.UserRole)
         assert isinstance(data, Header)
         return (data.title == self.samplename) and (f'{data.distance[0]:.2f}' == self.distkey)
 
     def filterAcceptsColumn(self, source_column: int, source_parent: QtCore.QModelIndex) -> bool:
-        caption = self.sourceModel().headerData(source_column, QtCore.Qt.Horizontal, QtCore.Qt.DisplayRole)
+        caption = self.sourceModel().headerData(source_column, QtCore.Qt.Orientation.Horizontal, QtCore.Qt.ItemDataRole.DisplayRole)
         return caption in ['fsn', 'enddate']
 
 
@@ -100,7 +100,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
 
     @Slot()
     def markExposures(self):
-        fsns = [index.data(QtCore.Qt.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)]
+        fsns = [index.data(QtCore.Qt.ItemDataRole.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)]
         if self.sender() is self.markBadPushButton:
             self.project.settings.markAsBad(fsns)
         elif self.sender() is self.markGoodPushButton:
@@ -163,13 +163,13 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
     @Slot()
     def showImage(self):
         for index in self.treeView.selectionModel().selectedRows(0):
-            header = index.data(QtCore.Qt.UserRole)
+            header = index.data(QtCore.Qt.ItemDataRole.UserRole)
             self.mainwindow.createViewWindow(
                 ShowImageWindow, items=[('', str(header.fsn))])
 
     @Slot()
     def showCurve(self):
-        fsns = sorted([index.data(QtCore.Qt.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)])
+        fsns = sorted([index.data(QtCore.Qt.ItemDataRole.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)])
         if not fsns:
             return
         self.mainwindow.createViewWindow(ShowCurveWindow, [('', str(fsn)) for fsn in fsns])
@@ -195,7 +195,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
         fsn = event.artist.get_xdata()[pickedindex]
         for row in range(self.treeView.model().rowCount(QtCore.QModelIndex())):
             index = self.treeView.model().index(row, 0, QtCore.QModelIndex())
-            if self.treeView.model().data(index, QtCore.Qt.UserRole).fsn == fsn:
+            if self.treeView.model().data(index, QtCore.Qt.ItemDataRole.UserRole).fsn == fsn:
                 if self.treeView.selectionModel().isRowSelected(row, QtCore.QModelIndex()):
                     self.treeView.selectionModel().select(index, QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Deselect)
                 else:
@@ -211,7 +211,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
             fsn = self.outliertestresults.fsns[i]
             for row in range(self.treeView.model().rowCount(QtCore.QModelIndex())):
                 index = self.treeView.model().index(row, 0, QtCore.QModelIndex())
-                if self.treeView.model().data(index, QtCore.Qt.UserRole).fsn == fsn:
+                if self.treeView.model().data(index, QtCore.Qt.ItemDataRole.UserRole).fsn == fsn:
                     if self.treeView.selectionModel().isRowSelected(row, QtCore.QModelIndex()):
                         self.treeView.selectionModel().select(index, QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Deselect)
                     else:
@@ -221,7 +221,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
     def fsnSelectionChanged(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
         if self.outliertestresults is None:
             return
-        selectedfsns = [index.data(QtCore.Qt.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)]
+        selectedfsns = [index.data(QtCore.Qt.ItemDataRole.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)]
         sizes = self.otmarkedline.get_sizes()
         for i in range(sizes.size):
             sizes[i] = 0 if self.outliertestresults.fsns[i] not in selectedfsns else 100

@@ -56,7 +56,7 @@ class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
         self.proxymodel.setSourceModel(self.instrument.samplestore)
         self.treeView.setModel(self.proxymodel)
         self.treeView.setSortingEnabled(True)
-        self.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.treeView.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         self.treeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)
         self.treeView.selectionModel().currentRowChanged.connect(self.onCurrentSelectionChanged)
         self.instrument.samplestore.sampleEdited.connect(self.onSampleChangedInStore)
