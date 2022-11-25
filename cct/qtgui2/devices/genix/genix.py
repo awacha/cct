@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class GeniXTool(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class GeniXTool(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     instrument: Instrument
     required_devicenames = ['GeniX']
 

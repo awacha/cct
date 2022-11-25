@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class AnisotropyEvaluator(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     plotimage: PlotImage
     sectorModel: SectorModel
 

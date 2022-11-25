@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class HeaderView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class HeaderView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     model: HeaderViewModel
     datareductionpipeline: Optional[multiprocessing.Process] = None
     queuetodatareduction: Optional[multiprocessing.Queue] = None

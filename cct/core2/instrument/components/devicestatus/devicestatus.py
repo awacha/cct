@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class DeviceStatus(QtCore.QAbstractItemModel, Component):
+class DeviceStatus(Component, QtCore.QAbstractItemModel):
     _devicenames: List[str]
     _deviceready: Dict[str, bool]
     __indexobjects: List[Tuple[Optional[int], int]]

@@ -7,7 +7,7 @@ from ....core2.instrument.components.auth.privilege import Privilege
 from ....core2.instrument.components.auth.usermanager import User
 
 
-class UserManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class UserManager(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)

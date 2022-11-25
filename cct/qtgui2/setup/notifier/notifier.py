@@ -7,7 +7,7 @@ from .notifier_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
 
 
-class NotifierSetup(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class NotifierSetup(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class CenteringUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     plotimage: PlotImage
     plotcurve: PlotCurve
     fsnselector: FSNSelector

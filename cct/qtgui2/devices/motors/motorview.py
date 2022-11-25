@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class MotorView(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class MotorView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     addMotorDialog: Optional[AddMotorDialog] = None
     motorCalibrationDialog: Optional[MotorCalibrationDialog] = None
     motorConfigurationDialog: Optional[AdvancedMotorConfig] = None

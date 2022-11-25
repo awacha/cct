@@ -11,7 +11,7 @@ logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Keen80UPS(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class Keen80UPS(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     required_devicenames = ['Keen800']
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

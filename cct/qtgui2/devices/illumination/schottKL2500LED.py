@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class SchottKL2500LEDUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class SchottKL2500LEDUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     required_devicenames = ['KL2500LED']
 
     def __init__(self, **kwargs):

@@ -63,7 +63,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionQuit.triggered.connect(self.close)
         for actionname in [wi.action for wi in self.windowinfo]:
             action = getattr(self, actionname)
-            assert isinstance(action, QtWidgets.QAction)
+            assert isinstance(action, QtGui.QAction)
             action.triggered.connect(self.onShowHideProjectWindow)
             action.setEnabled(False)
         self.actionRecent_projects.setMenu(QtWidgets.QMenu())
@@ -124,7 +124,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             if action.toolTip() == filename:
                 logger.debug(f'Removing already existing action with file name {action.toolTip()}')
                 self.actionRecent_projects.menu().removeAction(action)
-        a = QtWidgets.QAction(self)
+        a = QtGui.QAction(self)
         a.setText(os.path.split(filename)[-1])
         a.setToolTip(filename)
         a.triggered.connect(self.loadRecentFile)
@@ -193,7 +193,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             sw.close()
             sw.hidden.connect(self.onSubWindowHidden)
             action = getattr(self, wi.action)
-            assert isinstance(action, QtWidgets.QAction)
+            assert isinstance(action, QtGui.QAction)
             action.setEnabled(True)
             action.setChecked(False)
             logger.debug(f'Created project window type {wi.attribute}')
@@ -211,7 +211,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 widget.destroy(True, True)
                 widget.deleteLater()
             action = getattr(self, wi.action)
-            assert isinstance(action, QtWidgets.QAction)
+            assert isinstance(action, QtGui.QAction)
             action.blockSignals(True)
             action.setEnabled(False)
             action.setChecked(False)
@@ -431,7 +431,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             except IndexError:
                 assert not windowstate[label]['basewindow']
             else:
-                action: QtWidgets.QAction = getattr(self, wi.action)
+                action: QtGui.QAction = getattr(self, wi.action)
                 action.blockSignals(True)
                 action.setChecked(not windowstate[label]['hidden'])
                 action.blockSignals(False)
@@ -447,7 +447,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 for line in f:
                     if os.path.isfile(line.strip()):
                         logger.debug(f'Adding action for file {line.strip()}')
-                        action = QtWidgets.QAction(self)
+                        action = QtGui.QAction(self)
                         action.setText(os.path.split(line.strip())[-1])
                         action.setToolTip(line.strip())
                         action.triggered.connect(self.loadRecentFile)
@@ -471,7 +471,7 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
     @Slot()
     def loadRecentFile(self):
         action = self.sender()
-        assert isinstance(action, QtWidgets.QAction)
+        assert isinstance(action, QtGui.QAction)
         filename = action.toolTip()
         logger.debug(f'Loading recent file: {action.toolTip()}')
         self.openProject(filename)

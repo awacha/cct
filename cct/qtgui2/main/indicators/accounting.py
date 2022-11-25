@@ -5,7 +5,7 @@ from ....core2.instrument.instrument import Instrument
 from ...utils.window import WindowRequiresDevices
 
 
-class AccountingIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
+class AccountingIndicator(WindowRequiresDevices, QtWidgets.QFrame, Ui_Frame):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
@@ -17,7 +17,7 @@ class AccountingIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         self.projectIDComboBox.setModelColumn(0)
         view = QtWidgets.QTreeView()
         view.setModel(Instrument.instance().projects)
-        view.setSelectionBehavior(view.SelectRows)
+        view.setSelectionBehavior(view.SelectionBehavior.SelectRows)
         view.setHeaderHidden(True)
         view.setRootIsDecorated(False)
         view.setMinimumWidth(600)
@@ -26,7 +26,7 @@ class AccountingIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
         view.resizeColumnToContents(0)
         view.resizeColumnToContents(1)
         view.resizeColumnToContents(2)
-        self.projectIDComboBox.setSizeAdjustPolicy(self.projectIDComboBox.AdjustToContents)
+        self.projectIDComboBox.setSizeAdjustPolicy(self.projectIDComboBox.SizeAdjustPolicy.AdjustToContents)
         self.projectIDComboBox.setView(view)
         self.projectIDComboBox.currentIndexChanged.connect(self.onProjectChanged)
         self.projectIDComboBox.setCurrentIndex(self.projectIDComboBox.findText(Instrument.instance().projects.projectID()))

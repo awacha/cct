@@ -76,8 +76,15 @@ class WindowRequiresDevices:
         :param instrument: the Instrument instance (optional, by default None)
         :type instrument: `Instrument`
         :param mainwindow: the main window instance
+        :param mainwindow: the main window instance
         :type mainwindow: `MainWindow`
         """
+        try:
+            instrument = kwargs.pop('instrument')
+        except KeyError:
+            instrument = None
+        mainwindow = kwargs.pop('mainwindow')
+        super().__init__(**kwargs)
         if self.required_devicenames is None:
             self.required_devicenames = []
         if self.required_devicetypes is None:
@@ -88,9 +95,9 @@ class WindowRequiresDevices:
         logger.debug(f'required device names: {self.required_devicenames}')
         logger.debug(f'required device types: {[dt.name for dt in self.required_devicetypes]}')
         logger.debug(f'required motors: {self.required_motors}')
-        if 'instrument' in kwargs:
+        if instrument is not None:
             # this check allows off-line usage of the widget, i.e. without a valid 'instrument' instance.
-            self.instrument = kwargs['instrument']
+            self.instrument = instrument
             # now try to connect devices and motors
             for dev in self.instrument.devicemanager:
                 self._onDeviceAdded(dev.name)
@@ -106,7 +113,7 @@ class WindowRequiresDevices:
             self.instrument.auth.currentUserChanged.connect(self.onUserOrPrivilegesChanged)
         else:
             self.instrument = None
-        self.mainwindow = kwargs['mainwindow']
+        self.mainwindow = mainwindow
 
     # ------------ Checking and handling requirements ------------------------------------------------------------------
 
@@ -179,7 +186,7 @@ class WindowRequiresDevices:
             device.connectionLost.disconnect(self.onConnectionLost)
             device.connectionEnded.disconnect(self.onConnectionEnded)
             device.telemetry.disconnect(self.onDeviceTelemetry)
-        except TypeError:
+        except (TypeError, RuntimeError):
             pass
 
     @final

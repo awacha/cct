@@ -7,7 +7,7 @@ from .startstopdelegate import StartStopDelegate
 from ...utils.filebrowserdelegate import FileSelectorDelegate
 
 
-class DeviceLogManagerUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class DeviceLogManagerUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)

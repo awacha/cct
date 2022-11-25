@@ -6,7 +6,7 @@ from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.components.motors import MotorRole, MotorDirection
 
 
-class BeamstopIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
+class BeamstopIndicator(WindowRequiresDevices, QtWidgets.QFrame, Ui_Frame):
     required_motors = [(MotorRole.BeamStop, MotorDirection.X), (MotorRole.BeamStop, MotorDirection.Y)]
 
     def __init__(self, **kwargs):

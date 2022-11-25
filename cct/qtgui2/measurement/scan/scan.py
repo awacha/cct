@@ -20,7 +20,7 @@ class RangeType(enum.Enum):
     SymmetricRelative = 'Symmetric'
 
 
-class ScanMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class ScanMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     required_devicetypes = [DeviceType.Source, DeviceType.Detector]
     motorname: Optional[str] = None
     scangraph: Optional[PlotScan] = None

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class ShutterIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
+class ShutterIndicator(WindowRequiresDevices, QtWidgets.QFrame, Ui_Frame):
     required_devicetypes = [DeviceType.Source]
 
     def __init__(self, **kwargs):

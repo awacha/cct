@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class DeviceVariableMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class DeviceVariableMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     loggerwidgets = List[DeviceVariableLoggerUI]
 
     def __init__(self, **kwargs):

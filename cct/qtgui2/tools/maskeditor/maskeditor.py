@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class MaskEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     """Mask editor user interface.
 
     A series of masks is stored in an undo stack, the current one pointed to by the stack pointer.

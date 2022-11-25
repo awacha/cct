@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class LeadFluid_BT100S(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class LeadFluid_BT100S(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     required_devicenames = ['BT100S']
 
     def __init__(self, **kwargs):

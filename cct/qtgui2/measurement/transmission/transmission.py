@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class TransmissionUi(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class TransmissionUi(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     required_devicetypes = [DeviceType.Source, DeviceType.Detector]
 
     def __init__(self, **kwargs):

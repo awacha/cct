@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class ScanStore(QtCore.QAbstractItemModel, Component):
+class ScanStore(Component, QtCore.QAbstractItemModel):
     """Scan subsystem of the instrument, responsible for reading and writing scan files.
     """
     _scans: Dict[int, Scan]

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class SampleStore(QtCore.QAbstractItemModel, Component):
+class SampleStore(Component, QtCore.QAbstractItemModel):
     _samples: List[Sample]
     _currentsample: Optional[str]
     _columns: Final[List[Tuple[str, str]]] = [

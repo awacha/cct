@@ -10,7 +10,7 @@ from .plotimage import PlotImage
 from ..utils.window import WindowRequiresDevices
 
 
-class ImageAndCurveMonitor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class ImageAndCurveMonitor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     fsnselector: FSNSelector
     plotwidget: Union[PlotImage, PlotCurve]
     mode_image: bool

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class SampleMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class SampleMover(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)

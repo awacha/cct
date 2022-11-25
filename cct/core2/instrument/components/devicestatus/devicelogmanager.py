@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class DeviceLogManager(QtCore.QAbstractItemModel, Component):
+class DeviceLogManager(Component, QtCore.QAbstractItemModel):
     _loggers: List[DeviceStatusLogger]
 
     def __init__(self, **kwargs):

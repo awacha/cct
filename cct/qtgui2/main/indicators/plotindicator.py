@@ -8,7 +8,7 @@ from ...utils.window import WindowRequiresDevices
 from ....core2.dataclasses import Exposure
 
 
-class PlotIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
+class PlotIndicator(WindowRequiresDevices, QtWidgets.QFrame, Ui_Frame):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)

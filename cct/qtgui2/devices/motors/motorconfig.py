@@ -15,7 +15,7 @@ logger=logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class AdvancedMotorConfig(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class AdvancedMotorConfig(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     required_privileges = [Privilege.MotorConfiguration]
     connect_all_motors = True
     motorname: Optional[str] = None

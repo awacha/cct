@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class CalibrantStore(QtCore.QAbstractItemModel, Component):
+class CalibrantStore(Component, QtCore.QAbstractItemModel):
     _calibrants: List[Calibrant]
     calibrantListChanged = Signal()
 

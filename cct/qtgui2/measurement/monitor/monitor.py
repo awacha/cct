@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class MonitorMeasurement(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class MonitorMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     required_devicetypes = [DeviceType.Source, DeviceType.Detector]
     figureIntensity: Figure
     figurePosition: Figure

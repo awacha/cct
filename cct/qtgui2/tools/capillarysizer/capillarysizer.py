@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class CapillarySizer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class CapillarySizer(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     figure: Figure
     figtoolbar: NavigationToolbar2QT
     canvas: FigureCanvasQTAgg

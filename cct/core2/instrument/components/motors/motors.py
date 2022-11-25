@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Motors(QtCore.QAbstractItemModel, Component):
+class Motors(Component, QtCore.QAbstractItemModel):
     motors: List[Motor]
 
     newMotor = Signal(str)

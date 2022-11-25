@@ -30,14 +30,15 @@ class Component:
     _panicking: PanicState = PanicState.NoPanic
 
     def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PySide6/multiinheritance.html
-        self.config = kwargs['config']
+        self.config = kwargs.pop('config')
         if isinstance(self.config, Config):
             logger.debug('Connecting configChanged signal')
             self.config.changed.connect(self.onConfigChanged)
-        if kwargs['instrument'] is not None:
-            self.instrument = weakref.proxy(kwargs['instrument'])
+        if (instrument:=kwargs.pop('instrument')) is not None:
+            self.instrument = weakref.proxy(instrument)
         else:
             self.instrument = None
+        super().__init__(**kwargs)
         self.loadFromConfig()
 
     @Slot(object, object)

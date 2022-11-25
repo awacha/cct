@@ -27,7 +27,7 @@ class ProxyModel(QtCore.QSortFilterProxyModel):
         self.invalidateFilter()
 
 
-class SampleEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class SampleEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     _param2widgets: Final[Dict[str, Tuple[str, ...]]] = {
         'title': ('sampleNameLineEdit', 'sampleNameLockToolButton'),
         'description': ('descriptionPlainTextEdit', 'descriptionLockToolButton'),

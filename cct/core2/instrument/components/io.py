@@ -42,7 +42,7 @@ def mywalkdir(root: str):
     logger.debug(f'Exiting mywalkdir(root={root}')
 
 
-class IO(QtCore.QObject, Component):
+class IO(Component, QtCore.QObject):
     """I/O subsystem of the instrument, responsible for reading and writing files and maintaining the file sequence.
 
     File system layout:

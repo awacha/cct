@@ -3,6 +3,7 @@ import logging
 import re
 import smtplib
 import traceback
+import weakref
 from typing import Sequence, Optional, List, Any, Tuple
 
 import dbus
@@ -31,20 +32,55 @@ class NotificationAddress:
         self.runtime = runtime
 
 
-class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
+class NotifyingLogHandler(logging.Handler):
+    def __init__(self, notifier: "Notifier"):
+        super().__init__()
+        self.notifier = weakref.proxy(notifier)
+
+    def emit(self, record: logging.LogRecord):
+        """Format the log message for an e-mail body and send an e-mail"""
+        if not record.name.startswith('cct'):
+            # this is a log message from somewhere else, e.g. matplotlib
+            return
+        try:
+            if (self.notifier.smtpserver is None) or (self.notifier.fromaddress is None):
+                return
+            emailaddresses = [n.emailaddress for n in self.notifier._data if
+                              (n.loglevel <= record.levelno) and (n.emailaddress is not None)]
+            if not emailaddresses:
+                # speed up
+                return
+            msg = f'Please be notified for the following log message from the SAXS instrument:\n'
+            msg += f'Log level: {record.levelno:d} ({record.levelname})\n'
+            msg += f'Time: {record.asctime}\n'
+            msg += f'Message: {record.getMessage()}\n'
+            msg += f'Logger name: {record.name}\n'
+            msg += f'Occurred in file: {record.pathname}\n'
+            msg += f'Line number: {record.lineno}\n'
+            msg += f'Module: {record.module}\n'
+            msg += f'Function name: {record.funcName}\n'
+            msg += f'Stack info: {record.stack_info}\n'
+            self.notifier.notify_email(f'[{record.levelname}] in {record.module}:{record.funcName}', msg, emailaddresses)
+        except Exception as exc:
+            # swallow the exception: unhandled exceptions return in a CRITICAL log event, resulting in an infinite loop.
+            print(traceback.format_exc())
+
+
+class Notifier(Component, QtCore.QAbstractItemModel, logging.Handler):
     _data: List[NotificationAddress]
     email_ratelimit_interval: float = 10.0  # seconds
     email_ratelimit_buffer: List[Tuple[email.message.EmailMessage, List[str]]]
     email_timer_handle: Optional[int] = None
     email_ratelimit_buffer_maxlength = 1000
     re_valid_email = re.compile(r'(?P<username>[-a-zA-Z_.0-9]+)@(?P<hostname>[-a-zA-Z0-9._]+)')
+    loghandler: NotifyingLogHandler = None
 
     def __init__(self, **kwargs):
         self.email_ratelimit_buffer = []
         self._data = []
         super().__init__(**kwargs)
-        logging.Handler.__init__(self)
-        self.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s'))
+        self.loghandler = NotifyingLogHandler(self)
+        self.loghandler.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s'))
 
     def saveToConfig(self):
         if 'notifier' not in self.config:
@@ -307,34 +343,6 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
         self.saveToConfig()
         return True
 
-    def emit(self, record: logging.LogRecord):
-        """Format the log message for an e-mail body and send an e-mail"""
-        if not record.name.startswith('cct'):
-            # this is a log message from somewhere else, e.g. matplotlib
-            return
-        try:
-            if (self.smtpserver is None) or (self.fromaddress is None):
-                return
-            emailaddresses = [n.emailaddress for n in self._data if
-                              (n.loglevel <= record.levelno) and (n.emailaddress is not None)]
-            if not emailaddresses:
-                # speed up
-                return
-            msg = f'Please be notified for the following log message from the SAXS instrument:\n'
-            msg += f'Log level: {record.levelno:d} ({record.levelname})\n'
-            msg += f'Time: {record.asctime}\n'
-            msg += f'Message: {record.getMessage()}\n'
-            msg += f'Logger name: {record.name}\n'
-            msg += f'Occurred in file: {record.pathname}\n'
-            msg += f'Line number: {record.lineno}\n'
-            msg += f'Module: {record.module}\n'
-            msg += f'Function name: {record.funcName}\n'
-            msg += f'Stack info: {record.stack_info}\n'
-            self.notify_email(f'[{record.levelname}] in {record.module}:{record.funcName}', msg, emailaddresses)
-        except Exception as exc:
-            # swallow the exception: unhandled exceptions return in a CRITICAL log event, resulting in an infinite loop.
-            print(traceback.format_exc())
-
     def notify(self, title: str, body: str):
         """Send notification to desktop and the current user"""
         self.notify_desktop(title, body)
@@ -345,10 +353,10 @@ class Notifier(QtCore.QAbstractItemModel, Component, logging.Handler):
     def startComponent(self):
         logger.debug('Starting component Notification')
         super().startComponent()
-        logging.root.addHandler(self)
-        self.setLevel(logging.INFO)
+        logging.root.addHandler(self.loghandler)
+        self.loghandler.setLevel(logging.INFO)
         logger.debug('Started component Notification')
 
     def stopComponent(self):
-        logging.root.removeHandler(self)
+        logging.root.removeHandler(self.loghandler)
         super().stopComponent()

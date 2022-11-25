@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0.0", "setuptools-scm", "cython", "PyQt5", "wheel", "numpy"]
+requires = ["setuptools>=61.0.0", "setuptools-scm", "cython", "PySide6", "wheel", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -25,7 +25,7 @@ dependencies = [
     "pyusb",
     "lmfit",
     "numdifftools",
-    "PyQt5",
+    "PySide6",
     "dbus-python"
 ]
 dynamic = ["version"]

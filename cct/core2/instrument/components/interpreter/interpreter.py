@@ -18,7 +18,7 @@ class ParsingError(Exception):
     pass
 
 
-class Interpreter(QtCore.QObject, Component):
+class Interpreter(Component, QtCore.QObject):
     script: List[Command] = None
     namespace: Dict[str, Any] = None
     pointer: Optional[int] = None  # points to the current command

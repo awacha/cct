@@ -42,7 +42,7 @@ class SummaryData:
 
 class Summarization(ProcessingTask):
     _data: List[SummaryData] = None
-    itemChanged = QtCore.pyqtSignal(str, str)
+    itemChanged = Signal(str, str)
     newbadfsns: Set[int]
     spinnerTimer: Optional[QtCore.QTimer] = None
 

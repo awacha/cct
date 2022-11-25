@@ -29,7 +29,7 @@ class ExposerState(enum.Enum):
     Stopping = enum.auto()
 
 
-class Exposer(QtCore.QObject, Component):
+class Exposer(Component, QtCore.QObject):
     """Handle exposures.
 
     1. An exposure of one or multiple images is initiated by the startExposure() method, which:

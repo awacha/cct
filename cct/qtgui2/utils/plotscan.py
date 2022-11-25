@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class PlotScan(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class PlotScan(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     _recording: bool = False
     figure: Figure
     canvas: FigureCanvasQTAgg

@@ -21,7 +21,7 @@ class State(enum.Enum):
     WaitingForImages = enum.auto()
 
 
-class SimpleExposure(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class SimpleExposure(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     """Steps of the measurement:
 
     1. move to sample (if needed)

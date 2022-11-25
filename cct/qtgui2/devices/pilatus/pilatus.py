@@ -30,7 +30,7 @@ logger.setLevel(logging.INFO)
 #   - expperiod, exptime, nimages, timeleft, starttime, lastcompletedimage, lastimage, targetfile
 
 
-class PilatusDetectorUI(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class PilatusDetectorUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     required_devicenames = ['PilatusDetector']
     thresholdsettings: Final[Dict[str, Tuple[float, PilatusGain]]] = {
         'Cu': (4024, PilatusGain.High),

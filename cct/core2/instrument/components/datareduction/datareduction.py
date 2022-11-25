@@ -17,7 +17,7 @@ logger_background = logging.getLogger(__name__ + ':background')
 logger.setLevel(logging.INFO)
 
 
-class DataReduction(QtCore.QObject, Component):
+class DataReduction(Component, QtCore.QObject):
     backend: Optional[multiprocessing.Process] = None
     queuetobackend: Optional[multiprocessing.Queue] = None
     queuefrombackend: Optional[multiprocessing.Queue] = None

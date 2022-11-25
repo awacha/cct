@@ -3,7 +3,7 @@ import os
 from typing import List, Optional
 
 import openpyxl
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui
 from PySide6.QtCore import Slot
 
 from .outliertest import OutlierTestWindow
@@ -150,11 +150,11 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
         if items:
             self.mainwindow.createViewWindow(VacuumWindow, items)
 
-    @Slot(QtWidgets.QAction)
-    def exportPatterns(self, action: Optional[QtWidgets.QAction] = None):
+    @Slot(QtGui.QAction)
+    def exportPatterns(self, action: Optional[QtGui.QAction] = None):
         if action is None:
             action = self.sender()
-        if not isinstance(action, QtWidgets.QAction):
+        if not isinstance(action, QtGui.QAction):
             action = self.exportPatternsToolButton.defaultAction()
         logger.debug(f'Export pattern action: {action.objectName()}')
         self.exportPatternsToolButton.setDefaultAction(action)
@@ -175,11 +175,11 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                         self.actionPatternNumpy_NPZ: PatternFileType.NUMPY}[action]
             item.writePattern(os.path.join(outputfolder, basename + filetype.value[-1]), filetype)
 
-    @Slot(QtWidgets.QAction)
-    def exportOutlierTestResults(self, action: Optional[QtWidgets.QAction] = None):
+    @Slot(QtGui.QAction)
+    def exportOutlierTestResults(self, action: Optional[QtGui.QAction] = None):
         if action is None:
             action = self.sender()
-        if not isinstance(action, QtWidgets.QAction):
+        if not isinstance(action, QtGui.QAction):
             logger.debug(f'sender() is not an Action. It is a {type(action)}')
             action = self.exportOutliersToolButton.defaultAction()
         logger.debug(f'Outlier test export action: {action.objectName()}')
@@ -200,11 +200,11 @@ class ResultsWindow(ProcessingWindow, Ui_Form):
                         self.actionCmatNumpy_NPZ: CorMatFileType.NUMPY}[action]
             item.writeCorMat(os.path.join(outputfolder, basename + filetype.value[-1]), filetype)
 
-    @Slot(QtWidgets.QAction)
-    def exportCurves(self, action: Optional[QtWidgets.QAction] = None):
+    @Slot(QtGui.QAction)
+    def exportCurves(self, action: Optional[QtGui.QAction] = None):
         if action is None:
             action = self.sender()
-        if not isinstance(action, QtWidgets.QAction):
+        if not isinstance(action, QtGui.QAction):
             action = self.exportCurvesToolButton.defaultAction()
         self.exportCurvesToolButton.setDefaultAction(action)
         items: List[SampleDistanceEntry] = [index.data(QtCore.Qt.ItemDataRole.UserRole) for index in

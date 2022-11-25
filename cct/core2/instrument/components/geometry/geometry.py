@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Geometry(QtCore.QObject, Component):
+class Geometry(Component, QtCore.QObject):
     """Describes current and possible geometries
 
     The current values of the geometry settings are stored in config['geometry'], to be accessed there by the rest of

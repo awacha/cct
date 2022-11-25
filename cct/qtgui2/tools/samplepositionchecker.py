@@ -12,7 +12,7 @@ from .samplepositionchecker_ui import Ui_Form
 from ..utils.window import WindowRequiresDevices
 
 
-class SamplePositionChecker(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class SamplePositionChecker(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     figure: Figure
     canvas: FigureCanvasQTAgg
     figtoolbar: NavigationToolbar2QT

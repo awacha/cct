@@ -23,7 +23,7 @@ class AdjustingState(enum.Enum):
     Stopping = -1
 
 
-class AutoAdjustMotor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class AutoAdjustMotor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     """Steps of motor auto-adjustment:
 
     1. remember the current motor position (-> oldposition)

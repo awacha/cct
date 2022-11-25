@@ -16,10 +16,10 @@ requirements:
     - setuptools_scm
     - numpy {{ numpy }}
     - cython >=0.15
-    - matplotlib
+    - matplotlib-base
     - scipy
     - krb5
-    - pyqt >=5
+    - pyside6
     - psutil
     - appdirs
     - pillow
@@ -44,8 +44,8 @@ requirements:
     - psutil
     - krb5
     - scipy
-    - matplotlib
-    - pyqt >=5
+    - matplotlib-base
+    - pyside6
     - openpyxl
     - sqlalchemy
     - adjusttext

@@ -12,7 +12,7 @@ from ....core2.instrument.components.calibrants.q import QCalibrant
 from ...utils.filebrowsers import getOpenFile
 
 
-class Calibrants(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class Calibrants(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     peakeditor: Optional[PeakEditor] = None
 
     def __init__(self, **kwargs ):

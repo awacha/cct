@@ -6,7 +6,7 @@ from ....core2.instrument.instrument import Instrument
 from ...utils.window import WindowRequiresDevices
 
 
-class LastFSNIndicator(QtWidgets.QFrame, WindowRequiresDevices, Ui_Frame):
+class LastFSNIndicator(WindowRequiresDevices, QtWidgets.QFrame, Ui_Frame):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)

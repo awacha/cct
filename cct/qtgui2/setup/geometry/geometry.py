@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class GeometryEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     _optimizer: Optional[GeometryOptimizer] = None
     _optimizerstore: OptimizerStore
     _spacerselectordialog: Optional[SpacerSelectorDialog] = None

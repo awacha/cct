@@ -14,7 +14,7 @@ from ..component import Component
 logger = logging.getLogger(__name__)
 
 
-class UserManager(QtCore.QAbstractItemModel, Component):
+class UserManager(Component, QtCore.QAbstractItemModel):
     _users: List[User]
     _currentuser: Optional[User] = None
     currentUserChanged = Signal(str)

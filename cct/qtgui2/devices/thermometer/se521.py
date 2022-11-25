@@ -9,7 +9,7 @@ from ...utils.window import WindowRequiresDevices
 from ....core2.devices.thermometer.se521 import SE521
 
 
-class SE521Window(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class SE521Window(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     required_devicenames = ['SE521']
     _name_lineedits = {'t1name': 't1NameLineEdit', 't2name': 't2NameLineEdit', 't3name': 't3NameLineEdit',
                        't4name': 't4NameLineEdit', 't1-t2name': 't1minust2NameLineEdit'}

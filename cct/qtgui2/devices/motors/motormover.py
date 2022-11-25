@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class MotorMover(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class MotorMover(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     currentmotor: Optional[str] = None
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

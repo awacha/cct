@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Calibration(QtWidgets.QMainWindow, WindowRequiresDevices, Ui_MainWindow):
+class Calibration(WindowRequiresDevices, QtWidgets.QMainWindow, Ui_MainWindow):
     fsnSelector: FSNSelector
     plotimage: PlotImage
     plotcurve: PlotCurve

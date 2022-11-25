@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class BeamStop(QtCore.QObject, Component):
+class BeamStop(Component, QtCore.QObject):
     class States(enum.Enum):
         In = 'in'
         Out = 'out'

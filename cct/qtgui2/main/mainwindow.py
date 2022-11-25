@@ -145,7 +145,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.curveTab.layout().addWidget(self.plotcurve)
         for actionname, windowclass in self._action2windowclass.items():
             action = getattr(self, actionname)
-            assert isinstance(action, QtWidgets.QAction)
+            assert isinstance(action, QtGui.QAction)
             action.triggered.connect(self.onActionTriggered)
         self.setWindowTitle(
             f'Credo Control Tool v{pkg_resources.get_distribution("cct").version} User: {self.instrument.auth.username()}')

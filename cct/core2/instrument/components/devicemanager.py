@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class DeviceManager(QtCore.QAbstractItemModel, Component):
+class DeviceManager(Component, QtCore.QAbstractItemModel):
     """Manage devices
 
     This component of the Instrument maintains a collection of device frontend objects and makes them available for

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class ProjectManager(QtCore.QAbstractItemModel, Component):
+class ProjectManager(Component, QtCore.QAbstractItemModel):
     _projects: List[Project]
     _currentproject: Project
 

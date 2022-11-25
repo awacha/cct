@@ -2,8 +2,8 @@
 import os
 import subprocess
 import sys
+import re
 
-from PyQt5.uic import compileUi
 from numpy import get_include
 from setuptools import setup, Extension, Command
 from setuptools.command.build_py import build_py
@@ -24,9 +24,9 @@ class RCCComand(Command):
 
     def run(self) -> None:
         subprocess.check_call(
-            ['pyrcc5',
+            ['pyside6-rcc',
              os.path.join('cct', 'resource', 'icons', 'icons.qrc'),
-             '-o', os.path.join('cct', 'resource', 'icons_rc.py')]
+             '-o', os.path.join('cct', 'resource', 'icons_rc.py'), '-g', 'python']
         )
 
 
@@ -49,8 +49,26 @@ class BuildUICommand(Command):
             for fn in [fn_ for fn_ in filenames if fn_.endswith('.ui')]:
                 fname = os.path.join(dirpath, fn)
                 pyfilename = os.path.splitext(fname)[0] + '_ui.py'
-                with open(pyfilename, 'wt', encoding='utf-8') as pyfile:
-                    compileUi(fname, pyfile, from_imports=True, import_from='cct.resource')
+                subprocess.check_call(
+                    ['pyside6-uic', fname, '-o', pyfilename, '-c', 'pmf', '-g', 'python']
+                )
+                # adjust import module path for rc
+                rcrootpath = os.path.join('cct', 'resource')
+                uifiledata = []
+                with open(pyfilename, 'rt') as f:
+                    for line in f:
+                        if m := re.match('^import (?P<rcmodulename>\\w+_rc)$', line):
+                            resourcefile = m['rcmodulename']+'.py'
+                            if not os.path.exists(os.path.join(rcrootpath, resourcefile)):
+                                raise FileNotFoundError(f'Resource file {resourcefile} does not exist in rc root {rcrootpath}.')
+                            relpath = os.path.relpath(rcrootpath, dirpath)
+                            relmodulepath = '.' + ''.join([x if x != '..' else '.' for x in relpath.split(os.path.sep)])
+                            uifiledata.append(f'from {relmodulepath} import {m["rcmodulename"]}\n')
+                        else:
+                            uifiledata.append(line)
+                with open(pyfilename, 'wt') as f:
+                    for line in uifiledata:
+                        f.write(line)
                 self.announce('Compiled UI file: {} -> {}.'.format(fname, pyfilename), 2)
 
 

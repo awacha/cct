@@ -10,7 +10,7 @@ from .newconnectiondialog import NewConnectionDialog
 from .telemetrymodel import TelemetryModel
 
 
-class ConnectionEditor(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class ConnectionEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     newconnectiondialog: Optional[NewConnectionDialog] = None
     connect_all_devices = True
 

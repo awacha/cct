@@ -6,7 +6,7 @@ from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.components.auth import Privilege
 
 
-class ProjectManager(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class ProjectManager(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)

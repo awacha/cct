@@ -9,7 +9,7 @@ from ..utils.window import WindowRequiresDevices
 from ...core2.dataclasses import Scan
 
 
-class ScanViewer(QtWidgets.QWidget, WindowRequiresDevices, Ui_Form):
+class ScanViewer(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.setupUi(self)
