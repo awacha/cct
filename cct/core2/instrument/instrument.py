@@ -23,15 +23,15 @@ from .components.samples import SampleStore
 from .components.scan import ScanStore
 from .components.sensors import Sensors
 from .components.transmission import TransmissionMeasurement
-from ..config import Config
+from ..config2 import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Instrument(QtCore.QObject):
     _singleton_instance: "Instrument" = None
-    config: Config
+    cfg: Config
     io: IO
     beamstop: BeamStop
     interpreter: Interpreter
@@ -64,11 +64,10 @@ class Instrument(QtCore.QObject):
         type(self)._singleton_instance = self
         super().__init__()
         self.online = False
-        self.config = Config(path='ROOT')
-        self.createDefaultConfig()
+        self.cfg = Config(parent=self)
         logger.debug(f'Using config file {configfile}')
         try:
-            self.config.load(configfile)
+            self.cfg.load(configfile)
         except FileNotFoundError:
             logger.warning(f'Config file {configfile} does not exist.')
             pass
@@ -99,7 +98,7 @@ class Instrument(QtCore.QObject):
             ('devicelogmanager', DeviceLogManager),
         ]:
             ### NOTE! When you add a new component, add a corresponding entry in the panic() method as well!
-            comp = componentclass(config=self.config, instrument=self)
+            comp = componentclass(cfg=self.cfg, instrument=self, parent=self)
             setattr(self, componentname, comp)
             self.components[componentname] = comp
             comp.started.connect(self.onComponentStarted)
@@ -171,24 +170,6 @@ class Instrument(QtCore.QObject):
             self.components[component].stopComponent()
         self.devicemanager.disconnectDevices()
 
-    def createDefaultConfig(self):
-        self.config['beamstop'] = {'in': (0.0, 0.0), 'out': (0.0, 0.0), 'motorx': 'BeamStop_X', 'motory': 'BeamStop_Y'}
-        self.config['services'] = {
-            'samplestore': {'list': {}, 'active': None, 'motorx': 'Sample_X', 'motory': 'Sample_Y'}
-        }
-        self.config['motors'] = {}
-        self.config['geometry'] = {
-            'choices': {
-                'spacers': [],
-                'flightpipes': [],
-                'beamstops': [],
-                'pinholes': {1: [], 2: [], 3: []}},
-            'dist_source_ph1': 0,
-            'dist_ph3_sample': 0,
-            'dist_det_beamstop': 0,
-        }
-        self.config['calibrants'] = {}
-
     @classmethod
     def instance(cls) -> "Instrument":
         return cls._singleton_instance
@@ -198,7 +179,7 @@ class Instrument(QtCore.QObject):
 #            logger.warning(f'Config instances before issuing {name}.saveToConfig(): {len(Config.instances)}')
             component.saveToConfig()
 #            logger.warning(f'Config instances after issuing {name}.saveToConfig(): {len(Config.instances)}')
-        self.config.save(self.config.filename)
+        self.cfg.save(self.cfg.filename)
 
     def panic(self, reason: str = 'Unspecified reason'):
         """Start the panic sequence
@@ -259,6 +240,6 @@ class Instrument(QtCore.QObject):
         self.deleteLater()
 
     def deleteLater(self) -> None:
-        self.config.deleteLater()
-        del self.config
+        self.cfg.deleteLater()
+        del self.cfg
         super().deleteLater()

@@ -133,17 +133,17 @@ class DeviceLogManager(Component, QtCore.QAbstractItemModel):
             return ['Name', 'File name', 'Variable count', 'Period', 'Running?'][section]
 
     def loadFromConfig(self):
-        if 'deviceloggers' not in self.config:
-            self.config['deviceloggers'] = {}
+        if 'deviceloggers' not in self.cfg.keysAt():
+            self.cfg['deviceloggers'] = None
         self.beginResetModel()
         try:
             self._loggers = []
-            for loggerkey in sorted(self.config['deviceloggers']):
+            for loggerkey in sorted(self.cfg.keysAt('deviceloggers')):
                 lgr = DeviceStatusLogger(
                     self.instrument.devicemanager,
-                    self.config['deviceloggers'][loggerkey]['filename'],
-                    float(self.config['deviceloggers'][loggerkey]['period']), loggerkey)
-                for devname, varname, vartype, scaling in self.config['deviceloggers'][loggerkey]['variables']:
+                    self.cfg['deviceloggers',  loggerkey,  'filename'],
+                    float(self.cfg['deviceloggers',  loggerkey,  'period']), loggerkey)
+                for devname, varname, vartype, scaling in self.cfg['deviceloggers',  loggerkey,  'variables']:
                     lgr.addRecordedVariable(devname, varname, scaling, vartype=VariableType[vartype])
                 lgr.rowsInserted.connect(self.saveToConfig)
                 lgr.rowsRemoved.connect(self.saveToConfig)
@@ -156,23 +156,20 @@ class DeviceLogManager(Component, QtCore.QAbstractItemModel):
     @Slot()
     def saveToConfig(self):
         try:
-            self.config.objectName()
+            self.cfg.objectName()
         except RuntimeError:
             # this happens sometimes at shutdown, when the log manager is notified too late on the destroying of a
             # device logger.
             return
-        self.config['deviceloggers'] = {}
-        for key in list(self.config['deviceloggers'].keys()):
-            # Config is somewhat counterintuitive here, assigning a {} does not make it empty, only updates it
-            del self.config['deviceloggers'][key]
+        self.cfg['deviceloggers'] = {}
         for i, lgr in enumerate(self._loggers):
             logger.debug(f'Saving logger {lgr.name()}')
-            self.config['deviceloggers'][lgr.name()] = {
+            self.cfg['deviceloggers',  lgr.name()] = {
                 'filename': lgr.fileName(),
                 'period': lgr.period(),
                 'variables': lgr.variables(),
             }
-        logger.debug(f'Loggers saved to config: {self.config["deviceloggers"].keys()}')
+        logger.debug(f'Loggers saved to config: {", ".join(self.cfg.keysAt("deviceloggers"))}')
 
     def startAll(self):
         for lgr in self._loggers:
@@ -192,7 +189,7 @@ class DeviceLogManager(Component, QtCore.QAbstractItemModel):
         self.stopAll()
         return super().stopComponent()
 
-    def __getitem__(self, item: int) -> DeviceStatusLogger:
+    def get(self, item: int) -> DeviceStatusLogger:
         return self._loggers[item]
 
     def __len__(self) -> int:

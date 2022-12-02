@@ -22,7 +22,7 @@ class MotorCommand(Command):
         self.motor().positionChanged.disconnect(self.onMotorPositionChanged)
 
     def motor(self):
-        return self.instrument.motors[self.motorname]
+        return self.instrument.motors.get(self.motorname)
 
     @Slot(float)
     def onMotorStarted(self, startposition: float):
@@ -85,7 +85,7 @@ class Where(InstantCommand):
 
     def run(self, motorname: str) -> Any:
         if motorname == '*':
-            positions = {m.name:m.where() for m in self.instrument.motors}
+            positions = {m.name:m.where() for m in self.instrument.motors.iterMotors()}
             namelength = max([len(m) for m in positions] + [len("Motor name")])
             txt = f'| {"Motor name":^{namelength}} |  Position  |\n'
             txt += f'+-{"-"*namelength}-+------------+\n'
@@ -94,6 +94,6 @@ class Where(InstantCommand):
             self.message.emit(txt)
             return positions
         else:
-            pos = self.instrument.motors[motorname].where()
+            pos = self.instrument.motors.get(motorname).where()
             self.message.emit(f'{pos:8.3f}')
             return pos

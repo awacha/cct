@@ -76,14 +76,16 @@ class UserManager(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot()
     def updateEditedValues(self):
-        password, ok = QtWidgets.QInputDialog.getText(self, 'Authenticate', 'Please type your password:', QtWidgets.QLineEdit.Password, '')
+        password, ok = QtWidgets.QInputDialog.getText(
+            self, 'Authenticate', 'Please type your password:', QtWidgets.QLineEdit.EchoMode.Password, '')
         if not ok:
             return
-        if not self.instrument.auth[self.instrument.auth.username()].authenticate(password):
+        if not self.instrument.auth.get(self.instrument.auth.username()).authenticate(password):
             QtWidgets.QMessageBox.critical(self, 'Permission denied', 'Authentication error')
         user = self.userListTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole)
         assert isinstance(user, User)
-        if (user.username == self.instrument.auth.username()) or (self.instrument.auth.hasPrivilege(Privilege.UserManagement)):
+        if (user.username == self.instrument.auth.username()) or \
+                (self.instrument.auth.hasPrivilege(Privilege.UserManagement)):
             # these properties can be self-edited
             if self.firstNameLineEdit.text() != user.firstname:
                 user.firstname = self.firstNameLineEdit.text()

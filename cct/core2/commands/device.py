@@ -3,7 +3,7 @@ import logging
 
 from PySide6.QtCore import Slot
 
-from .command import InstantCommand, CommandArgument, Command
+from .command import InstantCommand, Command
 from .commandargument import StringArgument
 from ..devices.device.frontend import DeviceFrontend
 
@@ -19,12 +19,13 @@ class GetVar(InstantCommand):
 
     def run(self, device: str, variable: str) -> Any:
         try:
-            self.instrument.devicemanager[device]
+            dev: DeviceFrontend= self.instrument.devicemanager.get(device)
         except (KeyError, IndexError):
             raise RuntimeError(f'No such device {device}')
         try:
-            self.message.emit(f'{self.instrument.devicemanager[device][variable]}')
-            return self.instrument.devicemanager[device][variable]
+            var = dev.get(variable)
+            self.message.emit(f'{var}')
+            return var
         except (KeyError, IndexError):
             raise RuntimeError(f'Device {device} has no variable named {variable}')
 
@@ -46,7 +47,7 @@ class DevCommand(Command):
         self.device.commandResult.disconnect(self.onDeviceCommandResult)
 
     def initialize(self, device: str, commandname: str, *args):
-        self.device = self.instrument.devicemanager[device]
+        self.device = self.instrument.devicemanager.get(device)
         self._connectDevice()
         self.sentcommand = commandname
         try:
@@ -73,5 +74,6 @@ class ListVariables(InstantCommand):
     arguments = [StringArgument('device', 'The name of the device')]
 
     def run(self, device: str) -> List[str]:
-        self.message.emit(f'{", ".join(self.instrument.devicemanager[device].keys())}')
-        return list(self.instrument.devicemanager[device].keys())
+        keys = self.instrument.devicemanager.get(device)
+        self.message.emit(f'{", ".join(keys)}')
+        return list(keys)

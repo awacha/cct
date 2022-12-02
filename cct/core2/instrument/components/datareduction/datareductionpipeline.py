@@ -4,7 +4,7 @@ import multiprocessing
 import pickle
 import re
 import traceback
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 import os
 import queue
 
@@ -12,7 +12,7 @@ import numpy as np
 import scipy.odr
 
 from ....algorithms.geometrycorrections import angledependentabsorption, angledependentairtransmission, solidangle
-from ....config import Config
+from ....config2 import Config
 from ....dataclasses import Exposure, Sample
 from ..io import IO
 
@@ -30,12 +30,13 @@ class DataReductionPipeLine:
     absintref: Optional[Exposure] = None
     commandqueue: Optional[multiprocessing.Queue] = None
     resultqueue: Optional[multiprocessing.Queue] = None
-    config: Dict[str, Any]
+    cfg: Config
     io: IO
 
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        self.io = IO(config=self.config, instrument=None)
+    def __init__(self, config: Dict):
+        self.cfg = Config()
+        self.cfg[()] = config
+        self.io = IO(cfg=self.cfg, instrument=None)
 
     @classmethod
     def run_in_background(cls, config: Dict, commandqueue: multiprocessing.Queue, resultqueue: multiprocessing.Queue, stopevent: Optional[multiprocessing.Event] = None):
@@ -65,7 +66,7 @@ class DataReductionPipeLine:
                     obj.error(repr(exc) + '\n' + traceback.format_exc())
                     obj.resultqueue.put_nowait(('result', None))
             elif cmd == 'config':
-                obj.config = arg
+                obj.cfg[()] = arg
                 #obj.debug('Config updated.')
             else:
                 obj.error(f'Unknown command: {cmd}')
@@ -89,15 +90,15 @@ class DataReductionPipeLine:
             except StopIteration as si:
                 exposure = si.args[0]
                 break
-        os.makedirs(self.config['path']['directories']['eval2d'], exist_ok=True)
+        os.makedirs(self.cfg['path', 'directories', 'eval2d'], exist_ok=True)
         exposure.save(
             os.path.join(
-                self.config['path']['directories']['eval2d'],
-                f'{exposure.header.prefix}_{exposure.header.fsn:0{self.config["path"]["fsndigits"]}d}.npz'))
+                self.cfg['path', 'directories', 'eval2d'],
+                f'{exposure.header.prefix}_{exposure.header.fsn:0{self.cfg["path", "fsndigits"]}d}.npz'))
         with open(
                 os.path.join(
-                    self.config['path']['directories']['eval2d'],
-                    f'{exposure.header.prefix}_{exposure.header.fsn:0{self.config["path"]["fsndigits"]}d}.pickle'),
+                    self.cfg['path', 'directories', 'eval2d'],
+                    f'{exposure.header.prefix}_{exposure.header.fsn:0{self.cfg["path", "fsndigits"]}d}.pickle'),
                 'wb') as f:
             pickle.dump(exposure.header._data, f)
         return exposure
@@ -221,57 +222,55 @@ class DataReductionPipeLine:
         if exposure.header.sample().category in [Sample.Categories.NormalizationSample, Sample.Categories.Calibrant]:
             self.debug('This is a calibration sample')
             # find corresponding reference
-            if 'calibrants' not in self.config:
-                raise ProcessingError('No calibrants found in config.')
+            self.cfg.setdefault(('calibrants', ), [])
+            matching = [cname for cname in self.cfg['calibrants']
+                        if ('datafile' in self.cfg['calibrants', cname])
+                        and re.match(self.cfg['calibrants', cname, 'regex'], exposure.header.title)
+                        ]
+            self.debug(f'Matched calibrants: {", ".join(matching)}')
+            if len(matching) > 1:
+                raise ProcessingError(
+                    f'Sample name {exposure.header.title} is matched by more than one calibrants: '
+                    f'{", ".join(matching)}')
+            elif len(matching) == 1:
+                datafile = self.cfg['calibrants', matching[0], 'datafile']
+                calibdata = np.loadtxt(datafile)
+                self.info(f'Using data file {datafile} (q from {np.nanmin(calibdata[:,0]):.5f} to {np.nanmax(calibdata[:,0]):.5f} 1/nm, {calibdata.shape[0]} points)')
+                rad0 = exposure.radial_average()
+                rad = exposure.radial_average(calibdata[:, 0]).sanitize()
+                self.info(f'Radial average has {len(rad.q)} points.')
+                qcalib = rad.q
+                self.info(f'Measured q from {np.nanmin(rad0.q):.5f} to {np.nanmax(rad0.q):.5f} 1/nm, {len(rad0.q)} points')
+                icalib = np.interp(qcalib, calibdata[:, 0], calibdata[:, 1])
+                ecalib = np.interp(qcalib, calibdata[:, 0], calibdata[:, 2])
+                model = scipy.odr.Model(lambda params, x: x * params[0])
+                data = scipy.odr.RealData(rad.intensity, icalib, rad.uncertainty, ecalib)
+                odr = scipy.odr.ODR(data, model, [1.0])
+                result = odr.run()
+                factor = result.beta[0]
+                factor_unc = result.sd_beta[0]
+                chi2_red = result.res_var
+                dof = len(rad) - 1
+                self.absintref = exposure
+                exposure.header.absintchi2 = chi2_red
+                exposure.header.absintdof = dof
+                exposure.header.absintfactor = factor, factor_unc
+                exposure.header.fsn_absintref = exposure.header.fsn
+                exposure.header.absintqmin = qcalib.min()
+                exposure.header.absintqmax = qcalib.max()
+                exposure.header.flux = 1 / factor, abs(factor_unc / factor ** 2)
+                exposure.uncertainty = (exposure.uncertainty ** 2 * exposure.header.absintfactor[
+                    0] ** 2 + exposure.intensity ** 2 * exposure.header.absintfactor[1] ** 2) ** 0.5
+                exposure.intensity = exposure.intensity * exposure.header.absintfactor[0]
+                self.info(f'FSN #{exposure.header.fsn} calibrated into absolute units using reference data from '
+                         f'{datafile}. Common q-range from {qcalib.min():g} to {qcalib.max():g} 1/nm ({len(qcalib)} '
+                         f'points). Reduced chi2: {chi2_red:g} (DoF: {dof}')
+                self.info(f'FSN #{exposure.header.fsn}: estimated beam flux {exposure.header.flux[0]:g} \xb1 '
+                         f'{exposure.header.flux[1]} photons*eta/sec')
+                return exposure
             else:
-                matching = [cname for cname in self.config['calibrants']
-                            if ('datafile' in self.config['calibrants'][cname])
-                            and re.match(self.config['calibrants'][cname]['regex'], exposure.header.title)
-                            ]
-                self.debug(f'Matched calibrants: {", ".join(matching)}')
-                if len(matching) > 1:
-                    raise ProcessingError(
-                        f'Sample name {exposure.header.title} is matched by more than one calibrants: '
-                        f'{", ".join(matching)}')
-                elif len(matching) == 1:
-                    datafile = self.config['calibrants'][matching[0]]['datafile']
-                    calibdata = np.loadtxt(datafile)
-                    self.info(f'Using data file {datafile} (q from {np.nanmin(calibdata[:,0]):.5f} to {np.nanmax(calibdata[:,0]):.5f} 1/nm, {calibdata.shape[0]} points)')
-                    rad0 = exposure.radial_average()
-                    rad = exposure.radial_average(calibdata[:, 0]).sanitize()
-                    self.info(f'Radial average has {len(rad.q)} points.')
-                    qcalib = rad.q
-                    self.info(f'Measured q from {np.nanmin(rad0.q):.5f} to {np.nanmax(rad0.q):.5f} 1/nm, {len(rad0.q)} points')
-                    icalib = np.interp(qcalib, calibdata[:, 0], calibdata[:, 1])
-                    ecalib = np.interp(qcalib, calibdata[:, 0], calibdata[:, 2])
-                    model = scipy.odr.Model(lambda params, x: x * params[0])
-                    data = scipy.odr.RealData(rad.intensity, icalib, rad.uncertainty, ecalib)
-                    odr = scipy.odr.ODR(data, model, [1.0])
-                    result = odr.run()
-                    factor = result.beta[0]
-                    factor_unc = result.sd_beta[0]
-                    chi2_red = result.res_var
-                    dof = len(rad) - 1
-                    self.absintref = exposure
-                    exposure.header.absintchi2 = chi2_red
-                    exposure.header.absintdof = dof
-                    exposure.header.absintfactor = factor, factor_unc
-                    exposure.header.fsn_absintref = exposure.header.fsn
-                    exposure.header.absintqmin = qcalib.min()
-                    exposure.header.absintqmax = qcalib.max()
-                    exposure.header.flux = 1 / factor, abs(factor_unc / factor ** 2)
-                    exposure.uncertainty = (exposure.uncertainty ** 2 * exposure.header.absintfactor[
-                        0] ** 2 + exposure.intensity ** 2 * exposure.header.absintfactor[1] ** 2) ** 0.5
-                    exposure.intensity = exposure.intensity * exposure.header.absintfactor[0]
-                    self.info(f'FSN #{exposure.header.fsn} calibrated into absolute units using reference data from '
-                             f'{datafile}. Common q-range from {qcalib.min():g} to {qcalib.max():g} 1/nm ({len(qcalib)} '
-                             f'points). Reduced chi2: {chi2_red:g} (DoF: {dof}')
-                    self.info(f'FSN #{exposure.header.fsn}: estimated beam flux {exposure.header.flux[0]:g} \xb1 '
-                             f'{exposure.header.flux[1]} photons*eta/sec')
-                    return exposure
-                else:
-                    assert not matching
-                    # no matching reference data, treat this sample as a normal sample.
+                assert not matching
+                # no matching reference data, treat this sample as a normal sample.
         if self.absintref is None:
             raise ProcessingError('No absolute intensity reference measurement encountered up to now, cannot scale into'
                                   'absolute intensity units.')

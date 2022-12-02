@@ -54,7 +54,7 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             layout = QtWidgets.QHBoxLayout()
             selectorpage.setLayout(layout)
             layout.addWidget(selector, stretch=1)
-            selector.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
+            selector.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.Preferred)
         self.fsnselector.fsnSelected.connect(self.onFSNSelected)
         self.h5selector.datasetSelected.connect(self.onH5Selected)
         self.fileSequencePagePushButton.toggled.connect(self.onFileSequencePagePushButtonClicked)
@@ -64,17 +64,17 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.patternTab.setLayout(self.patternVerticalLayout)
         self.patternVerticalLayout.addWidget(self.plotimage, stretch=1)
         self.plotimage.figure.set_size_inches(1, 0.75)
-        self.plotimage.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        self.plotimage.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.plotcurve = PlotCurve(self)
         self.plotcurve.figure.set_size_inches(1, 0.75)
-        self.plotcurve.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        self.plotcurve.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.curveVerticalLayout = QtWidgets.QVBoxLayout()
         self.curveTab.setLayout(self.curveVerticalLayout)
         self.curveVerticalLayout.addWidget(self.plotcurve, stretch=1)
         self.polarfigure = Figure(figsize=(1, 0.75), constrained_layout=True)
         self.polaraxes = self.polarfigure.add_subplot(1, 1, 1)
         self.polarcanvas = FigureCanvasQTAgg(self.polarfigure)
-        self.polarcanvas.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        self.polarcanvas.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.polarfigtoolbar = NavigationToolbar2QT(self.polarcanvas, self)
         self.polarVerticalLayout = QtWidgets.QVBoxLayout()
         self.polarTab.setLayout(self.polarVerticalLayout)
@@ -95,19 +95,19 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot(bool, name='on_beamRowSaveToolButton_clicked')
     def on_beamRowSaveToolButton_clicked(self, checked: bool):
-        self.instrument.config[('geometry', 'beamposx')] = self.beamrow()[0]
-        self.instrument.config[('geometry', 'beamposx.err')] = self.beamrow()[1]
+        self.instrument.cfg['geometry', 'beamposx'] = self.beamrow()[0]
+        self.instrument.cfg['geometry', 'beamposx.err'] = self.beamrow()[1]
         logger.info(
-            f'Updated beam row (vertical) coordinate to {self.instrument.config[("geometry", "beamposx")]:.5f} \xb1 '
-            f'{self.instrument.config[("geometry", "beamposx.err")]:.5f} pixel')
+            f'Updated beam row (vertical) coordinate to {self.instrument.cfg["geometry", "beamposx"]:.5f} \xb1 '
+            f'{self.instrument.cfg["geometry", "beamposx.err"]:.5f} pixel')
 
     @Slot(bool, name='on_beamColumnSaveToolButton_clicked')
     def on_beamColumnSaveToolButton_clicked(self, checked: bool):
-        self.instrument.config[('geometry', 'beamposy')] = self.beamcol()[0]
-        self.instrument.config[('geometry', 'beamposy.err')] = self.beamcol()[1]
+        self.instrument.cfg['geometry', 'beamposy'] = self.beamcol()[0]
+        self.instrument.cfg['geometry', 'beamposy.err'] = self.beamcol()[1]
         logger.info(
-            f'Updated beam column (horizontal) coordinate to {self.instrument.config[("geometry", "beamposy")]:.5f} \xb1 '
-            f'{self.instrument.config[("geometry", "beamposy.err")]:.5f} pixel')
+            f'Updated beam column (horizontal) coordinate to {self.instrument.cfg["geometry", "beamposy"]:.5f} \xb1 '
+            f'{self.instrument.cfg["geometry", "beamposy.err"]:.5f} pixel')
 
 
     @Slot(bool, name='on_sensitivityGoodnessScoreRadioButton_toggled')
@@ -132,7 +132,7 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             method.cleanupUI()
             try:
                 method.positionFound.disconnect(self.onBeamPositionFound)
-            except TypeError:
+            except (RuntimeError, TypeError):
                 pass  # disconnecting a not connected signal
         self.drawcurve()
         self.drawpolar()

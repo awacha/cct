@@ -31,3 +31,4 @@ conda_build.sh
 /cct/_version.py
 /cct/core2/instrument/components/auth/krb5_check_pass.c
 /cct/core2/algorithms/polar2d.c
+/cct/core2/instrument/components/auth/user.c

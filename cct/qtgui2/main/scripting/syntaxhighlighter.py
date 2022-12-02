@@ -16,7 +16,7 @@ class ScriptSyntaxHighlighter(QtGui.QSyntaxHighlighter):
         f.setForeground(QtCore.Qt.GlobalColor.darkCyan)
         self.formats.append(([re.compile("(?P<delimiter>\"\').+(?P=delimiter)")], f))
         f = QtGui.QTextCharFormat()
-        f.setFontWeight(QtGui.QFont.Bold)
+        f.setFontWeight(QtGui.QFont.Weight.Bold)
         f.setForeground(QtCore.Qt.GlobalColor.darkMagenta)
         self.formats.append(([re.compile(r'\b' + c.name + r'\b') for c in Command.subclasses() if isinstance(c.name, str)], f))
         f = QtGui.QTextCharFormat()

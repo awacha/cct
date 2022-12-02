@@ -1,9 +1,10 @@
 # coding: utf-8
 
 """A context manager to block signals on Qt wigets or simple objects"""
-from typing import List, Tuple, Sequence
+from typing import Sequence
 
 from PySide6 import QtCore
+
 
 class SignalsBlocked:
     """A context manager to block signals on Qt objects

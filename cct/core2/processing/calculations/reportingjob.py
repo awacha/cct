@@ -1,4 +1,4 @@
-from .backgroundprocess import BackgroundProcess, BackgroundProcessError
+from .backgroundprocess import BackgroundProcess
 import multiprocessing
 from multiprocessing import Lock
 from typing import Any, Union, Optional

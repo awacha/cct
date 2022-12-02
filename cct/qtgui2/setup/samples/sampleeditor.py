@@ -45,6 +45,8 @@ class SampleEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     }
     sampleeditordelegate: SampleEditorDelegate
     proxymodel: ProxyModel
+    _description_update_timeout:float = 1 # seconds
+    _description_update_timer:Optional[int] = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -135,15 +137,15 @@ class SampleEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def setCurrentSample(self, name: str):
         self.treeView.selectionModel().setCurrentIndex(
             self.treeView.model().mapFromSource(self.instrument.samplestore.indexForSample(name)),
-            QtCore.QItemSelectionModel.Select | QtCore.QItemSelectionModel.Clear |
-            QtCore.QItemSelectionModel.Current | QtCore.QItemSelectionModel.Rows)
+            QtCore.QItemSelectionModel.SelectionFlag.Select | QtCore.QItemSelectionModel.SelectionFlag.Clear |
+            QtCore.QItemSelectionModel.SelectionFlag.Current | QtCore.QItemSelectionModel.SelectionFlag.Rows)
 
     def currentSample(self) -> Optional[Sample]:
         if not self.treeView.selectionModel().currentIndex().isValid():
             return None
         logger.debug(f'Current sample row: {self.treeView.selectionModel().currentIndex().row()}')
-        return self.instrument.samplestore[
-            self.treeView.model().mapToSource(self.treeView.selectionModel().currentIndex()).row()]
+        return self.instrument.samplestore.get(
+            self.treeView.model().mapToSource(self.treeView.selectionModel().currentIndex()).row())
 
     def currentSampleName(self) -> Optional[str]:
         sam = self.currentSample()
@@ -193,7 +195,19 @@ class SampleEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     @Slot()
     def onPlainTextEdited(self):
         attribute = self.attributeForWidget(self.sender())
-        self.updateSampleInStore(attribute, self.sender().toPlainText())
+        if attribute == 'description':
+            if self._description_update_timer is not None:
+                self.killTimer(self._description_update_timer)
+            self._description_update_timer = self.startTimer(
+                int(self._description_update_timeout*1000), QtCore.Qt.TimerType.PreciseTimer)
+        else:
+            self.updateSampleInStore(attribute, self.sender().toPlainText())
+
+    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
+        if self._description_update_timer is not None:
+            self.updateSampleInStore('description', self.descriptionPlainTextEdit.toPlainText())
+            self.killTimer(self._description_update_timer)
+            self._description_update_timer = None
 
     @Slot()
     def onLineEditEditingFinished(self):
@@ -240,7 +254,7 @@ class SampleEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                     pass
             finally:
                 widget.blockSignals(False)
-            self.updateLockButtonState(self.instrument.samplestore[samplename], attribute)
+            self.updateLockButtonState(self.instrument.samplestore.get(samplename), attribute)
 
     @Slot(QtCore.QItemSelection, QtCore.QItemSelection)
     def onSelectionChanged(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):

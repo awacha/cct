@@ -256,13 +256,6 @@ class DeviceBackend:
             self.messageToFrontend('end', expected=self.stopevent.is_set())
 
     @final
-    async def ensureready(self) -> bool:
-        """Task to ensure that the device is ready, i.e. all variables have been successfully queried at least once."""
-        await asyncio.sleep(self.readytimeout)
-        if self.variablesready:
-            return self.variablesready
-
-    @final
     async def telemetry(self) -> bool:
         """Collect telemetry information periodically"""
         #        self.debug('Telemetry task started.')

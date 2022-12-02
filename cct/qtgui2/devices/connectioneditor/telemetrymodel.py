@@ -22,7 +22,7 @@ class TelemetryModel(QtCore.QAbstractItemModel):
     def parent(self, child: QtCore.QModelIndex) -> QtCore.QModelIndex:
         return QtCore.QModelIndex()
     
-    def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlags:
+    def flags(self, index: QtCore.QModelIndex) -> QtCore.Qt.ItemFlag:
         return QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsEnabled
     
     def index(self, row: int, column: int, parent: QtCore.QModelIndex = ...) -> QtCore.QModelIndex:

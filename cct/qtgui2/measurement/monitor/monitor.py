@@ -55,7 +55,7 @@ class MonitorMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         super().setupUi(Form)
         self.plotimage = PlotImage(self)
         self.plotImageVerticalLayout.addWidget(self.plotimage, 1)
-        self.plotimage.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
+        self.plotimage.setSizePolicy(QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.figureIntensity = Figure(constrained_layout=True)
         self.canvasIntensity = FigureCanvasQTAgg(self.figureIntensity)
         self.toolbarIntensity = NavigationToolbar2QT(self.canvasIntensity, self)

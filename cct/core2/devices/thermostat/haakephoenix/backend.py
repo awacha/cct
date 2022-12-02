@@ -1,7 +1,6 @@
 import datetime
 from math import inf
 from typing import Sequence, Any, Tuple, List
-import time
 
 from ...device.backend import DeviceBackend, VariableType
 
@@ -218,8 +217,9 @@ class HaakePhoenixBackend(DeviceBackend):
                 var = [v for v in self.querymessages if self.querymessages[v] == sentmessage][0]
             except IndexError:
                 self.error(f'Cannot interpret message: {message}. Sent message was: {sentmessage}')
-            self.getVariable(var).lastquery = None
-            self.warning(f'Cannot interpret message: {message}. Sent message was: {sentmessage}. Requeued query for variable {var}')
+            else:
+                self.getVariable(var).lastquery = None
+                self.warning(f'Cannot interpret message: {message}. Sent message was: {sentmessage}. Requeued query for variable {var}')
 
     def issueCommand(self, name: str, args: Sequence[Any]):
         if name == 'start':
@@ -319,7 +319,3 @@ class HaakePhoenixBackend(DeviceBackend):
             self.enqueueHardwareMessage(b'W TS 0\r')
         else:
             super().doPanic()
-
-    async def _dosend(self, message: bytes, nreplies: int):
-        self.debug(f'Sending message *{message}* to Haake Phoenix hardware, expecting {nreplies} replies.')
-        await super()._dosend(message, nreplies)

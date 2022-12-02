@@ -60,8 +60,6 @@ class ExposureTask(QtCore.QObject):
     :type prefix: str
     :ivar fsn: file sequence number of this exposure
     :type fsn: int
-    :ivar command_issue_time: the timestamp (a la time.monotonic()) when the detector was started
-    :type command_issue_time: float
     :ivar command_ack_time: the timestamp (a la time.monotonic()) when the detector acknowledged the start command
     :type command_ack_time: float
     :ivar exptime: time of a single exposure (sec)
@@ -187,7 +185,7 @@ class ExposureTask(QtCore.QObject):
                 self.writeNeXus(image, uncertainty, mask)
                 # emit the raw image.
                 exposure = Exposure(image, header, uncertainty, mask)
-                if self.prefix == self.instrument.config['path']['prefixes']['crd']:
+                if self.prefix == self.instrument.cfg['path',  'prefixes',  'crd']:
                     self.instrument.datareduction.submit(exposure)
                 self.finished.emit(True, exposure)
 
@@ -253,7 +251,7 @@ class ExposureTask(QtCore.QObject):
             'fsn': self.fsn,
             'filename': os.path.abspath(
                 os.path.join(
-                    self.instrument.config['path']['directories']['param'], self.prefix,
+                    self.instrument.cfg['path',  'directories',  'param'], self.prefix,
                     self.instrument.io.formatFileName(self.prefix, self.fsn, '.pickle'))),
             'exposure': {
                 'fsn': self.fsn,
@@ -267,7 +265,7 @@ class ExposureTask(QtCore.QObject):
             'geometry': self.instrument.geometry.getHeaderEntry(),
             'sample': sample.todict() if sample is not None else {},
             'motors': self.instrument.motors.getHeaderEntry(),
-            'devices': {dev.name: dev.toDict() for dev in self.instrument.devicemanager if dev.isOnline()},
+            'devices': {dev.name: dev.toDict() for dev in self.instrument.devicemanager.iterDevices() if dev.isOnline()},
             'environment': {},
             'accounting': {'projectid': self.instrument.projects.project().projectid,
                            'operator': self.instrument.auth.username(),
@@ -275,7 +273,7 @@ class ExposureTask(QtCore.QObject):
                            'proposer': self.instrument.projects.project().proposer},
         }
         # devices
-        for dev in self.instrument.devicemanager:
+        for dev in self.instrument.devicemanager.iterDevices():
             if not dev.isOnline():
                 continue
             data['devices'][dev.name]['devicetype'] = dev.devicetype.value

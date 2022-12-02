@@ -28,7 +28,7 @@ class NotifierSetup(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         row = self.instrument.notifier.rowCount()
         self.instrument.notifier.insertRow(row)
         self.treeView.selectionModel().select(
-            self.instrument.notifier.index(row, 0), QtCore.QItemSelectionModel.ClearAndSelect)
+            self.instrument.notifier.index(row, 0), QtCore.QItemSelectionModel.SelectionFlag.ClearAndSelect)
 
     @Slot()
     def onRemoveClicked(self):

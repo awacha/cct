@@ -2,6 +2,7 @@ import enum
 import logging
 from typing import List, Tuple, Any, Optional
 
+import numpy as np
 import h5py
 from PySide6 import QtCore
 from PySide6.QtCore import Signal, Slot

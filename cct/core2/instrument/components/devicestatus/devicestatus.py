@@ -25,7 +25,7 @@ class DeviceStatus(Component, QtCore.QAbstractItemModel):
     def startComponent(self):
         self.instrument.devicemanager.deviceAdded.connect(self.onDeviceAdded)
         self.instrument.devicemanager.deviceRemoved.connect(self.onDeviceRemoved)
-        for device in self.instrument.devicemanager:
+        for device in self.instrument.devicemanager.iterDevices():
             self.onDeviceAdded(device.name)
 
     def stopComponent(self):
@@ -48,7 +48,7 @@ class DeviceStatus(Component, QtCore.QAbstractItemModel):
         self.beginInsertRows(QtCore.QModelIndex(), insertrow, insertrow)
         self._devicenames.insert(insertrow, name)
         self.endInsertRows()
-        device: DeviceFrontend = self.instrument.devicemanager[name]
+        device: DeviceFrontend = self.instrument.devicemanager.get(name)
         self._deviceready[name] = device.ready
         device.allVariablesReady.connect(self.onDeviceReadyOrLost)
         device.connectionLost.connect(self.onDeviceReadyOrLost)
@@ -83,7 +83,7 @@ class DeviceStatus(Component, QtCore.QAbstractItemModel):
         del self._devicenames[row]
         self.endRemoveRows()
         try:
-            device = self.instrument.devicemanager[name]
+            device = self.instrument.devicemanager.get(name)
         except KeyError:
             return
         device.allVariablesReady.disconnect(self.onDeviceReadyOrLost)
@@ -107,7 +107,7 @@ class DeviceStatus(Component, QtCore.QAbstractItemModel):
         if not parent.isValid():
             return len(self._devicenames)
         else:
-            device = self.instrument.devicemanager[self._devicenames[parent.row()]]
+            device = self.instrument.devicemanager.get(self._devicenames[parent.row()])
             if self._deviceready[device.name]:
                 return len(device)
             else:
@@ -156,11 +156,11 @@ class DeviceStatus(Component, QtCore.QAbstractItemModel):
             if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return self._devicenames[index.row()]
             elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
-                return self.instrument.devicemanager[self._devicenames[index.row()]].devicename
+                return self.instrument.devicemanager.get(self._devicenames[index.row()]).devicename
             elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.EditRole):
                 return self._devicenames[index.row()]
         else:
-            device: DeviceFrontend = self.instrument.devicemanager[self._devicenames[index.parent().row()]]
+            device: DeviceFrontend = self.instrument.devicemanager.get(self._devicenames[index.parent().row()])
             varnames = sorted(device.keys())
             variable = device.getVariable(varnames[index.row()])
             if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DisplayRole):

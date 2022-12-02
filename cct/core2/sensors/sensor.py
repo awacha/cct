@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 
 import numpy as np
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -41,7 +41,7 @@ class Sensor(QtCore.QObject):
 
     def __init__(self, name: str, devicename: str, index: int, units: str, lowwarnlimit: Optional[float] = None,
                  highwarnlimit: Optional[float] = None, lowerrorlimit: Optional[float] = None,
-                 higherrorlimit: Optional[float] = None, paniconerror: bool=False):
+                 higherrorlimit: Optional[float] = None, paniconerror: bool = False):
         self._value = math.nan
         self.name = name
         self.devicename = devicename
@@ -128,11 +128,11 @@ class Sensor(QtCore.QObject):
 
     def __getstate__(self) -> Dict[str, Any]:
         return {
-            'name':self.name,
+            'name': self.name,
             'type': self.sensortype,
             'quantity': self.quantityname,
             'device': self.devicename,
-            'index':self.index,
+            'index': self.index,
             'value': self.value(),
             'units': self.units,
             'warnlimits': (self.lowwarnlimit, self.highwarnlimit),

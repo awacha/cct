@@ -1,8 +1,6 @@
 import datetime
 import enum
-import enum
 import logging
-import multiprocessing
 import time
 from typing import Dict, Optional, Any, List
 
@@ -164,10 +162,10 @@ class Exposer(Component, QtCore.QObject):
         if self.detector is None:
             self._connectDetector()
         # check if the detector is idle
-        if self.detector['__status__'] != PilatusBackend.Status.Idle:  # e.g. the detector is trimming
+        if self.detector.get('__status__') != PilatusBackend.Status.Idle:  # e.g. the detector is trimming
             self._disconnectDetector()
             raise RuntimeError(
-                f'Cannot start exposure: the detector is not idle (instead {self.detector["__status__"]}).')
+                f'Cannot start exposure: the detector is not idle (instead {self.detector.get("__status__")}).')
         # Prepare the exposure (but do not start it yet)!
 
         # ##############################################
@@ -262,7 +260,7 @@ class Exposer(Component, QtCore.QObject):
             # state: Starting -> Exposing
             # ##############################################
             logger.debug('The detector reported that it has started exposing')
-            assert self.detector['__status__'] in [PilatusBackend.Status.Exposing, PilatusBackend.Status.ExposingMulti]
+            assert self.detector.get('__status__') in [PilatusBackend.Status.Exposing, PilatusBackend.Status.ExposingMulti]
             self.state = ExposerState.Exposing
 
             # now start the timers of the ExposureTasks

@@ -4,7 +4,7 @@ from typing import Final
 
 import sqlalchemy, sqlalchemy.exc, sqlalchemy.sql
 
-from ..core2.config import Config
+from ..core2.config2 import Config
 from ..core2.dataclasses import Header
 
 logger = logging.getLogger(__name__)
@@ -22,8 +22,14 @@ def listsubdirs(path: str):
 
 def updatedb(dbtype: str, host: str, database: str, username: str, password: str, configfile: str, verbose: bool, updateonly: bool=True):
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
-    config = Config(dicorfile=configfile)
-    config.filename = None  # inhibit auto-save
+    cfg = Config(configfile)
+    cfg.filename = None  # inhibit auto-save
+    cfg.autosave_interval = None
+    cfg.setdefault(("path", "prefixes", "crd"), 'crd')
+    cfg.setdefault(("path", "fsndigits"), 5)
+    cfg.setdefault(("path", "directories", "param"), "param")
+    cfg.setdefault(("path", "directories", "param_override"), "param_override")
+    cfg.setdefault(("path", "directories", "eval2d"), "eval2d")
     if dbtype.lower() == 'sqlite':
         engine = sqlalchemy.create_engine(f'sqlite:///{database}')
     elif (dbtype.lower() == 'mysql') or (dbtype.lower() == 'mariadb'):
@@ -66,14 +72,14 @@ def updatedb(dbtype: str, host: str, database: str, username: str, password: str
         fsn = 0
     subdirs = []
     for subpath in ['eval2d', 'param_override', 'param']:
-        subdirs.extend(listsubdirs(config['path']['directories'][subpath]))
+        subdirs.extend(listsubdirs(cfg['path', 'directories', subpath]))
     while notfoundcount < MAXNOTFOUNDCOUNT:
         for subdir in subdirs:
             try:
                 header = Header(
                     filename=os.path.join(
                         subdir,
-                        f'{config["path"]["prefixes"]["crd"]}_{fsn:0{config["path"]["fsndigits"]}d}.pickle'))
+                        f'{cfg["path", "prefixes", "crd"]}_{fsn:0{cfg["path", "fsndigits"]}d}.pickle'))
                 logger.debug(f'Found header {header.fsn} in {subdir}')
                 params = dict(
                     fsn=header.fsn, title=header.title, distance=header.distance[0],

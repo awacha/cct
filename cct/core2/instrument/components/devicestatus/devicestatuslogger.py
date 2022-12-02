@@ -85,7 +85,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
         elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             return self._variables[index.row()].variablename
         elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.UserRole):
-            device: DeviceFrontend = self._devicemanager[self._variables[index.row()].devicename]
+            device: DeviceFrontend = self._devicemanager.get(self._variables[index.row()].devicename)
             goodvariablenames = [vn for vn in device.keys() if device.getVariable(vn).vartype in [VariableType.FLOAT, VariableType.INT, VariableType.BOOL]]
             return sorted(goodvariablenames)
         elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
@@ -111,7 +111,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
                 return True
         elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.EditRole):
             # variable name is to be updated
-            if value in self._devicemanager[self._variables[index.row()].devicename].keys():
+            if value in self._devicemanager.get(self._variables[index.row()].devicename).keys():
                 self._variables[index.row()].variablename = value
                 self.dataChanged.emit(
                     self.index(index.row(), 0, QtCore.QModelIndex()),
@@ -163,7 +163,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
             self._writetimerhandle = None
         self._writetimerhandle = self.startTimer(int(self._writeperiod * 1000), QtCore.Qt.TimerType.PreciseTimer)
         for devicename in {v.devicename for v in self._variables}:
-            self._devicemanager[devicename].variableChanged.connect(self.onVariableChanged)
+            self._devicemanager.get(devicename).variableChanged.connect(self.onVariableChanged)
         self.recordingStarted.emit()
         logger.debug(f'Started recording')
         self.recordCurrentValues()
@@ -181,7 +181,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
         self._savepointer = None
         self._recordpointer = None
         for devicename in {v.devicename for v in self._variables}:
-            self._devicemanager[devicename].variableChanged.disconnect(self.onVariableChanged)
+            self._devicemanager.get(devicename).variableChanged.disconnect(self.onVariableChanged)
         self.recordingStopped.emit()
         logger.debug(f'Stopped recording')
 
@@ -226,7 +226,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
 
     def addRecordedVariable(self, devicename: str, variablename: str, scaling: float = 1.0, vartype: Optional[VariableType]=None):
         if vartype is None:
-            dev: DeviceFrontend = self._devicemanager[devicename]
+            dev: DeviceFrontend = self._devicemanager.get(devicename)
             var: Variable = dev.getVariable(variablename)
             vartype = var.vartype
         if vartype in [VariableType.FLOAT,
@@ -251,7 +251,7 @@ class DeviceStatusLogger(QtCore.QAbstractItemModel):
             self._record[self._recordpointer]['Time'] = time.time()
             for v in self._variables:
                 try:
-                    val = self._devicemanager[v.devicename][v.variablename]
+                    val = self._devicemanager.get(v.devicename).get(v.variablename)
                 except (KeyError, DeviceFrontend.DeviceError):
                     val = None
                 if val is None:

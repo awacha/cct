@@ -6,7 +6,7 @@ import h5py
 from PySide6 import QtCore
 from PySide6.QtCore import Signal, Slot
 
-from ...config import Config
+from ...config2 import Config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 class Component:
     """Logical component of an instrument"""
-    config: Config
+    cfg: Config
     instrument: "Instrument"
     started = Signal()
     stopped = Signal()
@@ -30,11 +30,11 @@ class Component:
     _panicking: PanicState = PanicState.NoPanic
 
     def __init__(self, **kwargs):  # see https://www.riverbankcomputing.com/static/Docs/PySide6/multiinheritance.html
-        self.config = kwargs.pop('config')
-        if isinstance(self.config, Config):
+        self.cfg = kwargs.pop('cfg')
+        if isinstance(self.cfg, Config):
             logger.debug('Connecting configChanged signal')
-            self.config.changed.connect(self.onConfigChanged)
-        if (instrument:=kwargs.pop('instrument')) is not None:
+            self.cfg.changed.connect(self.onConfigChanged)
+        if (instrument := kwargs.pop('instrument')) is not None:
             self.instrument = weakref.proxy(instrument)
         else:
             self.instrument = None

@@ -1,9 +1,15 @@
-from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 from .project_ui import Ui_Form
 from .processingwindow import ProcessingWindow
 from ..utils.filebrowsers import getDirectory
 from ...core2.processing.settings import FileNameScheme
+from PySide6.QtCore import Slot
+
+from .processingwindow import ProcessingWindow
+from .project_ui import Ui_Form
+from ..utils.filebrowsers import getDirectory
+from ...core2.processing.settings import FileNameScheme
+
 
 class ProjectWindow(ProcessingWindow, Ui_Form):
     def setupUi(self, Form):
@@ -18,7 +24,7 @@ class ProjectWindow(ProcessingWindow, Ui_Form):
         self.fsnDigitsSpinBox.setValue(self.project.settings.fsndigits)
         self.fileNamePrefixLineEdit.setText(self.project.settings.prefix)
         for ischeme, scheme in enumerate(FileNameScheme):
-            self.fileNameSchemeComboBox.setItemText(ischeme, scheme.value+':')
+            self.fileNameSchemeComboBox.setItemText(ischeme, scheme.value + ':')
         self.fileNamePatternLineEdit.setText(self.project.settings.filenamepattern)
         self.fsnDigitsSpinBox.valueChanged.connect(self.onFSNDigitsChanged)
         self.fileNamePrefixLineEdit.editingFinished.connect(self.onFileNamePrefixEditingFinished)
@@ -54,12 +60,14 @@ class ProjectWindow(ProcessingWindow, Ui_Form):
 
     @Slot()
     def onTaskStarted(self):
-        for pushbutton in [self.loadHeadersPushButton, self.averagingPushButton, self.subtractionPushButton, self.mergingPushButton]:
+        for pushbutton in [self.loadHeadersPushButton, self.averagingPushButton, self.subtractionPushButton,
+                           self.mergingPushButton]:
             pushbutton.setEnabled(False)
 
     @Slot(bool)
     def onTaskFinished(self, success: bool):
-        for pushbutton in [self.loadHeadersPushButton, self.averagingPushButton, self.subtractionPushButton, self.mergingPushButton]:
+        for pushbutton in [self.loadHeadersPushButton, self.averagingPushButton, self.subtractionPushButton,
+                           self.mergingPushButton]:
             pushbutton.setEnabled(True)
 
     @Slot()

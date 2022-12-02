@@ -1,7 +1,7 @@
 import logging
 
-from PySide6 import QtWidgets, QtGui, QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Signal
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -1,18 +1,18 @@
 import enum
 import logging
+import multiprocessing.queues
+import multiprocessing.synchronize
 import queue
-from typing import Optional, List, Any
-from configparser import ConfigParser
 import weakref
+from typing import Optional, List, Any
 
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
-import multiprocessing.synchronize, multiprocessing.queues
-from ..settings import ProcessingSettings
 from ..calculations.backgroundprocess import Results, Message
+from ..settings import ProcessingSettings
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
@@ -112,7 +112,7 @@ class ProcessingTask(QtCore.QAbstractItemModel):
                 self.onBackgroundTaskProgress(message.sender, message.totalcount, message.currentcount, message.message)
             elif message.type_ == 'error':
                 self.onBackgroundTaskError(message.sender, message.message, message.traceback)
-                #self.onBackgroundTaskFinished(message.sender)
+                # self.onBackgroundTaskFinished(message.sender)
             elif message.type_ == 'message':
                 logger.debug(f'{message.sender=}, {message.message=}')
             else:
@@ -125,7 +125,7 @@ class ProcessingTask(QtCore.QAbstractItemModel):
 
         if ((not self._asyncresults) or (
                 (self.status == ProcessingStatus.Stopping) and not [t for t in self._asyncresults if t.ready()])) and (
-        self._messageQueue.empty()):
+                self._messageQueue.empty()):
             self._stopPool()
             self.killTimer(timerEvent.timerId())
             success = self.status != ProcessingStatus.Stopping

@@ -96,6 +96,8 @@ class SubtractionJob(BackgroundProcess):
             bglevel = odrresult.beta[0], odrresult.sd_beta[0]
         elif self.scalingmode == SubtractionScalingMode.Unscaled:
             bglevel = (0.0, 0.0)
+        else:
+            assert False
         ex = Exposure(exposure.intensity - bglevel[0], exposure.header,
                       (exposure.uncertainty ** 2 + bglevel[1] ** 2) ** 0.5, exposure.mask)
         curve_avg = self.h5io.readCurve(f'Samples/{self.samplename}/{distkey}/curve_averaged')

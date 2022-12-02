@@ -1,6 +1,5 @@
 import datetime
 import logging
-import multiprocessing.pool
 import os
 import time
 from typing import Dict, Optional, Any, Sequence
@@ -47,7 +46,7 @@ class ScanStore(Component, QtCore.QAbstractItemModel):
             f.write(f'#E {time.time()}\n')
             f.write(f'#D {datetime.datetime.now()}\n')
             f.write('#C CREDO scan file')
-            f.write('#O0 ' + '  '.join([m.name for m in self.instrument.motors]) + '\n')
+            f.write('#O0 ' + '  '.join([m.name for m in self.instrument.motors.iterMotors()]) + '\n')
             f.write('\n\n')
 
     def startScan(self, motorname: str, rangemin: float, rangemax: float, steps: int, relative: bool,
@@ -57,7 +56,7 @@ class ScanStore(Component, QtCore.QAbstractItemModel):
         if self.scanrecorder is not None:
             raise RuntimeError('Cannot start scan: already running')
         try:
-            motor = self.instrument.motors[motorname]
+            motor = self.instrument.motors.get(motorname)
         except KeyError:
             raise RuntimeError(f'Invalid motor {motorname}')
         assert isinstance(motor, Motor)
@@ -104,7 +103,7 @@ class ScanStore(Component, QtCore.QAbstractItemModel):
             f.write(f'#G0 0\n')
             f.write(f'#G1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n')
             f.write(f'#Q 0 0 0\n')
-            motorpos = [m.where() for m in self.instrument.motors]
+            motorpos = [m.where() for m in self.instrument.motors.iterMotors()]
             for i in range(len(motorpos) // 8 + 1):
                 if motorpos[i * 8:i * 8 + 8]:  # avoid an empty line
                     f.write(f'#P{i} ' + ' '.join([str(mp) for mp in motorpos[i * 8:i * 8 + 8]]) + '\n')
@@ -145,8 +144,8 @@ class ScanStore(Component, QtCore.QAbstractItemModel):
             super().panichandler()
 
     def scanfile(self) -> str:
-        return os.path.join(self.config['path']['directories']['scan'],
-                            self.config['scan']['scanfile'])
+        return os.path.join(self.cfg['path',  'directories',  'scan'],
+                            self.cfg['scan',  'scanfile'])
 
     @Slot(object, object)
     def onConfigChanged(self, path, value):
@@ -155,11 +154,11 @@ class ScanStore(Component, QtCore.QAbstractItemModel):
 
     def reindex(self):
         self.beginResetModel()
-        os.makedirs(self.config['path']['directories']['scan'], exist_ok=True)
+        os.makedirs(self.cfg['path',  'directories',  'scan'], exist_ok=True)
         self._scans = {}
         try:
-            with open(os.path.join(self.config['path']['directories']['scan'],
-                                   self.config['scan']['scanfile']), 'rb') as f:
+            with open(os.path.join(self.cfg['path',  'directories',  'scan'],
+                                   self.cfg['scan',  'scanfile']), 'rb') as f:
                 while True:
                     try:
                         scan = Scan.fromspecfile(f, None)
@@ -170,8 +169,8 @@ class ScanStore(Component, QtCore.QAbstractItemModel):
             self._nextscan = self._lastscan + 1 if self._lastscan is not None else 0
         except FileNotFoundError:
             # we need to create a new scan file
-            self.newScanFile(os.path.join(self.config['path']['directories']['scan'],
-                                          self.config['scan']['scanfile']))
+            self.newScanFile(os.path.join(self.cfg['path',  'directories',  'scan'],
+                                          self.cfg['scan',  'scanfile']))
         finally:
             self.endResetModel()
         self.lastscanchanged.emit(self._lastscan if self._lastscan is not None else -1)
@@ -233,12 +232,12 @@ class ScanStore(Component, QtCore.QAbstractItemModel):
     def firstscan(self) -> Optional[int]:
         return min(self._scans) if self._scans else None
 
-    def __getitem__(self, item) -> Scan:
+    def get(self, item) -> Scan:
         return self._scans[item]
 
     def loadFromConfig(self):
-        if 'scan' not in self.config:
-            self.config['scan'] = {'mask': None, 'mask_total': None, 'scanfile': 'credoscan.spec'}
+        if 'scan' not in self.cfg:
+            self.cfg['scan'] = {'mask': None, 'mask_total': None, 'scanfile': 'credoscan.spec'}
 
     def panichandler(self):
         self._panicking = self.PanicState.Panicking

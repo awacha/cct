@@ -3,7 +3,6 @@ from PySide6.QtCore import Slot
 
 from .beamstopcalibrator_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
-from ....core2.instrument.components.auth.privilege import Privilege
 
 
 class BeamStopCalibrator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
@@ -56,8 +55,9 @@ class BeamStopCalibrator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 'Confirm calibrating beam-stop position',
                 f'Do you really want to set beam-stop {"in" if self.inRadioButton.isChecked() else "out"} position '
                 f'to ({self.xDoubleSpinBox.value():.4f}, {self.yDoubleSpinBox.value():.4f})?',
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No
-        ) == QtWidgets.QMessageBox.No:
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No
+        ) == QtWidgets.QMessageBox.StandardButton.No:
             QtWidgets.QMessageBox.information(
                 self.window(),
                 'Calibrating beam-stop position',

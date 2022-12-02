@@ -3,7 +3,7 @@ import multiprocessing.pool
 from typing import Any, List, Optional, Sequence, Iterator
 
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 from ...core2.dataclasses import Header
 from ...core2.instrument.components.io import IO
@@ -18,7 +18,7 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
     loading = Signal(bool)
     loaderpool: Optional[multiprocessing.pool.Pool] = None
     asyncresults: Optional[List[multiprocessing.pool.AsyncResult]]
-    _stopLoading: bool=False
+    _stopLoading: bool = False
 
     def __init__(self):
         super().__init__()
@@ -72,8 +72,8 @@ class HeaderViewModel(QtCore.QAbstractItemModel):
         if self.loaderpool is not None:
             raise RuntimeError('Another reload process is running in the background')
         self.loaderpool = multiprocessing.Pool(multiprocessing.cpu_count(), initializer=self._initloaderpool,
-                                               initargs=(Instrument.instance().config.asdict(),))
-        prefix = Instrument.instance().config['path']['prefixes']['crd']
+                                               initargs=(Instrument.instance().cfg.toDict(),))
+        prefix = Instrument.instance().cfg['path', 'prefixes', 'crd']
         self.asyncresults = [self.loaderpool.apply_async(self._loadheader, (prefix, fsn, True)) for fsn in
                              fsns]
         self.beginResetModel()

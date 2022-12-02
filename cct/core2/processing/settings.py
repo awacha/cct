@@ -6,14 +6,13 @@ import multiprocessing.synchronize
 import numbers
 import os
 import re
-import enum
 from typing import Optional, Set, Iterable, List, Tuple, Final, Iterator, Union
 
 import appdirs
 import h5py
 import numpy as np
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 from .calculations.outliertest import OutlierMethod
 from .h5io import ProcessingH5File

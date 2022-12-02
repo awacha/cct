@@ -125,14 +125,14 @@ class PlotScan(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     @Slot()
     def onSliderButton(self):
         if self.sender() is self.goBackToolButton:
-            self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderSingleStepSub)
+            self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderAction.SliderSingleStepSub)
         elif self.sender() is self.goForwardToolButton:
-            self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderSingleStepAdd)
+            self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderAction.SliderSingleStepAdd)
         elif self.sender() is self.gotoFirstToolButton:
-            self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderToMinimum)
+            self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderAction.SliderToMinimum)
         else:
             assert self.sender() is self.gotoLastToolButton
-            self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderToMaximum)
+            self.cursorHorizontalSlider.triggerAction(QtWidgets.QSlider.SliderAction.SliderToMaximum)
 
     @Slot()
     def autoScaleToggled(self):
@@ -145,22 +145,22 @@ class PlotScan(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             and self.instrument.online
             and (not self._recording)
             and (self.scan.motorname in self.instrument.motors)
-            and (not self.instrument.motors[self.scan.motorname].isMoving()))
+            and (not self.instrument.motors.get(self.scan.motorname).isMoving()))
         self.motorToCursorToolButton.setEnabled(
             self.instrument.online
             and (not self._recording)
             and (self.scan.motorname in self.instrument.motors)
-            and (not self.instrument.motors[self.scan.motorname].isMoving())
+            and (not self.instrument.motors.get(self.scan.motorname).isMoving())
         )
 
     @Slot()
     def motorToPeak(self):
         if self.peakposition() is not None:
-            self.instrument.motors[self.scan.motorname].moveTo(self.peakposition())
+            self.instrument.motors.get(self.scan.motorname).moveTo(self.peakposition())
 
     @Slot()
     def motorToCursor(self):
-        self.instrument.motors[self.scan.motorname].moveTo(
+        self.instrument.motors.get(self.scan.motorname).moveTo(
             self.scan[self.scan.motorname][self.cursorHorizontalSlider.value()])
 
     @Slot()
@@ -182,7 +182,7 @@ class PlotScan(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def showImage(self, keepzoom: bool = False):
         self.mainwindow.showPattern(
             self.instrument.io.loadExposure(
-                self.instrument.config['path']['prefixes']['scn'],
+                self.instrument.cfg['path',  'prefixes',  'scn'],
                 int(self.scan['FSN'][self.cursorHorizontalSlider.value()]), raw=True, check_local=True),
             keepzoom)
 
@@ -287,8 +287,9 @@ class PlotScan(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.cursor.set_visible(not self._recording)
         limits = self.axes.axis()
         try:
-            self.motorvline = self.axes.axvline(self.instrument.motors[self.scan.motorname].where(), lw=1, ls='dotted',
-                                                color='g')
+            self.motorvline = self.axes.axvline(
+                self.instrument.motors.get(self.scan.motorname).where(), lw=2, ls='dotted',
+                color='g')
             self.axes.axis(limits)
         except Exception as exc:
             logger.warning(f'Cannot plot motor vline: {exc}')
@@ -297,21 +298,17 @@ class PlotScan(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def setScan(self, scan: Scan):
         if isinstance(self.scan, Scan):
             if self.instrument.online:
-                self.disconnectMotor(self.instrument.motors[self.scan.motorname])
+                self.disconnectMotor(self.instrument.motors.get(self.scan.motorname))
         self.scan = scan
         if self.instrument.online:
-            self.connectMotor(self.instrument.motors[self.scan.motorname])
+            self.connectMotor(self.instrument.motors.get(self.scan.motorname))
         self.listWidget.clear()
         self.listWidget.addItems(self.scan.columnnames[1:])
         for row in range(self.listWidget.count()):
             item = self.listWidget.item(row)
             item.setFlags(
                 QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
-            if 'gui' not in self.instrument.config:
-                self.instrument.config['gui'] = {}
-            if 'plotscan' not in self.instrument.config['gui']:
-                self.instrument.config['gui']['plotscan'] = {}
-            visible = self.instrument.config['gui']['plotscan'].setdefault(self.scan.columnnames[1 + row], True)
+            visible = self.instrument.cfg.setdefault(('gui', 'plotscan', self.scan.columnnames[1 + row]), True)
             item.setCheckState(QtCore.Qt.CheckState.Checked if bool(visible) else QtCore.Qt.CheckState.Unchecked)
         self.listWidget.setCurrentItem(self.listWidget.item(1))
         self.cursorHorizontalSlider.setMinimum(0)
@@ -339,9 +336,5 @@ class PlotScan(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         if self.scan is None:
             return
         for row, label in enumerate(self.scan.columnnames[1:]):
-            if 'gui' not in self.instrument.config:
-                self.instrument.config['gui'] = {}
-            if 'plotscan' not in self.instrument.config['gui']:
-                self.instrument.config['gui']['plotscan'] = {}
-            self.instrument.config['gui']['plotscan'][label] = \
+            self.instrument.cfg['gui',  'plotscan',  label] = \
                 self.listWidget.item(row).checkState() == QtCore.Qt.CheckState.Checked

@@ -3,8 +3,7 @@ from typing import Any
 
 import h5py
 import numpy as np
-from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 from .backend import SE521Backend
 from ...device.frontend import DeviceFrontend, DeviceType
@@ -26,7 +25,7 @@ class SE521(DeviceFrontend):
         self.sensors = [Thermometer(f't{i}', self.name, i-1, '°C') for i in range(1, 5)]
 
     def temperature(self, index: int) -> float:
-        return self[f't{index}']
+        return self.get(f't{index}')
 
     def toggleBacklight(self):
         self.issueCommand('togglebacklight')
@@ -60,7 +59,7 @@ class SE521(DeviceFrontend):
         self.create_hdf5_dataset(grp, 'name', 'SE521 4-channel digital thermometer')
         self.create_hdf5_dataset(grp, 'short_name', 'Sample chamber temperature')
         self.create_hdf5_dataset(grp, 'measurement', 'temperature')
-        self.create_hdf5_dataset(grp, 'type', self['thermistortype'])
+        self.create_hdf5_dataset(grp, 'type', self.get('thermistortype'))
         self.create_hdf5_dataset(grp, 'run_control', False)
-        self.create_hdf5_dataset(grp, 'value', np.array([self['t1'], self['t2'], self['t3'], self['t4']]))
+        self.create_hdf5_dataset(grp, 'value', np.array([self.get('t1'), self.get('t2'), self.get('t3'), self.get('t4')]))
         return grp

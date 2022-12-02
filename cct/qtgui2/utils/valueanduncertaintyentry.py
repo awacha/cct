@@ -1,6 +1,6 @@
 from typing import Tuple, Optional
 
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, Slot
 
 from .valueanduncertaintyentry_ui import Ui_Form
@@ -17,7 +17,7 @@ class ValueAndUncertaintyEntry(QtWidgets.QWidget, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
         self.uncertaintyDoubleSpinBox.setMinimum(0)
-        self.uncertaintyDoubleSpinBox.setMaximum(self.valueDoubleSpinBox.maximum()*self.maxrelativeuncertainty)
+        self.uncertaintyDoubleSpinBox.setMaximum(self.valueDoubleSpinBox.maximum() * self.maxrelativeuncertainty)
         self.valueDoubleSpinBox.valueChanged.connect(self._onvaluechanged)
         self.uncertaintyDoubleSpinBox.valueChanged.connect(self._onvaluechanged)
 
@@ -70,4 +70,4 @@ class ValueAndUncertaintyEntry(QtWidgets.QWidget, Ui_Form):
     def setRange(self, min: float, max: float):
         self.valueDoubleSpinBox.setMinimum(min)
         self.valueDoubleSpinBox.setMaximum(max)
-        self.uncertaintyDoubleSpinBox.setMaximum(max*self.maxrelativeuncertainty)
+        self.uncertaintyDoubleSpinBox.setMaximum(max * self.maxrelativeuncertainty)

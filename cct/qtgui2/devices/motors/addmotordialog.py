@@ -30,7 +30,7 @@ class AddMotorDialog(QtWidgets.QDialog, Ui_Dialog):
 
     @Slot()
     def motorControllerSelected(self):
-        controller = Instrument.instance().devicemanager[self.controllerComboBox.currentText()]
+        controller = Instrument.instance().devicemanager.get(self.controllerComboBox.currentText())
         assert isinstance(controller, MotorController)
         self.axisSpinBox.setRange(0, controller.Naxes)
         self.axisSpinBox.setValue(0)
@@ -40,7 +40,7 @@ class AddMotorDialog(QtWidgets.QDialog, Ui_Dialog):
         if (not self.motorNameLineEdit.text()) or \
             (self.motorNameLineEdit.text() in Instrument.instance().motors) or \
                 (self.controllerComboBox.currentIndex() < 0) or \
-                ([motor for motor in Instrument.instance().motors
+                ([motor for motor in Instrument.instance().motors.iterMotors()
                   if (motor.controllername == self.controllerComboBox.currentText())
                      and (motor.axis == self.axisSpinBox.value())]) or \
                 (self.leftLimitDoubleSpinBox.value() > self.rightLimitDoubleSpinBox.value()) or \

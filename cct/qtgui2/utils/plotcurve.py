@@ -29,7 +29,7 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
     MARKERS: str = 'ovsp*D^h<H>x+d1234'
     _figsize: Tuple[float, float] = None
 
-    def __init__(self, parent: QtWidgets.QWidget = None, figsize: Tuple[float, float] = (6, 6), show_stddev: bool = False, stddev_graph_height_ratio: Optional[fractions.Fraction] = None):
+    def __init__(self, parent: QtWidgets.QWidget = None, figsize: Tuple[float, float] = (2, 1.5), show_stddev: bool = False, stddev_graph_height_ratio: Optional[fractions.Fraction] = None):
         super().__init__(parent)
         self._figsize = figsize
         self.curves = []

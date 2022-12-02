@@ -79,8 +79,8 @@ class SequenceWizard(QtWidgets.QWizard, Ui_Wizard):
              f"    return\n\n"
         exposures = self.samplespage.exposures()
         if self.field('orderSamples'):
-            samples = [instrument.samplestore[e[0]] for e in exposures]
-            qsample = instrument.samplestore[self.field('qCalibrantSample')]
+            samples = [instrument.samplestore.get(e[0]) for e in exposures]
+            qsample = instrument.samplestore.get(self.field('qCalibrantSample'))
             exposures = orderForLeastMotorMovement(
                 [(e, (s.positionx[0], s.positiony[0])) for e, s in zip(exposures, samples)],
                 (qsample.positionx[0], qsample.positiony[0])

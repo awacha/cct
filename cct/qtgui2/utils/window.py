@@ -99,9 +99,9 @@ class WindowRequiresDevices:
             # this check allows off-line usage of the widget, i.e. without a valid 'instrument' instance.
             self.instrument = instrument
             # now try to connect devices and motors
-            for dev in self.instrument.devicemanager:
+            for dev in self.instrument.devicemanager.iterDevices():
                 self._onDeviceAdded(dev.name)
-            for mot in self.instrument.motors:
+            for mot in self.instrument.motors.iterMotors():
                 self._onNewMotor(mot.name)
             # have a look out for added/removed devices and motors
             self.instrument.devicemanager.deviceRemoved.connect(self._onDeviceRemoved)
@@ -109,7 +109,7 @@ class WindowRequiresDevices:
             self.instrument.motors.newMotor.connect(self._onNewMotor)
             self.instrument.motors.motorRemoved.connect(self.onMotorRemoved)
 
-            self.instrument.config.changed.connect(self.onConfigChanged)
+            self.instrument.cfg.changed.connect(self.onConfigChanged)
             self.instrument.auth.currentUserChanged.connect(self.onUserOrPrivilegesChanged)
         else:
             self.instrument = None
@@ -134,11 +134,11 @@ class WindowRequiresDevices:
                 logger.debug(f'Cannot instantiate {cls.__name__}: no device of type {dt} available.')
                 return False
         for dn in required_devicenames:
-            if not [d for d in instrument.devicemanager if (d.devicename == dn) and d.isOnline()]:
+            if not [d for d in instrument.devicemanager.iterDevices() if (d.devicename == dn) and d.isOnline()]:
                 logger.debug(f'Cannot instantiate {cls.__name__}: no device with name {dn} available.')
                 return False
         for motrole, motdir in required_motors:
-            if not [m for m in instrument.motors if (m.role == motrole) and (m.direction == motdir) and m.isOnline()]:
+            if not [m for m in instrument.motors.iterMotors() if (m.role == motrole) and (m.direction == motdir) and m.isOnline()]:
                 logger.debug(
                     f'Cannot instantiate {cls.__name__}: no motors with role {motrole} and direction {motdir} available')
                 return False
@@ -193,7 +193,7 @@ class WindowRequiresDevices:
     def connectMotor(self, motor: Union[Motor, str]):
         """Connect the signals of a motor to the callback functions"""
         if isinstance(motor, str):
-            motor = self.instrument.motors[motor]
+            motor = self.instrument.motors.get(motor)
         logger.debug(f'Connecting motor {motor.name} to an instance of class {self.__class__.__name__}')
         motor.started.connect(self.onMotorStarted)
         motor.stopped.connect(self.onMotorStopped)
@@ -207,7 +207,7 @@ class WindowRequiresDevices:
     def disconnectMotor(self, motor: Union[Motor, str]):
         """Disconnect the signals of a motor from the callback functions"""
         if isinstance(motor, str):
-            motor = self.instrument.motors[motor]
+            motor = self.instrument.motors.get(motor)
         try:
             logger.debug(f'Disconnecting motor {motor.name} from an instance of class {self.__class__.__name__}')
             motor.started.disconnect(self.onMotorStarted)
@@ -274,10 +274,10 @@ class WindowRequiresDevices:
     @final
     @Slot(str)
     def _onDeviceAdded(self, devicename: str):
-        device = self.instrument.devicemanager[devicename]
+        device = self.instrument.devicemanager.get(devicename)
         if (device.devicename in self.required_devicenames) or self.connect_all_devices or (
                 device.devicetype in self.required_devicetypes):
-            device = self.instrument.devicemanager[devicename]
+            device = self.instrument.devicemanager.get(devicename)
             self._disconnectDevice(device)
             self._connectDevice(device)
             self.setSensitive(None)
@@ -339,9 +339,9 @@ class WindowRequiresDevices:
     @Slot(str)
     def _onNewMotor(self, motorname: str):
         logger.debug(f'New motor callback in {self.__class__.__name__}')
-        motor = self.instrument.motors[motorname]
+        motor = self.instrument.motors.get(motorname)
         if self.connect_all_motors or ((motor.role, motor.direction) in self.required_motors):
-            self.connectMotor(self.instrument.motors[motorname])
+            self.connectMotor(motor)
         self.setSensitive(None)
         self.onNewMotor(motorname)
 

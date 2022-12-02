@@ -2,14 +2,12 @@ import logging
 import logging.handlers
 import multiprocessing
 import os
-import gc
 import sys
 
 import click
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets
 
 from .main import main
-from ..core2.config import Config
 from ..core2.instrument.instrument import Instrument
 from ..qtgui2.main.logindialog import LoginDialog
 from ..qtgui2.main.mainwindow import MainWindow
@@ -46,7 +44,7 @@ def daq(config: str, online: bool, root: bool):
             logindialog = LoginDialog()
             logindialog.setOffline(not online)
             result = logindialog.exec()
-            if result == QtWidgets.QDialog.Accepted:
+            if result == QtWidgets.QDialog.DialogCode.Accepted:
                 if logindialog.authenticate():
                     logger.debug('Successful authentication')
                     online = not logindialog.isOffline()
@@ -69,19 +67,17 @@ def daq(config: str, online: bool, root: bool):
     mw.show()
     instrument.start()
     def onAboutToQuit():
-#        print('Application is about to quit')
+        print('Application is about to quit')
         logging.root.removeHandler(mw.logViewer)
-#        print(logging.root.handlers)
-        mw.deleteLater()
-        instrument.config.deleteLater()
-        instrument.deleteLater()
-        app.processEvents(QtCore.QEventLoop.AllEvents)
-        gc.collect()
-#        print('Application about to quit callback has finished')
+        print(logging.root.handlers)
+        #mw.deleteLater()
+        #instrument.deleteLater()
+        #app.processEvents(QtCore.QEventLoop.AllEvents)
+        #gc.collect()
+        print('Application about to quit callback has finished')
     app.aboutToQuit.connect(onAboutToQuit)
 
     logger.debug('Starting event loop')
     result = app.exec_()
-    print(f'Remaining Configs: {len(Config.instances)}')
     print('Now exiting...')
     sys.exit(result)

@@ -1,10 +1,10 @@
 import logging
 import os
-from typing import Tuple, Any, List, Optional
+from typing import Tuple, Any, List
 
 import h5py
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 from ...device.frontend import DeviceFrontend, DeviceType
 
@@ -26,19 +26,19 @@ class MotorController(DeviceFrontend):
         self.Naxes = self.backendclass.Naxes
 
     def moveTo(self, motor: int, position: float):
-        if position < self[f'softleft${motor}'] or position > self[f'softright${motor}']:
+        if position < self.get(f'softleft${motor}') or position > self.get(f'softright${motor}'):
             raise self.DeviceError(f'Cannot move motor {motor}: position outside limits.')
-        if self[f'moving${motor}']:
+        if self.get(f'moving${motor}'):
             raise self.DeviceError(f'Cannot move motor {motor}: already in motion.')
         self.issueCommand('moveto', motor, position)
 
     def moveRel(self, motor: int, position: float):
 #        logger.debug(f'Moving motor {motor} relatively by {position}')
-        if (self[f'actualposition${motor}'] + position < self[f'softleft${motor}']) or \
-                (self[f'actualposition${motor}'] + position > self[f'softright${motor}']):
+        if (self.get(f'actualposition${motor}') + position < self.get(f'softleft${motor}')) or \
+                (self.get(f'actualposition${motor}') + position > self.get(f'softright${motor}')):
             #logger.debug('Position outside limits!')
             raise self.DeviceError(f'Cannot move motor {motor}: position outside limits.')
-        if self[f'moving${motor}']:
+        if self.get(f'moving${motor}'):
             #logger.debug('Motor is moving!')
             raise self.DeviceError(f'Cannot move motor {motor}: already in motion.')
         self.issueCommand('moverel', motor, position)
@@ -54,7 +54,7 @@ class MotorController(DeviceFrontend):
         self.issueCommand('setlimits', motor, (left, right))
 
     def getLimits(self, motor: int) -> Tuple[float, float]:
-        return self[f'softleft${motor}'], self[f'softright${motor}']
+        return self.get(f'softleft${motor}'), self.get(f'softright${motor}')
 
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
         row = [i for i, (name, isperaxis) in enumerate(self._variablebasenames()) if name == variablename.split('$')[0]][0]
@@ -69,9 +69,9 @@ class MotorController(DeviceFrontend):
             axis = int(variablename.split('$')[-1])
             try:
                 if newvalue:
-                    self.moveStarted.emit(axis, self[f'movestartposition${axis}'])
+                    self.moveStarted.emit(axis, self.get(f'movestartposition${axis}'))
                 else:
-                    self.moveEnded.emit(axis, self[f'lastmovewassuccessful${axis}'], self[f'actualposition${axis}'])
+                    self.moveEnded.emit(axis, self.get(f'lastmovewassuccessful${axis}'), self.get(f'actualposition${axis}'))
             except self.DeviceError:
                 # this error is normal if not all variables have been updated.
                 if self.ready:

@@ -21,7 +21,7 @@ class NewConnectionDialog(QtWidgets.QDialog, Ui_Dialog):
 
     @Slot()
     def check(self):
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(
             bool(self.driverClassComboBox.currentText()) and
             bool(self.deviceNameLineEdit.text()) and
             bool(self.hostNameLineEdit.text()) and

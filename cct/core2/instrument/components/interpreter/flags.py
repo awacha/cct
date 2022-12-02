@@ -1,7 +1,7 @@
 from typing import Dict, Any, Iterable
 
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 
 class InterpreterFlags(QtCore.QAbstractItemModel):
@@ -82,20 +82,14 @@ class InterpreterFlags(QtCore.QAbstractItemModel):
     def __len__(self) -> int:
         return len(self._flags)
 
-    def __iter__(self) -> Iterable[str]:
+    def iterFlags(self) -> Iterable[str]:
         return iter(sorted(self._flags))
 
     def __contains__(self, item):
         return item in self._flags
 
-    def __getitem__(self, item):
+    def getFlag(self, item):
         return self._flags[item]
-
-    def __setitem__(self, key, value):
-        self.setFlag(key, value)
-
-    def __delitem__(self, key):
-        return self.removeFlag(key)
 
     def reset(self):
         for flag in list(self._flags):

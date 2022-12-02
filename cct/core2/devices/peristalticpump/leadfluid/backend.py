@@ -37,9 +37,6 @@ class BT100SBackend(DeviceBackend, ModbusTCP):
         self.lastissuedcommand = []
         return super().onVariablesReady()
 
-    def enqueueHardwareMessage(self, message: bytes, numreplies: int = 1, urgencymodifier: float = 0.0):
-        super().enqueueHardwareMessage(message, numreplies, urgencymodifier)
-
     def _query(self, variablename: str):
         if variablename == 'rotating_speed_timer':
             self.modbus_read_input_registers(1000, 30)

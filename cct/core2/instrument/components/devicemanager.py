@@ -2,7 +2,6 @@ import logging
 import warnings
 from typing import List, Any, Type, Iterator, Union
 
-import gc
 import h5py
 from PySide6 import QtCore
 from PySide6.QtCore import Signal, Slot
@@ -14,7 +13,7 @@ from ...devices.motor.generic.frontend import MotorController
 from ....utils import getIconFromTheme
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class DeviceManager(Component, QtCore.QAbstractItemModel):
@@ -43,8 +42,8 @@ class DeviceManager(Component, QtCore.QAbstractItemModel):
         self.beginResetModel()
         self._devices = []
         self.endResetModel()
-        if 'connections' in self.config:
-            for key, value in self.config['connections'].asdict().items():
+        if 'connections' in self.cfg:
+            for key, value in self.cfg['connections'].items():
                 logger.debug(f'Loading device info from key {key}')
                 try:
                     self.addDevice(value['name'], value['classname'], value['host'], value['port'])
@@ -52,20 +51,11 @@ class DeviceManager(Component, QtCore.QAbstractItemModel):
                     logger.critical(f'Cannot add device {value["name"]}: {exc}')
 
     def saveToConfig(self):
-        if 'connections' not in self.config:
-            self.config['connections'] = {}
-        devnames = {dev.name for dev in self._devices}
-        for dev in list(self.config['connections'].keys()):
-            if dev not in devnames:
-                self.config['connections'][dev].deleteLater()
-                del self.config['connections'][dev]
-        for dev in self._devices:
-            if dev.name in self.config['connections']:
-                self.config['connections'][dev.name].deleteLater()
-                del self.config['connections'][dev.name]
-            self.config['connections'][dev.name] = {'classname': dev.__class__.devicename, 'name': dev.name, 'host': dev.host, 'port': dev.port}
-        logger.debug(f'Config connections keys: {list(self.config["connections"].keys())}')
-        gc.collect()
+        self.cfg['connections'] = {
+            dev.name: {'classname': dev.__class__.devicename, 'name': dev.name, 'host': dev.host, 'port': dev.port}
+            for dev in self._devices
+        }
+        logger.debug(f'Config connections keys: {list(self.cfg["connections"].keys())}')
 
     @staticmethod
     def getDriverClass(deviceclassname: str) -> Type[DeviceFrontend]:
@@ -82,24 +72,24 @@ class DeviceManager(Component, QtCore.QAbstractItemModel):
     def disconnectDevices(self):
         logger.info('Disconnecting all devices')
         if not self._devices:
-            QtCore.QTimer.singleShot(0, QtCore.Qt.TimerType.VeryCoarseTimer, self.stopped.emit)
+            QtCore.QTimer.singleShot(0, self.stopped.emit)
             logger.debug('No devices, emitting stopped.')
         for dev in self._devices:
             self.disconnectDevice(dev.name)
 
     def disconnectDevice(self, devicename: str):
-        if self[devicename].isOffline():
+        if self.get(devicename).isOffline():
             # already off-line, no need to disconnect
             return
-        if not (self[devicename].isOnline() or self[devicename].isInitializing()):
+        if not (self.get(devicename).isOnline() or self.get(devicename).isInitializing()):
             raise ValueError('Cannot disconnect from device: it is not online and not initializing')
-        self[devicename].stopbackend()
+        self.get(devicename).stopbackend()
 
     def connectDevice(self, devicename: str):
         """Start the backend of an existing device"""
         if not self.instrument.online:
             raise RuntimeError('Cannot connect devices in offline mode.')
-        dev = self[devicename]
+        dev = self.get(devicename)
         if dev.isOnline() or dev.isInitializing():
             # no need to connect, already online
             return
@@ -137,45 +127,57 @@ class DeviceManager(Component, QtCore.QAbstractItemModel):
     def devicenames(self) -> List[str]:
         return [dev.name for dev in self._devices]
 
-    def __iter__(self) -> Iterator[DeviceFrontend]:
+    def iterDevices(self) -> Iterator[DeviceFrontend]:
         yield from self._devices
 
     def __contains__(self, item: str) -> bool:
         return item in [dev.name for dev in self._devices]
 
-    def __getitem__(self, item: str) -> DeviceFrontend:
+    def get(self, item: str) -> DeviceFrontend:
         try:
             return [dev for dev in self._devices if dev.name == item][0]
         except IndexError:
             raise KeyError(item)
 
+    def getByDeviceName(self, item: str) -> DeviceFrontend:
+        try:
+            return [dev for dev in self._devices if dev.devicename == item][0]
+        except IndexError:
+            raise KeyError(item)
+
+    def getByDeviceType(self, item: DeviceType) -> DeviceFrontend:
+        try:
+            return [dev for dev in self._devices if dev.devicetype == item][0]
+        except IndexError:
+            raise KeyError(item)
+
     def detector(self) -> DeviceFrontend:
         """Get the first available detector"""
-        return [d for d in self._devices if d.devicetype == DeviceType.Detector][0]
+        return self.getByDeviceType(DeviceType.Detector)
 
     def source(self) -> DeviceFrontend:
         """Get the first available X-ray source"""
-        return [d for d in self._devices if d.devicetype == DeviceType.Source][0]
+        return self.getByDeviceType(DeviceType.Source)
 
     def vacuum(self) -> DeviceFrontend:
         """Get the first available vacuum gauge"""
-        return [d for d in self._devices if d.devicetype == DeviceType.VacuumGauge][0]
+        return self.getByDeviceType(DeviceType.VacuumGauge)
 
     def temperature(self) -> DeviceFrontend:
         """Get the first available thermostat"""
-        return [d for d in self._devices if d.devicetype == DeviceType.Thermostat][0]
+        return self.getByDeviceType(DeviceType.Thermostat)
 
     def motorcontrollers(self) -> List[MotorController]:
         """Get all motor controllers"""
-        return [d for d in self._devices if d.devicetype == DeviceType.MotorController]
+        return self.devicesOfType(DeviceType.MotorController, online=False)
 
     def peristalticpump(self) -> DeviceFrontend:
         """Get the first available peristaltic pump"""
-        return [d for d in self._devices if d.devicetype == DeviceType.PeristalticPump][0]
+        return self.getByDeviceType(DeviceType.PeristalticPump)
 
     def ups(self) -> DeviceFrontend:
         """Get the first available ups"""
-        return [d for d in self._devices if d.devicetype == DeviceType.UPS][0]
+        return self.getByDeviceType(DeviceType.UPS)
 
     def devicesOfType(self, devicetype: Union[str, DeviceType], online: bool = True) -> List[DeviceFrontend]:
         if isinstance(devicetype, str):
@@ -216,7 +218,7 @@ class DeviceManager(Component, QtCore.QAbstractItemModel):
     @needsprivilege(Privilege.DeviceConfiguration)
     def removeDevice(self, devicename: str):
         try:
-            device = self[devicename]
+            device = self.get(devicename)
         except KeyError:
             raise ValueError(f'No device with name {devicename}')
         if not device.isOffline():
@@ -250,7 +252,7 @@ class DeviceManager(Component, QtCore.QAbstractItemModel):
             self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
     def isConnected(self, devicename: str) -> bool:
-        return self[devicename].isOnline()
+        return self.get(devicename).isOnline()
 
     def startComponent(self):
         if self.instrument.online:

@@ -49,7 +49,8 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
         self.figure = Figure(figsize=(6, 3), constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.canvas.setSizePolicy(
-            QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding))
+            QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+                                  QtWidgets.QSizePolicy.Policy.MinimumExpanding))
         self.figtoolbar = NavigationToolbar2QT(self.canvas, self)
         self.figureVerticalLayout.addWidget(self.figtoolbar, 0)
         self.figureVerticalLayout.addWidget(self.canvas, 1)
@@ -81,7 +82,7 @@ class DeviceVariableLoggerUI(QtWidgets.QWidget, Ui_Form):
         if self.deviceNameComboBox.currentIndex() < 0:
             self.variableNameComboBox.setModel(None)
         try:
-            self.variableNameComboBox.setModel(self.instrument.devicemanager[self.deviceNameComboBox.currentText()])
+            self.variableNameComboBox.setModel(self.instrument.devicemanager.get(self.deviceNameComboBox.currentText()))
         except KeyError:
             self.variableNameComboBox.setModel(None)
 

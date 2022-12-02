@@ -1,25 +1,24 @@
+import logging
 import os
 from typing import Sequence, Optional, Union
-import logging
 
 import numpy as np
 import scipy.io
 from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 from matplotlib.backend_bases import MouseEvent
-from matplotlib.path import Path
 from matplotlib.widgets import Cursor, EllipseSelector, RectangleSelector, LassoSelector, PolygonSelector
 
 from .maskeditor_ui import Ui_Form
+from .maskoperations import maskCircle, maskRectangle, maskPolygon, mm_mask, mm_flip, mm_unmask
 from .stack import Stack
+from ...utils.filebrowsers import browseMask, getSaveFile
 from ...utils.fsnselector import FSNSelector
 from ...utils.h5selector import H5Selector
 from ...utils.plotcurve import PlotCurve
 from ...utils.plotimage import PlotImage
-from ...utils.filebrowsers import browseMask, getSaveFile
 from ...utils.window import WindowRequiresDevices
 from ....core2.dataclasses import Exposure
-from .maskoperations import maskCircle, maskRectangle, maskPolygon, mm_mask, mm_flip, mm_unmask
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -49,15 +48,17 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
         self.plotimage = PlotImage(self)
-        self.plotimage.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        self.plotimage.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+                                     QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.plotimage.setPixelOnly(True)
         self.imageVerticalLayout.addWidget(self.plotimage, stretch=1)
         self.plotcurve = PlotCurve(self)
-        self.plotcurve.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        self.plotcurve.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+                                     QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.curveVerticalLayout.addWidget(self.plotcurve, stretch=1)
         frame1 = QtWidgets.QFrame(self)
-#        frame1.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-        frame1.setFrameStyle(QtWidgets.QFrame.StyledPanel | QtWidgets.QFrame.Raised)
+        #        frame1.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
+        frame1.setFrameStyle(QtWidgets.QFrame.Shape.StyledPanel | QtWidgets.QFrame.Shadow.Raised)
         frame1.setLineWidth(1)
         self.fsnSelectorHorizontalLayout.addWidget(frame1)
         frame1.setLayout(QtWidgets.QHBoxLayout())
@@ -66,8 +67,8 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.fsnselector.fsnSelected.connect(self.onFSNSelected)
         frame1.layout().addWidget(self.fsnselector)
         frame2 = QtWidgets.QFrame(self)
-#        frame2.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
-        frame2.setFrameStyle(QtWidgets.QFrame.StyledPanel | QtWidgets.QFrame.Raised)
+        #        frame2.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
+        frame2.setFrameStyle(QtWidgets.QFrame.Shape.StyledPanel | QtWidgets.QFrame.Shadow.Raised)
         frame1.setLineWidth(1)
         self.fsnSelectorHorizontalLayout.addWidget(frame2)
         frame2.setLayout(QtWidgets.QHBoxLayout())
@@ -123,7 +124,7 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.setExposure(exposure)
 
     @Slot(str, str, str)
-    def onH5DatasetSelected(self, filename:str, samplename:str, distkey: str):
+    def onH5DatasetSelected(self, filename: str, samplename: str, distkey: str):
         exposure = self.h5selector.loadExposure()
         self.setExposure(exposure)
 
@@ -132,8 +133,9 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             return QtWidgets.QMessageBox.question(
                 self, 'Confirm discarding changes?',
                 'You have made changes to the current mask. Do you want to discard them?',
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No
-            ) == QtWidgets.QMessageBox.Yes
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No
+            ) == QtWidgets.QMessageBox.StandardButton.Yes
         else:
             return True
 
@@ -256,7 +258,7 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         row0 = 0.5 * (pos1.ydata + pos2.ydata)
         col0 = 0.5 * (pos1.xdata + pos2.xdata)
         r2 = ((pos2.xdata - pos1.xdata) ** 2 + (pos2.ydata - pos1.ydata) ** 2) / 8
-        maskCircle(mask, row0, col0, r2**0.5, self._getMaskingMode())
+        maskCircle(mask, row0, col0, r2 ** 0.5, self._getMaskingMode())
         self.undoStack.push(mask)
 
     def selectedRectangle(self, pos1, pos2):
@@ -265,7 +267,8 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         # are NOT the exact button presses and releases!
         mask = self.undoStack.get()
         mask = mask.copy()
-        maskRectangle(mask, min(pos1.ydata, pos2.ydata), min(pos1.xdata, pos2.xdata), max(pos1.ydata, pos2.ydata), max(pos1.xdata, pos2.xdata), self._getMaskingMode())
+        maskRectangle(mask, min(pos1.ydata, pos2.ydata), min(pos1.xdata, pos2.xdata), max(pos1.ydata, pos2.ydata),
+                      max(pos1.xdata, pos2.xdata), self._getMaskingMode())
         self.undoStack.push(mask)
 
     def selectedFreeHand(self, vertices):
@@ -294,7 +297,7 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             mask = self.undoStack.get()
             self.exposure.mask = mask
             self.plotcurve.clear()
-            self.plotcurve.addCurve(self.exposure.radial_average(), label = self.exposure.header.title)
+            self.plotcurve.addCurve(self.exposure.radial_average(), label=self.exposure.header.title)
             self.plotcurve.setPixelMode(True)
             self.plotimage.setMask(mask)
         except IndexError:
@@ -318,4 +321,3 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.selectLassoToolButton.setEnabled(True)
         self.selectCircleToolButton.setEnabled(True)
         self.setWindowModified(False)
-

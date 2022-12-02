@@ -53,15 +53,15 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.figure = Figure(figsize=(6, 4), constrained_layout=True)
+        self.figure = Figure(figsize=(2, 1.5), constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.figToolbar = NavigationToolbar2QT(self.canvas, self)
         self.layout().addWidget(self.figToolbar)
         self.layout().addWidget(self.canvas, 1)
         self.canvas.mpl_connect('resize_event', self.onCanvasResize)
         self.canvas.setSizePolicy(
-            QtWidgets.QSizePolicy.MinimumExpanding,
-            QtWidgets.QSizePolicy.MinimumExpanding)
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         gs = self.figure.add_gridspec(1, 1)
         self.axes = self.figure.add_subplot(gs[:, :])
         self.axes.set_facecolor('black')

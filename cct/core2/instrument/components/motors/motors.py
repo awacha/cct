@@ -29,17 +29,17 @@ class Motors(Component, QtCore.QAbstractItemModel):
 
     def loadFromConfig(self):
         logger.debug('Loading Motors state from config')
-        motorkeys = list(self.config['motors'])
-        motorkeys_newstyle = [k for k in motorkeys if self.config['motors'][k]['name'] == k]
+        motorkeys = list(self.cfg.setdefault('motors', []))
+        motorkeys_newstyle = [k for k in motorkeys if self.cfg['motors',  k,  'name'] == k]
         motorkeys_oldstyle = [k for k in motorkeys if k not in motorkeys_newstyle]
 
         for motorkey in itertools.chain(motorkeys_newstyle, motorkeys_oldstyle):
             logger.debug(f'Motor key: {motorkey}')
-            motorinfo = self.config['motors'][motorkey]
+            motorinfo = self.cfg['motors',  motorkey]
             if motorinfo['name'] in self:
                 logger.debug(f'Motor {motorinfo["name"]} with {motorkey=} already exists, not adding')
                 if motorkey != motorinfo['name']:
-                    del self.config['motors'][motorkey]
+                    del self.cfg['motors',  motorkey]
                     logger.debug(f'Deleted old-style motor information {motorkey=}, '
                                  f'corresponding to motor name {motorinfo["name"]} from the config.')
                     continue
@@ -83,34 +83,34 @@ class Motors(Component, QtCore.QAbstractItemModel):
                 if index.column() == 0:  # motor name
                     return self.motors[index.row()].name
                 elif index.column() == 1:  # left limit
-                    return f"{self.motors[index.row()]['softleft']:.4f}"
+                    return f"{self.motors[index.row()].get('softleft'):.4f}"
                 elif index.column() == 2:  # right limit
-                    return f"{self.motors[index.row()]['softright']:.4f}"
+                    return f"{self.motors[index.row()].get('softright'):.4f}"
                 elif index.column() == 3:  # position
-                    return f"{self.motors[index.row()]['actualposition']:.4f}"
+                    return f"{self.motors[index.row()].get('actualposition'):.4f}"
                 elif index.column() == 4:  # speed
-                    return f"{self.motors[index.row()]['actualspeed']:.4f}"
+                    return f"{self.motors[index.row()].get('actualspeed'):.4f}"
                 elif index.column() in [5, 6]:  # left and right switches
                     return None  # CheckStateRole will show the switch status
                 elif index.column() == 7:
-                    return self.motors[index.row()]['load']
+                    return self.motors[index.row()].get('load')
                 elif index.column() == 8:
-                    return self.motors[index.row()]['drivererror']
+                    return self.motors[index.row()].get('drivererror')
             except (KeyError, MotorController.DeviceError):
                 # happens when a controller is missing
                 return None
         elif role == QtCore.Qt.ItemDataRole.CheckStateRole:
             try:
                 if index.column() == 5:
-                    return QtCore.Qt.CheckState.Checked if self.motors[index.row()]['leftswitchstatus'] else QtCore.Qt.CheckState.Unchecked
+                    return QtCore.Qt.CheckState.Checked if self.motors[index.row()].get('leftswitchstatus') else QtCore.Qt.CheckState.Unchecked
                 elif index.column() == 6:
-                    return QtCore.Qt.CheckState.Checked if self.motors[index.row()]['rightswitchstatus'] else QtCore.Qt.CheckState.Unchecked
+                    return QtCore.Qt.CheckState.Checked if self.motors[index.row()].get('rightswitchstatus') else QtCore.Qt.CheckState.Unchecked
             except (KeyError, MotorController.DeviceError):
                 # happens when a controller is missing
                 return None
-        elif role == QtCore.Qt.ItemDataRole.BackgroundColorRole:
+        elif role == QtCore.Qt.ItemDataRole.BackgroundRole:
             try:
-                return QtGui.QColor('lightgreen') if self.motors[index.row()]['moving'] else None
+                return QtGui.QColor('lightgreen') if self.motors[index.row()].get('moving') else None
             except (KeyError, MotorController.DeviceError):
                 # happens when a controller is missing
                 return None
@@ -163,10 +163,10 @@ class Motors(Component, QtCore.QAbstractItemModel):
         motor.positionChanged.connect(self.onMotorPositionChanged)
         self.endInsertRows()
         self.newMotor.emit(motorname)
-        self.config['motors'][motorname] = {'controller': devicename, 'index': motorindex, 'name': motorname,
-                                            'role': motor.role.value, 'direction': motor.direction.value}
+        self.cfg['motors',  motorname] = {'controller': devicename, 'index': motorindex, 'name': motorname,
+                                          'role': motor.role.value, 'direction': motor.direction.value}
 
-    def __getitem__(self, item: Union[str, int]) -> Motor:
+    def get(self, item: Union[str, int]) -> Motor:
         if isinstance(item, str):
             try:
                 return [m for m in self.motors if m.name == item][0]
@@ -216,7 +216,7 @@ class Motors(Component, QtCore.QAbstractItemModel):
                 self.index(row, 0, QtCore.QModelIndex()),
                 self.index(row, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
-    def __iter__(self) -> Iterator[Motor]:
+    def iterMotors(self) -> Iterator[Motor]:
         return iter(self.motors)
 
     def __contains__(self, item: Union[Motor, str]) -> bool:
@@ -242,7 +242,7 @@ class Motors(Component, QtCore.QAbstractItemModel):
             if (role_ == role) and (direction_ == direction_) and [m for m in self if
                                                                    (m.role == role) and (m.direction == direction)]:
                 raise ValueError(f'Another motor already exists with role {role} and direction {direction}')
-        controller = self.instrument.devicemanager[controllername]
+        controller = self.instrument.devicemanager.get(controllername)
         assert isinstance(controller, MotorController)
         if axis >= controller.Naxes:
             raise ValueError(f'Controller {controllername} has only {controller.Naxes} axes.')
@@ -255,8 +255,8 @@ class Motors(Component, QtCore.QAbstractItemModel):
         if (position < softleft) or (position > softright):
             raise ValueError(f'Position must be between the limits.')
         self._addmotor(motorname, controllername, axis, role, direction)
-        self[motorname].setLimits(softleft, softright)
-        self[motorname].setPosition(position)
+        self.get(motorname).setLimits(softleft, softright)
+        self.get(motorname).setPosition(position)
 
     @needsprivilege(Privilege.MotorConfiguration, 'Not enough privileges to remove a motor')
     def removeMotor(self, motorname: str):

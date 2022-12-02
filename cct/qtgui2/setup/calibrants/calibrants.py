@@ -58,7 +58,7 @@ class Calibrants(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot(int)
     def onPeakEditorFinished(self, result: int):
-        if result == QtWidgets.QDialog.Accepted:
+        if result == QtWidgets.QDialog.DialogCode.Accepted:
             current = self.calibrantsTreeView.selectionModel().currentIndex().internalPointer()
             assert isinstance(current, QCalibrant)
             current.peaks = self.peakeditor.peaks()

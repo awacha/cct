@@ -72,30 +72,30 @@ class BeamStop(Component, QtCore.QObject):
 
     @Slot(str)
     def onNewMotorConnected(self, motorname: str):
-        if self.instrument.motors[motorname].role == MotorRole.BeamStop:
-            self._connectMotor(self.instrument.motors[motorname])
+        if self.instrument.motors.get(motorname).role == MotorRole.BeamStop:
+            self._connectMotor(self.instrument.motors.get(motorname))
 
     def moveOut(self):
         if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot move beam-stop: panic!')
         self._movetarget = self.States.Out
         self.motionstoprequested = False
-        self.motorx.moveTo(self.config['beamstop']['out'][0])
+        self.motorx.moveTo(self.cfg['beamstop',  'out',  0])
 
     def moveIn(self):
         if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot move beam-stop: panic!')
         self._movetarget = self.States.In
         self.motionstoprequested = False
-        self.motorx.moveTo(self.config['beamstop']['in'][0])
+        self.motorx.moveTo(self.cfg['beamstop',  'in',  0])
 
     def calibrateIn(self, posx: float, posy: float):
-        self.config['beamstop']['in'] = (posx, posy)
+        self.cfg['beamstop',  'in'] = (posx, posy)
         logger.info(f'Beamstop IN position changed to {posx:.4f}, {posy:.4f}')
         self.checkState()
 
     def calibrateOut(self, posx: float, posy: float):
-        self.config['beamstop']['out'] = (posx, posy)
+        self.cfg['beamstop',  'out'] = (posx, posy)
         logger.info(f'Beamstop OUT position changed to {posx:.4f}, {posy:.4f}')
         self.checkState()
 
@@ -108,11 +108,11 @@ class BeamStop(Component, QtCore.QObject):
         else:
             xpos = self.motorx.where()
             ypos = self.motory.where()
-            if (abs(xpos - self.config['beamstop']['in'][0]) <= 0.0001) and \
-                    (abs(ypos - self.config['beamstop']['in'][1]) <= 0.0001):
+            if (abs(xpos - self.cfg['beamstop',  'in',  0]) <= 0.0001) and \
+                    (abs(ypos - self.cfg['beamstop',  'in',  1]) <= 0.0001):
                 self.state = self.States.In
-            elif (abs(xpos - self.config['beamstop']['out'][0]) <= 0.0001) and \
-                    (abs(ypos - self.config['beamstop']['out'][1]) <= 0.0001):
+            elif (abs(xpos - self.cfg['beamstop',  'out',  0]) <= 0.0001) and \
+                    (abs(ypos - self.cfg['beamstop',  'out',  1]) <= 0.0001):
                 self.state = self.States.Out
             else:
                 self.state = self.States.Undefined
@@ -141,7 +141,7 @@ class BeamStop(Component, QtCore.QObject):
             elif (motor.role == MotorRole.BeamStop) and (motor.direction == MotorDirection.X):
                 # movement of X motor is done, start with Y
                 if success:
-                    self.motory.moveTo(self.config['beamstop'][self._movetarget.value][1])
+                    self.motory.moveTo(self.cfg['beamstop',  self._movetarget.value,  1])
                 else:
                     # not successful, break moving
                     logger.error('Error while moving beam-stop: target not reached.')
@@ -176,18 +176,8 @@ class BeamStop(Component, QtCore.QObject):
             self.motory.stop()
             self.motorx.stop()
 
-    def disconnectMotors(self):
-        for motorname in [self.xmotorname, self.ymotorname]:
-            if motorname is None:
-                continue
-            try:
-                motor = self.instrument.motors[motorname]
-            except KeyError:
-                pass
-            self._disconnectMotor(motor)
-
     def startComponent(self):
-        for motor in self.instrument.motors:
+        for motor in self.instrument.motors.iterMotors():
             if motor.role == MotorRole.BeamStop:
                 self._connectMotor(motor)
         super().startComponent()
@@ -212,10 +202,10 @@ class BeamStop(Component, QtCore.QObject):
         return self.instrument.motors.beamstop_y
 
     def inPosition(self) -> Tuple[float, float]:
-        return self.config['beamstop']['in']
+        return self.cfg['beamstop',  'in']
 
     def outPosition(self) -> Tuple[float, float]:
-        return self.config['beamstop']['out']
+        return self.cfg['beamstop',  'out']
 
     def panichandler(self):
         self._panicking = self.PanicState.Panicking
@@ -235,3 +225,9 @@ class BeamStop(Component, QtCore.QObject):
         bsgroup.create_dataset('x', data=wherex-inx).attrs.update({'units': 'mm'})
         bsgroup.create_dataset('y', data=wherey-iny).attrs.update({'units': 'mm'})
         return instrumentgroup
+
+    def loadFromConfig(self):
+        self.cfg.setdefault(('beamstop', 'in'), (0.0, 0.0))
+        self.cfg.setdefault(('beamstop', 'out'), (0.0, 0.0))
+        self.cfg.setdefault(('beamstop', 'motorx'), 'BeamStop_X')
+        self.cfg.setdefault(('beamstop', 'motory'), 'BeamStop_Y')

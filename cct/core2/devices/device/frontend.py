@@ -329,7 +329,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         return (self._variables is not None) and all([v.timestamp is not None for v in self._variables]) and \
                (self.connectionstate == DeviceConnectionState.Online)
 
-    def __getitem__(self, item: str) -> Any:
+    def get(self, item: str) -> Any:
         """Get the value of a variable.
 
         :param item: variable name
@@ -481,7 +481,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
     def __contains__(self, item: str) -> bool:
         return bool([v for v in self._variables if (v.name == item) and v.hasValidValue()])
 
-    def __iter__(self) -> Iterator[Tuple[str, Any]]:
+    def iterVariables(self) -> Iterator[Tuple[str, Any]]:
         for v in self._variables:
             yield v.name, v.value
 

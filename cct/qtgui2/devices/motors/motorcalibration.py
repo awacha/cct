@@ -14,7 +14,7 @@ class MotorCalibrationDialog(QtWidgets.QDialog, Ui_Dialog):
     def setupUi(self, Dialog):
         super().setupUi(Dialog)
         self.setWindowTitle(f'Calibrate motor {self.motorname}')
-        motor = Instrument.instance().motors[self.motorname]
+        motor = Instrument.instance().motors.get(self.motorname)
         self.leftLimitDoubleSpinBox.setValue(motor['softleft'])
         self.rightLimitDoubleSpinBox.setValue(motor['softright'])
         self.positionDoubleSpinBox.setValue(motor['actualposition'])

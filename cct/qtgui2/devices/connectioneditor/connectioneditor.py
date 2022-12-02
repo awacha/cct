@@ -31,7 +31,7 @@ class ConnectionEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.deviceComboBox.currentIndexChanged.connect(self.onDeviceChanged)
         self.updateDeviceComboBox()
         if self.deviceComboBox.currentIndex() >= 0:
-            self.variablesTreeView.setModel(self.instrument.devicemanager[self.deviceComboBox.currentText()])
+            self.variablesTreeView.setModel(self.instrument.devicemanager.get(self.deviceComboBox.currentText()))
 
     @Slot()
     def addDevice(self):
@@ -43,7 +43,7 @@ class ConnectionEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot(int)
     def onNewConnectionDialogFinished(self, result: int):
-        if result == QtWidgets.QDialog.Accepted:
+        if result == QtWidgets.QDialog.DialogCode.Accepted:
             try:
                 self.instrument.devicemanager.addDevice(self.newconnectiondialog.devicename(), self.newconnectiondialog.driverClassName(), self.newconnectiondialog.host(), self.newconnectiondialog.port())
             except RuntimeError:
@@ -93,7 +93,7 @@ class ConnectionEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.deviceComboBox.blockSignals(True)
         try:
             self.deviceComboBox.clear()
-            self.deviceComboBox.addItems(sorted([d.name for d in self.instrument.devicemanager]))
+            self.deviceComboBox.addItems(sorted([d.name for d in self.instrument.devicemanager.iterDevices()]))
             if currentdevice is not None:
                 self.deviceComboBox.setCurrentIndex(self.deviceComboBox.findText(currentdevice))
             # otherwise currentIndex will be -1
@@ -111,4 +111,4 @@ class ConnectionEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def onDeviceChanged(self):
         self.telemetryTreeView.model().setTelemetry(None)
         if self.deviceComboBox.currentIndex() >= 0:
-            self.variablesTreeView.setModel(self.instrument.devicemanager[self.deviceComboBox.currentText()])
+            self.variablesTreeView.setModel(self.instrument.devicemanager.get(self.deviceComboBox.currentText()))

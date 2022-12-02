@@ -28,7 +28,7 @@ class ImageAndCurveMonitor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.setWindowTitle('Image monitor' if self.mode_image else 'Curve monitor')
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/icons/imagemonitor.svg" if self.mode_image else ':/icons/curvemonitor.svg'),
-                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                       QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.setWindowIcon(icon)
         self.fsnselector.fsnSelected.connect(self.onFSNSelected)
         self.instrument.io.lastFSNChanged.connect(self.onLastFSNChanged)

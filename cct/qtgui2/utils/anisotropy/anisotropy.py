@@ -4,16 +4,15 @@ from typing import List, Tuple, Optional
 import numpy as np
 from PySide6 import QtWidgets, QtGui, QtCore
 from PySide6.QtCore import Slot
-
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
 from matplotlib.axes import Axes
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT, FigureCanvasQTAgg
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from matplotlib.patches import Circle, Polygon
 from matplotlib.widgets import SpanSelector
-from matplotlib.lines import Line2D
 
-from .slicesmodel import SectorInformation, SectorModel
 from .anisotropy_ui import Ui_Form
+from .slicesmodel import SectorModel
 from ..fsnselector import FSNSelector
 from ..h5selector import H5Selector
 from ..plotimage import PlotImage
@@ -80,7 +79,7 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             setattr(self, f'canvas_{graphname}', FigureCanvasQTAgg(getattr(self, f'fig_{graphname}')))
             setattr(self, f'figtoolbar_{graphname}', NavigationToolbar2QT(getattr(self, f'canvas_{graphname}'), self))
             getattr(self, f'canvas_{graphname}').setSizePolicy(
-                QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+                QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
             vbox.addWidget(getattr(self, f'figtoolbar_{graphname}'), stretch=0)
             vbox.addWidget(getattr(self, f'canvas_{graphname}'), stretch=1)
             setattr(self, f'axes_{graphname}', getattr(self, f'fig_{graphname}').add_subplot(1, 1, 1))
@@ -89,7 +88,8 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         vboxLayout.insertLayout(0, self.selectorGrid, stretch=0)
         if self.instrument is not None:
             self.fsnSelector = FSNSelector(self)
-            self.fsnSelector.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
+            self.fsnSelector.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+                                           QtWidgets.QSizePolicy.Policy.Preferred)
             self.fsnSelectorLabel = QtWidgets.QLabel("Select by file sequence:", self)
             self.selectorGrid.addWidget(self.fsnSelectorLabel, 0, 0, 1, 1)
             self.selectorGrid.addWidget(self.fsnSelector, 0, 1, 1, 1)
@@ -98,7 +98,8 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.fsnSelector = None
         self.h5Selector = H5Selector(self)
         self.h5SelectorLabel = QtWidgets.QLabel("Select from a h5 file:", self)
-        self.h5Selector.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
+        self.h5Selector.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+                                      QtWidgets.QSizePolicy.Policy.Preferred)
         self.selectorGrid.addWidget(self.h5SelectorLabel, 1, 0, 1, 1)
         self.selectorGrid.addWidget(self.h5Selector, 1, 1, 1, 1, QtCore.Qt.AlignmentFlag.AlignLeft)
         self.selectorGrid.setColumnStretch(1, 1)
@@ -125,7 +126,6 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     @Slot(int, name='onRadialCountChanged')
     def onRadialCountChanged(self, value: int):
         self.onSectorsChanged()
-
 
     def enableH5Selector(self, enable: bool = True):
         self.h5Selector.setEnabled(enable)
@@ -167,7 +167,6 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.beamPosXDoubleSpinBox.setValue(exposure.header.beamposcol[0])
         finally:
             self.beamPosXDoubleSpinBox.blockSignals(False)
-
 
     def redrawFullRadialAverage(self):
         self.axes_full.clear()
@@ -228,12 +227,13 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.canvas_azim.draw_idle()
 
     def onPhiRangeSelected(self, phimin: float, phimax: float):
-        self.sectorModel.appendSector(0.5*(phimin+phimax), phimax-phimin, True, None)
+        self.sectorModel.appendSector(0.5 * (phimin + phimax), phimax - phimin, True, None)
 
     @Slot(name='onSectorsChanged')  # QAbstractItemModel.modelReset
     @Slot(QtCore.QModelIndex, int, int, name='onSectorsChanged')  # QAbstractItemModel.rowsInserted
     @Slot(QtCore.QModelIndex, int, int, name='onSectorsChanged')  # QAbstractItemModel.rowsRemoved
-    @Slot(QtCore.QModelIndex, QtCore.QModelIndex, 'QVector<int>', name='onSectorsChanged')  # QAbstractItemModel.dataChanged
+    @Slot(QtCore.QModelIndex, QtCore.QModelIndex, 'QVector<int>',
+          name='onSectorsChanged')  # QAbstractItemModel.dataChanged
     def onSectorsChanged(self, *args, **kwargs):
         self.removeSliceLines()
         self.axes_slice.clear()
@@ -244,10 +244,12 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             for si in self.sectorModel:
                 ex.mask = maskforsectors(originalmask, ex.header.beamposrow[0], ex.header.beamposcol[0],
                                          si.phi0 * np.pi / 180., si.dphi * np.pi / 180, symmetric=si.symmetric)
-                sliced = ex.radial_average(self.nRadialSpinBox.value() if self.nRadialSpinBox.value() > 0 else None).sanitize()
+                sliced = ex.radial_average(
+                    self.nRadialSpinBox.value() if self.nRadialSpinBox.value() > 0 else None).sanitize()
                 line2d = self.axes_slice.loglog(
                     sliced.q, sliced.intensity,
-                    label=rf'$\phi_0={si.phi0:.2f}^\circ$, $\Delta\phi = {si.dphi:.2f}^\circ$', color=si.color.name(QtGui.QColor.HexRgb))[0]
+                    label=rf'$\phi_0={si.phi0:.2f}^\circ$, $\Delta\phi = {si.dphi:.2f}^\circ$',
+                    color=si.color.name(QtGui.QColor.NameFormat.HexRgb))[0]
                 self._slicelines.append(line2d)
                 qmax = np.nanmax(ex.q()[0])
                 ax = self.plotimage.axes.axis()
@@ -263,10 +265,10 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 if si.symmetric:
                     self._slicearcs.append(
                         Polygon(-points, closed=True, color=line2d.get_color(), zorder=100, alpha=0.5, linewidth=1,
-                            fill=True))
+                                fill=True))
         finally:
             ex.mask = originalmask
-#        self.axes_slice.legend(loc='best')
+        #        self.axes_slice.legend(loc='best')
         self.axes_slice.set_xlabel('q (nm$^{-1}$)')
         self.axes_slice.set_ylabel(r'$d\sigma/d\Omega$ (cm$^{-1}$ sr$^{-1}$)')
         self.axes_slice.set_title('Slices')
@@ -296,7 +298,7 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.sectorModel.appendSector(phi0 + dphi * i, dphi, False)
 
     @Slot(float, name='onBeamXChanged')
-    def onBeamXChanged(self, value:float):
+    def onBeamXChanged(self, value: float):
         self.exposure.header.beamposcol = (value, 0.0)
         self.plotimage.setExposure(self.exposure, keepzoom=True)
         self.redrawFullRadialAverage()
@@ -304,11 +306,9 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.onSectorsChanged()
 
     @Slot(float, name='onBeamYChanged')
-    def onBeamYChanged(self, value:float):
+    def onBeamYChanged(self, value: float):
         self.exposure.header.beamposrow = (value, 0.0)
         self.plotimage.setExposure(self.exposure, keepzoom=True)
         self.redrawFullRadialAverage()
         self.onAzimuthalCountChanged(self.nAzimSpinBox.value())
         self.onSectorsChanged()
-
-

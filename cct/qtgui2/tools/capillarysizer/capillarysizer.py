@@ -47,7 +47,7 @@ class CapillarySizer(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.figureVerticalLayout.addWidget(self.canvas)
         self.figureVerticalLayout.addWidget(self.figtoolbar)
         self.axes = self.figure.add_subplot(self.figure.add_gridspec(1, 1)[:, :])
-        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.canvas.draw_idle()
         self.scanIndexSpinBox.valueChanged.connect(self.scanIndexChanged)
         self.signalNameComboBox.currentIndexChanged.connect(self.signalNameChanged)
@@ -62,9 +62,9 @@ class CapillarySizer(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.updateCenterToolButton.clicked.connect(self.saveCenter)
         self.updateThicknessToolButton.clicked.connect(self.saveThickness)
         self.updateCenterToolButton.setIcon(
-            QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
+            QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_ArrowRight))
         self.updateThicknessToolButton.setIcon(
-            QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.SP_ArrowRight))
+            QtWidgets.QApplication.instance().style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_ArrowRight))
         self.instrument.scan.lastscanchanged.connect(self.onLastScanChanged)
         if self.instrument.scan.firstscan() is None:
             self.scanIndexSpinBox.setEnabled(False)
@@ -293,7 +293,7 @@ class CapillarySizer(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def sampleChanged(self):
         if self.sampleNameComboBox.currentIndex() < 0:
             return
-        sample = self.instrument.samplestore[self.sampleNameComboBox.currentText()]
+        sample = self.instrument.samplestore.get(self.sampleNameComboBox.currentText())
         if self.instrument.samplestore.hasMotors() and (self.scan is not None):
             if self.instrument.samplestore.xmotorname() == self.scan.motorname:
                 self.oldPositionLabel.setText(f'{sample.positionx[0]:.4f} \xb1 {sample.positionx[1]:.4f}')
@@ -303,7 +303,7 @@ class CapillarySizer(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot(int)
     def scanIndexChanged(self, value: int):
-        self.scan = self.instrument.scan[value]
+        self.scan = self.instrument.scan.get(value)
         self.signalNameComboBox.blockSignals(True)
         oldsignal = self.signalNameComboBox.currentText()
         self.signalNameComboBox.clear()
@@ -355,12 +355,12 @@ class CapillarySizer(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         if not self.instrument.samplestore.hasMotors():
             # ask the user which direction this is
             msgbox = QtWidgets.QMessageBox(self.window())
-            msgbox.setIcon(QtWidgets.QMessageBox.Question)
+            msgbox.setIcon(QtWidgets.QMessageBox.Icon.Question)
             msgbox.setWindowTitle('Select direction')
             msgbox.setText('Please select X or Y direction to save the determined sample center to:')
-            btnX = msgbox.addButton('X', QtWidgets.QMessageBox.YesRole)
-            btnY = msgbox.addButton('Y', QtWidgets.QMessageBox.NoRole)
-            msgbox.addButton(QtWidgets.QMessageBox.Cancel)
+            btnX = msgbox.addButton('X', QtWidgets.QMessageBox.ButtonRole.YesRole)
+            btnY = msgbox.addButton('Y', QtWidgets.QMessageBox.ButtonRole.NoRole)
+            msgbox.addButton(QtWidgets.QMessageBox.StandardButton.Cancel)
             result = msgbox.exec_()
             logger.debug(f'{result=}')
             if msgbox.clickedButton() == btnX:
@@ -395,7 +395,7 @@ class CapillarySizer(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def saveThickness(self):
         thicknessval = abs(self.positive[0] - self.negative[0])
         thicknesserr = (self.positive[1] ** 2 + self.negative[1] ** 2) ** 0.5
-        sample = self.instrument.samplestore[self.sampleNameComboBox.currentText()]
+        sample = self.instrument.samplestore.get(self.sampleNameComboBox.currentText())
         try:
             sample.thickness = (thicknessval / 10, thicknesserr / 10)
         except ValueError:

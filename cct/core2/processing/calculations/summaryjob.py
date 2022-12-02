@@ -3,18 +3,17 @@ import multiprocessing
 import time
 import traceback
 from multiprocessing.synchronize import Lock
-from typing import List, Optional, Any, Set
+from typing import List, Any, Set
 
 import h5py
 import numpy as np
 
 from .backgroundprocess import BackgroundProcess, Results, BackgroundProcessError, UserStopException
 from .outliertest import OutlierMethod, OutlierTest
-from ...dataclasses.exposure import QRangeMethod
-from ..h5io import ProcessingH5File
 from ..loader import Loader, FileNameScheme
 from ...algorithms.matrixaverager import ErrorPropagationMethod
 from ...dataclasses import Header, Exposure, Curve
+from ...dataclasses.exposure import QRangeMethod
 
 
 class SummaryError(BackgroundProcessError):

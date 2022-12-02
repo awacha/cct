@@ -7,7 +7,6 @@ from PySide6.QtCore import Slot
 from .devicevariablelogging.devicevariablelogger import DeviceVariableLoggerUI
 from .devicevariablemeasurement_ui import Ui_Form
 from ..utils.window import WindowRequiresDevices
-from ...core2.instrument.components.devicestatus import DeviceStatusLogger
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -34,10 +33,11 @@ class DeviceVariableMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_For
         self.onModelReset()
 
     @Slot(QtCore.QModelIndex, int, int)
-    def onRowsInserted(self, parent: QtCore.QModelIndex, first:int, last:int):
+    def onRowsInserted(self, parent: QtCore.QModelIndex, first: int, last: int):
         layout: QtWidgets.QVBoxLayout = self.scrollArea.widget().layout()
-        for i in range(first, last+1):
-            widget = DeviceVariableLoggerUI(instrument=self.instrument, devicelogger=self.instrument.devicelogmanager[i])
+        for i in range(first, last + 1):
+            widget = DeviceVariableLoggerUI(instrument=self.instrument,
+                                            devicelogger=self.instrument.devicelogmanager.get(i))
             layout.insertWidget(i, widget)
 
     @Slot(QtCore.QModelIndex, int, int)
@@ -55,8 +55,10 @@ class DeviceVariableMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_For
         for widget in self.scrollArea.widget().layout().children():
             self.scrollArea.widget().layout().removeWidget(widget)
         self.loggerwidgets = []
-        logger.debug(f'Calling onRowsInserted, rowcount is {self.instrument.devicelogmanager.rowCount(QtCore.QModelIndex())}')
-        self.onRowsInserted(QtCore.QModelIndex(), 0, self.instrument.devicelogmanager.rowCount(QtCore.QModelIndex())-1)
+        logger.debug(
+            f'Calling onRowsInserted, rowcount is {self.instrument.devicelogmanager.rowCount(QtCore.QModelIndex())}')
+        self.onRowsInserted(QtCore.QModelIndex(), 0,
+                            self.instrument.devicelogmanager.rowCount(QtCore.QModelIndex()) - 1)
 
     @Slot()
     def startAll(self):
@@ -69,14 +71,15 @@ class DeviceVariableMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_For
     @Slot()
     def onAddClicked(self):
         self.instrument.devicelogmanager.insertRow(len(self.instrument.devicelogmanager), QtCore.QModelIndex())
-        lgr = self.instrument.devicelogmanager[len(self.instrument.devicelogmanager)-1]
+        lgr = self.instrument.devicelogmanager.get(len(self.instrument.devicelogmanager) - 1)
         for rowindex in self.treeView.selectionModel().selectedRows(0):
             if not rowindex.parent().isValid():
                 continue
             logger.debug(
                 f'Adding logger for variable {rowindex.parent().data(QtCore.Qt.ItemDataRole.EditRole)}/{rowindex.data((QtCore.Qt.ItemDataRole.EditRole))}')
             try:
-                lgr.addRecordedVariable(rowindex.parent().data(QtCore.Qt.ItemDataRole.EditRole), rowindex.data(QtCore.Qt.ItemDataRole.EditRole))
+                lgr.addRecordedVariable(rowindex.parent().data(QtCore.Qt.ItemDataRole.EditRole),
+                                        rowindex.data(QtCore.Qt.ItemDataRole.EditRole))
             except ValueError as ve:
                 QtWidgets.QMessageBox.critical(
                     self, f'Cannot add variable',

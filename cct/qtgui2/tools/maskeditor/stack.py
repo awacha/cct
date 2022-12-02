@@ -1,7 +1,7 @@
-from typing import Any, List, Optional
+from typing import Any, List
 
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 
 class Stack(QtCore.QObject):
@@ -62,14 +62,14 @@ class Stack(QtCore.QObject):
         data = self._stack[-1]
         self._stack = self._stack[:-1]
         if self._pointer >= len(self._stack):
-            self._pointer = len(self._stack) -1
+            self._pointer = len(self._stack) - 1
             self.pointerChanged.emit(self._pointer)
         self.stackChanged.emit()
         return data
 
     def goto(self, index: int):
         """Move the pointer to the specified element"""
-        if index < 0 or index >=len(self._stack):
+        if index < 0 or index >= len(self._stack):
             # invaid index: do not move.
             raise IndexError('Invalid stack index')
         self._pointer = index

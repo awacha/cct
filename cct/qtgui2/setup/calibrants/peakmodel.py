@@ -100,5 +100,5 @@ class DoubleSpinBoxDelegate(QtWidgets.QStyledItemDelegate):
                              index: QtCore.QModelIndex):
         editor.setGeometry(option.rect)
 
-    def setModelData(self, editor: QtWidgets.QWidget, model: QtCore.QAbstractItemModel, index: QtCore.QModelIndex):
+    def setModelData(self, editor: QtWidgets.QDoubleSpinBox, model: QtCore.QAbstractItemModel, index: QtCore.QModelIndex):
         model.setData(index, editor.value(), QtCore.Qt.ItemDataRole.EditRole)

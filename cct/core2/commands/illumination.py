@@ -1,15 +1,11 @@
 # coding = utf-8
-"""Commands for the Schott KL2500LED light source"""
-import math
-from typing import Optional, Any
-from PySide6 import QtCore
+from typing import Any
 from PySide6.QtCore import Slot
 
-import time
 import logging
 
-from .command import Command, InstantCommand
-from .commandargument import FloatArgument, StringArgument, IntArgument
+from .command import Command
+from .commandargument import IntArgument
 from ..devices.illumination.schott import KL2500LED
 
 logger=logging.getLogger(__name__)
@@ -33,7 +29,7 @@ class IlluminationSetBrightness(Command):
             raise self.CommandException(*ve.args)
 
     def device(self) -> KL2500LED:
-        dev = [d for d in self.instrument.devicemanager if d.devicename == 'KL2500LED'][0]
+        dev = self.instrument.devicemanager.getByDeviceName('KL2500LED')
         assert isinstance(dev, KL2500LED)
         return dev
 

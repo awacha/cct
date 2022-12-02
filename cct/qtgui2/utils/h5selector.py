@@ -37,7 +37,7 @@ class H5Selector(QtWidgets.QWidget, Ui_Form):
             grid.addWidget(QtWidgets.QLabel(self, text='Distance:'), 2, 0, 1, 1)
             grid.addWidget(self.distanceComboBox, 2, 1, 1, 1)
             grid.addWidget(self.reloadToolButton, 0, 2, 1, 1)
-            self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+            self.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.distanceComboBox.setEnabled(False)
         self.sampleNameComboBox.setEnabled(False)
         self.browsePushButton.clicked.connect(self.browseH5FileName)

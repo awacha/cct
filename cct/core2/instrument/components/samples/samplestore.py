@@ -210,12 +210,18 @@ class SampleStore(Component, QtCore.QAbstractItemModel):
     def __contains__(self, item: str) -> bool:
         return item in [s.title for s in self._samples]
 
-    def __iter__(self) -> Iterable[Sample]:
+    def samples(self):
         yield from self._samples
 
-    def __getitem__(self, item: Union[str, int]) -> Sample:
+    def get(self, item: Union[str, int]) -> Sample:
         return copy.deepcopy([s for i, s in enumerate(self._samples) if (s.title == item) or (i == item)][0])
 
+#    def __iter__(self) -> Iterable[Sample]:
+#        yield from self._samples
+#
+#    def __getitem__(self, item: Union[str, int]) -> Sample:
+#        return copy.deepcopy([s for i, s in enumerate(self._samples) if (s.title == item) or (i == item)][0])
+#
     def __len__(self) -> int:
         return len(self._samples)
 
@@ -240,7 +246,7 @@ class SampleStore(Component, QtCore.QAbstractItemModel):
         # at this point, the new value is guaranteed to be different from the present one
         if attribute == 'title':
             # handle this differently
-            if value in self:
+            if value in self._samples:
                 raise ValueError(
                     f'Cannot rename sample {sample.title} to {value}: another sample with this title already exists.')
         elif attribute == 'maskoverride' and isinstance(value, str) and not value.strip():
@@ -258,16 +264,16 @@ class SampleStore(Component, QtCore.QAbstractItemModel):
         return True
 
     def getFreeSampleName(self, prefix: str) -> str:
-        if prefix not in self:
+        if prefix not in self._samples:
             return prefix
         i = 0
-        while (sn := f'{prefix}_{i}') in self:
+        while (sn := f'{prefix}_{i}') in self._samples:
             i += 1
         return sn
 
     def addSample(self, samplename: Optional[str] = None, sample: Optional[Sample] = None) -> str:
         logger.debug('Adding a sample')
-        if (samplename is not None) and (samplename in self):
+        if (samplename is not None) and (samplename in self._samples):
             raise ValueError(f'Cannot add sample: another sample with this name ({samplename}) already exists.')
         logger.debug('Calling insertRow')
         if not self.insertRow(self.rowCount()):
@@ -294,41 +300,27 @@ class SampleStore(Component, QtCore.QAbstractItemModel):
     def loadFromConfig(self):
         self.beginResetModel()
         self._samples = []
-        for sample in self.config['services']['samplestore']['list']:
-            self._samples.append(Sample.fromdict(self.config['services']['samplestore']['list'][sample].asdict()))
-        if ('active' in self.config['services']['samplestore']) and (
-                self.config['services']['samplestore']['active'] in self):
-            self.setCurrentSample(self.config['services']['samplestore']['active'])
+        if ('services', 'samplestore', 'list') in self.cfg:
+            for sample in self.cfg['services',  'samplestore',  'list']:
+                self._samples.append(Sample.fromdict(self.cfg['services',  'samplestore',  'list',  sample]))
+        if ('services', 'samplestore', 'active') in self.cfg and (
+                self.cfg['services',  'samplestore',  'active'] in self._samples):
+            self.setCurrentSample(self.cfg['services',  'samplestore',  'active'])
         else:
             self.setCurrentSample(None)
         self.endResetModel()
 
     def saveToConfig(self):
-        self.config.blockSignals(True)
-        if 'samplestore' not in self.config['services']:
-            logger.warning('Creating "samplestore" key in config/services/')
-            self.config['services']['samplestore'] = {}
-        if 'list' not in self.config['services']['samplestore']:
-            logger.warning('Creating "list" key in config/services/samplestore/')
-            self.config['services']['samplestore']['list'] = {}
-        for sample in self._samples:
-            dic = sample.todict()
-            if sample.title not in self.config['services']['samplestore']['list']:
-                self.config['services']['samplestore']['list'][sample.title] = dic
-            else:
-                self.config['services']['samplestore']['list'][sample.title].update(dic)
-        sampletitles = [s.title for s in self._samples]
-        removedsamples = [k for k in self.config['services']['samplestore']['list'] if k not in sampletitles]
-        for sn in removedsamples:
-            del self.config['services']['samplestore']['list'][sn]
-        self.config.blockSignals(False)
-        self.config.changed.emit(('services', 'samplestore', 'list'), self.config['services']['samplestore']['list'])
+        self.cfg.setdefault(('services', 'samplestore', 'list'), {})
+        self.cfg.updateAt(('services', 'samplestore', 'list'), {s.title: s.todict() for s in self._samples})
+        self.cfg['services', 'samplestore', 'active'] = self._currentsample
 
     def setCurrentSample(self, title: Optional[str]):
         if title is None:
             self._currentsample = None
             self.currentSampleChanged.emit(None)
-        elif title in self:
+            self.saveToConfig()
+        elif title in self._samples:
             self._currentsample = title
             self.currentSampleChanged.emit(title)
             self.saveToConfig()
@@ -338,7 +330,7 @@ class SampleStore(Component, QtCore.QAbstractItemModel):
     def currentSample(self) -> Optional[Sample]:
         if self._currentsample is None:
             return None
-        return self[self._currentsample]
+        return self.get(self._currentsample)
 
     def hasMotors(self) -> bool:
         try:
@@ -451,7 +443,10 @@ class SampleStore(Component, QtCore.QAbstractItemModel):
         model = QtCore.QSortFilterProxyModel()
         model.setSourceModel(self)
         model.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
-        model.setFilterRegExp(QtCore.QRegExp(f"^{category.value}$", QtCore.Qt.CaseSensitivity.CaseSensitive, QtCore.QRegExp.RegExp))
+        model.setFilterRegularExpression(
+            QtCore.QRegularExpression(
+                f"^{category.value}$",
+                QtCore.QRegularExpression.PatternOption.NoPatternOption))
         model.setFilterKeyColumn([i for i in range(len(self._columns)) if self._columns[i][0] == 'category'][0])
         model.setFilterRole(QtCore.Qt.ItemDataRole.DisplayRole)
         return model

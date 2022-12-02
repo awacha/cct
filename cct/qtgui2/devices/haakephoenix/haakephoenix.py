@@ -20,7 +20,7 @@ class HaakePhoenixDevice(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
         for var in self.device().keys():
-            self.onVariableChanged(var, self.device()[var], None)
+            self.onVariableChanged(var, self.device().get(var), None)
         self.lowLimitDoubleSpinBox.valueChanged.connect(self.setPointDoubleSpinBox.setMinimum)
         self.highLimitDoubleSpinBox.valueChanged.connect(self.setPointDoubleSpinBox.setMaximum)
         self.updateHighLimitPushButton.clicked.connect(self.updateHighLimit)
@@ -32,21 +32,21 @@ class HaakePhoenixDevice(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     def setErrorFlag(self, widget: QtWidgets.QLabel, iserror: bool, label: Optional[str] = None):
         palette = widget.palette()
-        palette.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if iserror else 'lightgreen'))
+        palette.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor('red' if iserror else 'lightgreen'))
         widget.setPalette(palette)
         widget.setAutoFillBackground(True)
         if label is not None:
             widget.setText(label)
         try:
-            self.lowLimitDoubleSpinBox.setValue(self.device()['lowlimit'])
+            self.lowLimitDoubleSpinBox.setValue(self.device().get('lowlimit'))
         except DeviceFrontend.DeviceError:
             pass
         try:
-            self.highLimitDoubleSpinBox.setValue(self.device()['highlimit'])
+            self.highLimitDoubleSpinBox.setValue(self.device().get('highlimit'))
         except DeviceFrontend.DeviceError:
             pass
         try:
-            self.setPointDoubleSpinBox.setValue(self.device()['setpoint'])
+            self.setPointDoubleSpinBox.setValue(self.device().get('setpoint'))
         except DeviceFrontend.DeviceError:
             pass
 
@@ -142,5 +142,6 @@ class HaakePhoenixDevice(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.statusLabel.setText(newvalue)
 
     def device(self) -> HaakePhoenix:
-        assert isinstance(self.instrument.devicemanager['haakephoenix'], HaakePhoenix)
-        return self.instrument.devicemanager['haakephoenix']
+        dev = self.instrument.devicemanager.getByDeviceName('HaakePhoenix')
+        assert isinstance(dev, HaakePhoenix)
+        return dev

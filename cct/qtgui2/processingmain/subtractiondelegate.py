@@ -2,10 +2,10 @@ import logging
 
 from PySide6 import QtWidgets, QtCore
 
-from ...core2.processing.tasks.subtraction import SubtractionData, SubtractionScalingMode
-from ...core2.processing.processing import Processing
 from ..utils.qrangeentry import QRangeEntry
 from ..utils.valueanduncertaintyentry import ValueAndUncertaintyEntry
+from ...core2.processing.processing import Processing
+from ...core2.processing.tasks.subtraction import SubtractionScalingMode
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -47,13 +47,15 @@ class SubtractionDelegate(QtWidgets.QStyledItemDelegate):
         w.setAutoFillBackground(True)
         return w
 
-    def updateEditorGeometry(self, editor: QtWidgets.QWidget, option: 'QStyleOptionViewItem',
+    def updateEditorGeometry(self, editor: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
                              index: QtCore.QModelIndex) -> None:
-        logger.debug(f'updateEditorGeometry({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
+        logger.debug(
+            f'updateEditorGeometry({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         editor.setGeometry(option.rect)
 
     def setEditorData(self, editor: QtWidgets.QWidget, index: QtCore.QModelIndex) -> None:
-        logger.debug(f'setEditorData({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
+        logger.debug(
+            f'setEditorData({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         if (index.column() == 0) or (index.column() == 1):
             assert isinstance(editor, QtWidgets.QComboBox)
             if index.data(QtCore.Qt.ItemDataRole.EditRole) is None:

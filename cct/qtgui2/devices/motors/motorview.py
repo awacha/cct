@@ -60,7 +60,7 @@ class MotorView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.beamStopMoverGroupBox.setLayout(QtWidgets.QVBoxLayout())
         self.beamStopMoverGroupBox.layout().addWidget(self.beamstop)
         self.beamstop.layout().setContentsMargins(0, 0, 0, 0)
-        self.beamstop.setFrameStyle(QtWidgets.QFrame.NoFrame)
+        self.beamstop.setFrameStyle(QtWidgets.QFrame.Shape.NoFrame)
         self.beamstopcalibrator = BeamStopCalibrator(parent=self.beamStopCalibratorGroupBox, mainwindow=self.mainwindow,
                                                      instrument=self.instrument)
         self.beamStopCalibratorGroupBox.setLayout(QtWidgets.QVBoxLayout())
@@ -103,7 +103,7 @@ class MotorView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             QtWidgets.QMessageBox.critical(self, 'Insufficient privileges',
                                            'Cannot remove motor: not enough privileges.')
             return
-        self.instrument.motors.removeMotor(self.instrument.motors[index.row()].name)
+        self.instrument.motors.removeMotor(self.instrument.motors.get(index.row()).name)
 
     @Slot()
     def configureMotor(self):
@@ -116,7 +116,7 @@ class MotorView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         win = self.mainwindow.addSubWindow(AdvancedMotorConfig, singleton=False)
         if win is None:
             return
-        win.setMotor(self.instrument.motors[self.treeView.selectionModel().currentIndex().row()].name)
+        win.setMotor(self.instrument.motors.get(self.treeView.selectionModel().currentIndex().row()).name)
 
     @Slot()
     def calibrateMotor(self):
@@ -127,7 +127,7 @@ class MotorView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         if self.motorCalibrationDialog is None:
             self.motorCalibrationDialog = MotorCalibrationDialog(
                 parent=self,
-                motorname=self.instrument.motors[self.treeView.selectionModel().currentIndex().row()].name)
+                motorname=self.instrument.motors.get(self.treeView.selectionModel().currentIndex().row()).name)
             self.motorCalibrationDialog.finished.connect(self.onMotorCalibrationDialogFinished)
             self.motorCalibrationDialog.show()
         else:
@@ -139,7 +139,7 @@ class MotorView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     @Slot(int)
     def onMotorCalibrationDialogFinished(self, accepted: Union[int, bool]):
         if accepted:
-            motor = self.instrument.motors[self.motorCalibrationDialog.motorname]
+            motor = self.instrument.motors.get(self.motorCalibrationDialog.motorname)
             motor.setLimits(self.motorCalibrationDialog.leftLimit(), self.motorCalibrationDialog.rightLimit())
             motor.setPosition(self.motorCalibrationDialog.position())
         self.motorCalibrationDialog.close()
@@ -151,12 +151,12 @@ class MotorView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         if not self.treeView.selectionModel().currentIndex().isValid():
             return
         if not self.instrument.auth.hasPrivilege(Privilege.MotorCalibration):
-            QtWidgets.QMessageBox.critical(self, 'Insufficient privileges to calibrate motors.')
+            QtWidgets.QMessageBox.critical(self, 'Error', 'Insufficient privileges to calibrate motors.')
             return
         win = self.mainwindow.addSubWindow(AutoAdjustMotor, singleton=False)
         if win is None:
             return
-        win.setMotor(self.instrument.motors[self.treeView.selectionModel().currentIndex().row()].name)
+        win.setMotor(self.instrument.motors.get(self.treeView.selectionModel().currentIndex().row()).name)
 
     @Slot(bool, str, str)
     def onCommandResult(self, success: bool, name: str, message: str):

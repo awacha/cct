@@ -71,7 +71,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         color = QtGui.QColor(QtCore.Qt.GlobalColor.yellow).lighter(160)
         selection.format.setBackground(color)
         selection.format.setForeground(QtGui.QColor('black'))
-        selection.format.setProperty(QtGui.QTextFormat.FullWidthSelection, True)
+        selection.format.setProperty(QtGui.QTextFormat.Property.FullWidthSelection, True)
         selection.cursor = QtGui.QTextCursor(self.textCursor())
         selection.cursor.clearSelection()
         self.setExtraSelections([selection])
@@ -91,7 +91,7 @@ class ScriptEditor(QtWidgets.QPlainTextEdit):
         color = QtGui.QColor(QtCore.Qt.GlobalColor.green).lighter(160)
         selection.format.setBackground(color)
         selection.format.setForeground(QtGui.QColor('black'))
-        selection.format.setProperty(QtGui.QTextFormat.FullWidthSelection, True)
+        selection.format.setProperty(QtGui.QTextFormat.Property.FullWidthSelection, True)
         self.lastRunCursor = QtGui.QTextCursor(self.document().findBlockByNumber(line))
         selection.cursor = self.lastRunCursor
         selection.cursor.clearSelection()

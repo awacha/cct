@@ -2,7 +2,7 @@ from typing import Optional, Dict, Any, List, Type, final, Tuple
 import logging
 
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 from .commandargument import CommandArgument
 

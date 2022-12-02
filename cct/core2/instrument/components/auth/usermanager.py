@@ -1,11 +1,10 @@
-import hashlib
 import logging
 import os
 import pickle
 from typing import Any, List, Optional
 
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 from .privilege import Privilege
 from .user import User
@@ -93,7 +92,7 @@ class UserManager(Component, QtCore.QAbstractItemModel):
         if username is None:
             username = self._currentuser.username
         if (username == self._currentuser) or self.hasPrivilege(Privilege.UserManagement):
-            user = self[username]
+            user = self.get(username)
             user.setPassword(password)
             logger.info(f'Password updated for user {username}')
             self.saveToConfig()
@@ -105,7 +104,7 @@ class UserManager(Component, QtCore.QAbstractItemModel):
         if not self.hasPrivilege(Privilege.UserManagement):
             raise ValueError(f'User {self._currentuser.username} is not permitted to change LDAP distinguished names.')
         else:
-            user = self[username]
+            user = self.get(username)
             user.ldapdn = ldapdn
             logger.info(f'LDAP distinguished name updated for user {username}')
             self.saveToConfig()
@@ -114,7 +113,7 @@ class UserManager(Component, QtCore.QAbstractItemModel):
         if not self.hasPrivilege(Privilege.UserManagement):
             raise ValueError(f'User {self._currentuser.username} is not permitted to change Kerberos principal names.')
         else:
-            user = self[username]
+            user = self.get(username)
             user.kerberosprincipal = principal
             logger.info(f'Kerberos principal name updated for user {username}')
             self.saveToConfig()
@@ -127,14 +126,14 @@ class UserManager(Component, QtCore.QAbstractItemModel):
     def __contains__(self, item: str) -> bool:
         return bool([u.username for u in self._users if item == u.username])
 
-    def __getitem__(self, item: str) -> User:
+    def get(self, item: str) -> User:
         try:
             return [u for u in self._users if u.username == item][0]
         except IndexError:
             raise KeyError(f'Nonexistent user {item}.')
 
     def setUser(self, username: str, password: str):
-        user = self[username]
+        user = self.get(username)
         if user.authenticateLDAP(password) or user.authenticateKerberos(password) or user.authenticatePWHash(password):
             self._currentuser = user
             self.currentUserChanged.emit(user.username)
@@ -148,20 +147,20 @@ class UserManager(Component, QtCore.QAbstractItemModel):
         return self._currentuser
 
     def loadFromConfig(self):
-        if 'auth' in self.config:
+        if 'auth' in self.cfg.keysAt():
             logger.debug('Loading Auth component state from new-style config.')
             self.beginResetModel()
             self._users = []
-            for username in self.config['auth']['users']:
+            for username in self.cfg.keysAt('auth', 'users'):
                 user = User(username)
-                user.__setstate__(self.config['auth']['users'][username])
+                user.__setstate__(self.cfg.toDict(('auth', 'users',  username)))
                 self._users.append(user)
             self._users = sorted(self._users, key=lambda u: u.username)
             self.endResetModel()
-        elif ('services' in self.config) and ('accounting' in self.config['services']):
+        elif ('services', 'accounting') in self.cfg:
             # old-style config file
             logger.debug('Loading Auth component state from old-style config.')
-            with open(os.path.join('config', self.config['services']['accounting']['dbfile']), 'rb') as f:
+            with open(os.path.join('config', self.cfg['services',  'accounting',  'dbfile']), 'rb') as f:
                 userdb = pickle.load(f)
                 self.beginResetModel()
                 self._users = []
@@ -171,8 +170,8 @@ class UserManager(Component, QtCore.QAbstractItemModel):
                     user.lastname = u.lastname
                     user.setPasswordHash(u.passwordhash)
                     user.email = u.email
-                    user.setLDAPdn(f'uid={u.username},{self.config["services"]["accounting"]["ldap_dn"]}')
-                    user.setKerberosPrincipal(f'{u.username}@{self.config["services"]["accounting"]["default_realm"]}')
+                    user.setLDAPdn(f'uid={u.username},{self.cfg["services",  "accounting",  "ldap_dn"]}')
+                    user.setKerberosPrincipal(f'{u.username}@{self.cfg["services",  "accounting",  "default_realm"]}')
                     if u.privlevel.normalizedname == 'LAYMAN':
                         continue
                     for normalizedname, privilege in [
@@ -202,18 +201,17 @@ class UserManager(Component, QtCore.QAbstractItemModel):
             self.endResetModel()
 
     def saveToConfig(self):
-        self.config['auth'] = {}
-        self.config['auth']['users'] = {user.username: user.__getstate__() for user in self._users}
-        removedusers = [k for k in self.config['auth']['users'] if k not in self]
+        self.cfg.updateAt(('auth', 'users'), {user.username: user.__getstate__() for user in self._users})
+        removedusers = [k for k in self.cfg.keysAt('auth',  'users') if k not in self]
         for uname in removedusers:
-            del self.config['auth']['users'][uname]
+            del self.cfg['auth',  'users',  uname]
 
     def isAuthenticated(self) -> bool:
         return self._currentuser is not None
 
     def setRoot(self):
         try:
-            self._currentuser = self['root']
+            self._currentuser = self.get('root')
         except KeyError:
             root = User('root')
             root.firstname = 'Rootus'

@@ -54,7 +54,7 @@ class AdvancedMotorConfig(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.motorSelectorComboBox.blockSignals(True)
         try:
             self.motorSelectorComboBox.clear()
-            self.motorSelectorComboBox.addItems(sorted([mot.name for mot in self.instrument.motors]))
+            self.motorSelectorComboBox.addItems(sorted([mot.name for mot in self.instrument.motors.iterMotors()]))
             self.motorSelectorComboBox.setCurrentIndex(self.motorSelectorComboBox.findText(currentmotor))
         finally:
             self.motorSelectorComboBox.blockSignals(False)
@@ -100,7 +100,7 @@ class AdvancedMotorConfig(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot()
     def applyChanges(self):
-        motor = self.instrument.motors[self.motorSelectorComboBox.currentText()]
+        motor = self.instrument.motors.get(self.motorSelectorComboBox.currentText())
         axis = motor.axis
         controller: TrinamicMotor = motor.controller
         changed: List[Tuple[str, Any, Any, Callable[[int, Any], Any]]] = []
@@ -116,8 +116,8 @@ class AdvancedMotorConfig(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             (self.maxCurrentSpinBox.value(), 'maxcurrent:raw', controller.setMaxCurrent),
             (self.standbyCurrentSpinBox.value(), 'standbycurrent:raw', controller.setStandbyCurrent),
         ]:
-            if widgetvalue != motor[variablename]:
-                changed.append((variablename, widgetvalue, motor[variablename], setfunc))
+            if widgetvalue != motor.get(variablename):
+                changed.append((variablename, widgetvalue, motor.get(variablename), setfunc))
         if changed:
             result = QtWidgets.QMessageBox.warning(
                 self.window(), 'Updating motor parameters',
@@ -125,10 +125,10 @@ class AdvancedMotorConfig(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                     [f'{varname}: {oldvalue} -> {widgetvalue}'
                      for varname, widgetvalue, oldvalue, setfunc in changed]
                 ) + '\nAre you really sure?',
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                QtWidgets.QMessageBox.No
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No
             )
-            if result == QtWidgets.QMessageBox.Yes:
+            if result == QtWidgets.QMessageBox.StandardButton.Yes:
                 for varname, widgetvalue, oldvalue, setfunc in changed:
                     logger.info(
                         f'Updating variable {varname} of motor {motor.name} ({controller.name}:{axis}) from {oldvalue} '
@@ -139,7 +139,7 @@ class AdvancedMotorConfig(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def resetChanges(self):
         if self.motorSelectorComboBox.currentIndex() < 0:
             return
-        mot = self.instrument.motors[self.motorSelectorComboBox.currentText()]
+        mot = self.instrument.motors.get(self.motorSelectorComboBox.currentText())
         self.controllerNameLabel.setText(mot.controllername)
         self.axisIndexLabel.setText(str(mot.axis))
         # avoid automatic updating of dependent spin boxes
@@ -153,20 +153,20 @@ class AdvancedMotorConfig(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         try:
             self.pulseDivisorSpinBox.setRange(0, 13)
             self.pulseDivisorSpinBox.setSingleStep(1)
-            self.pulseDivisorSpinBox.setValue(mot['pulsedivisor'])
+            self.pulseDivisorSpinBox.setValue(mot.get('pulsedivisor'))
             self.rampDivisorSpinBox.setRange(0, 13)
             self.rampDivisorSpinBox.setSingleStep(1)
-            self.rampDivisorSpinBox.setValue(mot['rampdivisor'])
+            self.rampDivisorSpinBox.setValue(mot.get('rampdivisor'))
             self.microstepResolutionSpinBox.setRange(0, 8)
             self.microstepResolutionSpinBox.setSingleStep(1)
-            self.microstepResolutionSpinBox.setValue(mot['microstepresolution'])
-            self.enableLeftSwitchCheckBox.setChecked(mot['leftswitchenable'])
-            self.enableRightSwitchCheckBox.setChecked(mot['rightswitchenable'])
+            self.microstepResolutionSpinBox.setValue(mot.get('microstepresolution'))
+            self.enableLeftSwitchCheckBox.setChecked(mot.get('leftswitchenable'))
+            self.enableRightSwitchCheckBox.setChecked(mot.get('rightswitchenable'))
             self.freewheelingDelayDoubleSpinBox.setRange(0, 65.535)
             self.freewheelingDelayDoubleSpinBox.setSpecialValueText('Always on')
             self.freewheelingDelayDoubleSpinBox.setDecimals(3)
             self.freewheelingDelayDoubleSpinBox.setSingleStep(0.1)
-            self.freewheelingDelayDoubleSpinBox.setValue(mot['freewheelingdelay'])
+            self.freewheelingDelayDoubleSpinBox.setValue(mot.get('freewheelingdelay'))
             self.maxSpeedSpinBox.setRange(0, 2047)
             self.maxAccelerationSpinBox.setRange(0, 2047)
             self.maxCurrentSpinBox.setRange(0, 255)
@@ -181,14 +181,14 @@ class AdvancedMotorConfig(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                            self.maxCurrentDoubleSpinBox, self.maxAccelerationDoubleSpinBox,
                            self.standbyCurrentDoubleSpinBox]:
                 widget.blockSignals(False)
-        self.maxSpeedSpinBox.setValue(mot['maxspeed:raw'])
-        self.maxAccelerationSpinBox.setValue(mot['maxacceleration:raw'])
-        self.maxCurrentSpinBox.setValue(mot['maxcurrent:raw'])
-        self.standbyCurrentSpinBox.setValue(mot['standbycurrent:raw'])
+        self.maxSpeedSpinBox.setValue(mot.get('maxspeed:raw'))
+        self.maxAccelerationSpinBox.setValue(mot.get('maxacceleration:raw'))
+        self.maxCurrentSpinBox.setValue(mot.get('maxcurrent:raw'))
+        self.standbyCurrentSpinBox.setValue(mot.get('standbycurrent:raw'))
 
     @Slot()
     def onRawPhysSpinboxChanged(self):
-        motor = self.instrument.motors[self.motorSelectorComboBox.currentText()]
+        motor = self.instrument.motors.get(self.motorSelectorComboBox.currentText())
         uc = UnitConverter(
             motor.unitConverter().top_rms_current, motor.unitConverter().fullstepsize, motor.unitConverter().clockfreq,
             self.pulseDivisorSpinBox.value(), self.rampDivisorSpinBox.value(), self.microstepResolutionSpinBox.value())
@@ -232,7 +232,7 @@ class AdvancedMotorConfig(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     def setPhysRange(self):
         """Update the range of physical value spin-boxes"""
-        mot = self.instrument.motors[self.motorSelectorComboBox.currentText()]
+        mot = self.instrument.motors.get(self.motorSelectorComboBox.currentText())
         uc = UnitConverter(
             mot.unitConverter().top_rms_current, mot.unitConverter().fullstepsize, mot.unitConverter().clockfreq,
         self.pulseDivisorSpinBox.value(), self.rampDivisorSpinBox.value(),

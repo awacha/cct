@@ -205,7 +205,7 @@ class ProcessingH5File:
         for attribute in self._as_is_header_fields:
             try:
                 group.attrs[attribute] = getattr(header, attribute)
-            except KeyError:
+            except KeyError as ke:
                 logger.warning(f'Cannot write attribute {attribute} because of KeyError {ke}')
 
     def writeCurve(self, curve: Union[Curve, np.ndarray], group: h5py.Group, name: str):

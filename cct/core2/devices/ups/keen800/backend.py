@@ -1,10 +1,13 @@
 from math import inf
-from typing import Sequence, Any, Tuple, List
+from typing import Tuple, List, Sequence, Any
 
 from ...device.backend import DeviceBackend, VariableType
 
 
 class Keen800Backend(DeviceBackend):
+    def issueCommand(self, name: str, args: Sequence[Any]):
+        raise ValueError(f'Command {name} not supported by this device')
+
     class Status(DeviceBackend.Status):
         GridPower = 'grid'
         BatteryPower = 'battery'

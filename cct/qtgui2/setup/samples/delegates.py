@@ -16,7 +16,7 @@ class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
         assert isinstance(model, SampleStore)
         return model._columns[index.column()][0]
 
-    def createEditor(self, parent: QtWidgets.QWidget, option: 'QStyleOptionViewItem',
+    def createEditor(self, parent: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
                      index: QtCore.QModelIndex) -> QtWidgets.QWidget:
         logger.debug(f'createEditor({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         if self._get_attribute(index) in ['title', 'description', 'preparedby', 'maskoverride']:
@@ -50,7 +50,7 @@ class SampleEditorDelegate(QtWidgets.QStyledItemDelegate):
         w.setFrame(False)
         return w
 
-    def updateEditorGeometry(self, editor: QtWidgets.QWidget, option: 'QStyleOptionViewItem',
+    def updateEditorGeometry(self, editor: QtWidgets.QWidget, option: QtWidgets.QStyleOptionViewItem,
                              index: QtCore.QModelIndex) -> None:
         logger.debug(f'updateEditorGeometry({index.row()=}, {index.column()=}, {index.isValid()=}, {index.parent().isValid()=}')
         editor.setGeometry(option.rect)

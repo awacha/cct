@@ -67,8 +67,8 @@ def fitpeak(x: np.ndarray, y: np.ndarray, dy: Optional[np.ndarray], dx: Optional
     if dx is None:
         # do an ordinary least-squares fit with/without error bars
         result = scipy.optimize.least_squares(
-            fun=(lambda parameters, x, y, dy: (y - peaktype(x, *parameters)) / dy) if dy is not None else (
-                lambda parameters, x, y: y - peaktype(x, *parameters)),
+            fun=(lambda parameters, x, y, dy: (y - peaktype.value(x, *parameters)) / dy) if dy is not None else (
+                lambda parameters, x, y: y - peaktype.value(x, *parameters)),
             x0=parameter_guess,
             x_scale='jac',
             diff_step=diff_step,
@@ -85,13 +85,13 @@ def fitpeak(x: np.ndarray, y: np.ndarray, dy: Optional[np.ndarray], dx: Optional
             covar = np.dot(VT.T / s ** 2, VT)
         except ValueError:
             covar = np.ones((len(result.x), len(result.x))) * np.nan
-        return values, covar, lambda x: peaktype(x, *values)
+        return values, covar, lambda x: peaktype.value(x, *values)
     elif (dx is not None) and (dy is not None):
         # orthogonal distance least-squares
-        model = scipy.odr.Model(lambda params, x: peaktype(x, *params))
+        model = scipy.odr.Model(lambda params, x: peaktype.value(x, *params))
         data = scipy.odr.RealData(x, y, dx, dy)
         odr = scipy.odr.ODR(data, model, parameter_guess)
         result = odr.run()
-        return result.beta, result.cov_beta, lambda x: peaktype(x, *result.beta)
+        return result.beta, result.cov_beta, lambda x: peaktype.value(x, *result.beta)
     else:
         raise ValueError('Cannot fit with x errors present and y errors absent.')

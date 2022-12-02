@@ -90,7 +90,7 @@ class Variable:
 
     def __str__(self) -> str:
         return (f'Variable {self.name}:\n'
-                f'   type: {self.type.name}\n'
+                f'   type: {self.vartype.name}\n'
                 f'   value: {self.value}\n'
                 f'   previous value: {self.previousvalue}\n'
                 f'   last refreshed: {self.timestamp}\n'

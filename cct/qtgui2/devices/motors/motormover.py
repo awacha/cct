@@ -26,7 +26,7 @@ class MotorMover(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.motorNameComboBox.currentIndexChanged.connect(self.onMotorNameChanged)
         self.relativeMovementCheckBox.toggled.connect(self.onRelativeCheckBoxToggled)
         self.motorTargetDoubleSpinBox.lineEdit().returnPressed.connect(self.onMoveMotorClicked)
-        self.motorNameComboBox.addItems([m.name for m in self.instrument.motors.motors])
+        self.motorNameComboBox.addItems([m.name for m in self.instrument.motors.iterMotors()])
         self.motorNameComboBox.setCurrentIndex(0)
         self.moveMotorPushButton.clicked.connect(self.onMoveMotorClicked)
         self.instrument.motors.newMotor.connect(self.onMotorAdded)
@@ -38,12 +38,12 @@ class MotorMover(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.moveMotorPushButton.setEnabled(False)
             return
         self.moveMotorPushButton.setEnabled(True)
-        motor = self.instrument.motors[self.motorNameComboBox.currentText()]
+        motor = self.instrument.motors.get(self.motorNameComboBox.currentText())
         if motor.isOnline():
             self.onMotorOnline()
-            actualposition = motor['actualposition']
-            left = motor['softleft']
-            right = motor['softright']
+            actualposition = motor.get('actualposition')
+            left = motor.get('softleft')
+            right = motor.get('softright')
             if toggled is None:
                 toggled = self.relativeMovementCheckBox.isChecked()
             if toggled:
@@ -97,7 +97,7 @@ class MotorMover(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot()
     def onMoveMotorClicked(self):
-        motor = self.instrument.motors[self.motorNameComboBox.currentText()]
+        motor = self.instrument.motors.get(self.motorNameComboBox.currentText())
         if self.moveMotorPushButton.text() == 'Move':
             if self.relativeMovementCheckBox.isChecked():
                 motor.moveRel(self.motorTargetDoubleSpinBox.value())
@@ -112,7 +112,7 @@ class MotorMover(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         try:
             currentmotor = self.motorNameComboBox.currentText()
             self.motorNameComboBox.clear()
-            self.motorNameComboBox.addItems([m.name for m in self.instrument.motors])
+            self.motorNameComboBox.addItems([m.name for m in self.instrument.motors.iterMotors()])
             self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.findText(currentmotor))
         finally:
             self.motorNameComboBox.blockSignals(False)
@@ -125,7 +125,7 @@ class MotorMover(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         try:
             currentmotor = self.motorNameComboBox.currentText()
             self.motorNameComboBox.clear()
-            self.motorNameComboBox.addItems([m.name for m in self.instrument.motors])
+            self.motorNameComboBox.addItems([m.name for m in self.instrument.motors.iterMotors()])
             self.motorNameComboBox.setCurrentIndex(self.motorNameComboBox.findText(currentmotor))
         finally:
             self.motorNameComboBox.blockSignals(False)

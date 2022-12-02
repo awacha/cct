@@ -4,7 +4,7 @@ from typing import List, Any, Optional
 
 from PySide6 import QtCore
 
-from ....config import Config
+from ....config2 import Config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -95,7 +95,7 @@ class GeometryChoices(QtCore.QAbstractItemModel):
     spacers: List[float]  # list of the lengths of spacers that can be put between pinhole stages. May be repeated
     flightpipes: List[float]  # list of flight pipe lengths to be put between the sample chamber and the beamstop stage
     _indexobjects: List[IndexObject]  # cache of index objects, to avoid garbage collecting them
-    config: Config  # the configuration object
+    cfg: Config  # the configuration object
 
     def __init__(self, **kwargs):
         self.pinhole1 = []
@@ -105,13 +105,13 @@ class GeometryChoices(QtCore.QAbstractItemModel):
         self.spacers = []
         self.flightpipes = []
         self._indexobjects = []
-        self.config = kwargs.pop('config')
+        self.cfg = kwargs.pop('config')
         super().__init__(**kwargs)
         self.loadFromConfig()
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
-        ip = parent.internalPointer() if parent.isValid() else None
-        assert isinstance(ip, self.IndexObject) or ip is None
+        ip: GeometryChoices.IndexObject = parent.internalPointer() if parent.isValid() else None
+        assert isinstance(ip, GeometryChoices.IndexObject) or ip is None
         if not parent.isValid():  # root level
             return 4  # pinholes, spacers, beamstops, pipes
         elif ip.level == 1:
@@ -301,48 +301,45 @@ class GeometryChoices(QtCore.QAbstractItemModel):
         self.saveToConfig()
 
     def loadFromConfig(self):
+        self.cfg.setdefault(('geometry', 'choices', 'spacers'), [])
+        self.cfg.setdefault(('geometry', 'choices', 'flightpipes'), [])
+        self.cfg.setdefault(('geometry', 'choices', 'beamstops'), [])
+        self.cfg.setdefault(('geometry', 'choices', 'pinholes', 1), [])
+        self.cfg.setdefault(('geometry', 'choices', 'pinholes', 2), [])
+        self.cfg.setdefault(('geometry', 'choices', 'pinholes', 3), [])
         self.beginResetModel()
         try:
-            self.pinhole1 = self.config['geometry']['choices']['pinholes'][1]
+            self.pinhole1 = self.cfg['geometry',  'choices',  'pinholes',  1]
         except KeyError:
             pass
         try:
-            self.pinhole2 = self.config['geometry']['choices']['pinholes'][2]
+            self.pinhole2 = self.cfg['geometry',  'choices',  'pinholes',  2]
         except KeyError:
             pass
         try:
-            self.pinhole3 = self.config['geometry']['choices']['pinholes'][3]
+            self.pinhole3 = self.cfg['geometry',  'choices',  'pinholes',  3]
         except KeyError:
             pass
         try:
-            self.beamstop = self.config['geometry']['choices']['beamstops']
+            self.beamstop = self.cfg['geometry',  'choices',  'beamstops']
         except KeyError:
             pass
         try:
-            self.spacers = self.config['geometry']['choices']['spacers']
+            self.spacers = self.cfg['geometry',  'choices',  'spacers']
         except KeyError:
             pass
         try:
-            self.flightpipes = self.config['geometry']['choices']['flightpipes']
+            self.flightpipes = self.cfg['geometry',  'choices',  'flightpipes']
         except KeyError:
             pass
         self.endResetModel()
 
     def saveToConfig(self):
         """Save the current state to the configuration dictionary"""
-        if 'geometry' not in self.config:
-            self.config['geometry'] = {}
-        if 'choices' not in self.config:
-            self.config['geometry']['choices'] = {}
-        for listname in ['pinholes', 'spacers', 'flightpipes', 'beamstops']:
-            try:
-                del self.config['geometry']['choices'][listname]
-            except KeyError:
-                pass
-        self.config['geometry']['choices']['pinholes'] = {1: self.pinhole1, 2: self.pinhole2, 3: self.pinhole3}
-        self.config['geometry']['choices']['spacers'] = self.spacers
-        self.config['geometry']['choices']['flightpipes'] = self.flightpipes
-        self.config['geometry']['choices']['beamstops'] = self.beamstop
+        self.cfg['geometry',  'choices',  'pinholes'] = {1: self.pinhole1, 2: self.pinhole2, 3: self.pinhole3}
+        self.cfg['geometry',  'choices',  'spacers'] = self.spacers
+        self.cfg['geometry',  'choices',  'flightpipes'] = self.flightpipes
+        self.cfg['geometry',  'choices',  'beamstops'] = self.beamstop
 
     def removeRow(self, row: int, parent: QtCore.QModelIndex = ...) -> bool:
         if not parent.isValid():

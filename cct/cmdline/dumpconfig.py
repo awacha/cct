@@ -1,9 +1,8 @@
-from .main import main
-import click
 import pickle
 
+import click
 
-
+from .main import main
 
 
 @main.command()
@@ -38,5 +37,3 @@ def dumpconfig(config, maxlevel):
                 click.echo(f'{indentation * level}{key}: {conf[key]}')
 
     dump(config, 0)
-
-

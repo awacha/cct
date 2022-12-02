@@ -3,7 +3,7 @@ import logging
 import click
 
 from .main import main
-from ..core2.config import Config
+from ..core2.config2 import Config
 from ..core2.instrument.components.datareduction import DataReductionPipeLine
 from ..core2.instrument.components.io import IO
 
@@ -19,15 +19,16 @@ logger.setLevel(logging.INFO)
 @click.option('--config', '-c', default='config/cct.pickle', help='Config file',
               type=click.Path(exists=True, file_okay=True, dir_okay=False, writable=False, readable=True,
                               allow_dash=False, ))
-def datareduction(firstfsn: int, lastfsn: int, config):
+def datareduction(firstfsn: int, lastfsn: int, config: str):
     """Command-line data reduction routine"""
-    config = Config(dicorfile=config, path='ROOT')
+    config = Config(filename=config)
     config.filename = None  # inhibit autosave
-    io = IO(config=config, instrument=None)
-    pipeline = DataReductionPipeLine(config.asdict())
+    config.autosave_interval = None
+    io = IO(cfg=config, instrument=None)
+    pipeline = DataReductionPipeLine(config.toDict())
     for fsn in range(firstfsn, lastfsn + 1):
         try:
-            ex = io.loadExposure(config[('path', 'prefixes', 'crd')], fsn, raw=True, check_local=True)
+            ex = io.loadExposure(config['path', 'prefixes', 'crd'], fsn, raw=True, check_local=True)
         except FileNotFoundError:
             logger.warning(f'Cannot load exposure #{fsn}')
             continue

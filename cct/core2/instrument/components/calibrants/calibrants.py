@@ -5,7 +5,7 @@ import logging
 
 import dateutil.parser
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 from .calibrant import Calibrant
 from .intensity import IntensityCalibrant
@@ -140,9 +140,10 @@ class CalibrantStore(Component, QtCore.QAbstractItemModel):
     def loadFromConfig(self):
         self.beginResetModel()
         self._calibrants = []
-        if 'calibrants' in self.config:
-            for calibrantname in self.config['calibrants']:
-                conf = self.config['calibrants'][calibrantname].asdict()
+        self.cfg.setdefault(('calibrants', ), [])
+        if 'calibrants' in self.cfg.keysAt():
+            for calibrantname in self.cfg.keysAt('calibrants'):
+                conf = self.cfg.toDict(('calibrants',  calibrantname))
                 if all([(isinstance(v, dict) and ('val' in v) and ('err' in v)) for k, v in conf.items()]):
                     # this is an old-style q-calibrant
                     calibrant = QCalibrant(calibrantname)
@@ -170,10 +171,10 @@ class CalibrantStore(Component, QtCore.QAbstractItemModel):
 
     def saveToConfig(self):
         for c in self._calibrants:
-            self.config['calibrants'][c.name] = c.__getstate__()
-        missing = [k for k in self.config['calibrants'] if k not in [c.name for c in self._calibrants]]
+            self.cfg.updateAt(('calibrants',  c.name), c.__getstate__())
+        missing = [k for k in self.cfg.keysAt('calibrants') if k not in [c.name for c in self._calibrants]]
         for k in missing:
-            del self.config['calibrants'][k]
+            del self.cfg['calibrants',  k]
 
     def addQCalibrant(self):
         i = 0

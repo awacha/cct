@@ -3,8 +3,7 @@ import logging
 from typing import Any
 
 import h5py
-from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 from .backend import HaakePhoenixBackend
 from ...device.frontend import DeviceFrontend, DeviceType
@@ -28,16 +27,16 @@ class HaakePhoenix(DeviceFrontend):
                         ]
 
     def temperature(self) -> float:
-        return self['temperature']
+        return self.get('temperature')
 
     def highlimit(self) -> float:
-        return self['highlimit']
+        return self.get('highlimit')
 
     def lowlimit(self) -> float:
-        return self['lowlimit']
+        return self.get('lowlimit')
 
     def setpoint(self) -> float:
-        return self['setpoint']
+        return self.get('setpoint')
 
     def startCirculator(self):
         self.issueCommand('start')
@@ -61,7 +60,7 @@ class HaakePhoenix(DeviceFrontend):
         self.issueCommand('settime', time)
 
     def isRunning(self) -> bool:
-        return self['__status__'] == HaakePhoenixBackend.Status.Running
+        return self.get('__status__') == HaakePhoenixBackend.Status.Running
 
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
         super().onVariableChanged(variablename, newvalue, previousvalue)
@@ -82,7 +81,7 @@ class HaakePhoenix(DeviceFrontend):
 
     def toNeXus(self, grp: h5py.Group) -> h5py.Group:
         grp = super().toNeXus(grp)
-        self.create_hdf5_dataset(grp, 'type', self['firmwareversion'])
+        self.create_hdf5_dataset(grp, 'type', self.get('firmwareversion'))
         self.create_hdf5_dataset(grp, 'description', 'Haake Phoenix 2P circulating bath')
         sensorgrp = grp.create_group('temperature')
         sensorgrp.attrs['NX_class'] = 'NXsensor'
@@ -91,5 +90,5 @@ class HaakePhoenix(DeviceFrontend):
         self.create_hdf5_dataset(sensorgrp, 'short_name', 'sample block temperature')
         self.create_hdf5_dataset(sensorgrp, 'measurement', 'temperature')
         self.create_hdf5_dataset(sensorgrp, 'run_control', False)
-        self.create_hdf5_dataset(sensorgrp, 'value', self['temperature'], units='°C')
+        self.create_hdf5_dataset(sensorgrp, 'value', self.get('temperature'), units='°C')
         return grp

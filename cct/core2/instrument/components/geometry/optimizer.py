@@ -7,9 +7,9 @@ from typing import Sequence, Optional, Dict, Tuple, Any
 
 import numpy as np
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
-from ....config import Config
+from ....config2 import Config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -135,7 +135,7 @@ class GeometryOptimizer(QtCore.QObject):
 
     def __init__(self, config: Config):
         super().__init__()
-        self.geoconfig = config['geometry'].asdict()
+        self.geoconfig = config['geometry']
         self.queue = None
         self.process = None
         self.timerid = None

@@ -1,13 +1,12 @@
 import datetime
-import multiprocessing
 import os
 import logging
-from typing import Any, List, Final, Optional, Sequence, Iterator, Tuple
+from typing import Any, List, Final, Optional, Iterator, Tuple
 
 from PySide6 import QtCore
 
 from ..settings import ProcessingSettings, FileNameScheme
-from .task import ProcessingTask, ProcessingStatus
+from .task import ProcessingTask
 from ...dataclasses import Header
 
 logger = logging.getLogger(__name__)

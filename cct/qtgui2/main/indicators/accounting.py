@@ -1,8 +1,9 @@
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
+
 from .accounting_ui import Ui_Frame
-from ....core2.instrument.instrument import Instrument
 from ...utils.window import WindowRequiresDevices
+from ....core2.instrument.instrument import Instrument
 
 
 class AccountingIndicator(WindowRequiresDevices, QtWidgets.QFrame, Ui_Frame):
@@ -29,12 +30,15 @@ class AccountingIndicator(WindowRequiresDevices, QtWidgets.QFrame, Ui_Frame):
         self.projectIDComboBox.setSizeAdjustPolicy(self.projectIDComboBox.SizeAdjustPolicy.AdjustToContents)
         self.projectIDComboBox.setView(view)
         self.projectIDComboBox.currentIndexChanged.connect(self.onProjectChanged)
-        self.projectIDComboBox.setCurrentIndex(self.projectIDComboBox.findText(Instrument.instance().projects.projectID()))
+        self.projectIDComboBox.setCurrentIndex(
+            self.projectIDComboBox.findText(Instrument.instance().projects.projectID()))
         self.onProjectChanged()
 
     @Slot()
     def onProjectChanged(self):
+        print('ONPROJECTCHANGED, setproject')
         Instrument.instance().projects.setProject(self.projectIDComboBox.currentText())
+        print('END OF ONPROJECTCHANGED, setproject')
         self.titleLineEdit.setText(Instrument.instance().projects.project().title)
         self.titleLineEdit.setToolTip(self.titleLineEdit.text())
         self.titleLineEdit.home(False)

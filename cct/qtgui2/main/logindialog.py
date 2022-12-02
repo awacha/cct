@@ -18,10 +18,10 @@ class LoginDialog(QtWidgets.QDialog, Ui_Dialog):
     def setupUi(self, Dialog):
         super().setupUi(Dialog)
         self.setWindowTitle(f'CCT v{pkg_resources.get_distribution("cct").version} login')
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setText('Login')
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setIcon(QtGui.QIcon.fromTheme('user-info'))
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).setIcon(QtGui.QIcon.fromTheme('system-exit'))
-        self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).setText('Exit')
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setText('Login')
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setIcon(QtGui.QIcon.fromTheme('user-info'))
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).setIcon(QtGui.QIcon.fromTheme('system-exit'))
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Cancel).setText('Exit')
         self.resize(self.minimumSizeHint())
 
     def authenticate(self) -> bool:
@@ -32,13 +32,13 @@ class LoginDialog(QtWidgets.QDialog, Ui_Dialog):
             logger.debug(f'Authentication failed with exception {repr(exc)}')
             self.passwordLineEdit.setAutoFillBackground(True)
             pal = self.passwordLineEdit.palette()
-            pal.setColor(QtGui.QPalette.Background, QtGui.QColor('red'))
+            pal.setColor(QtGui.QPalette.ColorRole.Background, QtGui.QColor('red'))
             self.passwordLineEdit.setPalette(pal)
             return False
 
     def passwordEdited(self):
         pal = self.passwordLineEdit.palette()
-        pal.setColor(QtGui.QPalette.Background, self.userNameLineEdit.palette().color(QtGui.QPalette.Background))
+        pal.setColor(QtGui.QPalette.ColorRole.Background, self.userNameLineEdit.palette().color(QtGui.QPalette.ColorRole.Background))
         self.passwordLineEdit.setPalette(pal)
 
     def isOffline(self):

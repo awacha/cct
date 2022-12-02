@@ -19,17 +19,17 @@ class Keen80UPS(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'Keen800'][0]
+        ups = self.instrument.devicemanager.getByDeviceName('Keen800')
         for variable in ups.keys():
             try:
-                self.onVariableChanged(variable, ups[variable], ups[variable])
+                self.onVariableChanged(variable, ups.get(variable), ups.get(variable))
             except ups.DeviceError:
                 pass
 
     @Slot(str, object, object)
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         logger.debug(f'{name}: {prevvalue} -> {newvalue}')
-        ups = [dev for dev in self.instrument.devicemanager if dev.devicename == 'Keen800'][0]
+        ups = self.instrument.devicemanager.getByDeviceName('Keen800')
         if name == '__status__':
             pass
         elif name == '__auxstatus__':
@@ -42,7 +42,7 @@ class Keen80UPS(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.outputVoltageLabel.setText(f'{newvalue:.2f} V')
         elif name == 'outputcurrentpercentage':
             try:
-                ratedcurrent = ups['ratedcurrent']
+                ratedcurrent = ups.get('ratedcurrent')
             except ups.DeviceError:
                 pass
             else:
@@ -76,5 +76,5 @@ class Keen80UPS(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                     widget.setText(goodtext if good else badtext)
                     widget.setAutoFillBackground(True)
                     pal = widget.palette()
-                    pal.setColor(pal.Window, QtGui.QColor('lightgreen' if good else 'red'))
+                    pal.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor('lightgreen' if good else 'red'))
                     widget.setPalette(pal)

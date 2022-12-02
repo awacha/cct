@@ -3,13 +3,13 @@
 import math
 from typing import Optional, Any
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Slot
 
 import time
 import logging
 
-from .command import Command, InstantCommand
-from .commandargument import FloatArgument, StringArgument, IntArgument
+from .command import Command
+from .commandargument import FloatArgument, StringArgument
 from ..devices.peristalticpump.leadfluid.frontend import BT100S, ControlMode
 
 logger=logging.getLogger(__name__)
@@ -71,9 +71,9 @@ class PeristalticPumpDispense(Command):
         if self.starttime is None:
             self.progress.emit('Initializing peristaltic pump...', 0, 0)
         else:
-            disptime = self.device()['dispense_time']
+            disptime = self.device().get('dispense_time')
             elapsed = time.monotonic() - self.starttime
-            if (elapsed > disptime) and (not self.device()['running']):
+            if (elapsed > disptime) and (not self.device().get('running')):
                 # dispense time elapsed and the pump is not running anymore => we are finished
                 self.finish(True)
             else:
@@ -114,9 +114,9 @@ class PeristalticPumpDispense(Command):
             self.device().startRotation()
         elif (command == 'start'):
             self.message.emit(
-                f'Peristaltic pump running {self.device()["direction"]} at {self.device()["rotating_speed"]:.1f} rpm ' + (
-                    f'for {self.device()["dispense_time"]:.1f} seconds.' if (
-                            self.device()["control_mode"] == ControlMode.Foot_Switch.value) else "until stopped.")
+                f'Peristaltic pump running {self.device().get("direction")} at {self.device().get("rotating_speed"):.1f} rpm ' + (
+                    f'for {self.device().get("dispense_time"):.1f} seconds.' if (
+                            self.device().get("control_mode") == ControlMode.Foot_Switch.value) else "until stopped.")
             )
             if (not self.wait_until_complete) or (
                     (self.dispensetime is not None) and (not math.isfinite(self.dispensetime))):

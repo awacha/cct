@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtCore
+
 from .calibrants_ui import Ui_WizardPage
 from ......core2.instrument.instrument import Instrument
-from ......core2.dataclasses.sample import Sample
 
 
 class CalibrantsPage(QtWidgets.QWizardPage, Ui_WizardPage):
@@ -21,7 +21,7 @@ class CalibrantsPage(QtWidgets.QWizardPage, Ui_WizardPage):
             sortmodel = QtCore.QSortFilterProxyModel(self)
             sortmodel.setSourceModel(instrument.samplestore)
             sortmodel.setFilterKeyColumn(8)
-            sortmodel.setFilterRegExp(regexp)
+            sortmodel.setFilterRegularExpression(QtCore.QRegularExpression(regexp))
             sortmodel.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
             combobox.setModel(sortmodel)
             self.registerField(fieldname, combobox, 'currentText', combobox.currentTextChanged)

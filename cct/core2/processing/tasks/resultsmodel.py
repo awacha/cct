@@ -1,13 +1,10 @@
-from configparser import ConfigParser
-from typing import Any, List, Tuple
 import logging
+from typing import Any, List, Tuple
 
 from PySide6 import QtCore, QtGui
-from .task import ProcessingTask
-from ...dataclasses import Header
-from ..calculations.resultsentry import SampleDistanceEntry, SampleDistanceEntryType
 
-import numpy as np
+from .task import ProcessingTask
+from ..calculations.resultsentry import SampleDistanceEntry
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -20,13 +17,13 @@ class ResultsModel(ProcessingTask):
         self._data = []
         super().__init__(*args, **kwargs)
         self.reload()
-    
+
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return len(self._data)
 
     def columnCount(self, parent: QtCore.QModelIndex = ...) -> int:
         return 9
-    
+
     def data(self, index: QtCore.QModelIndex, role: int = ...) -> Any:
         sde = self._data[index.row()]
         if role == QtCore.Qt.ItemDataRole.DisplayRole:
@@ -40,8 +37,8 @@ class ResultsModel(ProcessingTask):
                 return str(sde.header.exposurecount)
             elif index.column() == 4:
                 hours = sde.header.exposuretime[0] // 3600
-                minutes = (sde.header.exposuretime[0] - hours*3600) // 60
-                seconds = (sde.header.exposuretime[0] - hours*3600 - minutes*60)
+                minutes = (sde.header.exposuretime[0] - hours * 3600) // 60
+                seconds = (sde.header.exposuretime[0] - hours * 3600 - minutes * 60)
                 return f'{hours:02.0f}:{minutes:02.0f}:{seconds:04.1f}'
             elif index.column() == 5:
                 if sde.isDerived():
@@ -75,31 +72,36 @@ class ResultsModel(ProcessingTask):
             return self.headerData(index.column(), QtCore.Qt.Orientation.Horizontal, QtCore.Qt.ItemDataRole.ToolTipRole)
         elif role == QtCore.Qt.ItemDataRole.UserRole:
             return sde
-        elif role == QtCore.Qt.ItemDataRole.BackgroundColorRole:
-            if (index.column() in [5,6]) and sde.isDerived():
+        elif role == QtCore.Qt.ItemDataRole.BackgroundRole:
+            if (index.column() in [5, 6]) and sde.isDerived():
                 return None
             if index.column() == 5:
                 try:
-                    return QtGui.QColor('red') if sde.outliertest.shapiroTest().pvalue < 0.05 else QtGui.QColor('lightgreen')
+                    return QtGui.QColor('red') if sde.outliertest.shapiroTest().pvalue < 0.05 else QtGui.QColor(
+                        'lightgreen')
                 except:
                     return QtGui.QColor('orange')
             elif index.column() == 6:
                 try:
-                    return QtGui.QColor('red') if sde.outliertest.schillingTest().pvalue < 0.05 else QtGui.QColor('lightgreen')
+                    return QtGui.QColor('red') if sde.outliertest.schillingTest().pvalue < 0.05 else QtGui.QColor(
+                        'lightgreen')
                 except:
                     return QtGui.QColor('orange')
             elif index.column() == 7:
                 try:
-                    return QtGui.QColor('red') if sde.outliertest.FtestQuadraticVsConstant().pvalue < 0.05 else QtGui.QColor('lightgreen')
+                    return QtGui.QColor(
+                        'red') if sde.outliertest.FtestQuadraticVsConstant().pvalue < 0.05 else QtGui.QColor(
+                        'lightgreen')
                 except:
                     return QtGui.QColor('orange')
             elif index.column() == 8:
                 try:
-                    return QtGui.QColor('red') if sde.outliertest.FtestLinearVsConstant().pvalue < 0.05 else QtGui.QColor('lightgreen')
+                    return QtGui.QColor(
+                        'red') if sde.outliertest.FtestLinearVsConstant().pvalue < 0.05 else QtGui.QColor('lightgreen')
                 except:
                     return QtGui.QColor('orange')
-        elif role == QtCore.Qt.ItemDataRole.TextColorRole:
-            if (index.column() in [5,6]) and sde.isDerived():
+        elif role == QtCore.Qt.ItemDataRole.ForegroundRole:
+            if (index.column() in [5, 6]) and sde.isDerived():
                 return None
             if (index.column() == 5) or (index.column() == 6):
                 return QtGui.QColor('black')
@@ -119,7 +121,8 @@ class ResultsModel(ProcessingTask):
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = ...) -> Any:
         if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
-            return ['Sample', 'Distance', 'Category', 'Count', 'Total time', 'Shapiro test', 'Schilling test', 'Quadratic vs. const F-test', 'Linear vs. const F-test'][section]
+            return ['Sample', 'Distance', 'Category', 'Count', 'Total time', 'Shapiro test', 'Schilling test',
+                    'Quadratic vs. const F-test', 'Linear vs. const F-test'][section]
         elif (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.ToolTipRole):
             return [
                 'The name of the sample',
@@ -150,7 +153,7 @@ class ResultsModel(ProcessingTask):
     def reload(self):
         self.beginResetModel()
         try:
-            self._data=[]
+            self._data = []
             for samplename in self.settings.h5io.samplenames():
                 logger.debug(f'Reading sample {samplename}')
                 for dist in self.settings.h5io.distancekeys(samplename, onlynumeric=False):
@@ -169,8 +172,9 @@ class ResultsModel(ProcessingTask):
     def get(self, samplename: str, distkey: str) -> SampleDistanceEntry:
         return [sde for sde in self._data if sde.samplename == samplename and sde.distancekey == distkey][0]
 
-    def remove(self, samplename:str, distancekey:str):
-        rows = [i for i, sde in enumerate(self._data) if sde.samplename == samplename and sde.distancekey == distancekey]
+    def remove(self, samplename: str, distancekey: str):
+        rows = [i for i, sde in enumerate(self._data) if
+                sde.samplename == samplename and sde.distancekey == distancekey]
         if not rows:
             raise ValueError(f'Cannot remove {samplename}@{distancekey}: no such measurement')
         assert len(rows) == 1
@@ -180,4 +184,3 @@ class ResultsModel(ProcessingTask):
 
     def __contains__(self, item: Tuple[str, str]) -> bool:
         return item in self.settings.h5io
-

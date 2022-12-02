@@ -75,9 +75,10 @@ class Motor(QtCore.QObject):
                 role = MotorRole.Other
         self.role = role
 
-        self.instrument.devicemanager[self.controllername].allVariablesReady.connect(self.onControllerConnected)
-        self.instrument.devicemanager[self.controllername].connectionLost.connect(self.onControllerDisconnected)
-        if self.instrument.devicemanager[self.controllername].isOnline():
+        controller = self.instrument.devicemanager.get(self.controllername)
+        controller.allVariablesReady.connect(self.onControllerConnected)
+        controller.connectionLost.connect(self.onControllerDisconnected)
+        if controller.isOnline():
             self.onControllerConnected()
 
     @Slot()
@@ -123,7 +124,7 @@ class Motor(QtCore.QObject):
         return self.controller.stopMotor(self.axis)
 
     def isMoving(self) -> bool:
-        return self.controller[f'moving${self.axis}']
+        return self.controller.get(f'moving${self.axis}')
 
     def setPosition(self, newposition: float):
         self.checkPrivileges(calibration=True)
@@ -135,7 +136,7 @@ class Motor(QtCore.QObject):
 
     def where(self) -> float:
         try:
-            return self.controller[f'actualposition${self.axis}']
+            return self.controller.get(f'actualposition${self.axis}')
         except DeviceFrontend.DeviceError:
             return math.nan
 
@@ -146,8 +147,8 @@ class Motor(QtCore.QObject):
                 if int(motoridx) == self.axis:
                     yield basename
 
-    def __getitem__(self, item: str) -> Any:
-        return self.controller[f'{item}${self.axis}']
+    def get(self, item: str) -> Any:
+        return self.controller.get(f'{item}${self.axis}')
 
     @Slot(str, object, object)
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
@@ -179,7 +180,7 @@ class Motor(QtCore.QObject):
 
     @property
     def controller(self) -> MotorController:
-        return self.instrument.devicemanager[self.controllername]
+        return self.instrument.devicemanager.get(self.controllername)
 
     @property
     def hasController(self) -> bool:
@@ -194,23 +195,23 @@ class Motor(QtCore.QObject):
             raise RuntimeError('Cannot calibrate motor: insufficient privileges')
 
     def isOnline(self) -> bool:
-        return (self.controllername in self.instrument.devicemanager) and self.instrument.devicemanager[
-            self.controllername].isOnline()
+        return (self.controllername in self.instrument.devicemanager) and self.instrument.devicemanager.get(
+            self.controllername).isOnline()
 
     def unitConverter(self) -> UnitConverter:
         return self.controller.unitConverter(self.axis)
 
     def isAtRightSoftLimit(self) -> bool:
-        return self.where() >= self['softright']
+        return self.where() >= self.get('softright')
 
     def isAtLeftSoftLimit(self) -> bool:
-        return self.where() <= self['softleft']
+        return self.where() <= self.get('softleft')
 
     def isAtRightHardLimit(self) -> bool:
-        return self['rigthswitchenable'] and self['rightswitchstatus']
+        return self.get('rigthswitchenable') and self.get('rightswitchstatus')
 
     def isAtLeftHardLimit(self) -> bool:
-        return self['leftswitchenable'] and self['leftswitchstatus']
+        return self.get('leftswitchenable') and self.get('leftswitchstatus')
 
     @staticmethod
     def create_hdf5_dataset(grp: h5py.Group, name: str, data: Any, **kwargs) -> h5py.Dataset:
@@ -220,11 +221,11 @@ class Motor(QtCore.QObject):
         grp.attrs['NX_class'] = 'NXpositioner'
         self.create_hdf5_dataset(grp, 'name', self.name)
         self.create_hdf5_dataset(grp, 'description', self.role.value + ' motor in direction ' + self.direction.value)
-        self.create_hdf5_dataset(grp, 'value', self['actualposition'])
-        self.create_hdf5_dataset(grp, 'raw_value', self['actualposition:raw'])
-        self.create_hdf5_dataset(grp, 'target_value', self['targetposition'])
-        self.create_hdf5_dataset(grp, 'soft_limit_min', self['softleft'])
-        self.create_hdf5_dataset(grp, 'soft_limit_max', self['softright'])
-        self.create_hdf5_dataset(grp, 'velocity', self['actualspeed'])
-        self.create_hdf5_dataset(grp, 'acceleration_time', self['maxspeed'] / self['maxacceleration'], units='s')
+        self.create_hdf5_dataset(grp, 'value', self.get('actualposition'))
+        self.create_hdf5_dataset(grp, 'raw_value', self.get('actualposition:raw'))
+        self.create_hdf5_dataset(grp, 'target_value', self.get('targetposition'))
+        self.create_hdf5_dataset(grp, 'soft_limit_min', self.get('softleft'))
+        self.create_hdf5_dataset(grp, 'soft_limit_max', self.get('softright'))
+        self.create_hdf5_dataset(grp, 'velocity', self.get('actualspeed'))
+        self.create_hdf5_dataset(grp, 'acceleration_time', self.get('maxspeed') / self.get('maxacceleration'), units='s')
         return grp

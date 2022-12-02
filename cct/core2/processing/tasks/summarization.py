@@ -1,18 +1,14 @@
 import logging
-import multiprocessing
-import queue
 from typing import List, Any, Optional, Sequence, Iterator, Set
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtCore import Signal, Slot
 
-from .task import ProcessingTask, ProcessingStatus, ProcessingSettings
-from ..calculations.backgroundprocess import Message
-from ..calculations.summaryjob import SummaryJob, SummaryJobResults, Results
-from ...algorithms.matrixaverager import ErrorPropagationMethod
+from .task import ProcessingTask, ProcessingSettings
 from ..calculations.outliertest import OutlierMethod
+from ..calculations.summaryjob import SummaryJob
+from ...algorithms.matrixaverager import ErrorPropagationMethod
 from ...dataclasses.exposure import QRangeMethod
-from ..loader import FileNameScheme
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -80,9 +76,9 @@ class Summarization(ProcessingTask):
             return QtGui.QIcon(QtGui.QPixmap(f':/icons/spinner_{sd.spinner % 12:02d}.svg'))
         elif (role == QtCore.Qt.ItemDataRole.ToolTipRole) and (sd.errormessage is not None):
             return sd.traceback
-        elif (role == QtCore.Qt.ItemDataRole.BackgroundColorRole) and (sd.errormessage is not None):
+        elif (role == QtCore.Qt.ItemDataRole.BackgroundRole) and (sd.errormessage is not None):
             return QtGui.QColor('red').lighter(150)
-        elif (role == QtCore.Qt.ItemDataRole.TextColorRole) and (sd.errormessage is not None):
+        elif (role == QtCore.Qt.ItemDataRole.ForegroundRole) and (sd.errormessage is not None):
             return QtGui.QColor('black')
         elif (role == QtCore.Qt.ItemDataRole.UserRole):
             return sd
@@ -188,18 +184,19 @@ class Summarization(ProcessingTask):
         self._data[i].lastfoundbadfsns = result.newbadfsns
         self.newbadfsns = self.newbadfsns.union(result.newbadfsns)
         self._data[i].statusmessage = 'Processing done'
-        #self.itemChanged.emit(self._data[i].samplename, f'{self._data[i].distance:.2f}')
+        # self.itemChanged.emit(self._data[i].samplename, f'{self._data[i].distance:.2f}')
         self.dataChanged.emit(self.index(i, 0), self.index(i, self.columnCount()))
         self.itemChanged.emit(self._data[i].samplename, f'{self._data[i].distance:.2f}')
         super().onBackgroundTaskFinished(result)
 
     def onAllBackgroundTasksFinished(self):
         self.settings.addBadFSNs(self.newbadfsns)
-        for i,d in enumerate(self._data):
+        for i, d in enumerate(self._data):
             if d.spinner is not None:
                 d.errormessage = 'User break'
                 d.spinner = None
-                self.dataChanged.emit(self.index(i, 0, QtCore.QModelIndex()), self.index(i, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
+                self.dataChanged.emit(self.index(i, 0, QtCore.QModelIndex()),
+                                      self.index(i, self.columnCount(QtCore.QModelIndex()), QtCore.QModelIndex()))
 
     @Slot()
     def updateSpinners(self):
@@ -209,7 +206,8 @@ class Summarization(ProcessingTask):
                 d.spinner += 1
         self.dataChanged.emit(
             self.index(0, 0, QtCore.QModelIndex()),
-            self.index(self.rowCount(QtCore.QModelIndex()), 0, QtCore.QModelIndex()), [QtCore.Qt.ItemDataRole.DecorationRole])
+            self.index(self.rowCount(QtCore.QModelIndex()), 0, QtCore.QModelIndex()),
+            [QtCore.Qt.ItemDataRole.DecorationRole])
         if not [d for d in self._data if d.spinner is not None]:
             self.spinnerTimer.stop()
             self.spinnerTimer.deleteLater()

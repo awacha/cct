@@ -48,9 +48,9 @@ class PilatusDetectorUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         super().setupUi(Form)
         self.gainComboBox.addItems([p.value for p in PilatusGain])
         self.gainComboBox.setCurrentIndex(0)
-        self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(self.instrument.devicemanager.detector()['gain']))
-        self.thresholdDoubleSpinBox.setValue(self.instrument.devicemanager.detector()['threshold'])
-        det = self.instrument.devicemanager.detector()
+        pilatus: PilatusDetector = self.instrument.devicemanager.getByDeviceName('PilatusDetector')
+        self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(pilatus.get('gain')))
+        self.thresholdDoubleSpinBox.setValue(pilatus.get('threshold'))
         for variable in ['gain', 'threshold', 'vcmp', 'tau', 'cutoff',
                          'humidity', 'temperature', 'temperaturelimits', 'humiditylimits',
                          'cameradef', 'cameraname', 'cameraSN',  'imgmode', 'wpix', 'hpix',  'version',
@@ -59,7 +59,7 @@ class PilatusDetectorUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                          'exptime', 'nimages', 'expperiod', 'starttime', '__status__']:
             logger.debug(f'Getting variable {variable}')
             try:
-                self.onVariableChanged(variable, det[variable], None)
+                self.onVariableChanged(variable, pilatus.get(variable), None)
             except DeviceFrontend.DeviceError:
                 # this variable has not yet been updated
                 logger.warning(f'Variable not yet updated: {variable}')
@@ -92,40 +92,40 @@ class PilatusDetectorUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         if self.gainComboBox.currentIndex() < 0:
             return
         gain = PilatusGain(self.gainComboBox.currentText())
-        detector = self.instrument.devicemanager.detector()
+        detector = self.instrument.devicemanager.getByDeviceName('PilatusDetector')
         assert isinstance(detector, PilatusDetector)
         self.thresholdDoubleSpinBox.setRange(*detector.thresholdLimits(gain))
 
     @Slot(bool, name='on_trimPushButton_clicked')
     def onTrimButtonClicked(self, checked: bool):
-        detector = self.instrument.devicemanager.detector()
+        detector = self.instrument.devicemanager.getByDeviceName('PilatusDetector')
         assert isinstance(detector, PilatusDetector)
         detector.trim(self.thresholdDoubleSpinBox.value(), PilatusGain(self.gainComboBox.currentText()))
 
     @Slot(str, object, object, name='onVariableChanged')
     def onVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
-        det: PilatusDetector = self.instrument.devicemanager.detector()
+        det: PilatusDetector = self.instrument.devicemanager.getByDeviceName('PilatusDetector')
         if name == '__status__':
             self.trimPushButton.setEnabled(newvalue == PilatusBackend.Status.Idle)
             self.statusLabel.setText(newvalue)
         elif name == 'gain':
-            self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(det['gain']))
-            self.thresholdDoubleSpinBox.setValue(det['threshold'])
+            self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(det.get('gain')))
+            self.thresholdDoubleSpinBox.setValue(det.get('threshold'))
             self.gainLabel.setText(newvalue)
         elif name == 'threshold':
-            self.thresholdDoubleSpinBox.setValue(det['threshold'])
+            self.thresholdDoubleSpinBox.setValue(det.get('threshold'))
             self.thresholdLabel.setText(f'{newvalue:.0f} eV')
         elif name == 'vcmp':
             self.vcmpLabel.setText(f'{newvalue:.3f} V')
         elif name in ['wpix', 'hpix']:
             try:
-                self.geometryLabel.setText(f'{det["wpix"]} × {det["hpix"]} (pixels X × Y)')
+                self.geometryLabel.setText(f'{det.get("wpix")} × {det.get("hpix")} (pixels X × Y)')
             except DeviceFrontend.DeviceError:
                 pass
         elif name in ['humidity', 'humiditylimits']:
             try:
-                humidity = det['humidity']
-                humiditylimits = det['humiditylimits']
+                humidity = det.get('humidity')
+                humiditylimits = det.get('humiditylimits')
             except det.DeviceError:
                 pass
             else:
@@ -135,12 +135,12 @@ class PilatusDetectorUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                     label.setText(f'{value:.1f} %')
                     label.setAutoFillBackground(True)
                     pal = label.palette()
-                    pal.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if (value < lowlim) or (value > uplim) else 'lightgreen'))
+                    pal.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor('red' if (value < lowlim) or (value > uplim) else 'lightgreen'))
                     label.setPalette(pal)
         elif name in ['temperature', 'temperaturelimits']:
             try:
-                temperature = det['temperature']
-                temperaturelimits = det['temperaturelimits']
+                temperature = det.get('temperature')
+                temperaturelimits = det.get('temperaturelimits')
             except det.DeviceError:
                 pass
             else:
@@ -150,7 +150,7 @@ class PilatusDetectorUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                     label.setText(f'{value:.1f} °C')
                     label.setAutoFillBackground(True)
                     pal = label.palette()
-                    pal.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if (value < lowlim) or (value > uplim) else 'lightgreen'))
+                    pal.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor('red' if (value < lowlim) or (value > uplim) else 'lightgreen'))
                     label.setPalette(pal)
         elif name == 'cameradef':
             pass
@@ -166,7 +166,7 @@ class PilatusDetectorUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.versionLabel.setText(newvalue)
         elif name in ['controllingPID', 'pid']:
             try:
-                haverights = det['controllingPID'] == det['pid']
+                haverights = det.get('controllingPID') == det.get('pid')
             except DeviceFrontend.DeviceError:
                 self.remoteControlLabel.setText('--')
                 self.remoteControlLabel.setAutoFillBackground(False)
@@ -174,7 +174,7 @@ class PilatusDetectorUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 self.remoteControlLabel.setText('YES' if haverights else 'NO')
                 self.remoteControlLabel.setAutoFillBackground(True)
                 pal = self.remoteControlLabel.palette()
-                pal.setColor(QtGui.QPalette.Window, QtGui.QColor('lightgreen' if haverights else 'red'))
+                pal.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor('lightgreen' if haverights else 'red'))
                 self.remoteControlLabel.setPalette(pal)
         elif name == 'tau':
             self.tauLabel.setText(f'{newvalue*1e9:.1f} ns')

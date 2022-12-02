@@ -32,7 +32,7 @@ class HeaderView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.model = HeaderViewModel()
         self.model.loading.connect(self.onHeadersLoading)
         self.headersTreeView.setModel(self.model)
-        lastfsn = self.instrument.io.lastfsn(self.instrument.config['path']['prefixes']['crd'])
+        lastfsn = self.instrument.io.lastfsn(self.instrument.cfg['path',  'prefixes',  'crd'])
         if lastfsn is None:
             self.firstFSNSpinBox.setEnabled(False)
             self.lastFSNSpinBox.setEnabled(False)
@@ -65,7 +65,7 @@ class HeaderView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot(str, int)
     def onLastFSNChanged(self, prefix: str, lastfsn: Optional[int]):
-        if prefix == self.instrument.config['path']['prefixes']['crd']:
+        if prefix == self.instrument.cfg['path',  'prefixes',  'crd']:
             if lastfsn is None:
                 self.firstFSNSpinBox.setEnabled(False)
                 self.lastFSNSpinBox.setEnabled(False)
@@ -93,7 +93,7 @@ class HeaderView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             header = self.headersTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole)
             assert isinstance(header, Header)
             exposure = self.instrument.io.loadExposure(
-                self.instrument.config['path']['prefixes']['crd'], header.fsn, raw=True, check_local=True)
+                self.instrument.cfg['path',  'prefixes',  'crd'], header.fsn, raw=True, check_local=True)
             self.mainwindow.showPattern(exposure)
 
     @Slot()
@@ -102,7 +102,7 @@ class HeaderView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             header = self.headersTreeView.selectionModel().currentIndex().data(QtCore.Qt.ItemDataRole.UserRole)
             assert isinstance(header, Header)
             exposure = self.instrument.io.loadExposure(
-                self.instrument.config['path']['prefixes']['crd'], header.fsn, raw=True, check_local=True)
+                self.instrument.cfg['path',  'prefixes',  'crd'], header.fsn, raw=True, check_local=True)
             self.mainwindow.showCurve(exposure)
 
     @Slot()
@@ -120,7 +120,7 @@ class HeaderView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         logger.debug('Got event')
         self.datareductionpipeline = multiprocessing.Process(
             target=DataReductionPipeLine.run_in_background,
-            args=(self.instrument.config.asdict(), self.queuetodatareduction, self.queuefromdatareduction,
+            args=(self.instrument.cfg.toDict(), self.queuetodatareduction, self.queuefromdatareduction,
                   self.stopprocessingevent))
         logger.debug('Starting process')
         self.datareductionpipeline.start()
@@ -136,7 +136,7 @@ class HeaderView(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         for index in self.headersTreeView.selectionModel().selectedRows(0):
             header = index.data(QtCore.Qt.ItemDataRole.UserRole)
             logger.debug(f'Queueing job with fsn {header.fsn}')
-            self.queuetodatareduction.put(('process', (self.instrument.config['path']['prefixes']['crd'], header.fsn)))
+            self.queuetodatareduction.put(('process', (self.instrument.cfg['path',  'prefixes',  'crd'], header.fsn)))
         self.queuetodatareduction.put(('end', None))
         self.headersTreeView.setEnabled(False)
         logger.info('All set up.')

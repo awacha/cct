@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import Slot
 
 from .genix_ui import Ui_Form
@@ -53,11 +53,11 @@ class GeniXTool(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        device = self.instrument.devicemanager['genix']
+        device = self.instrument.devicemanager.getByDeviceName('GeniX')
         for variable in self._var2widget:
-            self.onVariableChanged(variable, device[variable], None)
-        self.onVariableChanged('__status__', device['__status__'], None)
-        self.onVariableChanged('__auxstatus__', device['__auxstatus__'], None)
+            self.onVariableChanged(variable, device.get(variable), None)
+        self.onVariableChanged('__status__', device.get('__status__'), None)
+        self.onVariableChanged('__auxstatus__', device.get('__auxstatus__'), None)
         self.resetFaultsPushButton.clicked.connect(self.onResetFaultsClicked)
         self.xraysOnPushButton.toggled.connect(self.onXraysOnToggled)
         self.warmUpPushButton.toggled.connect(self.onWarmUpToggled)
@@ -74,7 +74,7 @@ class GeniXTool(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 pal = widget.palette()
                 if name in ['remote_mode', 'xrays', 'interlock']:
                     newvalue = not newvalue
-                pal.setColor(QtGui.QPalette.Window, QtGui.QColor('red' if bool(newvalue) else 'lightgreen'))
+                pal.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor('red' if bool(newvalue) else 'lightgreen'))
                 widget.setPalette(pal)
                 widget.setAutoFillBackground(True)
             elif isinstance(widget, QtWidgets.QLCDNumber):
@@ -84,7 +84,7 @@ class GeniXTool(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         if name == 'faultstatus':
             self.resetFaultsPushButton.setEnabled(newvalue)
         if name == 'remote_mode' or name == 'interlock':
-            self.shutterPushButton.setEnabled(self.genix()['remote_mode'] and self.genix()['interlock'])
+            self.shutterPushButton.setEnabled(self.genix().get('remote_mode') and self.genix().get('interlock'))
         if name == '__status__':
             self.xraysOnPushButton.setEnabled(newvalue in [GeniXBackend.Status.off, GeniXBackend.Status.xraysoff])
             self.warmUpPushButton.setEnabled(newvalue in [GeniXBackend.Status.off, GeniXBackend.Status.warmup])
@@ -102,11 +102,11 @@ class GeniXTool(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 self.warmUpPushButton.blockSignals(False)
         if name == 'xrays':
             self.xraysOnPushButton.blockSignals(True)
-            self.xraysOnPushButton.setChecked(self.genix()['xrays'])
+            self.xraysOnPushButton.setChecked(self.genix().get('xrays'))
             self.xraysOnPushButton.blockSignals(False)
         if name == 'shutter':
             self.shutterPushButton.blockSignals(True)
-            self.shutterPushButton.setChecked(self.genix()['shutter'])
+            self.shutterPushButton.setChecked(self.genix().get('shutter'))
             self.shutterPushButton.blockSignals(False)
 
     @Slot()
@@ -145,7 +145,7 @@ class GeniXTool(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.genix().rampup()
 
     def genix(self) -> GeniX:
-        device = self.instrument.devicemanager['genix']
+        device = self.instrument.devicemanager.get('genix')
         assert isinstance(device, GeniX)
         return device
 

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, Slot
 
 from .fsnselector_ui import Ui_Form
@@ -10,9 +10,9 @@ from ...core2.instrument.instrument import Instrument
 
 class FSNSelector(QtWidgets.QWidget, Ui_Form):
     fsnSelected = Signal(str, int)
-    horizontal: bool=True
+    horizontal: bool = True
 
-    def __init__(self, parent: QtWidgets.QWidget, horizontal: bool=True):
+    def __init__(self, parent: QtWidgets.QWidget, horizontal: bool = True):
         super().__init__(parent)
         self.horizontal = horizontal
         self.setupUi(self)
@@ -32,7 +32,8 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
             grid.addWidget(self.label_2, 1, 0, 1, 1)
             grid.addLayout(self.horizontalLayout_2, 1, 1, 1, 1)
             grid.addWidget(self.reloadToolButton, 0, 2, 1, 1)
-            self.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+            self.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+                               QtWidgets.QSizePolicy.Policy.MinimumExpanding)
 
         instrument = Instrument.instance()
         instrument.io.lastFSNChanged.connect(self.onLastFSNChanged)
@@ -66,7 +67,7 @@ class FSNSelector(QtWidgets.QWidget, Ui_Form):
         self.reloadToolButton.setEnabled(not invalid)
 
     @Slot(int)
-    def onPrefixChanged(self, index:int):
+    def onPrefixChanged(self, index: int):
         if self.comboBox.currentIndex() < 0:
             self.setInvalid(True)
             return

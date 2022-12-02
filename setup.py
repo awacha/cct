@@ -72,21 +72,21 @@ class BuildUICommand(Command):
                 self.announce('Compiled UI file: {} -> {}.'.format(fname, pyfilename), 2)
 
 
-class BuildPyCommand(build_py):
-    """Override the default build_py command to require Qt UI and resource compilation"""
+#class BuildPyCommand(build_py):
+#    """Override the default build_py command to require Qt UI and resource compilation"""
+#
+#    def run(self):
+#        self.run_command('rcc')
+#        self.run_command('uic')
+#        super().run()
 
-    def run(self):
-        self.run_command('rcc')
-        self.run_command('uic')
-        super().run()
 
-
-class DevelopCommand(develop):
-    """Override the default develop command to require Qt UI and resourec compilation"""
-    def run(self) -> None:
-        self.run_command('rcc')
-        self.run_command('uic')
-        super().run()
+#class DevelopCommand(develop):
+#    """Override the default develop command to require Qt UI and resourec compilation"""
+#    def run(self) -> None:
+#        self.run_command('rcc')
+#        self.run_command('uic')
+#        super().run()
 
 
 # collect extensions
@@ -110,9 +110,10 @@ for dirpath, dirnames, filenames in os.walk('cct'):
                                     ))
 
 setup(ext_modules=extensions,
-      cmdclass={'build_py': BuildPyCommand,
-                'uic': BuildUICommand,
-                'rcc': RCCComand,
-                'develop': DevelopCommand,
+      cmdclass={
+#          'build_py': BuildPyCommand,
+          'uic': BuildUICommand,
+          'rcc': RCCComand,
+#          'develop': DevelopCommand,
                 }
       )

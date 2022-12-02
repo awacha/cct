@@ -1,8 +1,7 @@
 from typing import Any
 
 from ...device.frontend import DeviceFrontend, DeviceType
-from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 
 class VacuumGauge(DeviceFrontend):
@@ -10,7 +9,7 @@ class VacuumGauge(DeviceFrontend):
     pressureChanged = Signal(float)
 
     def pressure(self) -> float:
-        return self['pressure']
+        return self.get('pressure')
 
     def onVariableChanged(self, variablename: str, newvalue: Any, previousvalue: Any):
         super().onVariableChanged(variablename, newvalue, previousvalue)

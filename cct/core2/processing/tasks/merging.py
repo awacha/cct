@@ -2,7 +2,6 @@ import logging
 from collections import namedtuple
 from typing import Dict, List, Any, Optional
 
-import numpy as np
 from PySide6 import QtCore, QtGui
 from PySide6.QtCore import Signal, Slot
 
@@ -87,9 +86,9 @@ class Merging(ProcessingTask):
                 return md.samplename
             elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
                 return md.statusmessage if md.errormessage is None else md.errormessage
-            elif (role == QtCore.Qt.ItemDataRole.BackgroundColorRole) and (md.errormessage is not None):
+            elif (role == QtCore.Qt.ItemDataRole.BackgroundRole) and (md.errormessage is not None):
                 return QtGui.QColor('red').lighter(50)
-            elif (role == QtCore.Qt.ItemDataRole.TextColorRole) and (md.errormessage is not None):
+            elif (role == QtCore.Qt.ItemDataRole.ForegroundRole) and (md.errormessage is not None):
                 return QtGui.QColor('black')
             elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DecorationRole):
                 return QtGui.QIcon(

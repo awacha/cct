@@ -95,7 +95,7 @@ class TransmissionMeasurementStatus(enum.Enum):
     Stopping = 'Stop requested by the user'
 
 
-class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
+class TransmissionMeasurement(Component, QtCore.QAbstractItemModel):
     """Transmission measurement sequence:
 
     1. Initialization
@@ -139,10 +139,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
     def __init__(self, **kwargs):
         self._data = []
         super().__init__(**kwargs)
-        if 'transmission' not in self.config:
-            self.config['transmission'] = {}
-        if 'sd_from_error_propagation' not in self.config['transmission']:
-            self.config['transmission']['sd_from_error_propagation'] = True
+        self.cfg.setdefault(('transmission', 'sd_from_error_propagation'), True)
 
     def setStatus(self, status: TransmissionMeasurementStatus):
         logger.debug(f'Transmission status: {status}')
@@ -181,7 +178,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         elif (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.DecorationRole):
             return QtGui.QIcon.fromTheme(
                 'media-playback-start') if index.row() == self.currentlymeasuredsample else None
-        elif role == QtCore.Qt.ItemDataRole.BackgroundColorRole:
+        elif role == QtCore.Qt.ItemDataRole.BackgroundRole:
             return QtGui.QColor(QtCore.Qt.GlobalColor.green) if index.row() == self.currentlymeasuredsample else None
         elif (index.column() == 1) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             value = data.dark()
@@ -193,25 +190,25 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
             value = data.sample()
             return '--' if value is None else f'{value[0]:.1f} \xb1 {value[1]:.1f}'
         elif (index.column() == 4) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
-            value = data.transmission(self.config['transmission']['sd_from_error_propagation'])
+            value = data.transmission(self.cfg['transmission',  'sd_from_error_propagation'])
             return '--' if value is None else f'{value[0]:.4f} \xb1 {value[1]:.4f}'
         elif (index.column() == 5) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
-            transm = data.transmission(self.config['transmission']['sd_from_error_propagation'])
+            transm = data.transmission(self.cfg['transmission',  'sd_from_error_propagation'])
             if transm is None:
                 return '--'
             mud = -np.log(transm[0]), np.abs(transm[1] / transm[0])
-            sample = self.instrument.samplestore[data.samplename]
+            sample = self.instrument.samplestore.get(data.samplename)
             assert isinstance(sample, Sample)
             mu = mud[0] / sample.thickness[0], (
                     mud[1] ** 2 / sample.thickness[0] ** 2 + mud[0] ** 2 * sample.thickness[1] ** 2 /
                     sample.thickness[0] ** 4) ** 0.5
             return f'{mu[0]:.4f} \xb1 {mu[1]:.4f}'
         elif (index.column() == 6) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
-            transm = data.transmission(self.config['transmission']['sd_from_error_propagation'])
+            transm = data.transmission(self.cfg['transmission',  'sd_from_error_propagation'])
             if transm is None:
                 return '--'
             mud = -np.log(transm[0]), np.abs(transm[1] / transm[0])
-            sample = self.instrument.samplestore[data.samplename]
+            sample = self.instrument.samplestore.get(data.samplename)
             assert isinstance(sample, Sample)
             invmu = sample.thickness[0] / mud[0], (
                     sample.thickness[1] ** 2 / mud[0] ** 2 + sample.thickness[0] ** 2 * mud[1] ** 2 / mud[
@@ -269,7 +266,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
     def mimeData(self, indexes: Iterable[QtCore.QModelIndex]) -> QtCore.QMimeData:
         md = QtCore.QMimeData()
         samplenames = [self._data[index.row()].samplename for index in indexes]
-        samples = [s for s in self.instrument.samplestore if s.title in samplenames]
+        samples = [s for s in self.instrument.samplestore.samples() if s.title in samplenames]
         md.setData('application/x-cctsamplelist', pickle.dumps(samples))
         td = [self._data[index.row()] for index in indexes]
         md.setData('application/x-ccttransmissiondata', pickle.dumps(td))
@@ -483,7 +480,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         if self.finishIfUserStop():
             return
         self.setStatus(TransmissionMeasurementStatus.CloseShutter)
-        if not self.source['shutter']:
+        if not self.source.get('shutter'):
             self.onShutter(False)
         else:
             self._connectSource()
@@ -498,7 +495,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         if self.finishIfUserStop():
             return
         self.setStatus(TransmissionMeasurementStatus.OpenShutter)
-        if self.source['shutter']:
+        if self.source.get('shutter'):
             self.onShutter(True)
         else:
             self._connectSource()
@@ -513,7 +510,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         if self.finishIfUserStop():
             return
         self.setStatus(TransmissionMeasurementStatus.XraysToStandby)
-        if self.source['__status__'] == GeniXBackend.Status.standby:
+        if self.source.get('__status__') == GeniXBackend.Status.standby:
             self.onXraySourcePowerStateChanged(GeniXBackend.Status.standby)
         else:
             self._connectSource()
@@ -597,7 +594,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                 logger.debug('Exposing sample')
                 self.setStatus(TransmissionMeasurementStatus.ExposingSample)
             self.waitingforimages = self.nimages
-            self.instrument.exposer.startExposure(self.config['path']['prefixes']['tra'],
+            self.instrument.exposer.startExposure(self.cfg['path',  'prefixes',  'tra'],
                                                   exposuretime=self.countingtime,
                                                   delay=self.delaytime, imagecount=self.nimages)
         except Exception as exc:
@@ -697,8 +694,10 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         elif isinstance(samplename, int):
             sampleindex = samplename
             samplename = self._data[sampleindex].samplename
+        else:
+            raise TypeError(samplename)
         currenttask = self._data[sampleindex]
-        transm = currenttask.transmission(self.config['transmission']['sd_from_error_propagation'])
+        transm = currenttask.transmission(self.cfg['transmission',  'sd_from_error_propagation'])
         logger.info(f'Transmission for sample {samplename} is: '
                     f'{transm[0]:.4f} \xb1 {transm[1]:.4f}')
         try:
@@ -829,8 +828,8 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
         self.endResetModel()
 
     def orderSamplesForLeastMovement(self):
-        samples = [self.samplestore[d.samplename] for d in self._data]
-        empty = self.samplestore[self.emptysample]
+        samples = [self.samplestore.get(d.samplename) for d in self._data]
+        empty = self.samplestore.get(self.emptysample)
         samples_ordered = orderForLeastMotorMovement([(s, (s.positionx[0], s.positiony[0])) for s in samples], (empty.positionx[0], empty.positiony[0]))
         self.beginResetModel()
         sorteddata = [[d for d in self._data if d.samplename == s.title][0] for s in samples_ordered]
@@ -852,7 +851,7 @@ class TransmissionMeasurement(QtCore.QAbstractItemModel, Component):
                 logger.error(f'Cannot save trnasmission of sample {self._data[i].samplename}: {exc}')
 
     def setErrorPropagationMode(self, sd_from_error_propagation: bool):
-        self.instrument.config['transmission']['sd_from_error_propagation'] = sd_from_error_propagation
+        self.instrument.config['transmission',  'sd_from_error_propagation'] = sd_from_error_propagation
         self.dataChanged.emit(self.index(0, 0, QtCore.QModelIndex()),
                               self.index(self.rowCount(QtCore.QModelIndex()),
                                          self.columnCount(QtCore.QModelIndex())))

@@ -52,7 +52,8 @@ class SimpleExposure(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.sampleNameComboBox.setModel(self.instrument.samplestore.sortedmodel)
         self.prefixComboBox.clear()
         self.prefixComboBox.addItems(sorted(self.instrument.io.prefixes))
-        self.prefixComboBox.setCurrentIndex(self.prefixComboBox.findText(self.instrument.config['path']['prefixes']['tst']))
+        self.prefixComboBox.setCurrentIndex(
+            self.prefixComboBox.findText(self.instrument.cfg['path',  'prefixes',  'tst']))
         self.progressBar.hide()
         self.resize(self.minimumSizeHint())
         self.setUiEnabled()

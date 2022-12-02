@@ -21,7 +21,7 @@ class SE521Window(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def setupUi(self, Form):
         super().setupUi(Form)
         for variable in self.device().keys():
-            self.onVariableChanged(variable, self.device()[variable], None)
+            self.onVariableChanged(variable, self.device().get(variable), None)
         self.backlightPushButton.clicked.connect(self.toggleBacklight)
         self.switchUnitsPushButton.clicked.connect(self.celsiusorfahrenheit)
         for widgetname in self._name_lineedits.values():
@@ -36,12 +36,12 @@ class SE521Window(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.recallModeLabel.setText(f'{"yes" if newvalue else "no"}')
         elif name in ['isalarm', 'islowalarm', 'ishighalarm']:
             try:
-                if self.device()['islowalarm'] and self.device()['isalarm']:
+                if self.device().get('islowalarm') and self.device().get('isalarm'):
                     self.alarmStateLabel.setText(f'Low temperature!')
-                elif self.device()['ishighalarm'] and self.device()['isalarm']:
+                elif self.device().get('ishighalarm') and self.device().get('isalarm'):
                     self.alarmStateLabel.setText(f'High temperature!')
                 else:
-                    self.alarmStateLabel.setText('Unknown alarm' if self.device()['isalarm'] else 'None')
+                    self.alarmStateLabel.setText('Unknown alarm' if self.device().get('isalarm') else 'None')
             except self.device().DeviceError:
                 if self.device().isInitializing():
                     # can happen when not all variables have been queried yet
@@ -58,13 +58,13 @@ class SE521Window(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.bluetoothLabel.setText('yes' if newvalue else 'no')
         elif name in ['ismaxmode', 'ismaxminmode', 'isminmode', 'isavgmode', 'ismaxminavgflashing']:
             try:
-                if self.device()['ismaxmode']:
+                if self.device().get('ismaxmode'):
                     self.displayModeLabel.setText('Max')
-                elif self.device()['isminmode']:
+                elif self.device().get('isminmode'):
                     self.displayModeLabel.setText('Min')
-                elif self.device()['isavgmode']:
+                elif self.device().get('isavgmode'):
                     self.displayModeLabel.setText('Avg')
-                elif self.device()['ismaxminavgflashing']:
+                elif self.device().get('ismaxminavgflashing'):
                     self.displayModeLabel.setText('Max/Min/Avg')
                 else:
                     self.displayModeLabel.setText('Current')
@@ -104,7 +104,7 @@ class SE521Window(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 widget.blockSignals(False)
 
     def device(self) -> SE521:
-        return self.instrument.devicemanager['se521']
+        return self.instrument.devicemanager.getByDeviceName('SE521')
 
     @Slot()
     def toggleBacklight(self):

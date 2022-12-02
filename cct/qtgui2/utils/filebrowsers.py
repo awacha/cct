@@ -22,22 +22,22 @@ def browseFile(mode: FileBrowserMode, parent: QtWidgets.QWidget, caption: str,
     try:
         fd.setModal(True)
         if mode == FileBrowserMode.SaveFile:
-            fd.setFileMode(QtWidgets.QFileDialog.AnyFile)
-            fd.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+            fd.setFileMode(QtWidgets.QFileDialog.FileMode.AnyFile)
+            fd.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
             fd.setDefaultSuffix(defaultsuffix)
         elif mode == FileBrowserMode.Directory:
-            fd.setFileMode(QtWidgets.QFileDialog.Directory)
-            fd.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
-            fd.setAcceptMode(QtWidgets.QFileDialog.AcceptOpen)
+            fd.setFileMode(QtWidgets.QFileDialog.FileMode.Directory)
+            fd.setOption(QtWidgets.QFileDialog.Option.ShowDirsOnly, True)
+            fd.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptOpen)
         elif mode == FileBrowserMode.OpenFile:
-            fd.setFileMode(QtWidgets.QFileDialog.ExistingFile)
-            fd.setAcceptMode(QtWidgets.QFileDialog.AcceptOpen)
+            fd.setFileMode(QtWidgets.QFileDialog.FileMode.ExistingFile)
+            fd.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptOpen)
         elif mode == FileBrowserMode.OpenFiles:
-            fd.setFileMode(QtWidgets.QFileDialog.ExistingFiles)
-            fd.setAcceptMode(QtWidgets.QFileDialog.AcceptOpen)
+            fd.setFileMode(QtWidgets.QFileDialog.FileMode.ExistingFiles)
+            fd.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptOpen)
         else:
             raise ValueError(f'Invalid file browser mode: {mode}')
-        if (result := fd.exec()) != QtWidgets.QFileDialog.Accepted:
+        if (result := fd.exec()) != QtWidgets.QFileDialog.DialogCode.Accepted:
             logger.debug(f'File dialog return value: {result}')
             return None
         elif mode == FileBrowserMode.OpenFiles:

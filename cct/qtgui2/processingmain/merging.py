@@ -41,7 +41,7 @@ class MergingWindow(ProcessingWindow, Ui_Form):
         self.figtoolbar = NavigationToolbar2QT(self.canvas, self)
         self.figureVerticalLayout.addWidget(self.figtoolbar)
         self.figureVerticalLayout.addWidget(self.canvas, 1)
-        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self._resetaxes()
         self.canvas.draw_idle()
         self.treeView.selectionModel().selectionChanged.connect(self.onSelectionChanged)

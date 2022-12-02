@@ -49,7 +49,7 @@ class Calibration(WindowRequiresDevices, QtWidgets.QMainWindow, Ui_MainWindow):
         self.fsnSelectorGroupBox.setLayout(QtWidgets.QVBoxLayout())
         self.fsnSelectorGroupBox.layout().addWidget(self.fsnSelector)
         self.fsnSelector.fsnSelected.connect(self.onFSNSelected)
-        self.fsnSelector.setPrefix(self.instrument.config['path']['prefixes']['tst'])
+        self.fsnSelector.setPrefix(self.instrument.cfg['path',  'prefixes',  'tst'])
         self.tab2D.setLayout(QtWidgets.QVBoxLayout())
         self.plotimage = PlotImage(self.tab2D)
         self.tab2D.layout().addWidget(self.plotimage)
@@ -110,18 +110,18 @@ class Calibration(WindowRequiresDevices, QtWidgets.QMainWindow, Ui_MainWindow):
         if self.exposure is None:
             return
         if self.sender() is self.saveSDDistToolButton:
-            self.instrument.config['geometry']['dist_sample_det'] = float(self.dist_sample_det[0])
-            self.instrument.config['geometry']['dist_sample_det.err'] = float(self.dist_sample_det[1])
+            self.instrument.cfg['geometry',  'dist_sample_det'] = float(self.dist_sample_det[0])
+            self.instrument.cfg['geometry',  'dist_sample_det.err'] = float(self.dist_sample_det[1])
             logger.info(
                 f'Updated sample-to-detector distance to {self.dist_sample_det[0]:.5f} \xb1 {self.dist_sample_det[1]:.5f} mm')
         elif self.sender() == self.saveBeamXToolButton:
-            self.instrument.config['geometry']['beamposy'] = self.exposure.header.beamposcol[0]
-            self.instrument.config['geometry']['beamposy.err'] = self.exposure.header.beamposcol[1]
+            self.instrument.cfg['geometry',  'beamposy'] = self.exposure.header.beamposcol[0]
+            self.instrument.cfg['geometry',  'beamposy.err'] = self.exposure.header.beamposcol[1]
             logger.info(f'Updated beam column (X) coordinate to {self.exposure.header.beamposcol[0]:.5f} \xb1 '
                         f'{self.exposure.header.beamposcol[1]:.5f} pixel')
         elif self.sender() == self.saveBeamYToolButton:
-            self.instrument.config['geometry']['beamposx'] = self.exposure.header.beamposrow[0]
-            self.instrument.config['geometry']['beamposx.err'] = self.exposure.header.beamposrow[1]
+            self.instrument.cfg['geometry',  'beamposx'] = self.exposure.header.beamposrow[0]
+            self.instrument.cfg['geometry',  'beamposx.err'] = self.exposure.header.beamposrow[1]
             logger.info(f'Updated beam row (Y) coordinate to {self.exposure.header.beamposrow[0]:.5f} \xb1 '
                         f'{self.exposure.header.beamposrow[1]:.5f} pixel')
         else:

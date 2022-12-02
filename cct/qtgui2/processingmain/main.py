@@ -6,7 +6,7 @@ from typing import Optional, Dict, Final, List, Tuple, Type
 
 import appdirs
 from PySide6 import QtWidgets, QtCore, QtGui
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Slot
 
 from .averaging import AveragingWindow
 from .closablemdisubwindow import ClosableMdiSubWindow
@@ -18,8 +18,8 @@ from .results import ResultsWindow
 from .resultviewwindow import ResultViewWindow
 from .settings import SettingsWindow
 from .subtraction import SubtractionWindow
-from ...core2.processing.processing import Processing
 from ..utils.filebrowsers import getOpenFile, getSaveFile
+from ...core2.processing.processing import Processing
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -159,7 +159,8 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @Slot()
     def saveProjectAs(self) -> bool:  # True if saved successfully
-        filename = getSaveFile(self, 'Save the project to...', '', 'CPT4 project files (*.cpt4);;All files (*)', '.cpt4')
+        filename = getSaveFile(self, 'Save the project to...', '', 'CPT4 project files (*.cpt4);;All files (*)',
+                               '.cpt4')
         if not filename:
             return False
         self.setWindowFilePath(filename)
@@ -414,7 +415,8 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
                 logger.info(f'Showing window {label} as normal')
                 subwindow.showNormal()
             # restore the size and position of the subwindow
-            if (windowstate[label]['x'] is None) and (windowstate[label]['y'] is None) and (windowstate[label]['width'] is None) and (windowstate[label]['height'] is None):
+            if (windowstate[label]['x'] is None) and (windowstate[label]['y'] is None) and (
+                    windowstate[label]['width'] is None) and (windowstate[label]['height'] is None):
                 logger.error(f'Restoring geometry of window {label} FROM GEOMETRY')
                 subwindow.restoreGeometry(windowstate[label]['geometry'])
             else:

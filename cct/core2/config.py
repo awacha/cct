@@ -67,8 +67,8 @@ class Config(QtCore.QObject):
             self.load(dicorfile, update=False)
         self.changed.connect(self.onChanged)
 
-    @Slot(QtCore.QObject, name='onDestroyed')
     @staticmethod
+    @Slot(QtCore.QObject, name='onDestroyed')
     def onDestroyed(selfdict):
         newinstances = []
         removedcount = 0

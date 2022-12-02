@@ -10,7 +10,7 @@ from ..auth import Privilege, needsprivilege
 from ..component import Component
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class ProjectManager(Component, QtCore.QAbstractItemModel):
@@ -39,7 +39,7 @@ class ProjectManager(Component, QtCore.QAbstractItemModel):
             return prj
         elif (role == QtCore.Qt.ItemDataRole.UserRole) and (index.column() == 0):
             return QtWidgets.QApplication.instance().style().standardIcon(
-                QtWidgets.QStyle.SP_DialogOkButton) if self._currentproject is prj else None
+                QtWidgets.QStyle.StandardPixmap.SP_DialogOkButton) if self._currentproject is prj else None
 
     @needsprivilege(Privilege.ProjectManagement, 'Insufficient privileges')
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
@@ -95,44 +95,35 @@ class ProjectManager(Component, QtCore.QAbstractItemModel):
         self.endRemoveRows()
         self.saveToConfig()
 
-    def __getitem__(self, item) -> Project:
-        try:
-            return [p for p in self._projects if p.projectid == item][0]
-        except IndexError:
-            raise KeyError(item)
+#    def __getitem__(self, item) -> Project:
+#        try:
+#            return [p for p in self._projects if p.projectid == item][0]
+#        except IndexError:
+#            raise KeyError(item)
 
-    def __contains__(self, item) -> bool:
-        return bool([p for p in self._projects if p.projectid == item])
+#    def __contains__(self, item) -> bool:
+#        return bool([p for p in self._projects if p.projectid == item])
 
     def saveToConfig(self):
-        if 'projects' not in self.config:
-            self.config['projects'] = {}
-        if 'projects' not in self.config['projects']:
-            self.config['projects']['projects'] = {}
-        self.config['projects']['current'] = self._currentproject.projectid
-        for p in list(self.config['projects']['projects']):
-            if p not in self:
-                del self.config['projects']['projects'][p]
-        for p in self._projects:
-            if p.projectid not in self.config['projects']['projects']:
-                self.config['projects']['projects'][p.projectid] = p.__getstate__()
-            else:
-                self.config['projects']['projects'][p.projectid].update(p.__getstate__())
+        logger.debug('SaveToConfig() starting')
+        self.cfg['projects', 'current'] = self._currentproject.projectid
+        self.cfg['projects', 'projects'] = {p.projectid: p.__getstate__() for p in self._projects}
+        logger.debug('SaveToConfig() ended.')
 
     def loadFromConfig(self):
-        if ('projects' in self.config) and ('projects' in self.config['projects']):
+        if ('projects', 'projects') in self.cfg:
             # new-style config
             self.beginResetModel()
-            for prjname in self.config['projects']['projects']:
+            for prjname in self.cfg['projects',  'projects']:
                 prj = Project('')
-                prj.__setstate__(self.config['projects']['projects'][prjname])
+                prj.__setstate__(self.cfg['projects',  'projects',  prjname])
                 self._projects.append(prj)
             self._projects = sorted(self._projects, key=lambda p: p.projectid)
-            self.setProject(self.config['projects']['current'])
+            self.setProject(self.cfg['projects',  'current'])
             self.endResetModel()
-        elif ('services' in self.config) and ('accounting' in self.config['services']):
-            dbfile = self.config['services']['accounting']['dbfile']
-            currentprojectid = self.config['services']['accounting']['projectid']
+        elif ('services', 'accounting') in self.cfg:
+            dbfile = self.cfg['services',  'accounting',  'dbfile']
+            currentprojectid = self.cfg['services',  'accounting',  'projectid']
             self.beginResetModel()
             with open(os.path.join('config', dbfile), 'rb') as f:
                 prjdb = pickle.load(f)['projects']
@@ -146,9 +137,14 @@ class ProjectManager(Component, QtCore.QAbstractItemModel):
             self._projects = [Project('Untitled', 'Anonymous', 'Untitled')]
             self.setProject('Untitled')
             self.endResetModel()
+            self.saveToConfig()
 
     def setProject(self, projectid: str):
-        self._currentproject = self[projectid]
+        logger.debug(f'Setting project to {projectid}')
+        try:
+            self._currentproject = [p for p in self._projects if p.projectid == projectid][0]
+        except IndexError:
+            return
         logger.info(f'Current project changed to {self._currentproject}')
         self.saveToConfig()
 

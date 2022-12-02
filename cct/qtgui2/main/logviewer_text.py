@@ -11,7 +11,7 @@ class LogViewerText(logging.Handler):
         self.widget = QtWidgets.QPlainTextEdit()
         self.setFormatter(formatter)
         self.debugformat = QtGui.QTextCharFormat()
-        self.debugformat.setFontWeight(QtGui.QFont.Normal)
+        self.debugformat.setFontWeight(QtGui.QFont.Weight.Normal)
         self.debugformat.setForeground(QtCore.Qt.GlobalColor.lightGray)
         self.warningformat = QtGui.QTextCharFormat()
         self.warningformat.setForeground(QtCore.Qt.GlobalColor.darkYellow)
@@ -29,7 +29,7 @@ class LogViewerText(logging.Handler):
     def emit(self, record: logging.LogRecord):
         msg = self.format(record) + '\n'
         cursor = self.widget.textCursor()
-        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
 
         if record.levelno < logging.INFO:
             cursor.insertText(msg, self.debugformat)
@@ -43,6 +43,6 @@ class LogViewerText(logging.Handler):
             cursor.insertText(msg, self.errorformat)
         else:
             cursor.insertText(msg, self.criticalformat)
-        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.movePosition(QtGui.QTextCursor.MoveOperation.End)
         self.widget.setTextCursor(cursor)
         self.widget.ensureCursorVisible()

@@ -39,13 +39,13 @@ class LeadFluid_BT100S(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.dispenseVolumeDoubleSpinBox.setEnabled(False)  # ToDo
         for variable in self.device().keys():
             try:
-                value = self.device()[variable]
+                value = self.device().get(variable)
             except BT100S.DeviceError:
                 continue
             self.onVariableChanged(variable, value, value)
 
     def device(self) -> BT100S:
-        return self.instrument.devicemanager['BT100S']
+        return self.instrument.devicemanager.getByDeviceName('BT100S')
 
     @Slot(float)
     def onRotationSpeedChanged(self, value: float):

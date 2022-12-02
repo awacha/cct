@@ -25,6 +25,6 @@ class ComboBoxDelegate(QtWidgets.QStyledItemDelegate):
         assert isinstance(editor, QtWidgets.QComboBox)
         editor.setCurrentIndex(editor.findText(index.data(QtCore.Qt.ItemDataRole.EditRole)))
 
-    def setModelData(self, editor: QtWidgets.QWidget, model: QtCore.QAbstractItemModel,
+    def setModelData(self, editor: QtWidgets.QComboBox, model: QtCore.QAbstractItemModel,
                      index: QtCore.QModelIndex) -> None:
         model.setData(index, editor.currentText(), QtCore.Qt.ItemDataRole.EditRole)

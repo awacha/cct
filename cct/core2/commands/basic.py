@@ -6,7 +6,7 @@ from PySide6 import QtCore
 from typing import Any, Tuple, Optional
 
 from .command import Command, InstantCommand, JumpCommand
-from .commandargument import IntArgument, FloatArgument, StringArgument, AnyArgument
+from .commandargument import FloatArgument, StringArgument, AnyArgument
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -210,6 +210,6 @@ class SaveConfig(InstantCommand):
     arguments = []
 
     def run(self, *args: Any) -> Any:
-        self.instrument.config.save()
+        self.instrument.cfg.save()
         self.message.emit('Saved configuration to disk.')
         return True

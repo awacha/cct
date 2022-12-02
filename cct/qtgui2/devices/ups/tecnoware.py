@@ -20,7 +20,7 @@ class TecnowareUPS(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.setupUi(self)
 
     def ups(self) -> TecnowareEvoDSPPlus:
-        return [dev for dev in self.instrument.devicemanager if dev.devicename == 'TecnowareEvoDSPPlus'][0]
+        return self.instrument.devicemanager.getByDeviceName('TecnowareEvoDSPPlus')
 
     def setupUi(self, Form):
         super().setupUi(Form)
@@ -33,7 +33,7 @@ class TecnowareUPS(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 except AttributeError:
                     pass
             try:
-                self.onVariableChanged(variable, self.ups()[variable], self.ups()[variable])
+                self.onVariableChanged(variable, self.ups().get(variable), self.ups().get(variable))
             except TecnowareEvoDSPPlus.DeviceError:
                 pass
 
@@ -110,7 +110,7 @@ class TecnowareUPS(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                     widget.setText(goodtext if good else badtext)
                     widget.setAutoFillBackground(True)
                     pal = widget.palette()
-                    pal.setColor(pal.Window, QtGui.QColor('lightgreen' if good else 'red'))
+                    pal.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor('lightgreen' if good else 'red'))
                     widget.setPalette(pal)
 
     @Slot(bool)

@@ -37,7 +37,7 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
 
     @Slot()
     def reconnect(self):
-        if Instrument.instance().devicemanager[self.devicename].isOffline():
+        if Instrument.instance().devicemanager.get(self.devicename).isOffline():
             Instrument.instance().devicemanager.connectDevice(self.devicename)
         else:
             Instrument.instance().devicemanager.disconnectDevice(self.devicename)
@@ -72,7 +72,7 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
     def onDeviceVariableChanged(self, name: str, newvalue: Any, prevvalue: Any):
         if name in ['__status__', '__auxstatus__']:
             try:
-                self.statusLabel.setText(f"{self.device['__status__']} ({self.device['__auxstatus__']})")
+                self.statusLabel.setText(f"{self.device.get('__status__')} ({self.device.get('__auxstatus__')})")
             except DeviceFrontend.DeviceError:
                 pass
 
@@ -98,7 +98,7 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
     def setLabelColor(label: QtWidgets.QLabel, isok: Optional[bool]):
         pal = label.palette()
         pal.setColor(
-            QtGui.QPalette.Window,
+            QtGui.QPalette.ColorRole.Window,
             QtGui.QColor(
                 ('lightgreen' if isok else 'red') if isok is not None else 'gray'))
         label.setPalette(pal)
@@ -106,4 +106,4 @@ class DeviceStatus(QtWidgets.QGroupBox, Ui_GroupBox):
 
     @property
     def device(self) -> DeviceFrontend:
-        return Instrument.instance().devicemanager[self.devicename]
+        return Instrument.instance().devicemanager.get(self.devicename)

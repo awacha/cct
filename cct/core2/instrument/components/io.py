@@ -4,18 +4,17 @@ import pathlib
 import re
 
 import shutil
-from typing import Dict, Tuple, Optional, List, Iterator
+from typing import Dict, Tuple, Optional, List, Iterator, Any
 
 import h5py
 import numpy as np
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 from scipy.io import loadmat
 
 from .component import Component
 from ...algorithms.readcbf import readcbf
 from ...dataclasses import Exposure, Header
-from ...config import Config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -51,6 +50,7 @@ class IO(Component, QtCore.QObject):
     _masks: Dict[str, Tuple[pathlib.Path, np.ndarray, float]]
     _nextfsn: Dict[str, int]
     _lastfsn: Dict[str, Optional[int]]
+    _last_reindex_parameters: Optional[Dict[str, Any]] = None
 
     nextFSNChanged = Signal(str, int)
     lastFSNChanged = Signal(str, int)
@@ -66,7 +66,7 @@ class IO(Component, QtCore.QObject):
         super().startComponent()
 
     def getSubDir(self, subdir: str) -> pathlib.Path:
-        return pathlib.Path.cwd() / self.config['path']['directories'][subdir]
+        return pathlib.Path.cwd() / self.cfg['path',  'directories',  subdir]
 
     ### Nextfsn / Lastfsn list maintenance
 
@@ -77,13 +77,33 @@ class IO(Component, QtCore.QObject):
         the start of the program.
         """
         # check raw detector images
+        if ('path', 'directories') not in self.cfg:
+            return
+        if ('path', 'prefixes') not in self.cfg:
+            return
         logger.info('Reindexing already present exposures...')
+        if self._last_reindex_parameters is not None:
+            # if neither the subdirectories nor the prefixes have changed, do not reindex
+            if all([
+                self.getSubDir(sd) == self._last_reindex_parameters['subdirs'][sd]
+                for sd in self._last_reindex_parameters['subdirs']]) and \
+                all([
+                    self.cfg['path', 'prefixes'][prefix] == self._last_reindex_parameters['prefixes'][prefix]
+                    for prefix in self._last_reindex_parameters['prefixes']]):
+                # do not reindex, nothing should has been changed
+                return
+
+        self._last_reindex_parameters={
+            'subdirs': {},
+            'prefixes': {prefix:self.cfg["path", "prefixes"][prefix] for prefix in self.cfg["path", "prefixes"]},
+        }
         for subdir, extension in [
             ('images', 'cbf'), ('images_local', 'cbf'), ('param', 'pickle'), ('param_override', 'pickle'),
             ('eval2d', 'npz'), ('eval1d', 'txt')]:
             # find all subdirectories in `directory`, including `directory`
             # itself
             directory = self.getSubDir(subdir)
+            self._last_reindex_parameters['subdirs'][subdir] = directory
             logger.debug(f'Reindexing subdirectory {directory}')
             filename_regex = re.compile(rf'^(?P<prefix>\w+)_(?P<fsn>\d+)\.{extension}$')
             for folder, subdirs, files in os.walk(str(directory)):
@@ -108,7 +128,7 @@ class IO(Component, QtCore.QObject):
 
         logger.debug('Creating empty prefixes')
         # add known prefixes to self._lastfsn if they were not yet added.
-        for prefix in self.config['path']['prefixes'].values():
+        for prefix in self.cfg['path',  'prefixes'].values():
             if prefix not in self._lastfsn:
                 self._lastfsn[prefix] = None
             else:
@@ -180,7 +200,7 @@ class IO(Component, QtCore.QObject):
         return list(self._lastfsn.keys())
 
     def iterfilename(self, subdir, prefix, fsn, extension) -> Iterator[str]:
-        filename = f'{prefix}_{fsn:0{self.config["path"]["fsndigits"]}d}{extension}'
+        filename = f'{prefix}_{fsn:0{self.cfg["path",  "fsndigits"]}d}{extension}'
         yield os.path.join(subdir, prefix, filename)
         yield os.path.join(subdir, filename)
         yield os.path.join(subdir, f'{prefix}{fsn // 10000}', filename)
@@ -189,7 +209,7 @@ class IO(Component, QtCore.QObject):
     ### Loading exposures, headers, masks
 
     def formatFileName(self, prefix: str, fsn: int, extn: str = '') -> str:
-        return f'{prefix}_{fsn:0{self.config["path"]["fsndigits"]}d}{extn}'
+        return f'{prefix}_{fsn:0{self.cfg["path",  "fsndigits"]}d}{extn}'
 
     def loadExposure(self, prefix: str, fsn: int, raw: bool = True, check_local: bool = False) -> Exposure:
         """Load an exposure
@@ -427,47 +447,38 @@ class IO(Component, QtCore.QObject):
         raise NotImplementedError
 
     def onConfigChanged(self, path, value):
-        if path == ('scan', 'scanfile'):
-            self.reindexScanfile()
-        elif path[:2] == ('path', 'directories'):
+        if path[:2] == ('path', 'directories'):
             self.reindex()
 
     def loadFromConfig(self):
-        if isinstance(self.config, Config):
-            self.config.blockSignals(True)
-        try:
-            for configpath, defaultvalue in [
-                (('path', 'directories', 'log'), 'log'),
-                (('path', 'directories', 'images'), 'images'),
-                (('path', 'directories', 'images_local'), 'images_local'),
-                (('path', 'directories', 'param'), 'param'),
-                (('path', 'directories', 'config'), 'config'),
-                (('path', 'directories', 'mask'), 'mask'),
-                (('path', 'directories', 'nexus'), 'nexus'),
-                (('path', 'directories', 'eval1d'), 'eval1d'),
-                (('path', 'directories', 'eval2d'), 'eval2d'),
-                (('path', 'directories', 'param_override'), 'param_override'),
-                (('path', 'directories', 'scan'), 'scan'),
-                (('path', 'directories', 'status'), 'status'),
-                (('path', 'directories', 'scripts'), 'scripts'),
-                (('path', 'directories', 'images_detector'), ['/disk2/images', '/home/det/p2_det/images']),
-                (('path', 'directories', 'nxsas'), 'nxsas'),
-                (('path', 'fsndigits'), 5),
-                (('path', 'prefixes', 'crd'), 'crd'),
-                (('path', 'prefixes', 'scn'), 'scn'),
-                (('path', 'prefixes', 'tra'), 'tra'),
-                (('path', 'prefixes', 'tst'), 'tst'),
-                (('path', 'prefixes', 'gsx'), 'gsx'),
-                (('path', 'prefixes', 'map'), 'map'),
-                (('path', 'varlogfile'), 'varlog.log'),
-            ]:
-                cnf = self.config
-                for pathelement in configpath[:-1]:
-                    if pathelement not in cnf:
-                        cnf[pathelement] = {}
-                    cnf = cnf[pathelement]
-                if configpath[-1] not in cnf:
-                    cnf[configpath[-1]] = defaultvalue
-        finally:
-            if isinstance(self.config, Config):
-                self.config.blockSignals(False)
+        # strictly speaking, this is not loading, since we always use the actual values
+        # present in config. We just initialize here the defaults, if missing.
+        for configpath, defaultvalue in [
+            (('path', 'directories', 'log'), 'log'),
+            (('path', 'directories', 'images'), 'images'),
+            (('path', 'directories', 'images_local'), 'images_local'),
+            (('path', 'directories', 'param'), 'param'),
+            (('path', 'directories', 'config'), 'config'),
+            (('path', 'directories', 'mask'), 'mask'),
+            (('path', 'directories', 'nexus'), 'nexus'),
+            (('path', 'directories', 'eval1d'), 'eval1d'),
+            (('path', 'directories', 'eval2d'), 'eval2d'),
+            (('path', 'directories', 'param_override'), 'param_override'),
+            (('path', 'directories', 'scan'), 'scan'),
+            (('path', 'directories', 'status'), 'status'),
+            (('path', 'directories', 'scripts'), 'scripts'),
+            (('path', 'directories', 'images_detector'), ['/disk2/images', '/home/det/p2_det/images']),
+            (('path', 'directories', 'nxsas'), 'nxsas'),
+            (('path', 'fsndigits'), 5),
+            (('path', 'prefixes', 'crd'), 'crd'),
+            (('path', 'prefixes', 'scn'), 'scn'),
+            (('path', 'prefixes', 'tra'), 'tra'),
+            (('path', 'prefixes', 'tst'), 'tst'),
+            (('path', 'prefixes', 'gsx'), 'gsx'),
+            (('path', 'prefixes', 'map'), 'map'),
+            (('path', 'varlogfile'), 'varlog.log'),
+        ]:
+            if configpath not in self.cfg:
+                self.cfg.blockSignals(True)
+                self.cfg[configpath] = defaultvalue
+                self.cfg.blockSignals(False)

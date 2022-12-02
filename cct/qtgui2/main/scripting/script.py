@@ -3,8 +3,8 @@ import logging
 import os
 from typing import Optional
 
-from PySide6 import QtWidgets, QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6 import QtWidgets
+from PySide6.QtCore import Signal
 
 from .script_ui import Ui_Form
 from .scripteditor import ScriptEditor
@@ -32,7 +32,7 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
         super().setupUi(Form)
         self.scriptEditor = ScriptEditor(self.splitter)
         self.scriptEditorVerticalLayout.addWidget(self.scriptEditor)
-        self.scriptEditor.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Preferred)
+        self.scriptEditor.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.Preferred)
         self.splitter.setSizes([2 * self.splitter.width() // 3, self.splitter.width() // 3])
         self.scriptEditor.document().modificationChanged.connect(self.modificationChanged)
         self.scriptEditor.undoAvailable.connect(self.undoAvailable)
@@ -79,7 +79,8 @@ class ScriptUI(QtWidgets.QWidget, Ui_Form):
         logger.info(f'Script saved to {self.filename}')
 
     def saveas(self):
-        filename = getSaveFile(self, 'Save script to file', '', 'CCT script files (*.cct);;All files (*)', defaultsuffix='.cct')
+        filename = getSaveFile(self, 'Save script to file', '', 'CCT script files (*.cct);;All files (*)',
+                               defaultsuffix='.cct')
         logger.debug(f'Got filename: {filename}')
         if not filename:
             return

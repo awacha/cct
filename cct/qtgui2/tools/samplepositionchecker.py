@@ -51,7 +51,7 @@ class SamplePositionChecker(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         items = [self.listWidget.item(row) for row in range(self.listWidget.count())]
         selected = [item.text() for item in items if item.checkState() == QtCore.Qt.CheckState.Checked]
         self.listWidget.clear()
-        self.listWidget.addItems(sorted([sample.title for sample in self.instrument.samplestore]))
+        self.listWidget.addItems(sorted([sample.title for sample in self.instrument.samplestore.samples()]))
         for item in [self.listWidget.item(row) for row in range(self.listWidget.count())]:
             item.setFlags(
                 QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
@@ -63,7 +63,7 @@ class SamplePositionChecker(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         items = [self.listWidget.item(row) for row in range(self.listWidget.count())]
         selected = sorted([item.text() for item in items if item.checkState() == QtCore.Qt.CheckState.Checked])
         self.axes.clear()
-        samples = [self.instrument.samplestore[samplename] for samplename in selected]
+        samples = [self.instrument.samplestore.get(samplename) for samplename in selected]
         self.xdata = [s.positionx[0] for s in samples]
         self.ydata = [s.positiony[0] for s in samples]
         xerr = [s.positionx[1] for s in samples]

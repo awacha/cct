@@ -1,11 +1,9 @@
-from typing import List, Any, Optional, Tuple
-import logging
-
 import logging
 from typing import List, Any, Optional, Tuple
 
+import numpy as np
 from PySide6 import QtCore
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal
 
 from .task import ProcessingTask, ProcessingSettings
 from ..calculations.subtractionjob import SubtractionScalingMode, SubtractionJob, SubtractionResult
@@ -28,7 +26,8 @@ class SubtractionData:
     factor: Tuple[float, float]
     interval: Tuple[float, float, int]
 
-    def __init__(self, samplename: Optional[str], background: Optional[str], scalingmode: SubtractionScalingMode, factor: Tuple[float, float], interval: Tuple[float, float, int]):
+    def __init__(self, samplename: Optional[str], background: Optional[str], scalingmode: SubtractionScalingMode,
+                 factor: Tuple[float, float], interval: Tuple[float, float, int]):
         self.samplename = samplename
         self.backgroundname = background
         self.factor = factor
@@ -106,9 +105,13 @@ class Subtraction(ProcessingTask):
         if (orientation == QtCore.Qt.Orientation.Horizontal) and (role == QtCore.Qt.ItemDataRole.DisplayRole):
             return ['Sample', 'Background', 'Scaling method', 'Parameters'][section]
 
-    def addSubtractionPair(self, samplename: Optional[str], background: Optional[str], mode: SubtractionScalingMode = SubtractionScalingMode.Unscaled, factor: Optional[Tuple[float, float]]=None, interval:Optional[Tuple[float, float, int]]=None):
+    def addSubtractionPair(self, samplename: Optional[str], background: Optional[str],
+                           mode: SubtractionScalingMode = SubtractionScalingMode.Unscaled,
+                           factor: Optional[Tuple[float, float]] = None,
+                           interval: Optional[Tuple[float, float, int]] = None):
         self.beginInsertRows(QtCore.QModelIndex(), len(self._data), len(self._data))
-        self._data.append(SubtractionData(samplename, background, mode, factor if factor is not None else (1.0, 0.0), interval if interval is not None else (0.0, 1000.0, 100)))
+        self._data.append(SubtractionData(samplename, background, mode, factor if factor is not None else (1.0, 0.0),
+                                          interval if interval is not None else (0.0, 1000.0, 100)))
         self.endInsertRows()
         self.save()
 
@@ -123,8 +126,8 @@ class Subtraction(ProcessingTask):
     def removeRows(self, row: int, count: int, parent: QtCore.QModelIndex = ...) -> bool:
         if parent is ...:
             parent = QtCore.QModelIndex()
-        self.beginRemoveRows(parent, row, row+count-1)
-        del self._data[row:row+count]
+        self.beginRemoveRows(parent, row, row + count - 1)
+        del self._data[row:row + count]
         self.endRemoveRows()
         self.save()
 
@@ -132,18 +135,21 @@ class Subtraction(ProcessingTask):
         if parent is ...:
             parent = QtCore.QModelIndex()
         self.beginInsertRows(parent, row, row)
-        self._data=self._data[:row] + [SubtractionData(None, None, SubtractionScalingMode.Unscaled, (),)] + self._data[row:]
+        self._data = self._data[:row] + [
+            SubtractionData(None, None, SubtractionScalingMode.Unscaled, (1.0, 0.0), (0, 1000, 100))] + self._data[row:]
         self.endInsertRows()
         self.save()
+        return True
 
     def insertRows(self, row: int, count: int, parent: QtCore.QModelIndex = ...) -> bool:
         if parent is ...:
             parent = QtCore.QModelIndex()
-        self.beginInsertRows(parent, row, row+count-1)
+        self.beginInsertRows(parent, row, row + count - 1)
         self._data = self._data[:row] + [
-            SubtractionData(None, None, SubtractionScalingMode.Unscaled, (), ) for i in range(count)] + self._data[row:]
+            SubtractionData(None, None, SubtractionScalingMode.Unscaled, (1.0, 0.0), (0, 1000, 100)) for i in range(count)] + self._data[row:]
         self.endInsertRows()
         self.save()
+        return True
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         sd = self._data[index.row()]
@@ -158,10 +164,13 @@ class Subtraction(ProcessingTask):
             if sd.scalingmode == SubtractionScalingMode.Unscaled:
                 pass
             elif sd.scalingmode == SubtractionScalingMode.Constant:
-                assert isinstance(value, tuple) and isinstance(value[0], float) and isinstance(value[1], float) and (len(value) == 2)
+                assert isinstance(value, tuple) and isinstance(value[0], float) and isinstance(value[1], float) and (
+                            len(value) == 2)
                 sd.factor = value
             elif sd.scalingmode in [SubtractionScalingMode.Interval, SubtractionScalingMode.PowerLaw]:
-                assert isinstance(value, tuple) and isinstance(value[0], float) and isinstance(value[1], float) and isinstance(value[2], int) and (len(value) == 3)
+                assert isinstance(value, tuple) and isinstance(value[0], float) and isinstance(value[1],
+                                                                                               float) and isinstance(
+                    value[2], int) and (len(value) == 3)
                 sd.interval = value
             else:
                 assert False
@@ -196,12 +205,15 @@ class Subtraction(ProcessingTask):
             for sample in grp:
                 if 'sample_category' in grp[sample].attrs:
                     # if the sample group already has information on the 'subtractedness'
-                    if (grp[sample].attrs['sample_category'] == 'subtracted') and (sample not in [sd.subtractedname for sd in self._data]):
+                    if (grp[sample].attrs['sample_category'] == 'subtracted') and (
+                            sample not in [sd.subtractedname for sd in self._data]):
                         del grp[sample]
                 else:
                     # see the distance subgroups
                     for distkey in grp[sample]:
-                        if ('sample_category' in grp[sample][distkey].attrs) and (grp[sample][distkey].attrs['sample_category'] == 'subtracted') and (sample not in [sd.subtractedname for sd in self._data]):
+                        if ('sample_category' in grp[sample][distkey].attrs) and (
+                                grp[sample][distkey].attrs['sample_category'] == 'subtracted') and (
+                                sample not in [sd.subtractedname for sd in self._data]):
                             del grp[sample]
                             break
             for sd in self._data:

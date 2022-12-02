@@ -56,7 +56,7 @@ from ...core2.instrument.components.interpreter import ParsingError
 from ...core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -114,7 +114,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def __init__(self, **kwargs):
         self._devicestatuswidgets = []
-        super().__init__(kwargs['parent'] if 'parent' in kwargs else None)
+        super().__init__(parent=kwargs['parent'] if 'parent' in kwargs else None)
         self.instrument = kwargs['instrument']
         self.instrument.panicAcknowledged.connect(self.onPanicAcknowledged)
         self.instrument.shutdown.connect(self.close)
@@ -170,7 +170,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.executePushButton.clicked.connect(self.onExecutePushed)
         self.actionSave_settings.triggered.connect(self.saveSettings)
         self.panicPushButton.clicked.connect(self.onPanicClicked)
-        for dev in self.instrument.devicemanager:
+        for dev in self.instrument.devicemanager.iterDevices():
             self.onDeviceAdded(dev.name)
         self.devicevariablemeasurement = DeviceVariableMeasurement(mainwindow=self, instrument=self.instrument)
         self.deviceStatusTab.setLayout(QtWidgets.QVBoxLayout())
@@ -250,16 +250,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             for name in self._windows:
                 self._windows[name].close()
             logger.debug('All windows closed, accepting close event.')
-            self.instrument.config.save()
+            self.instrument.cfg.save()
             logger.info('Detaching GUI logger')
             event.accept()
         elif not self.instrument.stopping:
             logger.debug('Instrument is running.')
             event.ignore()
             result = QtWidgets.QMessageBox.question(self, 'Confirm quit', 'Do you really want to quit CCT?',
-                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                    QtWidgets.QMessageBox.No)
-            if result == QtWidgets.QMessageBox.Yes:
+                                                    QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                                                    QtWidgets.QMessageBox.StandardButton.No)
+            if result == QtWidgets.QMessageBox.StandardButton.Yes:
                 logger.debug('Stopping instrument')
                 self.instrument.stop()
         logger.debug('Exiting closeEvent')
@@ -318,7 +318,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.instrument.interpreter.parseScript(self.commandLineEdit.text())
             except ParsingError:
                 pal = self.commandLineEdit.palette()
-                pal.setColor(pal.Window, QtCore.Qt.GlobalColor.red)
+                pal.setColor(QtGui.QPalette.ColorRole.Window, QtCore.Qt.GlobalColor.red)
                 self.commandLineEdit.setPalette(pal)
                 return
 

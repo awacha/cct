@@ -1,22 +1,21 @@
 import logging
-import itertools
-from typing import Tuple, List, Optional
+from typing import List, Optional
 
+import matplotlib.cm
 import numpy as np
 import scipy.stats.kde
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import Slot
 from matplotlib.axes import Axes
-from matplotlib.lines import Line2D
-import matplotlib.cm
+from matplotlib.backend_bases import PickEvent
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
-from matplotlib.backend_bases import PickEvent
+from matplotlib.lines import Line2D
 
 from .outliertest_ui import Ui_Form
 from .resultviewwindow import ResultViewWindow
-from .showimage import ShowImageWindow
 from .showcurve import ShowCurveWindow
+from .showimage import ShowImageWindow
 from ..utils.plotcurve import PlotCurve
 from ...core2.dataclasses import Header
 from ...core2.processing.calculations.outliertest import OutlierTest
@@ -40,12 +39,13 @@ class SortFilterModel(QtCore.QSortFilterProxyModel):
         return (data.title == self.samplename) and (f'{data.distance[0]:.2f}' == self.distkey)
 
     def filterAcceptsColumn(self, source_column: int, source_parent: QtCore.QModelIndex) -> bool:
-        caption = self.sourceModel().headerData(source_column, QtCore.Qt.Orientation.Horizontal, QtCore.Qt.ItemDataRole.DisplayRole)
+        caption = self.sourceModel().headerData(source_column, QtCore.Qt.Orientation.Horizontal,
+                                                QtCore.Qt.ItemDataRole.DisplayRole)
         return caption in ['fsn', 'enddate']
 
 
 class OutlierTestWindow(ResultViewWindow, Ui_Form):
-    outliertestresults : Optional[OutlierTest] = None
+    outliertestresults: Optional[OutlierTest] = None
     cmatfigure: Figure
     cmatcanvas: FigureCanvasQTAgg
     cmatfigtoolbar: NavigationToolbar2QT
@@ -59,7 +59,6 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
     plotcurve: PlotCurve
     otmarkedline: Line2D
     cmatmarkers: List[Line2D]
-
 
     def setupUi(self, Form):
         super().setupUi(Form)
@@ -100,7 +99,8 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
 
     @Slot()
     def markExposures(self):
-        fsns = [index.data(QtCore.Qt.ItemDataRole.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)]
+        fsns = [index.data(QtCore.Qt.ItemDataRole.UserRole).fsn for index in
+                self.treeView.selectionModel().selectedRows(0)]
         if self.sender() is self.markBadPushButton:
             self.project.settings.markAsBad(fsns)
         elif self.sender() is self.markGoodPushButton:
@@ -119,7 +119,8 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
             return
         self.cmatfigure.clear()
         self.cmataxes = self.cmatfigure.add_subplot(self.cmatfigure.add_gridspec(1, 1)[:, :])
-        im = self.cmataxes.imshow(self.outliertestresults.correlmatrix, cmap='coolwarm', interpolation='nearest', origin='upper', picker=5)
+        im = self.cmataxes.imshow(self.outliertestresults.correlmatrix, cmap='coolwarm', interpolation='nearest',
+                                  origin='upper', picker=5)
         self.cmatfigure.colorbar(im, ax=self.cmataxes)
         self.cmataxes.set_xticks(np.arange(len(self.outliertestresults.fsns)))
         self.cmataxes.set_xticklabels([str(f) for f in self.outliertestresults.fsns], rotation=90)
@@ -133,12 +134,14 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
         self.otaxes.axhline(rmax, color='lightgreen', ls='--')
         self.otaxes.plot(self.outliertestresults.fsns, self.outliertestresults.score, 'b.', pickradius=5, picker=True)
         self.otaxes.set_title(f'{self.samplename} @ {self.distancekey} mm')
-        self.otmarkedline = self.otaxes.scatter(self.outliertestresults.fsns, self.outliertestresults.score, [0.0]*len(self.outliertestresults.fsns), c='none', edgecolors='red')
+        self.otmarkedline = self.otaxes.scatter(self.outliertestresults.fsns, self.outliertestresults.score,
+                                                [0.0] * len(self.outliertestresults.fsns), c='none', edgecolors='red')
         self.otkdeaxes.clear()
         try:
             kde = scipy.stats.kde.gaussian_kde(self.outliertestresults.score)
-            y = np.linspace(min(np.nanmin(self.outliertestresults.score) - np.ptp(self.outliertestresults.score) * 0.1, rmin),
-                            max(np.nanmax(self.outliertestresults.score) + np.ptp(self.outliertestresults.score), rmax), 300)
+            y = np.linspace(
+                min(np.nanmin(self.outliertestresults.score) - np.ptp(self.outliertestresults.score) * 0.1, rmin),
+                max(np.nanmax(self.outliertestresults.score) + np.ptp(self.outliertestresults.score), rmax), 300)
             self.otkdeaxes.plot(kde(y), y)
             self.otkdeaxes.set_xlabel('Gaussian KDE')
             self.otkdeaxes.yaxis.set_label_position('right')
@@ -157,7 +160,7 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
         self.cmatmarkers = []
         curves = self.project.settings.h5io.readCurves(f'Samples/{self.samplename}/{self.distancekey}')
         for i, fsn in enumerate(sorted(curves)):
-            self.plotcurve.addCurve(curves[fsn], label=f'{fsn}', color=matplotlib.cm.inferno(i/(len(curves)-1)))
+            self.plotcurve.addCurve(curves[fsn], label=f'{fsn}', color=matplotlib.cm.inferno(i / (len(curves) - 1)))
         self.plotcurve.replot()
 
     @Slot()
@@ -169,14 +172,16 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
 
     @Slot()
     def showCurve(self):
-        fsns = sorted([index.data(QtCore.Qt.ItemDataRole.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)])
+        fsns = sorted([index.data(QtCore.Qt.ItemDataRole.UserRole).fsn for index in
+                       self.treeView.selectionModel().selectedRows(0)])
         if not fsns:
             return
         self.mainwindow.createViewWindow(ShowCurveWindow, [('', str(fsn)) for fsn in fsns])
 
     @Slot(str, str)
     def onResultItemChanged(self, samplename: str, distkey: str):
-        self.outliertestresults = self.project.settings.h5io.readOutlierTest(f'Samples/{self.samplename}/{self.distancekey}')
+        self.outliertestresults = self.project.settings.h5io.readOutlierTest(
+            f'Samples/{self.samplename}/{self.distancekey}')
         self.redraw()
 
     @property
@@ -188,18 +193,19 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
         return self.resultitems[0][1]
 
     def otPicked(self, event: PickEvent):
-        logger.debug(event.artist)
-        logger.debug(dir(event))
-        logger.debug(f'{event.ind=}, {event.guiEvent=}, {event.name=}')
         pickedindex = event.ind[0]
         fsn = event.artist.get_xdata()[pickedindex]
         for row in range(self.treeView.model().rowCount(QtCore.QModelIndex())):
             index = self.treeView.model().index(row, 0, QtCore.QModelIndex())
             if self.treeView.model().data(index, QtCore.Qt.ItemDataRole.UserRole).fsn == fsn:
                 if self.treeView.selectionModel().isRowSelected(row, QtCore.QModelIndex()):
-                    self.treeView.selectionModel().select(index, QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Deselect)
+                    self.treeView.selectionModel().select(
+                        index,
+                        QtCore.QItemSelectionModel.SelectionFlag.Rows | QtCore.QItemSelectionModel.SelectionFlag.Deselect)
                 else:
-                    self.treeView.selectionModel().select(index, QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Select)
+                    self.treeView.selectionModel().select(
+                        index,
+                        QtCore.QItemSelectionModel.SelectionFlag.Rows | QtCore.QItemSelectionModel.SelectionFlag.Select)
 
     def cmatPicked(self, event: PickEvent):
         if self.outliertestresults is None:
@@ -213,15 +219,20 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
                 index = self.treeView.model().index(row, 0, QtCore.QModelIndex())
                 if self.treeView.model().data(index, QtCore.Qt.ItemDataRole.UserRole).fsn == fsn:
                     if self.treeView.selectionModel().isRowSelected(row, QtCore.QModelIndex()):
-                        self.treeView.selectionModel().select(index, QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Deselect)
+                        self.treeView.selectionModel().select(
+                            index,
+                            QtCore.QItemSelectionModel.SelectionFlag.Rows | QtCore.QItemSelectionModel.SelectionFlag.Deselect)
                     else:
-                        self.treeView.selectionModel().select(index, QtCore.QItemSelectionModel.Rows | QtCore.QItemSelectionModel.Select)
+                        self.treeView.selectionModel().select(
+                            index,
+                            QtCore.QItemSelectionModel.SelectionFlag.Rows | QtCore.QItemSelectionModel.SelectionFlag.Select)
 
     @Slot(QtCore.QItemSelection, QtCore.QItemSelection)
     def fsnSelectionChanged(self, selected: QtCore.QItemSelection, deselected: QtCore.QItemSelection):
         if self.outliertestresults is None:
             return
-        selectedfsns = [index.data(QtCore.Qt.ItemDataRole.UserRole).fsn for index in self.treeView.selectionModel().selectedRows(0)]
+        selectedfsns = [index.data(QtCore.Qt.ItemDataRole.UserRole).fsn for index in
+                        self.treeView.selectionModel().selectedRows(0)]
         sizes = self.otmarkedline.get_sizes()
         for i in range(sizes.size):
             sizes[i] = 0 if self.outliertestresults.fsns[i] not in selectedfsns else 100
@@ -232,10 +243,10 @@ class OutlierTestWindow(ResultViewWindow, Ui_Form):
         self.cmatmarkers = []
         for fsn in selectedfsns:
             try:
-                index = [i for i in range(self.outliertestresults.fsns.size) if self.outliertestresults.fsns[i] == fsn][0]
+                index = [i for i in range(self.outliertestresults.fsns.size) if self.outliertestresults.fsns[i] == fsn][
+                    0]
             except IndexError:
                 continue
             self.cmatmarkers.append(self.cmataxes.axhline(index, color='black', ls='--'))
             self.cmatmarkers.append(self.cmataxes.axvline(index, color='black', ls='--'))
         self.cmatcanvas.draw_idle()
-

@@ -23,10 +23,10 @@ class TPG201(VacuumGauge):
 
     def toNeXus(self, grp: h5py.Group) -> h5py.Group:
         grp = super().toNeXus(grp)
-        self.create_hdf5_dataset(grp, 'model', self['version'])
+        self.create_hdf5_dataset(grp, 'model', self.get('version'))
         self.create_hdf5_dataset(grp, 'short_name', 'TPG201')
         self.create_hdf5_dataset(grp, 'measurement', 'pressure')
         self.create_hdf5_dataset(grp, 'type', 'Pirani')
         self.create_hdf5_dataset(grp, 'run_control', False)
-        self.create_hdf5_dataset(grp, 'value', self['pressure'], units=self['units'])
+        self.create_hdf5_dataset(grp, 'value', self.get('pressure'), units=self.get('units'))
         return grp

@@ -1,20 +1,18 @@
 import logging
-from typing import Tuple, Dict, Any, Optional, Sequence
+from typing import Tuple, Dict, Any, Optional
 
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtCore import Slot
-
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 
 from .geometry_ui import Ui_Form
 from .spacerselector import SpacerSelectorDialog
-from ...utils.window import WindowRequiresDevices
 from ...utils.filebrowsers import browseMask, getOpenFile, getSaveFile
+from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.components.geometry.choices import ComponentType, GeometryChoices
 from ....core2.instrument.components.geometry.optimizer import GeometryOptimizer
 from ....core2.instrument.components.geometry.optimizerstore import OptimizerStore
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -74,9 +72,9 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             obj = getattr(self, name)
             assert isinstance(obj, QtWidgets.QWidget)
             try:
-                value = self.instrument.config[path]
+                value = self.instrument.cfg[path]
             except KeyError:
-                pass
+                continue
             if isinstance(obj, QtWidgets.QDoubleSpinBox):
                 obj.setValue(float(value))
                 obj.valueChanged.connect(self.onDoubleSpinBoxValueChanged)
@@ -140,7 +138,8 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot()
     def updateSetupParameters(self):
-        dic = self.optimizationTreeView.model().data(self.optimizationTreeView.currentIndex(), role = QtCore.Qt.ItemDataRole.UserRole)
+        dic = self.optimizationTreeView.model().data(self.optimizationTreeView.currentIndex(),
+                                                     role=QtCore.Qt.ItemDataRole.UserRole)
         self.instrument.geometry.updateFromOptimizerResult(dic)
 
     @Slot(QtCore.QItemSelection, QtCore.QItemSelection)
@@ -154,9 +153,9 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def doOptimization(self):
         if self._optimizer is not None:
             self._optimizer.stopevent.set()
-#            QtWidgets.QMessageBox.critical(self, 'Cannot start optimization', 'Optimization process already running')
+            #            QtWidgets.QMessageBox.critical(self, 'Cannot start optimization', 'Optimization process already running')
             return
-        self._optimizer = GeometryOptimizer(self.instrument.config)
+        self._optimizer = GeometryOptimizer(self.instrument.cfg)
         self._optimizer.finished.connect(self.onOptimizationFinished)
         self._optimizer.geometryFound.connect(self.onOptimizationGeometryFound)
         logger.info('Starting geometry search')
@@ -189,8 +188,8 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         logger.debug('Plotting...')
         self.figure.clear()
         axes = self.figure.add_subplot(1, 1, 1)
-        qmin = [p["qmin"] for p in self._optimizerstore]
-        intensity = [p["intensity"] for p in self._optimizerstore]
+        qmin = [p["qmin"] for p in self._optimizerstore.iter_results()]
+        intensity = [p["intensity"] for p in self._optimizerstore.iter_results()]
         axes.plot(qmin, intensity, '.')
         axes.set_xlabel('Lowest q (nm$^{-1}$)')
         axes.set_ylabel('Intensity (\u03bcm$^4$ mm$^{-2}$)')
@@ -203,25 +202,28 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     @staticmethod
     def setLabelBackground(label: QtWidgets.QLabel, good: bool):
         pal = label.palette()
-        pal.setColor(pal.Window, QtGui.QColor('red' if not good else 'lightgreen'))
+        pal.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor('red' if not good else 'lightgreen'))
         label.setPalette(pal)
         label.setAutoFillBackground(True)
 
     def recalculateCollimationProperties(self):
-        self.relativeintensityLabel.setText(f'{self.instrument.config["geometry"]["intensity"]:.4f}')
-        self.qMinLabel.setText(f'{self.instrument.config["geometry"]["qmin"]:.4f}')
-        self.maxRgLabel.setText(f'{1/self.instrument.config["geometry"]["qmin"]:.4f}')
-        parasiticscattering_around_bs = self.instrument.config["geometry"]["dparasitic_at_bs"] > self.instrument.config["geometry"]["beamstop"]
+        self.relativeintensityLabel.setText(f'{self.instrument.cfg["geometry", "intensity"]:.4f}')
+        self.qMinLabel.setText(f'{self.instrument.cfg["geometry", "qmin"]:.4f}')
+        self.maxRgLabel.setText(f'{1 / self.instrument.cfg["geometry", "qmin"]:.4f}')
+        parasiticscattering_around_bs = self.instrument.cfg["geometry", "dparasitic_at_bs"] > self.instrument.cfg[
+            "geometry", "beamstop"]
         self.parasiticScatteringLabel.setText(
             'Expected' if parasiticscattering_around_bs else 'Not Expected')
         self.setLabelBackground(self.parasiticScatteringLabel, not parasiticscattering_around_bs)
-        directbeam_around_bs = self.instrument.config['geometry']['dbeam_at_bs'] > self.instrument.config['geometry']['beamstop']
+        directbeam_around_bs = self.instrument.cfg['geometry', 'dbeam_at_bs'] > self.instrument.cfg[
+            'geometry', 'beamstop']
         self.directBeamHitsDetectorLabel.setText(
             'YES!!!' if directbeam_around_bs else 'No')
         self.setLabelBackground(self.directBeamHitsDetectorLabel, not directbeam_around_bs)
-        self.sampleSizeLabel.setText(f'{self.instrument.config["geometry"]["dbeam_at_sample"]:.2f}')
-        self.beamStopSizeLabel.setText(f'{self.instrument.config["geometry"]["dbeam_at_bs"]:.2f}')
-        ph3_cuts_beam = self.instrument.config["geometry"]["dbeam_at_ph3"] > self.instrument.config["geometry"]["pinhole_3"]/1000.0
+        self.sampleSizeLabel.setText(f'{self.instrument.cfg["geometry", "dbeam_at_sample"]:.2f}')
+        self.beamStopSizeLabel.setText(f'{self.instrument.cfg["geometry", "dbeam_at_bs"]:.2f}')
+        ph3_cuts_beam = self.instrument.cfg["geometry", "dbeam_at_ph3"] > self.instrument.cfg[
+            "geometry", "pinhole_3"] / 1000.0
         self.pinhole3LargeEnoughLabel.setText(
             'NO!!!' if ph3_cuts_beam else 'Yes')
         self.setLabelBackground(self.pinhole3LargeEnoughLabel, not ph3_cuts_beam)
@@ -230,9 +232,9 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.l1Label.setText(f'{self.instrument.geometry.l1():.2f}')
         self.l2Label.setText(f'{self.instrument.geometry.l2():.2f}')
         self.flightpipesLabel.setText(
-            ' + '.join([f'{x:.0f} mm' for x in self.instrument.config['geometry']['flightpipes']]))
-        self.l1Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.config['geometry']['l1_elements']]))
-        self.l2Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.config['geometry']['l2_elements']]))
+            ' + '.join([f'{x:.0f} mm' for x in self.instrument.cfg['geometry', 'flightpipes']]))
+        self.l1Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.cfg['geometry', 'l1_elements']]))
+        self.l2Label.setToolTip(' + '.join([f'{x:.0f} mm' for x in self.instrument.cfg['geometry', 'l2_elements']]))
 
     @Slot()
     def editSpacers(self):
@@ -243,13 +245,15 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.instrument.geometry.choices.flightpipes) if self.sender() is self.flightpipesToolButton else list(
             self.instrument.geometry.choices.spacers)
         if self.sender() in [self.l1EditToolButton, self.l2EditToolButton]:
-            this = self.instrument.config['geometry']['l2_elements'] if self.sender() == self.l2EditToolButton else self.instrument.config['geometry']['l1_elements']
-            other = self.instrument.config['geometry']['l1_elements'] if self.sender() == self.l2EditToolButton else self.instrument.config['geometry']['l2_elements']
+            this = self.instrument.cfg['geometry', 'l2_elements'] if self.sender() == self.l2EditToolButton else \
+            self.instrument.cfg['geometry', 'l1_elements']
+            other = self.instrument.cfg['geometry', 'l1_elements'] if self.sender() == self.l2EditToolButton else \
+            self.instrument.cfg['geometry', 'l2_elements']
             for spacer in other:
                 allspacers.remove(spacer)
             target = SpacerSelectorDialog.TargetTypes.L1 if self.sender() == self.l1EditToolButton else SpacerSelectorDialog.TargetTypes.L2
         elif self.sender() == self.flightpipesToolButton:
-            this = self.instrument.config['geometry']['flightpipes']
+            this = self.instrument.cfg['geometry', 'flightpipes']
             target = SpacerSelectorDialog.TargetTypes.FlightPipes
         else:
             assert False
@@ -259,13 +263,13 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot(int)
     def spacerSelectorFinished(self, result: int):
-        if result == QtWidgets.QDialog.Accepted:
+        if result == QtWidgets.QDialog.DialogCode.Accepted:
             if self._spacerselectordialog.target == SpacerSelectorDialog.TargetTypes.L2:
-                self.instrument.config['geometry']['l2_elements'] = self._spacerselectordialog.selectedSpacers()
+                self.instrument.cfg['geometry', 'l2_elements'] = self._spacerselectordialog.selectedSpacers()
             elif self._spacerselectordialog.target == SpacerSelectorDialog.TargetTypes.L1:
-                self.instrument.config['geometry']['l1_elements'] = self._spacerselectordialog.selectedSpacers()
+                self.instrument.cfg['geometry', 'l1_elements'] = self._spacerselectordialog.selectedSpacers()
             elif self._spacerselectordialog.target == SpacerSelectorDialog.TargetTypes.FlightPipes:
-                self.instrument.config['geometry']['flightpipes'] = self._spacerselectordialog.selectedSpacers()
+                self.instrument.cfg['geometry', 'flightpipes'] = self._spacerselectordialog.selectedSpacers()
             else:
                 assert False
         self._spacerselectordialog.close()
@@ -279,7 +283,7 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         path = [p for wn, p in self._widgetname2configpath.items() if wn == w.objectName()][0]
         assert isinstance(path, tuple)
         assert all([isinstance(k, str) for k in path])
-        self.instrument.config[path] = newvalue
+        self.instrument.cfg[path] = newvalue
 
     @Slot()
     def onLineEditChanged(self):
@@ -287,7 +291,7 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         path = [p for wn, p in self._widgetname2configpath.items() if wn == w.objectName()][0]
         assert isinstance(path, tuple)
         assert all([isinstance(k, str) for k in path])
-        self.instrument.config[path] = w.text()
+        self.instrument.cfg[path] = w.text()
 
     @Slot()
     def onPlainTextEditChanged(self):
@@ -295,7 +299,7 @@ class GeometryEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         path = [p for wn, p in self._widgetname2configpath.items() if wn == w.objectName()][0]
         assert isinstance(path, tuple)
         assert all([isinstance(k, str) for k in path])
-        self.instrument.config[path] = w.toPlainText()
+        self.instrument.cfg[path] = w.toPlainText()
 
     @Slot(QtCore.QModelIndex, QtCore.QModelIndex)
     def onChoicesTreeViewCurrentChanged(self, current: QtCore.QModelIndex, previous: QtCore.QModelIndex):

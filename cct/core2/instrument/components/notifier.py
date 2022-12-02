@@ -83,65 +83,45 @@ class Notifier(Component, QtCore.QAbstractItemModel, logging.Handler):
         self.loghandler.setFormatter(logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s'))
 
     def saveToConfig(self):
-        if 'notifier' not in self.config:
-            self.config['notifier'] = {}
-        self.config['notifier']['addresses'] = {}
-        for i, address in enumerate(self._data):
-            self.config['notifier']['addresses'][f'{i:08d}'] = {
+        self.cfg['notifier', 'addresses'] = {f'{i:08d}': {
                 'name': address.name,
                 'emailaddress': address.emailaddress,
                 'panic': address.panic,
                 'runtime': address.runtime,
                 'loglevel': address.loglevel
-            }
-        self.config.save()
+            } for i, address in enumerate(self._data)}
 
     def loadFromConfig(self):
-        if 'notifier' not in self.config:
-            self.config['notifier'] = {}
         self.beginResetModel()
-        try:
-            self._data = []
-            if 'addresses' not in self.config['notifier']:
-                self.config['notifier']['addresses'] = {}
-            for key in sorted(self.config['notifier']['addresses']):
-                self._data.append(NotificationAddress(
-                    self.config['notifier']['addresses'][key]['name'],
-                    self.config['notifier']['addresses'][key]['emailaddress'],
-                    self.config['notifier']['addresses'][key]['panic'],
-                    self.config['notifier']['addresses'][key]['runtime'],
-                    self.config['notifier']['addresses'][key]['loglevel']
-                ))
-        finally:
-            self.endResetModel()
+        self._data = []
+        if ('notifier', 'addresses') not in self.cfg:
+            self.cfg['notifier',  'addresses'] = {}
+        for key in sorted(self.cfg['notifier',  'addresses']):
+            self._data.append(NotificationAddress(
+                self.cfg['notifier',  'addresses',  key,  'name'],
+                self.cfg['notifier',  'addresses',  key,  'emailaddress'],
+                self.cfg['notifier',  'addresses',  key,  'panic'],
+                self.cfg['notifier',  'addresses',  key,  'runtime'],
+                self.cfg['notifier',  'addresses',  key,  'loglevel'],
+            ))
+        self.endResetModel()
 
     @property
     def smtpserver(self) -> Optional[str]:
-        try:
-            return self.config['notifier']['smtpserver']
-        except KeyError:
-            try:
-                self.config['notifier']['smtpserver'] = None
-            except KeyError:
-                pass
-            return None
+        return self.cfg.setdefault(('notifier', 'smtpserver'), None)
 
     @smtpserver.setter
     def smtpserver(self, value: Optional[str]):
-        self.config['notifier']['smtpserver'] = value
+        self.cfg['notifier',  'smtpserver'] = value
         self.saveToConfig()
 
     @property
     def fromaddress(self) -> Optional[str]:
-        try:
-            return self.config['notifier']['fromaddress']
-        except KeyError:
-            self.config['notifier']['fromaddress'] = None
-            return None
+        return self.cfg.setdefault(('notifier', 'fromaddress'), None)
 
     @fromaddress.setter
     def fromaddress(self, value: Optional[str]):
-        self.config['notifier']['fromaddress'] = value
+        self.cfg['notifier',  'fromaddress'] = value
         self.saveToConfig()
 
     @staticmethod

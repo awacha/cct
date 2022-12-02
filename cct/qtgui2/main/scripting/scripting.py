@@ -1,18 +1,16 @@
-import datetime
 import logging
-import os
 from typing import List, Optional
 
 from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import Slot
 
 from .script import ScriptUI
-from .wizard.sequencewizard import SequenceWizard
 from .scripting_ui import Ui_Form
-from ...utils.filebrowsers import getOpenFile, getSaveFile
+from .wizard.sequencewizard import SequenceWizard
+from ...utils.filebrowsers import getOpenFile
+from ....core2.commands import Command
 from ....core2.instrument.components.interpreter import ParsingError
 from ....core2.instrument.instrument import Instrument
-from ....core2.commands import Command
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -63,7 +61,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         self.instrument.interpreter.flags.flagRemoved.connect(self.onFlagRemoved)
         self.flagsHorizontalLayout.addStretch(1)
         self.listWidget.clear()
-        for command in sorted([c for c in Command.subclasses() if isinstance(c.name, str)], key=lambda c:c.name):
+        for command in sorted([c for c in Command.subclasses() if isinstance(c.name, str)], key=lambda c: c.name):
             item = QtWidgets.QListWidgetItem(command.name)
             item.setToolTip(command.helptext())
             self.listWidget.addItem(item)
@@ -77,7 +75,8 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         tb.setCheckable(True)
         tb.setChecked(flagstate)
         tb.setObjectName(f'flag_{flagname}_ToolButton')
-        tb.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        tb.setSizePolicy(
+            QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred))
         tb.toggled.connect(self.onFlagToolButtonToggled)
         self.flagsHorizontalLayout.insertWidget(self.flagsHorizontalLayout.count() - 1, tb)
 
@@ -89,7 +88,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
     @Slot(str, bool)
     def onFlagChanged(self, flagname: str, flagstate: bool):
         logger.debug(f'onFlagChanged {flagname=}, {flagstate=}')
-        tb = self.findChild(QtWidgets.QToolButton, f'flag_{flagname}_ToolButton')
+        tb: QtWidgets.QToolButton = self.findChild(QtWidgets.QToolButton, f'flag_{flagname}_ToolButton')
         tb.blockSignals(True)
         tb.setChecked(flagstate)
         tb.blockSignals(False)
@@ -156,10 +155,10 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
         if self.scripts[index].isModified():
             result = QtWidgets.QMessageBox.question(
                 self, 'Confirm close', 'There are unsaved changes to this script. Do you want to save them?',
-                buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Cancel)
-            if result == QtWidgets.QMessageBox.Yes:
+                buttons=QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No | QtWidgets.QMessageBox.StandardButton.Cancel)
+            if result == QtWidgets.QMessageBox.StandardButton.Yes:
                 self.scripts[index].save()
-            elif result == QtWidgets.QMessageBox.Cancel:
+            elif result == QtWidgets.QMessageBox.StandardButton.Cancel:
                 return
         self.tabWidget.removeTab(index)
         self.scripts[index].deleteLater()
@@ -172,7 +171,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
                 self.instrument.interpreter.parseScript(self.currentScript().text())
                 self.currentScript().scriptEditor.setReadOnly(True)
             except ParsingError as pe:
-                QtWidgets.QMessageBox.critical('Parsing error',
+                QtWidgets.QMessageBox.critical(self, 'Parsing error',
                                                f'Line {pe.args[0] + 1} is invalid. Error message: {pe.args[1]}')
                 return
             except AttributeError:
@@ -206,7 +205,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
             try:
                 s = [s for s in self.scripts if (not s.text().strip()) and (not s.isModified())][0]
             except IndexError:
-                s=self.newScript()
+                s = self.newScript()
             self.tabWidget.setCurrentWidget(s)
             s.scriptEditor.setPlainText(self.wizard.script())
             s.scriptEditor.document().setModified(True)
@@ -219,7 +218,7 @@ class Scripting(QtWidgets.QWidget, Ui_Form):
 
     @Slot()
     def newScript(self) -> ScriptUI:
-        s=ScriptUI()
+        s = ScriptUI()
         self._createTab(s)
         return s
 

@@ -26,10 +26,10 @@ class SchottKL2500LEDUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.shutterPushButton.toggled.connect(self.onShutterToggled)
         self.frontPanelLockoutPushButton.toggled.connect(self.onFrontPanelLockoutToggled)
         for variable in self.device().keys():
-            self.onVariableChanged(variable, self.device()[variable], self.device()[variable])
+            self.onVariableChanged(variable, self.device().get(variable), self.device().get(variable))
 
     def device(self) -> KL2500LED:
-        dev = [d for d in self.instrument.devicemanager if d.devicename == 'KL2500LED'][0]
+        dev = self.instrument.devicemanager.getByDeviceName('KL2500LED')
         assert isinstance(dev, KL2500LED)
         return dev
 

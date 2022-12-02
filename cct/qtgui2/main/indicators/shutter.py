@@ -1,12 +1,11 @@
-from typing import Any
 import logging
+from typing import Any
 
 from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import Slot
 
 from .shutter_ui import Ui_Frame
 from ...utils.window import WindowRequiresDevices
-from ....core2.instrument.instrument import Instrument
 from ....core2.devices import DeviceType
 from ....core2.devices.xraysource.genix.frontend import GeniX
 
@@ -53,7 +52,7 @@ class ShutterIndicator(WindowRequiresDevices, QtWidgets.QFrame, Ui_Frame):
             self.toolButton.setChecked(False)
             return
         try:
-            self.toolButton.setEnabled(genix['interlock'])
+            self.toolButton.setEnabled(genix.get('interlock'))
         except (KeyError, GeniX.DeviceError):
             logger.debug('No interlock')
             self.toolButton.setEnabled(False)
@@ -61,9 +60,9 @@ class ShutterIndicator(WindowRequiresDevices, QtWidgets.QFrame, Ui_Frame):
             self.toolButton.setIcon(
                 QtGui.QIcon(
                     QtGui.QPixmap(
-                        ':/icons/beamshutter_open.svg' if genix['shutter'] else ':/icons/beamshutter_closed.svg')))
+                        ':/icons/beamshutter_open.svg' if genix.get('shutter') else ':/icons/beamshutter_closed.svg')))
             self.toolButton.blockSignals(True)
-            self.toolButton.setChecked(genix['shutter'])
+            self.toolButton.setChecked(genix.get('shutter'))
             self.toolButton.blockSignals(False)
         except (KeyError, GeniX.DeviceError):
             logger.debug('No shutter')

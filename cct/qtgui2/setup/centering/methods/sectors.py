@@ -9,7 +9,6 @@ from matplotlib.widgets import SpanSelector
 
 from .centeringmethod import CenteringMethod
 from .sectors_ui import Ui_Form
-from ....utils.blocksignalscontextmanager import SignalsBlocked
 from .....core2.algorithms.radavg import fastradavg, maskforannulus, maskforsectors
 from .....core2.dataclasses.exposure import Exposure
 

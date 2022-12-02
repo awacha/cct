@@ -1,4 +1,3 @@
-import datetime
 from math import inf
 from typing import Sequence, Any, Tuple, List
 
@@ -108,7 +107,7 @@ class SchottKL2500LEDBackend(DeviceBackend):
 
     def doPanic(self):
         self.panicking = self.PanicState.Panicking
-        if self['__status__'] == self.Status.Running:
+        if self['__status__'] == self.Status.LightsOn:
             self.enqueueHardwareMessage(b'0BR0000;\r')
             self.enqueueHardwareMessage(b'0LK0000;\r')
         else:

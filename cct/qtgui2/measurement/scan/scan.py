@@ -31,7 +31,7 @@ class ScanMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
-        self.motorComboBox.addItems(sorted([m.name for m in self.instrument.motors.motors]))
+        self.motorComboBox.addItems(sorted([m.name for m in self.instrument.motors.iterMotors()]))
         self.motorComboBox.currentIndexChanged.connect(self.onMotorChanged)
         self.motorComboBox.setCurrentIndex(-1)
         self.rangeTypeComboBox.addItems([rt.value for rt in RangeType])
@@ -66,7 +66,7 @@ class ScanMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         #self.toLabel.setVisible(False if rt == RangeType.SymmetricRelative else True)
         #self.rangeMaxDoubleSpinBox.setVisible(False if rt == RangeType.SymmetricRelative else True)
         if self.motorname is not None:
-            self.onMotorPositionChanged(self.instrument.motors[self.motorname].where())
+            self.onMotorPositionChanged(self.instrument.motors.get(self.motorname).where())
         self.shrinkWindow()
 
     def shrinkWindow(self):
@@ -75,13 +75,14 @@ class ScanMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     @Slot()
     def onMotorChanged(self):
         if self.motorname is not None:
-            self.disconnectMotor(self.instrument.motors[self.motorname])
+            self.disconnectMotor(self.instrument.motors.get(self.motorname))
             self.motorname = None
         if self.motorComboBox.currentIndex() < 0:
             return
         self.motorname = self.motorComboBox.currentText()
-        self.connectMotor(self.instrument.motors[self.motorname])
-        self.onMotorPositionChanged(self.instrument.motors[self.motorname].where())
+        motor = self.instrument.motors.get(self.motorname)
+        self.connectMotor(motor)
+        self.onMotorPositionChanged(motor.where())
         for widget in [self.rangeTypeComboBox, self.rangeMinDoubleSpinBox, self.rangeMaxDoubleSpinBox,
                        self.stepSizeDoubleSpinBox, self.stepCountSpinBox, self.countingTimeDoubleSpinBox,
                        self.commentLineEdit]:
@@ -93,15 +94,15 @@ class ScanMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             # scan is running, do not update motor limits in the input boxes
             return
         rt = RangeType(self.rangeTypeComboBox.currentText())
-        motor = self.instrument.motors[self.motorname]
+        motor = self.instrument.motors.get(self.motorname)
         if rt == RangeType.Absolute:
-            self.rangeMinDoubleSpinBox.setRange(motor['softleft'], motor['softright'])
-            self.rangeMaxDoubleSpinBox.setRange(motor['softleft'], motor['softright'])
+            self.rangeMinDoubleSpinBox.setRange(motor.get('softleft'), motor.get('softright'))
+            self.rangeMaxDoubleSpinBox.setRange(motor.get('softleft'), motor.get('softright'))
         elif rt == RangeType.Relative:
-            self.rangeMinDoubleSpinBox.setRange(motor['softleft'] - newposition, motor['softright'] - newposition)
-            self.rangeMaxDoubleSpinBox.setRange(motor['softleft'] - newposition, motor['softright'] - newposition)
+            self.rangeMinDoubleSpinBox.setRange(motor.get('softleft') - newposition, motor.get('softright') - newposition)
+            self.rangeMaxDoubleSpinBox.setRange(motor.get('softleft') - newposition, motor.get('softright') - newposition)
         elif rt == RangeType.SymmetricRelative:
-            radius = min(abs(motor['softleft'] - newposition), abs(motor['softright'] - newposition))
+            radius = min(abs(motor.get('softleft') - newposition), abs(motor.get('softright') - newposition))
             self.rangeMinDoubleSpinBox.setRange(0, radius)
             self.rangeMaxDoubleSpinBox.setRange(0, radius)
 
@@ -206,7 +207,7 @@ class ScanMeasurement(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         if (self.scangraph is None) and (currentpoint == 0):
             self.scangraph = self.mainwindow.addSubWindow(PlotScan, singleton=False)
             assert isinstance(self.scangraph, PlotScan)
-            self.scangraph.setScan(self.instrument.scan[scanindex])
+            self.scangraph.setScan(self.instrument.scan.get(scanindex))
             self.scangraph.setRecording(True)
         elif self.scangraph is not None:
             try:

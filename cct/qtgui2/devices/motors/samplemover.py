@@ -2,14 +2,12 @@
 """Motor mover widget"""
 
 import logging
-from typing import Optional
 
-from PySide6 import QtWidgets, QtGui
+from PySide6 import QtWidgets
 from PySide6.QtCore import Slot
 
 from .samplemover_ui import Ui_Form
 from ...utils.window import WindowRequiresDevices
-from ....core2.instrument.components.motors.motor import Motor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -57,4 +55,3 @@ class SampleMover(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             widget.setEnabled(True)
         self.instrument.samplestore.movingFinished.disconnect(self.onMovingToSampleFinished)
         logger.debug('Moving to sample finished')
-

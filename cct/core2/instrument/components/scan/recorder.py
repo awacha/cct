@@ -152,7 +152,7 @@ class ScanRecorder(QtCore.QObject):
             logger.debug('Starting next exposure')
             self.positionsdone.append(self.motor.where())
             self.state = self.State.Exposing
-            self.instrument.exposer.startExposure(self.instrument.config['path']['prefixes']['scn'], self.countingtime)
+            self.instrument.exposer.startExposure(self.instrument.cfg['path',  'prefixes',  'scn'], self.countingtime)
             self.imagesrequested += 1
             self.exposurefinished = False
 
@@ -289,19 +289,19 @@ class ScanRecorder(QtCore.QObject):
             logger.warning(f'More than one outstanding images: {self.imagesrequested}. '
                            f'Might be caused by jamming of subsequent exposures!')
         if self.mask is None:
-            if self.instrument.config['scan']['mask'] is None:
+            if self.instrument.cfg['scan',  'mask'] is None:
                 self.mask = exposure.intensity >= 0
             else:
                 try:
-                    self.mask = self.instrument.io.loadMask(self.instrument.config['scan']['mask'])
+                    self.mask = self.instrument.io.loadMask(self.instrument.cfg['scan',  'mask'])
                 except (KeyError, FileNotFoundError, TypeError):
                     self.mask = exposure.intensity >= 0
         if self.mask_total is None:
-            if self.instrument.config['scan']['mask_total'] is None:
+            if self.instrument.cfg['scan',  'mask_total'] is None:
                 self.mask_total = exposure.intensity >= 0
             else:
                 try:
-                    self.mask_total = self.instrument.io.loadMask(self.instrument.config['scan']['mask_total'])
+                    self.mask_total = self.instrument.io.loadMask(self.instrument.cfg['scan',  'mask_total'])
                 except (KeyError, FileNotFoundError, TypeError):
                     self.mask_total = exposure.intensity >= 0
         logger.debug('Queueing analyzeimage task to imageprocessorpool')

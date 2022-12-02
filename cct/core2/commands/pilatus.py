@@ -12,7 +12,7 @@ class Trim(Command):
                  StringChoicesArgument('gain', 'Gain setting', ['lowG', 'midG', 'highG'])]
 
     def pilatus(self) -> PilatusDetector:
-        pilatus = self.instrument.devicemanager['pilatus']
+        pilatus = self.instrument.devicemanager.getByDeviceName('PilatusDetector')
         assert isinstance(pilatus, PilatusDetector)
         return pilatus
 
@@ -28,7 +28,7 @@ class Trim(Command):
         except IndexError:
             raise self.CommandException(f'Invalid gain setting: {gain}')
         assert isinstance(gain, PilatusGain)
-        if self.pilatus()['__status__'] != PilatusBackend.Status.Idle:
+        if self.pilatus().get('__status__') != PilatusBackend.Status.Idle:
             raise self.CommandException('Cannot trim detector: not idle.')
         self.connectPilatus()
         try:

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class Sensors(QtCore.QAbstractItemModel, Component):
+class Sensors(Component, QtCore.QAbstractItemModel):
     _data: List[Sensor]
 
     def __init__(self, **kwargs):
@@ -22,7 +22,7 @@ class Sensors(QtCore.QAbstractItemModel, Component):
         super().__init__(**kwargs)
         self.instrument.devicemanager.deviceAdded.connect(self.onDeviceAdded)
         self.instrument.devicemanager.deviceRemoved.connect(self.onDeviceRemoved)
-        for device in self.instrument.devicemanager:
+        for device in self.instrument.devicemanager.iterDevices():
             self.onDeviceAdded(device.name)
 
     def rowCount(self, parent: QtCore.QModelIndex = ...) -> int:
@@ -66,7 +66,7 @@ class Sensors(QtCore.QAbstractItemModel, Component):
 
     @Slot(str)
     def onDeviceAdded(self, name: str):
-        device: DeviceFrontend = self.instrument.devicemanager[name]
+        device: DeviceFrontend = self.instrument.devicemanager.get(name)
         for sensor in device.sensors:
             self.beginInsertRows(QtCore.QModelIndex(), len(self._data), len(self._data))
             self._data.append(sensor)

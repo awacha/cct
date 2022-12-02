@@ -1,5 +1,4 @@
 import datetime
-import numbers
 import pickle
 import numpy as np
 import logging
@@ -10,6 +9,9 @@ from .headerparameter import ValueAndUncertaintyHeaderParameter, StringHeaderPar
 from .sample import Sample
 
 ValueAndUncertaintyType = Tuple[float, float]
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class Header:

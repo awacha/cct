@@ -3,7 +3,7 @@ import logging
 import os
 import pickle
 import math
-from typing import Any, Optional, Final, List, Dict, Union
+from typing import Any, Optional, Dict
 
 import h5py
 import numpy as np
@@ -26,7 +26,7 @@ class Geometry(Component, QtCore.QObject):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)  # this implies self.loadFromConfig()
-        self.choices = GeometryChoices(config=self.config)
+        self.choices = GeometryChoices(config=self.cfg)
         # if some values are missing, add them
         for parameter, defaultvalue in [
             ('l1_elements', []),
@@ -57,8 +57,7 @@ class Geometry(Component, QtCore.QObject):
             ('pixelsize', 0.172),
             ('pixelsize.err', 0.0002),
         ]:
-            if parameter not in self.config['geometry']:
-                self.config['geometry'][parameter] = defaultvalue
+            self.cfg.setdefault(('geometry', parameter), defaultvalue)
 
         # remove obsolete parameters
         for parameter in [
@@ -69,20 +68,20 @@ class Geometry(Component, QtCore.QObject):
             'pinhole2',  # -> pinhole_2
             'pinhole3',  # -> pinhole_3
         ]:
-            if parameter in self.config['geometry']:
-                del self.config['geometry'][parameter]
+            if parameter in self.cfg['geometry']:
+                del self.cfg['geometry',  parameter]
 
-        if 'presets' in self.config['geometry']:
+        if 'presets' in self.cfg['geometry']:
             logger.info('Converting presets to external files.')
             # presets are obsolete, write simple geometry files
             os.makedirs('geo', exist_ok=True)
-            for presetname in self.config['geometry']['presets']:
+            for presetname in self.cfg['geometry',  'presets']:
                 logger.debug(f'Converting preset {presetname}')
-                presetconf = self.config['geometry']['presets'][presetname]
+                presetconf = self.cfg['geometry',  'presets',  presetname]
                 filename = presetname
                 for forbiddenchar in " <>:\"/\\|?*'":
                     filename = filename.replace(forbiddenchar, '_')
-                geoconf = self.config['geometry'].asdict()
+                geoconf = self.cfg['geometry']
                 del geoconf['choices']
                 del geoconf['presets']
                 geoconf['l1_elements'] = presetconf['l1_elements']
@@ -103,50 +102,54 @@ class Geometry(Component, QtCore.QObject):
                 self.saveGeometry(os.path.join('geo', filename + '.geoj'), geoconf)
                 self.saveGeometry(os.path.join('geo', filename + '.geop'), geoconf)
 
-            del self.config['geometry']['presets']
+            del self.cfg['geometry',  'presets']
         self.recalculateDerivedParameters()
 
     def onConfigChanged(self, path, value):
-        if path[0] != 'geometry':
+        if (len(path) < 2) or (path[0] != 'geometry'):
             return
         if path[1] in ['l1_elements', 'l2_elements', 'l1base', 'isoKFspacer', 'pinhole_1', 'pinhole_2', 'pinhole_3',
                        'dist_sample_det', 'ph3tosample', 'beamstoptodetector', 'beamstop', 'wavelength']:
             self.recalculateDerivedParameters()
 
     def recalculateDerivedParameters(self):
-        l1 = self.config['geometry']['l1'] = \
-            len(self.config['geometry']['l1_elements']) * self.config['geometry']['isoKFspacer'] + \
-            sum(self.config['geometry']['l1_elements']) + self.config['geometry']['l1base']
-        l2 = self.config['geometry']['l2'] = \
-            len(self.config['geometry']['l2_elements']) * self.config['geometry']['isoKFspacer'] + \
-            sum(self.config['geometry']['l2_elements']) + self.config['geometry']['l2base']
-        ph1 = self.config['geometry']['pinhole_1']
-        ph2 = self.config['geometry']['pinhole_2']
-        ph3 = self.config['geometry']['pinhole_3']
+        for param in ['l1_elements', 'l2_elements', 'l1base', 'isoKFspacer', 'pinhole_1', 'pinhole_2', 'pinhole_3',
+                       'dist_sample_det', 'ph3tosample', 'beamstoptodetector', 'beamstop', 'wavelength']:
+            if ('geometry', 'param') not in self.cfg:
+                return
+        l1 = self.cfg['geometry',  'l1'] = \
+            len(self.cfg['geometry',  'l1_elements']) * self.cfg['geometry',  'isoKFspacer'] + \
+            sum(self.cfg['geometry',  'l1_elements']) + self.cfg['geometry',  'l1base']
+        l2 = self.cfg['geometry',  'l2'] = \
+            len(self.cfg['geometry',  'l2_elements']) * self.cfg['geometry',  'isoKFspacer'] + \
+            sum(self.cfg['geometry',  'l2_elements']) + self.cfg['geometry',  'l2base']
+        ph1 = self.cfg['geometry',  'pinhole_1']
+        ph2 = self.cfg['geometry',  'pinhole_2']
+        ph3 = self.cfg['geometry',  'pinhole_3']
 
-        sd = float(self.config['geometry']['dist_sample_det'])
-        ph3tosample = self.config['geometry']['ph3tosample']
+        sd = float(self.cfg['geometry',  'dist_sample_det'])
+        ph3tosample = self.cfg['geometry',  'ph3tosample']
         ph3todetector = ph3tosample + sd
-        beamstoptodetector = self.config['geometry']['beamstoptodetector']
+        beamstoptodetector = self.cfg['geometry',  'beamstoptodetector']
         ph3tobeamstop = ph3todetector - beamstoptodetector
-        beamstopradius = self.config['geometry']['beamstop']
-        self.config['geometry']['intensity'] = ph1 ** 2 * ph2 ** 2 / l1 ** 2
-        self.config['geometry']['dbeam_at_ph3'] = ((ph1 + ph2) * (l1 + l2) / l1 - ph1) / 1000
-        dbeamsample = self.config['geometry']['dbeam_at_sample'] = ((ph1 + ph2) * (
+        beamstopradius = self.cfg['geometry',  'beamstop']
+        self.cfg['geometry',  'intensity'] = ph1 ** 2 * ph2 ** 2 / l1 ** 2
+        self.cfg['geometry',  'dbeam_at_ph3'] = ((ph1 + ph2) * (l1 + l2) / l1 - ph1) / 1000
+        dbeamsample = self.cfg['geometry',  'dbeam_at_sample'] = ((ph1 + ph2) * (
                 l1 + l2 + ph3tosample) / l1 - ph1) / 1000
-        self.config['geometry']['dbeam_at_bs'] = float(((ph1 + ph2) * (l1 + l2 + ph3tobeamstop) / l1 - ph1) / 1000)
-        self.config['geometry']['dparasitic_at_bs'] = float(((ph2 + ph3) * (l2 + ph3tobeamstop) / l2 - ph2) / 1000)
+        self.cfg['geometry',  'dbeam_at_bs'] = float(((ph1 + ph2) * (l1 + l2 + ph3tobeamstop) / l1 - ph1) / 1000)
+        self.cfg['geometry',  'dparasitic_at_bs'] = float(((ph2 + ph3) * (l2 + ph3tobeamstop) / l2 - ph2) / 1000)
         beamstopshadowradius = ((dbeamsample + beamstopradius) * sd / (sd - beamstoptodetector) - dbeamsample) * 0.5
         try:
-            self.config['geometry']['qmin'] = float(4 * np.pi * np.sin(0.5 * np.arctan(beamstopshadowradius / sd)) / \
-                                                    self.config['geometry']['wavelength'])
+            self.cfg['geometry',  'qmin'] = float(4 * np.pi * np.sin(0.5 * np.arctan(beamstopshadowradius / sd)) / \
+                                                    self.cfg['geometry',  'wavelength'])
         except ZeroDivisionError:
-            self.config['geometry']['qmin'] = math.nan
+            self.cfg['geometry',  'qmin'] = math.nan
 
     def saveGeometry(self, filename: str, configdict: Optional[Dict[str, Any]] = None):
         """Save the current settings under a preset name"""
         if configdict is None:
-            configdict = self.config['geometry']
+            configdict = self.cfg['geometry']
         dic = {key: configdict[key] for key in [
             'l1_elements', 'l2_elements',
             'pinhole_1', 'pinhole_2', 'pinhole_3', 'flightpipes', 'beamstop', 'dist_sample_det', 'dist_sample_det.err',
@@ -177,19 +180,19 @@ class Geometry(Component, QtCore.QObject):
         else:
             raise ValueError(f'Unknown file extension: {os.path.splitext(filename)[-1]}')
         for key in dic:
-            self.config['geometry'][key] = dic[key]
+            self.cfg['geometry',  key] = dic[key]
         self.recalculateDerivedParameters()
         logger.info(f'Loaded geometry from file {filename}.')
 
     def l1(self, geometrydict: Optional[Dict[str, Any]] = None) -> float:
         if geometrydict is None:
-            geometrydict = self.config['geometry']
+            geometrydict = self.cfg['geometry']
         return geometrydict['l1base'] + geometrydict['isoKFspacer'] * len(geometrydict['l1_elements']) + sum(
             geometrydict['l1_elements'])
 
     def l2(self, geometrydict: Optional[Dict[str, Any]] = None) -> float:
         if geometrydict is None:
-            geometrydict = self.config['geometry']
+            geometrydict = self.cfg['geometry']
         return geometrydict['l2base'] + geometrydict['isoKFspacer'] * len(geometrydict['l2_elements']) + sum(
             geometrydict['l2_elements'])
 
@@ -198,17 +201,17 @@ class Geometry(Component, QtCore.QObject):
                     'l1', 'l2', 'ph3todetector', 'dbeam_at_ph3', 'dbeam_at_bs', 'dbeam_at_sample', 'dparasitic_at_bs',
                     'qmin', 'intensity']:
             logger.debug(f'Updating geometry from optimizer results: {key} <- {optresult[key]}')
-            self.config['geometry'][key] = optresult[key]
-        self.config['geometry']['dist_sample_det'] = float(optresult['sd'])
-        self.config['geometry']['dist_sample_det.err'] = 0.0
-        self.config['geometry']['description'] = ''
+            self.cfg['geometry',  key] = optresult[key]
+        self.cfg['geometry',  'dist_sample_det'] = float(optresult['sd'])
+        self.cfg['geometry',  'dist_sample_det.err'] = 0.0
+        self.cfg['geometry',  'description'] = ''
 
     def getHeaderEntry(self) -> Dict[str, Any]:
         dic = {}
         for key in ['dist_sample_det', 'dist_sample_det.err', 'pinhole_1', 'pinhole_2', 'pinhole_3', 'description',
                     'beamstop', 'wavelength', 'wavelength.err', 'beamposx', 'beamposy', 'beamposx.err', 'beamposy.err',
                     'mask', 'pixelsize', 'pixelsize.err']:
-            dic[key] = self.config['geometry'][key]
+            dic[key] = self.cfg['geometry',  key]
         for key, alias in [('dist_source_ph1', 'sourcetoph1'),
                            ('dist_ph1_ph2', 'l1'),
                            ('dist_ph2_ph3', 'l2'),
@@ -217,7 +220,7 @@ class Geometry(Component, QtCore.QObject):
                            ('dist_sample_det.val', 'dist_sample_det'),
                            ('truedistance', 'dist_sample_det'),
                            ('truedistance.err', 'dist_sample_det.err')]:
-            dic[key] = self.config['geometry'][alias]
+            dic[key] = self.cfg['geometry',  alias]
         for key, value in dic.items():
             if isinstance(value, np.number):
                 dic[key] = float(value)
@@ -233,7 +236,7 @@ class Geometry(Component, QtCore.QObject):
         :return: the updated NXinstrument HDF5 group
         :rtype: h5py.Group
         """
-        geoconf = self.config['geometry']
+        geoconf = self.cfg['geometry']
         ### Add information on the beamstop
         bsgroup = instrumentgroup.require_group('beam_stop')  # should be created by the beamstop component
         logger.debug(str(list(bsgroup.keys())))

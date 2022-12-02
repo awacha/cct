@@ -62,7 +62,7 @@ class AzimuthalCurve:
     @classmethod
     def fromVectors(cls, phi: np.ndarray, intensity: np.ndarray, uncertainty: Optional[np.ndarray] = None,
                     phiuncertainty: Optional[np.ndarray] = None, binarea: Optional[np.ndarray] = None,
-                    qmean: Optional[np.ndarray] = None, qstd: Optional[np.ndarray] = None) -> "Curve":
+                    qmean: Optional[np.ndarray] = None, qstd: Optional[np.ndarray] = None) -> "AzimuthalCurve":
         assert (phi is not None) and (intensity is not None)
         if not all([
             phi.ndim == 1,
@@ -118,7 +118,7 @@ class AzimuthalCurve:
         return AzimuthalCurve.fromVectors(phi, i, di, dphi, a, q, dq)
 
     def isfinite(self) -> np.ndarray:
-        idx = np.logical_and(np.isfinite(self.q, np.isfinite(self.intensity)))
+        idx = np.logical_and(np.isfinite(self.phi, np.isfinite(self.intensity)))
         for vector in [self.uncertainty, self.phiuncertainty, self.qmean, self.qstd, self.binarea]:
             if np.isfinite(vector).sum() > 0:  # if not all elements are NaN
                 idx = np.logical_and(idx, np.isfinite(vector))

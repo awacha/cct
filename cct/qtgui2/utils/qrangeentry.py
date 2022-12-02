@@ -1,6 +1,6 @@
 from typing import Tuple, Optional
 
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets
 from PySide6.QtCore import Signal, Slot
 
 from .qrangeentry_ui import Ui_Form
@@ -23,7 +23,8 @@ class QRangeEntry(QtWidgets.QWidget, Ui_Form):
 
     @Slot()
     def _onvaluechanged(self):
-        self.valueChanged.emit(self.qminDoubleSpinBox.value(), self.qmaxDoubleSpinBox.value(), self.qCountSpinBox.value())
+        self.valueChanged.emit(self.qminDoubleSpinBox.value(), self.qmaxDoubleSpinBox.value(),
+                               self.qCountSpinBox.value())
 
     def setMinimum(self, value: float):
         self.qminDoubleSpinBox.setMinimum(value)

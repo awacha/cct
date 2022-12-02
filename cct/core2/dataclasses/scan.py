@@ -61,6 +61,8 @@ class Scan:
         maxpoints = None
         scan = None
         comment = []
+        date = None
+        countingtime = None
         for full_line in specfile:
             line = full_line.strip().decode('utf-8')
             if line.startswith('#D'):  # this is the date

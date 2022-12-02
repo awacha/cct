@@ -6,7 +6,7 @@ import openpyxl
 import openpyxl.styles
 import openpyxl.utils
 
-from ..core2.config import Config
+from ..core2.config2 import Config
 from ..core2.dataclasses import Header
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,14 @@ columns: Final[List[str]] = ['fsn', 'title', 'distance', 'distancedecrease', 'ex
 
 def mkexcel(filename: str, firstfsn: int, lastfsn: int, configfile: str, verbose: bool):
     logger.setLevel(logging.INFO if verbose else logging.INFO)
-    config = Config(dicorfile=configfile)
-    config.filename = None  # inhibit auto-save
+    cfg = Config(configfile)
+    cfg.autosave_interval = None   # do not auto-save
+    cfg.filename = None  # inhibit auto-save
+    cfg.setdefault(("path", "prefixes", "crd"), 'crd')
+    cfg.setdefault(("path", "fsndigits"), 5)
+    cfg.setdefault(("path", "directories", "eval2d"), "eval2d")
+    cfg.setdefault(("path", "directories", "param_override"), "param_override")
+    cfg.setdefault(("path", "directories", "param"), "param")
     wb = openpyxl.Workbook()
     ws = wb.active
     bold = openpyxl.styles.Font(bold=True)
@@ -41,7 +47,7 @@ def mkexcel(filename: str, firstfsn: int, lastfsn: int, configfile: str, verbose
         ws.cell(row=1, column=col).alignment = align
     subdirs = []
     for subpath in ['eval2d', 'param_override', 'param']:
-        subdirs.extend(listsubdirs(config['path']['directories'][subpath]))
+        subdirs.extend(listsubdirs(cfg['path', 'directories', subpath]))
     row = 2
     for fsn in range(firstfsn, lastfsn + 1):
         for subdir in subdirs:
@@ -49,7 +55,7 @@ def mkexcel(filename: str, firstfsn: int, lastfsn: int, configfile: str, verbose
                 header = Header(
                     filename=os.path.join(
                         subdir,
-                        f'{config["path"]["prefixes"]["crd"]}_{fsn:0{config["path"]["fsndigits"]}d}.pickle'))
+                        f'{cfg["path", "prefixes", "crd"]}_{fsn:0{cfg["path", "fsndigits"]}d}.pickle'))
                 logger.debug(f'Found header {header.fsn} in {subdir}')
                 for i, col in enumerate(columns, start=1):
                     try:

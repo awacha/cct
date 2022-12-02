@@ -1,5 +1,3 @@
-from typing import Optional
-
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import Slot
 

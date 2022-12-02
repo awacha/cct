@@ -1,6 +1,6 @@
 from typing import Any
 
-from .command import Command, InstantCommand
+from .command import InstantCommand
 from .commandargument import StringArgument
 
 

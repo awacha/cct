@@ -153,11 +153,11 @@ class OptimizerStore(QtCore.QAbstractItemModel):
         self._optimizationresults = []
         self.endResetModel()
 
-    def __iter__(self) -> Iterator[Dict[str, Any]]:
+    def iter_results(self) -> Iterator[Dict[str, Any]]:
         for result in self._optimizationresults:
             yield result
 
-    def __getitem__(self, item: int) -> Dict[str, Any]:
+    def get(self, item: int) -> Dict[str, Any]:
         return self._optimizationresults[item]
 
     def __len__(self) -> int:
