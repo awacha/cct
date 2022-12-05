@@ -70,9 +70,15 @@ class Sector(CenteringMethod, Ui_Form):
         self.pixMinDoubleSpinBox.setValue(pixmin)
         self.pixMaxDoubleSpinBox.setValue(pixmax)
 
-    @Slot(float, name='on_pixMinDoubleSpinBox_valueChanged')
-    @Slot(float, name='on_pixMaxDoubleSpinBox_valueChanged')
-    def updateSpanSelector(self, value: float):
+    @Slot(float)
+    def on_pixMinDoubleSpinBox_valueChanged(self, value: float):
+        return self.updateSpanSelector()
+
+    @Slot(float)
+    def on_pixMaxDoubleSpinBox_valueChanged(self, value: float):
+        return self.updateSpanSelector()
+
+    def updateSpanSelector(self):
         if self.polarspanselector is not None:
             self.polarspanselector.extents = (self.pixMinDoubleSpinBox.value(), self.pixMaxDoubleSpinBox.value())
         if self.curvespanselector is not None:

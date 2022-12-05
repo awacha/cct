@@ -1,6 +1,7 @@
 # coding: utf-8
 """Peak height centering method"""
 from typing import Union, Optional, Final
+import logging
 
 import lmfit
 import numpy as np
@@ -11,6 +12,9 @@ from .centeringmethod import CenteringMethod
 from .peakheight_ui import Ui_Form
 from .....core2.algorithms.radavg import fastradavg
 from .....core2.dataclasses.exposure import Exposure
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class PeakFitting(CenteringMethod, Ui_Form):
@@ -93,14 +97,22 @@ class PeakFitting(CenteringMethod, Ui_Form):
         if self.curvespanselector is not None:
             self.curvespanselector.active = False
             self.curvespanselector = None
+        pass
 
     def onRangeSelected(self, pixmin, pixmax):
+        logger.debug(f'onRangeSelected({pixmin=}, {pixmax=})')
         self.pixMinDoubleSpinBox.setValue(pixmin)
         self.pixMaxDoubleSpinBox.setValue(pixmax)
 
     @Slot(float, name='on_pixMinDoubleSpinBox_valueChanged')
+    def on_pixMinDoubleSpinBox_valueChanged(self, value: float):
+        logger.debug(f'on_pixMinMaxDoubleSpinBox_valueChanged({value=})')
+        self.polarspanselector.extents = (self.pixMinDoubleSpinBox.value(), self.pixMaxDoubleSpinBox.value())
+        self.curvespanselector.extents = (self.pixMinDoubleSpinBox.value(), self.pixMaxDoubleSpinBox.value())
+
     @Slot(float, name='on_pixMaxDoubleSpinBox_valueChanged')
-    def on_pixMinMaxDoubleSpinBox_valueChanged(self, value: float):
+    def on_pixMaxDoubleSpinBox_valueChanged(self, value: float):
+        logger.debug(f'on_pixMinMaxDoubleSpinBox_valueChanged({value=})')
         self.polarspanselector.extents = (self.pixMinDoubleSpinBox.value(), self.pixMaxDoubleSpinBox.value())
         self.curvespanselector.extents = (self.pixMinDoubleSpinBox.value(), self.pixMaxDoubleSpinBox.value())
 

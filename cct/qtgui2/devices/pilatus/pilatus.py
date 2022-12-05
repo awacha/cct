@@ -66,23 +66,27 @@ class PilatusDetectorUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 pass
 
     @Slot(bool, name='on_setAgToolButton_clicked')
-    @Slot(bool, name='on_setCrToolButton_clicked')
-    @Slot(bool, name='on_setCuToolButton_clicked')
-    @Slot(bool, name='on_setFeToolButton_clicked')
-    @Slot(bool, name='on_setMoToolButton_clicked')
-    def onQuickTrim(self, checked: bool):
-        if self.sender() is self.setAgToolButton:
-            threshold, gain = self.thresholdsettings['Ag']
-        elif self.sender() is self.setCrToolButton:
-            threshold, gain = self.thresholdsettings['Cr']
-        elif self.sender() is self.setCuToolButton:
-            threshold, gain = self.thresholdsettings['Cu']
-        elif self.sender() is self.setFeToolButton:
-            threshold, gain = self.thresholdsettings['Fe']
-        elif self.sender() is self.setMoToolButton:
-            threshold, gain = self.thresholdsettings['Mo']
-        else:
-            assert False
+    def on_setAgToolButton_clicked(self, checked: bool):
+        return self.onQuickTrim('Ag')
+
+    @Slot(bool)
+    def on_setCrToolButton_clicked(self, checked: bool):
+        return self.onQuickTrim('Cr')
+
+    @Slot(bool)
+    def on_setCuToolButton_clicked(self, checked: bool):
+        return self.onQuickTrim('Cu')
+
+    @Slot(bool)
+    def on_setFeToolButton_clicked(self, checked: bool):
+        return self.onQuickTrim('Fe')
+
+    @Slot(bool)
+    def on_setMoToolButton_clicked(self, checked: bool):
+        return self.onQuickTrim('Mo')
+
+    def onQuickTrim(self, element):
+        threshold, gain = self.thresholdsettings[element]
         self.gainComboBox.setCurrentIndex(self.gainComboBox.findText(gain.value))
         self.thresholdDoubleSpinBox.setValue(threshold)
         self.trimPushButton.click()

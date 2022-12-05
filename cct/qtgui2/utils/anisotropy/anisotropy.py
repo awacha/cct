@@ -230,8 +230,7 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.sectorModel.appendSector(0.5 * (phimin + phimax), phimax - phimin, True, None)
 
     @Slot(name='onSectorsChanged')  # QAbstractItemModel.modelReset
-    @Slot(QtCore.QModelIndex, int, int, name='onSectorsChanged')  # QAbstractItemModel.rowsInserted
-    @Slot(QtCore.QModelIndex, int, int, name='onSectorsChanged')  # QAbstractItemModel.rowsRemoved
+    @Slot(QtCore.QModelIndex, int, int, name='onSectorsChanged')  # QAbstractItemModel.rowsInserted and rowsRemoved
     @Slot(QtCore.QModelIndex, QtCore.QModelIndex, 'QVector<int>',
           name='onSectorsChanged')  # QAbstractItemModel.dataChanged
     def onSectorsChanged(self, *args, **kwargs):

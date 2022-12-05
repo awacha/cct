@@ -21,7 +21,7 @@ from ....core2.algorithms.polar2d import polar2D_pixel
 from ....core2.dataclasses.exposure import Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
@@ -109,13 +109,21 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             f'Updated beam column (horizontal) coordinate to {self.instrument.cfg["geometry", "beamposy"]:.5f} \xb1 '
             f'{self.instrument.cfg["geometry", "beamposy.err"]:.5f} pixel')
 
-
-    @Slot(bool, name='on_sensitivityGoodnessScoreRadioButton_toggled')
-    @Slot(bool, name='on_sensitivity1stDerivativeRadioButton_toggled')
-    @Slot(bool, name='on_sensitivity2ndDerivativeRadioButton_toggled')
-    def sensitivityreplotneeded(self, checked: bool):
-        if checked:  # only draw once
+    @Slot(bool)
+    def on_sensitivityGoodnessScoreRadioButton_toggled(self, checked: bool):
+        if checked:
             self.drawsensitivity()
+
+    @Slot(bool)
+    def on_sensitivity1stDerivativeRadioButton_toggled(self, checked: bool):
+        if checked:
+            self.drawsensitivity()
+
+    @Slot(bool)
+    def on_sensitivity2ndDerivativeRadioButton_toggled(self, checked: bool):
+        if checked:
+            self.drawsensitivity()
+
 
     @Slot(bool, name='on_sensitivityRecalculatePushButton_clicked')
     def on_sensitivityRecalculatePushButton_clicked(self, checked: bool):
@@ -145,6 +153,7 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot(bool, name='on_runToolButton_clicked')
     def execute(self, checked: bool):
+        print('EXECUTE')
         result: lmfit.minimizer.MinimizerResult = self.centeringmethods[self.methodSelectorComboBox.currentText()].run(
             self.exposure)
         self.lastminimizerresult = result
@@ -161,11 +170,23 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 params['beamcol'].value,
                 params['beamcol'].stderr if params['beamcol'].stderr is not None else 0.0))
 
-    @Slot(float, name='on_beamColumnUncertaintyDoubleSpinBox_valueChanged')
-    @Slot(float, name='on_beamColumnValueDoubleSpinBox_valueChanged')
-    @Slot(float, name='on_beamRowUncertaintyDoubleSpinBox_valueChanged')
-    @Slot(float, name='on_beamRowValueDoubleSpinBox_valueChanged')
-    def onBeamPositionChanged(self, value: float):
+    @Slot(float)
+    def on_beamColumnUncertaintyDoubleSpinBox_valueChanged(self, value: float):
+        return self.onBeamPositionChanged()
+
+    @Slot(float)
+    def on_beamColumnValueDoubleSpinBox_valueChanged(self, value: float):
+        return self.onBeamPositionChanged()
+
+    @Slot(float)
+    def on_beamRowUncertaintyDoubleSpinBox_valueChanged(self, value: float):
+        return self.onBeamPositionChanged()
+
+    @Slot(float)
+    def on_beamRowValueDoubleSpinBox_valueChanged(self, value: float):
+        return self.onBeamPositionChanged()
+
+    def onBeamPositionChanged(self):
         self.setBeamPosition(
             row=(self.beamRowValueDoubleSpinBox.value(), self.beamRowUncertaintyDoubleSpinBox.value()),
             column=(self.beamColumnValueDoubleSpinBox.value(), self.beamColumnUncertaintyDoubleSpinBox.value()))
@@ -201,12 +222,27 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.setBeamPosition(row=self.exposure.header.beamposrow, column=self.exposure.header.beamposcol)
         logger.debug('Centering.setExposure() done.')
 
-    @Slot(float, name='on_radavgMinRadiusDoubleSpinBox_valueChanged')
-    @Slot(float, name='on_radavgMaxRadiusDoubleSpinBox_valueChanged')
-    @Slot(bool, name='on_radavgMinRadiusCheckBox_toggled')
-    @Slot(bool, name='on_radavgMinRadiusCheckBox_toggled')
-    @Slot(int, name='on_radavgBinCountSpinBox_valueChanged')
-    def drawcurve(self, *args):
+    @Slot(float)
+    def on_radavgMinRadiusDoubleSpinBox_valueChanged(self, value: float):
+        return self.drawcurve()
+
+    @Slot(float)
+    def on_radavgMaxRadiusDoubleSpinBox_valueChanged(self, value: float):
+        return self.drawcurve()
+
+    @Slot(bool)
+    def on_radavgMinRadiusCheckBox_toggled(self, checked: bool):
+        return self.drawcurve()
+
+    @Slot(bool)
+    def on_radavgMaxRadiusCheckBox_toggled(self, checked: bool):
+        return self.drawcurve()
+
+    @Slot(int)
+    def on_radavgBinCountSpinBox_valueChanged(self, value: int):
+        return self.drawcurve()
+
+    def drawcurve(self):
         logger.debug('Centering.drawcurve()')
         self.plotcurve.clear()
         if self.exposure is None:
@@ -249,7 +285,7 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.polaraxes.grid(True, which='both')
         self.polaraxes.set_xlabel('Distance from origin (pixels)')
         self.polaraxes.set_ylabel('Azimuth angle (°)')
-        self.polarcanvas.draw_idle()
+        self.polarcanvas.draw()
         logger.debug('Centering.drawpolar() done')
 
     def beamrow(self) -> Tuple[float, float]:
