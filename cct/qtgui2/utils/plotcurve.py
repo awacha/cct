@@ -85,8 +85,10 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
 
     @Slot(bool)
     def showLegend(self, show: bool):
-        self.axes.get_legend().set_visible(show)
-        self.canvas.draw()
+        legend = self.axes.get_legend()
+        if legend is not None:
+            self.axes.get_legend().set_visible(show)
+            self.canvas.draw()
 
     @Slot()
     def replot(self):
@@ -198,8 +200,9 @@ class PlotCurve(QtWidgets.QWidget, Ui_Form):
         else:
             raise ValueError(self.plotTypeComboBox.currentText())
 
-        leg = self.axes.legend(loc='best', ncol=2, fontsize='x-small')
-        leg.set_visible(self.showLegendToolButton.isChecked())
+        if self.axes.lines and any([not l.get_label().startswith('_') for l in self.axes.lines]):
+            leg = self.axes.legend(loc='best', ncol=2, fontsize='x-small')
+            leg.set_visible(self.showLegendToolButton.isChecked())
 
         if self.showGridToolButton.isChecked():
             self.axes.grid(True, which='both')

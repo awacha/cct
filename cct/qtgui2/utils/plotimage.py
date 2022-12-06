@@ -1,5 +1,6 @@
 import logging
 from typing import Optional, Final, List
+import sys
 
 import matplotlib
 import matplotlib.cm
@@ -193,12 +194,17 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             matrix[matrix <= 0] = np.nan
         else:
             matrix = self.matrix
+        vmin = np.nanmin(matrix)
+        vmax = np.nanmax(matrix)
+        if vmin == vmax:
+            vmin = vmin-0.5
+            vmax = vmax+0.5
         if self._imghandle is None:
             keepzoom = False
             self._imghandle = self.axes.imshow(
                 matrix,
                 cmap=self.paletteComboBox.currentText(),
-                norm=self.getNormalization(float(np.nanmin(matrix)), float(np.nanmin(matrix[matrix>0]))),
+                norm=self.getNormalization(),
                 aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
                 interpolation='nearest',
                 alpha=1.0,
@@ -209,8 +215,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         else:
             self._imghandle.set_data(self.matrix)
             self._imghandle.set_cmap(self.paletteComboBox.currentText())
-            if (self.matrix > 0).sum() > 0:
-                self._imghandle.set_norm(self.getNormalization(float(np.nanmin(self.matrix)), float(np.nanmin(self.matrix[self.matrix>0]))))
+            self._imghandle.set_norm(self.getNormalization())
             self._imghandle.set_extent(extent)
             try:
                 self._imghandle.autoscale()
@@ -327,19 +332,28 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
 #        self.canvas.draw_idle()
         self.replot(keepzoom=True)
 
-    def getNormalization(self, minposvalue: Optional[float] = None, minvalue: Optional[float] = None):
-        if minposvalue is None:
-            minposvalue = np.nanmin(self.matrix[self.matrix>0])
-        if minvalue is None:
-            minvalue = np.nanmin(self.matrix)
+    def getNormalization(self):
+        vmin = np.nanmin(self.matrix, initial=np.nan)
+        vmax = np.nanmax(self.matrix, initial=np.nan)
+        vminpos = np.nanmin(self.matrix[self.matrix>0], initial=np.nan)
+        if not np.isfinite(vmin) or not np.isfinite(vmax):
+            vmin = 0.0
+            vmax = 1.0
+        if vmin == vmax:
+            vmin = vmin-0.5
+            vmax = vmax+0.5
+        if not np.isfinite(vminpos):
+            vminpos=sys.float_info.epsilon
+        if vmax < vminpos:
+            vmax = vminpos+0.5
         if self.colourScaleComboBox.currentText() == 'linear':
-            return matplotlib.colors.Normalize(minvalue)
+            return matplotlib.colors.Normalize(vmin, vmax)
         elif self.colourScaleComboBox.currentText() == 'log10':
-            return matplotlib.colors.LogNorm(minposvalue)
+            return matplotlib.colors.LogNorm(vminpos, vmax)
         elif self.colourScaleComboBox.currentText() == 'square':
-            return matplotlib.colors.PowerNorm(2, minposvalue)
+            return matplotlib.colors.PowerNorm(2, vminpos, vmax)
         elif self.colourScaleComboBox.currentText() == 'sqrt':
-            return matplotlib.colors.PowerNorm(0.5, minposvalue)
+            return matplotlib.colors.PowerNorm(0.5, vminpos, vmax)
         else:
             assert False
 
