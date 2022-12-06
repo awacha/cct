@@ -56,27 +56,13 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.plotcurve.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
                                      QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         self.curveVerticalLayout.addWidget(self.plotcurve, stretch=1)
-        frame1 = QtWidgets.QFrame(self)
-        #        frame1.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
-        frame1.setFrameStyle(QtWidgets.QFrame.Shape.StyledPanel | QtWidgets.QFrame.Shadow.Raised)
-        frame1.setLineWidth(1)
-        self.fsnSelectorHorizontalLayout.addWidget(frame1)
-        frame1.setLayout(QtWidgets.QHBoxLayout())
-        frame1.layout().addWidget(QtWidgets.QLabel('Load single exposure:'))
-        self.fsnselector = FSNSelector(self)
+        self.selectorStackedWidget
+        self.fsnselector = FSNSelector(parent=self.selectorStackedWidget, horizontal=True)
         self.fsnselector.fsnSelected.connect(self.onFSNSelected)
-        frame1.layout().addWidget(self.fsnselector)
-        frame2 = QtWidgets.QFrame(self)
-        #        frame2.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
-        frame2.setFrameStyle(QtWidgets.QFrame.Shape.StyledPanel | QtWidgets.QFrame.Shadow.Raised)
-        frame1.setLineWidth(1)
-        self.fsnSelectorHorizontalLayout.addWidget(frame2)
-        frame2.setLayout(QtWidgets.QHBoxLayout())
-        frame2.layout().addWidget(QtWidgets.QLabel('Load averaged image:'))
-        self.h5selector = H5Selector(self)
+        self.selectorStackedWidget.addWidget(self.fsnselector)
+        self.h5selector = H5Selector(parent=self.selectorStackedWidget, horizontal=True)
+        self.selectorStackedWidget.addWidget(self.h5selector)
         self.h5selector.datasetSelected.connect(self.onH5DatasetSelected)
-        frame2.layout().addWidget(self.h5selector)
-        self.fsnSelectorHorizontalLayout.addStretch(1)
         bg1 = QtWidgets.QButtonGroup(self)
         for button in [self.maskToolButton, self.unMaskToolButton, self.flipMaskToolButton]:
             bg1.addButton(button)
@@ -102,6 +88,18 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self._pixelhuntcursor = Cursor(self.plotimage.axes, color='white', lw=1, linestyle=':', zorder=100)
         self._pixelhuntcursor.set_active(False)
         self.plotcurve.setShowErrorBars(False)
+        self.selectorStackedWidget.setCurrentWidget(self.fsnselector)
+        self.fsnToolButton.setChecked(True)
+
+    @Slot(bool)
+    def on_hdf5ToolButton_toggled(self, checked: bool):
+        if checked:
+            self.selectorStackedWidget.setCurrentWidget(self.h5selector)
+
+    @Slot(bool)
+    def on_fsnToolButton_toggled(self, checked: bool):
+        if checked:
+            self.selectorStackedWidget.setCurrentWidget(self.fsnselector)
 
     def on2DCanvasButtonPress(self, event: MouseEvent) -> bool:
         """Handle button presses on the canvas in pixel selection mode."""
