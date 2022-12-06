@@ -55,12 +55,6 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def setupUi(self, MainWindow):
         super().setupUi(MainWindow)
-        self.actionSave.triggered.connect(self.saveProject)
-        self.actionNew_project.triggered.connect(self.newProject)
-        self.actionClose.triggered.connect(self.closeProject)
-        self.actionSave_as.triggered.connect(self.saveProjectAs)
-        self.actionOpen_project.triggered.connect(self.openProject)
-        self.actionQuit.triggered.connect(self.close)
         for actionname in [wi.action for wi in self.windowinfo]:
             action = getattr(self, actionname)
             assert isinstance(action, QtGui.QAction)
@@ -68,6 +62,30 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             action.setEnabled(False)
         self.actionRecent_projects.setMenu(QtWidgets.QMenu())
         self.loadRecentFileList()
+
+    @Slot(bool)
+    def on_actionOpen_project_triggered(self, checked: bool):
+        return self.openProject()
+
+    @Slot(bool)
+    def on_actionSave_triggered(self, checked: bool):
+        return self.saveProject()
+
+    @Slot(bool)
+    def on_actionNew_project_triggered(self, checked: bool):
+        return self.newProject()
+
+    @Slot(bool)
+    def on_actionClose_triggered(self, checked: bool):
+        return self.closeProject()
+
+    @Slot(bool)
+    def on_actionSave_as_triggered(self, checked: bool):
+        return self.saveProjectAs()
+
+    @Slot(bool)
+    def on_actionQuit_triggered(self, checked: bool):
+        return self.close()
 
     @Slot(bool)
     def onShowHideProjectWindow(self, checked: bool):
@@ -137,8 +155,6 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
             f'Current actions: {[a.text() for a in self.actionRecent_projects.menu().actions()]}')
         self.saveRecentFileList()
 
-    @Slot()
-    @Slot(str)
     def openProject(self, filename: Optional[str] = None):
         if filename is None:
             filename = getOpenFile(
@@ -157,7 +173,6 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         logger.debug('Loaded window geometry.')
         self.addNewRecentFile(filename)
 
-    @Slot()
     def saveProjectAs(self) -> bool:  # True if saved successfully
         filename = getSaveFile(self, 'Save the project to...', '', 'CPT4 project files (*.cpt4);;All files (*)',
                                '.cpt4')
@@ -166,7 +181,6 @@ class Main(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setWindowFilePath(filename)
         return self.saveProject()
 
-    @Slot()
     def closeProject(self):
         if self.project is None:
             return
