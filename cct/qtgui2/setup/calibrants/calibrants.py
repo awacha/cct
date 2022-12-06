@@ -10,10 +10,12 @@ from ....core2.instrument.components.calibrants.calibrant import Calibrant
 from ....core2.instrument.components.calibrants.intensity import IntensityCalibrant
 from ....core2.instrument.components.calibrants.q import QCalibrant
 from ...utils.filebrowsers import getOpenFile
+from ...utils.dateeditordelegate import DateTimeEditorDelegate
 
 
 class Calibrants(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     peakeditor: Optional[PeakEditor] = None
+    datetimedelegate: DateTimeEditorDelegate = None
 
     def __init__(self, **kwargs ):
         super().__init__(**kwargs)
@@ -29,6 +31,8 @@ class Calibrants(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.expandTreeView()
         self.browseDataFileToolButton.clicked.connect(self.browseForDataFile)
         self.editPeaksToolButton.clicked.connect(self.editPeaks)
+        self.datetimedelegate = DateTimeEditorDelegate(self.calibrantsTreeView)
+        self.calibrantsTreeView.setItemDelegateForColumn(2, self.datetimedelegate)
 
     @Slot()
     def browseForDataFile(self):
