@@ -6,6 +6,8 @@ import os
 from .privilege import Privilege
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 cdef extern from "<krb5/krb5.h>":
     ctypedef struct krb5_context:
