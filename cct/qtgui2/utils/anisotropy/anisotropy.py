@@ -83,27 +83,24 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             vbox.addWidget(getattr(self, f'figtoolbar_{graphname}'), stretch=0)
             vbox.addWidget(getattr(self, f'canvas_{graphname}'), stretch=1)
             setattr(self, f'axes_{graphname}', getattr(self, f'fig_{graphname}').add_subplot(1, 1, 1))
-        vboxLayout: QtWidgets.QVBoxLayout = self.layout()
-        self.selectorGrid = QtWidgets.QGridLayout()
-        vboxLayout.insertLayout(0, self.selectorGrid, stretch=0)
-        if self.instrument is not None:
-            self.fsnSelector = FSNSelector(self)
-            self.fsnSelector.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
-                                           QtWidgets.QSizePolicy.Policy.Preferred)
-            self.fsnSelectorLabel = QtWidgets.QLabel("Select by file sequence:", self)
-            self.selectorGrid.addWidget(self.fsnSelectorLabel, 0, 0, 1, 1)
-            self.selectorGrid.addWidget(self.fsnSelector, 0, 1, 1, 1)
-            self.fsnSelector.fsnSelected.connect(self.onFSNSelected)
-        else:
-            self.fsnSelector = None
-        self.h5Selector = H5Selector(self)
-        self.h5SelectorLabel = QtWidgets.QLabel("Select from a h5 file:", self)
+        self.h5Selector = H5Selector(self.selectorStackedWidget)
         self.h5Selector.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
                                       QtWidgets.QSizePolicy.Policy.Preferred)
-        self.selectorGrid.addWidget(self.h5SelectorLabel, 1, 0, 1, 1)
-        self.selectorGrid.addWidget(self.h5Selector, 1, 1, 1, 1, QtCore.Qt.AlignmentFlag.AlignLeft)
-        self.selectorGrid.setColumnStretch(1, 1)
+        self.selectorStackedWidget.addWidget(self.h5Selector)
         self.h5Selector.datasetSelected.connect(self.onH5Selected)
+        if self.instrument is not None:
+            self.fsnSelector = FSNSelector(self.selectorStackedWidget)
+            self.fsnSelector.setSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+                                           QtWidgets.QSizePolicy.Policy.Preferred)
+            self.selectorStackedWidget.addWidget(self.fsnSelector)
+            self.fsnSelector.fsnSelected.connect(self.onFSNSelected)
+            self.selectorStackedWidget.setCurrentWidget(self.fsnSelector)
+            self.fsnToolButton.setChecked(True)
+        else:
+            self.fsnToolButton.setVisible(False)
+            self.hdf5ToolButton.setVisible(False)
+            self.selectorStackedWidget.setCurrentWidget(self.h5Selector)
+            self.fsnSelector = None
         self.sectorModel = SectorModel()
         self.slicesTreeView.setModel(self.sectorModel)
         self.sectorModel.dataChanged.connect(self.onSectorsChanged)
@@ -118,6 +115,16 @@ class AnisotropyEvaluator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.fanPushButton.clicked.connect(self.createFan)
         self.beamPosXDoubleSpinBox.valueChanged.connect(self.onBeamXChanged)
         self.beamPosYDoubleSpinBox.valueChanged.connect(self.onBeamYChanged)
+
+    @Slot(bool)
+    def on_fsnToolButton_toggled(self, checked: bool):
+        if checked:
+            self.selectorStackedWidget.setCurrentWidget(self.fsnSelector)
+
+    @Slot(bool)
+    def on_hdf5ToolButton_toggled(self, checked: bool):
+        if checked:
+            self.selectorStackedWidget.setCurrentWidget(self.h5Selector)
 
     @Slot(int, name='onAzimuthalCountChanged')
     def onAzimuthalCountChanged(self, value: int):

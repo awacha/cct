@@ -21,6 +21,7 @@ class SectorModel(QtCore.QAbstractItemModel):
     color_iterator: Iterator[str]
 
     def __init__(self, **kwargs):
+        self._data = []
         super().__init__(**kwargs)
         self._reset_colors_iterator()
 
@@ -99,7 +100,7 @@ class SectorModel(QtCore.QAbstractItemModel):
         elif (index.column() == 2) and (role == QtCore.Qt.ItemDataRole.EditRole):
             si.dphi = float(value)
         elif (index.column() == 3) and (role == QtCore.Qt.ItemDataRole.CheckStateRole):
-            si.symmetric = value == QtCore.Qt.CheckState.Checked
+            si.symmetric = value == QtCore.Qt.CheckState.Checked.value
         self.dataChanged.emit(
             self.index(index.row(), index.column(), QtCore.QModelIndex()),
             self.index(index.row(), index.column(), QtCore.QModelIndex()))
