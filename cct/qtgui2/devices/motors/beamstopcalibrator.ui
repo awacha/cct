@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>423</width>
-    <height>114</height>
+    <width>463</width>
+    <height>133</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,53 +19,6 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <widget class="QFrame" name="frame">
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_3">
-      <item>
-       <widget class="QRadioButton" name="inRadioButton">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>Operate on the beam-stop &quot;In&quot; position</string>
-        </property>
-        <property name="text">
-         <string>In</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="outRadioButton">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>Operate on the beam-stop &quot;Out&quot; position</string>
-        </property>
-        <property name="text">
-         <string>Out</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
     <widget class="QFrame" name="frame_2">
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
@@ -74,115 +27,191 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>x=</string>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="xDoubleSpinBox">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>Horizontal beam-stop coordinate</string>
-        </property>
-        <property name="decimals">
-         <number>4</number>
-        </property>
-        <property name="minimum">
-         <double>-100000.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>100000.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QDoubleSpinBox" name="yDoubleSpinBox">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>Vertical beam-stop coordinate</string>
-        </property>
-        <property name="decimals">
-         <number>4</number>
-        </property>
-        <property name="minimum">
-         <double>-100000.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>100000.000000000000000</double>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QDoubleSpinBox" name="xInDoubleSpinBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Horizontal beam-stop in coordinate</string>
+          </property>
+          <property name="decimals">
+           <number>4</number>
+          </property>
+          <property name="minimum">
+           <double>-100000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>100000.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="fetchXInFromMotorToolButton">
+          <property name="toolTip">
+           <string>Set from current motor position</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../resource/icons/icons.qrc">
+            <normaloff>:/icons/motor-where.svg</normaloff>:/icons/motor-where.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="resetXInToolButton">
+          <property name="toolTip">
+           <string>Reset to currently saved beam-stop position</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset theme="view-refresh">
+            <normaloff>.</normaloff>.</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="label_6">
+       <widget class="QLabel" name="label_2">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="text">
-         <string>y=</string>
+         <string>Out:</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
-       <widget class="QToolButton" name="fetchYFromMotorToolButton">
-        <property name="toolTip">
-         <string>Set from current motor position</string>
-        </property>
+      <item row="0" column="1">
+       <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>...</string>
+         <string>Horizontal (X)</string>
         </property>
-        <property name="icon">
-         <iconset resource="../../../resource/icons/icons.qrc">
-          <normaloff>:/icons/motor-where.svg</normaloff>:/icons/motor-where.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>24</width>
-          <height>24</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QToolButton" name="fetchXFromMotorToolButton">
-        <property name="toolTip">
-         <string>Set from current motor position</string>
-        </property>
-        <property name="text">
-         <string>...</string>
-        </property>
-        <property name="icon">
-         <iconset resource="../../../resource/icons/icons.qrc">
-          <normaloff>:/icons/motor-where.svg</normaloff>:/icons/motor-where.svg</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>24</width>
-          <height>24</height>
-         </size>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
       <item row="1" column="3">
-       <widget class="QToolButton" name="resetXToolButton">
-        <property name="toolTip">
-         <string>Reset to currently saved beam-stop position</string>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QDoubleSpinBox" name="yInDoubleSpinBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Vertical beam-stop in coordinate</string>
+          </property>
+          <property name="decimals">
+           <number>4</number>
+          </property>
+          <property name="minimum">
+           <double>-100000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>100000.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="fetchYInFromMotorToolButton">
+          <property name="toolTip">
+           <string>Set from current motor position</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../resource/icons/icons.qrc">
+            <normaloff>:/icons/motor-where.svg</normaloff>:/icons/motor-where.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="resetYInToolButton">
+          <property name="toolTip">
+           <string>Reset to currently saved beam-stop position</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset theme="view-refresh">
+            <normaloff>.</normaloff>.</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <property name="text">
-         <string>...</string>
+         <string>In:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Vertical (Y)</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QToolButton" name="saveInToolButton">
+        <property name="text">
+         <string>Save</string>
         </property>
         <property name="icon">
-         <iconset theme="view-refresh">
-          <normaloff>.</normaloff>.</iconset>
+         <iconset theme="document-save"/>
         </property>
         <property name="iconSize">
          <size>
@@ -192,17 +221,143 @@
         </property>
        </widget>
       </item>
+      <item row="2" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QDoubleSpinBox" name="xOutDoubleSpinBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Horizontal beam-stop out coordinate</string>
+          </property>
+          <property name="decimals">
+           <number>4</number>
+          </property>
+          <property name="minimum">
+           <double>-100000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>100000.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="fetchXOutFromMotorToolButton">
+          <property name="toolTip">
+           <string>Set from current motor position</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../resource/icons/icons.qrc">
+            <normaloff>:/icons/motor-where.svg</normaloff>:/icons/motor-where.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="resetXOutToolButton">
+          <property name="toolTip">
+           <string>Reset to currently saved beam-stop position</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset theme="view-refresh"/>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
       <item row="2" column="3">
-       <widget class="QToolButton" name="resetYToolButton">
-        <property name="toolTip">
-         <string>Reset to currently saved beam-stop position</string>
-        </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <widget class="QDoubleSpinBox" name="yOutDoubleSpinBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="toolTip">
+           <string>Vertical beam-stop out coordinate</string>
+          </property>
+          <property name="decimals">
+           <number>4</number>
+          </property>
+          <property name="minimum">
+           <double>-100000.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>100000.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="fetchYOutFromMotorToolButton">
+          <property name="toolTip">
+           <string>Set from current motor position</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../resource/icons/icons.qrc">
+            <normaloff>:/icons/motor-where.svg</normaloff>:/icons/motor-where.svg</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="resetYOutToolButton">
+          <property name="toolTip">
+           <string>Reset to currently saved beam-stop position</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset theme="view-refresh"/>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="2" column="4">
+       <widget class="QToolButton" name="saveOutToolButton">
         <property name="text">
-         <string>...</string>
+         <string>Save</string>
         </property>
         <property name="icon">
-         <iconset theme="view-refresh">
-          <normaloff>.</normaloff>.</iconset>
+         <iconset theme="document-save"/>
         </property>
         <property name="iconSize">
          <size>
@@ -215,45 +370,8 @@
      </layout>
     </widget>
    </item>
-   <item>
-    <widget class="QPushButton" name="calibrateBeamStopPushButton">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Save the beam-stop position</string>
-     </property>
-     <property name="text">
-      <string>Set</string>
-     </property>
-     <property name="icon">
-      <iconset resource="../../../resource/icons/icons.qrc">
-       <normaloff>:/icons/beamstop-config.svg</normaloff>:/icons/beamstop-config.svg</iconset>
-     </property>
-     <property name="iconSize">
-      <size>
-       <width>32</width>
-       <height>32</height>
-      </size>
-     </property>
-    </widget>
-   </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>inRadioButton</tabstop>
-  <tabstop>outRadioButton</tabstop>
-  <tabstop>xDoubleSpinBox</tabstop>
-  <tabstop>fetchXFromMotorToolButton</tabstop>
-  <tabstop>resetXToolButton</tabstop>
-  <tabstop>yDoubleSpinBox</tabstop>
-  <tabstop>fetchYFromMotorToolButton</tabstop>
-  <tabstop>resetYToolButton</tabstop>
-  <tabstop>calibrateBeamStopPushButton</tabstop>
- </tabstops>
  <resources>
   <include location="../../../resource/icons/icons.qrc"/>
  </resources>
