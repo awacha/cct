@@ -50,7 +50,8 @@ class ImageAndCurveMonitor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     @Slot(str, int)
     def onLastFSNChanged(self, prefix: str, fsn: int):
-        if (prefix == self.fsnselector.prefix()) and self.autoUpdatePushButton.isChecked():
+        if self.autoUpdatePushButton.isChecked():
+            self.fsnselector.setPrefix(prefix)
             self.fsnselector.gotoLast()
 
 
