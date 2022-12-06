@@ -1,10 +1,15 @@
+import logging
+
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtCore import Slot
 
-from ...utils.window import WindowRequiresDevices
 from .usermanager_ui import Ui_Form
+from ...utils.window import WindowRequiresDevices
 from ....core2.instrument.components.auth.privilege import Privilege
 from ....core2.instrument.components.auth.usermanager import User
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class UserManager(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
@@ -25,7 +30,8 @@ class UserManager(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.passwordRepeatLineEdit.textEdited.connect(self.passwordEdit)
         for priv in Privilege:
             itm = QtWidgets.QListWidgetItem(priv.name)
-            itm.setFlags(QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+            itm.setFlags(
+                QtCore.Qt.ItemFlag.ItemNeverHasChildren | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
             itm.setCheckState(QtCore.Qt.CheckState.Unchecked)
             self.privilegeListWidget.addItem(itm)
         self.onCurrentUserChanged()
@@ -58,7 +64,9 @@ class UserManager(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         for row in range(self.privilegeListWidget.count()):
             item = self.privilegeListWidget.item(row)
             priv = [p for p in Privilege if p.name == item.text()][0]
-            item.setCheckState(QtCore.Qt.CheckState.Checked if user.hasPrivilege(priv) else QtCore.Qt.CheckState.Unchecked)
+            logger.debug(f'User {user.username} has privilege {priv.name}: {user.hasPrivilege(priv)}')
+            item.setCheckState(
+                QtCore.Qt.CheckState.Checked if user.hasPrivilege(priv) else QtCore.Qt.CheckState.Unchecked)
 
     @Slot()
     def addUser(self):
@@ -107,8 +115,10 @@ class UserManager(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             for row in range(self.privilegeListWidget.count()):
                 priv = [p for p in Privilege if p.name == self.privilegeListWidget.item(row).text()][0]
                 if self.privilegeListWidget.item(row).checkState() == QtCore.Qt.CheckState.Checked:
+                    logger.debug(f'Granting privilege {priv.name} to user {user.username}')
                     user.grantPrivilege(priv)
                 else:
+                    logger.debug(f'Revoking privilege {priv.name} from user {user.username}')
                     user.revokePrivilege(priv)
         self.instrument.auth.saveToConfig()
         self.fetchUserData()
@@ -117,7 +127,8 @@ class UserManager(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def onCurrentUserChanged(self):
         # the current authenticated user has changed or the currently selected user has changed: set widget permissions
         widgets_only_usermanagers_can_edit = [self.ldapdnLineEdit, self.krbprincipalLineEdit, self.privilegeListWidget]
-        widgets_self_can_edit = [self.firstNameLineEdit, self.lastnameLineEdit, self.emailLineEdit, self.passwordLineEdit, self.passwordRepeatLineEdit]
+        widgets_self_can_edit = [self.firstNameLineEdit, self.lastnameLineEdit, self.emailLineEdit,
+                                 self.passwordLineEdit, self.passwordRepeatLineEdit]
         if not self.userListTreeView.selectionModel().currentIndex().isValid():
             # no selection
             for widget in widgets_only_usermanagers_can_edit + widgets_self_can_edit + [self.removeUserPushButton]:
@@ -133,4 +144,3 @@ class UserManager(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
         self.removeUserPushButton.setEnabled(
             self.instrument.auth.hasPrivilege(Privilege.UserManagement)
             and (user.username != self.instrument.auth.username()))  # the user cannot remove his/herself
-
