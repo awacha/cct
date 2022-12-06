@@ -21,7 +21,7 @@ from ....core2.algorithms.polar2d import polar2D_pixel
 from ....core2.dataclasses.exposure import Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
@@ -151,14 +151,15 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def currentMethod(self) -> CenteringMethod:
         return self.centeringmethods[self.methodSelectorComboBox.currentText()]
 
+    def on_runToolButton_clicked(self, checked: bool):
+        return self.execute()
+
     @Slot(bool, name='on_runToolButton_clicked')
-    def execute(self, checked: bool):
-        print('EXECUTE')
+    def execute(self):
         result: lmfit.minimizer.MinimizerResult = self.centeringmethods[self.methodSelectorComboBox.currentText()].run(
             self.exposure)
         self.lastminimizerresult = result
         params: lmfit.Parameters = result.params
-        logger.debug(params.pretty_print())
         logger.debug(lmfit.fit_report(result))
         #        logger.debug(str(result.covar))
         logger.debug(f'{result.status=}, {result.message=}, {result.nfev=}, {result.success=}, {result.errorbars=}, ')
@@ -260,7 +261,7 @@ class CenteringUI(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             nbins = int(np.ceil(self.exposure.qtopixel(qmax) - self.exposure.qtopixel(qmin)))
         else:
             nbins = self.radavgBinCountSpinBox.value()
-        self.plotcurve.addCurve(self.exposure.radial_average(np.linspace(qmin, qmax, nbins)))
+        self.plotcurve.addCurve(self.exposure.radial_average(np.linspace(qmin, qmax, nbins)), label='Full radial average')
         self.plotcurve.setSymbolsType(True, True)
         self.plotcurve.setShowErrorBars(False)
         self.plotcurve.showLegend(False)

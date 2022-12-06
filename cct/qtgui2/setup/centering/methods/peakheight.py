@@ -14,7 +14,7 @@ from .....core2.algorithms.radavg import fastradavg
 from .....core2.dataclasses.exposure import Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class PeakFitting(CenteringMethod, Ui_Form):
