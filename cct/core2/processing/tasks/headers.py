@@ -30,9 +30,10 @@ class HeaderStore(ProcessingTask):
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if (index.column() == 0) and (role == QtCore.Qt.ItemDataRole.CheckStateRole):
-            if value == QtCore.Qt.CheckState.Checked:
+            logger.debug(f'{type(value)=}, {value=}')
+            if value == QtCore.Qt.CheckState.Checked.value:
                 self.settings.markAsBad(self._data[index.row()].fsn)
-            elif value == QtCore.Qt.CheckState.Unchecked:
+            elif value == QtCore.Qt.CheckState.Unchecked.value:
                 self.settings.markAsGood(self._data[index.row()].fsn)
             else:
                 raise ValueError(f'Invalid check state: {value}')

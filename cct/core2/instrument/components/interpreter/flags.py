@@ -44,7 +44,7 @@ class InterpreterFlags(QtCore.QAbstractItemModel):
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int = ...) -> bool:
         if role == QtCore.Qt.ItemDataRole.CheckStateRole:
             flag = sorted(self._flags)[index.row()]
-            self._flags[flag] = True if value == QtCore.Qt.CheckState.Checked else False
+            self._flags[flag] = True if value == QtCore.Qt.CheckState.Checked.value else False
             self.dataChanged.emit(index, index, [QtCore.Qt.ItemDataRole.CheckStateRole])
             return True
         else:
