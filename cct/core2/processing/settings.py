@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-
 class ProcessingSettings(QtCore.QObject):
     _errorprop2str: Final[List[Tuple[ErrorPropagationMethod, str]]] = {
         (ErrorPropagationMethod.Conservative, 'Conservative'),
@@ -188,7 +187,8 @@ class ProcessingSettings(QtCore.QObject):
                 if not (m := re.match(r'\[(\(\d+\s*,\s*\d+\))(?:,\s*(\(\d+\s*,\s*\d+\)))*\]', s)):
                     raise ValueError(f'Invalid FSN range designation: {s}.')
                 logger.debug(str(m.groups()))
-                return [tuple([int(g1) for g1 in re.match(r'\((\d+),\s*(\d+)\)', g).groups()]+['', None]) for g in m.groups() if
+                return [tuple([int(g1) for g1 in re.match(r'\((\d+),\s*(\d+)\)', g).groups()] + ['', None]) for g in
+                        m.groups() if
                         g is not None]
 
             for attr, section, option, typeconversion in [
@@ -291,7 +291,8 @@ class ProcessingSettings(QtCore.QObject):
                             continue
                     fsnrangesdata = grp['io']['fsnranges']
                     if isinstance(fsnrangesdata, h5py.Dataset):
-                        self.fsnranges = [(fsnrangesdata[i, 0], fsnrangesdata[i, 1], '', None) for i in range(fsnrangesdata.shape[0])]
+                        self.fsnranges = [(fsnrangesdata[i, 0], fsnrangesdata[i, 1], '', None) for i in
+                                          range(fsnrangesdata.shape[0])]
                     elif isinstance(fsnrangesdata, h5py.Group):
                         self.fsnranges = []
                         for rangename in fsnrangesdata:
@@ -331,13 +332,14 @@ class ProcessingSettings(QtCore.QObject):
             except KeyError:
                 pass
             iogrp.create_group('fsnranges')
-            for i,(start, end, description, onlysamples) in enumerate(self.fsnranges):
+            for i, (start, end, description, onlysamples) in enumerate(self.fsnranges):
                 g = iogrp.create_group(f'fsnranges/{i:08d}')
                 g['start'] = start
                 g['end'] = end
                 g['description'] = description
                 g.create_dataset('onlysamples',
-                                 data=np.array([sn for sn in onlysamples] if onlysamples is not None else [], dtype=object), dtype=h5py.special_dtype(vlen=str))
+                                 data=np.array([sn for sn in onlysamples] if onlysamples is not None else [],
+                                               dtype=object), dtype=h5py.special_dtype(vlen=str))
 
             processinggrp = grp.require_group('processing')
             processinggrp.attrs['errorpropagation'] = self.ierrorprop.value
@@ -370,7 +372,8 @@ class ProcessingSettings(QtCore.QObject):
 
     def loader(self) -> Loader:
         if self._loader is None:
-            return Loader(self.rootpath, self.eval2dsubpath, self.masksubpath, self.fsndigits, self.prefix, self.filenamepattern, self.filenamescheme)
+            return Loader(self.rootpath, self.eval2dsubpath, self.masksubpath, self.fsndigits, self.prefix,
+                          self.filenamepattern, self.filenamescheme)
         elif (self._loader.rootpath != self.rootpath) or (self._loader.eval2dsubpath != self.eval2dsubpath) or \
                 (self._loader.masksubpath != self.masksubpath) or (self._loader.fsndigits != self.fsndigits) or \
                 (self._loader.prefix != self.prefix) or (self._loader.filenamepattern != self.filenamepattern) or \
