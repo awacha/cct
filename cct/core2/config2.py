@@ -4,7 +4,7 @@ import logging
 from typing import Any, Tuple, Union, Dict, Optional
 
 from PySide6 import QtCore
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Slot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -52,6 +52,7 @@ class Config(QtCore.QAbstractItemModel):
             self.load(filename)
         if not autosave:
             self.autosave_interval = None
+        self.changed.connect(self.onChanged)
 
     ## Re-implemented QAbstractItemModel methods
 
@@ -309,5 +310,6 @@ class Config(QtCore.QAbstractItemModel):
             self.killTimer(self._autosave_timer)
             self._autosave_timer = None
 
+    @Slot(object, object)
     def onChanged(self, key: KeyType, value: Any):
         self._autosave()
