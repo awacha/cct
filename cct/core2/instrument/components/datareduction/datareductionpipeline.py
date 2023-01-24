@@ -110,7 +110,7 @@ class DataReductionPipeLine:
         exposure.mask[~np.isfinite(exposure.intensity)] = 0
         exposure.mask[~np.isfinite(exposure.uncertainty)] = 0
         exposure.mask[exposure.uncertainty<0] = 0
-        exposure.mask=exposure.mask.astype(np.bool)  # !!! REALLY IMPORTANT!!! Int and bool indexes work differently
+        exposure.mask=exposure.mask.astype(bool)  # !!! REALLY IMPORTANT!!! Int and bool indexes work differently
         validafter = exposure.mask.sum()
         self.info(f'FSN #{exposure.header.fsn}: after sanitization {validbefore-validafter} more points are masked.')
         return exposure

@@ -174,7 +174,7 @@ class Curve:
         return idx
 
     def __getitem__(self, item) -> "Curve":
-        if isinstance(item, np.ndarray) and (item.dtype == np.bool):
+        if isinstance(item, np.ndarray) and (item.dtype == bool):
             return Curve.fromArray(self._data[item, :])
 
     def _checkcompatibility(self, other: "Curve", maxdifferenceratio: float = 0.005):

@@ -109,7 +109,7 @@ class SummaryJob(BackgroundProcess):
                                   total=len(self.fsns), current=i)
             except FileNotFoundError:
                 continue
-        self.goodindex = np.array(goodindex, dtype=np.bool)
+        self.goodindex = np.array(goodindex, dtype=bool)
         # check if all headers correspond to the same sample and distance
         self.sendMessage(f'{len(self.headers)} headers loaded in {self.result.time_loadheaders:.2f} seconds')
         if len({(h.title, float(h.distance[0])) for h in self.headers}) > 1:

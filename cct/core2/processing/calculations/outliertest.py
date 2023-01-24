@@ -42,7 +42,7 @@ class OutlierTest:
         self.score = np.diagonal(self.correlmatrix)
         self.method = method
         self.threshold = threshold
-        self.outlierverdict = np.zeros(self.score.shape, np.bool)
+        self.outlierverdict = np.zeros(self.score.shape, bool)
         if fsns is not None:
             self.fsns = np.array(fsns)
         self.markOutliers()
@@ -60,7 +60,7 @@ class OutlierTest:
     def markOutliers(self) -> np.ndarray:
         if self.correlmatrix.shape[0] < 3:
             logger.warning('Cannot do outlier detection for less than 3 measurements.')
-            return np.zeros(self.score.shape, dtype=np.bool)
+            return np.zeros(self.score.shape, dtype=bool)
         if self.method == OutlierMethod.ZScore:
             self.outlierverdict = (np.abs(self.score - np.nanmean(self.score)) / np.nanstd(self.score)) > self.threshold
         elif self.method == OutlierMethod.ZScoreMod:

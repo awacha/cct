@@ -144,6 +144,6 @@ class AzimuthalCurve:
         return idx
 
     def __getitem__(self, item) -> "AzimuthalCurve":
-        if isinstance(item, np.ndarray) and (item.dtype == np.bool):
+        if isinstance(item, np.ndarray) and (item.dtype == bool):
             return AzimuthalCurve.fromArray(self._data[item, :])
 

@@ -140,7 +140,7 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     @Slot()
     def onNewMask(self):
         if self.confirmChanges():
-            self.undoStack.push(np.ones(self.exposure.mask.shape, np.bool))
+            self.undoStack.push(np.ones(self.exposure.mask.shape, bool))
             self.setWindowModified(True)
             self.setWindowFilePath('')
 
