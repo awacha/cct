@@ -225,7 +225,10 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             self._imghandle.changed()
             self._imghandle.set_norm(norm)
             if self._cmapaxis is not None:
-                self._cmapaxis.update_normal(self._imghandle)
+                self._cmapaxis.norm = self._imghandle.norm
+                self._cmapaxis.vmin = self._imghandle.norm.vmin
+                self._cmapaxis.vmax = self._imghandle.norm.vmax
+#                self._cmapaxis.update_normal(self._imghandle)
         # color bar
         if np.ma.core.is_masked(self._imghandle.norm.vmin) or np.ma.core.is_masked(self._imghandle.norm.vmax):
             # we won't be able to make a color bar
