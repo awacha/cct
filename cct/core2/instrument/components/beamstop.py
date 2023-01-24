@@ -108,11 +108,11 @@ class BeamStop(Component, QtCore.QObject):
         else:
             xpos = self.motorx.where()
             ypos = self.motory.where()
-            if (abs(xpos - self.cfg['beamstop',  'in',  0]) <= 0.0001) and \
-                    (abs(ypos - self.cfg['beamstop',  'in',  1]) <= 0.0001):
+            if (abs(xpos - self.cfg['beamstop',  'in'][0]) <= 0.0001) and \
+                    (abs(ypos - self.cfg['beamstop', 'in'][1]) <= 0.0001):
                 self.state = self.States.In
-            elif (abs(xpos - self.cfg['beamstop',  'out',  0]) <= 0.0001) and \
-                    (abs(ypos - self.cfg['beamstop',  'out',  1]) <= 0.0001):
+            elif (abs(xpos - self.cfg['beamstop',  'out'][0]) <= 0.0001) and \
+                    (abs(ypos - self.cfg['beamstop',  'out'][1]) <= 0.0001):
                 self.state = self.States.Out
             else:
                 self.state = self.States.Undefined
