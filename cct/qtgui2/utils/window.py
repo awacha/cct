@@ -12,7 +12,7 @@ from ...core2.instrument.components.motors import Motor, MotorRole, MotorDirecti
 from ...core2.instrument.instrument import Instrument
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class WindowRequiresDevices:
@@ -363,10 +363,13 @@ class WindowRequiresDevices:
 
     def closeEvent(self, closeEvent: QtGui.QCloseEvent):
         if self.isIdle():
+            logger.debug(f'Accepting close event because we are idle. {self.objectName()=}')
             closeEvent.accept()
+            self.destroy()
         else:
             if QtWidgets.QMessageBox.question(
                     self.window(), 'Confirm close', 'Really close this window? There is a background process working!'):
                 closeEvent.accept()
+                self.destroy()
             else:
                 closeEvent.ignore()
