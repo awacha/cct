@@ -198,36 +198,25 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             matrix = self.matrix
         if self._imghandle is None:
             keepzoom = False
-            norm = self.getNormalization()
-            logger.debug(f'Using normalization {norm}, vmin is {norm.vmin}, vmax is {norm.vmax}')
-            self._imghandle = self.axes.imshow(
-                matrix,
-                cmap=self.paletteComboBox.currentText(),
-                norm=norm,
-                aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
-                interpolation='nearest',
-                alpha=1.0,
-                origin='upper',
-                extent=extent,
-                picker=True,
-            )
         else:
-            self._imghandle.set_data(self.matrix)
-            self._imghandle.set_cmap(self.paletteComboBox.currentText())
-            norm = self.getNormalization()
-            self._imghandle.set_norm(norm)
-            self._imghandle.set_extent(extent)
-            try:
-                self._imghandle.autoscale()  # this also changes the normalization!
-            except ValueError:
-                # happens with completely empty images
-                pass
-            self._imghandle.changed()
-            self._imghandle.set_norm(norm)
-            if self._cmapaxis is not None:
-                self._cmapaxis.norm = self._imghandle.norm
-                self._cmapaxis.vmin = self._imghandle.norm.vmin
-                self._cmapaxis.vmax = self._imghandle.norm.vmax
+            self._imghandle.remove()
+        norm = self.getNormalization()
+        logger.debug(f'Using normalization {norm}, vmin is {norm.vmin}, vmax is {norm.vmax}')
+        self._imghandle = self.axes.imshow(
+            matrix,
+            cmap=self.paletteComboBox.currentText(),
+            norm=norm,
+            aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
+            interpolation='nearest',
+            alpha=1.0,
+            origin='upper',
+            extent=extent,
+            picker=True,
+        )
+        if self._cmapaxis is not None:
+            self._cmapaxis.norm = self._imghandle.norm
+            self._cmapaxis.vmin = self._imghandle.norm.vmin
+            self._cmapaxis.vmax = self._imghandle.norm.vmax
 #                self._cmapaxis.update_normal(self._imghandle)
         # color bar
         if np.ma.core.is_masked(self._imghandle.norm.vmin) or np.ma.core.is_masked(self._imghandle.norm.vmax):
