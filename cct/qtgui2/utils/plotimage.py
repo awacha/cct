@@ -216,15 +216,19 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             self._imghandle.set_cmap(self.paletteComboBox.currentText())
             norm = self.getNormalization()
             logger.debug(f'Using normalization {norm}, vmin is {norm.vmin}, vmax is {norm.vmax}')
+            logger.debug(f'Before imghandle.set_norm {self._imghandle.norm.vmin=}, {self._imghandle.norm.vmax=}, {self._imghandle.norm=}')
             self._imghandle.set_norm(norm)
+            logger.debug(f'Before imghandle.set_extent {self._imghandle.norm.vmin=}, {self._imghandle.norm.vmax=}, {self._imghandle.norm=}')
             self._imghandle.set_extent(extent)
+            logger.debug(f'Before imghandle.autoscale {self._imghandle.norm.vmin=}, {self._imghandle.norm.vmax=}, {self._imghandle.norm=}')
             try:
                 self._imghandle.autoscale()
             except ValueError:
                 # happens with completely empty images
                 pass
+            logger.debug(f'Before imghandle.changed {self._imghandle.norm.vmin=}, {self._imghandle.norm.vmax=}, {self._imghandle.norm=}')
             self._imghandle.changed()
-            logger.debug(f'{self._imghandle.norm.vmin=}, {self._imghandle.norm.vmax=}, {self._imghandle.norm=}')
+            logger.debug(f'Before cmapaxis.update_normal {self._imghandle.norm.vmin=}, {self._imghandle.norm.vmax=}, {self._imghandle.norm=}')
             if self._cmapaxis is not None:
                 self._cmapaxis.update_normal(self._imghandle)
         # color bar
