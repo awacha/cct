@@ -222,8 +222,8 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             except ValueError:
                 # happens with completely empty images
                 pass
-            self._imghandle.set_norm(norm)
             self._imghandle.changed()
+            self._imghandle.set_norm(norm)
             if self._cmapaxis is not None:
                 self._cmapaxis.update_normal(self._imghandle)
         # color bar
