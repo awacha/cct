@@ -189,7 +189,7 @@ class SamplesPage(QtWidgets.QWizardPage, Ui_WizardPage):
         self.exposureCountSpinBox.valueChanged.connect(self.exposureTreeView.model().setDefaultExposureCount)
         self.setExpCountToolButton.clicked.connect(self.exposureTreeView.model().setExpCounts)
         self.setExpTimeToolButton.clicked.connect(self.exposureTreeView.model().setExpTimes)
-        self.registerField('orderSamples', self.orderSamplesCheckBox, 'checked', self.orderSamplesCheckBox.toggled)
+        self.registerField('orderSamples', self.orderSamplesCheckBox, b'checked', b'toggled')
 
     def exposures(self) -> List[Tuple[str, float, int]]:
         return self.exposureTreeView.model().exposures()

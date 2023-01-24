@@ -24,7 +24,7 @@ class CalibrantsPage(QtWidgets.QWizardPage, Ui_WizardPage):
             sortmodel.setFilterRegularExpression(QtCore.QRegularExpression(regexp))
             sortmodel.sort(0, QtCore.Qt.SortOrder.AscendingOrder)
             combobox.setModel(sortmodel)
-            self.registerField(fieldname, combobox, 'currentText', combobox.currentTextChanged)
+            self.registerField(fieldname, combobox, b'currentText', b'currentTextChanged')
             combobox.setCurrentIndex(-1)
         for spinbox, fieldname in [
             (self.darkExpTimeDoubleSpinBox, 'darkTime'),
@@ -32,5 +32,5 @@ class CalibrantsPage(QtWidgets.QWizardPage, Ui_WizardPage):
             (self.intensityExpTimeDoubleSpinBox, 'absintTime'),
             (self.qExpTimeDoubleSpinBox, 'qCalibrantTime'),
         ]:
-            self.registerField(fieldname, spinbox, 'value', spinbox.valueChanged)
+            self.registerField(fieldname, spinbox, b'value', b'valueChanged')
         self.initializePage()

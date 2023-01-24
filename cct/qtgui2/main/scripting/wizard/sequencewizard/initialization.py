@@ -18,20 +18,16 @@ class InitPage(QtWidgets.QWizardPage, Ui_WizardPage):
         self.thresholdSpinBox.setValue(4024)
         self.xRayPowerComboBox.addItems(['off', 'standby', 'full'])
         self.xRayPowerComboBox.setCurrentIndex(2)
-        self.registerField('closeShutterBefore', self.closeShutterCheckBox, 'checked',
-                           self.closeShutterCheckBox.toggled)
-        self.registerField('beamstopIn', self.beamstopInCheckBox, 'checked', self.beamstopInCheckBox.toggled)
-        self.registerField('initializeXraySourceTo', self.xRayPowerComboBox, 'currentText',
-                           self.xRayPowerComboBox.currentTextChanged)
-        self.registerField('initializeXraySource', self.xRayPowerCheckBox, 'checked', self.xRayPowerCheckBox.toggled)
-        self.registerField('trimDetector', self.trimCheckBox, 'checked', self.trimCheckBox.toggled)
-        self.registerField('gain', self.gainComboBox, 'currentText', self.gainComboBox.currentTextChanged)
-        self.registerField('threshold', self.thresholdSpinBox, 'value', self.thresholdSpinBox.valueChanged)
-        self.registerField('setSampleTemperature', self.temperatureCheckBox, 'checked',
-                           self.temperatureCheckBox.toggled)
-        self.registerField('sampleTemperature', self.temperatureDoubleSpinBox, 'value',
-                           self.temperatureDoubleSpinBox.valueChanged)
-        self.registerField('openShutterBefore', self.openShutterCheckBox, 'checked', self.openShutterCheckBox.toggled)
+        self.registerField('closeShutterBefore', self.closeShutterCheckBox, b'checked', b'toggled')
+        self.registerField('beamstopIn', self.beamstopInCheckBox, b'checked', b'toggled')
+        self.registerField('initializeXraySourceTo', self.xRayPowerComboBox, b'currentText', b'currentTextChanged')
+        self.registerField('initializeXraySource', self.xRayPowerCheckBox, b'checked', b'toggled')
+        self.registerField('trimDetector', self.trimCheckBox, b'checked', b'toggled')
+        self.registerField('gain', self.gainComboBox, b'currentText', b'currentTextChanged')
+        self.registerField('threshold', self.thresholdSpinBox, b'value', b'valueChanged')
+        self.registerField('setSampleTemperature', self.temperatureCheckBox, b'checked', b'toggled')
+        self.registerField('sampleTemperature', self.temperatureDoubleSpinBox, b'value', b'valueChanged')
+        self.registerField('openShutterBefore', self.openShutterCheckBox, b'checked', b'toggled')
 
     @Slot(int)
     def onGainChanged(self, index: int):
