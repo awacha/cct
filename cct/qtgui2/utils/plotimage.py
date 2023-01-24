@@ -244,21 +244,18 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             self._cmapaxis.ax.set_anchor((0, 0.5))
         # now plot the mask
         logger.debug(f'Mask: {(self.mask != 0).sum()} nonzero, {(self.mask == 0).sum()} zero pixels')
-        if self._maskhandle is None:
-            self._maskhandle = self.axes.imshow(
-                self.mask,
-                cmap=maskcmap,
-                aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
-                interpolation='nearest',
-                norm=matplotlib.colors.Normalize(0, 1),
-                # alpha=0.7,  # no need to specify: the color map does the job.
-                origin='upper',
-                extent=extent,
-            )
-        else:
-            self._maskhandle.set_data(self.mask)
-            self._maskhandle.set_extent(extent)
-            self._maskhandle.changed()
+        if self._maskhandle is not None:
+            self._maskhandle.remove()
+        self._maskhandle = self.axes.imshow(
+            self.mask,
+            cmap=maskcmap,
+            aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
+            interpolation='nearest',
+            norm=matplotlib.colors.Normalize(0, 1),
+            # alpha=0.7,  # no need to specify: the color map does the job.
+            origin='upper',
+            extent=extent,
+        )
         self._maskhandle.set_visible(self.showMaskToolButton.isChecked())
 
         # plot the crosshair
