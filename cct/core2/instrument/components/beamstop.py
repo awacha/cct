@@ -80,14 +80,14 @@ class BeamStop(Component, QtCore.QObject):
             raise RuntimeError('Cannot move beam-stop: panic!')
         self._movetarget = self.States.Out
         self.motionstoprequested = False
-        self.motorx.moveTo(self.cfg['beamstop',  'out',  0])
+        self.motorx.moveTo(self.cfg['beamstop',  'out'][0])
 
     def moveIn(self):
         if self._panicking != self.PanicState.NoPanic:
             raise RuntimeError('Cannot move beam-stop: panic!')
         self._movetarget = self.States.In
         self.motionstoprequested = False
-        self.motorx.moveTo(self.cfg['beamstop',  'in',  0])
+        self.motorx.moveTo(self.cfg['beamstop',  'in'][0])
 
     def calibrateIn(self, posx: float, posy: float):
         self.cfg['beamstop',  'in'] = (posx, posy)
@@ -141,7 +141,7 @@ class BeamStop(Component, QtCore.QObject):
             elif (motor.role == MotorRole.BeamStop) and (motor.direction == MotorDirection.X):
                 # movement of X motor is done, start with Y
                 if success:
-                    self.motory.moveTo(self.cfg['beamstop',  self._movetarget.value,  1])
+                    self.motory.moveTo(self.cfg['beamstop',  self._movetarget.value][1])
                 else:
                     # not successful, break moving
                     logger.error('Error while moving beam-stop: target not reached.')
