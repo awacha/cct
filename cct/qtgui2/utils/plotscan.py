@@ -179,7 +179,7 @@ class PlotScan(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             self.showImage(keepzoom=False)
 
     @Slot(bool)
-    def showImage(self, keepzoom: bool = False):
+    def showImage(self, keepzoom: Optional[bool] = None):
         self.mainwindow.showPattern(
             self.instrument.io.loadExposure(
                 self.instrument.cfg['path',  'prefixes',  'scn'],

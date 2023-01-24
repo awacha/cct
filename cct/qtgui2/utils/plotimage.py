@@ -298,7 +298,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.axes.set_title(self.title)
         self.canvas.draw()
 
-    def setExposure(self, exposure: Exposure, keepzoom: Optional[bool] = False, title: Optional[str] = None):
+    def setExposure(self, exposure: Exposure, keepzoom: Optional[bool] = None, title: Optional[str] = None):
         self.matrix = exposure.intensity if exposure is not None else None
         self.mask = (exposure.mask == 0) if exposure is not None else None
         self.wavelength = float(exposure.header.wavelength[0]) if exposure is not None else None
