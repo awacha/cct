@@ -1,5 +1,6 @@
 import enum
 from typing import Optional
+import functools
 
 import numpy as np
 import scipy.linalg
@@ -37,10 +38,12 @@ def AsymmetricGaussPeak(x, A, x0, fwhm1, fwhm2, y0):
 
 
 class PeakType(enum.Enum):
-    Lorentzian = LorentzPeak
-    Gaussian = GaussPeak
-    AsymmetricLorentzian = AsymmetricLorentzPeak
-    AsymmetricGaussian = AsymmetricGaussPeak
+    # a quirk of the Enum class is, that values of type function are not straightforward to add:
+    # a line like "Lorentzian = LorentzPeak" would add a _method_ instead!
+    Lorentzian = functools.partial(LorentzPeak)
+    Gaussian = functools.partial(GaussPeak)
+    AsymmetricLorentzian = functools.partial(AsymmetricLorentzPeak)
+    AsymmetricGaussian = functools.partial(AsymmetricGaussPeak)
 
 
 def fitpeak(x: np.ndarray, y: np.ndarray, dy: Optional[np.ndarray], dx: Optional[np.ndarray],
