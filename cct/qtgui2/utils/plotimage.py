@@ -19,7 +19,7 @@ from .plotimage_ui import Ui_Form
 from ...core2.dataclasses import Exposure
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 maskcmap = matplotlib.colors.ListedColormap([(0.0, 0.0, 0.0, 0.0), (1.0, 1.0, 1.0, 0.7)])
 
@@ -183,7 +183,9 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
 
     def replot(self, keepzoom: Optional[bool] = None):
         if keepzoom is None:
+            logger.debug(f'Defaulting keepzoom to {self.lockZoomToolButton.isChecked()}')
             keepzoom = self.lockZoomToolButton.isChecked()
+        logger.debug(f'Replotting: keeping zoom: {keepzoom}')
         if self.matrix is None:
             return
         extent, center = self._get_extent()
@@ -194,11 +196,6 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             matrix[matrix <= 0] = np.nan
         else:
             matrix = self.matrix
-        vmin = np.nanmin(matrix)
-        vmax = np.nanmax(matrix)
-        if vmin == vmax:
-            vmin = vmin-0.5
-            vmax = vmax+0.5
         if self._imghandle is None:
             keepzoom = False
             self._imghandle = self.axes.imshow(
@@ -299,7 +296,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         if keepzoom:
             self.axes.axis(axlimits)
         self.axes.set_title(self.title)
-        self.canvas.draw_idle()
+        self.canvas.draw()
 
     def setExposure(self, exposure: Exposure, keepzoom: Optional[bool] = False, title: Optional[str] = None):
         self.matrix = exposure.intensity if exposure is not None else None
@@ -333,6 +330,9 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         self.replot(keepzoom=True)
 
     def getNormalization(self):
+        if self.matrix is None:
+            vmin=0.0
+            vmax=1.0
         vmin = np.nanmin(self.matrix, initial=np.nan)
         vmax = np.nanmax(self.matrix, initial=np.nan)
         vminpos = np.nanmin(self.matrix[self.matrix>0], initial=np.nan)
@@ -346,6 +346,7 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             vminpos=sys.float_info.epsilon
         if vmax < vminpos:
             vmax = vminpos+0.5
+        logger.debug(f'Color scaling limits: {vmin=}, {vmax=}, {vminpos=}')
         if self.colourScaleComboBox.currentText() == 'linear':
             return matplotlib.colors.Normalize(vmin, vmax)
         elif self.colourScaleComboBox.currentText() == 'log10':
