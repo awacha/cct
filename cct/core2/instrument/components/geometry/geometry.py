@@ -13,7 +13,7 @@ from .choices import GeometryChoices
 from ..component import Component
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Geometry(Component, QtCore.QObject):
@@ -108,7 +108,6 @@ class Geometry(Component, QtCore.QObject):
     def onConfigChanged(self, path, value):
         if (len(path) < 2) or (path[0] != 'geometry'):
             return
-        logger.debug(f'Geometry config changed: {path=}, {value=}, {path[1]=}, {self.cfg[path]=}')
         if path[1] in ['l1_elements', 'l2_elements', 'l1base', 'isoKFspacer', 'pinhole_1', 'pinhole_2', 'pinhole_3',
                        'dist_sample_det', 'ph3tosample', 'beamstoptodetector', 'beamstop', 'wavelength']:
             self.recalculateDerivedParameters()
@@ -116,7 +115,7 @@ class Geometry(Component, QtCore.QObject):
     def recalculateDerivedParameters(self):
         for param in ['l1_elements', 'l2_elements', 'l1base', 'isoKFspacer', 'pinhole_1', 'pinhole_2', 'pinhole_3',
                        'dist_sample_det', 'ph3tosample', 'beamstoptodetector', 'beamstop', 'wavelength']:
-            if ('geometry', 'param') not in self.cfg:
+            if ('geometry', param) not in self.cfg:
                 return
         l1 = self.cfg['geometry',  'l1'] = \
             len(self.cfg['geometry',  'l1_elements']) * self.cfg['geometry',  'isoKFspacer'] + \
@@ -240,8 +239,6 @@ class Geometry(Component, QtCore.QObject):
         geoconf = self.cfg['geometry']
         ### Add information on the beamstop
         bsgroup = instrumentgroup.require_group('beam_stop')  # should be created by the beamstop component
-        logger.debug(str(list(bsgroup.keys())))
-        logger.debug(bsgroup.name)
         bsgroup.create_dataset('size', data=geoconf['beamstop']).attrs.update({'units': 'mm'})
         bsgroup.create_dataset('distance_to_detector', data=geoconf['beamstoptodetector']).attrs.update({'units': 'mm'})
         trans = bsgroup.create_group('transformations')
