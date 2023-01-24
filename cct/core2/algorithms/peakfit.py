@@ -64,6 +64,9 @@ def fitpeak(x: np.ndarray, y: np.ndarray, dy: Optional[np.ndarray], dx: Optional
             bounds[1][:3] + (bounds[1][2],) + bounds[1][3:]
         ]
         diff_step = diff_step[:3] + [diff_step[2]] + diff_step[3:]
+    if not isinstance(peaktype, PeakType):
+        raise TypeError(f'Invalid peak type: {peaktype}, of type {type(peaktype)}')
+    assert isinstance(peaktype, PeakType)
     if dx is None:
         # do an ordinary least-squares fit with/without error bars
         result = scipy.optimize.least_squares(
