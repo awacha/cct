@@ -282,7 +282,7 @@ class Config(QtCore.QAbstractItemModel):
             raise ValueError('File name not given.')
         logger.info(f'Saving config to file {filename}.')
         with open(filename, 'wb') as f:
-            pickle.dump(self._data, f)
+            pickle.dump(('CCT config', self._data), f)
 
     def updateAt(self, root: KeyType, dic: Dict[Union[str, int], Any], delete_missing=False):
         self[root] = Config.SubTreePlaceHolder
