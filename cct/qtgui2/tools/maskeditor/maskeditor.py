@@ -163,7 +163,14 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
             return self.onSaveMaskAs()
         filename = self.windowFilePath()
         maskname = os.path.splitext(os.path.split(filename)[1])[0]
-        scipy.io.savemat(filename, {maskname: self.undoStack.get()}, appendmat=True)
+        if filename.lower().endswith('.npy'):
+            np.save(filename, self.undoStack.get())
+        elif filename.lower().endswith('.mat'):
+            scipy.io.savemat(filename, {maskname: self.undoStack.get()}, appendmat=True)
+        else:
+            filename += '.npy'
+            self.setWindowFilePath(filename)
+            return self.onSaveMask()
         self.instrument.io.invalidateMaskCache()
         self.setWindowModified(False)
 
@@ -171,10 +178,12 @@ class MaskEditor(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
     def onSaveMaskAs(self):
         filename = getSaveFile(
             self, 'Save the mask...', self.windowFilePath(),
-            'Mask files (*.mat);;All files (*)',
+            'Mask files (*.mat;*.npy);;All files (*)',
             '.mat')
         if not filename:
             return
+        if not filename.lower().endswith('.mat') and not filename.lower().endswith('.npy'):
+            filename += '.npy'
         self.setWindowFilePath(filename)
         self.onSaveMask()
 
