@@ -338,7 +338,7 @@ class DeviceManager(Component, QtCore.QAbstractItemModel):
                 dev.panichandler()
 
     def toNeXus(self, instrumentgroup: h5py.Group) -> h5py.Group:
-        for device in self:
+        for device in self.iterDevices():
             if not device.isOnline():
                 continue
             devgrp = instrumentgroup.create_group(device.name)
