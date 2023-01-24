@@ -108,7 +108,7 @@ class Geometry(Component, QtCore.QObject):
     def onConfigChanged(self, path, value):
         if (len(path) < 2) or (path[0] != 'geometry'):
             return
-        logger.debug(f'Geometry config changed: {path=}, {value=}, {path[1]=}')
+        logger.debug(f'Geometry config changed: {path=}, {value=}, {path[1]=}, {self.cfg[path]=}')
         if path[1] in ['l1_elements', 'l2_elements', 'l1base', 'isoKFspacer', 'pinhole_1', 'pinhole_2', 'pinhole_3',
                        'dist_sample_det', 'ph3tosample', 'beamstoptodetector', 'beamstop', 'wavelength']:
             self.recalculateDerivedParameters()
