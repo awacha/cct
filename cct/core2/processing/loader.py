@@ -82,9 +82,9 @@ class Loader:
             if maskfile.lower().endswith('.mat'):
                 matfile = scipy.io.loadmat(maskfile)
                 maskkey = [k for k in matfile.keys() if not (k.startswith('_') or k.endswith('_'))][0]
-                mask = matfile[maskkey]
+                mask = matfile[maskkey].astype(np.uint8)
             elif maskfile.lower().endswith('.npy'):
-                mask = np.load(maskfile)
+                mask = np.load(maskfile).astype(np.uint8)
             else:
                 raise ValueError(f'Unknown mask file type: {maskfile}: neither .mat, nor .npy.')
             self._maskcache[maskname] = mask, os.stat(maskfile).st_mtime, maskfile
