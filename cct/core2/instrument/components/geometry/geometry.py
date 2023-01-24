@@ -13,7 +13,7 @@ from .choices import GeometryChoices
 from ..component import Component
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class Geometry(Component, QtCore.QObject):
