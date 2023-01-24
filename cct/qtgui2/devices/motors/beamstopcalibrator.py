@@ -12,6 +12,10 @@ class BeamStopCalibrator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
 
     def setupUi(self, Form):
         super().setupUi(Form)
+        self.xInDoubleSpinBox.setValue(self.instrument.beamstop.inPosition()[0])
+        self.yInDoubleSpinBox.setValue(self.instrument.beamstop.inPosition()[1])
+        self.xOutDoubleSpinBox.setValue(self.instrument.beamstop.outPosition()[0])
+        self.yOutDoubleSpinBox.setValue(self.instrument.beamstop.outPosition()[1])
 
     @Slot(bool)
     def on_fetchXInFromMotorToolButton_clicked(self, checked: bool):
@@ -88,7 +92,11 @@ class BeamStopCalibrator(WindowRequiresDevices, QtWidgets.QWidget, Ui_Form):
                 f'Beam-stop {inorout} position NOT SET.')
             return
         try:
-            self.instrument.beamstop.calibrateIn(x, y)
+            if inorout == 'in':
+                self.instrument.beamstop.calibrateIn(x, y)
+            else:
+                assert inorout == 'out'
+                self.instrument.beamstop.calibrateOut(x, y)
         except Exception as exc:
             QtWidgets.QMessageBox.critical(
                 self.window(), 'Calibrating beam-stop position',
