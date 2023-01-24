@@ -83,7 +83,7 @@ class GoOnFlag(JumpCommand):
                  StringArgument('flag', 'Flag name')]
 
     def run(self, label:str, flag:str) -> Tuple[Optional[str], bool]:
-        if self.instrument.interpreter.flags[flag]:
+        if self.instrument.interpreter.flags.getFlag(flag):
             return label, False
         else:
             return None, False
@@ -96,7 +96,7 @@ class GoSubOnFlag(JumpCommand):
                  StringArgument('flag', 'Flag name')]
 
     def run(self, label:str, flag:str) -> Tuple[Optional[str], bool]:
-        if self.instrument.interpreter.flags[flag]:
+        if self.instrument.interpreter.flags.getFlag(flag):
             return label, True
         else:
             return None, False

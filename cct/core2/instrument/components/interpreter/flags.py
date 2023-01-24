@@ -89,7 +89,11 @@ class InterpreterFlags(QtCore.QAbstractItemModel):
         return item in self._flags
 
     def getFlag(self, item):
-        return self._flags[item]
+        try:
+            return self._flags[item]
+        except KeyError:
+            self.addFlag(item, False)
+            return False
 
     def reset(self):
         for flag in list(self._flags):
