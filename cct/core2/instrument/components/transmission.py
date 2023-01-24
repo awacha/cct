@@ -351,11 +351,11 @@ class TransmissionMeasurement(Component, QtCore.QAbstractItemModel):
     def _disconnectSource(self):
         try:
             self.source.shutter.disconnect(self.onShutter)
-        except TypeError:
+        except (TypeError, RuntimeError):
             pass
         try:
             self.source.powerStateChanged.disconnect(self.onXraySourcePowerStateChanged)
-        except TypeError:
+        except (TypeError, RuntimeError):
             pass
 
     def _connectBeamStop(self):
@@ -364,7 +364,7 @@ class TransmissionMeasurement(Component, QtCore.QAbstractItemModel):
     def _disconnectBeamStop(self):
         try:
             self.beamstop.stateChanged.disconnect(self.onBeamStopStateChanged)
-        except TypeError:
+        except (TypeError, RuntimeError):
             pass
 
     def _connectSampleStore(self):
@@ -374,11 +374,11 @@ class TransmissionMeasurement(Component, QtCore.QAbstractItemModel):
     def _disconnectSampleStore(self):
         try:
             self.samplestore.movingFinished.disconnect(self.onMovingToSampleFinished)
-        except TypeError:
+        except (TypeError, RuntimeError):
             pass
         try:
             self.samplestore.movingToSample.disconnect(self.onMovingToSampleProgress)
-        except TypeError:
+        except (TypeError, RuntimeError):
             pass
 
     def _connectExposer(self):
@@ -389,15 +389,15 @@ class TransmissionMeasurement(Component, QtCore.QAbstractItemModel):
     def _disconnectExposer(self):
         try:
             self.exposer.exposureFinished.disconnect(self.onExposureFinished)
-        except TypeError:
+        except (TypeError, RuntimeError):
             pass
         try:
             self.exposer.exposureProgress.disconnect(self.onExposureProgress)
-        except TypeError:
+        except (TypeError, RuntimeError):
             pass
         try:
             self.exposer.imageReceived.disconnect(self.onImageReceived)
-        except TypeError:
+        except (TypeError, RuntimeError):
             pass
 
     # start the measurement
@@ -454,22 +454,10 @@ class TransmissionMeasurement(Component, QtCore.QAbstractItemModel):
 
     def finishIfUserStop(self) -> bool:
         if self.status == TransmissionMeasurementStatus.Stopping:
-            try:
-                self._disconnectSource()
-            except TypeError:
-                pass
-            try:
-                self._disconnectSampleStore()
-            except TypeError:
-                pass
-            try:
-                self._disconnectBeamStop()
-            except TypeError:
-                pass
-            try:
-                self._disconnectExposer()
-            except TypeError:
-                pass
+            self._disconnectSource()
+            self._disconnectSampleStore()
+            self._disconnectBeamStop()
+            self._disconnectExposer()
             logger.error('Transmission measurement stopped on user request')
             self.finish(False, 'Transmission measurement stopped on user request')
             return True
