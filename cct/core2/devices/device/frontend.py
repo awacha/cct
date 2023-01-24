@@ -535,7 +535,7 @@ class DeviceFrontend(QtCore.QAbstractItemModel):
         grp.attrs['NX_class'] = 'NXcollection'  # add a default NX_class, the actual implementation will correct it.
         stategrp = grp.create_group('statevariables')
         stategrp.attrs['NX_class'] = 'NXcollection'
-        for variable, value in self:
+        for variable, value in self.iterVariables():
             try:
                 self.create_hdf5_dataset(stategrp, variable, value)
             except ValueError:

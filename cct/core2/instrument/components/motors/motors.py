@@ -303,7 +303,7 @@ class Motors(Component, QtCore.QAbstractItemModel):
             super().panichandler()
 
     def toNeXus(self, instrumentgroup: h5py.Group) -> h5py.Group:
-        for motor in self:
+        for motor in self.iterMotors():
             mg = instrumentgroup.create_group(motor.name)
             mg.attrs['target'] = mg.name  # NeXus requires this attribute for hard-linked groups/datasets
             motor.toNeXus(mg)
