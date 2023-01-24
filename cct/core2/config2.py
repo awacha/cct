@@ -1,6 +1,7 @@
 import itertools
 import pickle
 import logging
+import shutil
 from typing import Any, Tuple, Union, Dict, Optional
 
 from PySide6 import QtCore
@@ -232,18 +233,34 @@ class Config(QtCore.QAbstractItemModel):
         """
         with open(filename, 'rb') as f:
             data = pickle.load(f)
-        if not update:
-            self.__setstate__(data)
-        else:
-            self.updateAt((), data)
+        if isinstance(data, tuple) and (len(data) == 2) and (data[0] == 'CCT config'):
+            if update:
+                for key, value in data:
+                    self[key] = value
+            else:
+                self.beginResetModel()
+                self._data = data
+                self.endResetModel()
+        elif isinstance(data, dict):
+            if not update:
+                self.__setstate__(data)
+            else:
+                self.updateAt((), data)
+            # make a backup copy of the old format file.
+            shutil.copy2(filename, filename+'.oldformat')
         if autosave:
             self.filename = filename
         logger.debug(f'Loaded config from file {filename}')
 
     def __setstate__(self, state):
-        self.beginResetModel()
-        self[()] = state
-        self.endResetModel()
+        if isinstance(state, tuple) and (len(state) == 2) and state[0] == 'CCT config':
+            self.beginResetModel()
+            self._data = state[1]
+            self.endResetModel()
+        elif isinstance(state, dict):
+            self.beginResetModel()
+            self[()] = state
+            self.endResetModel()
 
     def __getstate__(self):
         return self.toDict(())
@@ -265,7 +282,7 @@ class Config(QtCore.QAbstractItemModel):
             raise ValueError('File name not given.')
         logger.info(f'Saving config to file {filename}.')
         with open(filename, 'wb') as f:
-            pickle.dump(self.toDict(), f)
+            pickle.dump(self._data, f)
 
     def updateAt(self, root: KeyType, dic: Dict[Union[str, int], Any], delete_missing=False):
         self[root] = Config.SubTreePlaceHolder
