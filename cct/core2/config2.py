@@ -235,11 +235,11 @@ class Config(QtCore.QAbstractItemModel):
             data = pickle.load(f)
         if isinstance(data, tuple) and (len(data) == 2) and (data[0] == 'CCT config'):
             if update:
-                for key, value in data:
+                for key, value in data[1]:
                     self[key] = value
             else:
                 self.beginResetModel()
-                self._data = data
+                self._data = data[1]
                 self.endResetModel()
         elif isinstance(data, dict):
             if not update:
