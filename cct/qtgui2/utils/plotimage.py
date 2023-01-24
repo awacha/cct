@@ -198,10 +198,12 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
             matrix = self.matrix
         if self._imghandle is None:
             keepzoom = False
+            norm = self.getNormalization()
+            logger.debug(f'Using normalization {norm}, vmin is {norm.vmin}, vmax is {norm.vmax}')
             self._imghandle = self.axes.imshow(
                 matrix,
                 cmap=self.paletteComboBox.currentText(),
-                norm=self.getNormalization(),
+                norm=norm,
                 aspect='equal' if self.equalAspectToolButton.isChecked() else 'auto',
                 interpolation='nearest',
                 alpha=1.0,
@@ -212,7 +214,9 @@ class PlotImage(QtWidgets.QWidget, Ui_Form):
         else:
             self._imghandle.set_data(self.matrix)
             self._imghandle.set_cmap(self.paletteComboBox.currentText())
-            self._imghandle.set_norm(self.getNormalization())
+            norm = self.getNormalization()
+            logger.debug(f'Using normalization {norm}, vmin is {norm.vmin}, vmax is {norm.vmax}')
+            self._imghandle.set_norm(norm)
             self._imghandle.set_extent(extent)
             try:
                 self._imghandle.autoscale()
