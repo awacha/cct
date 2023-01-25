@@ -11,7 +11,7 @@ from ..motors import Motor
 from ....dataclasses.sample import Sample, LockState
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class SampleStore(Component, QtCore.QAbstractItemModel):

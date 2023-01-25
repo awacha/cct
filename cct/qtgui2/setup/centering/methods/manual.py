@@ -10,7 +10,7 @@ from matplotlib.backend_bases import MouseEvent, PickEvent
 from matplotlib.widgets import Cursor
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Manual(CenteringMethod):

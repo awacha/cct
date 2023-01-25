@@ -26,7 +26,7 @@ from .components.transmission import TransmissionMeasurement
 from ..config2 import Config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class Instrument(QtCore.QObject):
