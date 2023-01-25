@@ -49,7 +49,7 @@ class Calibration(WindowRequiresDevices, QtWidgets.QMainWindow, Ui_MainWindow):
         self.fsnSelectorGroupBox.setLayout(QtWidgets.QVBoxLayout())
         self.fsnSelectorGroupBox.layout().addWidget(self.fsnSelector)
         self.fsnSelector.fsnSelected.connect(self.onFSNSelected)
-        self.fsnSelector.setPrefix(self.instrument.cfg['path',  'prefixes',  'tst'])
+        self.fsnSelector.setPrefix(self.instrument.cfg['path', 'prefixes', 'tst'])
         self.tab2D.setLayout(QtWidgets.QVBoxLayout())
         self.plotimage = PlotImage(self.tab2D)
         self.tab2D.layout().addWidget(self.plotimage)
@@ -110,18 +110,18 @@ class Calibration(WindowRequiresDevices, QtWidgets.QMainWindow, Ui_MainWindow):
         if self.exposure is None:
             return
         if self.sender() is self.saveSDDistToolButton:
-            self.instrument.cfg['geometry',  'dist_sample_det'] = float(self.dist_sample_det[0])
-            self.instrument.cfg['geometry',  'dist_sample_det.err'] = float(self.dist_sample_det[1])
+            self.instrument.cfg['geometry', 'dist_sample_det'] = float(self.dist_sample_det[0])
+            self.instrument.cfg['geometry', 'dist_sample_det.err'] = float(self.dist_sample_det[1])
             logger.info(
                 f'Updated sample-to-detector distance to {self.dist_sample_det[0]:.5f} \xb1 {self.dist_sample_det[1]:.5f} mm')
         elif self.sender() == self.saveBeamXToolButton:
-            self.instrument.cfg['geometry',  'beamposy'] = self.exposure.header.beamposcol[0]
-            self.instrument.cfg['geometry',  'beamposy.err'] = self.exposure.header.beamposcol[1]
+            self.instrument.cfg['geometry', 'beamposy'] = self.exposure.header.beamposcol[0]
+            self.instrument.cfg['geometry', 'beamposy.err'] = self.exposure.header.beamposcol[1]
             logger.info(f'Updated beam column (X) coordinate to {self.exposure.header.beamposcol[0]:.5f} \xb1 '
                         f'{self.exposure.header.beamposcol[1]:.5f} pixel')
         elif self.sender() == self.saveBeamYToolButton:
-            self.instrument.cfg['geometry',  'beamposx'] = self.exposure.header.beamposrow[0]
-            self.instrument.cfg['geometry',  'beamposx.err'] = self.exposure.header.beamposrow[1]
+            self.instrument.cfg['geometry', 'beamposx'] = self.exposure.header.beamposrow[0]
+            self.instrument.cfg['geometry', 'beamposx.err'] = self.exposure.header.beamposrow[1]
             logger.info(f'Updated beam row (Y) coordinate to {self.exposure.header.beamposrow[0]:.5f} \xb1 '
                         f'{self.exposure.header.beamposrow[1]:.5f} pixel')
         else:
@@ -197,10 +197,10 @@ class Calibration(WindowRequiresDevices, QtWidgets.QMainWindow, Ui_MainWindow):
             # While we could derive the formula for the error propagation analytically, it is easier to do it by
             # sampling from a multivariate normal distribution.
             means = np.array([qval[0], pixval[0], pixelsize[0], wavelength[0]])
-            covar = np.array([[qunc[0]**2, 0, 0, 0],
-                              [0, pixunc[0]**2, 0, 0],
-                              [0, 0, pixelsize[1]**2, 0],
-                              [0, 0, 0, wavelength[1]**2]])
+            covar = np.array([[qunc[0] ** 2, 0, 0, 0],
+                              [0, pixunc[0] ** 2, 0, 0],
+                              [0, 0, pixelsize[1] ** 2, 0],
+                              [0, 0, 0, wavelength[1] ** 2]])
             samples = np.random.multivariate_normal(means, covar, 5000)
             q = samples[:, 0]
             pix = samples[:, 1]
@@ -238,9 +238,10 @@ class Calibration(WindowRequiresDevices, QtWidgets.QMainWindow, Ui_MainWindow):
                 curve.pixel, curve.intensity, dx=None, dy=None,
                 peaktype=PeakType.Lorentzian if self.sender() == self.fitLorentzPushButton else PeakType.Gaussian)
         except Exception as exc:
-            QtWidgets.QMessageBox.critical(self, 'Error while fitting', f'An error happened while fitting: {exc}.\n'
-                                                                        'Please select a different algorithm, a different range in the curve or '
-                                                                        'select an approximate beam position manually and start over.')
+            QtWidgets.QMessageBox.critical(self, 'Error while fitting',
+                                           f'An error happened while fitting: {exc}.\n'
+                                           'Please select a different algorithm, a different range in the curve or '
+                                           'select an approximate beam position manually and start over.')
             return
         x = np.linspace(curve.pixel.min(), curve.pixel.max(), 100)
         fitcurve = Curve.fromVectors(q=np.interp(x, curve.pixel, curve.q), intensity=peakfcn(x), pixel=x)
