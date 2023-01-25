@@ -178,7 +178,7 @@ class SummaryJob(BackgroundProcess):
             self.outliermethod, self.outlierthreshold, curves=self.curves[:, :, self.goodindex],
             fsns=notalreadybadfsns)
         self.result.newbadfsns=set(
-            np.array(notalreadybadfsns, dtype=np.int)[self.outliertest.outlierverdict])
+            np.array(notalreadybadfsns, dtype=int)[self.outliertest.outlierverdict])
         self.result.badfsns=self.result.badfsns.union(self.result.newbadfsns)
         self.result.time_outlierdetection = time.monotonic() - t0
 
@@ -256,7 +256,7 @@ class SummaryJob(BackgroundProcess):
                 del group['badfsns']
             except KeyError:
                 pass
-            group['badfsns'] = np.array(sorted(self.result.badfsns), dtype=np.int)
+            group['badfsns'] = np.array(sorted(self.result.badfsns), dtype=int)
             try:
                 del group['goodindex']
             except KeyError:

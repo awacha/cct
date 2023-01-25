@@ -157,7 +157,7 @@ class ProcessingSettings(QtCore.QObject):
                 del grp['badfsns']
             except KeyError:
                 pass
-            grp.create_dataset('badfsns', data=np.array(sorted(self.badfsns)), dtype=np.int)
+            grp.create_dataset('badfsns', data=np.array(sorted(self.badfsns)), dtype=int)
         logger.debug('BadFSNs list saved to HDF5 file.')
 
     def loadBadFSNs(self, filename: Optional[str] = None):
@@ -168,7 +168,7 @@ class ProcessingSettings(QtCore.QObject):
             logger.warning('Cannot read badFSNS list from H5 file, trying to load it from the badfsns file instead.')
             if filename is not None:
                 try:
-                    badfsns = np.loadtxt(filename).astype(np.int)
+                    badfsns = np.loadtxt(filename).astype(int)
                 except IOError:
                     logger.warning(f'Could not open badfsns file {filename}')
                     return
